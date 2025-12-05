@@ -1,5 +1,4 @@
 # Disk learning 2D sensor experiment
-# From surface_sm_inference.py: disk_learning_2d
 
 defaults:
   - base_disk_learning

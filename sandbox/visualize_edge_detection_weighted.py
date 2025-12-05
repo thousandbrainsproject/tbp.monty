@@ -1,7 +1,7 @@
-"""Script to compare two edge detection methods (default and center-aware) on synthetic RGB images.
+"""Script to visualize weighted edge detection on synthetic RGB images.
 
 Reads RGB PNG images from a user-selected folder in synthetic_edge_test_images directory,
-applies two edge detection methods, and creates comparison visualizations with results saved to CSV.
+applies the weighted (center-aware) edge detection method, and creates visualizations.
 """
 
 import argparse
@@ -15,13 +15,12 @@ import numpy as np
 from tqdm import tqdm
 
 from tbp.monty.frameworks.utils.edge_detection_utils import (
-    compute_edge_features_at_center,
     compute_edge_features_center_weighted,
 )
 
 # Edge detection thresholds matching two_d_sensor_module.py defaults
 EDGE_THRESHOLD = 0.1
-COHERENCE_THRESHOLD = 0.1
+COHERENCE_THRESHOLD = 0.05
 
 # Arrow length scaling parameters
 MAX_ARROW_LENGTH = 30  # Maximum arrow length in pixels
@@ -68,82 +67,53 @@ def draw_tangent_only(
 
 
 def process_single_image(patch: np.ndarray, output_path: Path) -> dict:
-    """Process one image and save comparison visualization.
+    """Process one image and save visualization.
 
     Args:
         patch: RGB image patch as numpy array
-        output_path: Path where the comparison figure should be saved
+        output_path: Path where the figure should be saved
 
     Returns:
-        Dictionary with results for both methods:
+        Dictionary with results:
         {
-            'default': (edge_strength, coherence, tangent_theta),
-            'center_aware': (edge_strength, coherence, tangent_theta)
+            'strength': edge_strength,
+            'coherence': coherence,
+            'theta': tangent_theta,
+            'ec': edge_strength * coherence
         }
     """
-    # Apply both edge detection methods
-    default_strength, default_coherence, default_theta = (
-        compute_edge_features_at_center(patch)
+    # Apply weighted edge detection method
+    strength, coherence, theta = compute_edge_features_center_weighted(patch)
+    ec = strength * coherence
+
+    # Create figure
+    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+
+    # Filter edges using same thresholds as two_d_sensor_module.py
+    has_edge = (strength > EDGE_THRESHOLD) and (coherence > COHERENCE_THRESHOLD)
+    edge_direction = theta if has_edge else None
+
+    # Calculate arrow length: linear scaling up to MAX_ARROW_LENGTH
+    arrow_length = int(
+        min(MAX_ARROW_LENGTH, (ec / MAX_STRENGTH_COHERENCE) * MAX_ARROW_LENGTH)
     )
-    center_aware_strength, center_aware_coherence, center_aware_theta = (
-        compute_edge_features_center_weighted(patch)
+
+    annotated_patch = draw_tangent_only(
+        patch.copy(), edge_direction=edge_direction, arrow_length=arrow_length
     )
 
-    # Create 1x2 subplot figure
-    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+    # Display the annotated patch
+    ax.imshow(annotated_patch)
+    ax.axis("off")
 
-    # Method configurations
-    methods = [
-        {
-            "name": "naive",
-            "strength": default_strength,
-            "coherence": default_coherence,
-            "theta": default_theta,
-            "ax": axes[0],
-        },
-        {
-            "name": "weighted",
-            "strength": center_aware_strength,
-            "coherence": center_aware_coherence,
-            "theta": center_aware_theta,
-            "ax": axes[1],
-        },
-    ]
-
-    # Process each method
-    for method in methods:
-        ax = method["ax"]
-        strength = method["strength"]
-        coherence = method["coherence"]
-        theta = method["theta"]
-
-        # Draw pose on patch
-        # Filter edges using same thresholds as two_d_sensor_module.py
-        has_edge = (strength > EDGE_THRESHOLD) and (coherence > COHERENCE_THRESHOLD)
-        edge_direction = theta if has_edge else None
-
-        # Calculate arrow length: linear scaling up to MAX_ARROW_LENGTH
-        product = strength * coherence
-        arrow_length = int(
-            min(MAX_ARROW_LENGTH, (product / MAX_STRENGTH_COHERENCE) * MAX_ARROW_LENGTH)
-        )
-
-        annotated_patch = draw_tangent_only(
-            patch.copy(), edge_direction=edge_direction, arrow_length=arrow_length
-        )
-
-        # Display the annotated patch
-        ax.imshow(annotated_patch)
-        ax.axis("off")
-
-        # Set title with angle in degrees
-        if has_edge:
-            angle_deg = np.degrees(theta)
-            title = f"{method['name']}, E={strength:.2f}, C={coherence:.2f}, θ={angle_deg:.1f}°"
-        else:
-            title = f"{method['name']}, E={strength:.2f}, C={coherence:.2f}, No Edge"
-        print(title)
-        ax.set_title(title, fontsize=24)
+    # Set title with angle in degrees, E (edge strength), and C (coherence)
+    if has_edge:
+        angle_deg = np.degrees(theta)
+        title = f"E={strength:.2f}, C={coherence:.2f}, θ={angle_deg:.1f}°"
+    else:
+        title = f"E={strength:.2f}, C={coherence:.2f}, No Edge"
+    print(title)
+    ax.set_title(title, fontsize=24)
 
     plt.tight_layout()
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
@@ -152,46 +122,33 @@ def process_single_image(patch: np.ndarray, output_path: Path) -> dict:
 
     # Return results dictionary
     return {
-        "default": (default_strength, default_coherence, default_theta),
-        "center_aware": (center_aware_strength, center_aware_coherence, center_aware_theta),
+        "strength": strength,
+        "coherence": coherence,
+        "theta": theta,
+        "ec": ec,
     }
 
 
 def plot_histograms(
-    default_strengths: List[float],
-    default_coherences: List[float],
-    center_aware_strengths: List[float],
-    center_aware_coherences: List[float],
+    strengths: List[float],
+    coherences: List[float],
     output_path: Path,
 ) -> None:
     """Plot histograms of edge strengths, coherences, and their products.
 
     Args:
-        default_strengths: List of edge strengths from default method.
-        default_coherences: List of coherences from default method.
-        center_aware_strengths: List of edge strengths from center-aware method.
-        center_aware_coherences: List of coherences from center-aware method.
+        strengths: List of edge strengths.
+        coherences: List of coherences.
         output_path: Path where the histogram figure should be saved.
     """
     # Calculate products
-    default_products = [s * c for s, c in zip(default_strengths, default_coherences)]
-    center_aware_products = [
-        s * c for s, c in zip(center_aware_strengths, center_aware_coherences)
-    ]
+    products = [s * c for s, c in zip(strengths, coherences)]
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
     # Edge strength histogram
     axes[0].hist(
-        default_strengths, bins=30, alpha=0.6, label="naive", color="blue", edgecolor="black"
-    )
-    axes[0].hist(
-        center_aware_strengths,
-        bins=30,
-        alpha=0.6,
-        label="weighted",
-        color="orange",
-        edgecolor="black",
+        strengths, bins=30, alpha=0.7, color="orange", edgecolor="black"
     )
     axes[0].axvline(EDGE_THRESHOLD, color="red", linestyle="--", label="threshold")
     axes[0].set_xlabel("Edge Strength")
@@ -201,15 +158,7 @@ def plot_histograms(
 
     # Coherence histogram
     axes[1].hist(
-        default_coherences, bins=30, alpha=0.6, label="naive", color="blue", edgecolor="black"
-    )
-    axes[1].hist(
-        center_aware_coherences,
-        bins=30,
-        alpha=0.6,
-        label="weighted",
-        color="orange",
-        edgecolor="black",
+        coherences, bins=30, alpha=0.7, color="orange", edgecolor="black"
     )
     axes[1].axvline(COHERENCE_THRESHOLD, color="red", linestyle="--", label="threshold")
     axes[1].set_xlabel("Coherence")
@@ -217,17 +166,9 @@ def plot_histograms(
     axes[1].set_title("Coherence Distribution")
     axes[1].legend()
 
-    # Product histogram (strength * coherence)
+    # Product histogram (strength * coherence = EC)
     axes[2].hist(
-        default_products, bins=30, alpha=0.6, label="naive", color="blue", edgecolor="black"
-    )
-    axes[2].hist(
-        center_aware_products,
-        bins=30,
-        alpha=0.6,
-        label="weighted",
-        color="orange",
-        edgecolor="black",
+        products, bins=30, alpha=0.7, color="orange", edgecolor="black"
     )
     axes[2].axvline(
         MAX_STRENGTH_COHERENCE,
@@ -235,9 +176,9 @@ def plot_histograms(
         linestyle="--",
         label=f"max arrow ({MAX_STRENGTH_COHERENCE})",
     )
-    axes[2].set_xlabel("Strength × Coherence")
+    axes[2].set_xlabel("EC (Strength × Coherence)")
     axes[2].set_ylabel("Count")
-    axes[2].set_title("Strength × Coherence Distribution")
+    axes[2].set_title("EC Distribution")
     axes[2].legend()
 
     plt.tight_layout()
@@ -272,18 +213,18 @@ def select_folder_interactive(input_dir: Path) -> str:
         Selected folder name
     """
     folders = get_available_folders(input_dir)
-    
+
     if not folders:
         raise ValueError(f"No subdirectories found in {input_dir}")
-    
+
     print("\nAvailable folders:")
     for i, folder in enumerate(folders, 1):
         print(f"  {i}. {folder}")
-    
+
     while True:
         try:
             choice = input(f"\nSelect folder (1-{len(folders)}) or folder name: ").strip()
-            
+
             # Try to parse as number
             if choice.isdigit():
                 idx = int(choice) - 1
@@ -302,10 +243,10 @@ def select_folder_interactive(input_dir: Path) -> str:
 
 
 def main():
-    """Main function to process all images and generate comparison results."""
+    """Main function to process all images and generate visualization results."""
     # Parse command-line arguments
     parser = argparse.ArgumentParser(
-        description="Compare default and center-aware edge detection methods on synthetic images"
+        description="Visualize weighted edge detection on synthetic images"
     )
     parser.add_argument(
         "--folder",
@@ -317,7 +258,7 @@ def main():
 
     # Set up paths
     input_dir = Path("/Users/hlee/tbp/feat.2d_sensor/results/synthetic_edge_test_images")
-    
+
     # Select folder
     if args.folder:
         selected_folder = args.folder
@@ -329,11 +270,11 @@ def main():
     else:
         selected_folder = select_folder_interactive(input_dir)
         folder_path = input_dir / selected_folder
-    
+
     print(f"\nProcessing folder: {selected_folder}")
-    
+
     # Set up output directory
-    output_dir = Path("results/synthetic_edge_test_images_comparison") / selected_folder
+    output_dir = Path("results/synthetic_edge_test_images_comparison") / f"{selected_folder}_weighted"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Find PNG files in selected folder (not recursively)
@@ -352,10 +293,8 @@ def main():
     total_failed = 0
 
     # Data collection for histograms
-    all_default_strengths = []
-    all_default_coherences = []
-    all_center_aware_strengths = []
-    all_center_aware_coherences = []
+    all_strengths = []
+    all_coherences = []
 
     # Process each image with CSV file context manager
     with open(csv_path, "w", newline="") as csv_file:
@@ -363,13 +302,10 @@ def main():
         csv_writer.writerow(
             [
                 "filename",
-                "subdirectory",
-                "default_angle",
-                "default_strength",
-                "default_coherence",
-                "center_aware_angle",
-                "center_aware_strength",
-                "center_aware_coherence",
+                "angle",
+                "strength",
+                "coherence",
+                "ec",
             ]
         )
 
@@ -404,29 +340,17 @@ def main():
                 results = process_single_image(patch, output_path)
 
                 # Collect data for histograms
-                all_default_strengths.append(results["default"][0])
-                all_default_coherences.append(results["default"][1])
-                all_center_aware_strengths.append(results["center_aware"][0])
-                all_center_aware_coherences.append(results["center_aware"][1])
-
-                # Get subdirectory name (empty string if in root)
-                subdirectory = (
-                    str(relative_path.parent)
-                    if relative_path.parent != Path(".")
-                    else ""
-                )
+                all_strengths.append(results["strength"])
+                all_coherences.append(results["coherence"])
 
                 # Write to CSV
                 csv_writer.writerow(
                     [
                         image_file.name,
-                        subdirectory,
-                        results["default"][2],  # angle
-                        results["default"][0],  # strength
-                        results["default"][1],  # coherence
-                        results["center_aware"][2],  # angle
-                        results["center_aware"][0],  # strength
-                        results["center_aware"][1],  # coherence
+                        results["theta"],  # angle in radians
+                        results["strength"],
+                        results["coherence"],
+                        results["ec"],
                     ]
                 )
 
@@ -438,13 +362,11 @@ def main():
                 continue
 
     # Generate histograms
-    if all_default_strengths:
+    if all_strengths:
         histogram_path = output_dir / "histograms.png"
         plot_histograms(
-            all_default_strengths,
-            all_default_coherences,
-            all_center_aware_strengths,
-            all_center_aware_coherences,
+            all_strengths,
+            all_coherences,
             histogram_path,
         )
 

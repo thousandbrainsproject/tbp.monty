@@ -75,16 +75,22 @@ CIRCLE_RADIUS = 10  # Radius for circle shapes
 ANGLES = list(range(0, 181, 2))  # 0 to 180 degrees in 2-degree increments
 
 # Test Suites 5 & 6: Distraction offsets
-DISTRACTION_OFFSETS = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28]
+DISTRACTION_OFFSETS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28]
 
 # Thickness variations for distraction tests
-THICKNESS_VARIATIONS = [2, 4, 6]
+THICKNESS_VARIATIONS = [2, 4, 8, 14]
 
 # Test Suite 7: Random line intersections
 RANDOM_INTERSECTIONS_COUNT = 20
 
+# Test Suite 8: Angled intersections
+ANGLED_INTERSECTION_OFFSETS = [0, 2, 4, 8, 16, 24]  # Y offset below center for intersection
+ANGLED_INTERSECTION_ANGLES = list(range(0, 166, 15))  # 0 to 165 in 15-deg increments
+ANGLED_INTERSECTION_THICKNESSES = [2, 4, 8, 16]
+ANGLED_INTERSECTION_MAIN_THICKNESS = 2  # Fixed main vertical line thickness
+
 # Output directory
-OUTPUT_DIR = Path("synthetic_edge_test_images")
+OUTPUT_DIR = Path("results/synthetic_edge_test_images")
 
 
 # ============================================================================
@@ -626,7 +632,7 @@ def parse_suite_selection(input_str: str) -> List[int]:
             (e.g., "1,2,3" or "1 2 3")
 
     Returns:
-        List of valid suite numbers (1-7)
+        List of valid suite numbers (1-8)
 
     Raises:
         ValueError: If input contains invalid suite numbers or non-numeric values
@@ -639,21 +645,21 @@ def parse_suite_selection(input_str: str) -> List[int]:
     # Split by spaces and convert to integers
     parts = input_str.split()
     suites = []
-    valid_suites = {1, 2, 3, 4, 5, 6, 7}
+    valid_suites = {1, 2, 3, 4, 5, 6, 7, 8}
 
     for part in parts:
         try:
             suite_num = int(part)
             if suite_num not in valid_suites:
                 raise ValueError(
-                    f"Invalid suite number: {suite_num}. Must be 1-7."
+                    f"Invalid suite number: {suite_num}. Must be 1-8."
                 )
             suites.append(suite_num)
         except ValueError as e:
             if "Invalid suite number" in str(e):
                 raise
             raise ValueError(
-                f"Invalid input: '{part}'. Must be a number (1-7)."
+                f"Invalid input: '{part}'. Must be a number (1-8)."
             ) from None
 
     # Remove duplicates while preserving order
@@ -671,7 +677,7 @@ def get_suite_selection_interactive() -> List[int]:
     """Get suite selection from user via interactive prompt.
 
     Returns:
-        List of valid suite numbers (1-7)
+        List of valid suite numbers (1-8)
     """
     print("\nSelect test suites to generate:")
     print("  1 = Thickness variations")
@@ -681,6 +687,7 @@ def get_suite_selection_interactive() -> List[int]:
     print("  5 = Horizontal distraction with offsets")
     print("  6 = Vertical distraction with offsets")
     print("  7 = Random line intersections")
+    print("  8 = Angled intersections (vertical line + angled line)")
     print(
         "\nEnter suite numbers (comma or space separated, "
         "e.g., 1,2,3 or 1 2 3):"
@@ -692,7 +699,7 @@ def get_suite_selection_interactive() -> List[int]:
             return parse_suite_selection(user_input)
         except ValueError as e:
             print(f"Error: {e}")
-            print("Please enter valid suite numbers (1-7):")
+            print("Please enter valid suite numbers (1-8):")
 
 
 # ============================================================================
@@ -1224,11 +1231,11 @@ def generate_horizontal_distraction_offset_test_images(
 
     # Define thickness combinations
     # Same thickness: (main, distraction)
-    same_thickness = [(2, 2), (4, 4), (6, 6)]
+    same_thickness = [(2, 2), (4, 4), (8, 8), (14, 14)]
     # Main thicker: (main, distraction)
-    main_thicker = [(4, 2), (6, 2), (6, 4)]
+    main_thicker = [(4, 2), (8, 2), (8, 4), (14, 2), (14, 4), (14, 8)]
     # Distraction thicker: (main, distraction)
-    dist_thicker = [(2, 4), (2, 6), (4, 6)]
+    dist_thicker = [(2, 4), (2, 8), (2, 14), (4, 8), (4, 14), (8, 14)]
 
     thickness_combinations = same_thickness + main_thicker + dist_thicker
 
@@ -1277,9 +1284,9 @@ def generate_vertical_distraction_offset_test_images(
         edge_color = LOW_CONTRAST_EDGE
 
     # Define thickness combinations (same as suite 5)
-    same_thickness = [(2, 2), (4, 4), (6, 6)]
-    main_thicker = [(4, 2), (6, 2), (6, 4)]
-    dist_thicker = [(2, 4), (2, 6), (4, 6)]
+    same_thickness = [(2, 2), (4, 4), (8, 8), (14, 14)]
+    main_thicker = [(4, 2), (8, 2), (8, 4), (14, 2), (14, 4), (14, 8)]
+    dist_thicker = [(2, 4), (2, 8), (2, 14), (4, 8), (4, 14), (8, 14)]
 
     thickness_combinations = same_thickness + main_thicker + dist_thicker
 
@@ -1366,6 +1373,123 @@ def generate_random_intersections_test_images(
         print(f"Generated: {filepath}")
 
 
+def generate_angled_intersections_test_images(
+    output_dir: Path, contrast_level: str
+) -> None:
+    """Generate test suite 8: angled line intersections with vertical line.
+
+    Creates images with a main vertical line at center and an intersecting line
+    at various angles, with the intersection point offset below center.
+
+    Args:
+        output_dir: Directory to save images
+        contrast_level: 'high' or 'low'
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if contrast_level == "high":
+        bg_color = HIGH_CONTRAST_BG
+        edge_color = HIGH_CONTRAST_EDGE
+    else:
+        bg_color = LOW_CONTRAST_BG
+        edge_color = LOW_CONTRAST_EDGE
+
+    for offset in ANGLED_INTERSECTION_OFFSETS:
+        # Intersection point is at center X, offset below center Y
+        intersection_x = CENTER_X
+        intersection_y = CENTER_Y + offset
+
+        for angle_deg in ANGLED_INTERSECTION_ANGLES:
+            for thickness in ANGLED_INTERSECTION_THICKNESSES:
+                # Create image with background
+                image = create_image(bg_color)
+
+                # Draw main vertical edge at center with fixed thickness
+                create_vertical_edge(
+                    image, CENTER_X, ANGLED_INTERSECTION_MAIN_THICKNESS, edge_color
+                )
+
+                # Draw intersecting line at the specified angle through intersection point
+                # Convert angle to radians (angle from horizontal)
+                angle_rad = np.deg2rad(angle_deg)
+
+                # Calculate direction vector
+                dx = np.cos(angle_rad)
+                dy = np.sin(angle_rad)
+
+                # Find intersections with image boundaries
+                # Line through intersection point: (x, y) = (ix, iy) + t * (dx, dy)
+                t_values = []
+
+                # Intersection with left edge (x = 0)
+                if abs(dx) > 1e-6:
+                    t = (0 - intersection_x) / dx
+                    y = intersection_y + t * dy
+                    if 0 <= y < IMAGE_SIZE:
+                        t_values.append(t)
+
+                # Intersection with right edge (x = IMAGE_SIZE - 1)
+                if abs(dx) > 1e-6:
+                    t = (IMAGE_SIZE - 1 - intersection_x) / dx
+                    y = intersection_y + t * dy
+                    if 0 <= y < IMAGE_SIZE:
+                        t_values.append(t)
+
+                # Intersection with top edge (y = 0)
+                if abs(dy) > 1e-6:
+                    t = (0 - intersection_y) / dy
+                    x = intersection_x + t * dx
+                    if 0 <= x < IMAGE_SIZE:
+                        t_values.append(t)
+
+                # Intersection with bottom edge (y = IMAGE_SIZE - 1)
+                if abs(dy) > 1e-6:
+                    t = (IMAGE_SIZE - 1 - intersection_y) / dy
+                    x = intersection_x + t * dx
+                    if 0 <= x < IMAGE_SIZE:
+                        t_values.append(t)
+
+                # Get the two extreme t values (min and max)
+                if len(t_values) >= 2:
+                    t_min = min(t_values)
+                    t_max = max(t_values)
+
+                    start = (
+                        int(intersection_x + t_min * dx),
+                        int(intersection_y + t_min * dy),
+                    )
+                    end = (
+                        int(intersection_x + t_max * dx),
+                        int(intersection_y + t_max * dy),
+                    )
+
+                    # Clamp to image bounds
+                    start = (
+                        max(0, min(IMAGE_SIZE - 1, start[0])),
+                        max(0, min(IMAGE_SIZE - 1, start[1])),
+                    )
+                    end = (
+                        max(0, min(IMAGE_SIZE - 1, end[0])),
+                        max(0, min(IMAGE_SIZE - 1, end[1])),
+                    )
+
+                    image = create_diagonal_line(
+                        image, start, end, thickness, edge_color
+                    )
+                elif angle_deg == 90:
+                    # Special case: vertical line (same as main line, creates overlap)
+                    create_vertical_edge(image, intersection_x, thickness, edge_color)
+
+                # Save image
+                filename = (
+                    f"angled_intersection_offset{offset}_"
+                    f"angle{angle_deg}_thick{thickness}_{contrast_level}.png"
+                )
+                filepath = output_dir / filename
+                plt.imsave(filepath, image)
+                print(f"Generated: {filepath}")
+
+
 # ============================================================================
 # Main Function
 # ============================================================================
@@ -1378,26 +1502,50 @@ def main(suites: List[int] = None):
         suites: List of suite numbers to generate
             (1=thickness, 2=offset, 3=distractions, 4=angled lines,
             5=horizontal distraction offsets, 6=vertical distraction offsets,
-            7=random intersections).
+            7=random intersections, 8=angled intersections).
             If None, will prompt user interactively.
     """
     # Get suite selection if not provided
     if suites is None:
         suites = get_suite_selection_interactive()
 
+    # Define output directories for each suite
+    suite_dirs = {
+        1: OUTPUT_DIR / "thickness",
+        2: OUTPUT_DIR / "offset",
+        3: OUTPUT_DIR / "distractions",
+        4: OUTPUT_DIR / "angled_lines",
+        5: OUTPUT_DIR / "horizontal_distraction_offset",
+        6: OUTPUT_DIR / "vertical_distraction_offset",
+        7: OUTPUT_DIR / "random_intersections",
+        8: OUTPUT_DIR / "angled_intersections",
+    }
+
+    # Check if any selected suite's output directory exists
+    existing_dirs = [suite_dirs[s] for s in suites if suite_dirs[s].exists()]
+    if existing_dirs:
+        print("\nThe following output directories already exist:")
+        for d in existing_dirs:
+            print(f"  - {d.absolute()}")
+        response = input("Do you want to override existing files? (y/n): ").strip().lower()
+        if response not in ("y", "yes"):
+            print("Aborting. No files were modified.")
+            return
+
     print("=" * 60)
     print("Generating synthetic edge detection test images")
     print(f"Selected test suites: {', '.join(map(str, suites))}")
     print("=" * 60)
 
-    # Create output directories
-    thickness_dir = OUTPUT_DIR / "thickness"
-    offset_dir = OUTPUT_DIR / "offset"
-    distractions_dir = OUTPUT_DIR / "distractions"
-    angled_lines_dir = OUTPUT_DIR / "angled_lines"
-    horizontal_distraction_offset_dir = OUTPUT_DIR / "horizontal_distraction_offset"
-    vertical_distraction_offset_dir = OUTPUT_DIR / "vertical_distraction_offset"
-    random_intersections_dir = OUTPUT_DIR / "random_intersections"
+    # Get output directories
+    thickness_dir = suite_dirs[1]
+    offset_dir = suite_dirs[2]
+    distractions_dir = suite_dirs[3]
+    angled_lines_dir = suite_dirs[4]
+    horizontal_distraction_offset_dir = suite_dirs[5]
+    vertical_distraction_offset_dir = suite_dirs[6]
+    random_intersections_dir = suite_dirs[7]
+    angled_intersections_dir = suite_dirs[8]
 
     # Generate test suite 1: Thickness variations
     if 1 in suites:
@@ -1436,13 +1584,6 @@ def main(suites: List[int] = None):
         generate_horizontal_distraction_offset_test_images(
             horizontal_distraction_offset_dir, "high"
         )
-        print(
-            "\nGenerating Test Suite 5: Horizontal Distraction Offsets "
-            "(Low Contrast)..."
-        )
-        generate_horizontal_distraction_offset_test_images(
-            horizontal_distraction_offset_dir, "low"
-        )
 
     # Generate test suite 6: Vertical distraction with offsets
     if 6 in suites:
@@ -1452,13 +1593,6 @@ def main(suites: List[int] = None):
         )
         generate_vertical_distraction_offset_test_images(
             vertical_distraction_offset_dir, "high"
-        )
-        print(
-            "\nGenerating Test Suite 6: Vertical Distraction Offsets "
-            "(Low Contrast)..."
-        )
-        generate_vertical_distraction_offset_test_images(
-            vertical_distraction_offset_dir, "low"
         )
 
     # Generate test suite 7: Random line intersections
@@ -1473,6 +1607,14 @@ def main(suites: List[int] = None):
             "(Low Contrast)..."
         )
         generate_random_intersections_test_images(random_intersections_dir, "low")
+
+    # Generate test suite 8: Angled intersections
+    if 8 in suites:
+        print(
+            "\nGenerating Test Suite 8: Angled Intersections "
+            "(High Contrast)..."
+        )
+        generate_angled_intersections_test_images(angled_intersections_dir, "high")
 
     print("\n" + "=" * 60)
     print("Generation complete!")
@@ -1493,7 +1635,9 @@ if __name__ == "__main__":
         default=None,
         help=(
             "Test suites to generate (comma or space separated). "
-            "1=thickness, 2=offset, 3=distractions. "
+            "1=thickness, 2=offset, 3=distractions, 4=angled lines, "
+            "5=horizontal distraction offsets, 6=vertical distraction offsets, "
+            "7=random intersections, 8=angled intersections. "
             "Example: --suite 1,2,3 or -s 1 2 3"
         ),
     )
@@ -1507,7 +1651,7 @@ if __name__ == "__main__":
             suites = parse_suite_selection(args.suite)
         except ValueError as e:
             print(f"Error parsing suite selection: {e}")
-            print("Please provide valid suite numbers (1-7)")
+            print("Please provide valid suite numbers (1-8)")
             sys.exit(1)
 
     main(suites)
