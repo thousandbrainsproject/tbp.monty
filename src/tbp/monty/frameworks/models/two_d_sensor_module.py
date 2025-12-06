@@ -31,9 +31,9 @@ from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.edge_detection_utils import (
     DEFAULT_KERNEL_SIZE,
     DEFAULT_WINDOW_SIGMA,
-    normalize,
-    compute_edge_features_at_center,
+    compute_edge_features_center_weighted,
     draw_2d_pose_on_patch,
+    normalize,
     project_onto_tangent_plane,
     save_raw_rgb_patch,
 )
@@ -76,6 +76,10 @@ class TwoDPoseSM(SensorModule):
                   (default: DEFAULT_KERNEL_SIZE from edge_detection_utils)
                 - edge_threshold: Minimum edge strength threshold (default: 0.1)
                 - coherence_threshold: Minimum coherence threshold (default: 0.05)
+                - radius: Radius of influence around center in pixels (default: 14.0)
+                - sigma_r: Radial falloff parameter for center weighting (default: 7.0)
+                - c_min: Minimum coherence threshold to accept edge (default: 0.75)
+                - e_min: Minimum local gradient energy threshold (default: 0.01)
             noise_params: Dictionary of noise amount for each feature.
             delta_thresholds: If given, a FeatureChangeFilter will be used to
                 check whether the current state's features are significantly different
@@ -124,6 +128,10 @@ class TwoDPoseSM(SensorModule):
             "kernel_size": DEFAULT_KERNEL_SIZE,
             "edge_threshold": 0.1,
             "coherence_threshold": 0.05,
+            "radius": 14.0,
+            "sigma_r": 7.0,
+            "c_min": 0.75,
+            "e_min": 0.01,
         }
         self.edge_params = {**default_edge_params, **(edge_detection_params or {})}
 
@@ -323,8 +331,20 @@ class TwoDPoseSM(SensorModule):
 
         win_sigma = self.edge_params.get("gaussian_sigma", DEFAULT_WINDOW_SIGMA)
         ksize = self.edge_params.get("kernel_size", DEFAULT_KERNEL_SIZE)
-        edge_strength, coherence, edge_orientation = compute_edge_features_at_center(
-            patch, win_sigma=win_sigma, ksize=ksize
+        radius = self.edge_params.get("radius", 14.0)
+        sigma_r = self.edge_params.get("sigma_r", 7.0)
+        c_min = self.edge_params.get("c_min", 0.75)
+        e_min = self.edge_params.get("e_min", 0.01)
+        edge_strength, coherence, edge_orientation = (
+            compute_edge_features_center_weighted(
+                patch,
+                win_sigma=win_sigma,
+                ksize=ksize,
+                radius=radius,
+                sigma_r=sigma_r,
+                c_min=c_min,
+                e_min=e_min,
+            )
         )
 
         strength_threshold = self.edge_params.get("edge_threshold", 0.1)

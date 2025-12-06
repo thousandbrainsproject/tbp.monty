@@ -7,7 +7,7 @@
 defaults:
   - monty_class: graph_matching
   - monty_args: defaults
-  - motor_system: informed
+  - motor_system: naive_scan_spiral
   - learning_module: displacement_graph
   - sensor_module: habitat_patch_view
   - connectivity: patch_view_single_lm

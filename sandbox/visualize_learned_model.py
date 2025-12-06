@@ -140,6 +140,10 @@ def visualize_point_cloud_interactive(
     points = np.asarray(model_data["points"], float)
     features = model_data["features"]
 
+    # Edge length scaling parameters (similar to visualize_edge_detection_weighted.py)
+    MAX_EDGE_SCALE = 1.0  # Maximum scale multiplier for edge length
+    MAX_STRENGTH_COHERENCE = 1.0  # Coherence value at which max scale is reached (coherence is typically in [0, 1])
+
     # Debug: print available features
     print(f"[viz] Available features: {list(features.keys())}")
 
@@ -291,6 +295,14 @@ def visualize_point_cloud_interactive(
     if "pose_from_edge" in features:
         edge_mask = np.asarray(features["pose_from_edge"], bool).reshape(-1)
 
+    # Extract edge_strength and coherence for scaling edge lengths
+    edge_strength = None
+    coherence = None
+    if "edge_strength" in features:
+        edge_strength = np.asarray(features["edge_strength"], float).reshape(-1)
+    if "coherence" in features:
+        coherence = np.asarray(features["coherence"], float).reshape(-1)
+
     # Optional: mask to points on object (if semantic ids provided)
     # If you have a mask, apply it here to 'points' and 'tangents'.
 
@@ -303,7 +315,9 @@ def visualize_point_cloud_interactive(
         n_points = points.shape[0]
         n_tangents = tangents.shape[0]
         n_mask = edge_mask.shape[0] if edge_mask is not None else n_tangents
-        n_common = min(n_points, n_tangents, n_mask)
+        n_edge_strength = edge_strength.shape[0] if edge_strength is not None else n_tangents
+        n_coherence = coherence.shape[0] if coherence is not None else n_tangents
+        n_common = min(n_points, n_tangents, n_mask, n_edge_strength, n_coherence)
 
         if n_common == 0:
             print("[viz] No common rows to draw tangents.")
@@ -314,6 +328,16 @@ def visualize_point_cloud_interactive(
                 edge_mask[:n_common]
                 if edge_mask is not None
                 else np.ones((n_common,), dtype=bool)
+            )
+            ES = (
+                edge_strength[:n_common]
+                if edge_strength is not None
+                else None
+            )
+            COH = (
+                coherence[:n_common]
+                if coherence is not None
+                else None
             )
 
             # Print counts for debugging
@@ -332,12 +356,26 @@ def visualize_point_cloud_interactive(
                 keep = EM & valid
                 idx = np.where(keep)[0]
 
+                # Calculate scaled lengths based on coherence only
+                scaled_lengths = None
+                if COH is not None:
+                    # Scale: scaled_length = arrow_scale * min(MAX_EDGE_SCALE, (coherence / MAX_STRENGTH_COHERENCE) * MAX_EDGE_SCALE)
+                    # This gives linear scaling from 0 to MAX_EDGE_SCALE * arrow_scale as coherence goes from 0 to MAX_STRENGTH_COHERENCE
+                    scale_factors = np.minimum(
+                        MAX_EDGE_SCALE,
+                        (COH / MAX_STRENGTH_COHERENCE) * MAX_EDGE_SCALE
+                    )
+                    scaled_lengths = arrow_scale * scale_factors
+                else:
+                    # Fall back to fixed arrow_scale if coherence not available
+                    scaled_lengths = np.full(n_common, arrow_scale)
+
                 # Build lines
                 lines = []
                 for i in idx:
                     p0 = P[i]
                     # Center the line around the point
-                    half_scale = arrow_scale / 2
+                    half_scale = scaled_lengths[i] / 2
                     p_start = p0 - half_scale * T[i]
                     p_end = p0 + half_scale * T[i]
                     lines.append(Line(p_start, p_end, c=tangent_color, lw=tangent_lw))
@@ -519,7 +557,7 @@ if __name__ == "__main__":
     # Set up paths
     pretrained_model_path = Path(
         "~/tbp/results/monty/pretrained_models/2d_sensor/"
-        "disk_learning_control/pretrained/model.pt"
+        "disk_learning_2d/pretrained/model.pt"
     ).expanduser()
 
     # Load the model to explore available objects

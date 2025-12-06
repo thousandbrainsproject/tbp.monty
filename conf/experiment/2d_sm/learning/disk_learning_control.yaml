@@ -8,7 +8,6 @@
 defaults:
   - override /presets: supervised_pretraining
   - override /logging: pretrain
-  - override /monty/motor_system@config.monty_config.motor_system: naive_scan_spiral
   - override /train_env: disk_objects
   
 _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
@@ -21,8 +20,6 @@ config:
     python_log_level: INFO
     run_name: disk_learning_control
   monty_config:
-    monty_args:
-      num_exploratory_steps: 500
     motor_system_config:
       motor_system_args:
         policy_args:
