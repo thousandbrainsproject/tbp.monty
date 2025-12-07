@@ -23,6 +23,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     VectorXYZ,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.simulators.simulator import Simulator
 
 
@@ -139,8 +140,8 @@ class MuJoCoSimulator(Simulator):
         return self._object_count
 
     @property
-    def states(self) -> None:
-        pass
+    def states(self) -> ProprioceptiveState:
+        return ProprioceptiveState({})
 
     @override
     def apply_actions(self, actions: Sequence[Action]) -> Observations:
