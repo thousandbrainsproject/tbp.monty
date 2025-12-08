@@ -16,6 +16,7 @@ const EXTERNAL_LINK_ICON = 'fa-external-link-alt';
 const EDIT_ICON = 'fa-pencil-alt';
 const BADGE_CLASS = 'badge';
 const BADGE_SKILLS_CLASS = 'badge-skills';
+const BADGE_STATUS_CLASS = 'badge-status';
 
 
 function escapeHtml(unsafe) {
@@ -112,21 +113,21 @@ const ColumnFormatters = {
     const status = cell.getValue() || '';
     const contributor = rowData.contributor || '';
 
-    const statusBadge = status
-      ? `<span class="${BADGE_SKILLS_CLASS}" data-search-value="${escapeHtml(status)}" style="cursor: pointer;">${escapeHtml(status)}</span>`
+    const statusText = status
+      ? `<span class="${BADGE_STATUS_CLASS}">${escapeHtml(status)}</span>`
       : '';
 
-    if (!contributor) return statusBadge;
+    if (!contributor) return statusText;
 
     const usernames = Array.isArray(contributor)
       ? contributor
       : contributor.split(',').map(u => u.trim()).filter(Boolean);
 
     const avatars = usernames
-      .map(username => `<a href="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(username)}"><img src="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}.png" class="github-avatar" alt="${escapeHtml(username)}"/></a>`)
+      .map(username => `<img src="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}.png" class="github-avatar" data-search-value="${escapeHtml(username)}" title="${escapeHtml(username)}" alt="${escapeHtml(username)}"/>`)
       .join(' ');
 
-    return statusBadge + '<br>' + avatars;
+    return statusText + '<br>' + avatars;
   },
   formatRfcColumn(cell) {
     const value = cell.getValue();

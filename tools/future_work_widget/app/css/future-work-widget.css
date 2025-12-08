@@ -33,6 +33,17 @@ body {
   background-color: #d0d0e0;
 }
 
+.badge-status {
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  font-size: 0.7rem;
+  display: inline-block;
+  background-color: #ffffff;
+  color: #666;
+  border: 1px solid #999;
+}
+
 .badge-size-small {
   background-color: #f0f0f0;
   color: #666;
@@ -308,4 +319,5 @@ body {
   vertical-align: middle;
   border-radius: 100%;
   margin-left: 5px;
+  cursor: pointer;
 }
