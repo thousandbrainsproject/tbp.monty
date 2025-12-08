@@ -37,16 +37,5 @@ You can also read articles on the newsroom page for higher level coverage of the
 
 **Cortical Columns**, By Artem Kirsanov
 
-[block:embed]
-{
-  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FDykkubb-Qus%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DDykkubb-Qus&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FDykkubb-Qus%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
-  "url": "https://www.youtube.com/watch?v=Dykkubb-Qus",
-  "title": "2025/02 - Cortical Circuit Overview",
-  "favicon": "https://www.youtube.com/favicon.ico",
-  "image": "https://i.ytimg.com/vi/Dykkubb-Qus/hqdefault.jpg",
-  "provider": "https://www.youtube.com/",
-  "href": "https://www.youtube.com/watch?v=Dykkubb-Qus",
-  "typeOfEmbed": "youtube"
-}
-[/block]
+[2025/02 - Cortical Circuit Overview](https://www.youtube.com/watch?v=Dykkubb-Qus)
 
