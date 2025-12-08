@@ -19,15 +19,4 @@ The main testbed for Monty is currently focused on object and pose recognition. 
 # Overview of Monty's Current Default Setup
 This video gives a high level overview of all the components in Monty and the custom versions of them that we currently use for our [benchmark experiments](../overview/benchmark-experiments.md). It goes into some more depth on the [evidence based learning module](learning-module/evidence-based-learning-module.md) (our current best LM implementation) and voting.
 
-[block:embed]
-{
-  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FbkwY4ru1xCg%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DbkwY4ru1xCg&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FbkwY4ru1xCg%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
-  "url": "https://www.youtube.com/watch?v=bkwY4ru1xCg",
-  "title": "2023/01 - A Comprehensive Overview of Monty and the Evidence-Based Learning Module",
-  "favicon": "https://www.youtube.com/favicon.ico",
-  "image": "https://i.ytimg.com/vi/bkwY4ru1xCg/hqdefault.jpg",
-  "provider": "https://www.youtube.com/",
-  "href": "https://www.youtube.com/watch?v=bkwY4ru1xCg",
-  "typeOfEmbed": "youtube"
-}
-[/block]
+[2023/01 - A Comprehensive Overview of Monty and the Evidence-Based Learning Module](https://www.youtube.com/watch?v=bkwY4ru1xCg)
