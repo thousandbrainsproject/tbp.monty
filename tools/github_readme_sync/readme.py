@@ -19,16 +19,18 @@ from collections import OrderedDict
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, quote
 
 import nh3
 import yaml
 
 from tools.github_readme_sync.colors import GRAY, GREEN, RESET
 from tools.github_readme_sync.constants import (
+    IGNORE_CLOUDINARY,
     IGNORE_DOCS,
     IGNORE_IMAGES,
     IGNORE_TABLES,
+    IGNORE_YOUTUBE,
     REGEX_CSV_TABLE,
 )
 from tools.github_readme_sync.req import delete, get, post, put
@@ -43,6 +45,10 @@ regex_image_path = re.compile(
 regex_markdown_path = re.compile(r"\(([\./]*)([\w\-/]+)\.md(#.*?)?\)")
 regex_cloudinary_video = re.compile(
     r"\[(.*?)\]\((https://res\.cloudinary\.com/([^/]+)/video/upload/v(\d+)/([^/]+\.mp4))\)",
+    re.IGNORECASE,
+)
+regex_youtube_link = re.compile(
+    r"\[(.*?)\]\((?:https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})(?:[&?][^\)]*)?)\)",
     re.IGNORECASE,
 )
 regex_markdown_snippet = re.compile(r"!snippet\[(.*?)\]")
@@ -312,7 +318,8 @@ class ReadMe:
         body = self.correct_file_locations(body)
         body = self.convert_note_tags(body)
         body = self.parse_images(body)
-        return self.convert_cloudinary_videos(body)
+        body = self.convert_cloudinary_videos(body)
+        return self.convert_youtube_videos(body)
 
     def sanitize_html(self, body: str) -> str:
         allowed_attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
@@ -466,10 +473,17 @@ class ReadMe:
         delete(f"{PREFIX}/version/v{self.version}")
         logging.info(f"{GREEN}Successfully deleted version {self.version}{RESET}")
 
+    def _should_ignore_video(self, identifier: str, ignore_list: list[str]) -> bool:
+        return identifier in ignore_list
+
+    def _create_video_block(self, block_type: str, block_data: dict[str, Any]) -> str:
+        return f"[block:{block_type}]\n{json.dumps(block_data, indent=2)}\n[/block]"
+
     def convert_cloudinary_videos(self, markdown_text: str) -> str:
         def replace_video(match):
             _, _, cloud_id, version, filename = match.groups()
-            # Replace the cloud ID with the environment variable
+            if self._should_ignore_video(filename, IGNORE_CLOUDINARY):
+                return match.group(0)
             new_url = f"https://res.cloudinary.com/{cloud_id}/video/upload/v{version}/{filename}"
             block = {
                 "html": (
@@ -481,9 +495,44 @@ class ReadMe:
                     f"Your browser does not support the video tag.</video></div>"
                 )
             }
-            return f"[block:html]\n{json.dumps(block, indent=2)}\n[/block]"
+            return self._create_video_block("html", block)
 
         return regex_cloudinary_video.sub(replace_video, markdown_text)
+
+    def convert_youtube_videos(self, markdown_text: str) -> str:
+        def replace_youtube(match):
+            title, video_id = match.groups()
+            if self._should_ignore_video(video_id, IGNORE_YOUTUBE):
+                return match.group(0)
+            youtube_url = f"https://www.youtube.com/watch?v={video_id}"
+            embed_url = f"https://www.youtube.com/embed/{video_id}?feature=oembed"
+            thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
+            block = {
+                "html": (
+                    f'<iframe class="embedly-embed" '
+                    f'src="//cdn.embedly.com/widgets/media.html?'
+                    f"src={quote(embed_url, safe='')}&"
+                    f"display_name=YouTube&"
+                    f"url={quote(youtube_url, safe='')}&"
+                    f"image={quote(thumbnail_url, safe='')}&"
+                    f'type=text%2Fhtml&schema=youtube" '
+                    f'width="854" height="480" scrolling="no" '
+                    f'title="YouTube embed" frameborder="0" '
+                    f'allow="autoplay; fullscreen; encrypted-media; '
+                    f'picture-in-picture;" '
+                    f'allowfullscreen="true"></iframe>'
+                ),
+                "url": youtube_url,
+                "title": title,
+                "favicon": "https://www.youtube.com/favicon.ico",
+                "image": thumbnail_url,
+                "provider": "https://www.youtube.com/",
+                "href": youtube_url,
+                "typeOfEmbed": "youtube",
+            }
+            return self._create_video_block("embed", block)
+
+        return regex_youtube_link.sub(replace_youtube, markdown_text)
 
     def insert_markdown_snippet(self, body: str, file_path: str) -> str:
         """Insert markdown snippets from referenced files.
