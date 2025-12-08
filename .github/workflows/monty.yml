@@ -145,7 +145,7 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
-          deptry benchmarks src tests
+          deptry src tests conf
 
   check_license_monty:
     name: check-license-monty
@@ -205,8 +205,8 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           mkdir -p test_results/ruff
-          ruff check src tests benchmarks
-          ruff format --check src tests benchmarks
+          ruff check src tests conf
+          ruff format --check src tests conf
 
   check_types_monty:
     name: check-types-monty
@@ -245,7 +245,7 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           mkdir -p test_results/mypy
-          mypy src tests benchmarks
+          mypy src tests conf
 
   install_monty:
     name: install-monty

@@ -14,9 +14,9 @@ Click on the name to view the detail page for that task.  Click on the any of th
 [block:embed]
 {
   "html": false,
-  "url": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,rfc,status,improved-metric,skills",
+  "url": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,status,improved-metric,skills",
   "provider": "futureworkwidget.thousandbrains.ai",
-  "href": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,rfc,status,improved-metric,skills,",
+  "href": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,status,improved-metric,skills,",
   "typeOfEmbed": "iframe",
   "height": "800px",
   "iframe": true
@@ -42,18 +42,8 @@ We also have two stars that mark the current top two priorities of the TBP team.
 
 ## Current Quarterly Goals
 To get a more concrete idea of our goals and roadmap for Q4 - 2025, have a look at this video:
-[block:embed]
-{
-  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2F3LN5SeSJhOg%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D3LN5SeSJhOg&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2F3LN5SeSJhOg%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
-  "url": "https://www.youtube.com/watch?v=3LN5SeSJhOg",
-  "title": "Q4 Roadmap",
-  "favicon": "https://www.youtube.com/favicon.ico",
-  "image": "https://i.ytimg.com/vi/3LN5SeSJhOg/hqdefault.jpg",
-  "provider": "https://www.youtube.com/",
-  "href": "https://www.youtube.com/watch?v=3LN5SeSJhOg",
-  "typeOfEmbed": "youtube"
-}
-[/block]
+
+[2025/04 - Q4 Roadmap](https://youtu.be/3LN5SeSJhOg)
 
 # How You Can Contribute
 
