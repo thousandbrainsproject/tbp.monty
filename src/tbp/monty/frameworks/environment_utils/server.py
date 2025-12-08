@@ -19,6 +19,7 @@ import http.server
 import os
 import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 from tbp.monty.frameworks.run_env import setup_env
 
@@ -28,7 +29,8 @@ setup_env()
 class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_PUT(self):
         # Check type of incoming data: depth or rgb
-        inc_filename = os.path.basename(self.path)
+        parsed_url = urlparse(self.path)
+        inc_filename = os.path.basename(parsed_url.path)
         data_type = "depth" if inc_filename == "depth.data" else "rgb"
 
         # check existing filenames in the directory
