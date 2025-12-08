@@ -10,24 +10,23 @@ from __future__ import annotations
 
 import logging
 import os
-import pprint
 import time
 from pathlib import Path
 
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.hydra import register_resolvers
 
 logger = logging.getLogger(__name__)
 
 
-def print_config(config):
-    """Print config with nice formatting if config_args.print_config is True."""
+def print_config(config: DictConfig) -> None:
+    """Print config with nice formatting."""
     print("\n\n")
     print("Printing config below")
     print("-" * 100)
-    print(pprint.pformat(config))
+    print(OmegaConf.to_yaml(config))
     print("-" * 100)
 
 
