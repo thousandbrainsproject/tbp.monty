@@ -1,5 +1,13 @@
 ---
 title: Make Dataset to Test Compositional Objects
+description: Create more complex compositional object meshes that we can load in our simulator and test Monty on.
+rfc: optional
+estimated-scope: medium
+improved-metric: compositional
+output-type: experiments, testbed, mesh-models
+skills: python, 3d-modeling
+contributor: scottcanoe, ramyamounir
+status: evergreen
 ---
 
 > [!TIP] We have implemented a first dataset to test compositional modeling!

@@ -11,17 +11,18 @@
 import pytest
 
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.sensors import SensorID
 
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
 )
 
-import os
 import pickle
 import shutil
 import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import hydra
@@ -72,7 +73,7 @@ class MontyRunTest(unittest.TestCase):
         # Mock habitat_sim classes
         mock_agent_class = agent_patch.start()
         camera = SingleSensorAgent(
-            agent_id=AgentID("agent_id_0"), sensor_id="sensor_id_0"
+            agent_id=AgentID("agent_id_0"), sensor_id=SensorID("sensor_id_0")
         )
         self.mock_agent = mock_agent_class.return_value
         self.mock_agent.agent_config = camera.get_spec()
@@ -108,10 +109,9 @@ class MontyRunTest(unittest.TestCase):
         OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.cfg)
 
-        with open(
-            os.path.join(self.cfg.experiment.config.logging.output_dir, "fake_log.pkl"),
-            "rb",
-        ) as f:
+        output_dir = Path(self.cfg.experiment.config.logging.output_dir)
+
+        with open(output_dir / "fake_log.pkl", "rb") as f:
             exp_log = pickle.load(f)
 
         self.assertListEqual(exp_log, EXPECTED_LOG)

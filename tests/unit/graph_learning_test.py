@@ -17,7 +17,6 @@ pytest.importorskip(
 )
 
 import copy
-import os
 import shutil
 import tempfile
 import unittest
@@ -99,7 +98,7 @@ class GraphLearningTest(BaseGraphTest):
         """Code that gets executed before every test."""
         super().setUp()
 
-        self.output_dir = tempfile.mkdtemp()
+        self.output_dir = Path(tempfile.mkdtemp())
         self.compositional_save_path = tempfile.mkdtemp()
         self.fixed_actions_path = (
             Path(__file__).parent / "resources" / "fixed_test_actions.jsonl"
@@ -297,11 +296,12 @@ class GraphLearningTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.fixed_actions_disp_cfg.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_train_results(train_stats)
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
 
     def test_fixed_actions_ppf(self):
@@ -309,11 +309,12 @@ class GraphLearningTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.fixed_actions_disp_cfg.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_train_results(train_stats)
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
 
     def test_fixed_actions_feat(self):
@@ -321,11 +322,12 @@ class GraphLearningTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_train_results(train_stats)
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
 
     def test_reproduce_single_episode(self):
@@ -373,9 +375,9 @@ class GraphLearningTest(BaseGraphTest):
         ###
         # Check that basic csv stats are the same
         ###
-        original_eval_stats_file = os.path.join(eval_exp_1.output_dir, "eval_stats.csv")
-        new_eval_stats_file = os.path.join(
-            eval_exp_1.output_dir, "eval_episode_0_rerun", "eval_stats.csv"
+        original_eval_stats_file = eval_exp_1.output_dir / "eval_stats.csv"
+        new_eval_stats_file = (
+            eval_exp_1.output_dir / "eval_episode_0_rerun" / "eval_stats.csv"
         )
 
         original_stats = pd.read_csv(original_eval_stats_file)
@@ -391,13 +393,9 @@ class GraphLearningTest(BaseGraphTest):
         ###
 
         # TODO: Once json file i/o code has been updated, only load single episode
-        original_json_file = os.path.join(
-            eval_exp_1.output_dir, "detailed_run_stats.json"
-        )
-        new_json_file = os.path.join(
-            eval_exp_1.output_dir,
-            "eval_episode_0_rerun",
-            "detailed_run_stats.json",
+        original_json_file = eval_exp_1.output_dir / "detailed_run_stats.json"
+        new_json_file = (
+            eval_exp_1.output_dir / "eval_episode_0_rerun" / "detailed_run_stats.json"
         )
 
         original_detailed_stats = deserialize_json_chunks(original_json_file)
@@ -468,9 +466,9 @@ class GraphLearningTest(BaseGraphTest):
         ###
         # Check that basic csv stats are the same
         ###
-        original_eval_stats_file = os.path.join(eval_exp_1.output_dir, "eval_stats.csv")
-        new_eval_stats_file = os.path.join(
-            eval_exp_1.output_dir, "eval_rerun_episodes", "eval_stats.csv"
+        original_eval_stats_file = eval_exp_1.output_dir / "eval_stats.csv"
+        new_eval_stats_file = (
+            eval_exp_1.output_dir / "eval_rerun_episodes" / "eval_stats.csv"
         )
 
         original_stats = pd.read_csv(original_eval_stats_file)
@@ -486,13 +484,9 @@ class GraphLearningTest(BaseGraphTest):
         ###
 
         # TODO: Once json file i/o code has been updated, only load single episode
-        original_json_file = os.path.join(
-            eval_exp_1.output_dir, "detailed_run_stats.json"
-        )
-        new_json_file = os.path.join(
-            eval_exp_1.output_dir,
-            "eval_rerun_episodes",
-            "detailed_run_stats.json",
+        original_json_file = eval_exp_1.output_dir / "detailed_run_stats.json"
+        new_json_file = (
+            eval_exp_1.output_dir / "eval_rerun_episodes" / "detailed_run_stats.json"
         )
 
         original_detailed_stats = deserialize_json_chunks(original_json_file)
@@ -552,9 +546,9 @@ class GraphLearningTest(BaseGraphTest):
         ###
         # Check that basic csv stats are the same
         ###
-        original_eval_stats_file = os.path.join(eval_exp_1.output_dir, "eval_stats.csv")
-        new_eval_stats_file = os.path.join(
-            eval_exp_1.output_dir, "eval_rerun_episodes", "eval_stats.csv"
+        original_eval_stats_file = eval_exp_1.output_dir / "eval_stats.csv"
+        new_eval_stats_file = (
+            eval_exp_1.output_dir / "eval_rerun_episodes" / "eval_stats.csv"
         )
 
         original_stats = pd.read_csv(original_eval_stats_file)
@@ -570,13 +564,9 @@ class GraphLearningTest(BaseGraphTest):
         ###
 
         # TODO: Once json file i/o code has been updated, only load single episode
-        original_json_file = os.path.join(
-            eval_exp_1.output_dir, "detailed_run_stats.json"
-        )
-        new_json_file = os.path.join(
-            eval_exp_1.output_dir,
-            "eval_rerun_episodes",
-            "detailed_run_stats.json",
+        original_json_file = eval_exp_1.output_dir / "detailed_run_stats.json"
+        new_json_file = (
+            eval_exp_1.output_dir / "eval_rerun_episodes" / "detailed_run_stats.json"
         )
 
         original_detailed_stats = deserialize_json_chunks(original_json_file)
@@ -652,7 +642,8 @@ class GraphLearningTest(BaseGraphTest):
                 if e % 2 == 1:
                     exp.post_epoch()
 
-        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
         self.assertEqual(
             train_stats["primary_performance"][2],
             "pose_time_out",
@@ -706,7 +697,8 @@ class GraphLearningTest(BaseGraphTest):
                 exp.post_episode(last_step)
             exp.post_epoch()
 
-        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
         for i in [0, 1]:
             self.assertEqual(
                 train_stats["primary_performance"][i],
@@ -852,11 +844,12 @@ class GraphLearningTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.feature_uniform_initial_poses_cfg.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_train_results(train_stats)
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
 
     def gm_learn_object(
@@ -1209,11 +1202,12 @@ class GraphLearningTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.five_lm_ppf_displacement_cfg.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_multilm_eval_results(
             eval_stats, num_lms=5, min_done=3, num_episodes=1
         )
@@ -1255,7 +1249,8 @@ class GraphLearningTest(BaseGraphTest):
                 exp.post_episode(tm.num_observations(episode_num))
             exp.post_epoch()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        output_dir = Path(exp.output_dir)
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         # Just testing 1 episode here. Somehow the second rotation doesn't get
         # recognized. Probably just some parameter setting due to flaws in old
         # LM but didn't want to dig too deep into that for now.

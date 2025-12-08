@@ -4,9 +4,12 @@ description: An overview of tasks we plan to work on or would welcome contributi
 ---
 # Tasks on Our Roadmap
 
-
 Here is an interactive view of our future work that can be filtered and sorted to find tasks that match your scope appetite, skills and interests.
 Click on the name to view the detail page for that task.  Click on the any of the tags in the columns to filter the table by that tag.
+
+> [!NOTE] 
+> You can contribute to any task that is not marked as `completed`. Even tasks that are currently `in-progress` usually benefit from additional input so please feel free to reach out to us about any task that peaks your interest.
+> For more information on the different fields and values, see our [future work widget metadata](../contributing/documentation/future-work-widget-metadata.md) documentation page.
 
 [block:embed]
 {
@@ -23,12 +26,13 @@ Click on the name to view the detail page for that task.  Click on the any of th
 
 These are tasks where we have a rough idea of how we want to achieve them but we haven't necessarily scheduled when we will work on them or who will work on them. **We welcome anyone who would like to pick up one of these tasks and contribute to it.**
 
-Tasks are categorized in two ways:
+Tasks can be categorized in multiple ways:
 
-- **Which part of Monty does it touch?** This is represented section headers in the table, and is organized into Sensor Module, Learning Module, Motor System, Voting, Hierarchy, Environment, Framework, and Open-Source/Communication.
-- **Which capabilitie(s) does it improve?** This is represented by the metric column. We keep track of the progress on the capabilities. Each task should improve at least one capability but can contribute to multiple.
-
-Tasks that are done have a `completed` in the status column.
+- **Which part of Monty does it touch?** This is represented by the `section headers` in the table, and is organized into Sensor Module, Learning Module, Motor System, Voting, Hierarchy, Environment, Framework, and Open-Source/Communication.
+- **Which capabilitie(s) does it improve?** This is represented by the `improved-metric` column. We keep track of the progress on the capabilities. Each task should improve at least one capability but can contribute to multiple.
+- **What skills does it require?** This is represented in the `skills` column. Often, it is not a hard requirement to be an expert in all the skills listed but they give you a rough idea of which tasks may be a good fit given your background.
+- **What type of output is expected?** This can be found in the `output-type` column. This column should give you a rough idea of the type of work this task involves. Note that you can also contribute partially to a task (e.g. develop a prototype but don't integrate it as a new monty feature).
+- **What's the tasks scope?** As a rough rule of thumb, small tasks take several days, medium tasks several weeks, and large tasks several months. However, this is a very rough estimate as it doesn't take into account your daily time commitment or unexpected issues and changes in scope.
 
 # What the TBP Team is Working On
 
