@@ -279,13 +279,11 @@ def generate_parallel_eval_configs(
     n_epochs = experiment.config["n_eval_epochs"]
 
     params = sample_params_to_init_args(sampler())
-    start_seed = experiment.config["seed"]
 
     # Try to mimic the exact workflow instead of guessing
     while epoch_count < n_epochs:
         for obj in object_names:
             new_experiment: Mapping = OmegaConf.to_object(experiment)  # type: ignore[assignment]
-            new_experiment["config"]["seed"] = start_seed + episode_count
 
             # No training
             new_experiment["config"].update(

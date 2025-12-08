@@ -7,6 +7,13 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+"""This script is used for the Monty Meets World demo.
+
+It is used to live stream data from the iPad camera to a server that Monty can then read
+from.
+
+For more on the demo, see https://github.com/thousandbrainsproject/monty_lab/tree/main/monty_meets_world.
+"""
 
 import http.server
 import os
@@ -16,9 +23,6 @@ from pathlib import Path
 from tbp.monty.frameworks.run_env import setup_env
 
 setup_env()
-
-# This class is used for the monty meets world demo to live stream data from the iPad
-# camera to a server that Monty can then read from.
 
 
 class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
