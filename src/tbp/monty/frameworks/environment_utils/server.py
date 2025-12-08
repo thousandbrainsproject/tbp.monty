@@ -30,7 +30,7 @@ class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_PUT(self):
         # Check type of incoming data: depth or rgb
         parsed_url = urlparse(self.path)
-        inc_filename = os.path.basename(parsed_url.path)
+        inc_filename = Path(parsed_url.path).name
         data_type = "depth" if inc_filename == "depth.data" else "rgb"
 
         # check existing filenames in the directory
