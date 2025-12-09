@@ -21,6 +21,7 @@ TUTORIALS_DIR = EXPERIMENT_DIR / "tutorial"
 TUTORIALS = [x.stem for x in TUTORIALS_DIR.glob("*.yaml")]
 TUTORIAL_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots" / "tutorial"
 
+
 def _assert_config_matches_snapshot(
     current_config_yaml: str, snapshot_config_yaml: str, name: str
 ):
@@ -34,6 +35,7 @@ def _assert_config_matches_snapshot(
             "the mismatch.\nFor more information on how to update snapshots"
             ", please see the tests/conf/README.md file."
         ) from e
+
 
 class ExperimentTest(ParametrizedTestCase):
     @parametrize(

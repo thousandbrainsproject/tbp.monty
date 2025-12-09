@@ -24,7 +24,7 @@ from tbp.monty.hydra import register_resolvers
 def update_snapshots(
     experiment_dir: Path = Path(__file__).parent / "experiment",
     experiment_prefix: str = "",
-    snapshots_dir: Path = Path(__file__).parent.parent / "tests" / "conf" / "snapshots"
+    snapshots_dir: Path = Path(__file__).parent.parent / "tests" / "conf" / "snapshots",
 ):
     """Update snapshots for all experiments in the experiment directory.
 
@@ -38,15 +38,14 @@ def update_snapshots(
         with hydra.initialize(version_base=None, config_path="."):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=[
-                    f"experiment={experiment_prefix}{file_path.stem}"
-                ]
+                overrides=[f"experiment={experiment_prefix}{file_path.stem}"],
             )
             OmegaConf.to_object(config)
             current_config_yaml = OmegaConf.to_yaml(config)
             snapshot_path = snapshots_dir / f"{file_path.stem}.yaml"
             with open(snapshot_path, "w") as f:
                 f.write(current_config_yaml)
+
 
 if __name__ == "__main__":
     setup_env()
