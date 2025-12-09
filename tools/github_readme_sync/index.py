@@ -101,14 +101,16 @@ def generate_index(docs_dir: str, output_file_path: str) -> str:
 
     entries = process_markdown_files(docs_dir)
 
-    Path(output_file_path).parent.mkdir(exist_ok=True, parents=True)
-    with open(output_file_path, "w", encoding="utf-8") as f:
+    output_file_pathstr, output_file_path = output_file_path, Path(output_file_path)
+
+    output_file_path.parent.mkdir(exist_ok=True, parents=True)
+    with output_file_path.open("w", encoding="utf-8") as f:
         json.dump(entries, f, indent=2, ensure_ascii=False)
 
     logger.info(
         f"{GREEN}Generated index with {len(entries)} entries: {output_file_path}{RESET}"
     )
-    return output_file_path
+    return output_file_pathstr
 
 
 def process_markdown_files(docs_dir: str) -> list[dict]:

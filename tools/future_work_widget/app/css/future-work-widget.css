@@ -33,6 +33,17 @@ body {
   background-color: #d0d0e0;
 }
 
+.badge-status {
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  font-size: 0.7rem;
+  display: inline-block;
+  background-color: #ffffff;
+  color: #666;
+  border: 1px solid #999;
+}
+
 .badge-size-small {
   background-color: #f0f0f0;
   color: #666;
@@ -144,6 +155,31 @@ body {
   opacity: 1;
 }
 
+#filterContainer {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.hide-completed-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #666;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.hide-completed-label input[type="checkbox"] {
+  margin-right: 5px;
+  cursor: pointer;
+}
+
+.hide-completed-label:hover {
+  color: #333;
+}
+
 .svg-inline--fa {
   height: 0.7rem;
   color: black;
@@ -223,7 +259,7 @@ body {
 
 .tabulator .tabulator-header .tabulator-col.tabulator-sortable[aria-sort=none] .tabulator-col-content .tabulator-col-sorter .tabulator-arrow {
   border-bottom-color: #dfe6f5;
-}}
+}
 
 .tabulator .tabulator-header .tabulator-col {
   background-color: #dfe6f5;
@@ -275,4 +311,13 @@ body {
 
 .tabulator-cell a:visited {
   color: #2f2b5c;
+}
+
+.github-avatar {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+  border-radius: 100%;
+  margin-left: 5px;
+  cursor: pointer;
 }

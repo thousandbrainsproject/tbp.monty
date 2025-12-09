@@ -73,5 +73,5 @@ def read_file_content(file_path: str) -> str:
     Returns:
         File content as string
     """
-    with open(file_path, encoding="utf-8") as f:
+    with Path(file_path).open(encoding="utf-8") as f:
         return f.read()

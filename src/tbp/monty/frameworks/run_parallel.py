@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 import os
-import pprint
 import re
 import shutil
 import time
@@ -150,12 +149,12 @@ def move_reproducibility_data(base_dir, parallel_dirs):
         episode0target.rename(outdir / f"eval_episode_{cnt}_target.txt")
 
 
-def print_config(config):
-    """Print config with nice formatting if config_args.print_config is True."""
+def print_config(config: DictConfig) -> None:
+    """Print config with nice formatting."""
     print("\n\n")
     print("Printing config below")
     print("-" * 100)
-    print(pprint.pformat(config))
+    print(OmegaConf.to_yaml(config))
     print("-" * 100)
 
 
@@ -279,13 +278,11 @@ def generate_parallel_eval_configs(
     n_epochs = experiment.config["n_eval_epochs"]
 
     params = sample_params_to_init_args(sampler())
-    start_seed = experiment.config["seed"]
 
     # Try to mimic the exact workflow instead of guessing
     while epoch_count < n_epochs:
         for obj in object_names:
             new_experiment: Mapping = OmegaConf.to_object(experiment)  # type: ignore[assignment]
-            new_experiment["config"]["seed"] = start_seed + episode_count
 
             # No training
             new_experiment["config"].update(
@@ -675,7 +672,7 @@ def run_episodes_parallel(
     print(f"Done running parallel experiments in {end_time - start_time} seconds")
 
     # Keep a record of how long everything takes
-    with open(base_dir / "parallel_log.txt", "w") as f:
+    with (base_dir / "parallel_log.txt").open("w") as f:
         f.write(f"experiment: {experiment_name}\n")
         f.write(f"num_parallel: {num_parallel}\n")
         f.write(f"total_time: {total_time}")

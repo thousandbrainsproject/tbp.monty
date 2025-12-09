@@ -352,7 +352,7 @@ def load_allowed_values(docs_snippets_dir: Path) -> dict[str, list[str]]:
     for file_path in future_work_files:
         field_name = file_path.stem.replace("future-work-", "").replace("-", "_")
 
-        with open(file_path, encoding="utf-8") as f:
+        with file_path.open(encoding="utf-8") as f:
             content = f.read().strip()
 
         parsed_values = []

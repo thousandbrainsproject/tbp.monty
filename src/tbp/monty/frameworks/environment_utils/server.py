@@ -7,24 +7,30 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+"""This script is used for the Monty Meets World demo.
+
+It is used to live stream data from the iPad camera to a server that Monty can then read
+from.
+
+For more on the demo, see https://github.com/thousandbrainsproject/monty_lab/tree/main/monty_meets_world.
+"""
 
 import http.server
 import os
 import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 from tbp.monty.frameworks.run_env import setup_env
 
 setup_env()
 
-# This class is used for the monty meets world demo to live stream data from the iPad
-# camera to a server that Monty can then read from.
-
 
 class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_PUT(self):
         # Check type of incoming data: depth or rgb
-        inc_filename = os.path.basename(self.path)
+        parsed_url = urlparse(self.path)
+        inc_filename = Path(parsed_url.path).name
         data_type = "depth" if inc_filename == "depth.data" else "rgb"
 
         # check existing filenames in the directory
@@ -45,7 +51,7 @@ class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         # Write data to file
         file_length = int(self.headers["Content-Length"])
-        with open(data_path / new_filename, "wb") as output_file:
+        with (data_path / new_filename).open("wb") as output_file:
             output_file.write(self.rfile.read(file_length))
             output_file.close()
 

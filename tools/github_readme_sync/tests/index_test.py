@@ -31,16 +31,17 @@ class TestGenerateIndex(unittest.TestCase):
 
         content = f"---\ntitle: test doc\n{frontmatter_fields}\n---\n"
         md_file_path = subdir_path / "test-doc.md"
-        with open(md_file_path, "w", encoding="utf-8") as f:
+        with md_file_path.open("w", encoding="utf-8") as f:
             f.write(content)
 
         index_file_path = generate_index(
             self.temp_dir, str(Path(self.temp_dir) / "index.json")
         )
+        index_file_path = Path(index_file_path)
 
-        self.assertTrue(Path(index_file_path).exists())
+        self.assertTrue(index_file_path.exists())
 
-        with open(index_file_path, encoding="utf-8") as f:
+        with index_file_path.open(encoding="utf-8") as f:
             return json.load(f)
 
     def test_generate_index_with_frontmatter(self):

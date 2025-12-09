@@ -127,6 +127,6 @@ def load_doc(file_path: str, category_slug: str, child: dict):
     if not file_path.exists():
         raise ValueError(f"File {file_path} does not exist")
 
-    with open(file_path, encoding="utf-8") as file:
+    with file_path.open(encoding="utf-8") as file:
         body = file.read()
         return process_markdown(body, child["slug"])

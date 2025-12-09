@@ -111,7 +111,7 @@ class MontyRunTest(unittest.TestCase):
 
         output_dir = Path(self.cfg.experiment.config.logging.output_dir)
 
-        with open(output_dir / "fake_log.pkl", "rb") as f:
+        with (output_dir / "fake_log.pkl").open("rb") as f:
             exp_log = pickle.load(f)
 
         self.assertListEqual(exp_log, EXPECTED_LOG)

@@ -10,7 +10,6 @@
 
 import concurrent.futures
 import logging
-import os
 import re
 import sys
 import timeit
@@ -39,7 +38,7 @@ README_URL = "https://thousandbrainsproject.readme.io"
 
 def create_hierarchy_file(output_dir, hierarchy):
     output_dir = Path(output_dir)
-    with open(output_dir / HIERARCHY_FILE, "w") as f:
+    with (output_dir / HIERARCHY_FILE).open("w") as f:
         for category in hierarchy:
             write_category(f, category, 0)
     logging.info(f"{GREEN}Export complete{RESET}")
@@ -78,7 +77,7 @@ def check_hierarchy_file(folder: str):
         logging.error(f"File {hierarchy_file} does not exist")
         sys.exit(1)
 
-    with open(hierarchy_file) as f:
+    with hierarchy_file.open() as f:
         content = f.read()
         content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
         lines = content.splitlines()
@@ -143,7 +142,7 @@ def sanity_check(path):
 
 def check_links(path):
     path = Path(path)
-    with open(path) as f:
+    with path.open() as f:
         content = f.read()
     file_name = path.name
 
@@ -167,7 +166,7 @@ def check_links(path):
     errors = []
 
     for match in table_matches:
-        table_name = os.path.basename(match)
+        table_name = Path(match).name
         if table_name in IGNORE_TABLES:
             continue
 
