@@ -31,7 +31,7 @@ def _assert_config_matches_snapshot(
         # TODO: Use e.add_note() once we get to Python 3.11 or higher
         raise AssertionError(
             f"\nThe {name} configuration does not match the stored "
-            "snapshot.\nPlease see the above exception for details about "
+            "snapshot.\nPlease see the direct cause exception above for details about "
             "the mismatch.\nFor more information on how to update snapshots"
             ", please see the tests/conf/README.md file."
         ) from e
