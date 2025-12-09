@@ -79,7 +79,7 @@ def _check_and_sanitize(
     return sanitized_key, sanitized_value
 
 
-def generate_index(docs_dir: str, output_file_path: str):
+def generate_index(docs_dir: str, output_file_path: Path):
     """Generate index.json file from docs directory.
 
     Args:
@@ -91,8 +91,6 @@ def generate_index(docs_dir: str, output_file_path: str):
     """
     if _is_empty(docs_dir):
         raise ValueError("docs_dir cannot be empty")
-    if _is_empty(output_file_path):
-        raise ValueError("output_file_path cannot be empty")
 
     logger.info(f"Scanning docs directory: {CYAN}{docs_dir}{RESET}")
 
