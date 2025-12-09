@@ -172,7 +172,7 @@ class DetailedJSONHandler(MontyHandler):
         episode_file = episodes_dir / f"episode_{global_episode_id:06d}.json"
         maybe_rename_existing_file(episode_file)
 
-        with open(episode_file, "w") as f:
+        with episode_file.open("w") as f:
             json.dump(
                 {global_episode_id: stats[global_episode_id]},
                 f,
@@ -192,7 +192,7 @@ class DetailedJSONHandler(MontyHandler):
             maybe_rename_existing_file(save_stats_path)
             self.already_renamed = True
 
-        with open(save_stats_path, "a") as f:
+        with save_stats_path.open("a") as f:
             json.dump(
                 {global_episode_id: stats[global_episode_id]},
                 f,
@@ -322,7 +322,7 @@ class ReproduceEpisodeHandler(MontyHandler):
         action_file = f"{mode}_episode_{episode}_actions.jsonl"
         action_file_path = self.data_dir / action_file
         actions = data["BASIC"][f"{mode}_actions"][episode]
-        with open(action_file_path, "w") as f:
+        with action_file_path.open("w") as f:
             f.writelines(
                 f"{json.dumps(action[0], cls=ActionJSONEncoder)}\n"
                 for action in actions
@@ -332,7 +332,7 @@ class ReproduceEpisodeHandler(MontyHandler):
         object_file = f"{mode}_episode_{episode}_target.txt"
         object_file_path = self.data_dir / object_file
         target = data["BASIC"][f"{mode}_targets"][episode]
-        with open(object_file_path, "w") as f:
+        with object_file_path.open("w") as f:
             json.dump(target, f, cls=BufferEncoder)
 
     def close(self):

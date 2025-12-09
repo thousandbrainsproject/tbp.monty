@@ -811,7 +811,7 @@ def load_img(fn):
 
 def load_motor(fn):
     motor = []
-    with open(fn) as fid:
+    with fn.open() as fid:
         lines = fid.readlines()
     lines = [line.strip() for line in lines]
     for myline in lines:

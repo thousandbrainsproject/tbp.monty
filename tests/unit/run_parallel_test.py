@@ -72,10 +72,10 @@ class RunParallelTest(unittest.TestCase):
             {p.name for p in s_param_files}, {p.name for p in p_param_files}
         )
         for sfile, pfile in zip(s_param_files, p_param_files):
-            with open(pfile) as f:
+            with pfile.open() as f:
                 ptarget = f.read()
 
-            with open(sfile) as f:
+            with sfile.open() as f:
                 starget = f.read()
 
             ptarget = json.loads(ptarget)

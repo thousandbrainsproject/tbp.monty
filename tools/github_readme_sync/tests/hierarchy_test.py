@@ -64,7 +64,7 @@ class TestHierarchyFile(unittest.TestCase):
         hierarchy_file_path = self.test_dir / HIERARCHY_FILE
         self.assertTrue(hierarchy_file_path.exists())
 
-        with open(hierarchy_file_path) as f:
+        with hierarchy_file_path.open() as f:
             content = f.read()
             self.assertIn(f"{CATEGORY_PREFIX}category-1: Category 1\n", content)
             self.assertIn(f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n", content)
@@ -81,7 +81,7 @@ class TestHierarchyFile(unittest.TestCase):
 
     def test_check_hierarchy_file_success(self):
         hierarchy_file = self.test_dir / HIERARCHY_FILE
-        with open(hierarchy_file, "w") as f:
+        with hierarchy_file.open("w") as f:
             f.write(
                 f"{CATEGORY_PREFIX}category-1: Category 1\n"
                 f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n"
@@ -89,14 +89,14 @@ class TestHierarchyFile(unittest.TestCase):
 
         (self.test_dir / "category-1").mkdir(parents=True)
         doc_file = self.test_dir / "category-1" / "doc-1.md"
-        with open(doc_file, "w") as f:
+        with doc_file.open("w") as f:
             f.write("---\ntitle: Doc 1\n---\nContent")
 
         check_hierarchy_file(self.test_dir)
 
     def test_check_hierarchy_file_duplicate_slugs(self):
         hierarchy_file = self.test_dir / HIERARCHY_FILE
-        with open(hierarchy_file, "w") as f:
+        with hierarchy_file.open("w") as f:
             f.write(
                 f"{CATEGORY_PREFIX}category-1: Category 1\n"
                 f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n"
@@ -105,11 +105,11 @@ class TestHierarchyFile(unittest.TestCase):
 
         (self.test_dir / "category-1").mkdir(parents=True)
         doc_file1 = self.test_dir / "category-1" / "doc-1.md"
-        with open(doc_file1, "w") as f:
+        with doc_file1.open("w") as f:
             f.write("---\ntitle: Doc 1\n---\nContent")
 
         doc_file2 = self.test_dir / "doc-1.md"
-        with open(doc_file2, "w") as f:
+        with doc_file2.open("w") as f:
             f.write("---\ntitle: Doc 1\n---\nContent")
 
         with self.assertLogs(level="ERROR") as log:
@@ -120,7 +120,7 @@ class TestHierarchyFile(unittest.TestCase):
 
     def test_check_hierarchy_broken_link_in_file(self):
         hierarchy_file = self.test_dir / HIERARCHY_FILE
-        with open(hierarchy_file, "w") as f:
+        with hierarchy_file.open("w") as f:
             f.write(
                 f"{CATEGORY_PREFIX}category-1: Category 1\n"
                 f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n"
@@ -128,7 +128,7 @@ class TestHierarchyFile(unittest.TestCase):
 
         (self.test_dir / "category-1").mkdir(parents=True)
         doc_file = self.test_dir / "category-1" / "doc-1.md"
-        with open(doc_file, "w") as f:
+        with doc_file.open("w") as f:
             f.write(
                 "---\ntitle: Doc 1\n---\nContent\n"
                 "[missing](category-1/missing.md)\n"
@@ -136,7 +136,7 @@ class TestHierarchyFile(unittest.TestCase):
             )
 
         existing_file = self.test_dir / "category-1" / "existing.md"
-        with open(existing_file, "w") as f:
+        with existing_file.open("w") as f:
             f.write("---\ntitle: Existing Doc\n---\nContent")
 
         with self.assertLogs(level="ERROR") as log:
@@ -172,7 +172,7 @@ class TestHierarchyFile(unittest.TestCase):
             pass
 
         test_file = self.test_dir / "test_external_links.md"
-        with open(test_file, "w") as f:
+        with test_file.open("w") as f:
             f.write(f"[Valid Link]({self.server_url}/valid)\n")
             f.write(f"[Missing Link]({self.server_url}/missing)\n")
             f.write(f"[Fragment]({self.server_url}/valid#fragment)\n")

@@ -76,10 +76,10 @@ class TestExport(unittest.TestCase):
         self.assertTrue((self.test_output_dir / "category-2" / "doc-2.md").is_file())
 
         # Assert the content of the files is correct
-        with open(self.test_output_dir / "category-1" / "doc-1.md") as f:
+        with (self.test_output_dir / "category-1" / "doc-1.md").open() as f:
             self.assertEqual(f.read(), "Content of Doc 1")
 
-        with open(self.test_output_dir / "category-2" / "doc-2.md") as f:
+        with (self.test_output_dir / "category-2" / "doc-2.md").open() as f:
             self.assertEqual(f.read(), "Content of Doc 2")
 
 

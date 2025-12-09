@@ -167,7 +167,7 @@ class BaseConfigTest(unittest.TestCase):
             logger.info(info_message)
             logger.warning(warning_message)
 
-            with open(exp.output_dir / "log.txt") as f:
+            with (exp.output_dir / "log.txt").open() as f:
                 log = f.read()
 
             self.assertTrue(info_message in log)
@@ -188,7 +188,7 @@ class BaseConfigTest(unittest.TestCase):
             logger.debug(debug_message)
             logger.warning(warning_message)
 
-            with open(exp.output_dir / "log.txt") as f:
+            with (exp.output_dir / "log.txt").open() as f:
                 log = f.read()
 
             self.assertTrue(debug_message not in log)

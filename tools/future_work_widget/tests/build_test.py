@@ -40,7 +40,7 @@ class TestBuild(unittest.TestCase):
 
         for filename, content in snippet_configs.items():
             snippet_file = snippets_dir / filename
-            with open(snippet_file, "w", encoding="utf-8") as f:
+            with snippet_file.open("w", encoding="utf-8") as f:
                 f.write(content)
 
         return snippets_dir
@@ -82,7 +82,7 @@ class TestBuild(unittest.TestCase):
             ValueError: If the build fails with validation errors.
         """
         index_file = self.temp_path / "index.json"
-        with open(index_file, "w", encoding="utf-8") as f:
+        with index_file.open("w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
         if snippets_dir is None:
@@ -97,7 +97,7 @@ class TestBuild(unittest.TestCase):
             raise ValueError(f"{result.error_message}\nErrors:\n{error_details}")
 
         data_file = self.temp_path / "data.json"
-        with open(data_file, encoding="utf-8") as f:
+        with data_file.open(encoding="utf-8") as f:
             return json.load(f)
 
     def _expect_build_failure(
@@ -209,7 +209,7 @@ class TestBuild(unittest.TestCase):
         ]
 
         index_file = self.temp_path / "index.json"
-        with open(index_file, "w", encoding="utf-8") as f:
+        with index_file.open("w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
         snippets_dir = self._create_snippets({})
@@ -237,7 +237,7 @@ class TestBuild(unittest.TestCase):
         ]
 
         index_file = self.temp_path / "index.json"
-        with open(index_file, "w", encoding="utf-8") as f:
+        with index_file.open("w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
         result = build(index_file, self.temp_path, snippets_dir)
@@ -272,7 +272,7 @@ class TestBuild(unittest.TestCase):
         ]
 
         index_file = self.temp_path / "index.json"
-        with open(index_file, "w", encoding="utf-8") as f:
+        with index_file.open("w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
         snippets_dir = self._create_snippets({})
@@ -372,7 +372,7 @@ class TestBuild(unittest.TestCase):
                 )
 
                 index_file = self.temp_path / "index.json"
-                with open(index_file, "w", encoding="utf-8") as f:
+                with index_file.open("w", encoding="utf-8") as f:
                     json.dump([valid_item], f)
 
                 result = build(index_file, self.temp_path, snippets_dir)
@@ -382,7 +382,7 @@ class TestBuild(unittest.TestCase):
                     **{case["field_name"]: case["invalid_value"]}
                 )
 
-                with open(index_file, "w", encoding="utf-8") as f:
+                with index_file.open("w", encoding="utf-8") as f:
                     json.dump([invalid_item], f)
 
                 result = build(index_file, self.temp_path, snippets_dir)

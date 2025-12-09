@@ -24,8 +24,8 @@ class TestGetFolders(unittest.TestCase):
 
         (temp_dir_path / "folder1").mkdir(parents=True)
         (temp_dir_path / "folder2").mkdir(parents=True)
-        open(temp_dir_path / "file1.txt", "w").close()
-        open(temp_dir_path / "file2.txt", "w").close()
+        (temp_dir_path / "file1.txt").touch()
+        (temp_dir_path / "file2.txt").touch()
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
