@@ -87,7 +87,7 @@ def generate_index(docs_dir: str, output_file_path: Path):
         output_file_path: Path where to write the output file.
 
     Raises:
-        ValueError: If docs_dir or output_file_path is empty.
+        ValueError: If docs_dir is empty.
     """
     if _is_empty(docs_dir):
         raise ValueError("docs_dir cannot be empty")
