@@ -16,6 +16,7 @@ const EXTERNAL_LINK_ICON = 'fa-external-link-alt';
 const EDIT_ICON = 'fa-pencil-alt';
 const BADGE_CLASS = 'badge';
 const BADGE_SKILLS_CLASS = 'badge-skills';
+const BADGE_STATUS_CLASS = 'badge-status';
 
 
 function escapeHtml(unsafe) {
@@ -112,20 +113,21 @@ const ColumnFormatters = {
     const status = cell.getValue() || '';
     const contributor = rowData.contributor || '';
 
-    if (!contributor) return escapeHtml(status);
+    const statusText = status
+      ? `<span class="${BADGE_STATUS_CLASS}">${escapeHtml(status)}</span>`
+      : '';
+
+    if (!contributor) return statusText;
 
     const usernames = Array.isArray(contributor)
       ? contributor
       : contributor.split(',').map(u => u.trim()).filter(Boolean);
 
     const avatars = usernames
-      .map(username => `<img src="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}.png"
-                             width="16" height="16"
-                             style="vertical-align:middle;border-radius:2px;margin-left:5px;"
-                             alt="${escapeHtml(username)}"/>`)
+      .map(username => `<img src="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}.png" class="github-avatar" data-search-value="${escapeHtml(username)}" title="${escapeHtml(username)}" alt="${escapeHtml(username)}"/>`)
       .join(' ');
 
-    return escapeHtml(status) + avatars;
+    return statusText + '<br>' + avatars;
   },
   formatRfcColumn(cell) {
     const value = cell.getValue();
@@ -155,7 +157,7 @@ const TableConfig = {
     return [
       { title: 'Title', field: 'title', formatter: ColumnFormatters.formatTitleWithLinksColumn, width: 200, cssClass: 'wrap-text', variableHeight: true },
       { title: 'Scope', field: 'estimated-scope', formatter: ColumnFormatters.formatSizeColumn },
-      { title: 'Metric', field: 'improved-metric', formatter: ColumnFormatters.formatTagsColumn },
+      { title: 'Metric', field: 'improved-metric', formatter: ColumnFormatters.formatTagsColumn, maxWidth: 200, cssClass: 'wrap-text' },
       { title: 'Output Type', field: 'output-type', formatter: ColumnFormatters.formatTagsColumn },
       { title: 'RFC', field: 'rfc', formatter: ColumnFormatters.formatRfcColumn },
       { title: 'Status', field: 'status', formatter: ColumnFormatters.formatStatusColumn },
@@ -227,45 +229,58 @@ const FutureWorkWidget = {
     const searchInput = document.getElementById('searchInput');
     const clearLink = document.getElementById('clearSearch');
     const copyUrlLink = document.getElementById('copyUrl');
+    const hideCompletedCheckbox = document.getElementById('hideCompleted');
 
-    const performSearch = (searchTerm) => {
-      const trimmedTerm = searchTerm.toLowerCase().trim();
-      if (!trimmedTerm) {
+    const applyFilters = () => {
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      const hideCompleted = hideCompletedCheckbox.checked;
+
+      if (!searchTerm && !hideCompleted) {
         table.clearFilter();
         return;
       }
 
       table.setFilter((data) => {
+        if (hideCompleted && (data.status || '').toLowerCase() === 'completed') {
+          return false;
+        }
+
+        if (!searchTerm) {
+          return true;
+        }
+
         const searchableText = [
           data.title, data.tags, data.skills, data.status,
-          data.contributor, data['estimated-scope'], data['improved-metric'], 
+          data.contributor, data['estimated-scope'], data['improved-metric'],
           data['output-type'], data.rfc, data.link, data.path2
         ]
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
 
-        return trimmedTerm.split(/\s+/).every(word => searchableText.includes(word));
+        return searchTerm.split(/\s+/).every(word => searchableText.includes(word));
       });
     };
 
     const initialSearchTerm = getInitialSearchTerm();
     if (initialSearchTerm) {
       searchInput.value = initialSearchTerm;
-      performSearch(initialSearchTerm);
     }
+    applyFilters();
 
     searchInput.addEventListener('input', (e) => {
       updateUrlSearchParam(e.target.value);
-      performSearch(e.target.value);
+      applyFilters();
     });
+
+    hideCompletedCheckbox.addEventListener('change', applyFilters);
 
     if (clearLink) {
       clearLink.addEventListener('click', (e) => {
         e.preventDefault();
         searchInput.value = '';
         updateUrlSearchParam('');
-        table.clearFilter();
+        applyFilters();
       });
     }
 
