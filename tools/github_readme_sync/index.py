@@ -96,8 +96,6 @@ def generate_index(docs_dir: str, output_file_path: Path):
 
     entries = process_markdown_files(docs_dir)
 
-    output_file_path = Path(output_file_path)
-
     output_file_path.parent.mkdir(exist_ok=True, parents=True)
     with output_file_path.open("w", encoding="utf-8") as f:
         json.dump(entries, f, indent=2, ensure_ascii=False)
