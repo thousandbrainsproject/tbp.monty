@@ -34,10 +34,8 @@ class TestGenerateIndex(unittest.TestCase):
         with md_file_path.open("w", encoding="utf-8") as f:
             f.write(content)
 
-        index_file_path = generate_index(
-            self.temp_dir, str(Path(self.temp_dir) / "index.json")
-        )
-        index_file_path = Path(index_file_path)
+        index_file_path = Path(self.temp_dir) / "index.json"
+        generate_index(self.temp_dir, str(index_file_path))
 
         self.assertTrue(index_file_path.exists())
 
