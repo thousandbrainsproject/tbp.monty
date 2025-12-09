@@ -21,6 +21,19 @@ TUTORIALS_DIR = EXPERIMENT_DIR / "tutorial"
 TUTORIALS = [x.stem for x in TUTORIALS_DIR.glob("*.yaml")]
 TUTORIAL_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots" / "tutorial"
 
+def _assert_config_matches_snapshot(
+    current_config_yaml: str, snapshot_config_yaml: str, name: str
+):
+    try:
+        assert snapshot_config_yaml == current_config_yaml
+    except AssertionError as e:
+        # TODO: Use e.add_note() once we get to Python 3.11 or higher
+        raise AssertionError(
+            f"\nThe {name} configuration does not match the stored "
+            "snapshot.\nPlease see the above exception for details about "
+            "the mismatch.\nFor more information on how to update snapshots"
+            ", please see the tests/conf/README.md file."
+        ) from e
 
 class ExperimentTest(ParametrizedTestCase):
     @parametrize(
@@ -41,7 +54,9 @@ class ExperimentTest(ParametrizedTestCase):
             except FileNotFoundError:
                 snapshot_config_yaml = None
             if snapshot_config_yaml is not None:
-                assert snapshot_config_yaml == current_config_yaml
+                _assert_config_matches_snapshot(
+                    current_config_yaml, snapshot_config_yaml, experiment
+                )
             else:
                 with open(snapshot_path, "w") as f:
                     f.write(current_config_yaml)
@@ -66,7 +81,9 @@ class TutorialTest(ParametrizedTestCase):
             except FileNotFoundError:
                 snapshot_config_yaml = None
             if snapshot_config_yaml is not None:
-                assert snapshot_config_yaml == current_config_yaml
+                _assert_config_matches_snapshot(
+                    current_config_yaml, snapshot_config_yaml, tutorial
+                )
             else:
                 with open(snapshot_path, "w") as f:
                     f.write(current_config_yaml)
