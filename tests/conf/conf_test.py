@@ -60,7 +60,7 @@ class ExperimentTest(ParametrizedTestCase):
                     current_config_yaml, snapshot_config_yaml, experiment
                 )
             else:
-                with open(snapshot_path, "w") as f:
+                with snapshot_path.open("w") as f:
                     f.write(current_config_yaml)
 
 
@@ -87,5 +87,5 @@ class TutorialTest(ParametrizedTestCase):
                     current_config_yaml, snapshot_config_yaml, tutorial
                 )
             else:
-                with open(snapshot_path, "w") as f:
+                with snapshot_path.open("w") as f:
                     f.write(current_config_yaml)

@@ -43,7 +43,7 @@ def update_snapshots(
             OmegaConf.to_object(config)
             current_config_yaml = OmegaConf.to_yaml(config)
             snapshot_path = snapshots_dir / f"{file_path.stem}.yaml"
-            with open(snapshot_path, "w") as f:
+            with snapshot_path.open("w") as f:
                 f.write(current_config_yaml)
 
 
