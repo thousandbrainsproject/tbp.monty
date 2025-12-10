@@ -8,7 +8,7 @@ on:
   pull_request_target:
     types: [opened, synchronize, reopened]
     branches:
-      - main
+      - fix-playlists-display-docs
     paths:
       - 'docs/**'
       - 'tools/github_readme_sync/**'
@@ -22,7 +22,7 @@ jobs:
   deploy_docs_preview:
     name: deploy-docs-preview
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    # if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     steps:
       - name: Checkout tbp.monty
         uses: actions/checkout@v4
