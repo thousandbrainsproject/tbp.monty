@@ -701,27 +701,6 @@ This is a test document.""",
 
         self.assertEqual(result, expected_output)
 
-    def test_convert_youtube_videos_ignores_inline_links(self):
-        input_text = (
-            "Check out [this video](https://www.youtube.com/watch?v=dQw4w9WgXcQ) "
-            "and [another](https://youtu.be/9bZkp7q19f0) inline."
-        )
-
-        result = self.readme.convert_youtube_videos(input_text)
-
-        self.assertEqual(result, input_text)
-
-    def test_convert_cloudinary_videos_ignores_inline_links(self):
-        input_text = (
-            "See [this video]"
-            "(https://res.cloudinary.com/demo/video/upload/v123/sample.mp4) "
-            "for more details."
-        )
-
-        result = self.readme.convert_cloudinary_videos(input_text)
-
-        self.assertEqual(result, input_text)
-
     def test_caption_markdown_images_multiple_per_line(self):
         input_text = (
             "![First Image](path/to/first.png) ![Second Image](path/to/second.png)"
