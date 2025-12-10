@@ -5,7 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  pull_request: # TODO change back to target
+  pull_request_target:
     types: [opened, synchronize, reopened]
     branches:
       - fix-playlists-display-docs
@@ -22,7 +22,7 @@ jobs:
   deploy_docs_preview:
     name: deploy-docs-preview
     runs-on: ubuntu-latest
-    # if: ${{ github.repository_owner == 'thousandbrainsproject' }}  TODO uncomment
+    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     steps:
       - name: Checkout tbp.monty
         uses: actions/checkout@v4
