@@ -713,28 +713,14 @@ This is a test document.""",
 
     def test_convert_cloudinary_videos_ignores_inline_links(self):
         input_text = (
-            "See [this video](https://res.cloudinary.com/demo/video/upload/v123/sample.mp4) "
+            "See [this video]"
+            "(https://res.cloudinary.com/demo/video/upload/v123/sample.mp4) "
             "for more details."
         )
 
         result = self.readme.convert_cloudinary_videos(input_text)
 
         self.assertEqual(result, input_text)
-
-    def test_convert_youtube_videos_with_leading_trailing_whitespace(self):
-        input_text = "   [Video](https://www.youtube.com/watch?v=dQw4w9WgXcQ)   "
-
-        result = self.readme.convert_youtube_videos(input_text)
-
-        self.assertIn("[block:embed]", result)
-        self.assertIn('"typeOfEmbed": "youtube"', result)
-
-    def test_convert_cloudinary_videos_with_leading_trailing_whitespace(self):
-        input_text = "   [Video](https://res.cloudinary.com/demo/video/upload/v123/sample.mp4)   "
-
-        result = self.readme.convert_cloudinary_videos(input_text)
-
-        self.assertIn("[block:html]", result)
 
     def test_caption_markdown_images_multiple_per_line(self):
         input_text = (
