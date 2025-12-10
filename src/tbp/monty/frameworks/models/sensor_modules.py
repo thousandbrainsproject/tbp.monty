@@ -432,11 +432,7 @@ class Probe(SensorModule):
     def step(self, data) -> State | None:
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data,
-                self.state["rotation"],
-                self.state["location"]
-                if "location" in self.state.keys()
-                else self.state["position"],
+                data, self.state.rotation, self.state.position
             )
 
         return None
@@ -665,11 +661,7 @@ class HabitatSM(SensorModule):
         """
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data,
-                self.state["rotation"],
-                self.state["location"]
-                if "location" in self.state.keys()
-                else self.state["position"],
+                data, self.state.rotation, self.state.position
             )
 
         observed_state, telemetry = self._habitat_observation_processor.process(data)

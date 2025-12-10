@@ -1049,18 +1049,18 @@ class PolicyPlot:
                 temp_sensor_loc = np.array(temp_agent_loc) + np.array(
                     self.detailed_stats[str(self.episode)]["motor_system"][
                         "action_details"
-                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["sensors"][
-                        sensor_key
-                    ]["position"]
+                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]
+                    .sensors[sensor_key]
+                    .position
                 )
 
                 partial_sensor_rot = Rotation.from_quat(
                     numpy_to_scipy_quat(
                         self.detailed_stats[str(self.episode)]["motor_system"][
                             "action_details"
-                        ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["sensors"][
-                            sensor_key
-                        ]["rotation"]
+                        ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]
+                        .sensors[sensor_key]
+                        .rotation
                     )
                 )
                 temp_sensor_rot = (

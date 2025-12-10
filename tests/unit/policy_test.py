@@ -43,7 +43,6 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
-from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )

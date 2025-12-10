@@ -15,8 +15,10 @@ from unittest.mock import MagicMock, patch, sentinel
 import numpy as np
 import numpy.testing as npt
 import pytest
+import quaternion as qt
 from parameterized import parameterized_class
 
+from tbp.monty.frameworks.models.motor_system_state import SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
     OnObjectObservation,
 )
@@ -53,10 +55,10 @@ class HabitatSalienceSMTest(unittest.TestCase):
             return_inhibitor_class=MagicMock,
             snapshot_telemetry_class=MagicMock,
         )
-        self.state = {
-            "rotation": "i'm a rotation",
-            "location": "i'm a position",
-        }
+        self.state = SensorState(
+            position=np.array([0, 0, 0]),
+            rotation=qt.quaternion(1, 0, 0, 0),
+        )
 
     def test_step_snapshots_raw_observation_as_needed(self) -> None:
         self.sensor_module._save_raw_obs = self.save_raw_obs  # type: ignore[attr-defined]
@@ -68,7 +70,7 @@ class HabitatSalienceSMTest(unittest.TestCase):
 
         if self.should_snapshot:  # type: ignore[attr-defined]
             self.sensor_module._snapshot_telemetry.raw_observation.assert_called_once_with(  # type: ignore[attr-defined]
-                data, self.state["rotation"], self.state["location"]
+                data, self.state.rotation, self.state.position
             )
         else:
             self.sensor_module._snapshot_telemetry.raw_observation.assert_not_called()  # type: ignore[attr-defined]

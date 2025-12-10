@@ -636,8 +636,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             if ii == 0:
                 first_sensor = current_sensor
             assert np.all(
-                pre_jump_state["sensors"][current_sensor]["rotation"]
-                == pre_jump_state["sensors"][first_sensor]["rotation"]
+                pre_jump_state.sensors[current_sensor].rotation
+                == pre_jump_state.sensors[first_sensor].rotation
             ), "Sensors are not identical in pose"
 
         # TODO In general what would be best/cleanest way of routing information,
@@ -757,7 +757,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # identical
         set_sensor_rotation = SetSensorRotation(
             agent_id=self.motor_system._policy.agent_id,
-            rotation_quat=pre_jump_state["sensors"][first_sensor]["rotation"],
+            rotation_quat=pre_jump_state.sensors[first_sensor].rotation,
         )
         self._observation, proprioceptive_state = self.step(
             [set_agent_pose, set_sensor_rotation]
@@ -776,10 +776,10 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             "sensors"
         ].keys():
             assert np.all(
-                proprioceptive_state[self.motor_system._policy.agent_id]["sensors"][
-                    current_sensor
-                ]["rotation"]
-                == pre_jump_state["sensors"][current_sensor]["rotation"]
+                proprioceptive_state[self.motor_system._policy.agent_id]
+                .sensors[current_sensor]
+                .rotation
+                == pre_jump_state.sensors[current_sensor].rotation
             ), "Failed to return sensor to orientation"
 
         self.motor_system._state = MotorSystemState(proprioceptive_state)
