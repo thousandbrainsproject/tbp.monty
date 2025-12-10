@@ -120,6 +120,9 @@ For example, the following markdown creates the image below:
 
 Videos can be embedded using markdown link syntax. The tool will automatically convert video links to embedded video players.
 
+> [!NOTE]
+> Video links must be on their own line to be automatically converted. Links that appear inline with other text will remain as regular markdown links.
+
 YouTube videos:
 
 ```markdown
