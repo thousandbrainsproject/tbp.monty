@@ -283,8 +283,8 @@ class FeatureAtLocationBuffer:
         """
         if input_channel == "all" or input_channel is None:
             all_disps = {}
-            for input_channel in self.displacements.keys():
-                all_disps[input_channel] = self.get_current_displacement(input_channel)
+            for channel in self.displacements.keys():
+                all_disps[channel] = self.get_current_displacement(channel)
             return all_disps
         return self.get_nth_displacement(-1, input_channel)
 
