@@ -36,7 +36,7 @@ def main():
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
         index_file = Path(tmp.name)
 
-    generate_index(str(docs_dir), str(index_file))
+    generate_index(str(docs_dir), index_file)
     result = build(index_file, output_dir, docs_snippets_dir)
     index_file.unlink()
     logger.info(result.model_dump_json(exclude_none=True, indent=2))

@@ -261,14 +261,12 @@ ignore = [
     "S101", # S101: Use of `assert` detected
     "S104", # S104: Possible binding to all interfaces
     "S301", # S301: `pickle` and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue
-    "S311", # S311: Standard pseudo-random generators are not suitable for cryptographic purposes
     "S605", # S605: Starting a process with a shell, possible injection detected
     "SIM102", # SIM102: Use a single `if` statement instead of nested `if` statements
     "SIM108", # SIM108: Use ternary operator {contents} instead of if-else-block
     "SIM117", # SIM117: Use a single `with` statement with multiple contexts instead of nested `with` statements
     "SIM118", # SIM118: Use `key in dict` instead of `key in dict.keys()`
     "SLF001", # SLF001: Private member accessed: {access}
-    "SLOT001", # SLOT001: Subclasses of `tuple` should define `__slots__`
     "TC001", # TC001: Move application import {} into a type-checking block
     "TC002", # TC002: Move third-party import {} into a type-checking block
     "TD001", # TD001: Invalid TODO tag: `FIXME`
