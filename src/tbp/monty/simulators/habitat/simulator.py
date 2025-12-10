@@ -185,7 +185,7 @@ class HabitatSim(HabitatActuator):
             # Add each object data path to the simulator
             objects_added = False
             for path in objects_data_path:
-                valid_objs = obj_mgr.load_configs(str(path), True)
+                valid_objs = obj_mgr.load_configs(str(path), save_as_defaults=True)
                 if valid_objs:
                     objects_added = True
 

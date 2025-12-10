@@ -558,7 +558,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: str) -> None:
         post_parallel_profile_cleanup(parallel_dirs, base_dir, "train")
 
     with exp:
-        exp.model.load_state_dict_from_parallel(parallel_dirs, True)
+        exp.model.load_state_dict_from_parallel(parallel_dirs, save=True)
         output_dir = Path(experiments[0]["config"]["logging"]["output_dir"]).parent
         if isinstance(exp, MontySupervisedObjectPretrainingExperiment):
             output_dir = output_dir / "pretrained"
