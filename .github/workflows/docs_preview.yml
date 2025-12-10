@@ -8,7 +8,7 @@ on:
   pull_request_target:
     types: [opened, synchronize, reopened]
     branches:
-      - fix-playlists-display-docs
+      - main
     paths:
       - 'docs/**'
       - 'tools/github_readme_sync/**'
