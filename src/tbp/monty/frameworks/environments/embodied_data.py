@@ -32,6 +32,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     ObjectID,
     SemanticID,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
     InformedPolicy,
@@ -134,9 +135,11 @@ class EnvironmentInterface:
 
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, ProprioceptiveState(state) if state else None
+        return observation, state if state else None
 
-    def apply_transform(self, transform, observation, state):
+    def apply_transform(
+        self, transform, observation: Observations, state: ProprioceptiveState
+    ) -> Observations:
         if isinstance(transform, Iterable):
             for t in transform:
                 observation = t(observation, state)
@@ -149,7 +152,7 @@ class EnvironmentInterface:
         state = self.env.get_state()
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, ProprioceptiveState(state) if state else None
+        return observation, state if state else None
 
     def pre_episode(self):
         self.motor_system.pre_episode()
@@ -252,9 +255,9 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
     def pre_episode(self):
         super().pre_episode()
 
-        self.motor_system._state[self.motor_system._policy.agent_id][
-            "motor_only_step"
-        ] = False
+        self.motor_system._state[
+            self.motor_system._policy.agent_id
+        ].motor_only_step = False
 
     def post_episode(self):
         super().post_episode()
@@ -464,9 +467,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         if isinstance(self.motor_system._policy, SurfacePolicy):
             # When we are attempting to find the object, we are always performing
             # a motor-only step.
-            motor_system_state[self.motor_system._policy.agent_id][
-                "motor_only_step"
-            ] = attempting_to_find_object
+            motor_system_state[
+                self.motor_system._policy.agent_id
+            ].motor_only_step = attempting_to_find_object
 
             if (
                 not attempting_to_find_object
@@ -481,9 +484,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
                 # want to send data to the learning module after taking the
                 # OrientVertical action. The other three actions in the cycle
                 # are motor-only to keep the surface agent on the object.
-                motor_system_state[self.motor_system._policy.agent_id][
-                    "motor_only_step"
-                ] = True
+                motor_system_state[
+                    self.motor_system._policy.agent_id
+                ].motor_only_step = True
 
         self.motor_system._state = motor_system_state
 
@@ -516,9 +519,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # For first step of surface-agent policy, always bypass LM processing
         # For distant-agent policy, we still process the first sensation if it is
         # on the object
-        self.motor_system._state[self.motor_system._policy.agent_id][
-            "motor_only_step"
-        ] = isinstance(self.motor_system._policy, SurfacePolicy)
+        self.motor_system._state[
+            self.motor_system._policy.agent_id
+        ].motor_only_step = isinstance(self.motor_system._policy, SurfacePolicy)
 
         return self._observation
 
@@ -689,9 +692,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # and we provide the observation to the next step of the motor policy
         self._counter += 1
 
-        self.motor_system._state[self.motor_system._policy.agent_id][
-            "motor_only_step"
-        ] = True
+        self.motor_system._state[
+            self.motor_system._policy.agent_id
+        ].motor_only_step = True
 
         # TODO refactor so that the whole of the hypothesis driven jumps
         # makes cleaner use of self.motor_system()
