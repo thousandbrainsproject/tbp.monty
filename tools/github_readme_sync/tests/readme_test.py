@@ -522,11 +522,11 @@ This is a test document.""",
         )
 
     def test_convert_cloudinary_videos(self):
-        input_text = """
-        [Video Title](https://res.cloudinary.com/demo-cloud/video/upload/v12345/sample.mp4)
-        Some text in between
-        [Another Video](https://res.cloudinary.com/demo-cloud/video/upload/v67890/test.mp4)
-        """
+        input_text = (
+            "[Video Title](https://res.cloudinary.com/demo-cloud/video/upload/v12345/sample.mp4)\n"
+            "Some text in between\n"
+            "[Another Video](https://res.cloudinary.com/demo-cloud/video/upload/v67890/test.mp4)"
+        )
 
         expected_blocks = [
             {
@@ -567,10 +567,10 @@ This is a test document.""",
         self.assertIn("[/block]", result)
 
     def test_convert_cloudinary_videos_ignores_example_filename(self):
-        input_text = """
-        [Example Video](https://res.cloudinary.com/demo-cloud/video/upload/v12345/example-video.mp4)
-        [Real Video](https://res.cloudinary.com/demo-cloud/video/upload/v67890/test.mp4)
-        """
+        input_text = (
+            "[Example Video](https://res.cloudinary.com/demo-cloud/video/upload/v12345/example-video.mp4)\n"
+            "[Real Video](https://res.cloudinary.com/demo-cloud/video/upload/v67890/test.mp4)"
+        )
 
         expected_html = (
             '<div style=\\"display: flex;justify-content: center;\\">'
@@ -584,15 +584,13 @@ This is a test document.""",
         )
 
         expected_output = (
-            "\n"
-            "        [Example Video](https://res.cloudinary.com/demo-cloud/"
+            "[Example Video](https://res.cloudinary.com/demo-cloud/"
             "video/upload/v12345/example-video.mp4)\n"
-            "        [block:html]\n"
+            "[block:html]\n"
             "{\n"
             f'  "html": "{expected_html}"\n'
             "}\n"
-            "[/block]\n"
-            "        "
+            "[/block]"
         )
 
         result = self.readme.convert_cloudinary_videos(input_text)
@@ -600,10 +598,11 @@ This is a test document.""",
         self.assertEqual(result, expected_output)
 
     def test_convert_youtube_videos(self):
-        input_text = """
-        [First YouTube Video](https://www.youtube.com/watch?v=dQw4w9WgXcQ) Some text
-        inbetween [Second Video](https://youtu.be/9bZkp7q19f0)
-        """
+        input_text = (
+            "[First YouTube Video](https://www.youtube.com/watch?v=dQw4w9WgXcQ)\n"
+            "Some text inbetween\n"
+            "[Second Video](https://youtu.be/9bZkp7q19f0)"
+        )
 
         expected_html_1 = (
             '<iframe class=\\"embedly-embed\\" src=\\"//cdn.embedly.com/'
@@ -632,8 +631,7 @@ This is a test document.""",
         )
 
         expected_output = (
-            "\n"
-            "        [block:embed]\n"
+            "[block:embed]\n"
             "{\n"
             f'  "html": "{expected_html_1}",\n'
             '  "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",\n'
@@ -644,8 +642,9 @@ This is a test document.""",
             '  "href": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",\n'
             '  "typeOfEmbed": "youtube"\n'
             "}\n"
-            "[/block] Some text\n"
-            "        inbetween [block:embed]\n"
+            "[/block]\n"
+            "Some text inbetween\n"
+            "[block:embed]\n"
             "{\n"
             f'  "html": "{expected_html_2}",\n'
             '  "url": "https://www.youtube.com/watch?v=9bZkp7q19f0",\n'
@@ -656,8 +655,7 @@ This is a test document.""",
             '  "href": "https://www.youtube.com/watch?v=9bZkp7q19f0",\n'
             '  "typeOfEmbed": "youtube"\n'
             "}\n"
-            "[/block]\n"
-            "        "
+            "[/block]"
         )
 
         result = self.readme.convert_youtube_videos(input_text)
@@ -665,10 +663,10 @@ This is a test document.""",
         self.assertEqual(result, expected_output)
 
     def test_convert_youtube_videos_ignores_example_video_id(self):
-        input_text = """
-        [Example Video](https://youtu.be/example-video-id)
-        [Real Video](https://youtu.be/dQw4w9WgXcQ)
-        """
+        input_text = (
+            "[Example Video](https://youtu.be/example-video-id)\n"
+            "[Real Video](https://youtu.be/dQw4w9WgXcQ)"
+        )
 
         expected_html = (
             '<iframe class=\\"embedly-embed\\" src=\\"//cdn.embedly.com/'
@@ -684,9 +682,8 @@ This is a test document.""",
         )
 
         expected_output = (
-            "\n"
-            "        [Example Video](https://youtu.be/example-video-id)\n"
-            "        [block:embed]\n"
+            "[Example Video](https://youtu.be/example-video-id)\n"
+            "[block:embed]\n"
             "{\n"
             f'  "html": "{expected_html}",\n'
             '  "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",\n'
@@ -697,13 +694,47 @@ This is a test document.""",
             '  "href": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",\n'
             '  "typeOfEmbed": "youtube"\n'
             "}\n"
-            "[/block]\n"
-            "        "
+            "[/block]"
         )
 
         result = self.readme.convert_youtube_videos(input_text)
 
         self.assertEqual(result, expected_output)
+
+    def test_convert_youtube_videos_ignores_inline_links(self):
+        input_text = (
+            "Check out [this video](https://www.youtube.com/watch?v=dQw4w9WgXcQ) "
+            "and [another](https://youtu.be/9bZkp7q19f0) inline."
+        )
+
+        result = self.readme.convert_youtube_videos(input_text)
+
+        self.assertEqual(result, input_text)
+
+    def test_convert_cloudinary_videos_ignores_inline_links(self):
+        input_text = (
+            "See [this video](https://res.cloudinary.com/demo/video/upload/v123/sample.mp4) "
+            "for more details."
+        )
+
+        result = self.readme.convert_cloudinary_videos(input_text)
+
+        self.assertEqual(result, input_text)
+
+    def test_convert_youtube_videos_with_leading_trailing_whitespace(self):
+        input_text = "   [Video](https://www.youtube.com/watch?v=dQw4w9WgXcQ)   "
+
+        result = self.readme.convert_youtube_videos(input_text)
+
+        self.assertIn("[block:embed]", result)
+        self.assertIn('"typeOfEmbed": "youtube"', result)
+
+    def test_convert_cloudinary_videos_with_leading_trailing_whitespace(self):
+        input_text = "   [Video](https://res.cloudinary.com/demo/video/upload/v123/sample.mp4)   "
+
+        result = self.readme.convert_cloudinary_videos(input_text)
+
+        self.assertIn("[block:html]", result)
 
     def test_caption_markdown_images_multiple_per_line(self):
         input_text = (
