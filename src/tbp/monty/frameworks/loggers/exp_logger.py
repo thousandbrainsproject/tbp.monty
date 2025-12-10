@@ -165,7 +165,7 @@ class TestLogger(BaseMontyLogger):
 
     @override
     def close(self, logger_args, output_dir, model):
-        outfile = Path(output_dir) / "fake_log.pkl"
+        outfile = Path(output_dir) / "fake_log.json"
         with outfile.open("w") as f:
             json.dump(self.log, f)
 

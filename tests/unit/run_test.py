@@ -111,7 +111,7 @@ class MontyRunTest(unittest.TestCase):
 
         output_dir = Path(self.cfg.experiment.config.logging.output_dir)
 
-        with (output_dir / "fake_log.pkl").open("r") as f:
+        with (output_dir / "fake_log.json").open("r") as f:
             exp_log = json.load(f)
 
         self.assertListEqual(exp_log, EXPECTED_LOG)
