@@ -8,7 +8,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import pickle
+import json
 from pathlib import Path
 
 from typing_extensions import override
@@ -165,9 +165,9 @@ class TestLogger(BaseMontyLogger):
 
     @override
     def close(self, logger_args, output_dir, model):
-        outfile = Path(output_dir) / "fake_log.pkl"
-        with outfile.open("wb") as f:
-            pickle.dump(self.log, f)
+        outfile = Path(output_dir) / "fake_log.json"
+        with outfile.open("w") as f:
+            json.dump(self.log, f)
 
     def __deepcopy__(self, memo):
         # Do not create new copy of loggers. They are create by the tests outside

@@ -1,0 +1,501 @@
+benchmarks:
+  default_all_noise_params:
+    features:
+      pose_vectors: 2
+      hsv: 0.1
+      principal_curvatures_log: 0.1
+      pose_fully_defined: 0.01
+    location: 0.002
+  default_sensor_features:
+  - pose_vectors
+  - pose_fully_defined
+  - on_object
+  - hsv
+  - principal_curvatures_log
+  min_eval_steps: 20
+  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11}
+  rotations_all_count: 14
+  rotations_all:
+  - - 0
+    - 0
+    - 0
+  - - 0
+    - 90
+    - 0
+  - - 0
+    - 180
+    - 0
+  - - 0
+    - 270
+    - 0
+  - - 90
+    - 0
+    - 0
+  - - 90
+    - 180
+    - 0
+  - - 35
+    - 45
+    - 0
+  - - 325
+    - 45
+    - 0
+  - - 35
+    - 315
+    - 0
+  - - 325
+    - 315
+    - 0
+  - - 35
+    - 135
+    - 0
+  - - 325
+    - 135
+    - 0
+  - - 35
+    - 225
+    - 0
+  - - 325
+    - 225
+    - 0
+  rotations_3_count: 3
+  rotations_3:
+  - - 0
+    - 0
+    - 0
+  - - 0
+    - 90
+    - 0
+  - - 0
+    - 180
+    - 0
+experiment:
+  config:
+    do_train: true
+    do_eval: false
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: ${benchmarks.rotations_all_count}
+    n_eval_epochs: 3
+    model_name_or_path: ''
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: all
+    logging:
+      monty_log_level: SILENT
+      monty_handlers: []
+      wandb_handlers: []
+      python_log_level: INFO
+      python_log_to_file: true
+      python_log_to_stderr: true
+      output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
+      run_name: supervised_pre_training_5lms_all_objects
+      resume_wandb_run: false
+      wandb_id:
+        _target_: wandb.util.generate_id
+      wandb_group: debugging
+      log_parallel_wandb: false
+    monty_config:
+      sensor_module_configs:
+        sensor_module_0:
+          sensor_module_args:
+            features:
+            - on_object
+            - rgba
+            - hsv
+            - pose_vectors
+            - principal_curvatures
+            - principal_curvatures_log
+            - gaussian_curvature
+            - mean_curvature
+            - gaussian_curvature_sc
+            - mean_curvature_sc
+            sensor_module_id: patch_0
+            save_raw_obs: false
+          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_1:
+          sensor_module_args:
+            features:
+            - on_object
+            - rgba
+            - hsv
+            - pose_vectors
+            - principal_curvatures
+            - principal_curvatures_log
+            - gaussian_curvature
+            - mean_curvature
+            - gaussian_curvature_sc
+            - mean_curvature_sc
+            sensor_module_id: patch_1
+            save_raw_obs: false
+          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_2:
+          sensor_module_args:
+            features:
+            - on_object
+            - rgba
+            - hsv
+            - pose_vectors
+            - principal_curvatures
+            - principal_curvatures_log
+            - gaussian_curvature
+            - mean_curvature
+            - gaussian_curvature_sc
+            - mean_curvature_sc
+            sensor_module_id: patch_2
+            save_raw_obs: false
+          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_3:
+          sensor_module_args:
+            features:
+            - on_object
+            - rgba
+            - hsv
+            - pose_vectors
+            - principal_curvatures
+            - principal_curvatures_log
+            - gaussian_curvature
+            - mean_curvature
+            - gaussian_curvature_sc
+            - mean_curvature_sc
+            sensor_module_id: patch_3
+            save_raw_obs: false
+          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_4:
+          sensor_module_args:
+            features:
+            - on_object
+            - rgba
+            - hsv
+            - pose_vectors
+            - principal_curvatures
+            - principal_curvatures_log
+            - gaussian_curvature
+            - mean_curvature
+            - gaussian_curvature_sc
+            - mean_curvature_sc
+            sensor_module_id: patch_4
+            save_raw_obs: false
+          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_5:
+          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+          sensor_module_args:
+            sensor_module_id: view_finder
+            save_raw_obs: false
+      motor_system_config:
+        motor_system_args:
+          policy_args:
+            file_name: null
+            good_view_percentage: 0.5
+            desired_object_distance: 0.03
+            use_goal_state_driven_actions: false
+            switch_frequency: 1
+            min_perc_on_obj: 0.25
+            agent_id: ${monty.agent_id:agent_id_0}
+            fixed_amount: 5
+            action_sampler_args:
+              actions:
+              - ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.LookDown}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.SetAgentPose}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.SetSensorRotation}
+            action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}
+          policy_class: ${monty.class:tbp.monty.frameworks.models.motor_policies.NaiveScanPolicy}
+        motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+      monty_args:
+        num_exploratory_steps: 500
+        min_eval_steps: 3
+        min_train_steps: 3
+        max_total_steps: 2500
+      monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
+      learning_module_configs:
+        learning_module_0:
+          learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+          learning_module_args:
+            k: 5
+            match_attribute: displacement
+        learning_module_1:
+          learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+          learning_module_args:
+            k: 5
+            match_attribute: displacement
+        learning_module_2:
+          learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+          learning_module_args:
+            k: 5
+            match_attribute: displacement
+        learning_module_3:
+          learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+          learning_module_args:
+            k: 5
+            match_attribute: displacement
+        learning_module_4:
+          learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+          learning_module_args:
+            k: 5
+            match_attribute: displacement
+      sm_to_agent_dict:
+        patch_0: ${monty.agent_id:agent_id_0}
+        patch_1: ${monty.agent_id:agent_id_0}
+        patch_2: ${monty.agent_id:agent_id_0}
+        patch_3: ${monty.agent_id:agent_id_0}
+        patch_4: ${monty.agent_id:agent_id_0}
+        view_finder: ${monty.agent_id:agent_id_0}
+      sm_to_lm_matrix:
+      - - 0
+      - - 1
+      - - 2
+      - - 3
+      - - 4
+      lm_to_lm_matrix: null
+      lm_to_lm_vote_matrix:
+      - - 1
+        - 2
+        - 3
+        - 4
+      - - 0
+        - 2
+        - 3
+        - 4
+      - - 0
+        - 1
+        - 3
+        - 4
+      - - 0
+        - 1
+        - 2
+        - 4
+      - - 0
+        - 1
+        - 2
+        - 3
+    env_interface_config:
+      env_init_args:
+        objects:
+        - name: coneSolid
+          position:
+          - 0.0
+          - 1.5
+          - -0.1
+        scene_id: null
+        seed: 42
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/ycb}
+        agents:
+          agent_args:
+            agent_id: ${monty.agent_id:agent_id_0}
+            sensor_ids:
+            - patch_0
+            - patch_1
+            - patch_2
+            - patch_3
+            - patch_4
+            - view_finder
+            height: 0.0
+            position:
+            - 0.0
+            - 1.5
+            - 0.2
+            resolutions:
+            - - 64
+              - 64
+            - - 64
+              - 64
+            - - 64
+              - 64
+            - - 64
+              - 64
+            - - 64
+              - 64
+            - - 64
+              - 64
+            positions:
+            - - 0.0
+              - 0.0
+              - 0.0
+            - - 0.0
+              - 0.01
+              - 0.0
+            - - 0.0
+              - -0.01
+              - 0.0
+            - - 0.01
+              - 0.0
+              - 0.0
+            - - -0.01
+              - 0.0
+              - 0.0
+            - - 0.0
+              - 0.0
+              - 0.0
+            rotations:
+            - - 1.0
+              - 0.0
+              - 0.0
+              - 0.0
+            - - 1.0
+              - 0.0
+              - 0.0
+              - 0.0
+            - - 1.0
+              - 0.0
+              - 0.0
+              - 0.0
+            - - 1.0
+              - 0.0
+              - 0.0
+              - 0.0
+            - - 1.0
+              - 0.0
+              - 0.0
+              - 0.0
+            - - 1.0
+              - 0.0
+              - 0.0
+              - 0.0
+            semantics:
+            - false
+            - false
+            - false
+            - false
+            - false
+            - false
+            zooms:
+            - 10.0
+            - 10.0
+            - 10.0
+            - 10.0
+            - 10.0
+            - 1.0
+          agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
+      env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+      transform:
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+        agent_id: ${monty.agent_id:agent_id_0}
+        max_depth: 1
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_ids:
+        - patch_0
+        - patch_1
+        - patch_2
+        - patch_3
+        - patch_4
+        - view_finder
+        resolutions:
+        - - 64
+          - 64
+        - - 64
+          - 64
+        - - 64
+          - 64
+        - - 64
+          - 64
+        - - 64
+          - 64
+        - - 64
+          - 64
+        world_coord: true
+        zooms:
+        - 10.0
+        - 10.0
+        - 10.0
+        - 10.0
+        - 10.0
+        - 1.0
+        get_all_points: true
+        use_semantic_sensor: false
+      rng: null
+      env_interface_config: null
+    train_env_interface_args:
+      parent_to_child_mapping: null
+      object_names:
+      - mug
+      - bowl
+      - potted_meat_can
+      - master_chef_can
+      - i_cups
+      - spoon
+      - b_cups
+      - pitcher_base
+      - knife
+      - b_marbles
+      - h_cups
+      - strawberry
+      - power_drill
+      - padlock
+      - golf_ball
+      - hammer
+      - softball
+      - orange
+      - c_lego_duplo
+      - c_toy_airplane
+      - b_lego_duplo
+      - banana
+      - nine_hole_peg_test
+      - tomato_soup_can
+      - baseball
+      - g_cups
+      - gelatin_box
+      - lemon
+      - plum
+      - racquetball
+      - plate
+      - pudding_box
+      - e_cups
+      - apple
+      - j_cups
+      - foam_brick
+      - large_marker
+      - peach
+      - phillips_screwdriver
+      - a_toy_airplane
+      - e_lego_duplo
+      - sugar_box
+      - a_colored_wood_blocks
+      - c_cups
+      - pear
+      - f_cups
+      - wood_block
+      - d_lego_duplo
+      - b_toy_airplane
+      - b_colored_wood_blocks
+      - g_lego_duplo
+      - a_lego_duplo
+      - mini_soccer_ball
+      - medium_clamp
+      - a_marbles
+      - extra_large_clamp
+      - d_cups
+      - e_toy_airplane
+      - adjustable_wrench
+      - rubiks_cube
+      - f_lego_duplo
+      - a_cups
+      - skillet_lid
+      - sponge
+      - tennis_ball
+      - spatula
+      - d_toy_airplane
+      - chain
+      - scissors
+      - mustard_bottle
+      - bleach_cleanser
+      - tuna_fish_can
+      - cracker_box
+      - fork
+      - large_clamp
+      - dice
+      - flat_screwdriver
+      object_init_sampler:
+        _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+        rotations: ${benchmarks.rotations_all}
+    train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+episodes: all
+num_parallel: 16
+print_cfg: false
+quiet_habitat_logs: true

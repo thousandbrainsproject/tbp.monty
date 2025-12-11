@@ -18,7 +18,7 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
-import pickle
+import json
 import shutil
 import tempfile
 import unittest
@@ -111,8 +111,8 @@ class MontyRunTest(unittest.TestCase):
 
         output_dir = Path(self.cfg.experiment.config.logging.output_dir)
 
-        with (output_dir / "fake_log.pkl").open("rb") as f:
-            exp_log = pickle.load(f)
+        with (output_dir / "fake_log.json").open("r") as f:
+            exp_log = json.load(f)
 
         self.assertListEqual(exp_log, EXPECTED_LOG)
 

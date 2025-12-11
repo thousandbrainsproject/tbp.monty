@@ -9,9 +9,7 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
-import os
 import time
-from pathlib import Path
 from typing import Sequence
 
 import matplotlib.pyplot as plt
@@ -34,6 +32,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorID,
     SensorObservations,
 )
+from tbp.monty.path import monty_data_path
 
 logger = logging.getLogger(__name__)
 
@@ -60,10 +59,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self.rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
         self.step_num = 0
         self.state = 0
-        if data_path is None:
-            self.data_path = Path(os.environ["MONTY_DATA"]) / "omniglot" / "python"
-        else:
-            self.data_path = Path(data_path)
+        self.data_path = monty_data_path(data_path, "omniglot/python")
         alphabet_path = self.data_path / "images_background"
         self.alphabet_names = [a.name for a in sorted(alphabet_path.glob("[!.]*"))]
         self.current_alphabet = self.alphabet_names[0]
@@ -278,12 +274,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         # the same. Since we don't use this, value doesn't matter much.
         self.rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
         self.state = 0
-        if data_path is None:
-            self.data_path = (
-                Path(os.environ["MONTY_DATA"]) / "worldimages" / "labeled_scenes"
-            )
-        else:
-            self.data_path = Path(data_path)
+        self.data_path = monty_data_path(data_path, "worldimages/labeled_scenes")
         self.scene_names = [a.name for a in sorted(self.data_path.glob("[!.]*"))]
         self.current_scene = self.scene_names[0]
         self.scene_version = 0
@@ -707,12 +698,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         # Letters are always presented upright
         self.rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
         self.state = 0
-        if data_path is None:
-            self.data_path = (
-                Path(os.environ["MONTY_DATA"]) / "worldimages" / "world_data_stream"
-            )
-        else:
-            self.data_path = Path(data_path)
+        self.data_path = monty_data_path(data_path, "worldimages/world_data_stream")
         self.scene_names = [a.name for a in sorted(self.data_path.glob("[!.]*"))]
         self.current_scene = 0
 
