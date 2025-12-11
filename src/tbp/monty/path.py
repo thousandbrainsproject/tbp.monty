@@ -7,11 +7,13 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
 
-def make_data_path(custom_data_path: str, default_subpath: str) -> Path:
+def monty_data_path(custom_data_path: str | Path, default_subpath: str | Path) -> Path:
     """Get data path, using custom path if provided, or return the default.
 
     Args:
