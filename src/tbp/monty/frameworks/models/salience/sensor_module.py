@@ -76,11 +76,7 @@ class HabitatSalienceSM(SensorModule):
         """
         if self._save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data,
-                self.state["rotation"],
-                self.state["location"]
-                if "location" in self.state.keys()
-                else self.state["position"],
+                data, self.state.rotation, self.state.position
             )
 
         salience_map = self._salience_strategy(rgba=data["rgba"], depth=data["depth"])
