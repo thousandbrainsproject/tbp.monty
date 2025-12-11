@@ -130,6 +130,7 @@ class TestLogger(BaseMontyLogger):
     def __init__(self, handlers):
         self.handlers = handlers
         self.log = []
+        self.use_parallel_wandb_logging = False
 
     @override
     def pre_episode(self, logger_args, output_dir, model):
