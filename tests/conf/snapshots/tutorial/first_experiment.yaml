@@ -96,7 +96,6 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: debugging
-      log_parallel_wandb: false
     monty_config:
       motor_system_config:
         motor_system_args:

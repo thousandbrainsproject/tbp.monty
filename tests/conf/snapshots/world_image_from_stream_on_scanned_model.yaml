@@ -99,7 +99,6 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: evidence_eval_runs
-      log_parallel_wandb: false
       logging: null
     monty_config:
       motor_system_config:
