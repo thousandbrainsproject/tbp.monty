@@ -59,7 +59,7 @@ class BasePolicyTest(unittest.TestCase):
         )
         state = MotorSystemState(
             {
-                AgentID(self.agent_id): expected_state,
+                self.agent_id: expected_state,
                 AgentID("different_agent_id"): AgentState(
                     sensors={}, position=(), rotation=()
                 ),
@@ -72,7 +72,7 @@ class BasePolicyTest(unittest.TestCase):
     ):
         state = MotorSystemState(
             {
-                AgentID(self.agent_id): self.default_agent_state,
+                self.agent_id: self.default_agent_state,
             }
         )
         self.assertFalse(self.policy.is_motor_only_step(state))
@@ -82,7 +82,7 @@ class BasePolicyTest(unittest.TestCase):
     ):
         state = MotorSystemState(
             {
-                AgentID(self.agent_id): AgentState(
+                self.agent_id: AgentState(
                     sensors=self.default_agent_state.sensors,
                     position=self.default_agent_state.position,
                     rotation=self.default_agent_state.rotation,
@@ -97,7 +97,7 @@ class BasePolicyTest(unittest.TestCase):
     ):
         state = MotorSystemState(
             {
-                AgentID(self.agent_id): AgentState(
+                self.agent_id: AgentState(
                     sensors=self.default_agent_state.sensors,
                     position=self.default_agent_state.position,
                     rotation=self.default_agent_state.rotation,

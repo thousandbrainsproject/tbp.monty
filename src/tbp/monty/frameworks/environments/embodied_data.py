@@ -135,7 +135,7 @@ class EnvironmentInterface:
 
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, state if state else None
+        return observation, state
 
     def apply_transform(
         self, transform, observation: Observations, state: ProprioceptiveState
@@ -152,7 +152,7 @@ class EnvironmentInterface:
         state = self.env.get_state()
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, state if state else None
+        return observation, state
 
     def pre_episode(self):
         self.motor_system.pre_episode()
@@ -632,7 +632,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # Check that all sensors have identical rotations - this is because actions
         # currently update them all together; if this changes, the code needs
         # to be updated; TODO make this its own method
-        for ii, current_sensor in enumerate(pre_jump_state["sensors"].keys()):
+        for ii, current_sensor in enumerate(pre_jump_state.sensors):
             if ii == 0:
                 first_sensor = current_sensor
             assert np.all(
@@ -750,8 +750,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
         set_agent_pose = SetAgentPose(
             agent_id=self.motor_system._policy.agent_id,
-            location=pre_jump_state["position"],
-            rotation_quat=pre_jump_state["rotation"],
+            location=pre_jump_state.position,
+            rotation_quat=pre_jump_state.rotation,
         )
         # All sensors are updated globally by actions, and are therefore
         # identical
@@ -764,17 +764,17 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         )
 
         assert np.all(
-            proprioceptive_state[self.motor_system._policy.agent_id]["position"]
-            == pre_jump_state["position"]
+            proprioceptive_state[self.motor_system._policy.agent_id].position
+            == pre_jump_state.position
         ), "Failed to return agent to location"
         assert np.all(
-            proprioceptive_state[self.motor_system._policy.agent_id]["rotation"]
-            == pre_jump_state["rotation"]
+            proprioceptive_state[self.motor_system._policy.agent_id].rotation
+            == pre_jump_state.rotation
         ), "Failed to return agent to orientation"
 
-        for current_sensor in proprioceptive_state[self.motor_system._policy.agent_id][
-            "sensors"
-        ].keys():
+        for current_sensor in proprioceptive_state[
+            self.motor_system._policy.agent_id
+        ].sensors:
             assert np.all(
                 proprioceptive_state[self.motor_system._policy.agent_id]
                 .sensors[current_sensor]

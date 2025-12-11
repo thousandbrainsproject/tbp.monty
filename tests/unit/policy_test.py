@@ -10,12 +10,6 @@
 
 import pytest
 
-from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.models.motor_system_state import (
-    AgentState,
-    ProprioceptiveState,
-)
-
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -43,6 +37,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
@@ -51,6 +46,10 @@ from tbp.monty.frameworks.models.goal_state_generation import (
 )
 from tbp.monty.frameworks.models.motor_policies import (
     get_perc_on_obj_semantic,
+)
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    ProprioceptiveState,
 )
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict

@@ -586,7 +586,7 @@ class HabitatSim(HabitatActuator):
         obs: Observations = defaultdict(dict)
         for agent_index, agent_obs in habitat_obs.items():
             agent = self._agents[agent_index]
-            agent_id = AgentID(self._agents[agent_index].agent_id)
+            agent_id = self._agents[agent_index].agent_id
             obs[agent_id] = agent.process_observations(agent_obs)
 
         return obs
@@ -608,7 +608,7 @@ class HabitatSim(HabitatActuator):
                 )
 
             # Update agent/module state
-            agent_id = AgentID(self._agents[agent_index].agent_id)
+            agent_id = self._agents[agent_index].agent_id
             rotation = sim_utils.quat_from_magnum(agent_node.rotation)
             result[agent_id] = AgentState(
                 position=agent_node.translation,

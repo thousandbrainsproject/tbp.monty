@@ -1022,13 +1022,13 @@ class PolicyPlot:
             # The location and rotation of the agent (temporarily) before it jumped back
             temp_agent_loc = self.detailed_stats[str(self.episode)]["motor_system"][
                 "action_details"
-            ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["position"]
+            ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")].position
 
             temp_agent_rot = Rotation.from_quat(
                 numpy_to_scipy_quat(
                     self.detailed_stats[str(self.episode)]["motor_system"][
                         "action_details"
-                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["rotation"]
+                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")].rotation
                 )
             )
 
@@ -1041,7 +1041,7 @@ class PolicyPlot:
                 x
                 for x in self.detailed_stats[str(self.episode)]["motor_system"][
                     "action_details"
-                ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["sensors"]
+                ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")].sensors
                 if "patch" in x and ".depth" in x
             ]
 
