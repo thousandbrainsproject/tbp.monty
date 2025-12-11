@@ -14,7 +14,7 @@ files to segment what is imported.
 
 from __future__ import annotations
 
-import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Sequence, cast
 
 import matplotlib.pyplot as plt
@@ -542,8 +542,7 @@ def show_initial_hypotheses(
     possible_ax = ["x", "y", "z"]
     plt.title(f"Possible Rotations along {possible_ax[axis]} axis")
     if save_fig:
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+        Path(save_path).mkdir(exist_ok=True, parents=True)
         print("figure saved at " + save_path)
         plt.savefig(
             save_path + f"initialH_{episode}_{obj}_{possible_ax[axis]}.png",
@@ -722,8 +721,7 @@ def plot_evidence_at_step(
         ax2.set_xticks([]), ax2.set_yticks([]), ax2.set_zticks([])
 
     if save_fig:
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+        Path(save_path).mkdir(exist_ok=True, parents=True)
         print("figure saved at " + save_path)
         plt.savefig(
             save_path + f"{episode}_{step}.png",
@@ -1217,8 +1215,7 @@ class PolicyPlot:
         self.ax.set_aspect("equal")
 
         if save_path is not None:
-            if not os.path.exists(save_path):
-                os.makedirs(save_path)
+            Path(save_path).mkdir(exist_ok=True, parents=True)
             print("figure saved at " + save_path)
             plt.savefig(
                 save_path + f"{self.episode}.png",
@@ -1301,8 +1298,7 @@ def plot_learned_graph(
         ax.view_init(view[0], view[1])
 
     if save_fig:
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+        Path(save_path).mkdir(exist_ok=True, parents=True)
         print("figure saved at " + save_path)
         plt.savefig(
             save_path + f"{episode}.png",
@@ -1472,8 +1468,7 @@ def plot_graph_mismatch(
         ax.view_init(view[0], view[1])
 
     if save_fig:
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+        Path(save_path).mkdir(exist_ok=True, parents=True)
         plt.savefig(
             fname=save_path + plot_name,
             dpi=300,
@@ -1561,8 +1556,7 @@ def plot_hotspots(
         ax.view_init(view[0], view[1])
 
     if save_fig:
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+        Path(save_path).mkdir(exist_ok=True, parents=True)
         print("figure saved at " + save_path)
         plt.savefig(
             save_path,

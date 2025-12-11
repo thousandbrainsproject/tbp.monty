@@ -17,6 +17,7 @@ See Also:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Mapping
 
 import yaml
@@ -174,7 +175,7 @@ class TactoSensorSpec:
 
     @classmethod
     def from_yaml(cls, yaml_file):
-        with open(yaml_file) as f:
+        with Path(yaml_file).open() as f:
             config = yaml.safe_load(f)["sensor"]
         return cls(**config)
 

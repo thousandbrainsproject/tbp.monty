@@ -13,7 +13,6 @@ from __future__ import annotations
 import copy
 import json
 import logging
-import os
 import shutil
 from collections import deque
 from itertools import chain
@@ -54,17 +53,17 @@ def load_stats(
     train_stats, eval_stats, detailed_stats, lm_models = None, None, None, None
     if load_train:
         print("...loading and checking train statistics...")
-        train_stats = pd.read_csv(os.path.join(exp_path, "train_stats.csv"))
+        train_stats = pd.read_csv(exp_path / "train_stats.csv")
 
     if load_eval:
         print("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp_path, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp_path / "eval_stats.csv")
 
     if load_detailed:
         print("...loading detailed run statistics...")
-        json_file = os.path.join(exp_path, "detailed_run_stats.json")
+        json_file = exp_path / "detailed_run_stats.json"
         try:
-            with open(json_file) as f:
+            with json_file.open() as f:
                 detailed_stats = json.load(f)
         except ValueError:
             detailed_stats = deserialize_json_chunks(json_file)
@@ -82,7 +81,7 @@ def load_models_from_dir(exp_path, pretrained_dict=None):
 
     if pretrained_dict is not None:
         lm_models["pretrained"] = {}
-        state_dict = torch.load(os.path.join(pretrained_dict, "model.pt"))
+        state_dict = torch.load(Path(pretrained_dict) / "model.pt")
         for lm_id in list(state_dict["lm_dict"].keys()):
             pretrained_models = state_dict["lm_dict"][lm_id]["graph_memory"]
             lm_models["pretrained"][lm_id] = pretrained_models
@@ -90,7 +89,7 @@ def load_models_from_dir(exp_path, pretrained_dict=None):
     for child in Path(exp_path).iterdir():
         folder = child.name
         if folder.isnumeric():
-            state_dict = torch.load(os.path.join(exp_path, folder, "model.pt"))
+            state_dict = torch.load(child / "model.pt")
             for lm_id in list(state_dict["lm_dict"].keys()):
                 epoch_models = state_dict["lm_dict"][lm_id]["graph_memory"]
                 if folder not in lm_models.keys():
@@ -125,7 +124,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
 
     detailed_json = {}
     stop = stop or np.inf
-    with open(json_file) as f:
+    with Path(json_file).open() as f:
         for line_counter, line in enumerate(f):
             if should_get_episode(start, stop, episodes, line_counter):
                 # NOTE: json logging is only used at inference time and inference

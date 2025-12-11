@@ -10,13 +10,12 @@ defaults:
   - /experiment/config/monty/motor_system/cur_informed_surface_goal_state_driven@config.monty_config.motor_system_config
   - /experiment/config/environment/surface_view_finder_mount_habitat@config.env_interface_config
   - /experiment/config/environment_interface/per_object@config.eval_env_interface_args
-  - /experiment/config/environment_interface/per_object@config.train_env_interface_args
 
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:
   # load the pre-trained models from this path; this needs to be the same name as used for pretraining
-  model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_obj/pretrained"}
-  n_eval_epochs: ${benchmarks.rotations_all_count}
+  model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_2obj_train/pretrained"}
+  n_eval_epochs: 3
   max_total_steps: 5000
   show_sensor_output: true # live visualization of Monty's observations and MLH
   logging:
@@ -79,7 +78,7 @@ config:
           tolerances:
             patch:
               hsv: ${np.array:[0.1, 0.2, 0.2]}
-              principal_curvatures_log: [2, 2]
+              principal_curvatures_log: [1, 1]
           # Features where weight is not specified default to 1.
           feature_weights:
             patch:

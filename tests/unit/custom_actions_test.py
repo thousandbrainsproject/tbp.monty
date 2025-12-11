@@ -10,6 +10,7 @@
 import pytest
 
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.sensors import SensorID
 
 pytest.importorskip(
     "habitat_sim",
@@ -33,7 +34,7 @@ class HabitatSimTest(unittest.TestCase):
         rotation_degrees = 10
         camera = SingleSensorAgent(
             agent_id=AgentID("camera"),
-            sensor_id=sensor_id,
+            sensor_id=SensorID(sensor_id),
             resolution=(64, 64),
             translation_step=0.25,
             rotation_step=rotation_degrees,

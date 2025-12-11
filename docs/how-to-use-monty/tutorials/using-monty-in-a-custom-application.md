@@ -97,7 +97,7 @@ Since this is a static dataset, and Monty is a sensorimotor learning system, we 
 At each step, the sensor module will extract a location and pose in a common reference frame and send it to the learning module. To define the pose at each location, we extract a [surface normal and two principal curvature directions](https://thousandbrainsproject.readme.io/docs/observations-transforms-sensor-modules#surface-normals-and-principle-curvatures) from a gaussian smoothed image of the patch. As you can see in the images below, the surface normal will always point straight out of the image (as this is a 2D image, not a 3D object surface) and the first principal curvature direction aligns with the stroke direction while the second one is orthogonal to it. The learning module then stores those relative locations and orientations in the model of the respective character and can use them to recognize a character during inference.
 ![The learned models store poses at locations relative to each other. Pose is defined by surface normal and curvature directions.](../../figures/how-to-use-monty/omniglot_model_exp.png#width=600px)
 
-Learning and inference on Omniglot characters can be implemented by writing two custom classes, the [OmniglotEnvironment](https://github.com/thousandbrainsproject/tbp.monty/blob/4bc857580ae6ac015586af1a61b3e292a7827b6f/src/tbp/monty/frameworks/environments/two_d_data.py#L65) and the [OmniglotEnvironmentInterface](https://github.com/thousandbrainsproject/tbp.monty/blob/4bc857580ae6ac015586af1a61b3e292a7827b6f/src/tbp/monty/frameworks/environments/embodied_data.py#L769):
+Learning and inference on Omniglot characters can be implemented by writing two custom classes, the [OmniglotEnvironment](https://github.com/thousandbrainsproject/tbp.monty/blob/f9acc1f013c716f8d2c126ec8fd789ceb4595ac0/src/tbp/monty/frameworks/environments/two_d_data.py#L40) and the [OmniglotEnvironmentInterface](https://github.com/thousandbrainsproject/tbp.monty/blob/f9acc1f013c716f8d2c126ec8fd789ceb4595ac0/src/tbp/monty/frameworks/environments/embodied_data.py#L790):
 1. `OmniglotEnvironment`:
    - Defines initialization of all basic variables in the `__init__(patch_size, data_path)` function.
    - In this example, we define the action space as `None` because we give Monty no choice in how to move. The step function just returns the next observation by following the predefined stroke order in the dataset. Note this will still be formulated as a sensorimotor task, as the retrieval of the next observation corresponds to a (pre-defined) movement and we get a relative displacement of the sensor.
@@ -115,168 +115,122 @@ Learning and inference on Omniglot characters can be implemented by writing two 
 ![Custom classes for character recognition on the Omniglot dataset](../../figures/how-to-use-monty/omniglot_custom_classes.png#width=500px)
 
 An experiment config for training on the Omniglot dataset can then look like this:
-```python
-omniglot_training = dict(
-	experiment_class=MontySupervisedObjectPretrainingExperiment,
-	experiment_args=SupervisedPretrainingExperimentArgs(
-    	n_train_epochs=1,
-	),
-	logging=PretrainLoggingConfig(
-    	output_dir=pretrain_dir,
-	),
-	monty_config=PatchAndViewMontyConfig(
-    	# Take 1 step at a time, following the drawing path of the letter
-    	motor_system_config=MotorSystemConfigInformedNoTransStepS1(),
-    	sensor_module_configs=omniglot_sensor_module_config,
-	),
-	env_interface_config=OmniglotEnvironmentInterfaceConfig(),
-	train_env_interface_class=ED.OmniglotEnvironmentInterface,
-	# Train on the first version of each character (there are 20 drawings for each
-	# character in each alphabet, here we see one of them). The default
-	# OmniglotEnvironmentInterfaceArgs specify alphabets = [0, 0, 0, 1, 1, 1] and
+```yaml
+defaults:
+  - /experiment/config/supervised_pretraining@config
+  - /experiment/config/logging/pretrain@config.logging
+  - /experiment/config/monty/patch_and_view@config.monty_config
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - /experiment/config/monty/motor_system/informed_no_trans_step_s1@config.monty_config.motor_system_config
+  - /experiment/config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+  - /experiment/config/environment/omniglot@config.env_interface_config
+  - /experiment/config/environment_interface/omniglot@config.train_env_interface_args
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+config:
+  n_train_epochs: 1
+  logging:
+    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
+    run_name: omniglot_training
+  monty_config:
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_args:
+          sensor_module_id: patch
+          features:
+            - pose_vectors
+            - pose_fully_defined
+            - on_object
+            - principal_curvatures_log
+          save_raw_obs: false
+          # Need to set this lower since curvature is generally lower
+          pc1_is_pc2_threshold: 1
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: false
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.OmniglotEnvironmentInterface}
+  train_env_interface_args:
+    # Train on the first version of each character (there are 20 drawings for each
+    # character in each alphabet, here we see one of them). The default
+    # OmniglotEnvironmentInterfaceArgs specify alphabets = [0, 0, 0, 1, 1, 1] and
     # characters = [1, 2, 3, 1, 2, 3]) so in the first episode we will see version 1
-	# of character 1 in alphabet 0, in the next episode version 1 of character 2 in
-	# alphabet 0, and so on.
-	train_env_interface_args=OmniglotEnvironmentInterfaceArgs(versions=[1, 1, 1, 1, 1, 1]),
-)
+    # of character 1 in alphabet 0, in the next episode version 1 of character 2 in
+    # alphabet 0, and so on.
+    versions: [1, 1, 1, 1, 1, 1]
 ```
 
 And a config for inference on those trained models could look like this:
-```python
-omniglot_inference = dict(
-    experiment_class=MontyObjectRecognitionExperiment,
-    experiment_args=ExperimentArgs(
-        model_name_or_path=pretrain_dir + "/omniglot_training/pretrained/",
-        do_train=False,
-        n_eval_epochs=1,
-    ),
-    logging=LoggingConfig(),
-    monty_config=PatchAndViewMontyConfig(
-        monty_class=MontyForEvidenceGraphMatching,
-        learning_module_configs=dict(
-            learning_module_0=dict(
-                learning_module_class=EvidenceGraphLM,
-                learning_module_args=dict(
-                    # xyz values are in larger range so need to increase mmd
-                    max_match_distance=5,
-                    tolerances={
-                        "patch": {
-                            "principal_curvatures_log": np.ones(2),
-                            "pose_vectors": np.ones(3) * 45,
-                        }
-                    },
-                    # Surface normal always points up, so they are not useful
-                    feature_weights={
-                        "patch": {
-                            "pose_vectors": [0, 1, 0],
-                        }
-                    },
-                    hypotheses_updater_args=dict(
-                        # We assume the letter is presented upright
-                        initial_possible_poses=[[0, 0, 0]],
-                    )
-                ),
-            )
-        ),
-        sensor_module_configs=omniglot_sensor_module_config,
-    ),
-    env_interface_config=OmniglotEnvironmentInterfaceConfig(),
-    eval_env_interface_class=ED.OmniglotEnvironmentInterface,
+```yaml
+defaults:
+  - /experiment/config/defaults@config
+  - /experiment/config/logging/defaults@config.logging
+  - /experiment/config/monty/patch_and_view@config.monty_config
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /experiment/config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+  - /experiment/config/environment/omniglot@config.env_interface_config
+  - /experiment/config/environment_interface/omniglot@config.eval_env_interface_args
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+config:
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/omniglot/omniglot_training/pretrained/}
+  do_train: false
+  n_eval_epochs: 1
+  logging:
+    run_name: omniglot_inference
+  monty_config:
+    monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+        learning_module_args:
+          # xyz values are in larger range so need to increase mmd
+          max_match_distance: 5
+          tolerances:
+            patch:
+              principal_curvatures_log: ${np.ones:2}
+              pose_vectors: ${np.array:[45, 45, 45]}
+          # Surface normal always points up, so they are not useful
+          feature_weights:
+            patch:
+              pose_vectors: [0, 1, 0]
+          hypotheses_updater_args:
+            # We assume the letter is presented upright
+            initial_possible_poses: [[0, 0, 0]]
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_args:
+          sensor_module_id: patch
+          features:
+            - pose_vectors
+            - pose_fully_defined
+            - on_object
+            - principal_curvatures_log
+          save_raw_obs: false
+          # Need to set this lower since curvature is generally lower
+          pc1_is_pc2_threshold: 1
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: false
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.OmniglotEnvironmentInterface}
+  eval_env_interface_args:
     # Using version 1 means testing on the same version of the character as trained.
     # Version 2 is a new drawing of the previously seen characters. In this small test
     # setting these are 3 characters from 2 alphabets.
-    eval_env_interface_args=OmniglotEnvironmentInterfaceArgs(versions=[1, 1, 1, 1, 1, 1]),
-    # eval_env_interface_args=OmniglotEnvironmentInterfaceArgs(versions=[2, 2, 2, 2, 2, 2]),
-)
+    versions: [1, 1, 1, 1, 1, 1]
 ```
 
 > 📘 Follow Along
 > To run the above experiment, you first need to download the [Omniglot dataset](https://github.com/brendenlake/omniglot). You can do this by running `cd ~/tbp/data` and `git clone https://github.com/brendenlake/omniglot.git`. You will need to unzip the `omniglot/python/images_background.zip` and `omniglot/python/strokes_background.zip` files.
 
-To test this, go ahead and copy the configs above into the `benchmarks/configs/my_experiments.py` file. To complete the configs, you will need to add the following imports, sensor module config and model_path at the top of the file.
-```python
-import os
-from dataclasses import asdict
+The above configurations are already included in Monty at `conf/experiment/tutorial/omniglot_training.yaml` and `conf/experiment/tutorial/omniglot_inference.yaml`.
 
-import numpy as np
-
-from benchmarks.configs.names import MyExperiments
-from tbp.monty.frameworks.config_utils.config_args import (
-	LoggingConfig,
-	MotorSystemConfigInformedNoTransStepS1,
-	PatchAndViewMontyConfig,
-	PretrainLoggingConfig,
-)
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-	ExperimentArgs,
-	OmniglotEnvironmentInterfaceArgs,
-	OmniglotEnvironmentInterfaceConfig,
-	SupervisedPretrainingExperimentArgs,
-)
-from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.experiments import (
-	MontyObjectRecognitionExperiment,
-	MontySupervisedObjectPretrainingExperiment,
-)
-from tbp.monty.frameworks.models.evidence_matching.learning_module import (
-	EvidenceGraphLM
-)
-from tbp.monty.frameworks.models.evidence_matching.model import (
-	MontyForEvidenceGraphMatching
-)
-from tbp.monty.frameworks.models.sensor_modules import (
-	HabitatSM,
-	Probe,
-)
-
-monty_models_dir = os.getenv("MONTY_MODELS")
-
-pretrain_dir = os.path.expanduser(os.path.join(monty_models_dir, "omniglot"))
-
-omniglot_sensor_module_config = dict(
-	sensor_module_0=dict(
-    	sensor_module_class=HabitatSM,
-    	sensor_module_args=dict(
-        	sensor_module_id="patch",
-        	features=[
-            	"pose_vectors",
-            	"pose_fully_defined",
-            	"on_object",
-            	"principal_curvatures_log",
-        	],
-        	save_raw_obs=False,
-        	# Need to set this lower since curvature is generally lower
-        	pc1_is_pc2_threshold=1,
-    	),
-	),
-	sensor_module_1=dict(
-    	sensor_module_class=Probe,
-    	sensor_module_args=dict(
-        	sensor_module_id="view_finder",
-        	save_raw_obs=False,
-    	),
-	),
-)
-```
-
-Finally, you will need to set the `experiments` variable at the bottom of the file to this:
-```python
-experiments = MyExperiments(
-    omniglot_training=omniglot_training,
-    omniglot_inference=omniglot_inference,
-)
-CONFIGS = asdict(experiments)
-```
-And add the two experiments into the `MyExperiments` class in `benchmarks/configs/names.py`:
-
-```python
-@dataclass
-class MyExperiments:
-    omniglot_training: dict
-    omniglot_inference: dict
-```
-
-Now you can run training by calling `python benchmarks/run.py -e omniglot_training` and then inference on these models by calling `python benchmarks/run.py -e omniglot_inference`. You can check the `eval_stats.csv` file in `~/tbp/results/monty/projects/monty_runs/omniglot_inference/` to see how Monty did. If you copied the code above, it should have recognized all six characters correctly.
+You can run training by calling `python run.py experiment=tutorial/omniglot_training` and then inference on these models by calling `python run.py experiment=tutorial/omniglot_inference`. You can check the `eval_stats.csv` file in `~/tbp/results/monty/projects/monty_runs/omniglot_inference/` to see how Monty did. If you copied the code above, it should have recognized all six characters correctly.
 
 > ❗️ Generalization Performance on Omniglot is Bad Without Hierarchy
 > Note that we currently don't get good generalization performance on the Omniglot dataset. If you use the commented-out env_interface_config (`eval_env_interface_args=OmniglotEnvironmentInterfaceArgs(versions=[2, 2, 2, 2, 2, 2])`) in the inference config, which shows previously unseen versions of the characters, you will see that performance degrades a lot. This is because the Omniglot characters are fundamentally compositional objects (strokes relative to each other), and compositional objects can only be modeled by stacking two learning modules hierarchically. The above configs do not do this. Our research team is hard at work getting Monty to model compositional objects.
@@ -352,6 +306,7 @@ For more configs to test on different subsets of the Monty Meets World dataset (
 ```
 import os
 from dataclasses import asdict
+from pathlib import Path
 
 import numpy as np
 
@@ -376,10 +331,7 @@ from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 
-model_path_numenta_lab_obj = os.path.join(
-	pretrained_dir,
-	"surf_agent_1lm_numenta_lab_obj/pretrained/",
-)
+model_path_numenta_lab_obj = pretrained_dir / "surf_agent_1lm_numenta_lab_obj" / "pretrained"
 ```
 
 To run the experiment, call `python benchmarks/run.py -e monty_meets_world_2dimage_inference`. If you don't want to log to wandb, add ` wandb_handlers=[]` to `logging`. If you just want to run a quick test on a few of the images, simply adjust the `scenes` and `versions` parameters in the `eval_env_interface_args`.
