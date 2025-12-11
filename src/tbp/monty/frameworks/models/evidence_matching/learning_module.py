@@ -584,21 +584,16 @@ class EvidenceGraphLM(GraphLM):
         return self.current_mlh
 
     def get_mlh_for_object(self, object_id):
-        """Get most likely hypothesis for object ID.
+        """Get mlh for a specific object ID.
 
         Note:
             When trying to retrieve the MLH for the current most likely object
             and not any other object, it is better to use self.current_mlh
 
-        Args:
-            object_id: Find mlh pose for the object with this graph ID.
-
         Returns:
             The most likely hypothesis for the object ID.
-            dict with keys: object_id, location, rotation, scale, evidence
         """
-        mlh_id = np.argmax(self.evidence[object_id])
-        return self._get_mlh_dict_from_id(object_id, mlh_id)
+        return self._calculate_most_likely_hypothesis(object_id)
 
     def get_top_two_mlh_ids(self):
         """Retrieve the two most likely object IDs for this LM.
@@ -635,7 +630,7 @@ class EvidenceGraphLM(GraphLM):
 
     def get_top_two_pose_hypotheses_for_graph_id(self, graph_id):
         """Return top two hypotheses for a given graph_id."""
-        mlh_for_graph = self.get_mlh_for_object(graph_id)
+        mlh_for_graph = self._calculate_most_likely_hypothesis(graph_id)
         second_mlh_id = np.argsort(self.evidence[graph_id])[-2]
         second_mlh = self._get_mlh_dict_from_id(graph_id, second_mlh_id)
         return mlh_for_graph, second_mlh
@@ -1161,28 +1156,34 @@ class EvidenceGraphLM(GraphLM):
             "evidence": self.evidence[graph_id][mlh_id],
         }
 
-    def _calculate_most_likely_hypothesis(self):
-        """Return object & pose with highest evidence count.
+    def _calculate_most_likely_hypothesis(self, graph_id=None):
+        """Return pose with highest evidence count.
 
-        Look through all objects and finds most likely one.
+        Args:
+            graph_id: If provided, find mlh pose for this object. If graph_id is None
+                look through all objects and finds most likely one.
 
         Returns dict with keys: object_id, location, rotation, scale, evidence
         """
         mlh = {}
-        highest_evidence_so_far = -np.inf
-        for graph_id in self.get_all_known_object_ids():
+        if graph_id is not None:
             mlh_id = np.argmax(self.evidence[graph_id])
-            evidence = self.evidence[graph_id][mlh_id]
-            if evidence > highest_evidence_so_far:
-                mlh = self._get_mlh_dict_from_id(graph_id, mlh_id)
-                highest_evidence_so_far = evidence
-        if not mlh:  # No objects in memory
-            mlh = self.current_mlh
-            mlh["graph_id"] = "new_object0"
-        logger.info(
-            f"current most likely hypothesis: {mlh['graph_id']} "
-            f"with evidence {np.round(mlh['evidence'], 2)}"
-        )
+            mlh = self._get_mlh_dict_from_id(graph_id, mlh_id)
+        else:
+            highest_evidence_so_far = -np.inf
+            for next_graph_id in self.get_all_known_object_ids():
+                mlh_id = np.argmax(self.evidence[next_graph_id])
+                evidence = self.evidence[next_graph_id][mlh_id]
+                if evidence > highest_evidence_so_far:
+                    mlh = self._get_mlh_dict_from_id(next_graph_id, mlh_id)
+                    highest_evidence_so_far = evidence
+            if not mlh:  # No objects in memory
+                mlh = self.current_mlh
+                mlh["graph_id"] = "new_object0"
+            logger.info(
+                f"current most likely hypothesis: {mlh['graph_id']} "
+                f"with evidence {np.round(mlh['evidence'], 2)}"
+            )
         return mlh
 
     def _get_node_distance_weights(self, distances):
