@@ -1,7 +1,7 @@
 ---
 title: Use Out of Model Movements
 description: Process out-of-model-movements such that we can distinguish similar objects, while also eliminating poor hypotheses.
-rfc: (draft/discontinued, see section 2) https://github.com/thousandbrainsproject/tbp.monty/pull/366/files
+rfc: optional
 estimated-scope: medium
 improved-metric: accuracy
 output-type: experiments, analysis, PR
@@ -33,4 +33,4 @@ Other details
 Potential "gotchas" to be aware of:
 - Currently hypotheses receive negative evidence when they move out of the model; by making the proposed change, we may find that certain (incorrect) hypotheses are eliminated more slowly. However, in practice, the window for maintaining an OOMM hypothesis is so short that it will hopefully have a negligible impact on the number of matching steps for convergence. Moreover, this change may be necessary to enable Monty to accommodate sparser models, which is one of our current aims (see [Use Models With Fewer Points](./use-models-with-fewer-points.md)). Without this, we risk punishing hypotheses that are simply between stored points in a sparse model.
 - We previously performed some early experiments evaluating the immediate elimination of hypotheses that undergo out-of-model-movements. We found that when there is no location noise, it can help reduce the hypothesis space without any negative impact on accuracy. However, as uncertainty about where the sensor is located was introduced, often good hypotheses were eliminated. We expect that the approach proposed here (clamp hypotheses for a few steps before deleting them) should help prevent this from happening.
-- Finally, see the linked RFC for potential considerations around unsupervised learning and incomplete models. These will likely require returning to in the future as a follow-up task.
+- Finally, see our [discontinued RFC on this topic](https://github.com/thousandbrainsproject/tbp.monty/pull/366/files) for potential considerations around unsupervised learning and incomplete models. These will likely require returning to in the future as a follow-up task.

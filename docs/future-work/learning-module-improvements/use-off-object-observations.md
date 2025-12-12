@@ -1,7 +1,7 @@
 ---
 title: Use Off-Object Observations
 description: Ensure that off-object observations are processed by LMs, resulting in evidence updates.
-rfc: (draft/discontinued) https://github.com/thousandbrainsproject/tbp.monty/pull/425/files
+rfc: optional
 estimated-scope: medium
 improved-metric: speed, numsteps, accuracy
 output-type: experiments, analysis, PR
@@ -42,6 +42,7 @@ From an initial look, this change might appear relatively straightforward, howev
 2. During learning, we want to ensure that observations associated with these "null" morphological features are not stored, i.e. are not learned as part of any model.
 3. The FeatureChangeSM has additional logic for determining when to pass an observation to the LMs, and this needs to be accounted for in any changes.
 4. The buffer uses information about off-object observations to filter data, so some elements here may need updating.
+5. There is a [discontinued RFC on this topic](https://github.com/thousandbrainsproject/tbp.monty/pull/425/files) which has some useful discussion of the above points.
 
 ### Outcome Measures
 - We anticipate that the primary benefit of this change will be that Monty can use off-object observations to more quickly eliminate hypotheses; this will result in fewer steps before convergence.
