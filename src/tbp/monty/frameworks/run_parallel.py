@@ -74,9 +74,9 @@ def cat_files(filenames, outfile):
         print(f"Removing existing file before writing new one: {outfile}")
         outfile.unlink()
 
-    with outfile.open("w") as out_f:
+    with outfile.open("wb") as out_f:
         for file in filenames:
-            with Path(file).open("r") as in_f:
+            with Path(file).open("rb") as in_f:
                 shutil.copyfileobj(in_f, out_f)
 
 
