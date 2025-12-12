@@ -7,7 +7,6 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-import numpy as np
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
