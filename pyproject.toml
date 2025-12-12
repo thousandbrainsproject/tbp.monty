@@ -249,7 +249,6 @@ ignore = [
     "PLR0912", # PLR0912: Too many branches
     "PLR0913", # PLR0913: Too many arguments in function definition
     "PLR0915", # PLR0915: Too many statements
-    "PLR1704", # PLR1704: Redefining argument with the local name
     "PLR1730", # PLR1730: Replace `if` statement with {replacement}
     "PLR2004", # PLR2004: Magic value used in comparison, consider replacing {value} with a constant variable
     "PT009", # PT009: Use a regular `assert` instead of unittest-style `assertEqual`
