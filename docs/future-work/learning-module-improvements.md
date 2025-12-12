@@ -6,7 +6,8 @@ We have a guide on [customizing learning modules](learning-module-improvements/c
 
 These are the things we would like to implement:
 
-- [Use off-object observations](learning-module-improvements/use-off-object-observations.md) #numsteps #multiobj
+- [Use off-object observations](learning-module-improvements/use-off-object-observations.md)
+- [Use out-of-model-movements](learning-module-improvements/use-out-of-model-movements.md)
 - [Implement and test rapid evidence decay as form of unsupervised memory resetting](learning-module-improvements/implement-and-test-rapid-evidence-decay-as-form-of-unsupervised-memory-resetting.md)
 - [Improve bounded evidence performance](learning-module-improvements/improve-bounded-evidence-performance.md)
 - [Use models with fewer points](learning-module-improvements/use-models-with-fewer-points.md)
