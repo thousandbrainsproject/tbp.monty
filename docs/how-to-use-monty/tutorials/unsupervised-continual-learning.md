@@ -95,13 +95,13 @@ config:
       - mug
       - bowl
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_initializers.RandomRotation
 
 ```
 
 If you have read our previous tutorials on [pretraining](pretraining-a-model.md) or [running inference with a pretrained model](running-inference-with-a-pretrained-model.md), you may spot a few differences in this setup. For pretraining, we used the `MontySupervisedObjectPretrainingExperiment` class which also performs training (and not evaluation). While that was a training-only setup, it is different from our unsupervised continual learning config since it supplies object labels to learning modules. For running inference with a pretrained model, we used the `MontyObjectRecognitionExperiment` class but specified that we only wanted to perform evaluation (i.e., `do_train: false` and `do_eval: true`). In contrast, here we used the `MontyObjectRecognitionExperiment` with arguments `do_train: true` and `do_eval: false`. This combination of experiment class and `do_train`/`do_eval` arguments is specific to unsupervised continual learning. We have also increased `min_training_steps`, `object_evidence_threshold`, and `required_symmetry_evidence` to avoid early misclassification when there are fewer objects in memory.
 
-Besides these crucial changes, we have also made a few minor adjustments to simplify the rest of the configs. First, we did not explicitly define our sensor module or motor system configs. This is because we are using `/experiment/config/monty/surface_and_view`'s default sensor modules, motor system, and matrices that define connectivity between agents, sensors, and learning modules. Second, we are using a `RandomRotationObjectInitializer` which randomly rotates an object at the beginning of each episode rather than rotating an object by a specific user-defined rotation. Third, we are using the `/experiment/config/logging/csv` configuration. This is equivalent to setting up a default logging configuration and specifying that we only want a `BasicCSVStatsHandler`, but it's a bit more succinct.
+Besides these crucial changes, we have also made a few minor adjustments to simplify the rest of the configs. First, we did not explicitly define our sensor module or motor system configs. This is because we are using `/experiment/config/monty/surface_and_view`'s default sensor modules, motor system, and matrices that define connectivity between agents, sensors, and learning modules. Second, we are using a `RandomRotation` object initializer which randomly rotates an object at the beginning of each episode rather than rotating an object by a specific user-defined rotation. Third, we are using the `/experiment/config/logging/csv` configuration. This is equivalent to setting up a default logging configuration and specifying that we only want a `BasicCSVStatsHandler`, but it's a bit more succinct.
 
 # Running the Unsupervised Continual Learning Experiment
 

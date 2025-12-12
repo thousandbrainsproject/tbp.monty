@@ -100,7 +100,8 @@ class HabitatDataTest(unittest.TestCase):
         )
         mock_sim_dist.reset.return_value = self.mock_reset
 
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
 
         # Create distant-agent motor systems / policies
         base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
@@ -114,7 +115,7 @@ class HabitatDataTest(unittest.TestCase):
         env_init_args = {"agents": self.camera_dist_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_dist = EnvironmentInterface(
-            env, rng=rng, motor_system=motor_system_dist
+            env, rng=rng, motor_system=motor_system_dist, seed=seed
         )
 
         # Check if env interface is getting observations from simulator
@@ -153,7 +154,8 @@ class HabitatDataTest(unittest.TestCase):
         )
         mock_sim_abs.reset.return_value = self.mock_reset
 
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
 
         base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
@@ -169,6 +171,7 @@ class HabitatDataTest(unittest.TestCase):
             env,
             rng=rng,
             motor_system=motor_system_abs,
+            seed=seed,
         )
 
         # Check if env interfaces are getting observations from simulator
@@ -207,7 +210,8 @@ class HabitatDataTest(unittest.TestCase):
         )
         mock_sim_surf.reset.return_value = self.mock_reset
 
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
         # Note we just test random actions (i.e. base policy) with the surface-agent
         # action space
         base_policy_cfg_surf = OmegaConf.to_object(self.policy_cfg_surf_fragment)
@@ -221,7 +225,7 @@ class HabitatDataTest(unittest.TestCase):
         env_init_args = {"agents": self.camera_surf_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_surf = EnvironmentInterface(
-            env, rng=rng, motor_system=motor_system_surf
+            env, rng=rng, motor_system=motor_system_surf, seed=seed
         )
 
         # Check if datasets are getting observations from simulator
@@ -261,7 +265,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_sim_dist.reset.return_value = self.mock_reset
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
 
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
 
         base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
         base_policy_cfg_dist["agent_id"] = AGENT_ID
@@ -272,7 +277,7 @@ class HabitatDataTest(unittest.TestCase):
         env_init_args = {"agents": self.camera_dist_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_dist = EnvironmentInterface(
-            env, motor_system=motor_system_dist, rng=rng
+            env, motor_system=motor_system_dist, rng=rng, seed=seed
         )
 
         for i, item in enumerate(env_interface_dist):
@@ -298,7 +303,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_sim_abs.reset.return_value = self.mock_reset
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
 
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
 
         base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
@@ -308,7 +314,7 @@ class HabitatDataTest(unittest.TestCase):
         env_init_args = {"agents": self.camera_abs_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_abs = EnvironmentInterface(
-            env, motor_system=motor_system_abs, rng=rng
+            env, motor_system=motor_system_abs, rng=rng, seed=seed
         )
         for i, item in enumerate(env_interface_abs):
             camera_obs_abs = item[AGENT_ID][SENSOR_ID]
@@ -333,7 +339,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_sim_surf.reset.return_value = self.mock_reset
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
 
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
 
         # Note we just test random actions (i.e. base policy) with the surface-agent
         # action space
@@ -346,7 +353,7 @@ class HabitatDataTest(unittest.TestCase):
         env_init_args = {"agents": self.camera_surf_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_surf = EnvironmentInterface(
-            env, motor_system=motor_system_surf, rng=rng
+            env, motor_system=motor_system_surf, rng=rng, seed=seed
         )
         for i, item in enumerate(env_interface_surf):
             camera_obs_surf = item[AGENT_ID][SENSOR_ID]

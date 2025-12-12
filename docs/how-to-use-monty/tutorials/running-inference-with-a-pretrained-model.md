@@ -35,7 +35,7 @@ config:
       - mug
       - banana
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
       # Specify the rotations in which objects will be presented.
       rotations:
         - [0.0, 15.0, 30.0]
@@ -252,7 +252,7 @@ config:
       - mug
       - banana
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
       rotations:
         - ${np.array:[0.0, 15.0, 30.0]}
         - ${np.array:[7.0, 77.0, 2.0]}
@@ -263,7 +263,7 @@ config:
       - mug
       - banana
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
       rotations:
         - ${np.array:[0.0, 15.0, 30.0]}
         - ${np.array:[7.0, 77.0, 2.0]}
