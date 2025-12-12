@@ -13,4 +13,3 @@ resume_wandb_run: false
 wandb_id:
   _target_: wandb.util.generate_id
 wandb_group: "debugging"
-log_parallel_wandb: false
