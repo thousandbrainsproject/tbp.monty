@@ -239,7 +239,6 @@ ignore = [
     "G004", # G004: Logging statement uses f-string
     "N804", # N804: First argument of a class method should be named `cls`
     "NPY002", # NPY002: Replace legacy `np.random.normal` call with `np.random.Generator`
-    "PD002", # PD002: `inplace=True` should be avoided; it has inconsistent behavior
     "PERF203", # PERF203: `try`-`except` within a loop incurs performance overhead
     "PERF401", # PERF401: Use a list comprehension to create a transformed list
     "PERF402", # PERF402: Use `list` or `list.copy` to create a copy of a list
