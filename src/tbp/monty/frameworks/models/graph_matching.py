@@ -971,7 +971,7 @@ class GraphLM(LearningModule):
         if first_movement_detected:
             query = [
                 self._select_features_to_use(observations),
-                self.buffer.get_current_displacement(input_channel="all"),
+                self.buffer.get_all_current_displacements(),
             ]
         else:
             query = [
