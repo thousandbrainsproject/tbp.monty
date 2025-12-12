@@ -206,8 +206,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
                 num_distractors : the number of distractor objects to add to the
                     environment
             object_init_sampler: Function that returns dict with position, rotation,
-                and scale of objects when re-initializing. To keep configs
-                serializable, default is set to :class:`DefaultObjectInitializer`.
+                and scale of objects when re-initializing.
             parent_to_child_mapping: dictionary mapping parent objects to their child
                 objects. Used for logging.
             *args: ?

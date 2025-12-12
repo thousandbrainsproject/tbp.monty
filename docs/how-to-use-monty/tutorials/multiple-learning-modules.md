@@ -56,7 +56,7 @@ config:
       - mug
       - banana
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
       # Specify the objects to train on 14 unique object poses.
       rotations: ${benchmarks.rotations_all}
 
@@ -151,7 +151,7 @@ config:
       - mug
       - banana
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
       rotations:
         - ${np.array:[0, 15, 30]} # A previously unseen rotation of the objects.
 ```
