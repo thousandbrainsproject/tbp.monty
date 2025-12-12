@@ -257,7 +257,6 @@ ignore = [
     "RUF015", # RUF015: Prefer next({iterable}) over single element slice
     "S101", # S101: Use of `assert` detected
     "S104", # S104: Possible binding to all interfaces
-    "S605", # S605: Starting a process with a shell, possible injection detected
     "SIM102", # SIM102: Use a single `if` statement instead of nested `if` statements
     "SIM108", # SIM108: Use ternary operator {contents} instead of if-else-block
     "SIM117", # SIM117: Use a single `with` statement with multiple contexts instead of nested `with` statements
