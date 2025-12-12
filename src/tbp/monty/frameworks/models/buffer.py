@@ -281,12 +281,18 @@ class FeatureAtLocationBuffer:
         Returns:
             The current displacement.
         """
-        if input_channel == "all" or input_channel is None:
-            all_disps = {}
-            for input_channel in self.displacements.keys():
-                all_disps[input_channel] = self.get_current_displacement(input_channel)
-            return all_disps
         return self.get_nth_displacement(-1, input_channel)
+
+    def get_all_current_displacements(self):
+        """Get all current displacements.
+
+        Returns:
+            A dictionary mapping channels to all current displacements.
+        """
+        return {
+            channel: self.get_current_displacement(channel)
+            for channel in self.displacements.keys()
+        }
 
     def get_current_ppf(self, input_channel):
         """Get the current ppf.
