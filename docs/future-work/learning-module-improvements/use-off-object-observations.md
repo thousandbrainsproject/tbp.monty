@@ -3,7 +3,7 @@ title: Use Off-Object Observations
 description: Ensure that off-object observations are processed by LMs, resulting in evidence updates.
 rfc: (draft/discontinued) https://github.com/thousandbrainsproject/tbp.monty/pull/425/files
 estimated-scope: medium
-improved-metric: speed, numsteps
+improved-metric: speed, numsteps, accuracy
 output-type: experiments, analysis, PR
 skills: python, research, monty
 contributor: hlee
@@ -42,5 +42,9 @@ i. We need to ensure that any change to how sensor modules pass these observatio
 ii. During learning, we want to ensure that observations associated with these "null" morphological features are not stored, i.e. are not learned as part of any model.
 iii. The FeatureChangeSM has additional logic for determining when to pass an observation to the LMs, and this needs to be accounted for in any changes.
 iv. The buffer uses information about on-object observations to filter data, so some elements here may need updating.
+
+### Outcome Measures
+- We anticipate that the primary benefit of this change will be that Monty can use off-object observations to more quickly eliminate hypotheses; this will result in fewer steps before convergence.
+- However, it may also improve Monty's accuracy, at least on certain recognition tasks. In particular, consider the instance where Monty has two hypotheses, which are a number "1" and a number "7", or a letter "i" vs a short vertical bar "ı" without a dot. When the actual object observed is the one with fewer features / a smaller model (the "1" rather than the "7", or the i without a dot (ı) rather than "i"), then Monty currently cannot recognize the object. If it moves to the location where it might expect the upper bar of a seven, or the dot of an i, it will perceive nothing. Without processing this observation, Monty cannot distinguish these. Thus, this future work item is necessary to resolve this issue. In addition however, resolving this setting will also require adjusting the [Use of Out of Reference Frame Movements](/use-out-of-reference-frame-movements.md) to ensure we briefly maintain the correct hypothesis (1 or ı, respectively). With these two changes in place, we expect the incorrect hypothesis for the larger model to receive negative evidence, while the correct hypothesis for the smaller model is maintained such that it can continue to accumulate evidence, and ultimately win out.
 
 NOTE: The instance where Monty moves onto *another* object (for example, a distant wall, or a nearby hand) is already handled by the existing matching process in Monty. In particular, this should result in unexpected sensory input if an LM believes it is still on the original object, and therefore will result in negative evidence.

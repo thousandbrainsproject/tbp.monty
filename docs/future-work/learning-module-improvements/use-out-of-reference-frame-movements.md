@@ -3,7 +3,7 @@ title: Use Out of Model Movements
 description: Ensure that off-object observations are processed by LMs, resulting in evidence updates.
 rfc: (see section 2) https://github.com/thousandbrainsproject/tbp.monty/pull/366/files
 estimated-scope: medium
-improved-metric: speed, numsteps
+improved-metric: speed, numsteps, accuracy
 output-type: experiments, analysis, PR
 skills: python, research, monty
 contributor: hlee
