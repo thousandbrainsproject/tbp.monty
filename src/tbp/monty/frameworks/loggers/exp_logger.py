@@ -86,6 +86,7 @@ class BaseMontyLogger:
 
     def __init__(self, handlers):
         self.handlers = handlers
+        self.use_parallel_wandb_logging = False
 
     def flush(self):
         pass
