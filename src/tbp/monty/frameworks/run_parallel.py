@@ -74,9 +74,10 @@ def cat_files(filenames, outfile):
         print(f"Removing existing file before writing new one: {outfile}")
         outfile.unlink()
 
-    outfile.touch()  # create file that captures output
-    for file in filenames:
-        os.system(f"cat {file} >> {outfile}")
+    with outfile.open("wb") as out_f:
+        for file in filenames:
+            with Path(file).open("rb") as in_f:
+                shutil.copyfileobj(in_f, out_f)
 
 
 def cat_csv(filenames, outfile):
