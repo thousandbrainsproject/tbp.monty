@@ -23,7 +23,7 @@ You can add new words to the dictionary by adding them to `.vale/styles/config/v
 
 ## How to Install and Use Vale
 
-# 1. **Install Vale**
+### 1. **Install Vale**
 
 Install Vale using the following commands (do not use Homebrew):
 
@@ -40,7 +40,7 @@ tar -xzf /tmp/vale.tar.gz -C /tmp
 sudo mv /tmp/vale /usr/local/bin/vale
 ```
 
-# 2. **Run Vale**
+### 2. **Run Vale**
 
 Use the following command in your terminal to run Vale:
 
