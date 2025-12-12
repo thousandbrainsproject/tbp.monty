@@ -156,7 +156,8 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         self.performance_encoder.fit(self.performance_options)
         self.use_parallel_wandb_logging = False
 
-        pd.set_option("display.max_rows", value=False)
+        new_option = ("display.max_rows", False)
+        pd.set_option(*new_option)
 
     def flush(self):
         self.data = dict(
