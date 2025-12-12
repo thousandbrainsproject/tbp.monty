@@ -105,6 +105,7 @@ class EncoderSDR:
             stability constraint applied and 1.0 is fixed SDRs. Values in between are
             for partial stability.
         log_flag: Flag to activate the logger.
+        random_seed: seed used to initialize the random number generator
     """
 
     def __init__(
@@ -115,6 +116,7 @@ class EncoderSDR:
         n_epochs=1000,
         stability=0.0,
         log_flag=False,
+        random_seed: int = 4,
     ):
         if sdr_on_bits >= sdr_length or sdr_on_bits <= 0:
             logger.warning(
@@ -135,6 +137,8 @@ class EncoderSDR:
 
         # Initialize obj SDR array with arbitrary values
         self.obj_sdrs = np.zeros((0, self.sdr_length))
+
+        self.np_rng = np.random.default_rng(random_seed)
 
     @property
     def n_objects(self):
@@ -255,8 +259,8 @@ class EncoderSDR:
         stable_data = self.obj_sdrs.copy()
         self.stable_ids = np.arange(stable_data.shape[0])
 
-        new_obj_sdrs = np.random.randn(
-            stable_data.shape[0] + n_objects, self.sdr_length
+        new_obj_sdrs = self.np_rng.standard_normal(
+            size=(stable_data.shape[0] + n_objects, self.sdr_length)
         )
 
         new_obj_sdrs[: stable_data.shape[0]] = stable_data
@@ -576,6 +580,7 @@ class EvidenceSDRLMMixin:
             lr=self.sdr_args["sdr_lr"],
             n_epochs=self.sdr_args["n_sdr_epochs"],
             log_flag=self.sdr_args["sdr_log_flag"],
+            random_seed=self.sdr_args["random_seed"],
         )
 
         # TODO: remove this logger and merge with the Monty Loggers after

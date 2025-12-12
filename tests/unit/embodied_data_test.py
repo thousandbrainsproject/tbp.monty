@@ -42,6 +42,9 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 
+# TODO: use instead of RandomState elsewhere in tests
+RNG = np.random.default_rng(42)
+
 AGENT_ID = AgentID("agent_id_0")
 SENSOR_ID = SensorID("sensor_id_0")
 NUM_STEPS = 10
@@ -53,7 +56,7 @@ POSSIBLE_ACTIONS_DIST = [
     f"{AGENT_ID}.turn_right",
 ]
 POSSIBLE_ACTIONS_ABS = [f"{AGENT_ID}.set_yaw", f"{AGENT_ID}.set_sensor_pitch"]
-EXPECTED_STATES: npt.NDArray[np.uint8] = np.random.randint(
+EXPECTED_STATES: npt.NDArray[np.uint8] = RNG.integers(
     0, 256, size=NUM_STEPS, dtype=np.uint8
 )
 

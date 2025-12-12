@@ -33,12 +33,14 @@ from omegaconf import OmegaConf
 from tbp.monty.frameworks.run import main
 from tbp.monty.simulators.habitat import SingleSensorAgent
 
+RNG = np.random.default_rng(42)
+
 DATASET_LEN = 1000
 TRAIN_EPOCHS = 2
 MAX_TRAIN_STEPS = 10
 MAX_EVAL_STEPS = 5
 EVAL_EPOCHS = 1
-FAKE_OBS = np.random.rand(DATASET_LEN, 64, 64, 1)
+FAKE_OBS = RNG.random(size=(DATASET_LEN, 64, 64, 1))
 EXPECTED_LOG = []
 
 # Train steps
@@ -87,7 +89,7 @@ class MontyRunTest(unittest.TestCase):
             self.mock_agent if agent_idx == 0 else None
         )
         self.mock_sim.reset.return_value = {
-            0: {"agent_id_0.depth": np.random.rand(64, 64, 1)}
+            0: {"agent_id_0.depth": RNG.random(size=(64, 64, 1))}
         }
         self.mock_sim.get_sensor_observations.side_effect = [
             {0: {"agent_id_0.depth": obs}} for obs in FAKE_OBS

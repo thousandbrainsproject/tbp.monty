@@ -37,7 +37,8 @@ DEFAULT_ACTUATION_AMOUNT = 0.25
 AGENT_ID = AgentID("camera")
 SENSOR_ID = SensorID("sensor_id_0")
 MODALITY = Modality("depth")
-EXPECTED_STATES = np.random.rand(NUM_STEPS, 64, 64, 1)
+RNG = np.random.default_rng(42)
+EXPECTED_STATES = RNG.random(size=(NUM_STEPS, 64, 64, 1))
 
 
 class HabitatDataTest(unittest.TestCase):

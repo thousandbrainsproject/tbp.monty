@@ -1277,7 +1277,8 @@ def plot_learned_graph(
 
     # Add optional noise; can be used to visualize e.g. how significant noise
     # in the sensory information might be
-    noise_to_add = np.random.normal(0, noise_amount, size=np.shape(learned_model_cloud))
+    rng = np.random.default_rng()
+    noise_to_add = rng.normal(0, noise_amount, size=np.shape(learned_model_cloud))
     learned_model_cloud = learned_model_cloud + noise_to_add
 
     plt.figure(figsize=(5, 5))
