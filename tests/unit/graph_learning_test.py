@@ -383,8 +383,8 @@ class GraphLearningTest(BaseGraphTest):
         original_stats = pd.read_csv(original_eval_stats_file)
         new_stats = pd.read_csv(new_eval_stats_file)
         # filter the time column, as both experiments took place at different times
-        original_stats.drop(columns=["time"], inplace=True)
-        new_stats.drop(columns=["time"], inplace=True)
+        original_stats = original_stats.drop(columns=["time"])
+        new_stats = new_stats.drop(columns=["time"])
         # Get only first episode; eval_exp_1 ran for 3 epochs
         self.assertTrue(original_stats.loc[0].equals(new_stats.loc[0]))
 
@@ -474,8 +474,8 @@ class GraphLearningTest(BaseGraphTest):
         original_stats = pd.read_csv(original_eval_stats_file)
         new_stats = pd.read_csv(new_eval_stats_file)
         # filter the time column, as both experiments took place at different times
-        original_stats.drop(columns=["time"], inplace=True)
-        new_stats.drop(columns=["time"], inplace=True)
+        original_stats = original_stats.drop(columns=["time"])
+        new_stats = new_stats.drop(columns=["time"])
         # Get only first episode; eval_exp_1 ran for 3 epochs
         self.assertTrue(original_stats.equals(new_stats))
 
@@ -554,8 +554,8 @@ class GraphLearningTest(BaseGraphTest):
         original_stats = pd.read_csv(original_eval_stats_file)
         new_stats = pd.read_csv(new_eval_stats_file)
         # filter the time column, as both experiments took place at different times
-        original_stats.drop(columns=["time"], inplace=True)
-        new_stats.drop(columns=["time"], inplace=True)
+        original_stats = original_stats.drop(columns=["time"])
+        new_stats = new_stats.drop(columns=["time"])
         # Get only first episode; eval_exp_1 ran for 3 epochs
         self.assertTrue(original_stats.loc[0].equals(new_stats.loc[0]))
 
