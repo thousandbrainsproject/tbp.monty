@@ -7,28 +7,26 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+import numpy as np
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 
 
 class Default:
-    def __call__(self):
-        euler_rotation = self.rng.uniform(0, 360, 3)
+    def __call__(self, seed: int, epoch: int, episode: int):
+        seed = episode_seed(seed, epoch, episode)
+        rng = np.random.RandomState(seed)
+        euler_rotation = rng.uniform(0, 360, 3)
         q = Rotation.from_euler("xyz", euler_rotation, degrees=True).as_quat()
         quat_rotation = scipy_to_numpy_quat(q)
         return dict(
             rotation=quat_rotation,
             euler_rotation=euler_rotation,
-            position=(self.rng.uniform(-0.5, 0.5), 0.0, 0.0),
+            position=(rng.uniform(-0.5, 0.5), 0.0, 0.0),
             scale=[1.0, 1.0, 1.0],
         )
-
-    def post_epoch(self):
-        pass
-
-    def post_episode(self):
-        pass
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -48,14 +46,10 @@ class Predefined(Default):
         self.positions = positions or [[0.0, 1.5, 0.0]]
         self.rotations = rotations or [[0.0, 0.0, 0.0], [45.0, 0.0, 0.0]]
         self.scales = scales or [[1.0, 1.0, 1.0]]
-        self.current_epoch = 0
-        self.current_episode = 0
         self.change_every_episode = change_every_episode
 
-    def __call__(self):
-        mod_counter = (
-            self.current_episode if self.change_every_episode else self.current_epoch
-        )
+    def __call__(self, _: int, epoch: int, episode: int):
+        mod_counter = episode if self.change_every_episode else epoch
         q = Rotation.from_euler(
             "xyz",
             self.rotations[mod_counter % len(self.rotations)],
@@ -72,12 +66,6 @@ class Predefined(Default):
 
     def __len__(self):
         return len(self.all_combinations_of_params())
-
-    def post_epoch(self):
-        self.current_epoch += 1
-
-    def post_episode(self):
-        self.current_episode += 1
 
     def all_combinations_of_params(self):
         param_list = []
@@ -104,8 +92,10 @@ class RandomRotation(Default):
         else:
             self.scale = [1.0, 1.0, 1.0]
 
-    def __call__(self):
-        euler_rotation = self.rng.uniform(0, 360, 3)
+    def __call__(self, seed: int, epoch: int, episode: int):
+        seed = episode_seed(seed, epoch, episode)
+        rng = np.random.RandomState(seed)
+        euler_rotation = rng.uniform(0, 360, 3)
         q = Rotation.from_euler("xyz", euler_rotation, degrees=True).as_quat()
         quat_rotation = scipy_to_numpy_quat(q)
         return dict(
