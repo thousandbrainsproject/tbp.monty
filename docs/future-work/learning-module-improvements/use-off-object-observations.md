@@ -20,7 +20,7 @@ Currently we have methods to move the sensor back onto the object, however we do
 To address this, we need to update how these observations are processed such that:
 1. These observations are formulated as an appropriate "null"-type observation - there is no surface to observe, and so there should be no morphological features. However, there would still be a location (e.g. where the finger tip is hovering, or an eye looking into the far distance), and there can be non-morphological features like color.
 2. These observations are still passed to the learning module.
-3. If a hypothesis predicts an observation, then the learning module's evidence-update appropriately results in negative evidence, as no object model should ever store a "null" feature that would match this observation.
+3. If a hypothesis predicts an observation, then the learning module's evidence update appropriately results in negative evidence, as no object model should ever store a "null" feature that would match this observation.
 
 ### What if a hypothesis itself has moved out of the reference frame?
 
@@ -37,8 +37,8 @@ In this case, while some hypotheses on the surface of the object might be close 
 
 ### Gotchas to Watch Out For
 
-From an initial look, this change might appear relatively straightforward, however we have found ourselves repeatedly facing conceptual or practical issues when visiting this task. A few potenital gotchas to consider:
-i. We need to ensure that any change to how sensor modules pass these observations to an LM do not interfere with the existing policies. In particular, the distant agent's random saccade policy has an `undo_last_action` that moves the sensor back onto the object if it moves off of it. Similarly, after performing a hypothesis testing jump, a `handle_failed_jump` process reverses the last action. Ideally we would still perform these corrective actions, but only after the LMs have a chance to process the observation.
+From an initial look, this change might appear relatively straightforward, however we have found ourselves repeatedly facing conceptual or practical issues when visiting this task. A few potential gotchas to consider:
+i. We need to ensure that any change to how sensor modules pass these observations to an LM does not interfere with the existing policies. In particular, the distant agent's random saccade policy has an `undo_last_action` that moves the sensor back onto the object if it moves off of it. Similarly, after performing a hypothesis testing jump, a `handle_failed_jump` process reverses the last action. Ideally we would still perform these corrective actions, but only after the LMs have a chance to process the observation.
 ii. During learning, we want to ensure that observations associated with these "null" morphological features are not stored, i.e. are not learned as part of any model.
 iii. The FeatureChangeSM has additional logic for determining when to pass an observation to the LMs, and this needs to be accounted for in any changes.
 iv. The buffer uses information about on-object observations to filter data, so some elements here may need updating.
