@@ -27,3 +27,6 @@ In the future, we will move towards policies that change the state of the world.
 
 ![Dinner table set](../../figures/future-work/dinner_variations_medieval.png)
 *Example of compositional objects made up of medieval cutlery and plates.*
+
+> [!NOTE]
+> While we always want to test Monty on more complex and varied environments (hence the evergreen status), it can be useful to have more clearly defined items on our future work roadmap. If you start work on making a new compositional testbed, feel free to create a new future work page, outlining that specific testbed.
