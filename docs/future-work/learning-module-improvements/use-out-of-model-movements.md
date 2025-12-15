@@ -18,7 +18,8 @@ Consider the situation described under using off-object observations. What if a 
 
 *Example of a sensor movement resulting in the hypothesis moving out of the learned model of an object.*
 
-NOTE: In the past we have sometimes referred to this as an "out of reference frame" movement. However, it is most accurate to describe the reference frame as the unbounded representational space where a model is learned. As such, describing it as an out-of-model-movement (OOMM) is more accurate.
+> [!NOTE]
+> In the past we have sometimes referred to this as an "out of reference frame" movement. However, it is most accurate to describe the reference frame as the unbounded representational space where a model is learned. As such, describing it as an out-of-model-movement (OOMM) is more accurate.
 
 We believe the best approach is that the LM would retain the OOMM hypothesis for a short period of time (perhaps 2-3 steps in the current, discrete version of Monty). If it then moves back into the model space before this time has elapsed, then the hypothesis can continue to accumulate evidence.
 
