@@ -74,9 +74,10 @@ def cat_files(filenames, outfile):
         print(f"Removing existing file before writing new one: {outfile}")
         outfile.unlink()
 
-    outfile.touch()  # create file that captures output
-    for file in filenames:
-        os.system(f"cat {file} >> {outfile}")
+    with outfile.open("wb") as out_f:
+        for file in filenames:
+            with Path(file).open("rb") as in_f:
+                shutil.copyfileobj(in_f, out_f)
 
 
 def cat_csv(filenames, outfile):
@@ -363,6 +364,7 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
         new_experiment["config"]["logging"]["run_name"] = run_name
         new_experiment["config"]["logging"]["output_dir"] = output_dir / name / run_name
         new_experiment["config"]["logging"]["wandb_handlers"] = []
+        new_experiment["config"]["logging"]["log_parallel_wandb"] = False
 
         # Object id, pose parameters for single episode
         new_experiment["config"]["train_env_interface_args"].update(
@@ -558,7 +560,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: str) -> None:
         post_parallel_profile_cleanup(parallel_dirs, base_dir, "train")
 
     with exp:
-        exp.model.load_state_dict_from_parallel(parallel_dirs, True)
+        exp.model.load_state_dict_from_parallel(parallel_dirs, save=True)
         output_dir = Path(experiments[0]["config"]["logging"]["output_dir"]).parent
         if isinstance(exp, MontySupervisedObjectPretrainingExperiment):
             output_dir = output_dir / "pretrained"

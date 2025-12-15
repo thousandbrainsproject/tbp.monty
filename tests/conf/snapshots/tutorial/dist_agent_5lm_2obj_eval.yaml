@@ -98,7 +98,6 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: gm_eval_runs
-      log_parallel_wandb: false
     monty_config:
       sensor_module_configs:
         sensor_module_0:

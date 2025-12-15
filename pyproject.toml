@@ -235,12 +235,10 @@ ignore = [
     "F403", # F403: from {name} import * used; unable to detect undefined names
     "FBT001", # FBT001: Boolean-typed positional argument in function definition
     "FBT002", # FBT002: Boolean default positional argument in function definition
-    "FBT003", # FBT003: Boolean positional value in function call
     "G003", # G003: Logging statement uses `+`
     "G004", # G004: Logging statement uses f-string
     "N804", # N804: First argument of a class method should be named `cls`
     "NPY002", # NPY002: Replace legacy `np.random.normal` call with `np.random.Generator`
-    "PD002", # PD002: `inplace=True` should be avoided; it has inconsistent behavior
     "PERF203", # PERF203: `try`-`except` within a loop incurs performance overhead
     "PERF401", # PERF401: Use a list comprehension to create a transformed list
     "PERF402", # PERF402: Use `list` or `list.copy` to create a copy of a list
@@ -259,7 +257,6 @@ ignore = [
     "RUF015", # RUF015: Prefer next({iterable}) over single element slice
     "S101", # S101: Use of `assert` detected
     "S104", # S104: Possible binding to all interfaces
-    "S605", # S605: Starting a process with a shell, possible injection detected
     "SIM102", # SIM102: Use a single `if` statement instead of nested `if` statements
     "SIM108", # SIM108: Use ternary operator {contents} instead of if-else-block
     "SIM117", # SIM117: Use a single `with` statement with multiple contexts instead of nested `with` statements
