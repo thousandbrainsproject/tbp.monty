@@ -16,7 +16,7 @@ Consider the situation described under using off-object observations. What if a 
 
 <img src="../../figures/future-work/out_of_model_movement.png" alt="Example of a sensor movement resulting in the hypothesis moving out of the learned model an object" width="500">
 
-*Example of a sensor movement resulting in the hypothesis moving out of the learned model of an object.*
+*Example of a sensor movement resulting in the hypothesis moving out of the learned model of an object. Note a hypothesis need not be correct to become out-of-model; a hypothesis simply needs to move far away from any learned model points.*
 
 > [!NOTE]
 > In the past we have sometimes referred to this as an "out of reference frame" movement. However, it is most accurate to describe the reference frame as the unbounded representational space where a model is learned. As such, describing it as an out-of-model-movement (OOMM) is more accurate.
@@ -25,7 +25,11 @@ We believe the best approach is that the LM would retain the OOMM hypothesis for
 
 If a hypothesis stays outside of the model space for too long however, then the hypothesis should receive strong negative evidence. In the resampling version of Monty, this would effectively be handled by the evidence slope being sufficiently small that the hypothesis is deleted.
 
-This approach ensures that a Learning Module is not expected to maintain a long-term memory of objects it is not currently on. At the same time, it means that we can move out of a model, which can be a useful way to test other hypotheses (i.e. for objects where we do expect to find something there). By then moving back onto the object and continuing to accumulate evidence, certain hypotheses can continue to grow. See the description of the 7 vs 1 and i vs ı under [Use Off Object Observations](./use-off-object-observations.md) for a concrete example of where this is relevant.
+This approach ensures that a Learning Module is not expected to maintain a long-term memory of objects it is not currently on. At the same time, it means that we can move out of a model, which can be a useful way to test other hypotheses (i.e. for objects where we do expect to find something there). By then moving back onto the object and continuing to accumulate evidence, certain hypotheses can continue to grow.
+
+## Evaluations
+-  See the description of the 7 vs 1 and i vs ı under [Use Off Object Observations](./use-off-object-observations.md) for a concrete example of where the above described situation is relevant for classification.
+- It is recommended to develop experiments that specifically evaluate the use of out-of-model movements to help resolve this classification issue in tandem with off-object observations. 
 
 ## Other details
 - If a most-likely-hypothesis moves out of a model and becomes "clamped" at that evidence value as a result, it should not continue to pass information up in a hierarchy of LMs. Intuitively, if we believe we are on a mug at location x, and then move to location y which is off of the mug, then we should not communicate to the next LM in the hierarchy that there is a mug at location y.
