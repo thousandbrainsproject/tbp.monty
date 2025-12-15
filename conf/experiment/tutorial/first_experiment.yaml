@@ -38,4 +38,4 @@ config:
     object_init_sampler:
       # Since this is a _target_, Hydra will instantiate this class using the _target_ and any
       # additional arguments you provide.
-      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined

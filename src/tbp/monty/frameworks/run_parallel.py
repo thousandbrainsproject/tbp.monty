@@ -28,7 +28,7 @@ from omegaconf import DictConfig, OmegaConf
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterfacePerObject,
 )
-from tbp.monty.frameworks.environments.object_initializers import (
+from tbp.monty.frameworks.environments.object_init_samplers import (
     Predefined,
 )
 from tbp.monty.frameworks.experiments.pretraining_experiments import (
