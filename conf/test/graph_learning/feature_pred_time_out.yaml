@@ -26,6 +26,6 @@ config:
       - capsule3DSolid
       - cubeSolid
     object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
       rotations:
         - [0.0, 0.0, 0.0]

@@ -17,7 +17,7 @@ from pathlib import Path
 import torch
 from omegaconf import DictConfig, OmegaConf, open_dict
 
-from tbp.monty.frameworks.environments.object_initializers import (
+from tbp.monty.frameworks.environments.object_init_samplers import (
     Predefined,
 )
 from tbp.monty.frameworks.loggers.monty_handlers import DetailedJSONHandler

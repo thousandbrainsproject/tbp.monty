@@ -64,5 +64,5 @@ config:
       - mug
       - banana
     object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
       rotations: ${benchmarks.rotations_all}

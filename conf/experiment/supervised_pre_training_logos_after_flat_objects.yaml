@@ -31,5 +31,5 @@ config:
           fixed_amount: 1
   train_env_interface_args:
     object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
 

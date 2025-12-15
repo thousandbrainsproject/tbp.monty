@@ -67,4 +67,4 @@ config:
       - mug
       - bowl
     object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_initializers.RandomRotation
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
