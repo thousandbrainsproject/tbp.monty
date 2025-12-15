@@ -229,10 +229,7 @@ def get_unique_euler_poses(poses):
     Returns:
         unique_poses: array of unique poses
     """
-    all_poses = []
-    for path_poses in poses:
-        for pose in path_poses:
-            all_poses.append(pose)
+    all_poses = [pose for path_poses in poses for pose in path_poses]
     return np.unique(all_poses, axis=0)
 
 
