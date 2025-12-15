@@ -33,7 +33,7 @@ This situation is shown in the below diagram:
 ![Example of off object observations near a surface](../../figures/future-work/off_object_near_surface.png)
 *Example of a sensor moving off of an object and observing nothing when it is close to the object's surface.*
 
-In this case, while some hypotheses on the surface of the object might be close (even within the neighborhood tolerance) to the sensors actual location, these will receive negative evidence, as they will predict being on the actual object. This is the desired behavior, as the LM should not predict that it is still on the object if it is no longer sensing it.
+In this case, while some hypotheses on the surface of the object might be close (even within the neighborhood tolerance) to the sensors actual location, these will receive negative evidence, as they will predict being on the actual object. This is the desired behavior, as the LM should not predict that it is still on the object if it is no longer sensing it. However, we should keep this effect in mind when testing this as it might cause "almost correct" hypotheses to get a lot of negative evidence and thereby lead to some performance drops.
 
 ### Gotchas to Watch Out For
 
