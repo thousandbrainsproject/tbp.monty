@@ -10,7 +10,7 @@ contributor: hlee
 status: scoping
 ---
 
-There are a few instances where Monty can move off of an object, sensing nothing/empty space. For example, this can occur due to a saccade moving off the object and pointing at a void (such as the sky), or a touch-based agent leaving the surface of an object.
+There are a few instances where Monty can move off of an object, sensing nothing/empty space (or at least no morphological features). For example, this can occur due to a saccade moving off the object and pointing at a void (such as the sky), or a touch-based agent leaving the surface of an object.
 
 Currently we have methods to move the sensor back onto the object, however we do not make use of the information that there was no object at the perceived location before doing so. This is valuable information, as the absence of the object at a location will be inconsistent with some object and pose hypotheses - hypotheses that should therefore have their associated evidence reduced. This setup is shown in the diagram below.
 
