@@ -3,7 +3,7 @@ title: Use Off-Object Observations
 description: Ensure that off-object observations are processed by LMs, resulting in evidence updates.
 rfc: optional
 estimated-scope: medium
-improved-metric: speed, numsteps, accuracy
+improved-metric: numsteps, accuracy
 output-type: experiments, analysis, PR
 skills: python, research, monty
 contributor: hlee
