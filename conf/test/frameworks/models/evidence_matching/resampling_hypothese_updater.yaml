@@ -43,4 +43,4 @@ config:
     object_names:
       - capsule3DSolid
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined

@@ -17,8 +17,8 @@ from pathlib import Path
 import torch
 from omegaconf import DictConfig, OmegaConf, open_dict
 
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    PredefinedObjectInitializer,
+from tbp.monty.frameworks.environments.object_init_samplers import (
+    Predefined,
 )
 from tbp.monty.frameworks.loggers.monty_handlers import DetailedJSONHandler
 from tbp.monty.frameworks.loggers.wandb_handlers import DetailedWandbMarkedObsHandler
@@ -97,7 +97,7 @@ def create_eval_episode_hydra_cfg(
         return f"${{monty.class:{class_path(klass)}}}"
 
     exp_cfg.eval_env_interface_args.object_init_sampler = {
-        "_target_": class_path(PredefinedObjectInitializer),
+        "_target_": class_path(Predefined),
         "positions": [target_data["primary_target_position"]],
         "rotations": [target_data["primary_target_rotation_euler"]],
         # FIXME: target_scale is a float, need an array of floats for this
@@ -190,12 +190,10 @@ def create_eval_episode_config(
     new_config["eval_env_interface_args"]["object_names"] = [
         target_data["primary_target_object"]
     ]
-    new_config["eval_env_interface_args"]["object_init_sampler"] = (
-        PredefinedObjectInitializer(
-            positions=[target_data["primary_target_position"]],
-            rotations=[target_data["primary_target_rotation_euler"]],
-            # FIXME: target_scale is a float, need an array of floats for this
-        )
+    new_config["eval_env_interface_args"]["object_init_sampler"] = Predefined(
+        positions=[target_data["primary_target_position"]],
+        rotations=[target_data["primary_target_rotation_euler"]],
+        # FIXME: target_scale is a float, need an array of floats for this
     )
 
     # 3) Update logging config
@@ -299,7 +297,7 @@ def create_eval_multiple_episodes_hydra_cfg(
     # Update config with episode-specific data
     exp_cfg.eval_env_interface_args.object_names = target_objects
     exp_cfg.eval_env_interface_args.object_init_sampler = {
-        "_target_": class_path(PredefinedObjectInitializer),
+        "_target_": class_path(Predefined),
         "positions": target_positions,
         "rotations": target_rotations,
         "change_every_episode": True,
@@ -389,12 +387,10 @@ def create_eval_config_multiple_episodes(
 
     # Update config with episode-specific data
     new_config["eval_env_interface_args"]["object_names"] = target_objects
-    new_config["eval_env_interface_args"]["object_init_sampler"] = (
-        PredefinedObjectInitializer(
-            positions=target_positions,
-            rotations=target_rotations,
-            change_every_episode=True,
-        )
+    new_config["eval_env_interface_args"]["object_init_sampler"] = Predefined(
+        positions=target_positions,
+        rotations=target_rotations,
+        change_every_episode=True,
     )
     new_config["monty_config"]["motor_system_config"]["motor_system_args"][
         "policy_args"

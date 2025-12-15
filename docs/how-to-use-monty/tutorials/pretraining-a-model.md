@@ -74,7 +74,7 @@ config:
       - mug
       - banana
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
       # Get predefined object rotations that give good views of the object from 14 angles.
       rotations: ${benchmarks.rotations_all}
 ```
@@ -166,7 +166,7 @@ config:
       - mug
       - banana
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
       rotations: ${benchmarks.rotations_all}
 
 ```

@@ -27,6 +27,6 @@ config:
         - capsule3DSolid
       num_distractors: 10
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
       positions:
         - ${np.array:[0.2, 1.5, -0.2]} # Object is farther away *and* to the right

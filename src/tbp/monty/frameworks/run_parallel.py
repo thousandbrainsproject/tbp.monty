@@ -25,11 +25,11 @@ import torch.multiprocessing as mp
 import wandb
 from omegaconf import DictConfig, OmegaConf
 
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    PredefinedObjectInitializer,
-)
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterfacePerObject,
+)
+from tbp.monty.frameworks.environments.object_init_samplers import (
+    Predefined,
 )
 from tbp.monty.frameworks.experiments.pretraining_experiments import (
     MontySupervisedObjectPretrainingExperiment,
@@ -308,7 +308,7 @@ def generate_parallel_eval_configs(
 
             new_experiment["config"]["eval_env_interface_args"].update(
                 object_names=[obj],
-                object_init_sampler=PredefinedObjectInitializer(**params),
+                object_init_sampler=Predefined(**params),
             )
 
             new_experiments.append(new_experiment)
