@@ -27,7 +27,7 @@ If a hypothesis stays outside of the model space for too long however, then the 
 
 This approach ensures that a Learning Module is not expected to maintain a long-term memory of objects it is not currently on. At the same time, it means that we can move out of a model, which can be a useful way to test other hypotheses (i.e. for objects where we do expect to find something there). By then moving back onto the object and continuing to accumulate evidence, certain hypotheses can continue to grow. See the description of the 7 vs 1 and i vs ı under [Use Off Object Observations](./use-off-object-observations.md) for a concrete example of where this is relevant.
 
-Other details
+## Other details
 - If a most-likely-hypothesis moves out of a model and becomes "clamped" at that evidence value as a result, it should not continue to pass information up in a hierarchy of LMs. Intuitively, if we believe we are on a mug at location x, and then move to location y which is off of the mug, then we should not communicate to the next LM in the hierarchy that there is a mug at location y.
 - What about object permanence, for example when moving back to where the object was after a significant period of time has elapsed? This should be captured via hierarchy - a higher-level LM would have a scene-like representation, and could use top-down biasing to help the LM in question recall what object it had just been observing. The mechanism here for OOMM only maintains hypotheses for a short period of time as a brief trace to enable returning to an object if a sensor strays off of it.
 
