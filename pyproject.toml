@@ -255,7 +255,6 @@ ignore = [
     "RUF005", # RUF005: Consider {expression} instead of concatenation
     "RUF015", # RUF015: Prefer next({iterable}) over single element slice
     "S101", # S101: Use of `assert` detected
-    "S104", # S104: Possible binding to all interfaces
     "SIM102", # SIM102: Use a single `if` statement instead of nested `if` statements
     "SIM108", # SIM108: Use ternary operator {contents} instead of if-else-block
     "SIM117", # SIM117: Use a single `with` statement with multiple contexts instead of nested `with` statements
@@ -267,7 +266,6 @@ ignore = [
     "TD002", # TD002: Missing author in TODO; try: `# TODO(<author_name>): ...` or `# TODO @<author_name>: ...`
     "TD003", # TD003: Missing issue link on the line following this TODO
     "TD004", # TD004: Missing colon in TODO
-    "TD005", # TD005: Missing issue description after `TODO`
     "TRY003", # TRY003: Avoid specifying long messages outside the exception class
 ]
 

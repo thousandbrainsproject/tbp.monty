@@ -95,6 +95,7 @@
 - [learning-module-improvements](future-work/learning-module-improvements.md)
   - [contributing-learning-modules](future-work/learning-module-improvements/contributing-learning-modules.md)
   - [use-off-object-observations](future-work/learning-module-improvements/use-off-object-observations.md)
+  - [use-out-of-model-movements](future-work/learning-module-improvements/use-out-of-model-movements.md)
   - [implement-and-test-rapid-evidence-decay-as-form-of-unsupervised-memory-resetting](future-work/learning-module-improvements/implement-and-test-rapid-evidence-decay-as-form-of-unsupervised-memory-resetting.md)
   - [improve-bounded-evidence-performance](future-work/learning-module-improvements/improve-bounded-evidence-performance.md)
   - [use-models-with-fewer-points](future-work/learning-module-improvements/use-models-with-fewer-points.md)
