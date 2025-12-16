@@ -25,18 +25,10 @@ from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateG
 from tbp.monty.frameworks.models.states import State
 from tests.unit.resources.unit_test_utils import BaseGraphTest
 
-
-def set_seed(seed):
-    """Set seed for reproducibility."""
-    np.random.seed(seed)
+RANDOM_SEED = 42
 
 
 class EvidenceSDRUnitTest(unittest.TestCase):
-    def setUp(self):
-        """Setup function at the beginning of each experiment."""
-        # set seed for reproducibility
-        set_seed(42)
-
     def test_unit_sdr_conf(self):
         """This tests edge condition of SDR configuration with invalid sparsity.
 
@@ -48,14 +40,24 @@ class EvidenceSDRUnitTest(unittest.TestCase):
 
         """
         encoder_sdr = EncoderSDR(
-            sdr_length=100, sdr_on_bits=100, lr=1e-2, n_epochs=100, log_flag=False
+            sdr_length=100,
+            sdr_on_bits=100,
+            lr=1e-2,
+            n_epochs=100,
+            log_flag=False,
+            random_seed=RANDOM_SEED,
         )
 
         # test that the sparsity is adjusted to 2%
         self.assertEqual(encoder_sdr.sdr_on_bits, int(100 * 0.02))
 
         encoder_sdr = EncoderSDR(
-            sdr_length=100, sdr_on_bits=0, lr=1e-2, n_epochs=100, log_flag=False
+            sdr_length=100,
+            sdr_on_bits=0,
+            lr=1e-2,
+            n_epochs=100,
+            log_flag=False,
+            random_seed=RANDOM_SEED,
         )
 
         # test that the sparsity is adjusted to 2%
@@ -112,7 +114,12 @@ class EvidenceSDRUnitTest(unittest.TestCase):
 
         """
         encoder = EncoderSDR(
-            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True
+            sdr_length=100,
+            sdr_on_bits=5,
+            lr=1e-2,
+            n_epochs=100,
+            log_flag=True,
+            random_seed=RANDOM_SEED,
         )
         encoder.add_objects(5)
 
@@ -136,7 +143,12 @@ class EvidenceSDRUnitTest(unittest.TestCase):
             - Representations of the last 2 objects shouldn't change
         """
         encoder = EncoderSDR(
-            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True
+            sdr_length=100,
+            sdr_on_bits=5,
+            lr=1e-2,
+            n_epochs=100,
+            log_flag=True,
+            random_seed=RANDOM_SEED,
         )
         encoder.add_objects(5)
         training_data = np.full((5, 5), np.nan)
@@ -178,7 +190,12 @@ class EvidenceSDRUnitTest(unittest.TestCase):
         """
         # test for some points out of bound
         encoder = EncoderSDR(
-            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True
+            sdr_length=100,
+            sdr_on_bits=5,
+            lr=1e-2,
+            n_epochs=100,
+            log_flag=True,
+            random_seed=RANDOM_SEED,
         )
         encoder.add_objects(3)
         training_data = np.full((5, 5), np.nan)
@@ -197,7 +214,12 @@ class EvidenceSDRUnitTest(unittest.TestCase):
 
         # test for all points out of bounds
         encoder = EncoderSDR(
-            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True
+            sdr_length=100,
+            sdr_on_bits=5,
+            lr=1e-2,
+            n_epochs=100,
+            log_flag=True,
+            random_seed=RANDOM_SEED,
         )
         encoder.add_objects(3)
         training_data = np.full((5, 5), np.nan)
@@ -221,7 +243,12 @@ class EvidenceSDRUnitTest(unittest.TestCase):
             - SDR overlaps should be close to target overlaps
         """
         encoder = EncoderSDR(
-            sdr_length=2048, sdr_on_bits=41, lr=1e-2, n_epochs=1000, log_flag=True
+            sdr_length=2048,
+            sdr_on_bits=41,
+            lr=1e-2,
+            n_epochs=1000,
+            log_flag=True,
+            random_seed=RANDOM_SEED,
         )
         encoder.add_objects(3)
         training_data = np.full((3, 3), np.nan)
@@ -268,8 +295,6 @@ class EvidenceSDRUnitTest(unittest.TestCase):
         """
         sdr_persistence = []
         for stability in [0.0, 0.33, 0.66, 1.0]:
-            set_seed(42)
-
             encoder = EncoderSDR(
                 sdr_length=2048,
                 sdr_on_bits=41,
@@ -277,6 +302,7 @@ class EvidenceSDRUnitTest(unittest.TestCase):
                 n_epochs=1000,
                 stability=stability,
                 log_flag=True,
+                random_seed=RANDOM_SEED,
             )
 
             encoder.add_objects(3)
@@ -316,7 +342,12 @@ class EvidenceSDRUnitTest(unittest.TestCase):
             - SDRs should be identical with overlap of exactly `sdr_on_bits`
         """
         encoder = EncoderSDR(
-            sdr_length=2048, sdr_on_bits=41, lr=1e-2, n_epochs=1000, log_flag=True
+            sdr_length=2048,
+            sdr_on_bits=41,
+            lr=1e-2,
+            n_epochs=1000,
+            log_flag=True,
+            random_seed=RANDOM_SEED,
         )
         encoder.add_objects(2)
         training_data = np.full((2, 2), np.nan)
@@ -337,9 +368,6 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
     def setUp(self):
         """Setup function at the beginning of each experiment."""
         self.output_dir = tempfile.mkdtemp()
-
-        # set seed for reproducibility
-        set_seed(42)
 
         self.default_obs_args = dict(
             location=np.array([0.0, 0.0, 0.0]),
@@ -486,6 +514,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
                 sdr_lr=1e-2,  # Learning rate of the encoding algorithm
                 n_sdr_epochs=1000,  # Number of training epochs per episode
                 sdr_log_flag=True,  # log the output of the module
+                random_seed=RANDOM_SEED,
             ),
         )
 
