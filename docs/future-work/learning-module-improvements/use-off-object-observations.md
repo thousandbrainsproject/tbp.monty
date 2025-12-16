@@ -3,8 +3,8 @@ title: Use Off-Object Observations
 description: Ensure that off-object observations are processed by LMs, resulting in evidence updates.
 rfc: optional
 estimated-scope: medium
-improved-metric: numsteps, accuracy
-output-type: experiments, analysis, PR
+improved-metric: numsteps
+output-type: analysis, PR
 skills: python, research, monty, refactoring
 contributor: hlee
 status: scoping
@@ -18,7 +18,7 @@ Currently we have methods to move the sensor back onto the object, however we do
 *Example of a sensor moving off of an object and observing nothing.*
 
 To address this, we need to update how these observations are processed such that:
-1. These observations are formulated as an appropriate "null"-type observation - there is no surface to observe, and so there should be no morphological features. However, there would still be a location (e.g. where the finger tip is hovering, or an eye looking into the far distance), and there can be non-morphological features like color.
+1. These observations are formulated as an appropriate "null"-type observation - there is no surface to observe, and so there should be no morphological features. However, there would still be a location (e.g. where the finger tip is hovering, or an eye looking into the far distance), and there can be non-morphological features like color. In the `State` class, this would likely involve setting the morphological features to a `None` type value.
 2. These observations are still passed to the learning module.
 3. If a hypothesis predicts an observation, then the learning module's evidence update appropriately results in negative evidence, as no object model should ever store a "null" feature that would match this observation.
 
@@ -45,7 +45,9 @@ From an initial look, this change might appear relatively straightforward, howev
 5. There is a [discontinued RFC on this topic](https://github.com/thousandbrainsproject/tbp.monty/pull/425/files) which has some useful discussion of the above points.
 
 ### Outcome Measures
-- We anticipate that the primary benefit of this change will be that Monty can use off-object observations to more quickly eliminate hypotheses; this will result in fewer steps before convergence.
-- However, it may also improve Monty's accuracy, at least on certain recognition tasks. In particular, consider the instance where Monty has two hypotheses, which are a number "1" and a number "7", or a letter "i" vs a short vertical bar "ı" without a dot. When the actual object observed is the one with fewer features / a smaller model (the "1" rather than the "7", or the i without a dot (ı) rather than "i"), then Monty currently cannot recognize the object. If it moves to the location where it might expect the upper bar of a seven, or the dot of an i, it will perceive nothing. Without processing this observation, Monty cannot distinguish the hypotheses. Thus, this future work item is necessary to resolve this issue. In addition however, resolving this setting will also require adjusting the [Use of Out of Model Movements](./use-out-of-model-movements.md) to ensure we briefly maintain the correct hypothesis (1 or ı, respectively). With these two changes in place, we expect the incorrect hypothesis for the larger model (7 or i) to receive negative evidence, while the correct hypothesis for the smaller model is maintained such that it can continue to accumulate evidence, and ultimately win out. This scenario would benefit from explicitly testing and examining once these changes have been made, which may require creating specific experimental setups.
+- We anticipate that the primary benefit of this change will be that Monty can use off-object observations to more quickly eliminate hypotheses; this will result in fewer steps before convergence. In particular, this should reduce the number of `monty_steps`, which include steps where we currently do not pass any information to LMs because Monty is "off object".
+- With follow-up work on [Use of Out of Model Movements](./use-out-of-model-movements.md), off-object observations can also help boost accuracy on certain challenging classification tasks. See this separate Future Work item for more details.
+- Until the [Use of Out of Model Movements](./use-out-of-model-movements.md) item has been completed, large movements off object may overly punish reasonable hypotheses before we can move back onto the object. Practically, this may reduce accuracy on some of the benchmarks. It is therefore suggested when implementing off-object observations that their use can be toggled via a hyperparameter, as we may find that we need to keep them unused in our benchmarks until the second stage (out-of-model-movement processing) is completed.
 
-NOTE: The instance where Monty moves onto *another* object (for example, a distant wall, or an occluding robotic hand) is already handled by the existing matching process in Monty. In particular, this should result in unexpected sensory input if an LM believes it is still on the original object, and therefore will (correctly) result in negative evidence. This instance is therefore not considered the "off object" setting described above that we wish to resolve.
+> [!NOTE]
+> The instance where Monty moves onto *another* object (for example, a distant wall, or an occluding robotic hand) is already handled by the existing matching process in Monty. In particular, this should result in unexpected sensory input if an LM believes it is still on the original object, and therefore will (correctly) result in negative evidence. This instance is therefore not considered the "off object" setting described above that we wish to resolve.
