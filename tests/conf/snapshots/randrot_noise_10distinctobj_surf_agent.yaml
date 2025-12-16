@@ -285,7 +285,7 @@ experiment:
       - c_lego_duplo
       - banana
       object_init_sampler:
-        _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer
+        _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
     eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 episodes: all

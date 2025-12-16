@@ -241,7 +241,6 @@ ignore = [
     "NPY002", # NPY002: Replace legacy `np.random.normal` call with `np.random.Generator`
     "PERF203", # PERF203: `try`-`except` within a loop incurs performance overhead
     "PERF401", # PERF401: Use a list comprehension to create a transformed list
-    "PERF402", # PERF402: Use `list` or `list.copy` to create a copy of a list
     "PIE790", # PIE790: Unnecessary pass statement
     "PLR0911", # PLR0911: Too many return statements
     "PLR0912", # PLR0912: Too many branches
