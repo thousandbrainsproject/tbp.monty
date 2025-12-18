@@ -1,0 +1,40 @@
+# @package _global_
+# Angles learning 2D sensor experiment
+
+defaults:
+  - /experiment/2d_sm/learning/angles_control
+
+config:
+  zoom: 30.0
+  logging:
+    run_name: angles_2d_zoom${config.zoom}
+  env_interface_config:
+    env_init_args:
+      agents:
+        agent_args:
+          resolutions: [[64, 64], [64, 64]]
+          zooms: 
+            - ${config.zoom}
+            - 1.0
+  monty_config:
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.two_d_sensor_module.TwoDPoseSM}
+        sensor_module_args:
+          sensor_module_id: patch
+          features:
+            - pose_vectors
+            - pose_fully_defined
+            - on_object
+            - object_coverage
+            - rgba
+            - hsv
+            - edge_strength
+            - coherence
+            - pose_from_edge
+          save_raw_obs: true
+          debug_visualize: true
+          debug_save_dir: ${path.expanduser:${oc.env:HOME}/tbp/feat.2d_sensor/results/patches/angles/zoom${config.zoom}}
+          save_raw_rgb: false
+          raw_rgb_base_dir: ${path.expanduser:${oc.env:HOME}/tbp/data/angles_RGB}
+
