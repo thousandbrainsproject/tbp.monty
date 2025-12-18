@@ -27,6 +27,7 @@ from tbp.monty.frameworks.actions.actions import (
     SetSensorRotation,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environment_utils.transforms import TransformContext
 from tbp.monty.frameworks.environments.embodied_environment import (
     EmbodiedEnvironment,
     ObjectID,
@@ -103,10 +104,6 @@ class EnvironmentInterface:
         self.rng = rng
         self.seed = seed
         self.transform = transform
-        if self.transform is not None:
-            for t in self.transform:
-                if t.needs_rng:
-                    t.rng = self.rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -144,11 +141,12 @@ class EnvironmentInterface:
         return observation, ProprioceptiveState(state) if state else None
 
     def apply_transform(self, transform, observation, state):
+        ctx = TransformContext(rng=self.rng, state=state)
         if isinstance(transform, Iterable):
             for t in transform:
-                observation = t(observation, state)
+                observation = t(observation, ctx)
         else:
-            observation = transform(observation, state)
+            observation = transform(observation, ctx)
         return observation
 
     def step(self, actions: Sequence[Action]):
@@ -840,10 +838,6 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        if self.transform is not None:
-            for t in self.transform:
-                if t.needs_rng:
-                    t.rng = self.rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -945,10 +939,6 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        if self.transform is not None:
-            for t in self.transform:
-                if t.needs_rng:
-                    t.rng = self.rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -1046,10 +1036,6 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        if self.transform is not None:
-            for t in self.transform:
-                if t.needs_rng:
-                    t.rng = self.rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None

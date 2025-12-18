@@ -562,7 +562,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         # Apply gaussian smoothing transform to depth image
         # Uncomment line below and add import, if needed
         # transform = GaussianSmoothing(agent_id=agent_id, sigma=2, kernel_width=3)
-        # obs = transform(obs, state=state)
+        # obs = transform.call(obs)
 
         transform = DepthTo3DLocations(
             agent_id=agent_id,
@@ -579,7 +579,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             depth_clip_sensors=[0],
             clip_value=1.1,
         )
-        obs_3d = transform(obs, state=state)
+        obs_3d = transform.call(obs, state=state)
         current_scene_point_cloud = obs_3d[agent_id][sensor_id]["semantic_3d"]
         image_shape = self.current_depth_image.shape
         current_scene_point_cloud = current_scene_point_cloud.reshape(
