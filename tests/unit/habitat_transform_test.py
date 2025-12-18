@@ -19,7 +19,6 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
     MissingToMaxDepth,
-    TransformContext,
 )
 
 AGENT_ID = AgentID("camera")
