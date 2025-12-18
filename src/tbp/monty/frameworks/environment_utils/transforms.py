@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import cv2
 import numpy as np
 import quaternion as qt
 import scipy
@@ -24,6 +25,7 @@ if TYPE_CHECKING:
 __all__ = [
     "AddNoiseToRawDepthImage",
     "DepthTo3DLocations",
+    "GaussianBlurRGB",
     "GaussianSmoothing",
     "MissingToMaxDepth",
 ]
@@ -219,6 +221,114 @@ class GaussianSmoothing:
                 normalized_kernel = self.kernel / norm_factor
                 filtered_img[i, j] = np.nansum(normalized_kernel * img_subset)
         return filtered_img
+
+
+class GaussianBlurRGB:
+    """Apply Gaussian blur to RGB/RGBA images before edge detection.
+
+    This transform applies Gaussian blur to RGB or RGBA images in observations,
+    following the pattern used in edge detection preprocessing. It can be used to
+    reduce noise in RGB images before edge detection is performed.
+    """
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sigma: float = 1.0,
+        kernel_size: int = 0,
+        sensor_ids: list[str] | None = None,
+    ):
+        """Initialize the transform.
+
+        Args:
+            agent_id: Agent ID where the transform should be applied.
+            sigma: Standard deviation for Gaussian blur. Default is 1.0.
+            kernel_size: Kernel size for blur. If 0 (default), OpenCV auto-computes
+                from sigma using `6*sigma + 1` rounded to nearest odd. If specified,
+                must be odd.
+            sensor_ids: Optional list of sensor IDs to apply to. If None, applies
+                to all sensors of the agent.
+
+        Raises:
+            ValueError: If kernel_size is even (when not 0).
+        """
+        self.agent_id = agent_id
+        self.sigma = sigma
+        self.kernel_size = kernel_size
+        self.sensor_ids = sensor_ids
+        self.needs_rng = False
+
+        # Validate kernel_size if specified
+        if self.kernel_size != 0 and self.kernel_size % 2 == 0:
+            raise ValueError(
+                f"kernel_size must be odd or 0 (for auto-compute), got {kernel_size}"
+            )
+
+    def __call__(self, observation, _state=None):
+        """Apply Gaussian blur to RGB/RGBA images.
+
+        Args:
+            observation: Observation to modify in place.
+            state: Not used.
+
+        Returns:
+            Observation, same as input, with blurred RGB/RGBA values.
+
+        Raises:
+            ValueError: If kernel_size is even (when not 0) or if image has
+                unexpected number of channels.
+        """
+        # Determine which sensors to process
+        sensors_to_process = self.sensor_ids
+        if sensors_to_process is None:
+            # Process all sensors for this agent
+            sensors_to_process = list(observation[self.agent_id].keys())
+
+        # Loop over specified sensor modules
+        for sm in sensors_to_process:
+            if sm not in observation[self.agent_id]:
+                continue
+
+            if "rgba" not in observation[self.agent_id][sm].keys():
+                # Skip sensors without rgba key
+                continue
+
+            rgba_image = observation[self.agent_id][sm]["rgba"]
+
+            # Handle both RGB (3 channels) and RGBA (4 channels)
+            if rgba_image.shape[2] == 4:
+                # RGBA: Extract RGB channels, blur them, then combine with alpha
+                rgb_channels = rgba_image[:, :, :3]
+                alpha_channel = rgba_image[:, :, 3:4]
+
+                # Convert RGB to BGR for OpenCV
+                rgb_bgr = cv2.cvtColor(rgb_channels, cv2.COLOR_RGB2BGR)
+                # Apply Gaussian blur (kernel_size=0 means auto-compute)
+                blurred_bgr = cv2.GaussianBlur(
+                    rgb_bgr, (self.kernel_size, self.kernel_size), self.sigma
+                )
+                # Convert back to RGB
+                blurred_rgb = cv2.cvtColor(blurred_bgr, cv2.COLOR_BGR2RGB)
+
+                # Combine blurred RGB with original alpha channel
+                observation[self.agent_id][sm]["rgba"] = np.concatenate(
+                    [blurred_rgb, alpha_channel], axis=2
+                )
+            elif rgba_image.shape[2] == 3:
+                # RGB: Blur directly
+                rgb_bgr = cv2.cvtColor(rgba_image, cv2.COLOR_RGB2BGR)
+                blurred_bgr = cv2.GaussianBlur(
+                    rgb_bgr, (self.kernel_size, self.kernel_size), self.sigma
+                )
+                blurred_rgb = cv2.cvtColor(blurred_bgr, cv2.COLOR_BGR2RGB)
+                observation[self.agent_id][sm]["rgba"] = blurred_rgb
+            else:
+                # Unexpected number of channels
+                raise ValueError(
+                    f"Expected RGB (3) or RGBA (4) channels, got {rgba_image.shape[2]}"
+                )
+
+        return observation
 
 
 class DepthTo3DLocations:

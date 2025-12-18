@@ -22,6 +22,7 @@ def visualize_point_cloud_interactive(
     *,
     tangent_color="black",
     tangent_lw=3,
+    show_unscaled_edge_lines=True,
 ):
     """Create interactive 3D visualization with Vedo.
 
@@ -37,6 +38,7 @@ def visualize_point_cloud_interactive(
         arrow_scale: length (in world units) of each tangent line.
         tangent_color: Vedo color for tangent lines.
         tangent_lw: line width for tangent lines.
+        show_unscaled_edge_lines: If True, draw red unscaled edge lines. Defaults to False.
     """
     points = np.asarray(model_data["points"], float)
     features = model_data["features"]
@@ -235,12 +237,13 @@ def visualize_point_cloud_interactive(
             p_end = p0 + half_scale * T[i]
             new_lines.append(Line(p_start, p_end, c=tangent_color, lw=tangent_lw))
             
-            # Also draw unscaled edge (always using full arrow_scale)
-            half_scale_unscaled = 0.002 / 2
-            p_start_unscaled = p0 - half_scale_unscaled * T[i]
-            p_end_unscaled = p0 + half_scale_unscaled * T[i]
-            # Use mid-red with transparency for unscaled edges
-            new_unscaled_lines.append(Line(p_start_unscaled, p_end_unscaled, c=(200, 0, 0), alpha=0.6, lw=tangent_lw - 1))
+            # Also draw unscaled edge (always using full arrow_scale) if enabled
+            if show_unscaled_edge_lines:
+                half_scale_unscaled = 0.002 / 2
+                p_start_unscaled = p0 - half_scale_unscaled * T[i]
+                p_end_unscaled = p0 + half_scale_unscaled * T[i]
+                # Use mid-red with transparency for unscaled edges
+                new_unscaled_lines.append(Line(p_start_unscaled, p_end_unscaled, c=(200, 0, 0), alpha=0.6, lw=tangent_lw - 1))
 
         if new_lines:
             plotter.add(*new_lines)
@@ -292,7 +295,7 @@ if __name__ == "__main__":
     # Set up paths
     pretrained_model_path = Path(
         "~/tbp/results/monty/pretrained_models/2d_sensor/"
-        "disk_learning_2d_zoom20_res64_step1/pretrained/model.pt"
+        "disk_learning_2d_zoom10_res64_step1_blur5.0/pretrained/model.pt"
     ).expanduser()
 
     # Load the model to explore available objects
