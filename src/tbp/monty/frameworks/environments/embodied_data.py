@@ -179,7 +179,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
     environment
 
     Has a list of primary target objects, swapping these objects in and out for episodes
-    without resetting the environment. The objects are initialized with parameters such
+    without resetting the environment. The objects ar initialized with parameters such
     that we can vary their location, rotation, and scale.
 
     After the primary target is added to the environment, other distractor objects,

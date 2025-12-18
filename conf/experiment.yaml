@@ -9,6 +9,7 @@ defaults:
   - monty: patch_and_view 
   - environment: patch_view_habitat
   - train_env: per_object
+  - eval_env: per_object
   # Experiment config (required) - use override to change defaults above
   - experiment: MISSING
 

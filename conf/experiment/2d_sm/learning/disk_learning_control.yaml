@@ -14,23 +14,56 @@ _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervis
 
 # Config overrides
 config:
+  zoom: 10.0
+  resolution: 64
+  step: 1
+  blur_sigma: 0.0
   n_train_epochs: 3
   logging:
     output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor}
     python_log_level: INFO
-    run_name: disk_learning_control_zoom20
+    run_name: disk_learning_control
   monty_config:
     motor_system_config:
       motor_system_args:
         policy_args:
-          fixed_amount: 1
+          fixed_amount: ${config.step}
   env_interface_config:
     env_init_args:
       data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
       agents:
         agent_args:
-          resolutions: [[64, 64], [64, 64]]
-          zooms: [30.0, 1.0]
+          resolutions: 
+          - - ${config.resolution}
+            - ${config.resolution}
+          - - ${config.resolution}
+            - ${config.resolution}
+          zooms:
+            - ${config.zoom}
+            - 1.0
+    transform:
+        # - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
+        #   agent_id: ${monty.agent_id:agent_id_0}
+        #   sigma: ${config.blur_sigma}
+        #   kernel_size: 0  # 0 means auto-compute from sigma (matches test file line 164)
+        #   sensor_ids:
+        #     - patch
+        - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+          agent_id: ${monty.agent_id:agent_id_0}
+          sensor_ids:
+            - patch
+            - view_finder
+          resolutions: 
+          - - ${config.resolution}
+            - ${config.resolution}
+          - - ${config.resolution}
+            - ${config.resolution}
+          world_coord: true
+          zooms:
+          - ${config.zoom}
+          - 1.0
+          get_all_points: true
+          use_semantic_sensor: false
   train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
   train_env_interface_args:
     object_init_sampler:
