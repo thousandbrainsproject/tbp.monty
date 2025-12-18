@@ -116,11 +116,16 @@ class AddNoiseToRawDepthImage(Transform):
     def __call__(
         self, observations: Observations, ctx: TransformContext
     ) -> Observations:
+        return self.call(observations, rng=ctx.rng)
+
+    def call(
+        self, observations: Observations, rng: np.random.RandomState
+    ) -> Observations:
         """Add gaussian noise to raw sensory input.
 
         Args:
             observations: Observations to modify in place.
-            ctx: The transform context.
+            rng: Random number generator.
 
         Returns:
             Observations, same as input, with added gaussian noise to depth values.
@@ -131,7 +136,7 @@ class AddNoiseToRawDepthImage(Transform):
         # loop over sensor modules
         for sm in observations[self.agent_id].keys():
             if "depth" in observations[self.agent_id][sm].keys():
-                noise = ctx.rng.normal(
+                noise = rng.normal(
                     0,
                     self.sigma,
                     observations[self.agent_id][sm]["depth"].shape,
