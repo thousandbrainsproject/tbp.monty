@@ -1,6 +1,6 @@
 ---
 title: Object Behaviors
-description: Our theory on how object behaviors are represented, learned, and inferred.
+description: Our theory on how object behaviors are represented, learned, and inferred
 ---
 
 > [!NOTE]
