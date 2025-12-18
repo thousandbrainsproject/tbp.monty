@@ -70,6 +70,7 @@ class EnvironmentInterface:
         env: An instance of a class that implements :class:`EmbodiedEnvironment`.
         motor_system: :class:`MotorSystem`
         rng: Random number generator to use.
+        seed: The configured random seed.
         transform: Callable used to transform the observations returned by
             the environment.
 
@@ -86,7 +87,12 @@ class EnvironmentInterface:
     """
 
     def __init__(
-        self, env: EmbodiedEnvironment, motor_system: MotorSystem, rng, transform=None
+        self,
+        env: EmbodiedEnvironment,
+        motor_system: MotorSystem,
+        rng,
+        seed: int,
+        transform=None,
     ):
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
@@ -95,6 +101,7 @@ class EnvironmentInterface:
         self.env = env
         self.motor_system = motor_system
         self.rng = rng
+        self.seed = seed
         self.transform = transform
         if self.transform is not None:
             for t in self.transform:
@@ -235,13 +242,14 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             raise TypeError("Object names should be a list or dictionary")
         self.create_semantic_mapping()
 
-        self.object_init_sampler = object_init_sampler
-        self.object_init_sampler.rng = self.rng
-        self.object_params = self.object_init_sampler()
-        self.current_object = 0
-        self.n_objects = len(self.object_names)
         self.episodes = 0
         self.epochs = 0
+        self.object_init_sampler = object_init_sampler
+        self.object_params = self.object_init_sampler(
+            self.seed, self.epochs, self.episodes
+        )
+        self.current_object = 0
+        self.n_objects = len(self.object_names)
         self.primary_target = None
         self.consistent_child_objects = None
         self.parent_to_child_mapping = (
@@ -257,18 +265,20 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
     def post_episode(self):
         super().post_episode()
-        self.object_init_sampler.post_episode()
-        self.object_params = self.object_init_sampler()
-        self.cycle_object()
         self.episodes += 1
+        self.object_params = self.object_init_sampler(
+            self.seed, self.epochs, self.episodes
+        )
+        self.cycle_object()
 
     def pre_epoch(self):
         self.change_object_by_idx(0)
 
     def post_epoch(self):
         self.epochs += 1
-        self.object_init_sampler.post_epoch()
-        self.object_params = self.object_init_sampler()
+        self.object_params = self.object_init_sampler(
+            self.seed, self.epochs, self.episodes
+        )
 
     def create_semantic_mapping(self):
         """Create a unique semantic ID (positive integer) for each object.

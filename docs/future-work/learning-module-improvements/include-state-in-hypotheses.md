@@ -10,7 +10,7 @@ contributor:
 status: open
 ---
 
-This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/recent-progress/object-behaviors.md#implementation-in-monty).
+This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/object-behaviors.md#implementation-in-monty).
 
 Once we [integrate state into the models learned in LMs](include-state-in-models.md), we will also need to add state to our hypotheses to infer the state the object is in.
 

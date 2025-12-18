@@ -10,7 +10,7 @@ contributor: jadhanna2000
 status: paused
 ---
 
-This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/recent-progress/object-behaviors.md#implementation-in-monty).
+This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/object-behaviors.md#implementation-in-monty).
 
 We can test Monty's ability to model object behaviors with successively more difficult tasks:
 

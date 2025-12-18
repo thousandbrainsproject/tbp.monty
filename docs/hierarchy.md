@@ -60,17 +60,17 @@
 # contributing: Contributing
 - [why-contribute](contributing/why-contribute.md)
 - [contributing](contributing/contributing.md)
-- [documentation](contributing/documentation.md)
-  - [future-work-widget-metadata](contributing/documentation/future-work-widget-metadata.md)
-- [contributing-tutorials](contributing/contributing-tutorials.md)
-- [comment-on-issues](contributing/comment-on-issues.md)
-- [request-for-comments-rfc](contributing/request-for-comments-rfc.md)
 - [pull-requests](contributing/pull-requests.md)
   - [contributor-license-agreement](contributing/pull-requests/contributor-license-agreement.md)
   - [pull-request-flow](contributing/pull-requests/pull-request-flow.md)
   - [reviewing-a-pull-request](contributing/pull-requests/reviewing-a-pull-request.md)
 - [ways-to-contribute-to-code](contributing/ways-to-contribute-to-code.md)
   - [identify-an-issue-to-work-on](contributing/ways-to-contribute-to-code/identify-an-issue-to-work-on.md)
+- [documentation](contributing/documentation.md)
+  - [future-work-widget-metadata](contributing/documentation/future-work-widget-metadata.md)
+- [contributing-tutorials](contributing/contributing-tutorials.md)
+- [comment-on-issues](contributing/comment-on-issues.md)
+- [request-for-comments-rfc](contributing/request-for-comments-rfc.md)
 - [style-guide](contributing/style-guide.md)
   - [code-style-guide](contributing/style-guide/code-style-guide.md)
   - [typing-guide](contributing/style-guide/typing-guide.md)
@@ -83,6 +83,11 @@
 - [our-licence-and-patent-pledge-explained](community/our-licence-and-patent-pledge-explained.md)
 - [tbp-based-papers](community/tbp-based-papers.md)
 - [project-showcase](community/project-showcase.md)
+
+# theory: Neuroscience Theory
+- [theory-overview](theory/theory-overview.md)
+- [compositional-models](theory/compositional-models.md)
+- [object-behaviors](theory/object-behaviors.md)
 
 # future-work: Future Work
 - [project-roadmap](future-work/project-roadmap.md)
@@ -169,8 +174,4 @@
   - [organize-local-meetup](future-work/oss-communication-improvements/organize-local-meetup.md)
   - [organize-start-podcast-series](future-work/oss-communication-improvements/organize-start-podcast-series.md)
   - [robust-docs-preview-cleanup](future-work/oss-communication-improvements/robust-docs-preview-cleanup.md)
-# theory: Neuroscience Theory
-- [theory-overview](theory/theory-overview.md)
-- [recent-progress](theory/recent-progress.md)
-  - [object-behaviors](theory/recent-progress/object-behaviors.md)
 <!-- vale on -->

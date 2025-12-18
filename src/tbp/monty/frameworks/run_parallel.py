@@ -259,6 +259,10 @@ def generate_parallel_eval_configs(
     Create a config for each object and rotation in the experiment. Unlike with parallel
     training episodes, a config is created for each object + rotation separately.
 
+    Notice that no matter what object_init_sampler is specified in the configuration,
+    it is replaced by a Predefined object initializer with parameters that the sampler
+    would generate for that specific episode and epoch.
+
     Args:
         experiment: Config for experiment to be broken into parallel configs.
         name: Name of experiment.
@@ -269,7 +273,6 @@ def generate_parallel_eval_configs(
     sampler = hydra.utils.instantiate(
         experiment.config["eval_env_interface_args"]["object_init_sampler"]
     )
-    sampler.rng = np.random.RandomState(experiment.config["seed"])
     object_names = experiment.config["eval_env_interface_args"]["object_names"]
     # sampler_params = sampler.all_combinations_of_params()
 
@@ -277,8 +280,9 @@ def generate_parallel_eval_configs(
     epoch_count = 0
     episode_count = 0
     n_epochs = experiment.config["n_eval_epochs"]
+    seed = experiment.config["seed"]
 
-    params = sample_params_to_init_args(sampler())
+    params = sample_params_to_init_args(sampler(seed, epoch_count, episode_count))
 
     # Try to mimic the exact workflow instead of guessing
     while epoch_count < n_epochs:
@@ -313,13 +317,12 @@ def generate_parallel_eval_configs(
 
             new_experiments.append(new_experiment)
             episode_count += 1
-            sampler.post_episode()
-            params = sample_params_to_init_args(sampler())
-
-        sampler.post_epoch()
-        params = sample_params_to_init_args(sampler())
+            params = sample_params_to_init_args(
+                sampler(seed, epoch_count, episode_count)
+            )
 
         epoch_count += 1
+        params = sample_params_to_init_args(sampler(seed, epoch_count, episode_count))
 
     return new_experiments
 
@@ -348,7 +351,6 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
     sampler = hydra.utils.instantiate(
         experiment.config["train_env_interface_args"]["object_init_sampler"]
     )
-    sampler.rng = np.random.RandomState(experiment.config["seed"])
     object_names = experiment.config["train_env_interface_args"]["object_names"]
     new_experiments = []
 
