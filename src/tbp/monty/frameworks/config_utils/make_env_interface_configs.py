@@ -9,17 +9,12 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import numpy as np
-
-if TYPE_CHECKING:
-    from numbers import Number
 
 
 def make_sensor_positions_on_grid(
     n_sensors: int,
-    delta: Number = 0.01,
+    delta: float = 0.01,
     order_by: str = "distance",
     add_view_finder: bool = True,
 ) -> np.ndarray:

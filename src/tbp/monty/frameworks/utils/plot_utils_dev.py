@@ -15,7 +15,7 @@ files to segment what is imported.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Sequence, cast
+from typing import Any, Sequence, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,9 +35,6 @@ from tbp.monty.frameworks.utils.plot_utils import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 from tbp.monty.frameworks.utils.transform_utils import numpy_to_scipy_quat
 
-if TYPE_CHECKING:
-    from numbers import Number
-
 
 def plot_graph(
     graph: Data | GraphObjectModel,
@@ -45,7 +42,7 @@ def plot_graph(
     show_edges: bool = False,
     show_trisurf: bool = False,
     show_axticks: bool = False,
-    rotation: Number = -80,
+    rotation: float = -80,
     ax_lim: Sequence | None = None,
     ax: Axes3D | None = None,
 ) -> Figure:

@@ -9,17 +9,12 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import numpy as np
 import quaternion as qt
 import scipy
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.states import State
-
-if TYPE_CHECKING:
-    from numbers import Number
 
 __all__ = [
     "AddNoiseToRawDepthImage",
@@ -527,9 +522,9 @@ class DepthTo3DLocations:
         self,
         depth_patch: np.ndarray,
         semantic_patch: np.ndarray,
-        min_depth_range: Number,
-        default_on_surface_th: Number,
-    ) -> tuple[Number, bool]:
+        min_depth_range: float,
+        default_on_surface_th: float,
+    ) -> tuple[float, bool]:
         """Return a depth threshold if we have a bimodal depth distribution.
 
         If the depth values are in a large enough range (> min_depth_range) we may
@@ -585,7 +580,7 @@ class DepthTo3DLocations:
         self,
         depth_patch: np.ndarray,
         semantic_patch: np.ndarray,
-        default_on_surface_th: Number,
+        default_on_surface_th: float,
     ) -> np.ndarray:
         """Return surface patch information from heuristics on depth patch.
 
