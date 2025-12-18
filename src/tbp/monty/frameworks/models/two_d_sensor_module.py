@@ -138,8 +138,6 @@ class TwoDPoseSM(SensorModule):
         self.debug_visualize = debug_visualize
         self.debug_save_dir = debug_save_dir
         if self.debug_visualize:
-            self.debug_counter = 0
-
             if self.debug_save_dir:
                 self.debug_save_dir = Path(self.debug_save_dir)
             else:
@@ -354,22 +352,22 @@ class TwoDPoseSM(SensorModule):
         )
 
         if self.debug_visualize:
-            angle_deg = np.degrees(edge_orientation)
-            label_text = f"{angle_deg:.1f}"
             patch_with_debug = draw_2d_pose_on_patch(
-                patch.copy(), edge_orientation, label_text
+                patch.copy(), edge_orientation, label_text=None
             )
 
+            angle_deg = np.degrees(edge_orientation)
             filename = (
                 f"ep{self.episode_counter:02d}_"
                 f"step{self.step_counter:03d}_"
-                f"{self.debug_counter:04d}.png"
+                f"theta{angle_deg:.1f}_"
+                f"coh{coherence:.2f}_"
+                f"str{edge_strength:.2f}.png"
             )
             filepath = self.debug_save_dir / filename
             plt.imsave(filepath, patch_with_debug)
 
             self.step_counter += 1
-            self.debug_counter += 1
 
         if not has_edge:
             state.morphological_features["pose_from_edge"] = False

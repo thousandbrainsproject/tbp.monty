@@ -140,6 +140,7 @@ def compute_edge_features_center_weighted(
     sigma_r: float = 7.0,
     c_min: float = 0.75,
     e_min: float = 0.01,
+    max_center_offset: float | None = None,
 ) -> Tuple[float, float, float]:
     """Compute edge features using center-weighted, global-aware structure tensor.
 
@@ -157,6 +158,10 @@ def compute_edge_features_center_weighted(
         sigma_r: Radial falloff parameter for center weighting (typically radius/2)
         c_min: Minimum coherence threshold to accept edge (0.7-0.8 recommended)
         e_min: Minimum local gradient energy threshold to accept as real edge
+        max_center_offset: Maximum allowed distance from patch center to edge in pixels.
+            If None, Step 4 (center proximity check) is skipped. If a float value is
+            provided, edges that do not pass within this distance of the center are
+            rejected.
 
     Returns:
         Tuple of (edge_strength, coherence, tangent_theta):
@@ -221,7 +226,27 @@ def compute_edge_features_center_weighted(
     gradient_theta = 0.5 * np.arctan2(2.0 * Jxy_bar, (Jxx_bar - Jyy_bar + EPSILON))
     tangent_theta = gradient_to_tangent_angle(gradient_theta)
 
-    # Step 4: Energy and coherence rejection
+    # Step 4: Check if edge passes near patch center
+    if max_center_offset is not None:
+        # Normal direction of edge
+        nx = np.cos(gradient_theta)
+        ny = np.sin(gradient_theta)
+
+        # Offsets from center (rows, cols already computed earlier)
+        dr = rows - r0
+        dc = cols - c0
+
+        # Signed distance of each pixel to the estimated line
+        dist_normal = nx * dc + ny * dr
+
+        # Weighted mean distance (use same weights as for tensor)
+        d_center = np.sum(w * dist_normal) / (total_weight + EPSILON)
+
+        if abs(d_center) > max_center_offset:
+            # Edge does not pass close enough to the center
+            return 0.0, 0.0, 0.0
+
+    # Step 5: Energy and coherence rejection
     # Compute local gradient energy (using total weight as proxy)
     # Area of circular window: π * radius²
     area_window = np.pi * radius**2
@@ -463,25 +488,11 @@ def draw_2d_pose_on_patch(
         tangent_end_x = int(center_x + arrow_length * np.cos(edge_direction))
         tangent_end_y = int(center_y + arrow_length * np.sin(edge_direction))
 
-        normal_direction = edge_direction + np.pi / 2
-        normal_length = arrow_length * 0.7
-        normal_end_x = int(center_x + normal_length * np.cos(normal_direction))
-        normal_end_y = int(center_y + normal_length * np.sin(normal_direction))
-
         cv2.arrowedLine(
             patch_with_pose,
             (center_x, center_y),
             (tangent_end_x, tangent_end_y),
             tangent_color,
-            thickness=3,
-            tipLength=0.3,
-        )
-
-        cv2.arrowedLine(
-            patch_with_pose,
-            (center_x, center_y),
-            (normal_end_x, normal_end_y),
-            normal_color,
             thickness=3,
             tipLength=0.3,
         )
