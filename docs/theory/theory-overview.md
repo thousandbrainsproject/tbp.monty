@@ -1,5 +1,5 @@
 ---
-title: Neuroscience Theory - Overview
+title: Theory Overview
 description: Intro page to the underlying theory of this project.
 ---
 
