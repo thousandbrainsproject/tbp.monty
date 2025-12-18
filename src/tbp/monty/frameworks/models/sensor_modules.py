@@ -15,7 +15,7 @@ from enum import Enum
 from typing import Any, ClassVar, Protocol, TypedDict
 
 import numpy as np
-import quaternion
+import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
@@ -47,7 +47,7 @@ class SnapshotTelemetry:
         self.poses = []
 
     def raw_observation(
-        self, raw_observation, rotation: quaternion.quaternion, position: np.ndarray
+        self, raw_observation, rotation: qt.quaternion, position: np.ndarray
     ):
         """Record a snapshot of a raw observation and its pose information.
 
@@ -59,7 +59,7 @@ class SnapshotTelemetry:
         self.raw_observations.append(raw_observation)
         self.poses.append(
             dict(
-                sm_rotation=quaternion.as_float_array(rotation),
+                sm_rotation=qt.as_float_array(rotation),
                 sm_location=np.array(position),
             )
         )
