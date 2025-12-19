@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -89,6 +91,7 @@ class NoResetEvidenceLMTest(BaseGraphTest):
             pretrained_models = train_exp.model.learning_modules[0].state_dict()
             eval_exp.model.learning_modules[0].load_state_dict(pretrained_models)
 
+            eval_exp.experiment_mode = ExperimentMode.EVAL
             eval_exp.model.set_experiment_mode("eval")
             eval_exp.pre_epoch()
 

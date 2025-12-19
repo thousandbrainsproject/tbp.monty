@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -194,6 +196,7 @@ class GraphLearningTest(BaseGraphTest):
     def test_can_run_train_episode(self):
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.run_episode()
@@ -201,6 +204,7 @@ class GraphLearningTest(BaseGraphTest):
     def test_right_data_in_buffer(self):
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
@@ -250,6 +254,7 @@ class GraphLearningTest(BaseGraphTest):
     def test_can_run_eval_episode(self):
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode("eval")
             exp.pre_epoch()
             exp.run_episode()
@@ -257,6 +262,7 @@ class GraphLearningTest(BaseGraphTest):
     def test_can_run_eval_episode_with_surface_agent(self):
         exp = hydra.utils.instantiate(self.surface_agent_eval_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode("eval")
             exp.pre_epoch()
             exp.run_episode()
@@ -625,6 +631,7 @@ class GraphLearningTest(BaseGraphTest):
         """
         exp = hydra.utils.instantiate(self.feature_pred_time_out_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             for e in range(6):
                 if e % 2 == 0:
@@ -685,6 +692,7 @@ class GraphLearningTest(BaseGraphTest):
         # anymore. Setting min_steps would also avoid this, probably.
         exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             # Overwrite target with a false name to test confused logging.
@@ -1218,6 +1226,7 @@ class GraphLearningTest(BaseGraphTest):
         with exp:
             objects = [self.fake_obs_learn, self.fake_obs_house_3d]
             trained_modules = self.get_5lm_gm_with_fake_objects(objects)
+            exp.experiment_mode = ExperimentMode.EVAL
             monty = exp.model
             monty.set_experiment_mode("eval")
             monty.learning_modules = [tm.learning_module for tm in trained_modules]

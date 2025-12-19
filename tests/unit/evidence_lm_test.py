@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -313,6 +315,7 @@ class EvidenceLMTest(BaseGraphTest):
         """Test that pre_episode raises an error when no object is present."""
         exp = hydra.utils.instantiate(self.fixed_actions_evidence_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.env._env.remove_all_objects()
@@ -458,6 +461,7 @@ class EvidenceLMTest(BaseGraphTest):
         # anymore. Setting min_steps would also avoid this, probably.
         exp = hydra.utils.instantiate(self.fixed_actions_evidence_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             # Overwrite target with a false name to test confused logging.
@@ -1116,6 +1120,7 @@ class EvidenceLMTest(BaseGraphTest):
 
             # TODO: Don't manually fake evaluation. Run this experiment
             # as normal and create a follow-up experiment for second evaluation.
+            exp.experiment_mode = ExperimentMode.EVAL
             exp.logger_handler.pre_eval(exp.logger_args)
             exp.model.set_experiment_mode("eval")
             for _ in range(exp.n_eval_epochs):
@@ -1218,6 +1223,7 @@ class EvidenceLMTest(BaseGraphTest):
         pprint("...parsing experiment...")
         exp = hydra.utils.instantiate(self.five_lm_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.env._env.remove_all_objects()

@@ -10,6 +10,8 @@
 
 import pytest
 
+from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -266,6 +268,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.dist_poor_initial_view_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
@@ -312,6 +315,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
@@ -368,6 +372,7 @@ class PolicyTest(unittest.TestCase):
 
             # Manually go through evaluation (i.e. methods in .evaluate()
             # and run_epoch())
+            exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode("eval")
             exp.pre_epoch()
             exp.pre_episode()
@@ -424,6 +429,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.dist_fixed_action_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
 
@@ -531,6 +537,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.surf_fixed_action_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
 
@@ -669,6 +676,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.rotated_cube_view_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
