@@ -115,7 +115,7 @@ class HabitatTransformTest(unittest.TestCase):
         )
 
         # Check that the same indices get set to max_depth and only max_depth
-        transformed_obs = transform(observation_copy)
+        transformed_obs = transform.call(observation_copy)
         unique_0_replacements = np.unique(
             transformed_obs[AGENT_ID][SENSOR_ID][Modality("depth")][m]
         )
@@ -126,7 +126,7 @@ class HabitatTransformTest(unittest.TestCase):
         resolution = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("depth")].shape
         # Replace 0 depth with max depth
         md_transform = MissingToMaxDepth(agent_id=AGENT_ID, max_depth=100)
-        md_obs = md_transform(TEST_OBS)
+        md_obs = md_transform.call(TEST_OBS)
         # Test transform using local coordinates
         transform = DepthTo3DLocations(
             agent_id=AGENT_ID,
@@ -134,7 +134,7 @@ class HabitatTransformTest(unittest.TestCase):
             resolutions=[resolution],
             use_semantic_sensor=True,
         )
-        obs = transform(md_obs)
+        obs = transform.call(md_obs)
         module_obs = obs[AGENT_ID][SENSOR_ID]
         depth_obs = module_obs[Modality("depth")]
         semantic_obs = module_obs[Modality("semantic")]
@@ -174,7 +174,7 @@ class HabitatTransformTest(unittest.TestCase):
     ):
         resolution = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("depth")].shape
         md_transform = MissingToMaxDepth(agent_id=AGENT_ID, max_depth=100)
-        md_obs = md_transform(TEST_OBS)
+        md_obs = md_transform.call(TEST_OBS)
 
         mock_state = ProprioceptiveState(
             {
@@ -200,7 +200,7 @@ class HabitatTransformTest(unittest.TestCase):
             use_semantic_sensor=True,
         )
 
-        obs = transform(md_obs, state=mock_state)
+        obs = transform.call(md_obs, state=mock_state)
         transformed_sensor_obs = obs[AGENT_ID][SENSOR_ID]
         depth_obs = transformed_sensor_obs[Modality("depth")]
         semantic_obs = transformed_sensor_obs["semantic"]

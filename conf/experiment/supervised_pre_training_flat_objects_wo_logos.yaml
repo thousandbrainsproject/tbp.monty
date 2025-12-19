@@ -32,5 +32,5 @@ config:
       data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
   train_env_interface_args:
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
       rotations: ${benchmarks.rotations_all}

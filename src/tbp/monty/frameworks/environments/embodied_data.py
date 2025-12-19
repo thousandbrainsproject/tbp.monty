@@ -27,6 +27,7 @@ from tbp.monty.frameworks.actions.actions import (
     SetSensorRotation,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environment_utils.transforms import TransformContext
 from tbp.monty.frameworks.environments.embodied_environment import (
     EmbodiedEnvironment,
     ObjectID,
@@ -71,6 +72,7 @@ class EnvironmentInterface:
         env: An instance of a class that implements :class:`EmbodiedEnvironment`.
         motor_system: :class:`MotorSystem`
         rng: Random number generator to use.
+        seed: The configured random seed.
         transform: Callable used to transform the observations returned by
             the environment.
 
@@ -87,7 +89,12 @@ class EnvironmentInterface:
     """
 
     def __init__(
-        self, env: EmbodiedEnvironment, motor_system: MotorSystem, rng, transform=None
+        self,
+        env: EmbodiedEnvironment,
+        motor_system: MotorSystem,
+        rng,
+        seed: int,
+        transform=None,
     ):
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
@@ -96,11 +103,8 @@ class EnvironmentInterface:
         self.env = env
         self.motor_system = motor_system
         self.rng = rng
+        self.seed = seed
         self.transform = transform
-        if self.transform is not None:
-            for t in self.transform:
-                if t.needs_rng:
-                    t.rng = self.rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -140,11 +144,12 @@ class EnvironmentInterface:
     def apply_transform(
         self, transform, observation: Observations, state: ProprioceptiveState
     ) -> Observations:
+        ctx = TransformContext(rng=self.rng, state=state)
         if isinstance(transform, Iterable):
             for t in transform:
-                observation = t(observation, state)
+                observation = t(observation, ctx)
         else:
-            observation = transform(observation, state)
+            observation = transform(observation, ctx)
         return observation
 
     def step(self, actions: Sequence[Action]):
@@ -209,8 +214,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
                 num_distractors : the number of distractor objects to add to the
                     environment
             object_init_sampler: Function that returns dict with position, rotation,
-                and scale of objects when re-initializing. To keep configs
-                serializable, default is set to :class:`DefaultObjectInitializer`.
+                and scale of objects when re-initializing.
             parent_to_child_mapping: dictionary mapping parent objects to their child
                 objects. Used for logging.
             *args: ?
@@ -239,13 +243,14 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             raise TypeError("Object names should be a list or dictionary")
         self.create_semantic_mapping()
 
-        self.object_init_sampler = object_init_sampler
-        self.object_init_sampler.rng = self.rng
-        self.object_params = self.object_init_sampler()
-        self.current_object = 0
-        self.n_objects = len(self.object_names)
         self.episodes = 0
         self.epochs = 0
+        self.object_init_sampler = object_init_sampler
+        self.object_params = self.object_init_sampler(
+            self.seed, self.epochs, self.episodes
+        )
+        self.current_object = 0
+        self.n_objects = len(self.object_names)
         self.primary_target = None
         self.consistent_child_objects = None
         self.parent_to_child_mapping = (
@@ -261,18 +266,20 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
     def post_episode(self):
         super().post_episode()
-        self.object_init_sampler.post_episode()
-        self.object_params = self.object_init_sampler()
-        self.cycle_object()
         self.episodes += 1
+        self.object_params = self.object_init_sampler(
+            self.seed, self.epochs, self.episodes
+        )
+        self.cycle_object()
 
     def pre_epoch(self):
         self.change_object_by_idx(0)
 
     def post_epoch(self):
         self.epochs += 1
-        self.object_init_sampler.post_epoch()
-        self.object_params = self.object_init_sampler()
+        self.object_params = self.object_init_sampler(
+            self.seed, self.epochs, self.episodes
+        )
 
     def create_semantic_mapping(self):
         """Create a unique semantic ID (positive integer) for each object.
@@ -834,10 +841,6 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        if self.transform is not None:
-            for t in self.transform:
-                if t.needs_rng:
-                    t.rng = self.rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -939,10 +942,6 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        if self.transform is not None:
-            for t in self.transform:
-                if t.needs_rng:
-                    t.rng = self.rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -1040,10 +1039,6 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        if self.transform is not None:
-            for t in self.transform:
-                if t.needs_rng:
-                    t.rng = self.rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None

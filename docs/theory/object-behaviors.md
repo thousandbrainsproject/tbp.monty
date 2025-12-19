@@ -2,6 +2,10 @@
 title: Object Behaviors
 description: Our theory on how object behaviors are represented, learned, and inferred.
 ---
+
+> [!NOTE]
+> This part of the theory is relatively fresh and hasn't been published in a journal yet. To follow how we developed the ideas outlined here, check out [this YouTube playlist](https://www.youtube.com/playlist?list=PLXpTU6oIscrn_v8pVxwJKnfKPpKSMEUvU)
+
 # Extending Monty to Learn Behaviors of Objects
 
 The world is both static and dynamic. Some features of the world have a fixed arrangement relative to each other and don’t change over time. For example, the arrangement of edges and surfaces of a coffee cup or the arrangement of rooms in a house do not change from moment to moment. Sometimes, however, the arrangement of features in the world changes over time and in predictable ways. For example, a stapler does not have a fixed morphology; it can open and close and emit staples, a traffic light can change color, a human can move its limbs to run, and a lever may rotate, causing a door to open. We refer to these changes as object behaviors.
@@ -12,7 +16,7 @@ In the TBT, static objects are learned as a set of features at poses (location a
 
 # Learning Object Behaviors is an Extension of the Current Theory
 
-![Behavior models (right) use an analogous mechanism to morphology models (left). The difference is that their input represents features that are changing instead of features that are static. Behavior models are also sequences (not illustrated here).](../../figures/theory/simplified_behavior_model.png)
+![Behavior models (right) use an analogous mechanism to morphology models (left). The difference is that their input represents features that are changing instead of features that are static. Behavior models are also sequences (not illustrated here).](../figures/theory/simplified_behavior_model.png)
 
 To learn and represent object behaviors, we use the same mechanism as we use for learning static structure. The main difference is what the input features represent. In the static models, the features are also static, such as the edge of a mug. In the dynamic models, the features represent changes, such as the moving edge of a stapler top as it opens. Static features are stored at locations in static/morphology models, and changing features are similarly stored at locations in behavior models. Additionally, behaviors occur over time. As a stapler opens, the locations where moving edges occur change over time. Therefore, behavior models are sequences of changes at locations.
 
@@ -30,7 +34,7 @@ Models of dynamic structure consist of sequences of behavioral elements over tim
 
 The figure below illustrates how state and time relate to the two types of models. The behavioral model on the left stores where changes occur over time. It does not represent the morphology of the object exhibiting the behavior. It represents behaviors independent of any particular object. The morphology model on the right stores where static features occur for a particular object. It may have learned several morphology models for the object, such as an open and closed stapler, but on its own, it doesn’t know how the stapler moves. The concept of state applies to both models. On the left, state represents where the model is in a sequence. On the right, state represents different learned morphologies for an object.
 
-![Both behavior (left) and morphology models can be state-conditioned. This means that depending on the state, different features/changes are expected at different locations. State might be traversed through passing time or by applying actions.](../../figures/theory/state_conditioning.png#width=600px)
+![Both behavior (left) and morphology models can be state-conditioned. This means that depending on the state, different features/changes are expected at different locations. State might be traversed through passing time or by applying actions.](../figures/theory/state_conditioning.png#width=600px)
  
 As we have previously demonstrated [2, 7, 10], cortical columns can vote to quickly reach a consensus of the static object being observed. The same mechanism applies to behaviors. Multiple columns can vote to quickly infer behaviors.  
 
@@ -46,7 +50,7 @@ We propose that the same mechanism applies to behavioral models. Specifically, a
 
 Note that the parent object, on the right in the figure, does not know if the child object is a morphology or behavioral object.
 
-![Analogous to learning compositional models of static objects, behaviors can be associated with locations on morphology models using hierarchical connections between two LMs with co-located inputs. This way, a detected behavior can bias the object (bottom-up) and a detected object can inform expected behaviors (top-down). ](../../figures/theory/associating_behavior_with_morphology.png#width=500px)
+![Analogous to learning compositional models of static objects, behaviors can be associated with locations on morphology models using hierarchical connections between two LMs with co-located inputs. This way, a detected behavior can bias the object (bottom-up) and a detected object can inform expected behaviors (top-down). ](../figures/theory/associating_behavior_with_morphology.png#width=500px)
 
 The above examples illustrate that the two modeling systems, morphology/static and behavior/dynamic are similar and share many mechanisms and attributes. This commonality makes it easier to understand and implement the two systems. 
 
@@ -58,11 +62,11 @@ Previous work at Numenta showed how any layer of neurons can learn high-order se
 
 Matrix cells in the thalamus could encode the time passed since the last event and broadcast this signal widely across the neocortex. Matrix cells project to L1, where they form synapses on the apical dendrites of L3 and L5 cells, allowing the behavioral model to encode the timing between behavioral states. The static model does not require time but could still learn state/context-conditioned models using the same mechanism. For instance, the stapler's morphology is different depending on whether it is in the opened or closed state.
 
-![In addition to the local sensory and movement input, the column receives a more global time input to L1. This signal represents the amount of time passed since the last event. It is sent widely/globally and therefore synchronizes learning between many columns. A detected event in one learning module can reset the interval timer for all of them.](../../figures/theory/timing_input.png#width=500px)
+![In addition to the local sensory and movement input, the column receives a more global time input to L1. This signal represents the amount of time passed since the last event. It is sent widely/globally and therefore synchronizes learning between many columns. A detected event in one learning module can reset the interval timer for all of them.](../figures/theory/timing_input.png#width=500px)
 
 During inference, the model can be used to speed up or slow down the global time signal. If input features arrive earlier than expected, the interval timer is sped up. If they arrive later than expected, the interval timer is slowed down. This allows for recognizing the same behavior at different speeds.
 
-> [!NOTE] For a more detailed description of the time mechanism see our future work page on the [interval timer](../../future-work/cmp-hierarchy-improvements/global-interval-timer.md).
+> [!NOTE] For a more detailed description of the time mechanism see our future work page on the [interval timer](../future-work/cmp-hierarchy-improvements/global-interval-timer.md).
 
 
 # Implementation in Monty
@@ -73,13 +77,13 @@ For behavior models, we propose using the same mechanism. The main difference is
 
 For a concrete implementation in tbp.monty, we need to add a capability to sensor modules to detect changes. Those could, for example, be local optic flow (indicating movement of the object) or features appearing or disappearing. Analogous to static features, these changes would be communicated to learning modules as part of the CMP messages. The static mechanisms are what we have implemented to date. We would use the same mechanisms for learning and inference for the behavior model, only that the LM receives input from an SM that detects changes.
 
-![As the modeling mechanism of behaviors is analogous to that of static morphology, the main update to Monty would be to introduce a new change-detecting sensor module (SM). The LM that receives input from this new SM will learn behavior models.](../../figures/theory/monty_implementation_change_SM.png)
+![As the modeling mechanism of behaviors is analogous to that of static morphology, the main update to Monty would be to introduce a new change-detecting sensor module (SM). The LM that receives input from this new SM will learn behavior models.](../figures/theory/monty_implementation_change_SM.png)
 
 Additionally, models require a temporal input as well as conditioning the state of the model based on this input. This could be implemented as multiple graphs or sets of points in the same reference frame that are traversed as time passes. There are many possible ways to achieve this in code. The important thing is that the state in the temporal sequence can condition the changes to expect at a location.  
 
 The inferred state of models is then communicated in the CMP output of learning modules, both for voting and for passing it as input to the higher-level LM.
 
-![The CMP message should contain information about the inferred state of objects in addition to the existing information on model location, orientation, and ID.](../../figures/theory/state_in_CMP.png#width=400px)
+![The CMP message should contain information about the inferred state of objects in addition to the existing information on model location, orientation, and ID.](../figures/theory/state_in_CMP.png#width=400px)
 
 Recognizing a behavior model in practice will likely depend more strongly on voting between multiple learning modules (at least for more complex behaviors where one sensor patch may not be able to observe enough of the behavioral state on its own before it changes). The voting process for behavior models would work analogously to the voting process already implemented for object models.
 
@@ -97,18 +101,18 @@ We can start with 1 and 2 for the first prototype. 3 should fall out of that sol
 
 The following items focus on concrete steps to get capabilities 1-3 into Monty.
 
-* [New type of SM for change detection.](../../future-work/sensor-module-improvements/change-detecting-sm.md)
+* [New type of SM for change detection.](../future-work/sensor-module-improvements/change-detecting-sm.md)
 * Add 'state' to Monty's model representation.
-  * [Add state conditioning to models learned in LMs.](../../future-work/learning-module-improvements/include-state-in-models.md)
-  * [Extend hypothesis representation and updates to incorporate model state.](../../future-work/learning-module-improvements/include-state-in-hypotheses.md)
-  * [Extend the CMP output to incorporate model state.](../../future-work/cmp-hierarchy-improvements/include-state-in-CMP.md)
-  * [Update the voting algorithm to take model state into account.](../../future-work/voting-improvements/vote-on-state.md)
+  * [Add state conditioning to models learned in LMs.](../future-work/learning-module-improvements/include-state-in-models.md)
+  * [Extend hypothesis representation and updates to incorporate model state.](../future-work/learning-module-improvements/include-state-in-hypotheses.md)
+  * [Extend the CMP output to incorporate model state.](../future-work/cmp-hierarchy-improvements/include-state-in-CMP.md)
+  * [Update the voting algorithm to take model state into account.](../future-work/voting-improvements/vote-on-state.md)
 * Add time interval representation to Monty
-  * [Add a global interval timer and provide its input to LMs.](../../future-work/cmp-hierarchy-improvements/global-interval-timer.md)
-  * [Add the ability to detect significant events to LMs and use them to reset the global interval timer.](../../future-work/learning-module-improvements/event-detection-to-reset-timer.md)
-  * [Add the ability for LMs to adjust the speed of the global interval timer.](../../future-work/learning-module-improvements/speed-detection-to-adjust-timer.md)
+  * [Add a global interval timer and provide its input to LMs.](../future-work/cmp-hierarchy-improvements/global-interval-timer.md)
+  * [Add the ability to detect significant events to LMs and use them to reset the global interval timer.](../future-work/learning-module-improvements/event-detection-to-reset-timer.md)
+  * [Add the ability for LMs to adjust the speed of the global interval timer.](../future-work/learning-module-improvements/speed-detection-to-adjust-timer.md)
 * Object behavior testbed
-  * [Set up a basic test environment to learn and infer behaviors under various conditions.](../../future-work/environment-improvements/object-behavior-test-bed.md)
+  * [Set up a basic test environment to learn and infer behaviors under various conditions.](../future-work/environment-improvements/object-behavior-test-bed.md)
   * Set up a basic Monty configuration with one change-detecting SM and one static feature SM, and connect it to two LMs. Evaluate Monty's performance on the object behavior test bed.
 
 See [this video](https://www.youtube.com/watch?v=3TwG6qyvEs4) for a walkthrough of the above capabilities and action items.

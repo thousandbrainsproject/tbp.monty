@@ -1366,9 +1366,9 @@ def plot_graph_mismatch(
     #         # internal estimates are
     #         corrected_current_loc = current_env_position - np.array(
     #             [0, 1.5, 0]
-    #         )  # TODO
-    #         # remove hard-coding of initial object position; note don't need to
-    #         # rotate because already fully in environmental-coordinates
+    #         )  # TODO: remove hard-coding of initial object position
+    #         # note don't need to rotate because already fully in
+    #         # environmental-coordinates
     #         gt_graph = gt_rotation.apply(gt_graph) - corrected_current_loc
     #         # Convert from environmental coordinates to the learned coordinate of
     #         # 2nd object

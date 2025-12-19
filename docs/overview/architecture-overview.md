@@ -3,6 +3,8 @@ title: Architecture Overview
 ---
 There are three major components that play a role in the architecture: sensors, learning modules, and actuators [\[1\]](#footnote1). These three components are tied together by a common messaging protocol, which we call the cortical messaging protocol (CMP). Due to the unified messaging protocol, the inner workings of each individual component can be quite varied as long as they have the appropriate interfaces [\[2\]](#footnote2).
 
+![Monty architecture overview. The basic components of Monty are sensor modules and learning modules. They communicate using the cortical messaging protocol. This high-level overview does not show the motor system, which receives movement outputs and executes them.](../figures/overview/overview_high_level.png)
+
 Those three components and the CMP are described in the following sub-sections. For a presentation of all the content in this sections (+a few others), have a look at the recording from our launch symposium:
 
 [2024/12 Overview of the TBP and the Monty Implementation](https://www.youtube.com/watch?v=lqFZKlsb8Dc)

@@ -10,7 +10,7 @@ contributor:
 status: open
 ---
 
-This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/recent-progress/object-behaviors.md#implementation-in-monty). For more details on time representations and processing, see our future work page on the [interval timer](../cmp-hierarchy-improvements/global-interval-timer.md).
+This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/object-behaviors.md#implementation-in-monty). For more details on time representations and processing, see our future work page on the [interval timer](../cmp-hierarchy-improvements/global-interval-timer.md).
 
 The LM has expectations of when it will sense the next feature at the current location. This is stored as the interval duration that came in from the global interval timer during learning at the same time as the sensory input.
 

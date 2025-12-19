@@ -98,7 +98,6 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: gm_eval_runs
-      log_parallel_wandb: false
     monty_config:
       sensor_module_configs:
         sensor_module_0:
@@ -492,7 +491,7 @@ experiment:
       - mug
       - banana
       object_init_sampler:
-        _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+        _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
         rotations:
         - ${np.array:[0, 15, 30]}
     eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}

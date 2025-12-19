@@ -172,7 +172,8 @@ class EmbodiedDataTest(unittest.TestCase):
             ).test.config.monty.motor_system.motor_system_args.policy_args
 
     def test_embodied_env_interface_dist(self):
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
         base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
         base_policy_cfg_dist["agent_id"] = AGENT_ID
         motor_system_dist = MotorSystem(
@@ -183,6 +184,7 @@ class EmbodiedDataTest(unittest.TestCase):
             env,
             rng=rng,
             motor_system=motor_system_dist,
+            seed=seed,
         )
 
         for i in range(1, NUM_STEPS):
@@ -210,7 +212,8 @@ class EmbodiedDataTest(unittest.TestCase):
 
     # @unittest.skip("debugging")
     def test_embodied_env_interface_abs(self):
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
         base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
 
@@ -222,6 +225,7 @@ class EmbodiedDataTest(unittest.TestCase):
             env,
             rng=rng,
             motor_system=motor_system_abs,
+            seed=seed,
         )
 
         for i in range(1, NUM_STEPS):
@@ -249,7 +253,8 @@ class EmbodiedDataTest(unittest.TestCase):
 
     # @unittest.skip("debugging")
     def test_embodied_env_interface_dist_states(self):
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
         base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
         base_policy_cfg_dist["agent_id"] = AGENT_ID
 
@@ -258,7 +263,7 @@ class EmbodiedDataTest(unittest.TestCase):
         )
         env = FakeEnvironmentRel()
         env_interface_dist = EnvironmentInterface(
-            env=env, rng=rng, motor_system=motor_system_dist
+            env=env, rng=rng, motor_system=motor_system_dist, seed=seed
         )
 
         for i, item in enumerate(env_interface_dist):
@@ -270,7 +275,8 @@ class EmbodiedDataTest(unittest.TestCase):
 
     # @unittest.skip("debugging")
     def test_embodied_env_interface_abs_states(self):
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
 
         base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
@@ -280,7 +286,7 @@ class EmbodiedDataTest(unittest.TestCase):
         )
         env = FakeEnvironmentAbs()
         env_interface_abs = EnvironmentInterface(
-            env=env, rng=rng, motor_system=motor_system_abs
+            env=env, rng=rng, motor_system=motor_system_abs, seed=seed
         )
 
         for i, item in enumerate(env_interface_abs):

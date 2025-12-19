@@ -12,4 +12,4 @@ config:
     run_name: randrot_noise_10simobj_surf_agent
   eval_env_interface_args:
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation

@@ -9,5 +9,5 @@ config:
     run_name: supervised_pre_training_objects_with_logos_lvl3_comp_models
   train_env_interface_args:
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
       rotations: ${benchmarks.rotations_all}

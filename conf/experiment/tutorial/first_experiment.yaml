@@ -34,8 +34,8 @@ config:
   train_env_interface_args:
     object_names:
       - mug
-    # We use the pre-defined PredefinedObjectInitializer to initialize the object.
+    # We use the Predefined object initializer to initialize the object.
     object_init_sampler:
       # Since this is a _target_, Hydra will instantiate this class using the _target_ and any
       # additional arguments you provide.
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined

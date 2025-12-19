@@ -10,7 +10,7 @@ contributor:
 status: open
 ---
 
-This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/recent-progress/object-behaviors.md#implementation-in-monty).
+This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/object-behaviors.md#implementation-in-monty).
 
 To infer object or behavioral state efficiently and communicate it between LMs, we need to add it to the CMP messages. This can be done by updating the CMP definition (currently represented in the unfortunately named `State` class whose name we should probably change in the scope of this).
 

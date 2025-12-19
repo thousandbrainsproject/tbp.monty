@@ -268,6 +268,7 @@ class MontyExperiment:
             **env_interface_args,
             motor_system=self.model.motor_system,
             rng=self.rng,
+            seed=self.config["seed"],
         )
 
         assert env_interface.motor_system is self.model.motor_system

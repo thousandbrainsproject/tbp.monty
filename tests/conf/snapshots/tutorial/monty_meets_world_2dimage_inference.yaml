@@ -73,7 +73,7 @@ experiment:
   config:
     do_train: false
     do_eval: true
-    show_sensor_output: false
+    show_sensor_output: true
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
@@ -101,7 +101,6 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
-      log_parallel_wandb: true
     monty_config:
       motor_system_config:
         motor_system_args:
