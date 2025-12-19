@@ -420,14 +420,14 @@ class Probe(SensorModule):
     def state_dict(self):
         return self._snapshot_telemetry.state_dict()
 
-    def update_state(self, state):
+    def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
-        # TODO: This uses Agent position and rotation as SensorState.
-        # Extract sensor-specific state.
+        sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
         self.state = SensorState(
-            position=state.position,
-            rotation=state.rotation,
+            position=agent.position + sensor.position,
+            rotation=agent.rotation * sensor.rotation,
         )
+        self.motor_only_step = agent.motor_only_step
 
     def step(self, data) -> State | None:
         if self.save_raw_obs and not self.is_exploring:
@@ -631,18 +631,12 @@ class HabitatSM(SensorModule):
 
     def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
-        sensor_position = agent.sensors[
-            SensorID(self.sensor_module_id + ".rgba")
-        ].position
-        self.motor_only_step = agent.motor_only_step
-
-        sensor_rotation = agent.sensors[
-            SensorID(self.sensor_module_id + ".rgba")
-        ].rotation
+        sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
         self.state = SensorState(
-            position=agent.position + sensor_position,
-            rotation=agent.rotation * sensor_rotation,
+            position=agent.position + sensor.position,
+            rotation=agent.rotation * sensor.rotation,
         )
+        self.motor_only_step = agent.motor_only_step
 
     def state_dict(self):
         state_dict = self._snapshot_telemetry.state_dict()

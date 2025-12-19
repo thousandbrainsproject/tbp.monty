@@ -13,6 +13,7 @@ from typing import Any
 import numpy as np
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
     on_object_observation,
 )
@@ -23,6 +24,7 @@ from tbp.monty.frameworks.models.salience.strategies import (
 )
 from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
 from tbp.monty.frameworks.models.states import GoalState, State
+from tbp.monty.frameworks.sensors import SensorID
 
 
 class HabitatSalienceSM(SensorModule):
@@ -61,9 +63,14 @@ class HabitatSalienceSM(SensorModule):
     def state_dict(self):
         return self._snapshot_telemetry.state_dict()
 
-    def update_state(self, state):
-        """Update the state of the sensor module."""
-        self.state = state
+    def update_state(self, agent: AgentState):
+        """Update information about the sensors location and rotation."""
+        sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
+        self.state = SensorState(
+            position=agent.position + sensor.position,
+            rotation=agent.rotation * sensor.rotation,
+        )
+        self.motor_only_step = agent.motor_only_step
 
     def step(self, data) -> State | None:
         """Generate goal states for the current step.

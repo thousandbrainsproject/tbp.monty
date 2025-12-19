@@ -1136,7 +1136,7 @@ class SurfacePolicy(InformedPolicy):
             distance = (
                 depth_at_center
                 - self.desired_object_distance
-                - state[AgentID("agent_id_0")]
+                - state[self.agent_id]
                 .sensors[SensorID(f"{view_sensor_id}.depth")]
                 .position[2]
             )
