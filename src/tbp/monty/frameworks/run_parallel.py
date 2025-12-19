@@ -55,11 +55,9 @@ RE_SINGLE = re.compile(r"^\d+$")  # "N"
 
 
 def mv_files(filenames: Iterable[Path], outdir: Path):
-    outdir = Path(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
-    for f in filenames:
-        src = Path(f)
+    for src in filenames:
         dest = outdir / src.name
 
         if dest.exists():
@@ -68,19 +66,18 @@ def mv_files(filenames: Iterable[Path], outdir: Path):
         src.replace(dest)
 
 
-def cat_files(filenames, outfile):
-    outfile = Path(outfile)
+def cat_files(filenames: Iterable[Path], outfile: Path):
     if outfile.exists():
         print(f"Removing existing file before writing new one: {outfile}")
         outfile.unlink()
 
     with outfile.open("wb") as out_f:
         for file in filenames:
-            with Path(file).open("rb") as in_f:
+            with file.open("rb") as in_f:
                 shutil.copyfileobj(in_f, out_f)
 
 
-def cat_csv(filenames, outfile):
+def cat_csv(filenames: Iterable[Path], outfile: Path):
     dfs = [pd.read_csv(file) for file in filenames]
     df = pd.concat(dfs)
     df.to_csv(outfile, index=False)
@@ -95,8 +92,8 @@ def sample_params_to_init_args(params):
     return new_params
 
 
-def post_parallel_log_cleanup(filenames, outfile, cat_fn):
-    existing_files = [f for f in map(Path, filenames) if f.exists()]
+def post_parallel_log_cleanup(filenames: Iterable[Path], outfile: Path, cat_fn):
+    existing_files = [f for f in filenames if f.exists()]
     if len(existing_files) == 0:
         return
 
@@ -108,8 +105,8 @@ def post_parallel_log_cleanup(filenames, outfile, cat_fn):
         f.unlink(missing_ok=True)
 
 
-def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
-    profile_dirs = [Path(i) / "profile" for i in parallel_dirs]
+def post_parallel_profile_cleanup(parallel_dirs: Iterable[Path], base_dir: Path, mode):
+    profile_dirs = [pdir / "profile" for pdir in parallel_dirs]
 
     episode_csvs = []
     setup_csvs = []
@@ -133,13 +130,13 @@ def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
     post_parallel_log_cleanup(overall_csvs, overall_outfile, cat_fn=cat_csv)
 
 
-def move_reproducibility_data(base_dir, parallel_dirs):
-    outdir = Path(base_dir) / "reproduce_episode_data"
+def move_reproducibility_data(base_dir: Path, parallel_dirs: Iterable[Path]):
+    outdir = base_dir / "reproduce_episode_data"
     if outdir.exists():
         shutil.rmtree(outdir)
 
     outdir.mkdir(parents=True)
-    repro_dirs = [Path(pdir) / "reproduce_episode_data" for pdir in parallel_dirs]
+    repro_dirs = [pdir / "reproduce_episode_data" for pdir in parallel_dirs]
 
     # Headache to accont for the fact that everyone is episode 0
     for cnt, rdir in enumerate(repro_dirs):
@@ -467,14 +464,14 @@ def get_overall_stats(stats):
     return overall_stats
 
 
-def collect_detailed_episodes_names(parallel_dirs):
+def collect_detailed_episodes_names(parallel_dirs: Iterable[Path]) -> list[Path]:
     filenames = []
     for pdir in parallel_dirs:
         filenames.extend((pdir / "detailed_run_stats").glob("*.json"))
     return filenames
 
 
-def post_parallel_eval(experiments: list[Mapping], base_dir: str) -> None:
+def post_parallel_eval(experiments: list[Mapping], base_dir: Path) -> None:
     """Post-execution cleanup after running evaluation in parallel.
 
     Logs are consolidated across parallel runs and saved to disk.
@@ -496,22 +493,22 @@ def post_parallel_eval(experiments: list[Mapping], base_dir: str) -> None:
         if issubclass(handler, DetailedJSONHandler):
             if save_per_episode:
                 filenames = collect_detailed_episodes_names(parallel_dirs)
-                outdir = Path(base_dir) / "detailed_run_stats"
+                outdir = base_dir / "detailed_run_stats"
                 maybe_rename_existing_dir(outdir)
                 post_parallel_log_cleanup(filenames, outdir, cat_fn=mv_files)
             else:
                 filename = "detailed_run_stats.json"
                 filenames = [pdir / filename for pdir in parallel_dirs]
-                outfile = Path(base_dir) / filename
-                maybe_rename_existing_file(Path(outfile))
+                outfile = base_dir / filename
+                maybe_rename_existing_file(outfile)
                 post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
             continue
 
         if issubclass(handler, BasicCSVStatsHandler):
             filename = "eval_stats.csv"
             filenames = [pdir / filename for pdir in parallel_dirs]
-            outfile = Path(base_dir) / filename
-            maybe_rename_existing_file(Path(outfile))
+            outfile = base_dir / filename
+            maybe_rename_existing_file(outfile)
             post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_csv)
             continue
 
@@ -522,7 +519,7 @@ def post_parallel_eval(experiments: list[Mapping], base_dir: str) -> None:
     if experiments[0]["config"]["logging"]["python_log_to_file"]:
         filename = "log.txt"
         filenames = [pdir / filename for pdir in parallel_dirs]
-        outfile = Path(base_dir) / filename
+        outfile = base_dir / filename
         post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
 
     exp = hydra.utils.instantiate(experiments[0])
@@ -533,7 +530,7 @@ def post_parallel_eval(experiments: list[Mapping], base_dir: str) -> None:
         shutil.rmtree(pdir)
 
 
-def post_parallel_train(experiments: list[Mapping], base_dir: str) -> None:
+def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
     """Post-execution cleanup after running training in parallel.
 
     Object models are consolidated across parallel runs and saved to disk.
@@ -555,7 +552,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: str) -> None:
     if experiments[0]["config"]["logging"]["python_log_to_file"]:
         filename = "log.txt"
         filenames = [pdir / filename for pdir in parallel_dirs]
-        outfile = Path(base_dir) / filename
+        outfile = base_dir / filename
         post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
 
     if isinstance(exp, ProfileExperimentMixin):
