@@ -8,5 +8,3 @@ config:
   do_train: true
   do_eval: false
   supervised_lm_ids: all
-  eval_env_interface_args: null
-  eval_env_interface_class: null

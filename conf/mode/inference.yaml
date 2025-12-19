@@ -8,5 +8,3 @@ config:
   do_train: false
   do_eval: true
   python_log_level: DEBUG
-  train_env_interface_args: null
-  train_env_interface_class: null

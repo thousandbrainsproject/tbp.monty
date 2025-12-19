@@ -1,0 +1,60 @@
+# @package config.monty_config
+# Benchmark evidence config with noisy sensors
+#
+# Noisy variant of benchmark_evidence_sota for experiments testing
+# robustness to sensor noise. Key differences from SOTA:
+# - max_nneighbors: 10 (default accuracy, not faster 5)
+# - noise_params on patch sensor
+# - save_raw_obs: true for view_finder
+
+defaults:
+  - monty_class: evidence_matching
+  - monty_args: defaults
+  - motor_system: informed_goal_state_driven
+  - connectivity: patch_view_single_lm
+
+sensor_module_configs:
+  sensor_module_0:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch
+      features: ${vars.default_sensor_features}
+      save_raw_obs: false
+      delta_thresholds:
+        on_object: 0
+        distance: 0.01
+      noise_params: ${vars.default_all_noise_params}
+  sensor_module_1:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+    sensor_module_args:
+      sensor_module_id: view_finder
+      save_raw_obs: true
+
+learning_module_configs:
+  learning_module_0:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+    learning_module_args:
+      max_match_distance: 0.01
+      x_percent_threshold: 20
+      evidence_threshold_config: 80%
+      max_graph_size: 0.3
+      num_model_voxels_per_dim: 100
+      gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+      gsg_args:
+        goal_tolerances:
+          location: 0.015
+        elapsed_steps_factor: 10
+        min_post_goal_success_steps: 5
+        x_percent_scale_factor: 0.75
+        desired_object_distance: 0.03
+      hypotheses_updater_args:
+        max_nneighbors: 10
+      feature_weights:
+        patch:
+          hsv: ${np.array:[1, 0.5, 0.5]}
+          pose_vectors: ${np.ones:3}
+          principal_curvatures_log: ${np.ones:2}
+      tolerances:
+        patch:
+          hsv: ${np.array:[0.1, 0.2, 0.2]}
+          principal_curvatures_log: ${np.ones:2}

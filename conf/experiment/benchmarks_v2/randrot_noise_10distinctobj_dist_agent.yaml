@@ -1,0 +1,15 @@
+# @package _global_
+# Random rotation with noisy sensors - 10 distinct YCB objects
+#
+# Variant of base_config_10distinctobj_dist_agent that tests robustness
+# to sensor noise with random object rotations.
+
+defaults:
+  - /experiment/benchmarks_v2/base_config_10distinctobj_dist_agent
+  - override /monty: benchmark_evidence_noisy
+  - override /environment/object_sampler: random_rotation
+
+config:
+  n_eval_epochs: 10
+  logging:
+    run_name: randrot_noise_10distinctobj_dist_agent
