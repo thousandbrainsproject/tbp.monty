@@ -14,7 +14,7 @@ defaults:
 
 _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 config:
-  n_train_epochs: ${benchmarks.rotations_all_count}
+  n_train_epochs: ${vars.rotations_all_count}
   logging:
     output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
     run_name: surf_agent_1lm_2obj_train
@@ -65,4 +65,4 @@ config:
       - banana
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations: ${benchmarks.rotations_all}
+      rotations: ${vars.rotations_all}

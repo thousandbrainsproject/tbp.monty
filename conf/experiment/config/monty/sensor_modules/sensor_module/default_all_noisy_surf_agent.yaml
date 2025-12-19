@@ -9,4 +9,4 @@ sensor_module_args:
     on_object: 0
     distance: 0.01
   is_surface_sm: true
-  noise_params: ${benchmarks.default_all_noise_params}
+  noise_params: ${vars.default_all_noise_params}
