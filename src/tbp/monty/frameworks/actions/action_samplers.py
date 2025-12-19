@@ -104,17 +104,19 @@ class ConstantSampler(ActionSampler):
         self.rotation_quat = rotation_quat if rotation_quat is not None else qt.one
         self.translation_distance = translation_distance
 
-    def sample_look_down(self, agent_id: AgentID, _rng: RandomState) -> LookDown:
+    def sample_look_down(self, agent_id: AgentID, rng: RandomState) -> LookDown:  # noqa: ARG002
         return LookDown(agent_id=agent_id, rotation_degrees=self.rotation_degrees)
 
-    def sample_look_up(self, agent_id: AgentID, _rng: RandomState) -> LookUp:
+    def sample_look_up(self, agent_id: AgentID, rng: RandomState) -> LookUp:  # noqa: ARG002
         return LookUp(agent_id=agent_id, rotation_degrees=self.rotation_degrees)
 
-    def sample_move_forward(self, agent_id: AgentID, _rng: RandomState) -> MoveForward:
+    def sample_move_forward(self, agent_id: AgentID, rng: RandomState) -> MoveForward:  # noqa: ARG002
         return MoveForward(agent_id=agent_id, distance=self.translation_distance)
 
     def sample_move_tangentially(
-        self, agent_id: AgentID, _rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,  # noqa: ARG002
     ) -> MoveTangentially:
         return MoveTangentially(
             agent_id=agent_id,
@@ -123,7 +125,9 @@ class ConstantSampler(ActionSampler):
         )
 
     def sample_orient_horizontal(
-        self, agent_id: AgentID, _rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,  # noqa: ARG002
     ) -> OrientHorizontal:
         return OrientHorizontal(
             agent_id=agent_id,
@@ -133,7 +137,9 @@ class ConstantSampler(ActionSampler):
         )
 
     def sample_orient_vertical(
-        self, agent_id: AgentID, _rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,  # noqa: ARG002
     ) -> OrientVertical:
         return OrientVertical(
             agent_id=agent_id,
@@ -143,41 +149,51 @@ class ConstantSampler(ActionSampler):
         )
 
     def sample_set_agent_pitch(
-        self, agent_id: AgentID, _rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,  # noqa: ARG002
     ) -> SetAgentPitch:
         return SetAgentPitch(agent_id=agent_id, pitch_degrees=self.absolute_degrees)
 
     def sample_set_agent_pose(
-        self, agent_id: AgentID, _rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,  # noqa: ARG002
     ) -> SetAgentPose:
         return SetAgentPose(
             agent_id=agent_id, location=self.location, rotation_quat=self.rotation_quat
         )
 
     def sample_set_sensor_pitch(
-        self, agent_id: AgentID, _rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,  # noqa: ARG002
     ) -> SetSensorPitch:
         return SetSensorPitch(agent_id=agent_id, pitch_degrees=self.absolute_degrees)
 
     def sample_set_sensor_pose(
-        self, agent_id: AgentID, _rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,  # noqa: ARG002
     ) -> SetSensorPose:
         return SetSensorPose(
             agent_id=agent_id, location=self.location, rotation_quat=self.rotation_quat
         )
 
     def sample_set_sensor_rotation(
-        self, agent_id: AgentID, _rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,  # noqa: ARG002
     ) -> SetSensorRotation:
         return SetSensorRotation(agent_id=agent_id, rotation_quat=self.rotation_quat)
 
-    def sample_set_yaw(self, agent_id: AgentID, _rng: RandomState) -> SetYaw:
+    def sample_set_yaw(self, agent_id: AgentID, rng: RandomState) -> SetYaw:  # noqa: ARG002
         return SetYaw(agent_id=agent_id, rotation_degrees=self.absolute_degrees)
 
-    def sample_turn_left(self, agent_id: AgentID, _rng: RandomState) -> TurnLeft:
+    def sample_turn_left(self, agent_id: AgentID, rng: RandomState) -> TurnLeft:  # noqa: ARG002
         return TurnLeft(agent_id=agent_id, rotation_degrees=self.rotation_degrees)
 
-    def sample_turn_right(self, agent_id: AgentID, _rng: RandomState) -> TurnRight:
+    def sample_turn_right(self, agent_id: AgentID, rng: RandomState) -> TurnRight:  # noqa: ARG002
         return TurnRight(agent_id=agent_id, rotation_degrees=self.rotation_degrees)
 
 
