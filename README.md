@@ -19,7 +19,7 @@ Our [**API documentation** here](https://api-monty.thousandbrains.org).
 You can find detailed instructions on how to install the project requirements and how to get started [here](https://thousandbrainsproject.readme.io/docs/getting-started)
 
 # Current Performance
-We regularly evaluate this system against a set of sensorimotor tasks, summarized in the **[benchmark experiments](./benchmarks/configs/)**. Any time a functional change is made to the code, these experiments are rerun, and results are updated.
+We regularly evaluate this system against a set of sensorimotor tasks, and report results in **[benchmark experiments](./benchmarks/)**. Any time a functional change is made to the code, these experiments are rerun, and results are updated. Configs for these experiments can be found in the [conf/experiment/](./conf/experiment/) folder.
 
 You can find our current performance on these benchmarks as well as an explanation of them [here](https://thousandbrainsproject.readme.io/docs/benchmark-experiments).
 

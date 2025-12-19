@@ -1,6 +1,17 @@
 ---
 title: Re-Anchor Hypotheses for Robustness to Noise and Distortions
+description: Reanchor hypothesized poses to nodes stored in model when salient features with high match are observed.
+rfc: required
+estimated-scope: large
+improved-metric: accuracy, deformations, noise, generalization
+output-type: prototype, analysis, monty-feature, PR
+skills: python, research, monty
+contributor: hlee9212
+status: scoping
 ---
+
+> [!NOTE]
+> For more details of our recent scoping of this task, see section `1. How can we realign hypotheses to model points for robustness to noise and distortions?` of this open RFC https://github.com/thousandbrainsproject/tbp.monty/pull/366 
 
 One aspect that we believe may contribute to dealing with object distortions, such as perceiving Dali's melted clocks for the first time, or being robust to the way a logo follows the surface of a mug, is through re-anchoring of hypotheses. More concretely, as the system moves over the object and path-integrates, the estimate of where the sensor is in space might lend greater weight to sensory landmarks, resulting in a re-assessment of the current location. Such re-anchoring is required even without distortions, due to the fact that path integration in the real world is imperfect.
 

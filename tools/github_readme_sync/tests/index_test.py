@@ -31,16 +31,15 @@ class TestGenerateIndex(unittest.TestCase):
 
         content = f"---\ntitle: test doc\n{frontmatter_fields}\n---\n"
         md_file_path = subdir_path / "test-doc.md"
-        with open(md_file_path, "w", encoding="utf-8") as f:
+        with md_file_path.open("w", encoding="utf-8") as f:
             f.write(content)
 
-        index_file_path = generate_index(
-            self.temp_dir, str(Path(self.temp_dir) / "index.json")
-        )
+        index_file_path = Path(self.temp_dir) / "index.json"
+        generate_index(self.temp_dir, index_file_path)
 
-        self.assertTrue(Path(index_file_path).exists())
+        self.assertTrue(index_file_path.exists())
 
-        with open(index_file_path, encoding="utf-8") as f:
+        with index_file_path.open(encoding="utf-8") as f:
             return json.load(f)
 
     def test_generate_index_with_frontmatter(self):
@@ -81,28 +80,24 @@ class TestGenerateIndex(unittest.TestCase):
     def test_generate_index_invalid_parameters(self):
         """Test various invalid parameter combinations."""
         test_cases = [
-            ("None docs_dir", None, "valid_output.json", ValueError),
-            ("empty docs_dir", "", "valid_output.json", ValueError),
-            ("None output_file", "valid_dir", None, ValueError),
-            ("empty output_file", "valid_dir", "", (ValueError, OSError)),
+            ("None docs_dir", None, ValueError),
+            ("empty docs_dir", "", ValueError),
         ]
 
-        for case_name, docs_dir, output_file_path, expected_exception in test_cases:
+        for case_name, docs_dir, expected_exception in test_cases:
             with self.subTest(case=case_name):
                 actual_docs_dir = docs_dir
-                actual_output_file = output_file_path
+                actual_output_file = Path(self.temp_dir) / "index.json"
 
                 if docs_dir == "valid_dir":
                     actual_docs_dir = self.temp_dir
-                if output_file_path == "valid_output.json":
-                    actual_output_file = str(Path(self.temp_dir) / "index.json")
 
                 with self.assertRaises(expected_exception):
                     generate_index(actual_docs_dir, actual_output_file)
 
     def test_generate_index_nonexistent_docs_folder(self):
         nonexistent_dir = str(Path(self.temp_dir) / "nonexistent")
-        output_file_path = str(Path(self.temp_dir) / "index.json")
+        output_file_path = Path(self.temp_dir) / "index.json"
 
         with self.assertRaises(ValueError) as context:
             generate_index(nonexistent_dir, output_file_path)

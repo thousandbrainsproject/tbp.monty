@@ -36,12 +36,12 @@ class TestLoadAllowedValues(unittest.TestCase):
 
         expected_tags = ["accuracy", "pose", "learning", "multiobj"]
         tags_file = snippets_dir / "future-work-tags.md"
-        with open(tags_file, "w", encoding="utf-8") as f:
+        with tags_file.open("w", encoding="utf-8") as f:
             f.write(" ".join(f"`{tag}`" for tag in expected_tags))
 
         expected_skills = ["python", "github-actions", "JS", "HTML"]
         skills_file = snippets_dir / "future-work-skills.md"
-        with open(skills_file, "w", encoding="utf-8") as f:
+        with skills_file.open("w", encoding="utf-8") as f:
             f.write(" ".join(f"`{skill}`" for skill in expected_skills))
 
         allowed_values = load_allowed_values(snippets_dir)

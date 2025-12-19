@@ -191,7 +191,7 @@ This will take some time, about 10 minutes on an 8-core i7-11700K for example:
 Finally, let’s run a benchmark. You can do this in either the Ubuntu terminal or directly in the VS Code terminal. In the VS Code top menu, select Terminal > Open Terminal, then enter:
 
 ```shell
-python benchmarks/run.py -e base_config_10distinctobj_dist_agent
+python run.py experiment=base_config_10distinctobj_dist_agent
 ```
 
 In this case, it took a little over 5 minutes:

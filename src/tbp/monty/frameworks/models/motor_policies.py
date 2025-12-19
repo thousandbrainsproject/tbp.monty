@@ -15,8 +15,8 @@ import copy
 import json
 import logging
 import math
-import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Literal, Mapping, cast
 
 import numpy as np
@@ -1588,8 +1588,8 @@ def read_action_file(file: str) -> list[Action]:
     Returns:
         List of actions
     """
-    file = os.path.expanduser(file)
-    with open(file) as f:
+    file = Path(file).expanduser()
+    with file.open() as f:
         file_read = f.read()
 
     lines = [line.strip() for line in file_read.split("\n") if line.strip()]
@@ -1605,7 +1605,7 @@ def write_action_file(actions: list[Action], file: str) -> None:
         actions: list of actions
         file: path to file to save actions to
     """
-    with open(file, "w") as f:
+    with Path(file).open("w") as f:
         f.writelines(
             f"{json.dumps(action, cls=ActionJSONEncoder)}\n" for action in actions
         )

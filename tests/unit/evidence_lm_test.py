@@ -17,7 +17,6 @@ pytest.importorskip(
 )
 
 import copy
-import os
 import shutil
 import tempfile
 import unittest
@@ -287,11 +286,14 @@ class EvidenceLMTest(BaseGraphTest):
         with exp:
             # self.exp.model.set_experiment_mode("eval")
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_train_results(train_stats)
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
+
         self.check_eval_results(eval_stats)
         for key in [
             "possible_rotations",
@@ -404,7 +406,8 @@ class EvidenceLMTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.evidence_times_out_cfg.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.assertEqual(
                 train_stats["individual_ts_performance"][0],
                 "no_match",
@@ -442,7 +445,7 @@ class EvidenceLMTest(BaseGraphTest):
 
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         for i in range(3):
             self.assertEqual(
                 eval_stats["individual_ts_performance"][i],
@@ -472,7 +475,8 @@ class EvidenceLMTest(BaseGraphTest):
                 exp.post_episode(last_step)
             exp.post_epoch()
 
-        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
         for i in [0, 1]:
             self.assertEqual(
                 train_stats["primary_performance"][i],
@@ -511,12 +515,14 @@ class EvidenceLMTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.uniform_initial_poses_cfg.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             print(train_stats)
             self.check_train_results(train_stats)
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
+
         self.check_eval_results(eval_stats)
 
     def test_fixed_initial_poses(self):
@@ -524,12 +530,13 @@ class EvidenceLMTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.fixed_possible_poses_cfg.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             print(train_stats)
             self.check_train_results(train_stats)
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
 
     def test_symmetry_recognition(self):
@@ -1095,11 +1102,12 @@ class EvidenceLMTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.no_features_cfg.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_train_results(train_stats)
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
 
     def test_5lm_evidence_experiment(self):
@@ -1108,7 +1116,8 @@ class EvidenceLMTest(BaseGraphTest):
         with exp:
             exp.train()
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             print(train_stats)
             self.check_train_results(train_stats, num_lms=5)
 
@@ -1117,14 +1126,14 @@ class EvidenceLMTest(BaseGraphTest):
             for _ in range(exp.n_eval_epochs):
                 exp.run_epoch()
             exp.logger_handler.post_eval(exp.logger_args)
-            eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+            eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
             self.check_eval_results(eval_stats, num_lms=5)
 
             for lm in exp.model.learning_modules:
                 lm.max_match_distance = 0.01
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
 
         self.check_eval_results(eval_stats, num_lms=5)
 
@@ -1134,14 +1143,15 @@ class EvidenceLMTest(BaseGraphTest):
         with exp:
             exp.train()
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
             # Same as in previous test we make it a bit more difficult during eval
             for lm in exp.model.learning_modules:
                 lm.max_match_distance = 0.01
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
 
         self.check_multilm_eval_results(eval_stats, num_lms=5, min_done=3)
 
@@ -1156,7 +1166,8 @@ class EvidenceLMTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.five_lm_off_object_cfg.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             # Just checking that objects are still recognized correctly when moving off
             # the object.
             self.check_train_results(train_stats, num_lms=5)
@@ -1177,7 +1188,7 @@ class EvidenceLMTest(BaseGraphTest):
 
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
 
         self.check_eval_results(eval_stats, num_lms=5)
 
@@ -1253,11 +1264,12 @@ class EvidenceLMTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.five_lm_no_threading_cfg.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_train_results(train_stats, num_lms=5)
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats, num_lms=5)
 
     def test_can_run_with_maxnn1_5lms(self):
@@ -1268,11 +1280,12 @@ class EvidenceLMTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.five_lm_maxnn1.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_train_results(train_stats, num_lms=5)
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats, num_lms=5)
 
     def test_can_run_with_bounded_evidence_5lms(self):
@@ -1280,11 +1293,12 @@ class EvidenceLMTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.five_lm_bounded.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_train_results(train_stats, num_lms=5)
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats, num_lms=5)
 
     def test_noise_mixing_evidence(self):
@@ -1299,7 +1313,8 @@ class EvidenceLMTest(BaseGraphTest):
         with exp:
             exp.train()
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             # NOTE: This might fail if the model becomes more noise robust or
             # better able to deal with few incomplete objects in memory.
             for i in range(6):
@@ -1311,7 +1326,7 @@ class EvidenceLMTest(BaseGraphTest):
                 )
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         for i in range(3):
             self.assertEqual(
                 eval_stats["primary_performance"][i],
@@ -1332,7 +1347,8 @@ class EvidenceLMTest(BaseGraphTest):
         with exp:
             # self.exp.model.set_experiment_mode("eval")
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             # NOTE: This might fail if the model becomes more noise robust or
             # better able to deal with few incomplete objects in memory.
             for i in range(6):
@@ -1344,7 +1360,7 @@ class EvidenceLMTest(BaseGraphTest):
                 )
             exp.evaluate()
 
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         for i in range(3):
             self.assertEqual(
                 eval_stats["primary_performance"][i],

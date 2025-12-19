@@ -32,18 +32,20 @@ Before submitting a Pull Request, you should set up your development environment
    ```shell
    pytest
    ```
-6. Push your changes to your branch on your fork:
+6. Run `ruff check` to make sure your code adheres to our linting rules.
+7. Push your changes to your branch on your fork:
    ```shell
    git push
    ```
-7. [Create a new GitHub Pull Request from your fork to the official Monty repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).
-8. Respond to and address any comments on your Pull Request. See [Pull Request Flow](pull-requests/pull-request-flow.md) for what to expect.
-9. Once your Pull Request is approved, it will be merged by one of the Maintainers. Thank you for contributing! 🥳🎉🎊
+8. [Create a new GitHub Pull Request from your fork to the official Monty repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).
+9. Respond to and address any comments on your Pull Request. See [Pull Request Flow](pull-requests/pull-request-flow.md) for what to expect.
+10. Once your Pull Request is approved, it will be merged by one of the Maintainers. Thank you for contributing! 🥳🎉🎊
 
 ## Additional Recommendations for Code Changes
 
 - It is recommended to **add unit tests for any new feature** you implement. This makes sure that your feature continues to function as intended when other people (or you) make future changes to the code. To get a detailed coverage report use `pytest --cov --cov-report html`.
 - **Run `pytest`, `ruff check`, and `ruff format`** to make sure your changes don't break any existing code and adhere to our [style requirements](style-guide.md). If your code doesn't pass these, it can not be merged.
+- To check whether a code change led to different behavior of the algorithm, you can [run our benchmark experiments](../how-to-use-monty/running-benchmarks.md) before and after the change and check for changes. You will not be able to replicate the [reported benchmark results](../overview/benchmark-experiments.md), but our team members may run your code on our hardware to check for any changes on those before merging your PR.
 - Make sure that your **code is properly documented**. Please refer to our [Style Guide](style-guide.md) for instructions on how to format your comments.
 - If applicable, please also **update or add to the documentation on readme.com**. For instructions on how to do this, see our [guide on contributing documentation](documentation.md).
 - **Use callbacks for logging**, and don’t put control logic into logging functions.
@@ -55,3 +57,14 @@ Before submitting a Pull Request, you should set up your development environment
   This rng is then passed to the various classes, and can be accessed in the sensor
   modules, learning modules, and motor system with self.rng. Thus to use a random
   numpy method, call it with e.g. `self.rng.uniform()` rather than `np.random.uniform()`
+
+## Additional Recommendations for Documentation Changes
+
+- run `vale .` to check spelling
+  - Install instructions are [here](./documentation.md#1-install-vale)
+- run `python -m tools.github_readme_sync.cli check docs` to check links.
+  - To install the tool, run `pip install -e '.[dev,github_readme_sync_tool]'`
+- run `python tools/future_work_widget/run_local.py` to render the future work table locally.
+  - To install run `pip install -e '.[github_readme_sync_tool,future_work_widget_tool]'`
+
+You can find more info in our [page on editing the documentation](documentation.md).

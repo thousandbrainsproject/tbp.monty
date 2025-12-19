@@ -173,8 +173,18 @@ Note: To obtain these results, pretraining was run without parallelization acros
 > unzip compositional_objects.zip
 > ```
 >
-> To generate the pretrained models, run the experiments in `benchmarks/configs/learn_compositional_objects.py` in the order in which they are listed by running:
-> `python benchmarks/run.py -e experiment_name`
+> To generate the pretrained models, run the following experiments in order:
+> ```
+> python run.py experiment=supervised_pre_training_flat_objects_wo_logos
+> python run.py experiment=supervised_pre_training_logos_after_flat_objects
+> python run.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_monolithic_models
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl2_comp_models
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl3_comp_models
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl4_comp_models
+> ```
 
 
 # Monty-Meets-World

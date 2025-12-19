@@ -116,6 +116,25 @@ For example, the following markdown creates the image below:
 > [!WARNING]
 > Caption text is only visible on readme.com
 
+## Videos
+
+Videos can be embedded using markdown link syntax. The tool will automatically convert video links to embedded video players.
+
+> [!NOTE]
+> Video links must be on their own line to be automatically converted. Links that appear inline with other text will remain as regular markdown links.
+
+YouTube videos:
+
+```markdown
+[Video Title](https://youtu.be/example-video-id)
+```
+
+Cloudinary videos:
+
+```markdown
+[Video Title](https://res.cloudinary.com/demo-cloud/video/upload/v12345/example-video.mp4)
+```
+
 ## CSV Data Tables
 
 You can inline CSV data tables in your markdown documents.  The following example shows how to create a table from a CSV file:

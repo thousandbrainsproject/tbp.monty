@@ -7,7 +7,7 @@ In a sensorimotor learning setup, one naturally encounters several different ref
 ![](../../figures/how-monty-works/reference_frames_overview.png)
 
 ### 🔴 Object rel. World
-The orientation of the object in the world (unknown to Monty). For instance, if we use a simulator, this would be the configuration that specifies where the object is placed in the environment (like we do [here](https://github.com/thousandbrainsproject/tbp.monty/blob/4844ef17a4cadce455acb8d852fe3ed7038a298f/src/tbp/monty/frameworks/config_utils/make_env_interface_configs.py#L229)). In the real world we don't have a specific origin, but all objects are still in a common reference frame with relative displacements between each other.
+The orientation of the object in the world (unknown to Monty). For instance, if we use a simulator, this would be the configuration that specifies where the object is placed in the environment. In the real world we don't have a specific origin, but all objects are still in a common reference frame with relative displacements between each other.
 ### 🔴⚫️ Feature rel. Object
 The pose of all the features on the object (also unknown to the Monty). For instance, if you use a 3D simulator, this could be defined in the object meshes.
 ### 🟢⚫️ Sensor rel. World/Body

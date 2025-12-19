@@ -1,0 +1,302 @@
+benchmarks:
+  default_all_noise_params:
+    features:
+      pose_vectors: 2
+      hsv: 0.1
+      principal_curvatures_log: 0.1
+      pose_fully_defined: 0.01
+    location: 0.002
+  default_sensor_features:
+  - pose_vectors
+  - pose_fully_defined
+  - on_object
+  - hsv
+  - principal_curvatures_log
+  min_eval_steps: 20
+  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11}
+  rotations_all_count: 14
+  rotations_all:
+  - - 0
+    - 0
+    - 0
+  - - 0
+    - 90
+    - 0
+  - - 0
+    - 180
+    - 0
+  - - 0
+    - 270
+    - 0
+  - - 90
+    - 0
+    - 0
+  - - 90
+    - 180
+    - 0
+  - - 35
+    - 45
+    - 0
+  - - 325
+    - 45
+    - 0
+  - - 35
+    - 315
+    - 0
+  - - 325
+    - 315
+    - 0
+  - - 35
+    - 135
+    - 0
+  - - 325
+    - 135
+    - 0
+  - - 35
+    - 225
+    - 0
+  - - 325
+    - 225
+    - 0
+  rotations_3_count: 3
+  rotations_3:
+  - - 0
+    - 0
+    - 0
+  - - 0
+    - 90
+    - 0
+  - - 0
+    - 180
+    - 0
+experiment:
+  config:
+    do_train: false
+    do_eval: true
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    n_eval_epochs: 1
+    model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
+    logging:
+      monty_log_level: BASIC
+      monty_handlers:
+      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.ReproduceEpisodeHandler}
+      wandb_handlers:
+      - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbTableStatsHandler}
+      - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbChartStatsHandler}
+      python_log_level: WARNING
+      python_log_to_file: true
+      python_log_to_stderr: true
+      output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/evidence_eval_runs/logs}
+      run_name: hand_intrusion_world_image_on_scanned_model
+      resume_wandb_run: false
+      wandb_id:
+        _target_: wandb.util.generate_id
+      wandb_group: benchmark_experiments
+    monty_config:
+      motor_system_config:
+        motor_system_args:
+          policy_args:
+            file_name: null
+            good_view_percentage: 0.5
+            desired_object_distance: 0.03
+            use_goal_state_driven_actions: false
+            switch_frequency: 1.0
+            min_perc_on_obj: 0.25
+            agent_id: ${monty.agent_id:agent_id_0}
+            action_sampler_args:
+              actions:
+              - ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.LookDown}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.SetAgentPose}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.SetSensorRotation}
+              rotation_degrees: 20.0
+            action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}
+          policy_class: ${monty.class:tbp.monty.frameworks.models.motor_policies.InformedPolicy}
+        motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+      monty_args:
+        num_exploratory_steps: 1000
+        min_eval_steps: ${benchmarks.min_eval_steps}
+        min_train_steps: 3
+        max_total_steps: 2500
+      monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
+      learning_module_configs:
+        learning_module_0:
+          learning_module_args:
+            feature_weights:
+              patch:
+                hsv: ${np.array:[1, 0.5, 0.5]}
+                pose_vectors: ${np.ones:3}
+                principal_curvatures_log: ${np.ones:2}
+            tolerances:
+              patch:
+                hsv: ${np.array:[0.1, 0.2, 0.2]}
+                principal_curvatures_log: ${np.ones:2}
+            max_match_distance: 0.01
+            x_percent_threshold: 20
+            evidence_threshold_config: 80%
+            max_graph_size: 0.3
+            num_model_voxels_per_dim: 100
+            gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+            gsg_args:
+              goal_tolerances:
+                location: 0.015
+              elapsed_steps_factor: 10
+              min_post_goal_success_steps: 5
+              x_percent_scale_factor: 0.75
+              desired_object_distance: 0.03
+            hypotheses_updater_args:
+              max_nneighbors: 10
+          learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+      sensor_module_configs:
+        sensor_module_0:
+          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+          sensor_module_args:
+            sensor_module_id: patch
+            features:
+            - pose_vectors
+            - pose_fully_defined
+            - on_object
+            - object_coverage
+            - rgba
+            - hsv
+            - principal_curvatures
+            - principal_curvatures_log
+            - gaussian_curvature
+            - mean_curvature
+            - gaussian_curvature_sc
+            - mean_curvature_sc
+            save_raw_obs: true
+        sensor_module_1:
+          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+          sensor_module_args:
+            sensor_module_id: view_finder
+            save_raw_obs: true
+      sm_to_agent_dict:
+        patch: ${monty.agent_id:agent_id_0}
+        view_finder: ${monty.agent_id:agent_id_0}
+      sm_to_lm_matrix:
+      - - 0
+      lm_to_lm_matrix: null
+      lm_to_lm_vote_matrix: null
+    env_interface_config:
+      env_init_args:
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/worldimages/hand_intrusion_scenes/}
+      env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.SaccadeOnImageEnvironment}
+      transform: null
+    eval_env_interface_args:
+      eval_env_interface_args: null
+      scenes:
+      - 0
+      - 0
+      - 0
+      - 0
+      - 1
+      - 1
+      - 1
+      - 1
+      - 2
+      - 2
+      - 2
+      - 2
+      - 3
+      - 3
+      - 3
+      - 3
+      - 4
+      - 4
+      - 4
+      - 4
+      - 5
+      - 5
+      - 5
+      - 5
+      - 6
+      - 6
+      - 6
+      - 6
+      - 7
+      - 7
+      - 7
+      - 7
+      - 8
+      - 8
+      - 8
+      - 8
+      - 9
+      - 9
+      - 9
+      - 9
+      - 10
+      - 10
+      - 10
+      - 10
+      - 11
+      - 11
+      - 11
+      - 11
+      versions:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 0
+      - 1
+      - 2
+      - 3
+      - 0
+      - 1
+      - 2
+      - 3
+      - 0
+      - 1
+      - 2
+      - 3
+      - 0
+      - 1
+      - 2
+      - 3
+      - 0
+      - 1
+      - 2
+      - 3
+      - 0
+      - 1
+      - 2
+      - 3
+      - 0
+      - 1
+      - 2
+      - 3
+      - 0
+      - 1
+      - 2
+      - 3
+      - 0
+      - 1
+      - 2
+      - 3
+      - 0
+      - 1
+      - 2
+      - 3
+      - 0
+      - 1
+      - 2
+      - 3
+    eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageEnvironmentInterface}
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+episodes: all
+num_parallel: 16
+print_cfg: false
+quiet_habitat_logs: true

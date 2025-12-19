@@ -1,9 +1,16 @@
 ---
 title: Include State in Models
 description: Add a 'state' dimension to the models learned in Monty that conditions which features to expect at what locations.
+rfc: optional
+estimated-scope: medium
+improved-metric: dynamic
+output-type: monty-feature, PR
+skills: python, monty, refactoring
+contributor: 
+status: open
 ---
 
-This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/recent-progress/object-behaviors.md#implementation-in-monty).
+This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/object-behaviors.md#implementation-in-monty).
 
 Any model in an LM can be state conditioned. For instance a stapler might be open or closed, and an object behavior is represented as a sequence of states. Depending on the state of an object, the model expects to see different features at different locations.
 

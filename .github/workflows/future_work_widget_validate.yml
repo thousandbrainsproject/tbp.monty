@@ -18,7 +18,9 @@ on:
 jobs:
   install_monty:
     name: install-monty
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tbp.monty
+      labels: tbp-linux-x64-ubuntu2204-4core
     if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     outputs:
       conda_env_cache_key_sha: ${{ steps.install_monty.outputs.conda_env_cache_key_sha }}
