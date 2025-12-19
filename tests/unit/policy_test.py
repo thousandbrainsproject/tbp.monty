@@ -163,51 +163,44 @@ class PolicyTest(unittest.TestCase):
     def test_can_run_informed_policy(self):
         exp = hydra.utils.instantiate(self.base_dist_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_spiral_policy(self):
         exp = hydra.utils.instantiate(self.spiral_cfg.test)
         with exp:
             # TODO: test that no two locations are the same
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_dist_agent_hypo_driven_policy(self):
         exp = hydra.utils.instantiate(self.dist_hypo_driven_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_surface_policy(self):
         exp = hydra.utils.instantiate(self.base_surf_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_curv_informed_policy(self) -> None:
         exp = hydra.utils.instantiate(self.curve_informed_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_surf_agent_hypo_driven_policy(self):
         exp = hydra.utils.instantiate(self.surf_hypo_driven_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self):
         exp = hydra.utils.instantiate(self.dist_hypo_driven_multi_lm_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # ==== MORE INVOLVED TESTS OF ACTION POLICIES ====
 

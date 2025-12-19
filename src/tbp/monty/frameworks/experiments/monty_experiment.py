@@ -560,6 +560,14 @@ class MontyExperiment:
             self.eval_epochs += 1
             self.eval_env_interface.post_epoch()
 
+    def run(self):
+        """Run the experiment."""
+        if self.do_train:
+            self.train()
+
+        if self.do_eval:
+            self.evaluate()
+
     def train(self):
         """Run n_train_epochs."""
         self.logger_handler.pre_train(self.logger_args)

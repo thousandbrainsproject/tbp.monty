@@ -104,9 +104,8 @@ class SensorModuleTest(unittest.TestCase):
     def test_feature_change_sm(self):
         exp = hydra.utils.instantiate(self.feature_change_sensor_cfg.test)
         with exp:
-            exp.train()
+            exp.run()
             # TODO: test that only new features are given to LM
-            exp.evaluate()
 
 
 if __name__ == "__main__":

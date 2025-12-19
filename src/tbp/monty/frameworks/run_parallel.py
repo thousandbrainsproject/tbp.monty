@@ -384,7 +384,7 @@ def single_train(experiment):
     exp = hydra.utils.instantiate(experiment)
     with exp:
         print("---------training---------")
-        exp.train()
+        exp.run()
 
 
 def single_evaluate(experiment):
@@ -393,12 +393,12 @@ def single_evaluate(experiment):
     exp = hydra.utils.instantiate(experiment)
     with exp:
         print("---------evaluating---------")
-        exp.evaluate()
+        exp.run()
         if experiment["config"]["logging"]["log_parallel_wandb"]:
             # WARNING: This relies on logger in the experiment having
             # `self.use_parallel_wandb_logging` set to True
             # This way, the logger does not flush its buffer in the
-            # `exp.evaluate()` call above.
+            # `exp.run()` call above.
             return get_episode_stats(exp, "eval")
 
 
@@ -591,7 +591,7 @@ def run_episodes_parallel(
             are fewer configs to run than `num_parallel`, then the actual number of
             processes will be equal to the number of configs.
         experiment_name: name of experiment
-        train: whether to run training or evaluation
+        train: Whether the episodes are training or evaluating episodes.
     """
     # Use fewer processes if there are fewer configs than `num_parallel`.
     num_parallel = min(len(experiments), num_parallel)

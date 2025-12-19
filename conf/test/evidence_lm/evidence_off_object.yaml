@@ -4,6 +4,7 @@ defaults:
   - /test/config/monty/learning_modules/default_evidence_lm@config.monty_config.learning_module_configs.learning_module_0
 
 config:
+  do_eval: false
   n_train_epochs: 2
   max_eval_steps: 50
   max_train_steps: 50

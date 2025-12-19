@@ -164,6 +164,9 @@ class GraphLearningTest(BaseGraphTest):
             self.feature_pred_off_object_cfg = hydra_config(
                 "feature_pred_off_object", self.fixed_actions_path_off_object
             )
+            self.feature_pred_off_object_train_cfg = hydra_config(
+                "feature_pred_off_object_train", self.fixed_actions_path_off_object
+            )
             self.feature_uniform_initial_poses_cfg = hydra_config(
                 "feature_uniform_initial_poses", self.fixed_actions_path
             )
@@ -261,20 +264,17 @@ class GraphLearningTest(BaseGraphTest):
     def test_can_run_ppf_experiment(self):
         exp = hydra.utils.instantiate(self.ppf_pred_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     def test_can_run_disp_experiment(self):
         exp = hydra.utils.instantiate(self.disp_pred_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     def test_can_run_feature_experiment(self):
         exp = hydra.utils.instantiate(self.feature_pred_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     def test_fixed_actions_disp(self):
         """Runs three test episodes on capsule3DSolid and cubeSolid.
@@ -295,11 +295,11 @@ class GraphLearningTest(BaseGraphTest):
         """
         exp = hydra.utils.instantiate(self.fixed_actions_disp_cfg.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            self.check_train_results(train_stats)
-            exp.evaluate()
+            exp.run()
+
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_train_results(train_stats)
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
@@ -308,11 +308,11 @@ class GraphLearningTest(BaseGraphTest):
         """Like test_fixed_actions_disp but using point pair features for matching."""
         exp = hydra.utils.instantiate(self.fixed_actions_disp_cfg.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            self.check_train_results(train_stats)
-            exp.evaluate()
+            exp.run()
+
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_train_results(train_stats)
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
@@ -321,11 +321,11 @@ class GraphLearningTest(BaseGraphTest):
         """Like test_fixed_actions_disp but using point pair features for matching."""
         exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            self.check_train_results(train_stats)
-            exp.evaluate()
+            exp.run()
+
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_train_results(train_stats)
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
@@ -590,7 +590,7 @@ class GraphLearningTest(BaseGraphTest):
         # Move this to graph_building_test.py?
         exp = hydra.utils.instantiate(self.fixed_actions_ppf_cfg.test)
         with exp:
-            exp.train()
+            exp.run()
 
         # We are training for 3 epochs by default, load most recent indexing from 0
         cfg2 = copy.deepcopy(self.fixed_actions_ppf_cfg)
@@ -735,7 +735,8 @@ class GraphLearningTest(BaseGraphTest):
     def test_moving_off_object(self):
         # Tests additional elements of logging, in particular in relation
         # to logging of observations when off the object
-        exp = hydra.utils.instantiate(self.feature_pred_off_object_cfg.test)
+
+        exp = hydra.utils.instantiate(self.feature_pred_off_object_train_cfg.test)
         with exp:
             # First episode will be used to learn object (no_match is triggered before
             # min_steps is reached and the sensor moves off the object). In the second
@@ -744,7 +745,7 @@ class GraphLearningTest(BaseGraphTest):
             # does not take place before then because when off the object, matching
             # steps are no longer incremented, while it is an unfamiliar part of
             # the object that we return to
-            exp.train()
+            exp.run()
             self.assertEqual(
                 len(
                     exp.model.learning_modules[0].buffer.get_all_locations_on_object(
@@ -791,8 +792,7 @@ class GraphLearningTest(BaseGraphTest):
     def test_detailed_logging(self):
         exp = hydra.utils.instantiate(self.feature_pred_off_object_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
         train_stats, eval_stats, detailed_stats, lm_models = load_stats(
             exp.output_dir,
@@ -843,11 +843,11 @@ class GraphLearningTest(BaseGraphTest):
         """Test same scenario as test_fixed_actions_feat with uniform poses."""
         exp = hydra.utils.instantiate(self.feature_uniform_initial_poses_cfg.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            self.check_train_results(train_stats)
-            exp.evaluate()
+            exp.run()
+
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_train_results(train_stats)
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
@@ -1201,11 +1201,11 @@ class GraphLearningTest(BaseGraphTest):
         """Test 5 displacement LMs voting with two evaluation settings."""
         exp = hydra.utils.instantiate(self.five_lm_ppf_displacement_cfg.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
-            exp.evaluate()
+            exp.run()
+
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_multilm_eval_results(

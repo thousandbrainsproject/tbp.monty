@@ -81,7 +81,7 @@ class NoResetEvidenceLMTest(BaseGraphTest):
         """
         train_exp = hydra.utils.instantiate(self.pretraining_cfg.test)
         with train_exp:
-            train_exp.train()
+            train_exp.run()
 
         eval_exp = hydra.utils.instantiate(self.unsupervised_cfg.test)
         with eval_exp:
