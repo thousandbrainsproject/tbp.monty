@@ -77,7 +77,7 @@ The `experiment` argument is determined by the location of the experiment config
 
 Now that you have run your first experiment, let's unpack what happened. This first section involves a lot of text, but rest assured, once you grok this first experiment, the rest of the tutorials will be much more interactive and will focus on running experiments and using tooling. This first experiment is virtually the simplest one possible, but it is designed to familiarize you with all the pieces and parts of the experimental workflow to give you a good foundation for further experimentation.
 
-Experiments are implemented as Python classes with methods like `train` and `evaluate`. In essence, `run.py` loads a config and calls `train` and `evaluate` methods if the config says to run them. **Notice that `first_experiment` has `do_eval` set to `false`, so `run.py` will only run the `train` method.**
+Experiments are implemented as Python classes with a `run` method. In essence, `run.py` creates an experiment from a config and calls the experiment's `run` method. **Notice that `first_experiment` has `do_eval` set to `false`, so the experiment will only do training.**
 
 ## Experiment Structure: Epochs, Episodes, and Steps
 
@@ -85,24 +85,25 @@ One epoch will run training (or evaluation) on all the specified objects.  An ep
 
 If you examine the `MontyExperiment` class, the parent class of `MontySupervisedObjectPretrainingExperiment`, you will notice that there are related methods like `{pre,post}_epoch`, and `{pre,post}_episode`. **With inheritance or mixin classes, you can use these methods to customize what happens before during and after each epoch, or episode.** For example, `MontySupervisedObjectPretrainingExperiment` reimplements `pre_episode` and `post_epoch` to provide extra functionality specific to pretraining experiments. Also notice that each method contains calls to a logger. Logger classes can also be customized to log specific information at each control point. Finally, we save a model with the `save_state_dict` method at the end of each epoch. All told, the sequence of method calls goes something like
 
-- `MontyExperiment.train` (loops over epochs)
-  - Do pre-train logging.
-  - `MontyExperiment.run_epoch` (loops over episodes)
-    - `MontyExperiment.pre_epoch`
-      - Do pre-epoch logging.
-    - `MontyExperiment.run_episode` (loops over steps)
-      - `MontyExperiment.pre_episode`
-        - Do pre-episode logging.
-      - `Monty.step`
-      - `MontyExperiment.post_episode`
-        - Update object model in memory.
-        - Do post-episode logging
-    - `MontyExperiment.post_epoch`
-      - `MontyExperiment.save_state_dict`.
-      - Do post-epoch logging.
-  - Do post-train logging.
+- `MontyExperiment.run`
+  - `MontyExperiment.train` (loops over epochs)
+    - Do pre-train logging.
+    - `MontyExperiment.run_epoch` (loops over episodes)
+      - `MontyExperiment.pre_epoch`
+        - Do pre-epoch logging.
+      - `MontyExperiment.run_episode` (loops over steps)
+        - `MontyExperiment.pre_episode`
+          - Do pre-episode logging.
+        - `Monty.step`
+        - `MontyExperiment.post_episode`
+          - Update object model in memory.
+          - Do post-episode logging
+      - `MontyExperiment.post_epoch`
+        - `MontyExperiment.save_state_dict`.
+        - Do post-epoch logging.
+    - Do post-train logging.
 
-and **this is exactly the procedure that was executed when you ran `python run.py experiment=tutorial/first_experiment`.** (Please note that we're writing `MontyExperiment` in the above sequence rather than `MontySupervisedObjectPretrainingExperiment` for the sake of generality). When we run Monty in evaluation mode, the same sequence of calls is initiated by `MontyExperiment.evaluate` minus the model updating step in `MontyExperiment.post_episode`. See [here](../../how-monty-works/experiment.md) for more details on epochs, episodes, and steps.
+and **this is exactly the procedure that was executed when you ran `python run.py experiment=tutorial/first_experiment`.** (Please note that we're writing `MontyExperiment` in the above sequence rather than `MontySupervisedObjectPretrainingExperiment` for the sake of generality). When we run Monty in evaluation mode, `MontyExperiment.run` calls `MontyExperiment.evaluate`, resulting in the same sequence of calls minus the model updating step in `MontyExperiment.post_episode`. See [here](../../how-monty-works/experiment.md) for more details on epochs, episodes, and steps.
 
 ## Model
 
@@ -114,7 +115,7 @@ Note that the `sm_to_agent_dict` field of the model config maps each SM to an "a
 
 ## Steps
 
-By now, we know that an experiment relies on `train` and `evaluate` methods, that each of these runs one or more `epochs`, which consists of one or more `episodes`, and finally each `episode` repeatedly calls `model.step`. Now we will start unpacking each of these levels, starting with the innermost loop over `steps`.
+By now, we know that an experiment starts with the `run` method calling `train` and `evaluate` methods, that each of these runs one or more `epochs`, which consists of one or more `episodes`, and finally each `episode` repeatedly calls `model.step`. Now we will start unpacking each of these levels, starting with the innermost loop over `steps`.
 
 In `/experiment/config/monty/patch_and_view`, notice that the model class is specified as `${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}` (it uses the `monty.class` resolver that passes the Python class itself to the config), which is a subclass of `tbp.monty.frameworks.models.monty_base.MontyBase`, which in turn is a subclass of `tbp.monty.frameworks.models.abstract_monty_classes.Monty`. In the abstract base class `Monty`, you will see that there are two template methods for two types of steps: `_exploratory_step` and `_matching_step`. In turn, each of these steps is defined as a sequence of calls to other abstract methods, including `_set_step_type_and_check_if_done`, which is a point at which the step type can be switched. The conceptual difference between these types of steps is that **during exploratory steps, no inference is attempted**, which means no voting and no keeping track of which objects or poses are possible matches to the current observation. Each time `model.step` is called in the experimental procedure listed under the "Episodes and Epochs" heading, either `_exploratory_step` or `_matching_step` will be called. In a typical experiment, training consists of running `_matching_step` until a) an object is recognized, or b) all known objects are ruled out, or c) a step counter exceeds a threshold. Regardless of how matching-steps is terminated, the system then switches to running exploratory step so as to gather more observations and build a more complete model of an object.
 
