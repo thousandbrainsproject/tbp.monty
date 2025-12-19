@@ -1,0 +1,5 @@
+# @package config.env_interface_args.object_init_sampler
+# Predefined rotations sampler - uses fixed rotation list
+
+_target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+rotations: ${vars.rotations_all}

@@ -1,10 +1,6 @@
 # @package config
 # YCB distinct objects for evaluation
-train_env_interface_args:
-  parent_to_child_mapping: null
-  object_names:
-    - coneSolid
-eval_env_interface_args:
+env_interface_args:
   parent_to_child_mapping: null
   object_names:
     - mug
@@ -17,3 +13,4 @@ eval_env_interface_args:
     - golf_ball
     - c_lego_duplo
     - banana
+  object_init_sampler: ???

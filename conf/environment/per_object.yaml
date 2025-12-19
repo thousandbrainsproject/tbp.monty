@@ -1,10 +1,7 @@
 # @package config
 # Per-object environment interface (for both train and eval)
-train_env_interface_args:
+env_interface_args:
   parent_to_child_mapping: null
   object_names:
     - coneSolid
-eval_env_interface_args:
-  parent_to_child_mapping: null
-  object_names:
-    - coneSolid
+  object_init_sampler: ???

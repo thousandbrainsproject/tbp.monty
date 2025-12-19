@@ -1,0 +1,4 @@
+# @package config.env_interface_args.object_init_sampler
+# Random rotation sampler - generates random rotations per episode
+
+_target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
