@@ -10,8 +10,42 @@
 from __future__ import annotations
 
 import abc
+from typing import Any, Dict, NewType
 
+import numpy as np
+import numpy.typing as npt
+
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.states import GoalState
+from tbp.monty.frameworks.sensors import SensorID
+
+Modality = NewType("Modality", str)
+"""Unique identifier for a modality."""
+
+
+class SensorObservations(Dict[Modality, npt.NDArray[Any]]):
+    """Observations from a sensor."""
+
+    rgba: npt.NDArray[np.int_]  # TODO: Verify specific type
+    depth: npt.NDArray[np.float64]  # TODO: Verify specific type
+    semantic: npt.NDArray[np.int_]  # TODO: Verify specific type
+    semantic_3d: npt.NDArray[np.int_]  # TODO: Verify specific type
+    sensor_frame_data: npt.NDArray[np.int_]  # TODO: Verify specific type
+    world_camera: npt.NDArray[np.int_]  # TODO: Verify specific type
+    pixel_loc: npt.NDArray[np.float64]  # TODO: Verify specific type
+    raw: npt.NDArray[np.uint8]
+
+
+class AgentObservations(Dict[SensorID, SensorObservations]):
+    """Observations from an agent."""
+
+    pass
+
+
+class Observations(Dict[AgentID, AgentObservations]):
+    """Observations from the environment."""
+
+    pass
 
 
 class Monty(metaclass=abc.ABCMeta):
@@ -256,7 +290,7 @@ class ObjectModel(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def update_model(self, obersevations):
+    def update_model(self, observations):
         """Update an existing model with new observations."""
         pass
 

@@ -8,8 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import os
-import pickle
+import json
+from pathlib import Path
 
 from typing_extensions import override
 
@@ -86,6 +86,7 @@ class BaseMontyLogger:
 
     def __init__(self, handlers):
         self.handlers = handlers
+        self.use_parallel_wandb_logging = False
 
     def flush(self):
         pass
@@ -130,6 +131,7 @@ class TestLogger(BaseMontyLogger):
     def __init__(self, handlers):
         self.handlers = handlers
         self.log = []
+        self.use_parallel_wandb_logging = False
 
     @override
     def pre_episode(self, logger_args, output_dir, model):
@@ -165,8 +167,9 @@ class TestLogger(BaseMontyLogger):
 
     @override
     def close(self, logger_args, output_dir, model):
-        with open(os.path.join(output_dir, "fake_log.pkl"), "wb") as f:
-            pickle.dump(self.log, f)
+        outfile = Path(output_dir) / "fake_log.json"
+        with outfile.open("w") as f:
+            json.dump(self.log, f)
 
     def __deepcopy__(self, memo):
         # Do not create new copy of loggers. They are create by the tests outside

@@ -8,5 +8,6 @@
 - .venv
 - .vscode
 - docs
+- outputs
 - rfcs
 - *.pyc

@@ -14,7 +14,6 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
-import os
 import shutil
 import tempfile
 import unittest
@@ -35,8 +34,8 @@ class HierarchyTest(BaseGraphTest):
         """Code that gets executed before every test."""
         super().setUp()
 
-        self.output_dir = tempfile.mkdtemp()
-        self.model_path = Path(self.output_dir) / "pretrained"
+        self.output_dir = Path(tempfile.mkdtemp())
+        self.model_path = self.output_dir / "pretrained"
 
         with hydra.initialize(version_base=None, config_path="../../conf"):
             self.two_lms_heterarchy_cfg = hydra.compose(
@@ -114,14 +113,15 @@ class HierarchyTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.two_lms_heterarchy_cfg.test)
         with exp:
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_hierarchical_lm_train_results(train_stats)
 
-            models = load_models_from_dir(exp.output_dir)
+            models = load_models_from_dir(output_dir)
             self.check_hierarchical_models(models)
 
             exp.evaluate()
-            eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+            eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
             self.check_hierarchical_lm_eval_results(eval_stats)
 
     def test_semisupervised_stacked_lms_experiment(self):
@@ -204,7 +204,7 @@ class HierarchyTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.two_lms_eval_cfg.test)
         with exp:
             exp.evaluate()
-            eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+            eval_stats = pd.read_csv(Path(exp.output_dir) / "eval_stats.csv")
             episode = 0
             num_lms = len(exp.model.learning_modules)
             for lm_id in range(num_lms):

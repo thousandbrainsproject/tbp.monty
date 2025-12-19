@@ -6,6 +6,8 @@ Welcome, and thank you for your interest in contributing to Monty!
 
 We appreciate all of your contributions. Below, you will find a list of ways to get involved and help create AI based on principles of the neocortex.
 
+# Help with Items on our Roadmap
+We have a collection of items that we think will be important in the near-term to improve Monty's capabilities, platform usability, or the project as a whole. These items can be found in our [future work table](../future-work/project-roadmap.md). You can filter this table by your interests, background, and time availability. If an item sounds interesting, you can click on the title and read a more detailed description. 
 
 # Contribute To Our Code
 

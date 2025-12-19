@@ -27,6 +27,7 @@ The documentation is broken into six main sections:
 | ⚙️&nbsp;[How&nbsp;Monty&nbsp;Works](../how-monty-works/implementation-overview.md) | Dive deep into the concrete algorithms that make Monty work and understand how the different components function together. |
 | 🤝&nbsp;[Contributing](../contributing/why-contribute.md) | Discover the many ways you can contribute to the project - from code and documentation to testing and ideas. |
 | 👥&nbsp;[Community](../community/code-of-conduct.md) | Join our welcoming community! Learn about our guidelines, code of conduct, and how to participate effectively. |
+| 🧠&nbsp;[Theory](../theory/theory-overview.md) | The neuroscience theory behind the project and our recent conceptual progress. |
 | 🔮&nbsp;[Future&nbsp;Work](../future-work/project-roadmap.md) | Explore exciting opportunities to help shape Monty's future by contributing to planned features and improvements. |
 
 
