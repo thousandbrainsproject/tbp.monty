@@ -48,7 +48,7 @@ def main(cfg: DictConfig):
     output_dir.mkdir(exist_ok=True, parents=True)
     experiment = hydra.utils.instantiate(cfg.experiment)
     start_time = time.time()
-    with experiment as exp:
-        exp.run()
+    with experiment:
+        experiment.run()
 
     logger.info(f"Done running {experiment} in {time.time() - start_time} seconds")
