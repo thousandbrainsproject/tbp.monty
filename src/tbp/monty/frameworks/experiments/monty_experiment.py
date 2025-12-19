@@ -452,7 +452,7 @@ class MontyExperiment:
         )
 
     def get_epoch_state(self):
-        if self.experiment_mode == ExperimentMode.TRAIN:
+        if self.experiment_mode is ExperimentMode.TRAIN:
             epoch = self.train_epochs
             episode = self.train_episodes
         else:
@@ -490,7 +490,7 @@ class MontyExperiment:
         self.env_interface.pre_episode()
 
         self.max_steps = self.max_train_steps
-        if self.experiment_mode != ExperimentMode.TRAIN:
+        if self.experiment_mode is not ExperimentMode.TRAIN:
             self.max_steps = self.max_eval_steps
 
         self.logger_handler.pre_episode(self.logger_args)
@@ -514,7 +514,7 @@ class MontyExperiment:
         self.logger_handler.post_episode(self.logger_args)
         self.model.post_episode()
 
-        if self.experiment_mode == ExperimentMode.TRAIN:
+        if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_episodes += 1
             self.total_train_steps += steps
         else:
@@ -550,7 +550,7 @@ class MontyExperiment:
     def pre_epoch(self):
         """Set environment interface and call sub pre_epoch functions."""
         self.env_interface = self.train_env_interface
-        if self.experiment_mode != ExperimentMode.TRAIN:
+        if self.experiment_mode is not ExperimentMode.TRAIN:
             self.env_interface = self.eval_env_interface
 
         self.env_interface.pre_epoch()
@@ -562,7 +562,7 @@ class MontyExperiment:
         self.save_state_dict(output_dir=self.output_dir / f"{self.train_epochs}")
         self.logger_handler.post_epoch(self.logger_args)
 
-        if self.experiment_mode == ExperimentMode.TRAIN:
+        if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_epochs += 1
             self.train_env_interface.post_epoch()
         else:
@@ -623,7 +623,7 @@ class MontyExperiment:
         # TODO can consider a save frequency for training as well; e.g. currently
         # with training from scratch, we save +++ data
         if (
-            self.experiment_mode == ExperimentMode.EVAL
+            self.experiment_mode is ExperimentMode.EVAL
             and self.monty_logger.use_parallel_wandb_logging
         ):
             pass
