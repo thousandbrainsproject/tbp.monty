@@ -6,18 +6,19 @@
 # Control experiment using standard 3D sensor (HabitatSM) for comparison with 2D sensor.
 
 defaults:
-  - override /presets: supervised_pretraining
+  - override /mode: pretrain
   - override /logging: pretrain
-  - override /train_env: disk_objects
+  - override /environment: disk_objects
   
 _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 
+vars:
+  zoom: 20.0
+  resolution: 64
+  blur_sigma: 5.0
+
 # Config overrides
 config:
-  zoom: 10.0
-  resolution: 64
-  step: 1
-  blur_sigma: 0.0
   n_train_epochs: 3
   logging:
     output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor}
@@ -27,19 +28,19 @@ config:
     motor_system_config:
       motor_system_args:
         policy_args:
-          fixed_amount: ${config.step}
+          fixed_amount: 1
   env_interface_config:
     env_init_args:
       data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
       agents:
         agent_args:
           resolutions: 
-          - - ${config.resolution}
-            - ${config.resolution}
-          - - ${config.resolution}
-            - ${config.resolution}
+          - - ${vars.resolution}
+            - ${vars.resolution}
+          - - ${vars.resolution}
+            - ${vars.resolution}
           zooms:
-            - ${config.zoom}
+            - ${vars.zoom}
             - 1.0
     transform:
         # - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
@@ -54,13 +55,13 @@ config:
             - patch
             - view_finder
           resolutions: 
-          - - ${config.resolution}
-            - ${config.resolution}
-          - - ${config.resolution}
-            - ${config.resolution}
+          - - ${vars.resolution}
+            - ${vars.resolution}
+          - - ${vars.resolution}
+            - ${vars.resolution}
           world_coord: true
           zooms:
-          - ${config.zoom}
+          - ${vars.zoom}
           - 1.0
           get_all_points: true
           use_semantic_sensor: false

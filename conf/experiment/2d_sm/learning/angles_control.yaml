@@ -5,9 +5,9 @@
 # Usage: python run.py experiment=2d_sm/learning/base_angles
 
 defaults:
-  - override /presets: supervised_pretraining
+  - override /mode: pretrain
   - override /logging: pretrain
-  - override /train_env: angled_lines
+  - override /environment: angled_lines
   
 _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 

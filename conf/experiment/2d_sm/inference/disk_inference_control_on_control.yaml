@@ -3,7 +3,7 @@
 
 defaults:
   - override /monty: patch_and_view_inference
-  - override /eval_env: disk_objects
+  - override /environment: disk_objects
 
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 

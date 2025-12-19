@@ -222,34 +222,20 @@ class MontyExperiment:
             env_interface_config["env_init_func"], env_interface_config["env_init_args"]
         )
 
-        # Initialize train environment interface if needed
-        if config["do_train"]:
-            env_interface_class = config["train_env_interface_class"]
-            env_interface_args = dict(
-                env=self.env,
-                transform=env_interface_config["transform"],
-                **config["train_env_interface_args"],
-            )
+        env_interface_class = config["env_interface_class"]
+        env_interface_args = dict(
+            env=self.env,
+            transform=env_interface_config["transform"],
+            **config["env_interface_args"],
+        )
 
-            self.train_env_interface = self.create_env_interface(
-                env_interface_class, env_interface_args
-            )
-        else:
-            self.train_env_interface = None
+        env_interface = self.create_env_interface(env_interface_class, env_interface_args)
 
-        # Initialize eval environment interfaces if needed
         if config["do_eval"]:
-            env_interface_class = config["eval_env_interface_class"]
-            env_interface_args = dict(
-                env=self.env,
-                transform=env_interface_config["transform"],
-                **config["eval_env_interface_args"],
-            )
-
-            self.eval_env_interface = self.create_env_interface(
-                env_interface_class, env_interface_args
-            )
+            self.train_env_interface = None
+            self.eval_env_interface = env_interface
         else:
+            self.train_env_interface = env_interface
             self.eval_env_interface = None
 
     def create_env_interface(self, env_interface_class, env_interface_args):

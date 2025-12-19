@@ -2,6 +2,61 @@
 
 This folder contains Monty configurations.
 
+## Config Groups
+
+The following config groups are available at the top level:
+
+| Group | Purpose | Package Target |
+|-------|---------|----------------|
+| `mode` | Experiment mode with base settings (inference or pretrain) | `_global_` |
+| `logging` | Logging configuration | `config.logging` |
+| `monty` | Monty agent configuration (sensors, learning modules, motor) | `config.monty_config` |
+| `agent_config` | Environment interface (agent setup, sensors, transforms) | `config.env_interface_config` |
+| `environment` | Object selection for both training and evaluation | `config` (sets both `train_env_interface_args` and `eval_env_interface_args`) |
+
+### Modes
+
+The `mode` config group provides base experiment settings and execution mode. All modes extend `_defaults.yaml` which provides shared settings (epochs, steps, seed, etc.).
+
+| Mode | `do_train` | `do_eval` | Description |
+|------|------------|-----------|-------------|
+| `inference` (default) | false | true | Evaluate pretrained models (nullifies train_env) |
+| `pretrain` | true | false | Train models from scratch with supervised learning (nullifies eval_env) |
+
+Usage:
+```bash
+python run.py experiment=... mode=pretrain
+```
+
+Modes do not select monty configs - use the `monty` config group or experiment defaults for that.
+
+## Config Syntax
+
+### New syntax (preferred)
+
+Use `override` syntax to compose experiments from top-level config groups:
+
+```yaml
+defaults:
+  - override /mode: pretrain
+  - override /logging: pretrain
+  - override /monty: patch_and_view_learning
+  - override /agent_config: patch_view_habitat
+  - override /environment: per_object
+```
+
+### Legacy syntax
+
+Older experiments reference configs from `experiment/config/` with explicit package targets:
+
+```yaml
+defaults:
+  - config/monty/patch_and_view@config.monty_config
+  - config/environment/patch_view_finder_mount_habitat@config.env_interface_config
+```
+
+This syntax is deprecated for new experiments but remains supported for backward compatibility.
+
 ## Experiments
 
 The `experiment` folder contains Monty experiment configurations. Most of these experiments are benchmarks and you can learn more about them at [Running Benchmarks](https://thousandbrainsproject.readme.io/docs/running-benchmarks). The experiments in the `experiment/tutorial` folder are used in [Tutorials](https://thousandbrainsproject.readme.io/docs/tutorials).

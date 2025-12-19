@@ -271,9 +271,9 @@ def generate_parallel_eval_configs(
         List of configs for evaluation episodes.
     """
     sampler = hydra.utils.instantiate(
-        experiment.config["eval_env_interface_args"]["object_init_sampler"]
+        experiment.config["env_interface_args"]["object_init_sampler"]
     )
-    object_names = experiment.config["eval_env_interface_args"]["object_names"]
+    object_names = experiment.config["env_interface_args"]["object_names"]
     # sampler_params = sampler.all_combinations_of_params()
 
     new_experiments = []
@@ -310,7 +310,7 @@ def generate_parallel_eval_configs(
 
             new_experiment["config"]["logging"]["episode_id_parallel"] = episode_count
 
-            new_experiment["config"]["eval_env_interface_args"].update(
+            new_experiment["config"]["env_interface_args"].update(
                 object_names=[obj],
                 object_init_sampler=Predefined(**params),
             )
@@ -349,9 +349,9 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
 
     """
     sampler = hydra.utils.instantiate(
-        experiment.config["train_env_interface_args"]["object_init_sampler"]
+        experiment.config["env_interface_args"]["object_init_sampler"]
     )
-    object_names = experiment.config["train_env_interface_args"]["object_names"]
+    object_names = experiment.config["env_interface_args"]["object_names"]
     new_experiments = []
 
     for obj in object_names:
@@ -369,10 +369,10 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
         new_experiment["config"]["logging"]["log_parallel_wandb"] = False
 
         # Object id, pose parameters for single episode
-        new_experiment["config"]["train_env_interface_args"].update(
+        new_experiment["config"]["env_interface_args"].update(
             object_names=[obj for _ in range(len(sampler))]
         )
-        new_experiment["config"]["train_env_interface_args"]["object_init_sampler"][
+        new_experiment["config"]["env_interface_args"]["object_init_sampler"][
             "change_every_episode"
         ] = True
 
@@ -693,7 +693,7 @@ def main(cfg: DictConfig):
 
     if cfg.experiment.config.do_train:
         assert issubclass(
-            cfg.experiment.config.train_env_interface_class,
+            cfg.experiment.config.env_interface_class,
             EnvironmentInterfacePerObject,
         ), "parallel experiments only work (for now) with per object env interfaces"
 
@@ -715,7 +715,7 @@ def main(cfg: DictConfig):
 
     if cfg.experiment.config.do_eval:
         assert issubclass(
-            cfg.experiment.config.eval_env_interface_class,
+            cfg.experiment.config.env_interface_class,
             EnvironmentInterfacePerObject,
         ), "parallel experiments only work (for now) with per object env interfaces"
 
