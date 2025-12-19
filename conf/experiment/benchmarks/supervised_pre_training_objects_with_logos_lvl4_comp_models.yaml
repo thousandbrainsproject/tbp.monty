@@ -10,4 +10,4 @@ config:
   train_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations: ${benchmarks.rotations_all}
+      rotations: ${vars.rotations_all}

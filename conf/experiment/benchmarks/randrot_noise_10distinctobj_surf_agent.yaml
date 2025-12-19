@@ -14,14 +14,14 @@ defaults:
   - config/environment/surface_view_finder_mount_habitat@config.env_interface_config
 
 config:
-  model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+  model_name_or_path: ${vars.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
   n_eval_epochs: 10
   max_total_steps: 5000 # x4 max_eval_steps for surface-policy, x2.5 for feature-change SM
   logging:
     run_name: randrot_noise_10distinctobj_surf_agent
   monty_config:
     monty_args:
-      min_eval_steps: ${benchmarks.min_eval_steps}
+      min_eval_steps: ${vars.min_eval_steps}
     sensor_module_configs:
       sensor_module_1:
         sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}

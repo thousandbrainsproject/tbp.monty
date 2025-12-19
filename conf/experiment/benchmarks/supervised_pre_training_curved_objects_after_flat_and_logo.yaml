@@ -6,7 +6,7 @@ defaults:
   - config/environment_interface/logos_on_objs/curved_objects_without_logos@config.train_env_interface_args.object_names
 
 config:
-  n_train_epochs: ${benchmarks.rotations_all_count}
+  n_train_epochs: ${vars.rotations_all_count}
   supervised_lm_ids: ["learning_module_0"]
   model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11/supervised_pre_training_logos_after_flat_objects/pretrained/}
   logging:
@@ -14,4 +14,4 @@ config:
   train_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations: ${benchmarks.rotations_all}
+      rotations: ${vars.rotations_all}

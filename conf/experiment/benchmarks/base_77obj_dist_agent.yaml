@@ -5,11 +5,11 @@ defaults:
   - config/environment_interface/ycb/shuffled_objects@config.eval_env_interface_args.object_names
 
 config:
-  model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_77obj/pretrained/
-  n_eval_epochs: ${benchmarks.rotations_3_count}
+  model_name_or_path: ${vars.pretrained_dir}/surf_agent_1lm_77obj/pretrained/
+  n_eval_epochs: ${vars.rotations_3_count}
   logging:
     run_name: base_77obj_dist_agent
   eval_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations: ${benchmarks.rotations_3}
+      rotations: ${vars.rotations_3}

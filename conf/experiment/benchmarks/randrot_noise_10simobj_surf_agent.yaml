@@ -5,7 +5,7 @@ defaults:
   - config/environment_interface/ycb/similar_objects@config.eval_env_interface_args.object_names
 
 config:
-  model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10similarobj/pretrained/
+  model_name_or_path: ${vars.pretrained_dir}/surf_agent_1lm_10similarobj/pretrained/
   n_eval_epochs: 10 # number of random rotations to test for each object
   max_total_steps: 6000
   logging:

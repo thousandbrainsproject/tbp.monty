@@ -17,10 +17,10 @@ config:
     run_name: base_10multi_distinctobj_dist_agent
   monty_config:
     monty_args:
-      min_eval_steps: ${benchmarks.min_eval_steps}
+      min_eval_steps: ${vars.min_eval_steps}
   eval_env_interface_args:
     object_names:
       num_distractors: 10
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations: ${benchmarks.rotations_all}
+      rotations: ${vars.rotations_all}

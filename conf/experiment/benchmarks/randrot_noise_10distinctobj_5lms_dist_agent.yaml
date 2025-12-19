@@ -12,7 +12,7 @@ defaults:
   - config/environment/five_lm_mount_habitat@config.env_interface_config
 
 config:
-  model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_5lms/pretrained/
+  model_name_or_path: ${vars.pretrained_dir}/supervised_pre_training_5lms/pretrained/
   n_eval_epochs: 10
   min_lms_match: 3
   logging:
@@ -20,4 +20,4 @@ config:
   monty_config:
     monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching} # has custom evidence voting method
     monty_args:
-      min_eval_steps: ${benchmarks.min_eval_steps}
+      min_eval_steps: ${vars.min_eval_steps}

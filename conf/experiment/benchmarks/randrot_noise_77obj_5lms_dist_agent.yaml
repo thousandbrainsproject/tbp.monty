@@ -5,7 +5,7 @@ defaults:
   - config/environment_interface/ycb/shuffled_objects@config.eval_env_interface_args.object_names
 
 config:
-  model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_5lms_all_objects/pretrained/
+  model_name_or_path: ${vars.pretrained_dir}/supervised_pre_training_5lms_all_objects/pretrained/
   n_eval_epochs: 1
   min_lms_match: 3
   logging:

@@ -18,7 +18,7 @@ defaults:
   - config/environment_interface/logos_on_objs/flat_objects_without_logos@config.train_env_interface_args.object_names
 
 config:
-  n_train_epochs: ${benchmarks.rotations_all_count}
+  n_train_epochs: ${vars.rotations_all_count}
   # only learn child objects in lm_0 at first so they can be used as input when
   # LM_1 is learning.
   supervised_lm_ids: ["learning_module_0"]
@@ -33,4 +33,4 @@ config:
   train_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations: ${benchmarks.rotations_all}
+      rotations: ${vars.rotations_all}
