@@ -1,0 +1,3 @@
+# @package config.monty_config
+# Evidence matching Monty class
+monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
