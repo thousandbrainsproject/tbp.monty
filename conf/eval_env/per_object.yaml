@@ -1,6 +1,0 @@
-# @package config.eval_env_interface_args
-# Per-object training environment interface
-parent_to_child_mapping: null
-object_names:
-  - coneSolid
-

@@ -1,0 +1,11 @@
+# @package config
+# Angled lines object for 2D sensor experiments
+defaults:
+  - per_object
+
+train_env_interface_args:
+  object_names:
+    - 030_angles_yb
+eval_env_interface_args:
+  object_names:
+    - 030_angles_yb

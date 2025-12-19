@@ -4,12 +4,12 @@
 
 defaults:
   - _self_
-  - presets: defaults 
-  - logging: defaults 
-  - monty: patch_and_view 
-  - environment: patch_view_habitat
-  - train_env: per_object
-  - eval_env: per_object
+  - vars: defaults
+  - logging: defaults
+  - monty: patch_and_view_inference
+  - agent_config: patch_view_habitat
+  - environment: per_object
+  - mode: inference
   # Experiment config (required) - use override to change defaults above
   - experiment: MISSING
 
