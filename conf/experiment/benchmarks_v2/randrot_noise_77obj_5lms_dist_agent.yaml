@@ -1,0 +1,38 @@
+# @package _global_
+
+defaults:
+  - /environment/object_sampler: random_rotation
+  - override /logging: parallel
+  - override /monty: benchmark_evidence_sota_5lm
+  - override /agent_config: five_lm_habitat
+  - override /environment: ycb_77obj
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+
+config:
+  model_name_or_path: ${vars.pretrained_dir}/supervised_pre_training_5lms_all_objects/pretrained/
+  n_eval_epochs: 1
+  min_lms_match: 3
+  logging:
+    wandb_group: benchmark_experiments
+    run_name: randrot_noise_77obj_5lms_dist_agent
+  monty_config:
+    monty_args:
+      min_eval_steps: ${vars.min_eval_steps}
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_args:
+          noise_params: ${vars.default_all_noise_params}
+      sensor_module_1:
+        sensor_module_args:
+          noise_params: ${vars.default_all_noise_params}
+      sensor_module_2:
+        sensor_module_args:
+          noise_params: ${vars.default_all_noise_params}
+      sensor_module_3:
+        sensor_module_args:
+          noise_params: ${vars.default_all_noise_params}
+      sensor_module_4:
+        sensor_module_args:
+          noise_params: ${vars.default_all_noise_params}
+  env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
