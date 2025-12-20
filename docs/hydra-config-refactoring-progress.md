@@ -365,16 +365,19 @@ conf/logging/
 
 ## Files Changed This Session
 
-### Phase 10: Migrate dist_on_distm Benchmark
+### Phase 10: Migrate Benchmarks to v2
 
 | File | Change |
 |------|--------|
 | `conf/experiment/benchmarks_v2/randrot_noise_10distinctobj_dist_on_distm.yaml` | Created - dist agent with noise, random rotation, supervised_pre_training_base model |
+| `conf/experiment/benchmarks_v2/randrot_10distinctobj_surf_agent.yaml` | Created - surface agent with random rotation (no noise) |
+| `conf/experiment/benchmarks/randrot_noise_10distinctobj_dist_on_distm.yaml` | Deleted |
+| `conf/experiment/benchmarks/randrot_10distinctobj_surf_agent.yaml` | Deleted |
 
 **Key simplifications:**
 - Uses `override /logging: parallel` with only wandb_group/run_name overrides
 - Uses unified `env_interface_class` (instead of `eval_env_interface_class`)
-- 26 lines vs original's deep inheritance chain
+- ~22-26 lines vs original's deep inheritance chain
 
 ### Phase 9: Complete Logging Config Group
 
