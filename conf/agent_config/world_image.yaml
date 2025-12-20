@@ -1,0 +1,10 @@
+# @package config.env_interface_config
+# World image environment - 2D image saccades on pre-captured world images.
+#
+# Uses SaccadeOnImageEnvironment instead of HabitatEnvironment.
+
+env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.SaccadeOnImageEnvironment}
+env_init_args:
+  data_path: ${path.expanduser:${oc.env:MONTY_DATA}/worldimages/standard_scenes/}
+transform: null
+rng: null

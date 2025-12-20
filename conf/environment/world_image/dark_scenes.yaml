@@ -1,0 +1,4 @@
+# @package config.env_interface_config.env_init_args
+# Dark lighting world image scenes
+
+data_path: ${path.expanduser:${oc.env:MONTY_DATA}/worldimages/dark_scenes/}

@@ -1,0 +1,37 @@
+# @package _global_
+# Multi-object recognition with 10 targets and 10 distractors.
+# Tests recognition in cluttered scenes with multiple objects.
+
+defaults:
+  - /environment/object_sampler: predefined
+  - override /logging: defaults
+  - override /monty: multi_object_inference
+  - override /agent_config: multi_object_habitat
+  - override /environment: ycb_distinct
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+
+config:
+  model_name_or_path: ${vars.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+  n_eval_epochs: ${vars.rotations_all_count}
+  logging:
+    python_log_level: WARNING
+    monty_log_level: BASIC
+    monty_handlers:
+      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.ReproduceEpisodeHandler}
+    wandb_handlers:
+      - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbTableStatsHandler}
+      - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbChartStatsHandler}
+    wandb_group: benchmark_experiments
+    output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs}
+    run_name: base_10multi_distinctobj_dist_agent
+  monty_config:
+    monty_args:
+      min_eval_steps: ${vars.min_eval_steps}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  eval_env_interface_args:
+    object_names:
+      targets_list: ${vars.ycb_distinct_objects}
+      source_object_list: ${vars.ycb_distinct_objects}
+      num_distractors: 10

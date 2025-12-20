@@ -1,0 +1,14 @@
+# @package config.monty_config
+# Multi-object inference config
+#
+# Uses informed goal state driven motor with larger step size and farther viewing distance.
+# EvidenceGraphLM with lower max_nneighbors for faster processing with distractors.
+
+defaults:
+  - monty_class: evidence_matching
+  - monty_args: defaults
+  - motor_system: informed_goal_state_driven_farther_away
+  - connectivity: patch_view_single_lm
+  - /monty/sensor_module/components/patch_distant@sensor_module_configs.sensor_module_0
+  - /monty/sensor_module/components/probe_view_finder@sensor_module_configs.sensor_module_1
+  - learning_module/evidence_distant_fast@learning_module_configs.learning_module_0

@@ -1,0 +1,4 @@
+# @package config.env_interface_config.env_init_args
+# Multi-object world image scenes
+
+data_path: ${path.expanduser:${oc.env:MONTY_DATA}/worldimages/multi_object_scenes/}

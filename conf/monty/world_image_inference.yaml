@@ -1,0 +1,14 @@
+# @package config.monty_config
+# World image inference config
+#
+# Uses patch_and_view structure with informed motor policy (20° steps).
+# Optimized for 2D world image saccade experiments.
+
+defaults:
+  - monty_class: evidence_matching
+  - monty_args: defaults
+  - motor_system: informed_no_trans_step_s20
+  - connectivity: patch_view_single_lm
+  - /monty/sensor_module/components/patch_distant@sensor_module_configs.sensor_module_0
+  - /monty/sensor_module/components/probe_view_finder@sensor_module_configs.sensor_module_1
+  - learning_module/evidence_distant@learning_module_configs.learning_module_0
