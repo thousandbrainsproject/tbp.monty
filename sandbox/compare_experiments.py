@@ -60,7 +60,7 @@ def get_rotation_error_data(df):
     """Get raw rotation_error data in degrees.
 
     Args:
-        df: DataFrame with rotation_error column (in radians)
+        df: DataFrame with rotation_error column (in degrees)
 
     Returns:
         Array of rotation_error values in degrees (with NaN removed)
@@ -68,9 +68,8 @@ def get_rotation_error_data(df):
     if "rotation_error" not in df.columns:
         raise ValueError("DataFrame must contain 'rotation_error' column")
 
-    # Drop NaN values and convert from radians to degrees
-    rotation_error_rad = df["rotation_error"].dropna()
-    rotation_error_deg = (rotation_error_rad * 180 / np.pi).values
+    # Drop NaN values (rotation_error is already in degrees)
+    rotation_error_deg = df["rotation_error"].dropna().values
     return rotation_error_deg
 
 
@@ -383,10 +382,10 @@ def main():
     """Main function to compare two experiments."""
     # Define experiment paths
     exp1_path = Path(
-        "/Users/hlee/tbp/results/monty/projects/evidence_eval_runs/logs/disk_inference_2d_on_2d/eval_stats.csv"
+        "/Users/hlee/tbp/results/monty/projects/2d_sensor_inference/disk_inference_2d_on_2d_zoom30_res64_blur5.0/eval_stats.csv"
     )
     exp2_path = Path(
-        "/Users/hlee/tbp/results/monty/projects/evidence_eval_runs/logs/disk_inference_control_on_control/eval_stats.csv"
+        "/Users/hlee/tbp/results/monty/projects/2d_sensor_inference/disk_inference_control_on_control/eval_stats.csv"
     )
 
     # Experiment names for labels
