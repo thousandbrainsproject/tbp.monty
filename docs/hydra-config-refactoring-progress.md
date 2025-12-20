@@ -365,6 +365,14 @@ conf/logging/
 
 ## Files Changed This Session
 
+### Phase 12: Add YCB Similar Environment and Migrate Benchmark
+
+| File | Change |
+|------|--------|
+| `conf/environment/ycb_similar.yaml` | Created - YCB similar objects list |
+| `conf/experiment/benchmarks_v2/base_10simobj_surf_agent.yaml` | Created - surface agent with similar objects |
+| `conf/experiment/benchmarks/base_10simobj_surf_agent.yaml` | Deleted |
+
 ### Phase 11: Add 5LM Config Group and Migrate Benchmark
 
 Created new config group for 5LM (multi-learning-module) experiments.

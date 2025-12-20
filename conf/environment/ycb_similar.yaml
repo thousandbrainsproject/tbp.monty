@@ -1,0 +1,16 @@
+# @package config
+# YCB similar objects for evaluation - objects with similar shapes/features
+env_interface_args:
+  parent_to_child_mapping: null
+  object_names:
+    - mug
+    - e_cups
+    - knife
+    - fork
+    - spoon
+    - c_cups
+    - d_cups
+    - cracker_box
+    - sugar_box
+    - pudding_box
+  object_init_sampler: ???
