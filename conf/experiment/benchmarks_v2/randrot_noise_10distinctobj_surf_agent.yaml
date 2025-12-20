@@ -1,0 +1,35 @@
+# @package _global_
+
+defaults:
+  - /environment/object_sampler: random_rotation
+  - override /logging: defaults
+  - override /monty: benchmark_evidence_sota_surface
+  - override /agent_config: surface_habitat
+  - override /environment: ycb_distinct
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+
+config:
+  model_name_or_path: ${config.vars.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+  n_eval_epochs: 10
+  max_total_steps: 5000
+  logging:
+    python_log_level: WARNING
+    monty_log_level: BASIC
+    monty_handlers:
+      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.ReproduceEpisodeHandler}
+    wandb_handlers:
+      - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbTableStatsHandler}
+      - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbChartStatsHandler}
+    wandb_group: benchmark_experiments
+    output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs}
+    run_name: randrot_noise_10distinctobj_surf_agent
+  monty_config:
+    monty_args:
+      min_eval_steps: ${config.vars.min_eval_steps}
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_args:
+          noise_params: ${config.vars.default_all_noise_params}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}

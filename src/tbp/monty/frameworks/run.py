@@ -46,7 +46,7 @@ def main(cfg: DictConfig):
     cfg.config.logging.output_dir = str(output_dir)
 
     output_dir.mkdir(exist_ok=True, parents=True)
-    experiment = hydra.utils.instantiate(cfg.experiment)
+    experiment = hydra.utils.instantiate(cfg)
     start_time = time.time()
     with experiment as exp:
         # TODO: Later will want to evaluate every x episodes or epochs

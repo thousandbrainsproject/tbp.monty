@@ -4,7 +4,7 @@
 
 **Branch:** `extract_edge`
 
-**Last updated:** 2025-12-18
+**Last updated:** 2025-12-19
 
 ---
 
@@ -238,9 +238,63 @@ conf/
     ├── config/                  # Legacy configs (still supported)
     ├── benchmarks/              # Benchmark experiments (legacy syntax)
     ├── benchmarks_v2/           # Refactored benchmarks (new syntax)
-    │   └── base_config_10distinctobj_dist_agent.yaml
+    │   ├── base_config_10distinctobj_dist_agent.yaml
+    │   └── randrot_noise_10distinctobj_surf_agent.yaml
     └── 2d_sm/                   # 2D sensor experiments (new syntax)
 ```
+
+---
+
+### Phase 8: Migrate Surface Agent Benchmark
+**Status:** COMPLETED
+
+Migrated the noisy surface agent random rotation benchmark from legacy to new syntax.
+
+| Task | Status |
+|------|--------|
+| Create `conf/experiment/benchmarks_v2/randrot_noise_10distinctobj_surf_agent.yaml` | Done |
+| Validate config structure | Done |
+
+**New file:**
+- `conf/experiment/benchmarks_v2/randrot_noise_10distinctobj_surf_agent.yaml`
+
+**Syntax comparison:**
+
+Original (15 lines of defaults with deep inheritance):
+```yaml
+defaults:
+  - randrot_noise_10distinctobj_dist_agent
+  - config/monty/clear_monty_config@config
+  - config/monty/surface_and_view_sota@config.monty_config
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/learning_modules/default_evidence_surf_1lm@config.monty_config.learning_module_configs
+  - config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - config/monty/motor_system/cur_informed_surface_goal_state_driven@config.monty_config.motor_system_config
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+  - config/monty/sensor_modules/sensor_module/default_all_noisy_surf_agent@config.monty_config.sensor_module_configs.sensor_module_0
+  - config/environment/clear_env_interface_config@config
+  - config/environment/surface_view_finder_mount_habitat@config.env_interface_config
+```
+
+Refactored (5 lines of defaults, flat structure):
+```yaml
+defaults:
+  - /environment/object_sampler: random_rotation
+  - override /logging: defaults
+  - override /monty: benchmark_evidence_sota_surface
+  - override /agent_config: surface_habitat
+  - override /environment: ycb_distinct
+```
+
+**Key configuration verified:**
+- Surface sensor module (`is_surface_sm: true`)
+- Curvature-informed surface policy
+- Noise params via `${vars.default_all_noise_params}`
+- Random rotation object sampler
+- 10 distinct YCB objects
+- `n_eval_epochs: 10`, `max_total_steps: 5000`
 
 ---
 
@@ -265,6 +319,12 @@ conf/
 ---
 
 ## Files Changed This Session
+
+### Phase 8: Migrate Surface Agent Benchmark
+
+| File | Change |
+|------|--------|
+| `conf/experiment/benchmarks_v2/randrot_noise_10distinctobj_surf_agent.yaml` | Created - surface agent with noise and random rotation |
 
 ### Phase 7: Migrate presets/ into mode/
 
