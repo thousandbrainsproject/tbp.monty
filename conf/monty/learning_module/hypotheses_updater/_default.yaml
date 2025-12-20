@@ -1,0 +1,4 @@
+# Base DefaultHypothesesUpdater config with ??? for required fields.
+# Use default.yaml or fast.yaml for concrete configs.
+
+max_nneighbors: ???

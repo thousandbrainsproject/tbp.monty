@@ -1,0 +1,5 @@
+# Full patch feature weights: hsv + pose_vectors + principal_curvatures_log
+patch:
+  hsv: ${np.array:[1, 0.5, 0.5]}
+  pose_vectors: ${np.ones:3}
+  principal_curvatures_log: ${np.ones:2}

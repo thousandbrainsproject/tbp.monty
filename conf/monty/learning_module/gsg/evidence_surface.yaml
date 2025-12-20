@@ -1,0 +1,7 @@
+# EvidenceGoalStateGenerator for surface agent.
+# desired_object_distance: 0.025m (2.5cm) - closer than distant agent
+
+defaults:
+  - _evidence
+
+desired_object_distance: 0.025

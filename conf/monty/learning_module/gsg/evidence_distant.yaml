@@ -1,0 +1,7 @@
+# EvidenceGoalStateGenerator for distant agent.
+# desired_object_distance: 0.03m (3cm)
+
+defaults:
+  - _evidence
+
+desired_object_distance: 0.03

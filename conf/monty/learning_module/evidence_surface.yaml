@@ -1,0 +1,9 @@
+# EvidenceGraphLM for surface agent with standard settings.
+# Composes base + GSG (surface, closer distance) + HypothesesUpdater (default)
+
+defaults:
+  - _evidence_graph
+  - gsg/evidence_surface@learning_module_args.gsg_args
+  - hypotheses_updater/default@learning_module_args.hypotheses_updater_args
+  - feature_weights/patch_full@learning_module_args.feature_weights
+  - tolerances/patch_full@learning_module_args.tolerances

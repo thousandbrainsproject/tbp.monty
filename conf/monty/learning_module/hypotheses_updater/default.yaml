@@ -1,0 +1,7 @@
+# DefaultHypothesesUpdater with standard settings.
+# max_nneighbors: 10 - higher accuracy but slower runtime
+
+defaults:
+  - _default
+
+max_nneighbors: 10

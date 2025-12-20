@@ -1,0 +1,9 @@
+# EvidenceGraphLM for distant agent with hsv-only tolerances.
+# Used for control experiments without principal_curvatures_log.
+
+defaults:
+  - _evidence_graph
+  - gsg/evidence_distant@learning_module_args.gsg_args
+  - hypotheses_updater/default@learning_module_args.hypotheses_updater_args
+  - feature_weights/patch_hsv_only@learning_module_args.feature_weights
+  - tolerances/patch_hsv_only@learning_module_args.tolerances

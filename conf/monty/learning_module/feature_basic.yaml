@@ -1,0 +1,11 @@
+# FeatureGraphLM with basic settings.
+# Uses pose-dependent features for matching.
+
+defaults:
+  - _feature_graph
+
+learning_module_args:
+  max_match_distance: 0.01
+  tolerances:
+    patch:
+      hsv: ${np.array:[0.1, 0.2, 0.2]}

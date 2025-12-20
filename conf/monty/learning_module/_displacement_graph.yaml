@@ -1,0 +1,10 @@
+# Base DisplacementGraphLM config with ??? for required fields.
+# Matches based on displacement vectors between locations.
+
+learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+learning_module_args:
+  k: ???
+  match_attribute: ???
+  tolerance: 0.001
+  use_relative_len: false
+  graph_delta_thresholds: null

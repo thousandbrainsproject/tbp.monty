@@ -1,0 +1,7 @@
+# DefaultHypothesesUpdater optimized for benchmark speed.
+# max_nneighbors: 5 - faster runtime with slightly lower accuracy
+
+defaults:
+  - _default
+
+max_nneighbors: 5

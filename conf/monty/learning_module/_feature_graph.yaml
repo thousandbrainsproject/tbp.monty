@@ -1,0 +1,13 @@
+# Base FeatureGraphLM config with ??? for required fields.
+# Matches based on pose-dependent features.
+
+learning_module_class: ${monty.class:tbp.monty.frameworks.models.feature_location_matching.FeatureGraphLM}
+learning_module_args:
+  max_match_distance: ???
+  tolerances: ???
+  path_similarity_threshold: 0.1
+  pose_similarity_threshold: 0.35
+  required_symmetry_evidence: 5
+  graph_delta_thresholds: null
+  initial_possible_poses: informed
+  umbilical_num_poses: 8
