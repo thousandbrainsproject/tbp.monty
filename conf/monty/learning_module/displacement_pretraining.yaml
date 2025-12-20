@@ -1,0 +1,17 @@
+# DisplacementGraphLM for pretraining with full graph delta thresholds.
+# k=10 nearest neighbors, displacement-based matching.
+
+defaults:
+  - _displacement_graph
+
+learning_module_args:
+  k: 10
+  match_attribute: displacement
+  tolerance: ${np.array:[0.0001, 0.0001, 0.0001]}
+  graph_delta_thresholds:
+    patch:
+      distance: 0.001
+      # Only first pose vector (surface normal) is currently used
+      pose_vectors: ${np.list_eval:[np.pi / 8, np.pi * 2, np.pi * 2]}
+      principal_curvatures_log: [1, 1]
+      hsv: [0.1, 1, 1]
