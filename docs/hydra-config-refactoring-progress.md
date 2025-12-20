@@ -373,9 +373,11 @@ conf/logging/
 | `conf/experiment/benchmarks_v2/base_10simobj_surf_agent.yaml` | Created - surface agent with similar objects |
 | `conf/experiment/benchmarks_v2/randrot_noise_10simobj_dist_agent.yaml` | Created - dist agent, noise, random rotation, similar objects |
 | `conf/experiment/benchmarks_v2/randrot_noise_10simobj_surf_agent.yaml` | Created - surface agent, noise, random rotation, similar objects |
+| `conf/experiment/benchmarks_v2/randomrot_rawnoise_10distinctobj_surf_agent.yaml` | Created - surface agent with raw depth noise (inlined transform) |
 | `conf/experiment/benchmarks/base_10simobj_surf_agent.yaml` | Deleted |
 | `conf/experiment/benchmarks/randrot_noise_10simobj_dist_agent.yaml` | Deleted |
 | `conf/experiment/benchmarks/randrot_noise_10simobj_surf_agent.yaml` | Deleted |
+| `conf/experiment/benchmarks/randomrot_rawnoise_10distinctobj_surf_agent.yaml` | Deleted |
 
 ### Phase 11: Add 5LM Config Group and Migrate Benchmark
 

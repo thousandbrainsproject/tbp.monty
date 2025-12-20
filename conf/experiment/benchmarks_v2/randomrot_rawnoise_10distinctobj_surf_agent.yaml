@@ -1,0 +1,48 @@
+# @package _global_
+# Surface agent with raw depth noise (AddNoiseToRawDepthImage transform)
+
+defaults:
+  - /environment/object_sampler: random_rotation
+  - override /logging: parallel
+  - override /monty: benchmark_evidence_sota_surface
+  - override /agent_config: surface_habitat
+  - override /environment: ycb_distinct
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+
+config:
+  model_name_or_path: ${vars.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+  n_eval_epochs: 10
+  max_total_steps: 5000
+  logging:
+    wandb_group: benchmark_experiments
+    run_name: randomrot_rawnoise_10distinctobj_surf_agent
+  monty_config:
+    monty_args:
+      min_eval_steps: ${vars.min_eval_steps}
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_args:
+          noise_params: ${vars.default_all_noise_params}
+  # Override transform to add raw depth noise
+  env_interface_config:
+    transform:
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+        agent_id: ${monty.agent_id:agent_id_0}
+        max_depth: 1
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.AddNoiseToRawDepthImage
+        agent_id: ${monty.agent_id:agent_id_0}
+        sigma: 0.001
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_ids:
+          - patch
+          - view_finder
+        resolutions: [[64, 64], [64, 64]]
+        world_coord: true
+        zooms: [10.0, 1.0]
+        get_all_points: true
+        use_semantic_sensor: false
+        depth_clip_sensors: [0]
+        clip_value: 0.05
+  env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
