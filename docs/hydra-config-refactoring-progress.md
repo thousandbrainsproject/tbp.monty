@@ -365,13 +365,17 @@ conf/logging/
 
 ## Files Changed This Session
 
-### Phase 12: Add YCB Similar Environment and Migrate Benchmark
+### Phase 12: Add YCB Similar Environment and Migrate Benchmarks
 
 | File | Change |
 |------|--------|
 | `conf/environment/ycb_similar.yaml` | Created - YCB similar objects list |
 | `conf/experiment/benchmarks_v2/base_10simobj_surf_agent.yaml` | Created - surface agent with similar objects |
+| `conf/experiment/benchmarks_v2/randrot_noise_10simobj_dist_agent.yaml` | Created - dist agent, noise, random rotation, similar objects |
+| `conf/experiment/benchmarks_v2/randrot_noise_10simobj_surf_agent.yaml` | Created - surface agent, noise, random rotation, similar objects |
 | `conf/experiment/benchmarks/base_10simobj_surf_agent.yaml` | Deleted |
+| `conf/experiment/benchmarks/randrot_noise_10simobj_dist_agent.yaml` | Deleted |
+| `conf/experiment/benchmarks/randrot_noise_10simobj_surf_agent.yaml` | Deleted |
 
 ### Phase 11: Add 5LM Config Group and Migrate Benchmark
 
