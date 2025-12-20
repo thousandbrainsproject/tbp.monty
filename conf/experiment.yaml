@@ -10,6 +10,7 @@ defaults:
   - agent_config: patch_view_habitat
   - environment: per_object
   - mode: inference
+  - hydra: defaults
   # Experiment config (required) - use override to change defaults above
   - experiment: MISSING
 
