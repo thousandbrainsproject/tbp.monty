@@ -1,0 +1,16 @@
+# Base config for Probe sensor module.
+# This is an abstract config - use concrete variants instead.
+#
+# Probe tracks raw observations for logging and positioning,
+# but does not process observations or emit Cortical Messages.
+#
+# Required fields (???):
+#   sensor_module_id: Unique identifier for this sensor
+#
+# Optional fields with defaults:
+#   save_raw_obs: false
+
+sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+sensor_module_args:
+  sensor_module_id: ???
+  save_raw_obs: false

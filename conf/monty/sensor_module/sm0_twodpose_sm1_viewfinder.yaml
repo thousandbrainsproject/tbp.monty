@@ -1,0 +1,6 @@
+# @package config.monty_config.sensor_module_configs
+# TwoDPoseSM patch and view finder sensor modules
+
+defaults:
+  - /monty/sensor_module/components/two_d_pose_patch@sensor_module_0
+  - /monty/sensor_module/components/probe_view_finder@sensor_module_1

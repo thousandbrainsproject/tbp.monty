@@ -1,0 +1,6 @@
+# @package config.monty_config.sensor_module_configs
+# Habitat patch and view finder sensor modules
+defaults:
+  - /monty/sensor_module/components/patch_surface@sensor_module_0
+  - /monty/sensor_module/components/probe_view_finder@sensor_module_1
+

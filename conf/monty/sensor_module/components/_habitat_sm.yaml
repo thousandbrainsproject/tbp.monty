@@ -1,0 +1,23 @@
+# Base config for HabitatSM sensor module.
+# This is an abstract config - use concrete variants instead.
+#
+# Required fields (???):
+#   sensor_module_id: Unique identifier for this sensor
+#   features: List of features to extract
+#   delta_thresholds: Thresholds for feature change detection
+#
+# Optional fields with defaults:
+#   save_raw_obs: false
+#   is_surface_sm: false
+#   noise_params: null
+#   pc1_is_pc2_threshold: 10
+
+sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+sensor_module_args:
+  sensor_module_id: ???
+  features: ???
+  delta_thresholds: ???
+  save_raw_obs: false
+  is_surface_sm: false
+  noise_params: null
+  pc1_is_pc2_threshold: 10

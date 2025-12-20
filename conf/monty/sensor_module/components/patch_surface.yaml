@@ -1,0 +1,28 @@
+# Habitat patch sensor for surface agent.
+#
+# Features: pose, color, curvature (including min/mean depth for surface)
+# Surface SM does not require central pixel to be on object.
+
+defaults:
+  - _habitat_sm
+
+sensor_module_args:
+  sensor_module_id: patch
+  is_surface_sm: true
+  features:
+    - pose_vectors
+    - pose_fully_defined
+    - on_object
+    - object_coverage
+    - min_depth
+    - mean_depth
+    - hsv
+    - principal_curvatures
+    - principal_curvatures_log
+  delta_thresholds:
+    on_object: 0
+    n_steps: 20
+    hsv: [0.1, 0.1, 0.1]
+    pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+    principal_curvatures_log: [2, 2]
+    distance: 0.01

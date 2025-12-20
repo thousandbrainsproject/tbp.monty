@@ -1,0 +1,10 @@
+# Probe sensor for view finder.
+#
+# Tracks raw observations for logging and visualization.
+# Does not process observations or emit Cortical Messages.
+
+defaults:
+  - _probe
+
+sensor_module_args:
+  sensor_module_id: view_finder
