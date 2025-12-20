@@ -1,0 +1,25 @@
+# @package _global_
+# Compositional inference level 1 with compositional models.
+# Tests recognition of composite objects using hierarchically trained models.
+
+defaults:
+  - /environment/object_sampler: predefined
+  - /environment/compositional: parent_to_child_mapping
+  - override /logging: parallel
+  - override /monty: inference_two_lm_stacked
+  - override /agent_config: two_lm_stacked_habitat
+  - override /environment: compositional/objects_with_logos_lvl1
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+
+config:
+  n_eval_epochs: ${vars.rotations_all_count}
+  min_lms_match: 1
+  model_name_or_path: ${vars.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl1_comp_models/pretrained/
+  logging:
+    wandb_group: benchmark_experiments
+    run_name: infer_comp_lvl1_with_comp_models
+  monty_config:
+    monty_args:
+      min_eval_steps: ${vars.min_eval_steps}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}

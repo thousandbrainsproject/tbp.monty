@@ -1,0 +1,120 @@
+# @package config.monty_config
+# Two LM stacked inference configuration for compositional object recognition.
+#
+# Hierarchical structure: LM_1 receives object_id from LM_0.
+# Uses informed goal state driven motor policy for efficient exploration.
+
+defaults:
+  - monty_args: defaults
+  - motor_system: informed_goal_state_driven
+
+monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
+
+monty_args:
+  num_exploratory_steps: 1000
+
+learning_module_configs:
+  learning_module_0:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+    learning_module_args:
+      max_match_distance: 0.01
+      tolerances:
+        patch_0:
+          hsv: ${np.array:[0.1, 1, 1]}
+          principal_curvatures_log: ${np.ones:2}
+      feature_weights: {}
+      max_graph_size: 0.3
+      num_model_voxels_per_dim: 200
+      max_nodes_per_graph: 2000
+      gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+      gsg_args:
+        goal_tolerances:
+          location: 0.015
+        elapsed_steps_factor: 10
+        min_post_goal_success_steps: 5
+        x_percent_scale_factor: 0.75
+        desired_object_distance: 0.03
+  learning_module_1:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+    learning_module_args:
+      max_match_distance: 0.01
+      tolerances:
+        patch_1:
+          hsv: ${np.array:[0.1, 1, 1]}
+          principal_curvatures_log: ${np.ones:2}
+        learning_module_0:
+          object_id: 1
+      feature_weights:
+        learning_module_0:
+          object_id: 1
+      max_graph_size: 0.4
+      num_model_voxels_per_dim: 200
+      max_nodes_per_graph: 2000
+      gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+      gsg_args:
+        goal_tolerances:
+          location: 0.015
+        elapsed_steps_factor: 10
+        min_post_goal_success_steps: 5
+        x_percent_scale_factor: 0.75
+        desired_object_distance: 0.03
+
+sensor_module_configs:
+  sensor_module_0:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_0
+      features:
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        - object_coverage
+        - min_depth
+        - mean_depth
+        - hsv
+        - principal_curvatures_log
+      delta_thresholds:
+        on_object: 0
+        n_steps: 20
+        hsv: [0.1, 0.1, 0.1]
+        pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+        principal_curvatures_log: [2, 2]
+        distance: 0.01
+      save_raw_obs: true
+  sensor_module_1:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_1
+      features:
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        - object_coverage
+        - hsv
+        - principal_curvatures_log
+      delta_thresholds:
+        on_object: 0
+        n_steps: 100
+        hsv: [0.2, 0.2, 0.2]
+        pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+        principal_curvatures_log: [4, 4]
+        distance: 0.05
+      save_raw_obs: true
+  sensor_module_2:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+    sensor_module_args:
+      sensor_module_id: view_finder
+      save_raw_obs: true
+
+sm_to_agent_dict:
+  patch_0: ${monty.agent_id:agent_id_0}
+  patch_1: ${monty.agent_id:agent_id_0}
+  view_finder: ${monty.agent_id:agent_id_0}
+
+sm_to_lm_matrix:
+  - [0]
+  - [1]
+
+lm_to_lm_matrix: [[], [0]]
+
+lm_to_lm_vote_matrix: null
