@@ -1,0 +1,11 @@
+# Base config for GaussianBlurRGB transform.
+# Applies Gaussian blur to RGB/RGBA images.
+#
+# Required: agent_id
+# Optional: sigma, kernel_size, sensor_ids
+
+_target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
+agent_id: ???
+sigma: 1.0
+kernel_size: 0
+sensor_ids: null

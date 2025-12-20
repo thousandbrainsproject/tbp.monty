@@ -1,0 +1,10 @@
+# Base config for MissingToMaxDepth transform.
+# Replaces 0 depth values (no mesh) with max_depth.
+#
+# Required: agent_id
+# Optional: max_depth (default: 1), threshold (default: 0)
+
+_target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+agent_id: ???
+max_depth: 1
+threshold: 0

@@ -1,0 +1,22 @@
+# Transform list for distant agent with RGB blur preprocessing.
+# Pipeline: GaussianBlurRGB -> MissingToMaxDepth -> DepthTo3DLocations
+
+transform:
+  - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
+    agent_id: ${monty.agent_id:agent_id_0}
+    sigma: 1.0
+    sensor_ids:
+      - patch
+  - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+    agent_id: ${monty.agent_id:agent_id_0}
+    max_depth: 1
+  - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+    agent_id: ${monty.agent_id:agent_id_0}
+    sensor_ids:
+      - patch
+      - view_finder
+    resolutions: [[64, 64], [64, 64]]
+    world_coord: true
+    zooms: [10.0, 1.0]
+    get_all_points: true
+    use_semantic_sensor: false

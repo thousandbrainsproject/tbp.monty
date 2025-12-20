@@ -1,0 +1,17 @@
+# Base config for DepthTo3DLocations transform.
+# Converts 2D depth observations to 3D world coordinates.
+#
+# Required: agent_id, sensor_ids, resolutions
+# Optional: zooms, world_coord, get_all_points, use_semantic_sensor,
+#           depth_clip_sensors, clip_value
+
+_target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+agent_id: ???
+sensor_ids: ???
+resolutions: ???
+zooms: 1.0
+world_coord: true
+get_all_points: false
+use_semantic_sensor: false
+depth_clip_sensors: null
+clip_value: 0.05
