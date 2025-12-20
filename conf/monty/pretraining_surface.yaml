@@ -1,0 +1,43 @@
+# @package config.monty_config
+# Surface agent pretraining configuration.
+#
+# Uses curvature-informed surface policy for learning.
+# DisplacementGraphLM with k=10 and surface-specific thresholds.
+
+defaults:
+  - monty_class: graph_matching
+  - monty_args: defaults
+  - motor_system: curvature_informed_surface
+  - learning_module/displacement_pretraining_surface@learning_module_configs.learning_module_0
+  - connectivity: patch_view_single_lm
+
+monty_args:
+  num_exploratory_steps: 1000
+
+sensor_module_configs:
+  sensor_module_0:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      is_surface_sm: true
+      sensor_module_id: patch
+      features:
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        - object_coverage
+        - rgba
+        - hsv
+        - min_depth
+        - mean_depth
+        - principal_curvatures
+        - principal_curvatures_log
+        - gaussian_curvature
+        - mean_curvature
+        - gaussian_curvature_sc
+        - mean_curvature_sc
+      save_raw_obs: true
+  sensor_module_1:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+    sensor_module_args:
+      sensor_module_id: view_finder
+      save_raw_obs: true
