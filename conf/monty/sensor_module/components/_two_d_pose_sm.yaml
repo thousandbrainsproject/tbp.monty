@@ -3,13 +3,15 @@
 #
 # Required fields (???):
 #   sensor_module_id: Unique identifier for this sensor
-#   features: List of features to extract\
+#   features: List of features to extract
 #   delta_thresholds: Thresholds for feature change detection
 #
 # Optional fields with defaults:
 #   save_raw_obs: false
 #   edge_detection_params: null
 #   noise_params: null
+#   debug_visualize: false
+#   debug_save_dir: null
 
 sensor_module_class: ${monty.class:tbp.monty.frameworks.models.two_d_sensor_module.TwoDPoseSM}
 sensor_module_args:
@@ -18,4 +20,6 @@ sensor_module_args:
   save_raw_obs: false
   edge_detection_params: null
   noise_params: null
+  debug_visualize: false
+  debug_save_dir: null
   delta_thresholds: ???

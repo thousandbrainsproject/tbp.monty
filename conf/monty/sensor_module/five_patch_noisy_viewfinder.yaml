@@ -1,0 +1,29 @@
+# @package config.monty_config.sensor_module_configs
+# 5 noisy patch sensors + view finder probe for multi-LM experiments.
+#
+# sensor_module_0-4: HabitatSM patch sensors with noise
+# sensor_module_5: Probe view finder
+
+defaults:
+  - /monty/sensor_module/components/patch_distant_noisy@sensor_module_0
+  - /monty/sensor_module/components/patch_distant_noisy@sensor_module_1
+  - /monty/sensor_module/components/patch_distant_noisy@sensor_module_2
+  - /monty/sensor_module/components/patch_distant_noisy@sensor_module_3
+  - /monty/sensor_module/components/patch_distant_noisy@sensor_module_4
+  - /monty/sensor_module/components/probe_view_finder@sensor_module_5
+
+sensor_module_0:
+  sensor_module_args:
+    sensor_module_id: patch_0
+sensor_module_1:
+  sensor_module_args:
+    sensor_module_id: patch_1
+sensor_module_2:
+  sensor_module_args:
+    sensor_module_id: patch_2
+sensor_module_3:
+  sensor_module_args:
+    sensor_module_id: patch_3
+sensor_module_4:
+  sensor_module_args:
+    sensor_module_id: patch_4
