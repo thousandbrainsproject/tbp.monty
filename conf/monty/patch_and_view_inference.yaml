@@ -8,7 +8,7 @@ defaults:
   - monty_class: graph_matching
   - monty_args: defaults
   - motor_system: naive_scan_spiral
-  - learning_module: evidence_lm
-  - sensor_module: habitat_patch_view
+  - learning_module/evidence_distant@learning_module_configs.learning_module_0
+  - sensor_module: sm0_habitatsm_sm1_viewfinder
   - connectivity: patch_view_single_lm
 

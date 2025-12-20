@@ -1,14 +1,11 @@
 # @package config.monty_config
-# Patch and view finder agent - composed from subcomponents
-#
-# This is the standard configuration for a single patch sensor + view finder
-# with informed policy and displacement graph learning module.
+# Patch and view finder agent for 2D sensor learning experiments.
+# Uses TwoDPoseSM with displacement graph learning module.
 
 defaults:
   - monty_class: graph_matching
   - monty_args: defaults
   - motor_system: naive_scan_spiral
   - learning_module/displacement_basic@learning_module_configs.learning_module_0
-  - sensor_module: habitat_patch_view
+  - sensor_module: sm0_twodpose_sm1_viewfinder
   - connectivity: patch_view_single_lm
-
