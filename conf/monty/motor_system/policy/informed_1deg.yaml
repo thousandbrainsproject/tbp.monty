@@ -1,0 +1,8 @@
+# InformedPolicy with 1 degree rotation steps (fine).
+
+defaults:
+  - _informed
+  - action_sampler/constant_1deg@policy_args.action_sampler_args
+
+policy_args:
+  action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}

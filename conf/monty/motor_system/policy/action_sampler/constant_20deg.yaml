@@ -1,0 +1,6 @@
+# ConstantSampler with 20 degree rotation steps (coarse).
+
+defaults:
+  - _constant
+
+rotation_degrees: 20.0

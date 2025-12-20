@@ -1,0 +1,4 @@
+# Base motor system config with ??? for required fields.
+
+motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+motor_system_args: ???

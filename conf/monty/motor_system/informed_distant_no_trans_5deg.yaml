@@ -1,0 +1,7 @@
+# @package config.monty_config.motor_system_config
+# InformedPolicy without translation, 5 degree steps.
+
+defaults:
+  - _motor_system
+  - policy/informed_5deg@motor_system_args
+  - action_space/distant_agent_no_translation@motor_system_args.policy_args.action_sampler_args

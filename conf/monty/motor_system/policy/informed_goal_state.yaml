@@ -1,0 +1,9 @@
+# InformedPolicy with goal-state-driven actions enabled.
+
+defaults:
+  - _informed
+  - action_sampler/constant_5deg@policy_args.action_sampler_args
+
+policy_args:
+  action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}
+  use_goal_state_driven_actions: true

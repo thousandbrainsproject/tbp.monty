@@ -1,0 +1,6 @@
+# ConstantSampler with 5 degree rotation steps (standard).
+
+defaults:
+  - _constant
+
+rotation_degrees: 5.0
