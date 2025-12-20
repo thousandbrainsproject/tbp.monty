@@ -1,33 +1,48 @@
 # @package _global_
-# Disk learning 2D sensor experiment
+# Disk inference 2D sensor experiment
 
 defaults:
-  - /experiment/2d_sm/inference/disk_inference_2d_on_2d
+  - /experiment/2d_sm/inference/disk_inference_control_on_control
+  - override /monty: patch_and_view_inference_2d
 
 config:
-  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor/disk_learning_2d/pretrained/}
+  # 2D sensor parameters
+  zoom: 30
+  blur_sigma: 5.0
   logging:
-    run_name: disk_inference_2d_on_2d
-  monty_config:
-    sensor_module_0:
-      sensor_module_class: ${monty.class:tbp.monty.frameworks.models.two_d_sensor_module.TwoDPoseSM}
-      sensor_module_args:
-        sensor_module_id: patch
-        features:
-          - pose_vectors
-          - pose_fully_defined
-          - on_object
-          - object_coverage
-          - rgba
-          - hsv
-          - edge_strength
-          - coherence
-          - pose_from_edge
-        save_raw_obs: true
-        debug_visualize: true
-        debug_save_dir: ${path.expanduser:${oc.env:HOME}/tbp/feat.2d_sensor/results/patches/disk/zoom${config.zoom}_res${config.resolution}_step${config.step}_blur${config.blur_sigma}}
-        save_raw_rgb: false
-        raw_rgb_base_dir: ${path.expanduser:${oc.env:HOME}/tbp/data/tbp_numenta_disks_RGB}
+    run_name: disk_inference_2d_on_2d_zoom${config.zoom}_blur${config.blur_sigma}
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor/disk_learning_2d_zoom${config.zoom}_blur${config.blur_sigma}/pretrained/}
+  # Apply zoom, resolution, and blur to environment
+  env_interface_config:
+    env_init_args:
+      agents:
+        agent_args:
+          resolutions:
+            - [64, 64]
+            - [64, 64]
+          zooms:
+            - ${config.zoom}
+            - 1.0
+    transform:
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
+        agent_id: ${monty.agent_id:agent_id_0}
+        sigma: ${config.blur_sigma}
+        sensor_ids: [patch]
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+        agent_id: ${monty.agent_id:agent_id_0}
+        max_depth: 1
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_ids: [patch, view_finder]
+        resolutions:
+          - [64, 64]
+          - [64, 64]
+        world_coord: true
+        zooms:
+          - ${config.zoom}
+          - 1.0
+        get_all_points: true
+        use_semantic_sensor: false
 
 
 

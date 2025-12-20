@@ -9,13 +9,9 @@ defaults:
   - override /mode: pretrain
   - override /logging: pretrain
   - override /environment: disk_objects
+  - override /monty: patch_and_view_learning
   
 _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
-
-vars:
-  zoom: 20.0
-  resolution: 64
-  blur_sigma: 5.0
 
 # Config overrides
 config:
@@ -32,43 +28,10 @@ config:
   env_interface_config:
     env_init_args:
       data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
-      agents:
-        agent_args:
-          resolutions: 
-          - - ${vars.resolution}
-            - ${vars.resolution}
-          - - ${vars.resolution}
-            - ${vars.resolution}
-          zooms:
-            - ${vars.zoom}
-            - 1.0
-    transform:
-        # - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
-        #   agent_id: ${monty.agent_id:agent_id_0}
-        #   sigma: ${config.blur_sigma}
-        #   kernel_size: 0  # 0 means auto-compute from sigma (matches test file line 164)
-        #   sensor_ids:
-        #     - patch
-        - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
-          agent_id: ${monty.agent_id:agent_id_0}
-          sensor_ids:
-            - patch
-            - view_finder
-          resolutions: 
-          - - ${vars.resolution}
-            - ${vars.resolution}
-          - - ${vars.resolution}
-            - ${vars.resolution}
-          world_coord: true
-          zooms:
-          - ${vars.zoom}
-          - 1.0
-          get_all_points: true
-          use_semantic_sensor: false
-  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
-  train_env_interface_args:
+  env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  env_interface_args:
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
       positions:
         - [0.0, 1.5, 0.0]
         - [-0.03, 1.5, 0.0]

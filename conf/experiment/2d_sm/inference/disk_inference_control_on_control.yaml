@@ -2,39 +2,37 @@
 # Disk Inference Control Experiment (3D sensor baseline)
 
 defaults:
-  - override /monty: patch_and_view_inference
+  - override /monty: patch_and_view_inference_control
   - override /environment: disk_objects
-
+  
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 
 config:
   # n_eval_epochs = len(INFERENCE_POSITIONS) = 21
   do_train: false
   n_eval_epochs: 21
-  max_eval_steps: 1000
+  max_eval_steps: 500
   model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor/disk_learning_control/pretrained/}
   logging:
-    output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/evidence_eval_runs/logs}
     run_name: disk_inference_control_on_control
+    output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/2d_sensor_inference}
+    monty_log_level: BASIC
+    monty_handlers:
+      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.ReproduceEpisodeHandler}
+    python_log_level: WARNING
   monty_config:
     motor_system_config:
       motor_system_args:
         policy_args:
           fixed_amount: 1
-    # Custom tolerances without principal_curvatures_log
-    learning_module_configs:
-      learning_module_0:
-        learning_module_args:
-          tolerances:
-            patch:
-              hsv: ${np.array:[0.1, 0.2, 0.2]}
   env_interface_config:
     env_init_args:
       data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
-  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
-  eval_env_interface_args:
+  env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  env_interface_args:
     object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
       positions:
         # 21 Gaussian-jittered positions (from surface_sm_inference.py)
         - [0.014895140249428116, 1.4953826716330455, -0.018761980893513734]
