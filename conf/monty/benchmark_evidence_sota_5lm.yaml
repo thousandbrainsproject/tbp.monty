@@ -1,0 +1,151 @@
+# @package config.monty_config
+# Benchmark evidence SOTA config - 5 LMs with evidence matching
+#
+# Used for multi-LM benchmark evaluation experiments. Includes:
+# - Evidence matching monty class with voting
+# - Informed goal state driven motor policy
+# - 5 Evidence LMs with max_nneighbors=5 for faster runtime
+# - 5 Habitat patch sensors + view finder
+
+defaults:
+  - monty_class: evidence_matching
+  - monty_args: defaults
+  - motor_system: informed_goal_state_driven
+  - connectivity: five_lm
+  - /monty/sensor_module/components/probe_view_finder@sensor_module_configs.sensor_module_5
+  - learning_module/evidence_distant_fast@learning_module_configs.learning_module_0
+  - learning_module/evidence_distant_fast@learning_module_configs.learning_module_1
+  - learning_module/evidence_distant_fast@learning_module_configs.learning_module_2
+  - learning_module/evidence_distant_fast@learning_module_configs.learning_module_3
+  - learning_module/evidence_distant_fast@learning_module_configs.learning_module_4
+
+# Override sensor_module_id for each patch and set tolerances/weights per patch_N
+sensor_module_configs:
+  sensor_module_0:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_0
+      features: ${vars.default_sensor_features}
+      delta_thresholds:
+        on_object: 0
+        n_steps: 20
+        hsv: [0.1, 0.1, 0.1]
+        pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+        principal_curvatures_log: [2, 2]
+        distance: 0.01
+      save_raw_obs: false
+      is_surface_sm: false
+  sensor_module_1:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_1
+      features: ${vars.default_sensor_features}
+      delta_thresholds:
+        on_object: 0
+        n_steps: 20
+        hsv: [0.1, 0.1, 0.1]
+        pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+        principal_curvatures_log: [2, 2]
+        distance: 0.01
+      save_raw_obs: false
+      is_surface_sm: false
+  sensor_module_2:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_2
+      features: ${vars.default_sensor_features}
+      delta_thresholds:
+        on_object: 0
+        n_steps: 20
+        hsv: [0.1, 0.1, 0.1]
+        pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+        principal_curvatures_log: [2, 2]
+        distance: 0.01
+      save_raw_obs: false
+      is_surface_sm: false
+  sensor_module_3:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_3
+      features: ${vars.default_sensor_features}
+      delta_thresholds:
+        on_object: 0
+        n_steps: 20
+        hsv: [0.1, 0.1, 0.1]
+        pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+        principal_curvatures_log: [2, 2]
+        distance: 0.01
+      save_raw_obs: false
+      is_surface_sm: false
+  sensor_module_4:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_4
+      features: ${vars.default_sensor_features}
+      delta_thresholds:
+        on_object: 0
+        n_steps: 20
+        hsv: [0.1, 0.1, 0.1]
+        pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+        principal_curvatures_log: [2, 2]
+        distance: 0.01
+      save_raw_obs: false
+      is_surface_sm: false
+
+# Override feature_weights and tolerances to use patch_N keys
+learning_module_configs:
+  learning_module_0:
+    learning_module_args:
+      feature_weights:
+        patch_0:
+          hsv: ${np.array:[1, 0.5, 0.5]}
+          pose_vectors: ${np.ones:3}
+          principal_curvatures_log: ${np.ones:2}
+      tolerances:
+        patch_0:
+          hsv: ${np.array:[0.1, 0.2, 0.2]}
+          principal_curvatures_log: ${np.ones:2}
+  learning_module_1:
+    learning_module_args:
+      feature_weights:
+        patch_1:
+          hsv: ${np.array:[1, 0.5, 0.5]}
+          pose_vectors: ${np.ones:3}
+          principal_curvatures_log: ${np.ones:2}
+      tolerances:
+        patch_1:
+          hsv: ${np.array:[0.1, 0.2, 0.2]}
+          principal_curvatures_log: ${np.ones:2}
+  learning_module_2:
+    learning_module_args:
+      feature_weights:
+        patch_2:
+          hsv: ${np.array:[1, 0.5, 0.5]}
+          pose_vectors: ${np.ones:3}
+          principal_curvatures_log: ${np.ones:2}
+      tolerances:
+        patch_2:
+          hsv: ${np.array:[0.1, 0.2, 0.2]}
+          principal_curvatures_log: ${np.ones:2}
+  learning_module_3:
+    learning_module_args:
+      feature_weights:
+        patch_3:
+          hsv: ${np.array:[1, 0.5, 0.5]}
+          pose_vectors: ${np.ones:3}
+          principal_curvatures_log: ${np.ones:2}
+      tolerances:
+        patch_3:
+          hsv: ${np.array:[0.1, 0.2, 0.2]}
+          principal_curvatures_log: ${np.ones:2}
+  learning_module_4:
+    learning_module_args:
+      feature_weights:
+        patch_4:
+          hsv: ${np.array:[1, 0.5, 0.5]}
+          pose_vectors: ${np.ones:3}
+          principal_curvatures_log: ${np.ones:2}
+      tolerances:
+        patch_4:
+          hsv: ${np.array:[0.1, 0.2, 0.2]}
+          principal_curvatures_log: ${np.ones:2}

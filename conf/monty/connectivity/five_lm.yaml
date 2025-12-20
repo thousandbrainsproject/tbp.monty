@@ -1,0 +1,27 @@
+# @package config.monty_config
+# Connectivity for 5 patch sensors + view_finder, each patch connected to its own LM
+# All LMs vote with each other for consensus
+
+sm_to_agent_dict:
+  patch_0: ${monty.agent_id:agent_id_0}
+  patch_1: ${monty.agent_id:agent_id_0}
+  patch_2: ${monty.agent_id:agent_id_0}
+  patch_3: ${monty.agent_id:agent_id_0}
+  patch_4: ${monty.agent_id:agent_id_0}
+  view_finder: ${monty.agent_id:agent_id_0}
+
+sm_to_lm_matrix:
+  - [0]
+  - [1]
+  - [2]
+  - [3]
+  - [4]
+
+lm_to_lm_matrix: null
+
+lm_to_lm_vote_matrix:
+  - [1, 2, 3, 4]
+  - [0, 2, 3, 4]
+  - [0, 1, 3, 4]
+  - [0, 1, 2, 4]
+  - [0, 1, 2, 3]

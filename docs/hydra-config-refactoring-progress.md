@@ -365,6 +365,23 @@ conf/logging/
 
 ## Files Changed This Session
 
+### Phase 11: Add 5LM Config Group and Migrate Benchmark
+
+Created new config group for 5LM (multi-learning-module) experiments.
+
+| File | Change |
+|------|--------|
+| `conf/monty/connectivity/five_lm.yaml` | Created - 5 patch + view_finder connectivity with vote matrix |
+| `conf/agent_config/five_lm_habitat.yaml` | Created - 5LM habitat agent config |
+| `conf/monty/benchmark_evidence_sota_5lm.yaml` | Created - 5LM evidence matching monty config |
+| `conf/experiment/benchmarks_v2/randrot_noise_10distinctobj_5lms_dist_agent.yaml` | Created - 5LM benchmark |
+| `conf/experiment/benchmarks/randrot_noise_10distinctobj_5lms_dist_agent.yaml` | Deleted |
+
+**New config group structure:**
+- `connectivity/five_lm.yaml` - reusable for any 5LM experiment
+- `benchmark_evidence_sota_5lm.yaml` - composes 5 evidence LMs with vote matrix
+- `agent_config/five_lm_habitat.yaml` - 5 patch sensors + view finder
+
 ### Phase 10: Migrate Benchmarks to v2
 
 | File | Change |
