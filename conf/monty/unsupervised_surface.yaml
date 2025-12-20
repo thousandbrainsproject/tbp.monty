@@ -1,0 +1,17 @@
+# @package config.monty_config
+# Unsupervised surface agent configuration for training.
+#
+# Uses EvidenceGraphLM with LFS (location-feature-similarity) settings
+# and SurfacePolicy for motor control.
+
+defaults:
+  - monty_class: evidence_matching
+  - monty_args: defaults
+  - motor_system: surface
+  - connectivity: patch_view_single_lm
+  - /monty/sensor_module/components/patch_surface@sensor_module_configs.sensor_module_0
+  - /monty/sensor_module/components/probe_view_finder@sensor_module_configs.sensor_module_1
+  - learning_module/evidence_lfs@learning_module_configs.learning_module_0
+
+monty_args:
+  num_exploratory_steps: 1000

@@ -1,0 +1,20 @@
+# EvidenceGraphLM configured for unsupervised learning (LFS - location-feature-similarity).
+# Higher thresholds to avoid false positives during initial epochs.
+
+defaults:
+  - _evidence_graph
+  - gsg/evidence_distant@learning_module_args.gsg_args
+  - hypotheses_updater/fast@learning_module_args.hypotheses_updater_args
+  - tolerances/patch_full@learning_module_args.tolerances
+  - feature_weights/patch_full@learning_module_args.feature_weights
+
+learning_module_args:
+  x_percent_threshold: 50
+  object_evidence_threshold: 100
+  required_symmetry_evidence: 20
+  graph_delta_thresholds:
+    patch:
+      distance: 0.01
+      pose_vectors: ${np.list_eval:[np.pi / 8, np.pi * 2, np.pi * 2]}
+      principal_curvatures_log: [1.0, 1.0]
+      hsv: [0.1, 1, 1]
