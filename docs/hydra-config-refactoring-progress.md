@@ -4,7 +4,7 @@
 
 **Branch:** `extract_edge`
 
-**Last updated:** 2025-12-19
+**Last updated:** 2025-12-20
 
 ---
 
@@ -234,6 +234,11 @@ conf/
 │   ├── per_object.yaml
 │   └── ycb_distinct.yaml
 ├── logging/                     # Logging configs
+│   ├── defaults.yaml            # Base logging (DETAILED, JSON+CSV+Reproduce)
+│   ├── pretrain.yaml            # Silent for training
+│   ├── csv.yaml                 # Minimal - CSV stats only
+│   ├── eval.yaml                # Feature eval with wandb
+│   └── parallel.yaml            # Parallel benchmarks (BASIC, wandb)
 └── experiment/
     ├── config/                  # Legacy configs (still supported)
     ├── benchmarks/              # Benchmark experiments (legacy syntax)
@@ -298,6 +303,46 @@ defaults:
 
 ---
 
+### Phase 9: Complete Logging Config Group
+**Status:** COMPLETED
+
+Added missing logging configs to `conf/logging/` for feature parity with legacy `conf/experiment/config/logging/`.
+
+| Task | Status |
+|------|--------|
+| Create `conf/logging/csv.yaml` | Done |
+| Create `conf/logging/eval.yaml` | Done |
+| Create `conf/logging/parallel.yaml` | Done |
+
+**New files:**
+- `conf/logging/csv.yaml` - Minimal logging (CSV stats only)
+- `conf/logging/eval.yaml` - Evaluation with wandb handlers
+- `conf/logging/parallel.yaml` - Parallel benchmark runs (BASIC level, WARNING python, wandb)
+
+**Mapping from legacy:**
+
+| Legacy Config | New Equivalent | Notes |
+|---------------|----------------|-------|
+| `defaults.yaml` | `defaults.yaml` | Already existed |
+| `pretrain.yaml` | `pretrain.yaml` | Already existed |
+| `csv.yaml` | `csv.yaml` | Created |
+| `eval.yaml` | `eval.yaml` | Created |
+| `eval_evidence_lm.yaml` | `parallel.yaml` | Consolidated |
+| `parallel_evidence_lm.yaml` | `parallel.yaml` | Consolidated |
+| `clear_logging.yaml` | N/A | Not needed with `override` syntax |
+
+**New logging/ structure:**
+```
+conf/logging/
+├── defaults.yaml    # Base logging (DETAILED, JSON+CSV+Reproduce)
+├── pretrain.yaml    # Silent for training
+├── csv.yaml         # Minimal - CSV stats only
+├── eval.yaml        # Feature eval with wandb
+└── parallel.yaml    # Parallel benchmarks (BASIC, WARNING, wandb)
+```
+
+---
+
 ## Next Steps
 
 1. **Migrate remaining benchmarks to `benchmarks_v2/`** (incremental):
@@ -319,6 +364,25 @@ defaults:
 ---
 
 ## Files Changed This Session
+
+### Phase 10: Migrate dist_on_distm Benchmark
+
+| File | Change |
+|------|--------|
+| `conf/experiment/benchmarks_v2/randrot_noise_10distinctobj_dist_on_distm.yaml` | Created - dist agent with noise, random rotation, supervised_pre_training_base model |
+
+**Key simplifications:**
+- Uses `override /logging: parallel` with only wandb_group/run_name overrides
+- Uses unified `env_interface_class` (instead of `eval_env_interface_class`)
+- 26 lines vs original's deep inheritance chain
+
+### Phase 9: Complete Logging Config Group
+
+| File | Change |
+|------|--------|
+| `conf/logging/csv.yaml` | Created - minimal CSV-only logging |
+| `conf/logging/eval.yaml` | Created - evaluation with wandb |
+| `conf/logging/parallel.yaml` | Created - parallel benchmarks |
 
 ### Phase 8: Migrate Surface Agent Benchmark
 
