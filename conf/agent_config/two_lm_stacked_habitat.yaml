@@ -1,0 +1,31 @@
+# @package config.env_interface_config
+# Two LM stacked agent - two patches with different zoom levels for hierarchical learning
+
+defaults:
+  - transform/two_lm_stacked@_here_
+
+env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+env_init_args:
+  objects:
+    - name: coneSolid
+      position: [0.0, 1.5, -0.1]
+  scene_id: null
+  seed: 42
+  data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
+  agents:
+    agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
+    agent_args:
+      agent_id: ${monty.agent_id:agent_id_0}
+      sensor_ids:
+        - patch_0
+        - patch_1
+        - view_finder
+      height: 0.0
+      position: [0.0, 1.5, 0.2]
+      resolutions: [[64, 64], [64, 64], [64, 64]]
+      positions: [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+      rotations: [[1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]]
+      semantics: [false, false, false]
+      zooms: [10.0, 5.0, 1.0]
+
+rng: null

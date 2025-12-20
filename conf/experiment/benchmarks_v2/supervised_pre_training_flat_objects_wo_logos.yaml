@@ -1,0 +1,21 @@
+# @package _global_
+# Two LM stacked pretraining - flat objects without logos (cube, disk)
+# Only learn child objects in lm_0 first so they can be used as input for LM_1.
+
+defaults:
+  - /environment/object_sampler: predefined
+  - override /mode: pretrain
+  - override /logging: pretrain
+  - override /monty: pretraining_two_lm_stacked
+  - override /agent_config: two_lm_stacked_habitat
+  - override /environment: compositional/flat_objects
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+
+config:
+  n_train_epochs: ${vars.rotations_all_count}
+  supervised_lm_ids: ["learning_module_0"]
+  logging:
+    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
+    run_name: supervised_pre_training_flat_objects_wo_logos
+  env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}

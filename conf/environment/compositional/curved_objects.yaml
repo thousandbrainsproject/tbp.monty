@@ -1,0 +1,10 @@
+# @package config
+# Curved objects without logos (cylinder, sphere, mug)
+
+env_interface_args:
+  parent_to_child_mapping: null
+  object_names:
+    - 011_cylinder
+    - 016_sphere
+    - 023_mug
+  object_init_sampler: ???

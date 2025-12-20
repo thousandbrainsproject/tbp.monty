@@ -1,0 +1,9 @@
+# @package config
+# Logo objects for compositional learning
+
+env_interface_args:
+  parent_to_child_mapping: null
+  object_names:
+    - 021_logo_tbp
+    - 022_logo_numenta
+  object_init_sampler: ???

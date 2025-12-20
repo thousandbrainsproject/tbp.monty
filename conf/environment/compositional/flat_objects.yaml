@@ -1,0 +1,9 @@
+# @package config
+# Flat objects without logos (cube, disk)
+
+env_interface_args:
+  parent_to_child_mapping: null
+  object_names:
+    - 001_cube
+    - 006_disk
+  object_init_sampler: ???

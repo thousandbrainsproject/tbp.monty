@@ -1,0 +1,118 @@
+# @package config.monty_config
+# 5LM pretraining configuration.
+#
+# Uses naive scan spiral policy for even object coverage during learning.
+# 5 displacement graph LMs for multi-sensor pretraining.
+
+defaults:
+  - monty_class: graph_matching
+  - monty_args: defaults
+  - motor_system: naive_scan_spiral
+  - connectivity: five_lm
+
+monty_args:
+  num_exploratory_steps: 500
+
+learning_module_configs:
+  learning_module_0:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+    learning_module_args:
+      k: 5
+      match_attribute: displacement
+  learning_module_1:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+    learning_module_args:
+      k: 5
+      match_attribute: displacement
+  learning_module_2:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+    learning_module_args:
+      k: 5
+      match_attribute: displacement
+  learning_module_3:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+    learning_module_args:
+      k: 5
+      match_attribute: displacement
+  learning_module_4:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+    learning_module_args:
+      k: 5
+      match_attribute: displacement
+
+sensor_module_configs:
+  sensor_module_0:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_0
+      features:
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        - object_coverage
+        - rgba
+        - hsv
+        - principal_curvatures
+        - principal_curvatures_log
+      save_raw_obs: true
+  sensor_module_1:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_1
+      features:
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        - object_coverage
+        - rgba
+        - hsv
+        - principal_curvatures
+        - principal_curvatures_log
+      save_raw_obs: true
+  sensor_module_2:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_2
+      features:
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        - object_coverage
+        - rgba
+        - hsv
+        - principal_curvatures
+        - principal_curvatures_log
+      save_raw_obs: true
+  sensor_module_3:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_3
+      features:
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        - object_coverage
+        - rgba
+        - hsv
+        - principal_curvatures
+        - principal_curvatures_log
+      save_raw_obs: true
+  sensor_module_4:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_4
+      features:
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        - object_coverage
+        - rgba
+        - hsv
+        - principal_curvatures
+        - principal_curvatures_log
+      save_raw_obs: true
+  sensor_module_5:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+    sensor_module_args:
+      sensor_module_id: view_finder
+      save_raw_obs: true
