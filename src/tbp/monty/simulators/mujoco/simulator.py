@@ -14,7 +14,6 @@ from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 from typing_extensions import override
 
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_environment import (
     ObjectID,
     ObjectInfo,
@@ -55,9 +54,6 @@ class MuJoCoSimulator(Simulator):
     def _recompile(self) -> None:
         """Recompile the MuJoCo model while retaining any state data."""
         self.model, self.data = self.spec.recompile(self.model, self.data)
-
-    def initialize_agent(self, agent_id: AgentID, agent_state) -> None:
-        pass
 
     def remove_all_objects(self) -> None:
         self.spec = MjSpec()
@@ -144,11 +140,13 @@ class MuJoCoSimulator(Simulator):
         return ProprioceptiveState({})
 
     @override
-    def apply_actions(self, actions: Sequence[Action]) -> Observations:
-        return Observations({})
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
+        return Observations({}), ProprioceptiveState({})
 
-    def reset(self) -> Observations:
-        return Observations({})
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
+        return Observations({}), ProprioceptiveState({})
 
     def close(self) -> None:
         pass

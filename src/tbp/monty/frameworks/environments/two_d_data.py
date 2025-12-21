@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 import time
@@ -80,7 +81,9 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError("OmniglotEnvironment does not support adding objects")
 
-    def step(self, actions: Sequence[Action]) -> Observations:
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
         """Retrieve the next observation.
 
         Since the omniglot dataset includes stroke information (the order in which
@@ -99,7 +102,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             each step.
 
         Returns:
-            The observations.
+            The observations and proprioceptive state.
         """
         obs = self._observation()
 
@@ -120,7 +123,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             self.patch_size,
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
-        return Observations(
+        obs = Observations(
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
@@ -143,6 +146,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                 )
             }
         )
+        return obs, self.get_state()
 
     def get_state(self) -> ProprioceptiveState:
         loc = self.locations[self.step_num % self.max_steps]
@@ -179,13 +183,13 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             "OmniglotEnvironment does not support removing all objects"
         )
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self.step_num = 0
         patch = self.get_image_patch(
             self.current_image, self.locations[self.step_num], self.patch_size
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
-        return Observations(
+        obs = Observations(
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
@@ -208,6 +212,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                 )
             }
         )
+        return obs, self.get_state()
 
     def load_new_character_data(self):
         img_char_dir = (
@@ -319,14 +324,16 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             "SaccadeOnImageEnvironment does not support adding objects"
         )
 
-    def step(self, actions: Sequence[Action]) -> Observations:
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
         """Retrieve the next observation.
 
         Args:
             actions: moving up, down, left or right from current location.
 
         Returns:
-            The observation.
+            The observation and proprioceptive state.
         """
         obs = self._observation()
 
@@ -352,7 +359,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             depth3d_patch,
             sensor_frame_patch,
         ) = self.get_image_patch(self.current_loc)
-        return Observations(
+        obs = Observations(
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
@@ -378,6 +385,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                 )
             }
         )
+        return obs, self.get_state()
 
     def get_state(self) -> ProprioceptiveState:
         loc = self.current_loc
@@ -426,7 +434,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             "SaccadeOnImageEnvironment does not support removing all objects"
         )
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         """Reset environment and extract image patch.
 
         TODO: clean up. Do we need this? No reset required in this env interface, maybe
@@ -443,7 +451,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         ) = self.get_image_patch(
             self.current_loc,
         )
-        return Observations(
+        obs = Observations(
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
@@ -467,6 +475,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                 )
             }
         )
+        return obs, self.get_state()
 
     def load_new_scene_data(self):
         """Load depth and rgb data for next scene environment.

@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import unittest
 from pathlib import Path
@@ -71,9 +72,9 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
         return ObjectID(-1)
 
     @override
-    def step(self, actions) -> Observations:
+    def step(self, actions) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
-        return Observations(
+        obs = Observations(
             {
                 AGENT_ID: AgentObservations(
                     {
@@ -84,6 +85,7 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
                 )
             }
         )
+        return obs, ProprioceptiveState({})
 
     def get_state(self) -> ProprioceptiveState:
         return ProprioceptiveState({})
@@ -91,9 +93,9 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
     def remove_all_objects(self):
         pass
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self._current_state = 0
-        return Observations(
+        obs = Observations(
             {
                 AGENT_ID: AgentObservations(
                     {
@@ -104,6 +106,7 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
                 )
             }
         )
+        return obs, ProprioceptiveState({})
 
     def close(self):
         self._current_state = None
@@ -118,9 +121,9 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
         return ObjectID(-1)
 
     @override
-    def step(self, actions) -> Observations:
+    def step(self, actions) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
-        return Observations(
+        obs = Observations(
             {
                 AGENT_ID: AgentObservations(
                     {
@@ -131,6 +134,7 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
                 )
             }
         )
+        return obs, ProprioceptiveState({})
 
     def get_state(self) -> ProprioceptiveState:
         return ProprioceptiveState({})
@@ -138,9 +142,9 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
     def remove_all_objects(self):
         pass
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self._current_state = 0
-        return Observations(
+        obs = Observations(
             {
                 AGENT_ID: AgentObservations(
                     {
@@ -151,6 +155,7 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
                 )
             }
         )
+        return obs, ProprioceptiveState({})
 
     def close(self):
         self._current_state = None

@@ -145,13 +145,15 @@ class HabitatEnvironment(EmbodiedEnvironment):
             primary_target_object,
         ).object_id
 
-    def step(self, actions: Sequence[Action]) -> Observations:
-        return self._env.apply_actions(actions)
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
+        return self._env.step(actions)
 
     def remove_all_objects(self) -> None:
         return self._env.remove_all_objects()
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         return self._env.reset()
 
     def close(self) -> None:

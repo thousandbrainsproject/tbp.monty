@@ -509,14 +509,16 @@ class HabitatSim(HabitatActuator):
         agent_index = self._agent_id_to_index[agent_id]
         return self._sim.get_agent(agent_index)
 
-    def apply_actions(self, actions: Sequence[Action]) -> Observations:
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
         """Execute given actions in the environment.
 
         Args:
             actions: The actions to execute
 
         Returns:
-            The observations from the simulator.
+            The observations and proprioceptive state.
 
         Raises:
             TypeError: If the action type is invalid
@@ -556,7 +558,7 @@ class HabitatSim(HabitatActuator):
 
             action.act(self)
 
-        return self.observations
+        return self.observations, self.states
 
     @property
     def observations(self) -> Observations:
@@ -619,11 +621,12 @@ class HabitatSim(HabitatActuator):
 
         return result
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         # All agents managed by this simulator
         agent_indices = range(len(self._agents))
         obs = self._sim.reset(agent_ids=agent_indices)
-        return self.process_observations(obs)
+        obs = self.process_observations(obs)
+        return obs, self.states
 
     def close(self) -> None:
         """Close simulator and release resources."""
