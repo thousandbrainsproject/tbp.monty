@@ -1,0 +1,12 @@
+# @package _global_
+# Test: Evaluation with fewer epochs than rotations
+#
+# Tests behavior when n_eval_epochs < len(rotations)
+
+defaults:
+  - /experiment/tests_v2/eval@_here_
+
+config:
+  n_eval_epochs: 2 # < len(eval_rotations)
+  logging:
+    run_name: test_eval_lt

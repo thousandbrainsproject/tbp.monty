@@ -1,0 +1,36 @@
+# @package _global_
+# Test: Evaluation with DisplacementGraphLM
+#
+# Basic evaluation test that loads pretrained models.
+
+defaults:
+  - /experiment/tests_v2/supervised_pre_training@_here_
+  - override /mode: inference
+  - override /logging: defaults
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+config:
+  do_eval: true
+  do_train: false
+  n_eval_epochs: 3 # == len(eval_rotations)
+  logging:
+    run_name: test_eval
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 10
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+        learning_module_args:
+          k: 5
+          match_attribute: displacement
+  eval_env_interface_args:
+    object_names:
+      - capsule3DSolid
+      - cubeSolid
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+      rotations:
+        - [0.0, 30.0, 0.0]
+        - [0.0, 60.0, 0.0]
+        - [0.0, 90.0, 0.0]
