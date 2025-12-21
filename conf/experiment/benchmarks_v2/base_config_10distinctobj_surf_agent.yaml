@@ -4,6 +4,7 @@
 # Uses surface sensor module with curvature-informed goal state driven policy.
 
 defaults:
+  - /environment/object_sampler: predefined
   - override /logging: defaults
   - override /monty: benchmark_evidence_sota_surface
   - override /agent_config: surface_habitat
@@ -31,7 +32,3 @@ config:
     monty_args:
       min_eval_steps: ${vars.min_eval_steps}
   eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
-  eval_env_interface_args:
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations: ${vars.rotations_all}
