@@ -3,77 +3,6 @@ config:
   num_parallel: 16
   print_cfg: false
   quiet_habitat_logs: true
-  vars:
-    pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11}
-    default_all_noise_params:
-      features:
-        pose_vectors: 2
-        hsv: 0.1
-        principal_curvatures_log: 0.1
-        pose_fully_defined: 0.01
-      location: 0.002
-    default_sensor_features:
-    - pose_vectors
-    - pose_fully_defined
-    - on_object
-    - hsv
-    - principal_curvatures_log
-    min_eval_steps: 20
-    rotations_all_count: 14
-    rotations_all:
-    - - 0
-      - 0
-      - 0
-    - - 0
-      - 90
-      - 0
-    - - 0
-      - 180
-      - 0
-    - - 0
-      - 270
-      - 0
-    - - 90
-      - 0
-      - 0
-    - - 90
-      - 180
-      - 0
-    - - 35
-      - 45
-      - 0
-    - - 325
-      - 45
-      - 0
-    - - 35
-      - 315
-      - 0
-    - - 325
-      - 315
-      - 0
-    - - 35
-      - 135
-      - 0
-    - - 325
-      - 135
-      - 0
-    - - 35
-      - 225
-      - 0
-    - - 325
-      - 225
-      - 0
-    rotations_3_count: 3
-    rotations_3:
-    - - 0
-      - 0
-      - 0
-    - - 0
-      - 90
-      - 0
-    - - 0
-      - 180
-      - 0
   logging:
     monty_log_level: BASIC
     monty_handlers:
@@ -96,7 +25,7 @@ config:
     monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
     monty_args:
       num_exploratory_steps: 1000
-      min_eval_steps: ${config.vars.min_eval_steps}
+      min_eval_steps: ${vars.min_eval_steps}
       min_train_steps: 3
       max_total_steps: 2500
     motor_system_config:
@@ -136,7 +65,6 @@ config:
       sensor_module_0:
         sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
         sensor_module_args:
-          is_surface_sm: true
           sensor_module_id: patch
           features:
           - pose_vectors
@@ -161,7 +89,9 @@ config:
             - 2
             distance: 0.01
           save_raw_obs: false
-          noise_params: ${config.vars.default_all_noise_params}
+          is_surface_sm: true
+          noise_params: ${vars.default_all_noise_params}
+          pc1_is_pc2_threshold: 10
       sensor_module_1:
         sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
         sensor_module_args:
@@ -169,13 +99,7 @@ config:
           save_raw_obs: false
     learning_module_configs:
       learning_module_0:
-        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
         learning_module_args:
-          max_match_distance: 0.01
-          x_percent_threshold: 20
-          evidence_threshold_config: 80%
-          max_graph_size: 0.3
-          num_model_voxels_per_dim: 100
           gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
           gsg_args:
             goal_tolerances:
@@ -184,6 +108,19 @@ config:
             min_post_goal_success_steps: 5
             x_percent_scale_factor: 0.75
             desired_object_distance: 0.025
+            gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+            gsg_args:
+              goal_tolerances:
+                location: 0.015
+              elapsed_steps_factor: 10
+              min_post_goal_success_steps: 5
+              x_percent_scale_factor: 0.75
+              desired_object_distance: 0.025
+          max_match_distance: 0.01
+          x_percent_threshold: 20
+          evidence_threshold_config: 80%
+          max_graph_size: 0.3
+          num_model_voxels_per_dim: 100
           hypotheses_updater_args:
             max_nneighbors: 5
           feature_weights:
@@ -195,7 +132,31 @@ config:
             patch:
               hsv: ${np.array:[0.1, 0.2, 0.2]}
               principal_curvatures_log: ${np.ones:2}
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
   env_interface_config:
+    transform:
+    - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+      agent_id: ${monty.agent_id:agent_id_0}
+      max_depth: 1
+    - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+      agent_id: ${monty.agent_id:agent_id_0}
+      sensor_ids:
+      - patch
+      - view_finder
+      resolutions:
+      - - 64
+        - 64
+      - - 64
+        - 64
+      world_coord: true
+      zooms:
+      - 10.0
+      - 1.0
+      get_all_points: true
+      use_semantic_sensor: false
+      depth_clip_sensors:
+      - 0
+      clip_value: 0.05
     env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
     env_init_args:
       objects:
@@ -247,29 +208,6 @@ config:
           - 10.0
           - 1.0
           action_space_type: surface_agent
-    transform:
-    - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
-      agent_id: ${monty.agent_id:agent_id_0}
-      max_depth: 1
-    - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
-      agent_id: ${monty.agent_id:agent_id_0}
-      sensor_ids:
-      - patch
-      - view_finder
-      resolutions:
-      - - 64
-        - 64
-      - - 64
-        - 64
-      world_coord: true
-      zooms:
-      - 10.0
-      - 1.0
-      get_all_points: true
-      use_semantic_sensor: false
-      depth_clip_sensors:
-      - 0
-      clip_value: 0.05
     rng: null
   env_interface_args:
     parent_to_child_mapping: null
@@ -294,10 +232,81 @@ config:
   max_total_steps: 5000
   n_train_epochs: 3
   n_eval_epochs: 10
-  model_name_or_path: ${config.vars.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+  model_name_or_path: ${vars.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
   min_lms_match: 1
   seed: 42
   supervised_lm_ids: []
   python_log_level: DEBUG
   eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+vars:
+  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11}
+  default_all_noise_params:
+    features:
+      pose_vectors: 2
+      hsv: 0.1
+      principal_curvatures_log: 0.1
+      pose_fully_defined: 0.01
+    location: 0.002
+  default_sensor_features:
+  - pose_vectors
+  - pose_fully_defined
+  - on_object
+  - hsv
+  - principal_curvatures_log
+  min_eval_steps: 20
+  rotations_all_count: 14
+  rotations_all:
+  - - 0
+    - 0
+    - 0
+  - - 0
+    - 90
+    - 0
+  - - 0
+    - 180
+    - 0
+  - - 0
+    - 270
+    - 0
+  - - 90
+    - 0
+    - 0
+  - - 90
+    - 180
+    - 0
+  - - 35
+    - 45
+    - 0
+  - - 325
+    - 45
+    - 0
+  - - 35
+    - 315
+    - 0
+  - - 325
+    - 315
+    - 0
+  - - 35
+    - 135
+    - 0
+  - - 325
+    - 135
+    - 0
+  - - 35
+    - 225
+    - 0
+  - - 325
+    - 225
+    - 0
+  rotations_3_count: 3
+  rotations_3:
+  - - 0
+    - 0
+    - 0
+  - - 0
+    - 90
+    - 0
+  - - 0
+    - 180
+    - 0
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

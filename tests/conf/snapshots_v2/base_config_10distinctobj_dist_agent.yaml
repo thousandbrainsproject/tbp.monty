@@ -11,7 +11,7 @@ config:
     wandb_handlers:
     - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbTableStatsHandler}
     - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbChartStatsHandler}
-    python_log_level: INFO
+    python_log_level: WARNING
     python_log_to_file: true
     python_log_to_stderr: true
     output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs}
@@ -82,6 +82,9 @@ config:
             - 2
             distance: 0.01
           save_raw_obs: false
+          is_surface_sm: false
+          noise_params: null
+          pc1_is_pc2_threshold: 10
       sensor_module_1:
         sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
         sensor_module_args:
@@ -89,13 +92,7 @@ config:
           save_raw_obs: false
     learning_module_configs:
       learning_module_0:
-        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
         learning_module_args:
-          max_match_distance: 0.01
-          x_percent_threshold: 20
-          evidence_threshold_config: 80%
-          max_graph_size: 0.3
-          num_model_voxels_per_dim: 100
           gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
           gsg_args:
             goal_tolerances:
@@ -104,6 +101,19 @@ config:
             min_post_goal_success_steps: 5
             x_percent_scale_factor: 0.75
             desired_object_distance: 0.03
+            gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+            gsg_args:
+              goal_tolerances:
+                location: 0.015
+              elapsed_steps_factor: 10
+              min_post_goal_success_steps: 5
+              x_percent_scale_factor: 0.75
+              desired_object_distance: 0.025
+          max_match_distance: 0.01
+          x_percent_threshold: 20
+          evidence_threshold_config: 80%
+          max_graph_size: 0.3
+          num_model_voxels_per_dim: 100
           hypotheses_updater_args:
             max_nneighbors: 5
           feature_weights:
@@ -115,7 +125,28 @@ config:
             patch:
               hsv: ${np.array:[0.1, 0.2, 0.2]}
               principal_curvatures_log: ${np.ones:2}
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
   env_interface_config:
+    transform:
+    - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+      agent_id: ${monty.agent_id:agent_id_0}
+      max_depth: 1
+    - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+      agent_id: ${monty.agent_id:agent_id_0}
+      sensor_ids:
+      - patch
+      - view_finder
+      resolutions:
+      - - 64
+        - 64
+      - - 64
+        - 64
+      world_coord: true
+      zooms:
+      - 10.0
+      - 1.0
+      get_all_points: true
+      use_semantic_sensor: false
     env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
     env_init_args:
       objects:
@@ -166,29 +197,8 @@ config:
           zooms:
           - 10.0
           - 1.0
-    transform:
-    - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
-      agent_id: ${monty.agent_id:agent_id_0}
-      max_depth: 1
-    - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
-      agent_id: ${monty.agent_id:agent_id_0}
-      sensor_ids:
-      - patch
-      - view_finder
-      resolutions:
-      - - 64
-        - 64
-      - - 64
-        - 64
-      world_coord: true
-      zooms:
-      - 10.0
-      - 1.0
-      get_all_points: true
-      use_semantic_sensor: false
     rng: null
-  train_env_interface_args: null
-  eval_env_interface_args:
+  env_interface_args:
     parent_to_child_mapping: null
     object_names:
     - mug
@@ -217,7 +227,6 @@ config:
   seed: 42
   supervised_lm_ids: []
   python_log_level: DEBUG
-  train_env_interface_class: null
   eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
 vars:
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11}

@@ -102,6 +102,26 @@ config:
               hsv: ${np.array:[0.1, 0.2, 0.2]}
               principal_curvatures_log: ${np.ones:2}
   env_interface_config:
+    transform:
+    - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+      agent_id: ${monty.agent_id:agent_id_0}
+      max_depth: 1
+    - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+      agent_id: ${monty.agent_id:agent_id_0}
+      sensor_ids:
+      - patch
+      - view_finder
+      resolutions:
+      - - 64
+        - 64
+      - - 64
+        - 64
+      world_coord: true
+      zooms:
+      - 10.0
+      - 1.0
+      get_all_points: true
+      use_semantic_sensor: false
     env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
     env_init_args:
       objects:
@@ -152,26 +172,6 @@ config:
           zooms:
           - 10.0
           - 1.0
-    transform:
-    - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
-      agent_id: ${monty.agent_id:agent_id_0}
-      max_depth: 1
-    - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
-      agent_id: ${monty.agent_id:agent_id_0}
-      sensor_ids:
-      - patch
-      - view_finder
-      resolutions:
-      - - 64
-        - 64
-      - - 64
-        - 64
-      world_coord: true
-      zooms:
-      - 10.0
-      - 1.0
-      get_all_points: true
-      use_semantic_sensor: false
     rng: null
   env_interface_args:
     parent_to_child_mapping: null
