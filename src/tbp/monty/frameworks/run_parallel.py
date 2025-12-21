@@ -48,6 +48,9 @@ from tbp.monty.hydra import register_resolvers
 
 logger = logging.getLogger(__name__)
 
+# Register resolvers before Hydra processes config files
+register_resolvers()
+
 RE_OPEN_LEFT = re.compile(r"^:(\d+)$")  # ":N"
 RE_OPEN_RIGHT = re.compile(r"^(\d+):$")  # "N:"
 RE_CLOSED = re.compile(r"^(\d+)\s*:\s*(\d+)$")  # "A:B"
@@ -686,7 +689,6 @@ def main(cfg: DictConfig):
         os.environ["HABITAT_SIM_LOG"] = "quiet"
 
     print_config(cfg)
-    register_resolvers()
 
     if cfg.experiment.config.do_train:
         assert issubclass(

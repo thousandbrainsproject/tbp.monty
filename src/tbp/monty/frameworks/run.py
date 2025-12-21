@@ -14,11 +14,14 @@ import time
 from pathlib import Path
 
 import hydra
-from omegaconf import DictConfig, OmegaConf, OmegaConf
+from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.hydra import register_resolvers
 
 logger = logging.getLogger(__name__)
+
+# Register resolvers before Hydra processes config files
+register_resolvers()
 
 
 def print_config(config: DictConfig) -> None:
@@ -35,8 +38,6 @@ def main(cfg: DictConfig):
     if cfg.config.quiet_habitat_logs:
         os.environ["MAGNUM_LOG"] = "quiet"
         os.environ["HABITAT_SIM_LOG"] = "quiet"
-
-    register_resolvers()
     print(OmegaConf.to_yaml(cfg))
 
     output_dir = (
