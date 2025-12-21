@@ -92,11 +92,11 @@ experiment:
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
-      run_name: supervised_pre_training_logos_after_flat_objects
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: debugging
+      run_name: supervised_pre_training_logos_after_flat_objects
     monty_config:
       sensor_module_configs:
         sensor_module_0:

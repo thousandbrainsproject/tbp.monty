@@ -93,11 +93,11 @@ experiment:
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-      run_name: dist_agent_5lm_2obj_eval
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: gm_eval_runs
+      run_name: dist_agent_5lm_2obj_eval
     monty_config:
       sensor_module_configs:
         sensor_module_0:

@@ -96,11 +96,11 @@ experiment:
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs}
-      run_name: unsupervised_inference_distinctobj_dist_agent
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
+      run_name: unsupervised_inference_distinctobj_dist_agent
     monty_config:
       motor_system_config:
         motor_system_args:

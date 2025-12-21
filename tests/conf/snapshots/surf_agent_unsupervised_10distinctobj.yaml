@@ -93,11 +93,11 @@ experiment:
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs/}
-      run_name: surf_agent_unsupervised_10distinctobj
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: debugging
+      run_name: surf_agent_unsupervised_10distinctobj
     monty_config:
       motor_system_config:
         motor_system_args:
