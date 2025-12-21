@@ -1,5 +1,4 @@
 # @package config.logging
-# Minimal logging configuration - CSV stats only
 defaults:
   - defaults
 
