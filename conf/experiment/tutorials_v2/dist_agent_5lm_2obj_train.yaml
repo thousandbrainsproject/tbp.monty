@@ -1,0 +1,30 @@
+# @package _global_
+# Tutorial: Distant agent with 5 learning modules - training on 2 objects
+#
+# This tutorial demonstrates supervised pretraining with a multi-LM distant agent.
+# Uses naive scan spiral policy for systematic coverage during training.
+
+defaults:
+  - /environment/object_sampler: predefined
+  - override /mode: pretrain
+  - override /logging: pretrain
+  - override /agent_config: five_lm_habitat
+  - override /monty: pretraining_5lm
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+config:
+  n_train_epochs: ${vars.rotations_all_count}
+  logging:
+    output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
+    run_name: dist_agent_5lm_2obj_train
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 500
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  train_env_interface_args:
+    object_names:
+      - mug
+      - banana
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+      rotations: ${vars.rotations_all}
