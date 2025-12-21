@@ -1,9 +1,11 @@
 # Base EvidenceGoalStateGenerator config with ??? for required fields.
 # Use evidence_distant or evidence_surface for concrete configs.
 
-goal_tolerances:
-  location: 0.015
-elapsed_steps_factor: 10
-min_post_goal_success_steps: 5
-x_percent_scale_factor: 0.75
-desired_object_distance: ???
+gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+gsg_args:
+  goal_tolerances:
+    location: 0.015
+  elapsed_steps_factor: 10
+  min_post_goal_success_steps: 5
+  x_percent_scale_factor: 0.75
+  desired_object_distance: 0.025
