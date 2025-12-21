@@ -1,7 +1,0 @@
-# @package config.monty_config.motor_system_config
-# SurfacePolicy with surface agent actions, 5 degree steps.
-
-defaults:
-  - _motor_system
-  - policy/surface_5deg@motor_system_args
-  - action_space/surface_agent@motor_system_args.policy_args.action_sampler_args

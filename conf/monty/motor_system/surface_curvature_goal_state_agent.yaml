@@ -1,7 +1,0 @@
-# @package config.monty_config.motor_system_config
-# SurfacePolicyCurvatureInformed with goal-state-driven actions.
-
-defaults:
-  - _motor_system
-  - policy/surface_curvature_goal_state@motor_system_args
-  - action_space/surface_agent@motor_system_args.policy_args.action_sampler_args

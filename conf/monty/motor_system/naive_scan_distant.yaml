@@ -1,7 +1,0 @@
-# @package config.monty_config.motor_system_config
-# NaiveScanPolicy with distant agent actions (spiral exploration).
-
-defaults:
-  - _motor_system
-  - policy/naive_scan_5deg@motor_system_args
-  - action_space/distant_agent@motor_system_args.policy_args.action_sampler_args

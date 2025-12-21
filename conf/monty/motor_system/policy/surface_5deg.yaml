@@ -1,8 +1,0 @@
-# SurfacePolicy with 5 degree rotation steps.
-
-defaults:
-  - _surface
-  - action_sampler/constant_5deg@policy_args.action_sampler_args
-
-policy_args:
-  action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}

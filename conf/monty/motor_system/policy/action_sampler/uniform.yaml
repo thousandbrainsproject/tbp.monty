@@ -1,4 +1,0 @@
-# UniformlyDistributedSampler for random action sampling.
-
-defaults:
-  - _uniform
