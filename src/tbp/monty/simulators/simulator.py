@@ -64,11 +64,6 @@ class Simulator(Protocol):
         """
         ...
 
-    @property
-    def states(self) -> ProprioceptiveState:
-        """Returns proprioceptive state of the agents and sensors."""
-        ...
-
     def step(
         self, actions: Sequence[Action]
     ) -> tuple[Observations, ProprioceptiveState]:

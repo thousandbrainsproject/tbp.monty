@@ -161,6 +161,3 @@ class HabitatEnvironment(EmbodiedEnvironment):
         if _env is not None:
             _env.close()
             self._env = None
-
-    def get_state(self) -> ProprioceptiveState:
-        return self._env.states

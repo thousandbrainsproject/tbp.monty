@@ -92,11 +92,6 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_state(self) -> ProprioceptiveState:
-        """Returns proprioceptive state of the agent and sensors."""
-        pass
-
-    @abc.abstractmethod
     def remove_all_objects(self) -> None:
         """Remove all objects from the environment.
 
