@@ -13,7 +13,7 @@ We use these terms fairly interchangeably (particularly in our meetings), howeve
 
 # Neuroscience Theory
 
-## What is the Relationship of the Thousand Brains Theory to the Active Inference and the Free Energy Principle? What about Predictive Coding?
+## What is the Relationship of the Thousand Brains Theory to Active Inference and the Free Energy Principle? What About Predictive Coding?
 
 Active inference and the Free Energy Principle are frameworks for understanding brains as systems designed to reduce "surprise". The importance of reducing surprise, either through sampling the environment to improve learned models, or acting based on learned models to reduce uncertainty, are entirely compatible with the Thousand Brains Theory, as well as how we are implementing Monty. However, concrete mathematical implementations of active inference typically struggle to operate in real-world settings, due to issues with modeling high-dimensional properties in the world, and the use of Gaussian distributions in modeling noise. As a result, these ideas are often realised using deep-learning models (see [Millidge, 2020](https://arxiv.org/abs/1907.03876)). However, this introduces the very issues plaguing deep learning that we want to avoid (see [Why Does Monty Not Make Use of Deep Learning?](#why-does-monty-not-make-use-of-deep-learning)). As a result, it remains an open question as to how a system can model the world to reduce surprise, while achieving comparable performance to mammalian brains. We think the TBT principles are essential for this. 
 
