@@ -15,7 +15,6 @@ from tbp.monty.frameworks.run_parallel import parse_episode_spec
 
 class ParseEpisodeSpecTest(unittest.TestCase):
     def test_selects_all(self):
-        self.assertEqual(parse_episode_spec(None, total=5), [0, 1, 2, 3, 4])
         self.assertEqual(parse_episode_spec("", total=3), [0, 1, 2])
         self.assertEqual(parse_episode_spec(":", total=3), [0, 1, 2])
         self.assertEqual(parse_episode_spec("all", total=4), [0, 1, 2, 3])
@@ -94,9 +93,6 @@ class ParseEpisodeSpecTest(unittest.TestCase):
 
     def test_total_zero_all_is_empty(self):
         self.assertEqual(parse_episode_spec("all", total=0), [])
-
-    def test_total_zero_none_is_empty(self):
-        self.assertEqual(parse_episode_spec(None, total=0), [])
 
     def test_total_zero_any_specific_raises(self):
         with self.assertRaises(ValueError):

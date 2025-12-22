@@ -156,7 +156,7 @@ def print_config(config: DictConfig) -> None:
     print("-" * 100)
 
 
-def parse_episode_spec(episode_spec: str | None, total: int) -> list[int]:
+def parse_episode_spec(episode_spec: str, total: int) -> list[int]:
     """Parses a zero-based episode selection string into episode indices.
 
     Converts a human-friendly selection string into a sorted list of unique,
@@ -188,8 +188,6 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> list[int]:
     Raises:
         ValueError: If the selection contains any invalid index or range.
     """
-    if episode_spec is None:
-        return list(range(total))
     s = episode_spec.strip().lower()
     if s in ("", "all", ":"):
         return list(range(total))
@@ -242,7 +240,7 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> list[int]:
     return sorted(selected)
 
 
-def filter_episode_configs(configs: list[dict], episode_spec: str | None) -> list[dict]:
+def filter_episode_configs(configs: list[dict], episode_spec: str) -> list[dict]:
     idxs = parse_episode_spec(episode_spec, len(configs))
     return [cfg for i, cfg in enumerate(configs) if i in idxs]
 
@@ -697,7 +695,7 @@ def main(cfg: DictConfig):
         train_configs = generate_parallel_train_configs(
             cfg.experiment, cfg.experiment.config.logging.run_name
         )
-        train_configs = filter_episode_configs(train_configs, cfg.episodes)
+        train_configs = filter_episode_configs(train_configs, str(cfg.episodes))
         if cfg.print_cfg:
             print("Printing configs for spot checking")
             for config in train_configs:
@@ -719,7 +717,7 @@ def main(cfg: DictConfig):
         eval_configs = generate_parallel_eval_configs(
             cfg.experiment, cfg.experiment.config.logging.run_name
         )
-        eval_configs = filter_episode_configs(eval_configs, cfg.episodes)
+        eval_configs = filter_episode_configs(eval_configs, str(cfg.episodes))
         if cfg.print_cfg:
             print("Printing configs for spot checking")
             for config in eval_configs:
