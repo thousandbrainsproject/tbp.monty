@@ -1,3 +1,5 @@
+# @package config.vars
+
 defaults:
   - paths
   - rotations
