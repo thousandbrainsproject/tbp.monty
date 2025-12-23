@@ -195,7 +195,7 @@ class BaseConfigTest(unittest.TestCase):
             self.assertTrue(warning_message in log)
 
 
-class DetailedLoggingConfigTest(unittest.TestCase):
+class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
 
