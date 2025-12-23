@@ -10,7 +10,7 @@ config:
   zoom: 30
   blur_sigma: 5.0
   logging:
-    run_name: disk_inference_2d_on_2d_zoom${config.zoom}_blur${config.blur_sigma}
+    run_name: disk_inference_2d_20pos_zoom${config.zoom}_blur${config.blur_sigma}
   model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor/disk_learning_2d_zoom${config.zoom}_blur${config.blur_sigma}/pretrained/}
   # Apply zoom, resolution, and blur to environment
   env_interface_config:
