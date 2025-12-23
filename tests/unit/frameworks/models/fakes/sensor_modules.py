@@ -12,6 +12,7 @@ from __future__ import annotations
 import numpy as np
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.models.states import State
 
 
@@ -29,7 +30,7 @@ class FakeSensorModule(SensorModule):
     def state_dict(self):
         pass
 
-    def update_state(self, state):
+    def update_state(self, agent: AgentState):
         pass
 
     def pre_episode(self):

@@ -15,6 +15,7 @@ from typing import NewType, Sequence, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 
 __all__ = [
     "EmbodiedEnvironment",
@@ -90,8 +91,8 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_state(self):
-        """Return the state of the environment (and agent)."""
+    def get_state(self) -> ProprioceptiveState:
+        """Returns proprioceptive state of the agent and sensors."""
         pass
 
     @abc.abstractmethod

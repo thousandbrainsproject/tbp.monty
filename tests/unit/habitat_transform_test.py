@@ -20,41 +20,60 @@ from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
     MissingToMaxDepth,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    AgentObservations,
+    Modality,
+    Observations,
+    SensorObservations,
+)
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    ProprioceptiveState,
+    SensorState,
+)
+from tbp.monty.frameworks.sensors import SensorID
 
 AGENT_ID = AgentID("camera")
-SENSOR_ID = "sensor_01"
+SENSOR_ID = SensorID("sensor_01")
 
-TEST_OBS = {
-    AGENT_ID: {
-        SENSOR_ID: {
-            "semantic": np.array(
-                [
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 5, 5, 5, 5, 0, 0],
-                    [0, 0, 5, 5, 5, 5, 0, 0],
-                    [0, 0, 5, 5, 5, 5, 0, 0],
-                    [0, 0, 5, 5, 5, 5, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                ],
-                dtype=int,
-            ),
-            "depth": np.array(
-                [
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
-                    [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
-                    [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
-                    [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                ]
-            ),
-        }
+TEST_OBS = Observations(
+    {
+        AGENT_ID: AgentObservations(
+            {
+                SENSOR_ID: SensorObservations(
+                    {
+                        Modality("semantic"): np.array(
+                            [
+                                [0, 0, 0, 0, 0, 0, 0, 0],
+                                [0, 0, 0, 0, 0, 0, 0, 0],
+                                [0, 0, 5, 5, 5, 5, 0, 0],
+                                [0, 0, 5, 5, 5, 5, 0, 0],
+                                [0, 0, 5, 5, 5, 5, 0, 0],
+                                [0, 0, 5, 5, 5, 5, 0, 0],
+                                [0, 0, 0, 0, 0, 0, 0, 0],
+                                [0, 0, 0, 0, 0, 0, 0, 0],
+                            ],
+                            dtype=int,
+                        ),
+                        Modality("depth"): np.array(
+                            [
+                                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
+                                [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
+                                [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
+                                [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
+                                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                            ]
+                        ),
+                    }
+                )
+            }
+        )
     }
-}
+)
+
 
 EXPECTED_SEMANTIC_XY = np.array(
     [
@@ -90,19 +109,21 @@ class HabitatTransformTest(unittest.TestCase):
         observation_copy = copy.deepcopy(TEST_OBS)
 
         # Control: get the 0 indices and check they are all zero
-        m = np.where(observation_copy[AGENT_ID][SENSOR_ID]["depth"] <= 0)
-        self.assertEqual(np.sum(observation_copy[AGENT_ID][SENSOR_ID]["depth"][m]), 0)
+        m = np.where(observation_copy[AGENT_ID][SENSOR_ID][Modality("depth")] <= 0)
+        self.assertEqual(
+            np.sum(observation_copy[AGENT_ID][SENSOR_ID][Modality("depth")][m]), 0
+        )
 
         # Check that the same indices get set to max_depth and only max_depth
         transformed_obs = transform.call(observation_copy)
         unique_0_replacements = np.unique(
-            transformed_obs[AGENT_ID][SENSOR_ID]["depth"][m]
+            transformed_obs[AGENT_ID][SENSOR_ID][Modality("depth")][m]
         )
         self.assertEqual(len(unique_0_replacements), 1)
         self.assertEqual(unique_0_replacements[0], max_depth)
 
     def test_semantic_3d_local(self):
-        resolution = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"].shape
+        resolution = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("depth")].shape
         # Replace 0 depth with max depth
         md_transform = MissingToMaxDepth(agent_id=AGENT_ID, max_depth=100)
         md_obs = md_transform.call(TEST_OBS)
@@ -115,14 +136,14 @@ class HabitatTransformTest(unittest.TestCase):
         )
         obs = transform.call(md_obs)
         module_obs = obs[AGENT_ID][SENSOR_ID]
-        depth_obs = module_obs["depth"]
-        semantic_obs = module_obs["semantic"]
-        semantic_3d_obs = module_obs["semantic_3d"]
+        depth_obs = module_obs[Modality("depth")]
+        semantic_obs = module_obs[Modality("semantic")]
+        semantic_3d_obs = module_obs[Modality("semantic_3d")]
 
         # make sure old observations stay unchanged
-        expected = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"]
+        expected = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("depth")]
         np.testing.assert_array_equal(depth_obs, expected)
-        expected = TEST_OBS[AGENT_ID][SENSOR_ID]["semantic"]
+        expected = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("semantic")]
         np.testing.assert_array_equal(semantic_obs, expected)
 
         # Check semantic 3D shape, it should be (nnz(semantic), 4)
@@ -131,14 +152,14 @@ class HabitatTransformTest(unittest.TestCase):
         self.assertTupleEqual(semantic_3d_obs.shape, expected)
 
         # Check semantic id
-        expected = TEST_OBS[AGENT_ID][SENSOR_ID]["semantic"]
+        expected = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("semantic")]
         expected = np.unique(expected)
         expected = expected[expected.nonzero()][0]
         actual = np.unique(semantic_3d_obs[:, 3])
         self.assertEqual(actual, expected)
 
         # Check Z values, should match -depth
-        expected = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"]
+        expected = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("depth")]
         expected = np.unique(expected)
         expected = -expected[expected.nonzero()][0]
         actual = np.unique(semantic_3d_obs[:, 2])
@@ -151,22 +172,24 @@ class HabitatTransformTest(unittest.TestCase):
     def setup_test_data(
         self, agent_position, agent_rotation, sensor_position, sensor_rotation
     ):
-        resolution = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"].shape
+        resolution = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("depth")].shape
         md_transform = MissingToMaxDepth(agent_id=AGENT_ID, max_depth=100)
         md_obs = md_transform.call(TEST_OBS)
 
-        mock_state = {
-            AGENT_ID: {
-                "position": agent_position,
-                "rotation": agent_rotation,
-                "sensors": {
-                    f"{SENSOR_ID}.depth": {
-                        "position": sensor_position,
-                        "rotation": sensor_rotation,
-                    }
-                },
+        mock_state = ProprioceptiveState(
+            {
+                AGENT_ID: AgentState(
+                    position=agent_position,
+                    rotation=agent_rotation,
+                    sensors={
+                        SensorID(f"{SENSOR_ID}.depth"): SensorState(
+                            position=sensor_position,
+                            rotation=sensor_rotation,
+                        )
+                    },
+                )
             }
-        }
+        )
 
         transform = DepthTo3DLocations(
             agent_id=AGENT_ID,
@@ -179,7 +202,7 @@ class HabitatTransformTest(unittest.TestCase):
 
         obs = transform.call(md_obs, state=mock_state)
         transformed_sensor_obs = obs[AGENT_ID][SENSOR_ID]
-        depth_obs = transformed_sensor_obs["depth"]
+        depth_obs = transformed_sensor_obs[Modality("depth")]
         semantic_obs = transformed_sensor_obs["semantic"]
         semantic_3d_obs = transformed_sensor_obs["semantic_3d"]
 
@@ -196,7 +219,9 @@ class HabitatTransformTest(unittest.TestCase):
     ):
         expected_x = EXPECTED_SEMANTIC_XY[:, 0]
         expected_y = EXPECTED_SEMANTIC_XY[:, 1]
-        depth_values = md_obs[AGENT_ID][SENSOR_ID]["depth"][semantic_obs.nonzero()]
+        depth_values = md_obs[AGENT_ID][SENSOR_ID][Modality("depth")][
+            semantic_obs.nonzero()
+        ]
         expected_z = -depth_values
 
         points_camera = np.vstack(
@@ -237,9 +262,9 @@ class HabitatTransformTest(unittest.TestCase):
             agent_position, agent_rotation, sensor_position, sensor_rotation
         )
 
-        expected = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"]
+        expected = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("depth")]
         np.testing.assert_array_equal(depth_obs, expected)
-        expected = TEST_OBS[AGENT_ID][SENSOR_ID]["semantic"]
+        expected = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("semantic")]
         np.testing.assert_array_equal(semantic_obs, expected)
 
         on_object_obs = np.nonzero(semantic_obs)
@@ -269,9 +294,9 @@ class HabitatTransformTest(unittest.TestCase):
             agent_position, agent_rotation, sensor_position, sensor_rotation
         )
 
-        expected = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"]
+        expected = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("depth")]
         np.testing.assert_array_equal(depth_obs, expected)
-        expected = TEST_OBS[AGENT_ID][SENSOR_ID]["semantic"]
+        expected = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("semantic")]
         np.testing.assert_array_equal(semantic_obs, expected)
 
         on_object_obs = np.nonzero(semantic_obs)
@@ -300,9 +325,9 @@ class HabitatTransformTest(unittest.TestCase):
             agent_position, agent_rotation, sensor_position, sensor_rotation
         )
 
-        expected = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"]
+        expected = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("depth")]
         np.testing.assert_array_equal(depth_obs, expected)
-        expected = TEST_OBS[AGENT_ID][SENSOR_ID]["semantic"]
+        expected = TEST_OBS[AGENT_ID][SENSOR_ID][Modality("semantic")]
         np.testing.assert_array_equal(semantic_obs, expected)
 
         on_object_obs = np.nonzero(semantic_obs)

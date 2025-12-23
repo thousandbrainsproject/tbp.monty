@@ -36,11 +36,15 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Modality,
     Observations,
-    SensorID,
     SensorObservations,
 )
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
+from tbp.monty.frameworks.models.motor_system_state import (
+    MotorSystemState,
+    ProprioceptiveState,
+)
+from tbp.monty.frameworks.sensors import SensorID
 
 AGENT_ID = AgentID("agent_id_0")
 SENSOR_ID = SensorID("sensor_id_0")
@@ -81,8 +85,8 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
             }
         )
 
-    def get_state(self):
-        return None
+    def get_state(self) -> ProprioceptiveState:
+        return ProprioceptiveState({})
 
     def remove_all_objects(self):
         pass
@@ -128,8 +132,8 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
             }
         )
 
-    def get_state(self):
-        return None
+    def get_state(self) -> ProprioceptiveState:
+        return ProprioceptiveState({})
 
     def remove_all_objects(self):
         pass
@@ -359,7 +363,7 @@ class EmbodiedDataTest(unittest.TestCase):
         base_policy_cfg_rel["agent_id"] = AGENT_ID
 
         motor_system_rel = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_rel)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_rel), state=MotorSystemState()
         )
 
         env_init_args = {"patch_size": patch_size, "data_path": data_path}

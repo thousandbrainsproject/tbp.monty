@@ -20,6 +20,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     VectorXYZ,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 
 
 class Simulator(Protocol):
@@ -75,8 +76,8 @@ class Simulator(Protocol):
         ...
 
     @property
-    def states(self):
-        """Get agent and sensor states."""
+    def states(self) -> ProprioceptiveState:
+        """Returns proprioceptive state of the agents and sensors."""
         ...
 
     def apply_actions(self, actions: Sequence[Action]) -> Observations:

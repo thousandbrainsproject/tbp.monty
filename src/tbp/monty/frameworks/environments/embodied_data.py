@@ -33,6 +33,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     ObjectID,
     SemanticID,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
     InformedPolicy,
@@ -138,9 +139,11 @@ class EnvironmentInterface:
 
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, ProprioceptiveState(state) if state else None
+        return observation, state
 
-    def apply_transform(self, transform, observation, state):
+    def apply_transform(
+        self, transform, observation: Observations, state: ProprioceptiveState
+    ) -> Observations:
         ctx = TransformContext(rng=self.rng, state=state)
         if isinstance(transform, Iterable):
             for t in transform:
@@ -154,7 +157,7 @@ class EnvironmentInterface:
         state = self.env.get_state()
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, ProprioceptiveState(state) if state else None
+        return observation, state
 
     def pre_episode(self):
         self.motor_system.pre_episode()
@@ -257,9 +260,9 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
     def pre_episode(self):
         super().pre_episode()
 
-        self.motor_system._state[self.motor_system._policy.agent_id][
-            "motor_only_step"
-        ] = False
+        self.motor_system._state[
+            self.motor_system._policy.agent_id
+        ].motor_only_step = False
 
     def post_episode(self):
         super().post_episode()
@@ -471,9 +474,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         if isinstance(self.motor_system._policy, SurfacePolicy):
             # When we are attempting to find the object, we are always performing
             # a motor-only step.
-            motor_system_state[self.motor_system._policy.agent_id][
-                "motor_only_step"
-            ] = attempting_to_find_object
+            motor_system_state[
+                self.motor_system._policy.agent_id
+            ].motor_only_step = attempting_to_find_object
 
             if (
                 not attempting_to_find_object
@@ -488,9 +491,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
                 # want to send data to the learning module after taking the
                 # OrientVertical action. The other three actions in the cycle
                 # are motor-only to keep the surface agent on the object.
-                motor_system_state[self.motor_system._policy.agent_id][
-                    "motor_only_step"
-                ] = True
+                motor_system_state[
+                    self.motor_system._policy.agent_id
+                ].motor_only_step = True
 
         self.motor_system._state = motor_system_state
 
@@ -523,9 +526,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # For first step of surface-agent policy, always bypass LM processing
         # For distant-agent policy, we still process the first sensation if it is
         # on the object
-        self.motor_system._state[self.motor_system._policy.agent_id][
-            "motor_only_step"
-        ] = isinstance(self.motor_system._policy, SurfacePolicy)
+        self.motor_system._state[
+            self.motor_system._policy.agent_id
+        ].motor_only_step = isinstance(self.motor_system._policy, SurfacePolicy)
 
         return self._observation
 
@@ -636,12 +639,12 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # Check that all sensors have identical rotations - this is because actions
         # currently update them all together; if this changes, the code needs
         # to be updated; TODO make this its own method
-        for ii, current_sensor in enumerate(pre_jump_state["sensors"].keys()):
+        for ii, current_sensor in enumerate(pre_jump_state.sensors):
             if ii == 0:
                 first_sensor = current_sensor
             assert np.all(
-                pre_jump_state["sensors"][current_sensor]["rotation"]
-                == pre_jump_state["sensors"][first_sensor]["rotation"]
+                pre_jump_state.sensors[current_sensor].rotation
+                == pre_jump_state.sensors[first_sensor].rotation
             ), "Sensors are not identical in pose"
 
         # TODO In general what would be best/cleanest way of routing information,
@@ -696,9 +699,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # and we provide the observation to the next step of the motor policy
         self._counter += 1
 
-        self.motor_system._state[self.motor_system._policy.agent_id][
-            "motor_only_step"
-        ] = True
+        self.motor_system._state[
+            self.motor_system._policy.agent_id
+        ].motor_only_step = True
 
         # TODO refactor so that the whole of the hypothesis driven jumps
         # makes cleaner use of self.motor_system()
@@ -754,36 +757,36 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
         set_agent_pose = SetAgentPose(
             agent_id=self.motor_system._policy.agent_id,
-            location=pre_jump_state["position"],
-            rotation_quat=pre_jump_state["rotation"],
+            location=pre_jump_state.position,
+            rotation_quat=pre_jump_state.rotation,
         )
         # All sensors are updated globally by actions, and are therefore
         # identical
         set_sensor_rotation = SetSensorRotation(
             agent_id=self.motor_system._policy.agent_id,
-            rotation_quat=pre_jump_state["sensors"][first_sensor]["rotation"],
+            rotation_quat=pre_jump_state.sensors[first_sensor].rotation,
         )
         self._observation, proprioceptive_state = self.step(
             [set_agent_pose, set_sensor_rotation]
         )
 
         assert np.all(
-            proprioceptive_state[self.motor_system._policy.agent_id]["position"]
-            == pre_jump_state["position"]
+            proprioceptive_state[self.motor_system._policy.agent_id].position
+            == pre_jump_state.position
         ), "Failed to return agent to location"
         assert np.all(
-            proprioceptive_state[self.motor_system._policy.agent_id]["rotation"]
-            == pre_jump_state["rotation"]
+            proprioceptive_state[self.motor_system._policy.agent_id].rotation
+            == pre_jump_state.rotation
         ), "Failed to return agent to orientation"
 
-        for current_sensor in proprioceptive_state[self.motor_system._policy.agent_id][
-            "sensors"
-        ].keys():
+        for current_sensor in proprioceptive_state[
+            self.motor_system._policy.agent_id
+        ].sensors:
             assert np.all(
-                proprioceptive_state[self.motor_system._policy.agent_id]["sensors"][
-                    current_sensor
-                ]["rotation"]
-                == pre_jump_state["sensors"][current_sensor]["rotation"]
+                proprioceptive_state[self.motor_system._policy.agent_id]
+                .sensors[current_sensor]
+                .rotation
+                == pre_jump_state.sensors[current_sensor].rotation
             ), "Failed to return sensor to orientation"
 
         self.motor_system._state = MotorSystemState(proprioceptive_state)

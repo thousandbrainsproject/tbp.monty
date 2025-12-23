@@ -44,6 +44,7 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_environment import SemanticID
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
+from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 
@@ -260,7 +261,7 @@ class BasePolicy(MotorPolicy):
     ###
 
     def get_agent_state(self, state: MotorSystemState) -> AgentState:
-        """Get agent state (dict).
+        """Get agent state.
 
         Note:
             Assumes we only have one agent.
@@ -287,9 +288,7 @@ class BasePolicy(MotorPolicy):
             True if the current step is a motor-only step, False otherwise.
         """
         agent_state = self.get_agent_state(state)
-
-        # FIXME: "motor_only_step" is not a valid AgentState key (based on type).
-        return bool(agent_state.get("motor_only_step"))
+        return agent_state.motor_only_step
 
     @property
     def last_action(self) -> Action:
@@ -579,10 +578,12 @@ class GetGoodView(PositioningProcedure):
         location_to_look_at = sem3d_obs_image[
             idx_loc_to_look_at[0], idx_loc_to_look_at[1], :3
         ]
-        camera_location = self.get_agent_state(state)["sensors"][
-            f"{self._sensor_id}.depth"
-        ]["position"]
-        agent_location = self.get_agent_state(state)["position"]
+        camera_location = (
+            self.get_agent_state(state)
+            .sensors[SensorID(f"{self._sensor_id}.depth")]
+            .position
+        )
+        agent_location = self.get_agent_state(state).position
         # Get the location of the object relative to sensor.
         return location_to_look_at - (camera_location + agent_location)
 
@@ -770,9 +771,11 @@ class GetGoodView(PositioningProcedure):
         """
         agent_state = self.get_agent_state(state)
         # Retrieve agent's rotation relative to the world.
-        agent_rotation = agent_state["rotation"]
+        agent_rotation = agent_state.rotation
         # Retrieve sensor's rotation relative to the agent.
-        sensor_rotation = agent_state["sensors"][f"{self._sensor_id}.depth"]["rotation"]
+        sensor_rotation = agent_state.sensors[
+            SensorID(f"{self._sensor_id}.depth")
+        ].rotation
         # Derive sensor's rotation relative to the world.
         return agent_rotation * sensor_rotation
 
@@ -1133,9 +1136,9 @@ class SurfacePolicy(InformedPolicy):
             distance = (
                 depth_at_center
                 - self.desired_object_distance
-                - state[AgentID("agent_id_0")]["sensors"][f"{view_sensor_id}.depth"][
-                    "position"
-                ][2]
+                - state[self.agent_id]
+                .sensors[SensorID(f"{view_sensor_id}.depth")]
+                .position[2]
             )
             logger.debug(f"Move to touch visible object, forward by {distance}")
 
@@ -1465,7 +1468,7 @@ class SurfacePolicy(InformedPolicy):
         )
 
         direction = qt.rotate_vectors(
-            state[self.agent_id]["rotation"],
+            state[self.agent_id].rotation,
             [
                 np.cos(self.tangential_angle - np.pi / 2),
                 np.sin(self.tangential_angle + np.pi / 2),
@@ -1541,7 +1544,7 @@ class SurfacePolicy(InformedPolicy):
             Inverse quaternion rotation.
         """
         # Note that quaternion format is [w, x, y, z]
-        [w, x, y, z] = qt.as_float_array(state[self.agent_id]["rotation"])
+        [w, x, y, z] = qt.as_float_array(state[self.agent_id].rotation)
         # Note that scipy.spatial.transform.Rotation (v1.10.0) format is [x, y, z, w]
         [x, y, z, w] = rot.from_quat([x, y, z, w]).inv().as_quat()
         return qt.quaternion(w, x, y, z)
@@ -1955,7 +1958,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             self.following_heading_counter = 0
 
             return tuple(
-                qt.rotate_vectors(state[self.agent_id]["rotation"], self.tangential_vec)
+                qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec)
             )
 
         # Otherwise our heading is good; we continue and use our original heading (or
@@ -1975,7 +1978,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.continuous_pc_steps += 1
 
         return tuple(
-            qt.rotate_vectors(state[self.agent_id]["rotation"], self.tangential_vec)
+            qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec)
         )
 
     def perform_standard_tang_step(self, state: MotorSystemState) -> VectorXYZ:
@@ -2042,7 +2045,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         return tuple(
             qt.rotate_vectors(
-                state[self.agent_id]["rotation"],
+                state[self.agent_id].rotation,
                 self.tangential_vec,
             )
         )
