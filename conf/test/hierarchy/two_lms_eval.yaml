@@ -6,6 +6,7 @@ defaults:
 
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:
+  do_eval: true
   do_train: false
   min_lms_match: 1
   n_eval_epochs: 2

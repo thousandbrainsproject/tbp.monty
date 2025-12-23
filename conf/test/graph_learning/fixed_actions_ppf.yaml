@@ -3,6 +3,7 @@ defaults:
   - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
 
 config:
+  do_eval: false
   monty_config:
     learning_module_configs:
       learning_module_0:
