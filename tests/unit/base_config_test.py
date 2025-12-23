@@ -204,7 +204,7 @@ class DetailedLoggingConfigTest(unittest.TestCase):
                 config_name="test",
                 overrides=[
                     "test=evidence_lm/base",
-                    "+test/config/logging=detailed_evidence_lm",
+                    "+experiment/config/logging@test.config.logging=detailed_evidence_lm",
                     f"test.config.logging.output_dir={self.output_dir}",
                 ],
             )
