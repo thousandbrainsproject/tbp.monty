@@ -21,7 +21,8 @@ Predictive coding is a proposal for how a hierarchical system can use prediction
 
 To summarize, Bayesian theories of the brain are interesting and broadly compatible with the principles of the TBT. While they can be useful for neuroscience research, our view is that these approaches are often too broad for building practical, intelligent systems. Similarly, while the concept of the neocortex as a system that predicts the nature of the of world is common to the above theories and the Thousand Brains Theory (as well as several other ideas going back to Hermann von Helmholtz), we want to emphasize the key elements that set the TBT apart. This includes the use of a modular architecture with reference frames, where each module builds representations of entire objects, and a focus on building a learning system that can model the world robustly and quickly, rather than on fitting neuroscience data or needing to rely on deep learning approaches.
 
-(the above is paraphrased from our [recent paper on Monty's current capabilities](https://arxiv.org/abs/2507.04494), where we do a more technical deep-dive discussing Monty's relationship to existing machine learning approaches and neuroscience theories)
+> [!NOTE]
+> The above is paraphrased from our [recent paper on Monty's current capabilities](https://arxiv.org/abs/2507.04494), where we do a more technical deep-dive discussing Monty's relationship to existing machine learning approaches and neuroscience theories.
 
 ## Do Cortical Columns in the Brain Really Model Whole Objects, Like a Coffee Mug in V1?
 
