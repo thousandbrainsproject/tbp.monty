@@ -168,7 +168,7 @@ class BasePolicy(MotorPolicy):
         self.rng = rng
         self.agent_id = agent_id
 
-        self.action_sampler = action_sampler_class(rng=self.rng, **action_sampler_args)
+        self.action_sampler = action_sampler_class(**action_sampler_args)
 
         self.action_sequence = []
         self.timestep = 0
@@ -177,7 +177,7 @@ class BasePolicy(MotorPolicy):
         self.switch_frequency = float(switch_frequency)
         # Ensure our first action only samples from those that can be random
         self.action: Action | None = self.get_random_action(
-            self.action_sampler.sample(self.agent_id)
+            self.action_sampler.sample(self.agent_id, self.rng)
         )
 
         ###
@@ -227,7 +227,7 @@ class BasePolicy(MotorPolicy):
         """
         while True:
             if self.rng.rand() < self.switch_frequency:
-                action = self.action_sampler.sample(self.agent_id)
+                action = self.action_sampler.sample(self.agent_id, self.rng)
             if not isinstance(action, SetAgentPose) and not isinstance(
                 action, SetSensorRotation
             ):
@@ -1275,7 +1275,9 @@ class SurfacePolicy(InformedPolicy):
             # In this case, we are on the first action, but the object view is already
             # good; therefore initialize the cycle of actions as if we had just
             # moved forward (e.g. to get a good view)
-            self.action = self.action_sampler.sample_move_forward(self.agent_id)
+            self.action = self.action_sampler.sample_move_forward(
+                self.agent_id, self.rng
+            )
             self.last_surface_policy_action = self.action
 
         return self.get_next_action(state)
@@ -1364,7 +1366,7 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             MoveTangentially action.
         """
-        action = self.action_sampler.sample_move_tangentially(self.agent_id)
+        action = self.action_sampler.sample_move_tangentially(self.agent_id, self.rng)
 
         # be careful if you're falling off the object!
         if self.processed_observations.get_feature_by_name("object_coverage") < 0.2:

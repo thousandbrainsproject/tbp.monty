@@ -1,0 +1,5 @@
+defaults:
+  - /test/graph_learning/feature_pred_off_object@
+
+config:
+  do_eval: false

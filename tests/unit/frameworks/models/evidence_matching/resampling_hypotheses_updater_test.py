@@ -42,7 +42,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
     def get_pretrained_resampling_lm(self):
         exp = hydra.utils.instantiate(self.cfg.test)
         with exp:
-            exp.train()
+            exp.run()
 
         rlm = exp.model.learning_modules[0]
         rlm.channel_hypothesis_mapping["capsule3DSolid"] = ChannelMapper()

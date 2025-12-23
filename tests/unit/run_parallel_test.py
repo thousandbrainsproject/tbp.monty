@@ -92,8 +92,7 @@ class RunParallelTest(unittest.TestCase):
         # serial run
         exp = hydra.utils.instantiate(self.supervised_pre_training_cfg.experiment)
         with exp:
-            exp.model.set_experiment_mode("train")
-            exp.train()
+            exp.run()
 
         # parallel run
         OmegaConf.clear_resolvers()  # main will re-register resolvers
@@ -141,7 +140,7 @@ class RunParallelTest(unittest.TestCase):
         # serial run
         exp = hydra.utils.instantiate(self.eval_cfg.experiment)
         with exp:
-            exp.evaluate()
+            exp.run()
 
         # parallel run
         OmegaConf.clear_resolvers()  # main will re-register resolvers
@@ -183,7 +182,7 @@ class RunParallelTest(unittest.TestCase):
         # serial run
         exp = hydra.utils.instantiate(self.eval_lt_cfg.experiment)
         with exp:
-            exp.evaluate()
+            exp.run()
 
         # parallel run
         OmegaConf.clear_resolvers()  # main will re-register resolvers
@@ -212,7 +211,7 @@ class RunParallelTest(unittest.TestCase):
         # serial run
         exp = hydra.utils.instantiate(self.eval_gt_cfg.experiment)
         with exp:
-            exp.evaluate()
+            exp.run()
 
         # parallel run
         OmegaConf.clear_resolvers()  # main will re-register resolvers
