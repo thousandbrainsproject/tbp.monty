@@ -579,6 +579,7 @@ class MontyExperiment:
 
     def train(self):
         """Run n_train_epochs."""
+        logger.info(f"running {self.n_train_epochs} train epochs")
         self.experiment_mode = ExperimentMode.TRAIN
         self.logger_handler.pre_train(self.logger_args)
         self.model.set_experiment_mode("train")
@@ -588,6 +589,7 @@ class MontyExperiment:
 
     def evaluate(self):
         """Run n_eval_epochs."""
+        logger.info(f"running {self.n_eval_epochs} eval epochs")
         self.experiment_mode = ExperimentMode.EVAL
         # TODO: check that number of eval epochs is at least as many as length
         # of environment interface number of rotations
