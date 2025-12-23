@@ -83,6 +83,7 @@
 \bGabor\b
 \bGauthier\b
 \bGavrikov\b
+\bGershman\b
 \bgithub\b
 \bGitHub\b
 \bGNNs?\b
@@ -118,6 +119,7 @@
 \bLLMs?\b
 \bLMs?\b
 \bloopdown\b
+\bMangalam\b
 \bMarkram\b
 \bmatplotlib\b
 \bMillidge\b
