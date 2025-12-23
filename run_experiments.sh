@@ -6,10 +6,10 @@ BASE_DIR="/Users/hlee/tbp/feat.2d_sensor"
 EXPERIMENT="experiment=2d_sm/learning/disk_learning_2d"
 
 # Arrays of values to test
-ZOOMS=(10)
+ZOOMS=(10 20 30)
 # ZOOMS=(10 20 30)  # Commented out - already ran experiments for zoom 20 and 30
 RESOLUTIONS=(64)
-BLURS=(3.0 4.0)  # Only running blur 3.0 and 4.0 for zoom 10 (already ran 1.0, 2.0, 5.0)
+BLURS=(5.0)  # Only running blur 3.0 and 4.0 for zoom 10 (already ran 1.0, 2.0, 5.0)
 
 # Export PYTHONPATH
 export PYTHONPATH="${BASE_DIR}/src:${PYTHONPATH}"
