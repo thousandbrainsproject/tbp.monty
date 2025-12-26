@@ -14,7 +14,7 @@ from pprint import pformat
 from typing import Iterable, Mapping, Sequence
 
 import numpy as np
-import quaternion
+import quaternion as qt
 from typing_extensions import Self
 
 from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
@@ -667,7 +667,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         )
         set_sensor_rotation = SetSensorRotation(
             agent_id=self.motor_system._policy.agent_id,
-            rotation_quat=quaternion.one,
+            rotation_quat=qt.one,
         )
         self._observation, proprioceptive_state = self.step(
             [set_agent_pose, set_sensor_rotation]
@@ -890,7 +890,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.current_object = idx
         self.primary_target = {
             "object": self.object_names[idx],
-            "rotation": np.quaternion(0, 0, 0, 1),
+            "rotation": qt.quaternion(0, 0, 0, 1),
             "euler_rotation": np.array([0, 0, 0]),
             "quat_rotation": [0, 0, 0, 1],
             "position": np.array([0, 0, 0]),
@@ -994,7 +994,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         target_object_formatted = "_".join(target_object.split("_")[1:])
         self.primary_target = {
             "object": target_object_formatted,
-            "rotation": np.quaternion(0, 0, 0, 1),
+            "rotation": qt.quaternion(0, 0, 0, 1),
             "euler_rotation": np.array([0, 0, 0]),
             "quat_rotation": [0, 0, 0, 1],
             "position": np.array([0, 0, 0]),
@@ -1079,7 +1079,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         # targets corresponding to the current scene ?
         self.primary_target = {
             "object": "no_label",
-            "rotation": np.quaternion(0, 0, 0, 1),
+            "rotation": qt.quaternion(0, 0, 0, 1),
             "euler_rotation": np.array([0, 0, 0]),
             "quat_rotation": [0, 0, 0, 1],
             "position": np.array([0, 0, 0]),

@@ -1,0 +1,11 @@
+monty_log_level: DETAILED
+monty_handlers:
+  - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+  - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler}
+  - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.ReproduceEpisodeHandler}
+wandb_handlers: []
+python_log_level: INFO
+python_log_to_file: true
+python_log_to_stderr: true
+output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/evidence_eval_runs/logs}
+resume_wandb_run: false

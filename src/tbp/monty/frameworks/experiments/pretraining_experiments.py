@@ -18,8 +18,10 @@ from scipy.spatial.transform import Rotation
 from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
 )
-
-from .monty_experiment import MontyExperiment
+from tbp.monty.frameworks.experiments.monty_experiment import (
+    ExperimentMode,
+    MontyExperiment,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -173,6 +175,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
     def train(self):
         """Save state_dict at the end of training."""
+        self.experiment_mode = ExperimentMode.TRAIN
         self.logger_handler.pre_train(self.logger_args)
         self.model.set_experiment_mode("train")
         for sm in self.model.sensor_modules:
