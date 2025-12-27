@@ -210,7 +210,7 @@ class HabitatObservationProcessor:
             (
                 features,
                 morphological_features,
-                invalid_signals,
+                valid_signals,
             ) = self._extract_and_add_features(
                 features,
                 obs_3d,
@@ -222,7 +222,7 @@ class HabitatObservationProcessor:
                 world_camera,
             )
         else:
-            invalid_signals = True
+            valid_signals = False
             morphological_features = {}
 
         if "on_object" in self._features:
@@ -240,7 +240,7 @@ class HabitatObservationProcessor:
             morphological_features=morphological_features,
             non_morphological_features=features,
             confidence=1.0,
-            use_state=on_object and not invalid_signals,
+            use_state=on_object and valid_signals,
             sender_id=self._sensor_module_id,
             sender_type="SM",
         )
@@ -271,13 +271,13 @@ class HabitatObservationProcessor:
         """Extract features configured for extraction from sensor patch.
 
         Returns the features in the patch, and True if the surface normal
-        or principal curvature directions were ill-defined.
+        and principal curvature directions are well-defined.
 
         Returns:
             features: The features in the patch.
             morphological_features: ?
-            invalid_signals: True if the surface normal or principal curvature
-                directions were ill-defined.
+            valid_signals: True if the surface normal and principal curvature
+                directions are well-defined.
         """
         # ------------ Extract Morphological Features ------------
         # Get surface normal for graph matching with features
@@ -347,11 +347,11 @@ class HabitatObservationProcessor:
             # policies
             features["pose_fully_defined"] = False
 
-        invalid_signals = (not valid_sn) or (not valid_pc)
-        if invalid_signals:
+        valid_signals = valid_sn and valid_pc
+        if not valid_signals:
             logger.debug("Either the surface-normal or pc-directions were ill-defined")
 
-        return features, morphological_features, invalid_signals
+        return features, morphological_features, valid_signals
 
     def _get_surface_normals(
         self,
