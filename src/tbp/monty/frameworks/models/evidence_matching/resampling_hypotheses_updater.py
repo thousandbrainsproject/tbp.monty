@@ -245,14 +245,16 @@ class ResamplingHypothesesUpdater:
         if self.resampling_multiplier < 0:
             raise ValueError("resampling_multiplier should be >= 0")
 
+        self.reset()
+
+    def reset(self) -> None:
+        self.sampling_burst_steps = 0
+
         # Dictionary of slope trackers, one for each graph_id
         self.evidence_slope_trackers: dict[str, EvidenceSlopeTracker] = {}
 
         # Dictionary of resampling telemetry for each channel in each graph_id
         self.resampling_telemetry: dict[str, dict[str, HypothesesUpdateTelemetry]] = {}
-
-        # Trigger a burst at the beginning of the episode
-        self.sampling_burst_steps = self.sampling_burst_duration
 
     def pre_step(self) -> None:
         """Runs once per step before updating the hypotheses.
@@ -802,4 +804,4 @@ class ResamplingHypothesesUpdater:
                 if finite_slopes.size:
                     max_slope = max(max_slope, np.max(finite_slopes))
 
-        return float(max_slope if np.isfinite(max_slope) else "nan")
+        return max_slope

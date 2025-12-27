@@ -67,6 +67,10 @@ class HypothesesUpdater(Protocol):
         """Runs once per step after updating the hypotheses."""
         ...
 
+    def reset(self) -> None:
+        """Resets updater at the beginning of an episode."""
+        ...
+
     def update_hypotheses(
         self,
         hypotheses: Hypotheses,
@@ -213,6 +217,10 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
 
     def post_step(self) -> None:
         """Runs once per step after updating the hypotheses."""
+        ...
+
+    def reset(self) -> None:
+        """Resets updater at the beginning of an episode."""
         ...
 
     def update_hypotheses(

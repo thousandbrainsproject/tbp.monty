@@ -279,6 +279,7 @@ class EvidenceGraphLM(GraphLM):
         self.symmetry_evidence = 0
         self.last_possible_hypotheses = None
         self.channel_hypothesis_mapping = {}
+        self.hypotheses_updater.reset()
 
         self.current_mlh["graph_id"] = "no_observations_yet"
         self.current_mlh["location"] = [0, 0, 0]
