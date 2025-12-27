@@ -190,9 +190,12 @@ class TheoreticalLimitLMLoggingMixin:
         Returns:
             The minimum achievable rotation error (in radians).
         """
-        hyp_rotations = Rotation.from_matrix(
-            self.possible_poses[self.primary_target]
-        ).inv()
+        object_possible_poses = self.possible_poses[self.primary_target]
+        if not len(object_possible_poses):
+            return -1
+
+        hyp_rotations = Rotation.from_matrix(object_possible_poses).inv()
+
         target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
         return compute_pose_error(hyp_rotations, target_rotation)
 
