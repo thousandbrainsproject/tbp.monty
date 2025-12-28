@@ -16,6 +16,7 @@ import timeit
 from pathlib import Path
 
 import requests
+from slugify import slugify
 
 from tools.github_readme_sync.colors import CYAN, GREEN, RED, RESET, WHITE, YELLOW
 from tools.github_readme_sync.constants import (
@@ -26,6 +27,7 @@ from tools.github_readme_sync.constants import (
     REGEX_CSV_TABLE,
 )
 from tools.github_readme_sync.file import find_markdown_files, read_file_content
+from tools.github_readme_sync.md import parse_frontmatter
 
 HIERARCHY_FILE = "hierarchy.md"
 CATEGORY_PREFIX = "# "
@@ -114,7 +116,13 @@ def check_hierarchy_file(folder: str):
             parent_stack.append(new_doc)
 
             slug_path = folder.joinpath(*[el["slug"] for el in parent_stack])
-            errors = sanity_check(slug_path.with_suffix(".md"))
+            full_path = slug_path.with_suffix(".md")
+
+            slug_errors = check_slug_matches_title(full_path)
+            if slug_errors:
+                link_check_errors.extend(slug_errors)
+
+            errors = sanity_check(full_path)
             if errors:
                 link_check_errors.extend(errors)
 
@@ -131,6 +139,41 @@ def extract_slug(line: str):
     regex = r"\[(.*)\]\(.*\)"
     match = re.search(regex, line)
     return match.group(1)
+
+
+def check_slug_matches_title(path):
+    """Ensure the slug of the title in the metadata matches the filename.
+
+    Args:
+        path: The path to the file to check.
+
+    Returns:
+        A list of errors if the slug does not match the title.
+    """
+    if not path.exists():
+        return []
+
+    content = read_file_content(path)
+    frontmatter = parse_frontmatter(content)
+    if not frontmatter:
+        return [f"  No front matter found in {path}"]
+
+    title = frontmatter.get("title")
+    if not title:
+        return [f"  No title found in front matter of {path}"]
+
+    expected_slug = slugify(title)
+    actual_slug = path.stem
+
+    if expected_slug != actual_slug:
+        return [
+            f"  Slug mismatch in {path}:"
+            f"\n    Title: '{title}'"
+            f"\n    Expected slug (from title): '{expected_slug}'"
+            f"\n    Actual slug (filename): '{actual_slug}'"
+        ]
+
+    return []
 
 
 def sanity_check(path):
