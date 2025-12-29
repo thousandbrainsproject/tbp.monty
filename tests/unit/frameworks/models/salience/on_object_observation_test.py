@@ -11,7 +11,7 @@ from __future__ import annotations
 import unittest
 
 import numpy as np
-import numpy.testing as npt
+import numpy.testing as nptest
 
 from tbp.monty.frameworks.models.salience.on_object_observation import (
     on_object_observation,
@@ -69,7 +69,9 @@ class OnObjectObservationTest(unittest.TestCase):
 
         on_object = on_object_observation(raw_observation, data["salience_map"])
         self.assertIsNotNone(on_object.center_location)
-        npt.assert_array_equal(on_object.center_location, self.center_location_sentinel)  # type: ignore[arg-type]
+        nptest.assert_array_equal(
+            on_object.center_location, self.center_location_sentinel
+        )  # type: ignore[arg-type]
 
     def test_center_is_not_on_object_returns_none_center_location(self) -> None:
         raw_observation, data = self.create_data(central_pixel_on_object=False)
@@ -81,12 +83,12 @@ class OnObjectObservationTest(unittest.TestCase):
         raw_observation, data = self.create_data(central_pixel_on_object=True)
 
         on_object = on_object_observation(raw_observation, data["salience_map"])
-        npt.assert_array_equal(on_object.salience, data["on_object_salience"])  # type: ignore[arg-type]
-        npt.assert_array_equal(on_object.locations, data["on_object_locations"])  # type: ignore[arg-type]
+        nptest.assert_array_equal(on_object.salience, data["on_object_salience"])  # type: ignore[arg-type]
+        nptest.assert_array_equal(on_object.locations, data["on_object_locations"])  # type: ignore[arg-type]
 
     def test_on_object_salience_and_locations_are_empty_if_no_on_object(self) -> None:
         raw_observation, data = self.create_data(central_region_on_object=False)
 
         on_object = on_object_observation(raw_observation, data["salience_map"])
-        npt.assert_array_equal(on_object.locations, np.zeros((0, 3)))  # type: ignore[arg-type]
-        npt.assert_array_equal(on_object.salience, np.zeros((0,)))  # type: ignore[arg-type]
+        nptest.assert_array_equal(on_object.locations, np.zeros((0, 3)))  # type: ignore[arg-type]
+        nptest.assert_array_equal(on_object.salience, np.zeros((0,)))  # type: ignore[arg-type]

@@ -21,6 +21,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     VectorXYZ,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.utils.dataclass_utils import (
     create_dataclass_args,
 )
@@ -159,5 +160,5 @@ class HabitatEnvironment(EmbodiedEnvironment):
             _env.close()
             self._env = None
 
-    def get_state(self):
+    def get_state(self) -> ProprioceptiveState:
         return self._env.states

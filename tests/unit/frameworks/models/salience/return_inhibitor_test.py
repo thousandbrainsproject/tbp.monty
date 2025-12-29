@@ -12,7 +12,7 @@ import unittest
 from unittest.mock import MagicMock, call
 
 import numpy as np
-import numpy.testing as npt
+import numpy.testing as nptest
 
 from tbp.monty.frameworks.models.salience.return_inhibitor import (
     DecayField,
@@ -38,7 +38,7 @@ class DecayKernelTest(unittest.TestCase):
         translation = np.array([0.001, 0.0, 0.0])
         points = np.array([location + translation * i for i in range(20, 100)])
         spatial_weights = kernel(points)
-        npt.assert_allclose(spatial_weights, 0.0)
+        nptest.assert_allclose(spatial_weights, 0.0)
 
     def test_kernel_temporal_weight_decays_with_time(self) -> None:
         location = np.array([1, 2, 3])
@@ -48,7 +48,7 @@ class DecayKernelTest(unittest.TestCase):
             weights.append(kernel(location.reshape(1, 3)))
             kernel.step()
         for i in range(1, len(weights)):
-            npt.assert_array_less(weights[i], weights[i - 1])
+            nptest.assert_array_less(weights[i], weights[i - 1])
 
 
 class DecayFieldTest(unittest.TestCase):
@@ -77,7 +77,7 @@ class DecayFieldTest(unittest.TestCase):
         translation = np.array([0.001, 0.0, 0.0])
         points = np.array([location + translation * i for i in range(20, 100)])
         spatial_weights = self.field.compute_weights(points)
-        npt.assert_allclose(spatial_weights, 0.0)
+        nptest.assert_allclose(spatial_weights, 0.0)
 
     def test_single_kernel_weight_decays_within_temporal_cutoff(self) -> None:
         location = np.array([1, 2, 3])
@@ -97,7 +97,7 @@ class DecayFieldTest(unittest.TestCase):
             if i > 34:  # after temporal cutoff
                 weights.append(self.field.compute_weights(location.reshape(1, 3)))
             self.field.step()
-        npt.assert_allclose(weights, 0.0)
+        nptest.assert_allclose(weights, 0.0)
 
     def test_colocated_kernels_not_additive(self) -> None:
         location = np.array([1, 2, 3])
@@ -109,7 +109,7 @@ class DecayFieldTest(unittest.TestCase):
             self.field.step()
             self.field.add(location)
             spatial_weights_2 = self.field.compute_weights(points)
-            npt.assert_array_equal(spatial_weights_1, spatial_weights_2)
+            nptest.assert_array_equal(spatial_weights_1, spatial_weights_2)
 
     def test_field_selects_max_from_overlapping_kernels(self) -> None:
         kernel_location_1 = np.array([1, 2, 3])
@@ -122,7 +122,7 @@ class DecayFieldTest(unittest.TestCase):
             test_point_2 = kernel_location_2 - translation * i
             spatial_weights_1 = self.field.compute_weights(test_point_1.reshape(1, 3))
             spatial_weights_2 = self.field.compute_weights(test_point_2.reshape(1, 3))
-            npt.assert_array_equal(spatial_weights_1, spatial_weights_2)
+            nptest.assert_array_equal(spatial_weights_1, spatial_weights_2)
 
     def test_field_selects_max_from_overlapping_decaying_kernels(self) -> None:
         kernel_location_1 = np.array([1, 2, 3])
@@ -147,23 +147,23 @@ class DecayFieldTest(unittest.TestCase):
 
         w_before_second_kernel = weights_before_second_kernel[-1]
         w_after_second_kernel = weights_after_second_kernel[0]
-        npt.assert_array_less(w_before_second_kernel, w_after_second_kernel)
+        nptest.assert_array_less(w_before_second_kernel, w_after_second_kernel)
 
     def test_field_returns_empty_array_if_empty_query(self) -> None:
         kernel_location = np.array([1, 2, 3])
         self.field.add(kernel_location)
         query_locations = np.array([]).reshape(0, 3)
         weights = self.field.compute_weights(query_locations)
-        npt.assert_array_equal(weights, np.array([]))
+        nptest.assert_array_equal(weights, np.array([]))
 
     def test_reset_clears_kernels(self) -> None:
         kernel_location = np.array([1, 2, 3])
         self.field.add(kernel_location)
         weights = self.field.compute_weights(kernel_location.reshape(1, 3))
-        npt.assert_array_equal(weights, 1.0)
+        nptest.assert_array_equal(weights, 1.0)
         self.field.reset()
         weights = self.field.compute_weights(kernel_location.reshape(1, 3))
-        npt.assert_array_equal(weights, 0.0)
+        nptest.assert_array_equal(weights, 0.0)
 
 
 class ReturnInhibitorTest(unittest.TestCase):
