@@ -29,9 +29,14 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Modality,
     Observations,
-    SensorID,
     SensorObservations,
 )
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    ProprioceptiveState,
+    SensorState,
+)
+from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.path import monty_data_path
 
 logger = logging.getLogger(__name__)
@@ -139,25 +144,27 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             }
         )
 
-    def get_state(self):
+    def get_state(self) -> ProprioceptiveState:
         loc = self.locations[self.step_num % self.max_steps]
         sensor_position = np.array([loc[0], loc[1], 0])
-        return {
-            AgentID("agent_id_0"): {
-                "sensors": {
-                    "patch" + ".depth": {
-                        "rotation": self.rotation,
-                        "position": sensor_position,
+        return ProprioceptiveState(
+            {
+                AgentID("agent_id_0"): AgentState(
+                    sensors={
+                        SensorID("patch" + ".depth"): SensorState(
+                            rotation=self.rotation,
+                            position=sensor_position,
+                        ),
+                        SensorID("patch" + ".rgba"): SensorState(
+                            rotation=self.rotation,
+                            position=sensor_position,
+                        ),
                     },
-                    "patch" + ".rgba": {
-                        "rotation": self.rotation,
-                        "position": sensor_position,
-                    },
-                },
-                "rotation": self.rotation,
-                "position": np.array([0, 0, 0]),
+                    rotation=self.rotation,
+                    position=np.array([0, 0, 0]),
+                )
             }
-        }
+        )
 
     def switch_to_object(self, alphabet_id, character_id, version_id):
         self.current_alphabet = self.alphabet_names[alphabet_id]
@@ -372,34 +379,29 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             }
         )
 
-    def get_state(self):
-        """Get agent state.
-
-        Returns:
-            The agent state.
-        """
+    def get_state(self) -> ProprioceptiveState:
         loc = self.current_loc
         # Provide LM w/ sensor position in 3D, body-centric coordinates
         # instead of pixel indices
         sensor_position = self.get_3d_coordinates_from_pixel_indices(loc[:2])
 
         # NOTE: This is super hacky and only works for 1 agent with 1 sensor
-        return {
-            AgentID("agent_id_0"): {
-                "sensors": {
-                    "patch" + ".depth": {
-                        "rotation": self.rotation,
-                        "position": sensor_position,
+        return ProprioceptiveState(
+            {
+                AgentID("agent_id_0"): AgentState(
+                    sensors={
+                        SensorID("patch" + ".depth"): SensorState(
+                            rotation=self.rotation, position=sensor_position
+                        ),
+                        SensorID("patch" + ".rgba"): SensorState(
+                            rotation=self.rotation, position=sensor_position
+                        ),
                     },
-                    "patch" + ".rgba": {
-                        "rotation": self.rotation,
-                        "position": sensor_position,
-                    },
-                },
-                "rotation": self.rotation,
-                "position": np.array([0, 0, 0]),
+                    rotation=self.rotation,
+                    position=np.array([0, 0, 0]),
+                )
             }
-        }
+        )
 
     def switch_to_object(self, scene_id, scene_version_id):
         """Load new image to be used as environment."""
@@ -543,21 +545,33 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             current_sf_scene_point_cloud: The 3D scene point cloud in sensor frame.
         """
         agent_id = AgentID("agent_01")
-        sensor_id = "patch_01"
-        obs = {agent_id: {sensor_id: {"depth": self.current_depth_image}}}
-        rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
-        state = {
-            agent_id: {
-                "sensors": {
-                    sensor_id + ".depth": {
-                        "rotation": rotation,
-                        "position": np.array([0, 0, 0]),
+        sensor_id = SensorID("patch_01")
+        obs = Observations(
+            {
+                agent_id: AgentObservations(
+                    {
+                        sensor_id: SensorObservations(
+                            {Modality("depth"): self.current_depth_image}
+                        )
                     }
-                },
-                "rotation": rotation,
-                "position": np.array([0, 0, 0]),
+                )
             }
-        }
+        )
+        rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
+        state = ProprioceptiveState(
+            {
+                agent_id: AgentState(
+                    sensors={
+                        SensorID(sensor_id + ".depth"): SensorState(
+                            rotation=rotation,
+                            position=np.array([0, 0, 0]),
+                        )
+                    },
+                    rotation=rotation,
+                    position=np.array([0, 0, 0]),
+                )
+            }
+        )
 
         # Apply gaussian smoothing transform to depth image
         # Uncomment line below and add import, if needed

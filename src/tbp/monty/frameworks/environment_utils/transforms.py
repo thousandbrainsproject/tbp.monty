@@ -18,7 +18,8 @@ import scipy
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Modality, Observations
-from tbp.monty.frameworks.models.states import State
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.frameworks.sensors import SensorID
 
 __all__ = [
     "AddNoiseToRawDepthImage",
@@ -33,7 +34,7 @@ __all__ = [
 @dataclass
 class TransformContext:
     rng: np.random.RandomState
-    state: State | None = None
+    state: ProprioceptiveState | None = None
 
 
 class Transform(Protocol):
@@ -363,7 +364,7 @@ class DepthTo3DLocations(Transform):
         return self.call(observations, state=ctx.state)
 
     def call(
-        self, observations: Observations, state: State | None = None
+        self, observations: Observations, state: ProprioceptiveState | None = None
     ) -> Observations:
         """Apply the depth-to-3D-locations transform to sensor observations.
 
@@ -499,12 +500,12 @@ class DepthTo3DLocations(Transform):
             if self.world_coord and state is not None:
                 # Get agent and sensor states from state dictionary
                 agent_state = state[self.agent_id]
-                depth_state = agent_state["sensors"][sensor_id + ".depth"]
-                agent_rotation = agent_state["rotation"]
+                depth_state = agent_state.sensors[SensorID(sensor_id + ".depth")]
+                agent_rotation = agent_state.rotation
                 agent_rotation_matrix = qt.as_rotation_matrix(agent_rotation)
-                agent_position = agent_state["position"]
-                sensor_rotation = depth_state["rotation"]
-                sensor_position = depth_state["position"]
+                agent_position = agent_state.position
+                sensor_rotation = depth_state.rotation
+                sensor_position = depth_state.position
                 # --- Apply camera transformations to get world coordinates ---
                 # Combine body and sensor rotation (since sensor rotation is relative to
                 # the agent this will give us the sensor rotation in world coordinates)

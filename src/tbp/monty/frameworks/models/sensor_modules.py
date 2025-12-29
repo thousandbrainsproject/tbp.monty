@@ -19,7 +19,11 @@ import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    SensorState,
+)
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.sensor_processing import (
     log_sign,
@@ -416,19 +420,20 @@ class Probe(SensorModule):
     def state_dict(self):
         return self._snapshot_telemetry.state_dict()
 
-    def update_state(self, state):
+    def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
-        # TODO: This stores the entire AgentState. Extract sensor-specific state.
-        self.state = state
+        sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
+        self.state = SensorState(
+            position=agent.position
+            + qt.rotate_vectors(agent.rotation, sensor.position),
+            rotation=agent.rotation * sensor.rotation,
+        )
+        self.motor_only_step = agent.motor_only_step
 
     def step(self, data) -> State | None:
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data,
-                self.state["rotation"],
-                self.state["location"]
-                if "location" in self.state.keys()
-                else self.state["position"],
+                data, self.state.rotation, self.state.position
             )
 
         return None
@@ -632,21 +637,15 @@ class HabitatSM(SensorModule):
         self.visited_locs = []
         self.visited_normals = []
 
-    def update_state(self, state):
+    def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
-        agent_position = state["position"]
-        sensor_position = state["sensors"][self.sensor_module_id + ".rgba"]["position"]
-        if "motor_only_step" in state.keys():
-            self.motor_only_step = state["motor_only_step"]
-        else:
-            self.motor_only_step = False
-
-        agent_rotation = state["rotation"]
-        sensor_rotation = state["sensors"][self.sensor_module_id + ".rgba"]["rotation"]
-        self.state = {
-            "location": agent_position + sensor_position,
-            "rotation": agent_rotation * sensor_rotation,
-        }
+        sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
+        self.state = SensorState(
+            position=agent.position
+            + qt.rotate_vectors(agent.rotation, sensor.position),
+            rotation=agent.rotation * sensor.rotation,
+        )
+        self.motor_only_step = agent.motor_only_step
 
     def state_dict(self):
         state_dict = self._snapshot_telemetry.state_dict()
@@ -665,11 +664,7 @@ class HabitatSM(SensorModule):
         """
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data,
-                self.state["rotation"],
-                self.state["location"]
-                if "location" in self.state.keys()
-                else self.state["position"],
+                data, self.state.rotation, self.state.position
             )
 
         observed_state, telemetry = self._habitat_observation_processor.process(data)

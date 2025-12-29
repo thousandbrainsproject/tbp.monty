@@ -13,10 +13,13 @@ from typing import Any
 from unittest.mock import MagicMock, patch, sentinel
 
 import numpy as np
-import numpy.testing as npt
+import numpy.testing as nptest
+import numpy.typing as npt
 import pytest
+import quaternion as qt
 from parameterized import parameterized_class
 
+from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
     OnObjectObservation,
 )
@@ -24,6 +27,18 @@ from tbp.monty.frameworks.models.salience.sensor_module import (
     HabitatSalienceSM,
 )
 from tbp.monty.frameworks.models.states import GoalState
+from tbp.monty.frameworks.sensors import SensorID
+
+
+class ArrayEqual:
+    def __init__(self, arr: npt.ArrayLike):
+        self.arr = arr
+
+    def __eq__(self, other: npt.ArrayLike):
+        return np.array_equal(self.arr, other)
+
+    def __hash__(self):
+        return hash(np.asarray(self.arr).tobytes())
 
 
 @pytest.fixture
@@ -53,10 +68,19 @@ class HabitatSalienceSMTest(unittest.TestCase):
             return_inhibitor_class=MagicMock,
             snapshot_telemetry_class=MagicMock,
         )
-        self.state = {
-            "rotation": "i'm a rotation",
-            "location": "i'm a position",
-        }
+        self.default_sensor_state = SensorState(
+            position=np.array([0, 0, 0]),
+            rotation=qt.quaternion(1, 0, 0, 0),
+        )
+        self.state = AgentState(
+            sensors={
+                SensorID(
+                    self.sensor_module.sensor_module_id + ".rgba"
+                ): self.default_sensor_state
+            },
+            position=self.default_sensor_state.position,
+            rotation=self.default_sensor_state.rotation,
+        )
 
     def test_step_snapshots_raw_observation_as_needed(self) -> None:
         self.sensor_module._save_raw_obs = self.save_raw_obs  # type: ignore[attr-defined]
@@ -68,7 +92,7 @@ class HabitatSalienceSMTest(unittest.TestCase):
 
         if self.should_snapshot:  # type: ignore[attr-defined]
             self.sensor_module._snapshot_telemetry.raw_observation.assert_called_once_with(  # type: ignore[attr-defined]
-                data, self.state["rotation"], self.state["location"]
+                data, self.state.rotation, ArrayEqual(self.state.position)
             )
         else:
             self.sensor_module._snapshot_telemetry.raw_observation.assert_not_called()  # type: ignore[attr-defined]
@@ -122,7 +146,7 @@ class HabitatSalienceSMTest(unittest.TestCase):
                 sender_type="SM",
             )
             # TODO: implement __eq__ for GoalState
-            npt.assert_array_equal(g.location, expected_goal.location)
+            nptest.assert_array_equal(g.location, expected_goal.location)
             self.assertEqual(g.confidence, expected_goal.confidence)
             self.assertEqual(g.use_state, expected_goal.use_state)
             self.assertEqual(
@@ -151,12 +175,12 @@ class HabitatSalienceSMPrivateTest(unittest.TestCase):
     ) -> None:
         salience = 2 * np.ones(10)
         normalized = self.sensor_module._normalize_salience(salience)
-        npt.assert_array_equal(normalized, np.ones(10))
+        nptest.assert_array_equal(normalized, np.ones(10))
 
     def test_normalize_salience_normalizes_empty_salience(self) -> None:
         salience = np.array([])
         normalized = self.sensor_module._normalize_salience(salience)
-        npt.assert_array_equal(normalized, np.array([]))
+        nptest.assert_array_equal(normalized, np.array([]))
 
     def test_weight_salience_decays_randomizes_and_normalizes_salience_in_that_order(
         self,
