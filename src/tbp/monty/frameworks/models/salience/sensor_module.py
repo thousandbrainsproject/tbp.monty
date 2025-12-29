@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+import quaternion as qt
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
@@ -67,7 +68,8 @@ class HabitatSalienceSM(SensorModule):
         """Update information about the sensors location and rotation."""
         sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
         self.state = SensorState(
-            position=agent.position + sensor.position,
+            position=agent.position
+            + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
         self.motor_only_step = agent.motor_only_step
