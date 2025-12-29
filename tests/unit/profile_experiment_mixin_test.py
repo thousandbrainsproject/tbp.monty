@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -103,6 +105,7 @@ class ProfileExperimentMixinTest(TestCase):
     def test_run_episode_is_profiled(self) -> None:
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.env_interface = exp.train_env_interface
             exp.run_episode()
@@ -119,6 +122,7 @@ class ProfileExperimentMixinTest(TestCase):
     def test_run_train_epoch_is_profiled(self) -> None:
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.run_epoch()
 
@@ -136,6 +140,7 @@ class ProfileExperimentMixinTest(TestCase):
     def test_run_eval_epoch_is_profiled(self) -> None:
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode("eval")
             exp.run_epoch()
 

@@ -22,9 +22,9 @@ class SensorState:
     """The proprioceptive state of a sensor."""
 
     position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
-    """The sensor's position relative to the agent."""
+    """The sensor's position."""
     rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
-    """The sensor's rotation relative to the agent."""
+    """The sensor's rotation."""
 
 
 @dataclass
@@ -32,11 +32,15 @@ class AgentState:
     """The proprioceptive state of an agent."""
 
     sensors: dict[SensorID, SensorState]
-    """The proprioceptive state of the agent's sensors."""
+    """The proprioceptive state of the agent's sensors.
+
+    When part of an AgentState, the SensorState's position and rotation are relative to
+    the agent's position and rotation.
+    """
     position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
-    """The agent's position relative to some global reference frame."""
+    """The agent's position."""
     rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
-    """The agent's rotation relative to some global reference frame."""
+    """The agent's rotation."""
     motor_only_step: bool = False
     """Control flow parameter. Processing will bypass the learning module if True.
 
@@ -46,7 +50,11 @@ class AgentState:
 
 
 class ProprioceptiveState(Dict[AgentID, AgentState]):
-    """The proprioceptive state of the motor system."""
+    """The proprioceptive state of the motor system.
+
+    When part of a ProprioceptiveState, the AgentState's position and rotation are
+    relative to some global reference frame.
+    """
 
 
 class MotorSystemState(Dict[AgentID, AgentState]):

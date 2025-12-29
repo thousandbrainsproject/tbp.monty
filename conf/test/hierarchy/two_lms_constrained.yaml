@@ -10,6 +10,7 @@ defaults:
 
 _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 config:
+  do_eval: false
   max_train_steps: 30
   max_eval_steps: 30
   max_total_steps: 60

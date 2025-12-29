@@ -15,8 +15,10 @@ import torch
 from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
 )
-
-from .monty_experiment import MontyExperiment
+from tbp.monty.frameworks.experiments.monty_experiment import (
+    ExperimentMode,
+    MontyExperiment,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +61,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         self.env_interface.pre_episode()
 
         self.max_steps = self.max_train_steps
-        if self.model.experiment_mode != "train":
+        if self.experiment_mode is not ExperimentMode.TRAIN:
             self.max_steps = self.max_eval_steps
 
         self.logger_handler.pre_episode(self.logger_args)

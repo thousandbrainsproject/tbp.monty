@@ -23,6 +23,7 @@ from typing import Any, Sequence
 import habitat_sim
 import magnum as mn
 import numpy as np
+import quaternion as qt
 from habitat_sim.simulator import ObservationDict
 from habitat_sim.utils import common as sim_utils
 from importlib_resources import files
@@ -273,7 +274,7 @@ class HabitatSim(HabitatActuator):
         # Update pose
         obj.translation = position
         if isinstance(rotation, (list, tuple)):
-            rotation = np.quaternion(*rotation)
+            rotation = qt.quaternion(*rotation)
         obj.rotation = sim_utils.quat_to_magnum(rotation)
 
         # Need to store the reference to the object here so that we can use it in the

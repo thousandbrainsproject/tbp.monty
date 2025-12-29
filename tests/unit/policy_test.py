@@ -10,6 +10,8 @@
 
 import pytest
 
+from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -167,51 +169,44 @@ class PolicyTest(unittest.TestCase):
     def test_can_run_informed_policy(self):
         exp = hydra.utils.instantiate(self.base_dist_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_spiral_policy(self):
         exp = hydra.utils.instantiate(self.spiral_cfg.test)
         with exp:
             # TODO: test that no two locations are the same
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_dist_agent_hypo_driven_policy(self):
         exp = hydra.utils.instantiate(self.dist_hypo_driven_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_surface_policy(self):
         exp = hydra.utils.instantiate(self.base_surf_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_curv_informed_policy(self) -> None:
         exp = hydra.utils.instantiate(self.curve_informed_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_surf_agent_hypo_driven_policy(self):
         exp = hydra.utils.instantiate(self.surf_hypo_driven_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self):
         exp = hydra.utils.instantiate(self.dist_hypo_driven_multi_lm_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # ==== MORE INVOLVED TESTS OF ACTION POLICIES ====
 
@@ -277,6 +272,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.dist_poor_initial_view_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
@@ -323,6 +319,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
@@ -379,6 +376,7 @@ class PolicyTest(unittest.TestCase):
 
             # Manually go through evaluation (i.e. methods in .evaluate()
             # and run_epoch())
+            exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode("eval")
             exp.pre_epoch()
             exp.pre_episode()
@@ -435,6 +433,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.dist_fixed_action_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
 
@@ -542,6 +541,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.surf_fixed_action_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
 
@@ -680,6 +680,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.rotated_cube_view_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()

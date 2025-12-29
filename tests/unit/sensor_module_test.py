@@ -10,6 +10,8 @@
 import hydra
 import pytest
 
+from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -57,6 +59,7 @@ class SensorModuleTest(unittest.TestCase):
         """Check that correct features are returned by sensor module."""
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
@@ -70,6 +73,7 @@ class SensorModuleTest(unittest.TestCase):
         """Check that correct features are returned by sensor module."""
         exp = hydra.utils.instantiate(self.sensor_feature_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
@@ -104,9 +108,8 @@ class SensorModuleTest(unittest.TestCase):
     def test_feature_change_sm(self):
         exp = hydra.utils.instantiate(self.feature_change_sensor_cfg.test)
         with exp:
-            exp.train()
+            exp.run()
             # TODO: test that only new features are given to LM
-            exp.evaluate()
 
 
 if __name__ == "__main__":

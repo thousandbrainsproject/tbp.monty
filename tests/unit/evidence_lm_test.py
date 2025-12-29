@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -277,20 +279,17 @@ class EvidenceLMTest(BaseGraphTest):
     def test_can_run_evidence_experiment(self):
         exp = hydra.utils.instantiate(self.evidence_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     def test_fixed_actions_evidence(self):
         """Test 3 train and 3 eval epochs with 2 objects and 2 rotations."""
         exp = hydra.utils.instantiate(self.fixed_actions_evidence_cfg.test)
         with exp:
-            # self.exp.model.set_experiment_mode("eval")
-            exp.train()
+            exp.run()
 
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            self.check_train_results(train_stats)
-            exp.evaluate()
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_train_results(train_stats)
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
 
@@ -316,6 +315,7 @@ class EvidenceLMTest(BaseGraphTest):
         """Test that pre_episode raises an error when no object is present."""
         exp = hydra.utils.instantiate(self.fixed_actions_evidence_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.env._env.remove_all_objects()
@@ -338,7 +338,7 @@ class EvidenceLMTest(BaseGraphTest):
             # until the camera turns a full circle and arrives on the other side of the
             # object. From there we can continue to try and recognize the object.
 
-            exp.train()
+            exp.run()
 
         self.assertEqual(
             len(
@@ -405,45 +405,43 @@ class EvidenceLMTest(BaseGraphTest):
     def test_evidence_time_out(self):
         exp = hydra.utils.instantiate(self.evidence_times_out_cfg.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            self.assertEqual(
-                train_stats["individual_ts_performance"][0],
-                "no_match",
-                "with no objects in memory individual_ts_performance"
-                " should be no match",
-            )
-            for i in range(5):
-                self.assertEqual(
-                    train_stats["individual_ts_performance"][i + 1],
-                    "time_out",
-                    f"time out not recognized/logged correctly in episode {i + 1}",
-                )
-            self.assertEqual(
-                train_stats["primary_performance"][2],
-                "correct_mlh",
-                "Evidence LM should look at most likely hypothesis at time out",
-            )
-            self.assertEqual(
-                train_stats["primary_performance"][3],
-                "confused_mlh",
-                "unknown object should be logged as confused_mlh at time out",
-            )
-            self.assertEqual(
-                len(exp.model.learning_modules[0].get_all_known_object_ids()),
-                1,
-                "No new objects should be added to memory after time out.",
-            )
-            self.assertLessEqual(
-                exp.model.learning_modules[0]
-                .get_graph("new_object0", input_channel="first")
-                .x.shape[1],
-                32,  # max_train_steps + exploratory_steps
-                "No new points should be added to an existing graph after time out.",
-            )
+            exp.run()
 
-            exp.evaluate()
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.assertEqual(
+            train_stats["individual_ts_performance"][0],
+            "no_match",
+            "with no objects in memory individual_ts_performance should be no match",
+        )
+        for i in range(5):
+            self.assertEqual(
+                train_stats["individual_ts_performance"][i + 1],
+                "time_out",
+                f"time out not recognized/logged correctly in episode {i + 1}",
+            )
+        self.assertEqual(
+            train_stats["primary_performance"][2],
+            "correct_mlh",
+            "Evidence LM should look at most likely hypothesis at time out",
+        )
+        self.assertEqual(
+            train_stats["primary_performance"][3],
+            "confused_mlh",
+            "unknown object should be logged as confused_mlh at time out",
+        )
+        self.assertEqual(
+            len(exp.model.learning_modules[0].get_all_known_object_ids()),
+            1,
+            "No new objects should be added to memory after time out.",
+        )
+        self.assertLessEqual(
+            exp.model.learning_modules[0]
+            .get_graph("new_object0", input_channel="first")
+            .x.shape[1],
+            32,  # max_train_steps + exploratory_steps
+            "No new points should be added to an existing graph after time out.",
+        )
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         for i in range(3):
@@ -463,6 +461,7 @@ class EvidenceLMTest(BaseGraphTest):
         # anymore. Setting min_steps would also avoid this, probably.
         exp = hydra.utils.instantiate(self.fixed_actions_evidence_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             # Overwrite target with a false name to test confused logging.
@@ -514,12 +513,11 @@ class EvidenceLMTest(BaseGraphTest):
         """Test same scenario as test_fixed_actions_evidence with uniform poses."""
         exp = hydra.utils.instantiate(self.uniform_initial_poses_cfg.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            print(train_stats)
-            self.check_train_results(train_stats)
-            exp.evaluate()
+            exp.run()
+
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_train_results(train_stats)
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
 
@@ -529,12 +527,11 @@ class EvidenceLMTest(BaseGraphTest):
         """Test same scenario as test_fixed_actions_evidence with predefined poses."""
         exp = hydra.utils.instantiate(self.fixed_possible_poses_cfg.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            print(train_stats)
-            self.check_train_results(train_stats)
-            exp.evaluate()
+            exp.run()
+
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_train_results(train_stats)
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
@@ -1101,11 +1098,11 @@ class EvidenceLMTest(BaseGraphTest):
         """Standard evaluation setup but using only pose features."""
         exp = hydra.utils.instantiate(self.no_features_cfg.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            self.check_train_results(train_stats)
-            exp.evaluate()
+            exp.run()
+
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_train_results(train_stats)
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
@@ -1121,6 +1118,9 @@ class EvidenceLMTest(BaseGraphTest):
             print(train_stats)
             self.check_train_results(train_stats, num_lms=5)
 
+            # TODO: Don't manually fake evaluation. Run this experiment
+            # as normal and create a follow-up experiment for second evaluation.
+            exp.experiment_mode = ExperimentMode.EVAL
             exp.logger_handler.pre_eval(exp.logger_args)
             exp.model.set_experiment_mode("eval")
             for _ in range(exp.n_eval_epochs):
@@ -1146,6 +1146,7 @@ class EvidenceLMTest(BaseGraphTest):
             output_dir = Path(exp.output_dir)
             train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
+            # TODO: Don't reach into the internals. Create another experiment for this.
             # Same as in previous test we make it a bit more difficult during eval
             for lm in exp.model.learning_modules:
                 lm.max_match_distance = 0.01
@@ -1165,31 +1166,29 @@ class EvidenceLMTest(BaseGraphTest):
         """
         exp = hydra.utils.instantiate(self.five_lm_off_object_cfg.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            # Just checking that objects are still recognized correctly when moving off
-            # the object.
-            self.check_train_results(train_stats, num_lms=5)
-            # now lets check the number of steps
-            for row in range(5 * 6):
-                self.assertLess(
-                    train_stats["num_steps"][row],
-                    train_stats["monty_steps"][row],
-                    "Should have less steps per lm (matching and exploratory"
-                    " steps that were on the object) than monty_steps.",
-                )
-                self.assertLess(
-                    train_stats["monty_matching_steps"][row],
-                    train_stats["num_steps"][row],
-                    "Should have less steps monty_matching_steps than"
-                    " overall steps since some steps were off the object.",
-                )
+            exp.run()
 
-            exp.evaluate()
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        # Just checking that objects are still recognized correctly when moving off
+        # the object.
+        self.check_train_results(train_stats, num_lms=5)
+        # now lets check the number of steps
+        for row in range(5 * 6):
+            self.assertLess(
+                train_stats["num_steps"][row],
+                train_stats["monty_steps"][row],
+                "Should have less steps per lm (matching and exploratory"
+                " steps that were on the object) than monty_steps.",
+            )
+            self.assertLess(
+                train_stats["monty_matching_steps"][row],
+                train_stats["num_steps"][row],
+                "Should have less steps monty_matching_steps than"
+                " overall steps since some steps were off the object.",
+            )
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
-
         self.check_eval_results(eval_stats, num_lms=5)
 
         # now lets check the number of steps
@@ -1224,6 +1223,7 @@ class EvidenceLMTest(BaseGraphTest):
         pprint("...parsing experiment...")
         exp = hydra.utils.instantiate(self.five_lm_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.env._env.remove_all_objects()
@@ -1238,7 +1238,7 @@ class EvidenceLMTest(BaseGraphTest):
         """Test that 5LM setup works with BASIC logging and stores correct data."""
         exp = hydra.utils.instantiate(self.five_lm_basic_logging_cfg.test)
         with exp:
-            exp.train()
+            exp.run()
             for key in [
                 "possible_rotations",
                 "possible_locations",
@@ -1263,11 +1263,11 @@ class EvidenceLMTest(BaseGraphTest):
         """
         exp = hydra.utils.instantiate(self.five_lm_no_threading_cfg.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            self.check_train_results(train_stats, num_lms=5)
-            exp.evaluate()
+            exp.run()
+
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_train_results(train_stats, num_lms=5)
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats, num_lms=5)
@@ -1279,11 +1279,11 @@ class EvidenceLMTest(BaseGraphTest):
         """
         exp = hydra.utils.instantiate(self.five_lm_maxnn1.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            self.check_train_results(train_stats, num_lms=5)
-            exp.evaluate()
+            exp.run()
+
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_train_results(train_stats, num_lms=5)
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats, num_lms=5)
@@ -1292,11 +1292,11 @@ class EvidenceLMTest(BaseGraphTest):
         """Standard evaluation setup with 5lm and bounded evidence."""
         exp = hydra.utils.instantiate(self.five_lm_bounded.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            self.check_train_results(train_stats, num_lms=5)
-            exp.evaluate()
+            exp.run()
+
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_train_results(train_stats, num_lms=5)
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats, num_lms=5)
@@ -1311,20 +1311,19 @@ class EvidenceLMTest(BaseGraphTest):
         """
         exp = hydra.utils.instantiate(self.noise_mixin_cfg.test)
         with exp:
-            exp.train()
+            exp.run()
 
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            # NOTE: This might fail if the model becomes more noise robust or
-            # better able to deal with few incomplete objects in memory.
-            for i in range(6):
-                self.assertEqual(
-                    train_stats["primary_performance"][i],
-                    "no_match",
-                    f"Train episode {i} didnt reach no_match."
-                    "Is noise being applied correctly?",
-                )
-            exp.evaluate()
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        # NOTE: This might fail if the model becomes more noise robust or
+        # better able to deal with few incomplete objects in memory.
+        for i in range(6):
+            self.assertEqual(
+                train_stats["primary_performance"][i],
+                "no_match",
+                f"Train episode {i} didnt reach no_match."
+                "Is noise being applied correctly?",
+            )
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         for i in range(3):
@@ -1345,20 +1344,19 @@ class EvidenceLMTest(BaseGraphTest):
         """
         exp = hydra.utils.instantiate(self.noisy_sensor_cfg.test)
         with exp:
-            # self.exp.model.set_experiment_mode("eval")
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            # NOTE: This might fail if the model becomes more noise robust or
-            # better able to deal with few incomplete objects in memory.
-            for i in range(6):
-                self.assertEqual(
-                    train_stats["primary_performance"][i],
-                    "no_match",
-                    f"Train episode {i} didnt reach no_match."
-                    "Is noise being applied correctly?",
-                )
-            exp.evaluate()
+            exp.run()
+
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        # NOTE: This might fail if the model becomes more noise robust or
+        # better able to deal with few incomplete objects in memory.
+        for i in range(6):
+            self.assertEqual(
+                train_stats["primary_performance"][i],
+                "no_match",
+                f"Train episode {i} didnt reach no_match."
+                "Is noise being applied correctly?",
+            )
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         for i in range(3):

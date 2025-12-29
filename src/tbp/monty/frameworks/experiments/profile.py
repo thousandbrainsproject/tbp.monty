@@ -86,7 +86,7 @@ class ProfileExperimentMixin:
 
     def run_episode(self):
         mode, epoch, episode = self.get_epoch_state()
-        filename = f"profile-{mode}_epoch_{epoch}_episode_{episode}.csv"
+        filename = f"profile-{mode.value}_epoch_{epoch}_episode_{episode}.csv"
         pr = cProfile.Profile()
         pr.enable()
         super().run_episode()

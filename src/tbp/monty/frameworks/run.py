@@ -48,15 +48,7 @@ def main(cfg: DictConfig):
     output_dir.mkdir(exist_ok=True, parents=True)
     experiment = hydra.utils.instantiate(cfg.experiment)
     start_time = time.time()
-    with experiment as exp:
-        # TODO: Later will want to evaluate every x episodes or epochs
-        # this could probably be solved with just setting the logging freqency
-        # Since each trainng loop already does everything that eval does.
-        if exp.do_train:
-            print("---------training---------")
-            exp.train()
+    with experiment:
+        experiment.run()
 
-        if exp.do_eval:
-            print("---------evaluating---------")
-            exp.evaluate()
     logger.info(f"Done running {experiment} in {time.time() - start_time} seconds")

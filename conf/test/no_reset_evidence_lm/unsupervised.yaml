@@ -10,6 +10,7 @@ defaults:
 
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:
+  do_train: false
   max_train_steps: 30
   max_eval_steps: 30
   max_total_steps: 60

@@ -112,17 +112,17 @@ class HierarchyTest(BaseGraphTest):
         """
         exp = hydra.utils.instantiate(self.two_lms_heterarchy_cfg.test)
         with exp:
-            exp.train()
-            output_dir = Path(exp.output_dir)
-            train_stats = pd.read_csv(output_dir / "train_stats.csv")
-            self.check_hierarchical_lm_train_results(train_stats)
+            exp.run()
 
-            models = load_models_from_dir(output_dir)
-            self.check_hierarchical_models(models)
+        output_dir = Path(exp.output_dir)
+        train_stats = pd.read_csv(output_dir / "train_stats.csv")
+        self.check_hierarchical_lm_train_results(train_stats)
 
-            exp.evaluate()
-            eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
-            self.check_hierarchical_lm_eval_results(eval_stats)
+        models = load_models_from_dir(output_dir)
+        self.check_hierarchical_models(models)
+
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
+        self.check_hierarchical_lm_eval_results(eval_stats)
 
     def test_semisupervised_stacked_lms_experiment(self):
         """Test two LMs stacked on top of each other with semisupervised learning.
@@ -143,8 +143,7 @@ class HierarchyTest(BaseGraphTest):
         """
         exp = hydra.utils.instantiate(self.two_lms_constrained_cfg.test)
         with exp:
-            exp.model.set_experiment_mode("train")
-            exp.train()
+            exp.run()
             # check that both LMs have learned both objects.
             for lm_idx, lm in enumerate(exp.model.learning_modules):
                 learned_objects = lm.get_all_known_object_ids()
@@ -163,7 +162,6 @@ class HierarchyTest(BaseGraphTest):
 
         exp = hydra.utils.instantiate(self.two_lms_semisupervised_cfg.test)
         with exp:
-            exp.model.set_experiment_mode("train")
             # check that models for both objects are loaded into memory correctly.
             for lm_idx, lm in enumerate(exp.model.learning_modules):
                 for object_id in ["capsule3DSolid", "cubeSolid"]:
@@ -181,7 +179,7 @@ class HierarchyTest(BaseGraphTest):
             lm_0_memory_before_learning = exp.model.learning_modules[
                 0
             ].graph_memory.get_all_models_in_memory()
-            exp.train()
+            exp.run()
             # check that LM_0 models were not updated
             for object_id in ["capsule3DSolid", "cubeSolid"]:
                 updated_graph = exp.model.learning_modules[0].graph_memory.get_graph(
@@ -203,7 +201,7 @@ class HierarchyTest(BaseGraphTest):
 
         exp = hydra.utils.instantiate(self.two_lms_eval_cfg.test)
         with exp:
-            exp.evaluate()
+            exp.run()
             eval_stats = pd.read_csv(Path(exp.output_dir) / "eval_stats.csv")
             episode = 0
             num_lms = len(exp.model.learning_modules)
