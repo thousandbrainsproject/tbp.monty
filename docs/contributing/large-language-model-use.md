@@ -67,4 +67,4 @@ Below we provide further guidance on some edge cases.
 - See the advice under [Writing RFCs](#writing-rfcs) for suggestions about when LLMs can be useful "tutors" when exploring a topic.
 
 ## Productivity Tools
-- Please note that the above guidance does not apply to productivity tools such as grammar checkers, which we understand you might find helpful in copy-editing text in RFCs and forum posts. If you need to use a more advanced AI tool for a specific reason (speech-to-text, etc.), we simply ask that you keep the concerns in this RFC in mind.
+- Please note that the above guidance does not apply to productivity tools such as grammar checkers, which we understand you might find helpful in copy-editing text in RFCs and forum posts. If you need to use a more advanced AI tool for a specific reason (speech-to-text, etc.), we simply ask that you keep the concerns of this document in mind.
