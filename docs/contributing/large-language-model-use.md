@@ -6,7 +6,7 @@ We're really excited to receive contributions from the wider community - one of 
 
 The reason for the guidance below is that we are increasingly encountering the limits of LLMs, and how these can negatively affect our time spent on reviews and discussions.
 
-As such, the following outlines the kinds of concerning attributes that are associated with LLM-generated contributions, and why these can be problematic. While we do not institute any strict guidance, please note that if we feel that the use of AI/LLMs has resulted in a contribution that matches these concerning patterns, Maintainers reserve the right to not review your contribution. We do not want to discourage contributions, but this balancing act on our part is an unfortunate side-effect of the small size of the Maintainers team vs. the speed at which LLM content can be generated.
+As such, the following outlines several concerning attributes that are associated with LLM-generated contributions, and why these can be problematic. While we do not institute any strict guidance, please note that if we feel that the use of AI/LLMs has resulted in a contribution that matches these concerning patterns, Maintainers reserve the right to not review your contribution. We do not want to discourage contributions, but this balancing act on our part is an unfortunate side-effect of the small size of the Maintainers team vs. the speed at which LLM content can be generated.
 
 
 # Guidance on the Use of AI/LLMs
