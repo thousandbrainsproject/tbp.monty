@@ -270,7 +270,7 @@ You can then create all kinds of plots from this data. A convenient way of doing
 
 For interactive inspection, debugging and visualization of Monty experiment runs, we provide a separate companion repository called **`tbp.plot`**.
 
-[`tbp.plot`](https://github.com/thousandbrainsproject/tbp.plot) contains interactive visualization tools built on top of [Vedo3D](https://vedo.embl.es/), which is a high-level wrapper for [VTK](https://vtk.org/). It allows you to visually interact with experiment logs by scrubbing through steps, visualizing the hypothesis space, inspecting meshes, and more. These tools are particularly useful when analyzing individual episodes to understand hypotheses evolution over time, or debug unexpected behavior in an experiment run.
+[`tbp.plot`](https://github.com/thousandbrainsproject/tbp.plot) contains interactive visualization tools built on top of [Vedo3D](https://vedo.embl.es/), which is a high-level wrapper for [VTK](https://vtk.org/). It allows you to visually interact with experiment logs by scrubbing through steps, visualizing the hypothesis space, inspecting meshes, and more. These tools are particularly useful when analyzing individual episodes to understand the evolution of hypotheses over time, or to debug unexpected behavior in an experiment run.
 
 ### How to Use `tbp.plot`
 
