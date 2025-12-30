@@ -252,3 +252,43 @@ You can then create all kinds of plots from this data. A convenient way of doing
 
 
 ![Another example of a wandb plot (standard bar plot).](../figures/how-to-use-monty/wandb_bar_plt.png)
+
+
+
+## Interactive Analysis with `tbp.plot`
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="../figures/tbp_plot_correlation.gif" width="100%">
+    </td>
+    <td width="50%" align="center">
+      <img src="../figures/tbp_plot_pointcloud.gif" width="100%">
+    </td>
+  </tr>
+</table>
+
+For interactive inspection, debugging and visualization of Monty experiment runs, we provide a separate companion repository called **`tbp.plot`**.
+
+[`tbp.plot`](https://github.com/thousandbrainsproject/tbp.plot) contains interactive visualization tools built on top of [Vedo3D](https://vedo.embl.es/), which is a high-level wrapper for [VTK](https://vtk.org/). It allows you to visually interact with experiment logs by scrubbing through steps, visualizing the hypothesis space, inspecting meshes, and more. These tools are particularly useful when analyzing individual episodes to understand the evolution of hypotheses over time, or to debug unexpected behavior in an experiment run.
+
+### How to Use `tbp.plot`
+
+A typical workflow is to first run a Monty experiment and then analyze the generated logs using `tbp.plot`. Most interactive visualizations rely on **per-step data**, so experiments are usually run with detailed logging enabled. In practice, this means running an experiment with the `DetailedJSONHandler` included in `config.logging.monty_handlers`, and keeping the number of episodes and objects small to keep the JSON log size manageable.
+
+A quick and convenient way to achieve this is to override the configuration from the command-line interface, for example:
+```zsh
+python run_parallel.py \
+  experiment=randrot_noise_10distinctobj_dist_agent \
+  episodes=\'5,9,12\' \
+  +experiment/config/logging=detailed_evidence_lm
+```
+
+### Tutorials and Examples
+
+`tbp.plot` provides a set of tutorials that walk through how to build interactive visualizations from Monty experiment logs. These tutorials show how to load and parse the logs using `DataParser` and `DataLocator` helper classes and construct complex interactive widgets with pub/sub communication protocol.
+
+
+You can find the [tutorials](https://github.com/thousandbrainsproject/tbp.plot/blob/main/README.md#tutorials) and [gallery](https://github.com/thousandbrainsproject/tbp.plot/blob/main/README.md#gallery) of available tools in the `tbp.plot` repository.
+
+
