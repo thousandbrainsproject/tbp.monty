@@ -7,13 +7,16 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import Tuple
 
 import quaternion as qt
 from habitat_sim.sensor import CameraSensorSpec, SensorSpec, SensorType
+
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservations
 
 __all__ = [
     "RGBDSensorConfig",
@@ -45,11 +48,13 @@ class SensorConfig:
     position: Vector3 = (0.0, 0.0, 0.0)
     rotation: Quaternion = (1.0, 0.0, 0.0, 0.0)
 
-    def get_specs(self) -> List[SensorSpec]:
+    def get_specs(self) -> list[SensorSpec]:
         """Returns List of Habitat sensor specs to be passed to `habitat-sim`."""
         return []
 
-    def process_observations(self, sensor_obs) -> dict:
+    def process_observations(
+        self, sensor_obs: SensorObservations
+    ) -> SensorObservations:
         """Callback used to process habitat raw sensor observations.
 
         Args:
@@ -84,7 +89,7 @@ class RGBDSensorConfig(SensorConfig):
     resolution: Size = (64, 64)
     zoom: float = 1.0
 
-    def get_specs(self) -> List[SensorSpec]:
+    def get_specs(self) -> list[SensorSpec]:
         """Returns List of Habitat sensor specs to be passed to `habitat-sim`."""
         orientation = qt.as_rotation_vector(qt.quaternion(*self.rotation))
 
@@ -135,7 +140,7 @@ class SemanticSensorConfig(SensorConfig):
     resolution: Size = (64, 64)
     zoom: float = 1.0
 
-    def get_specs(self) -> List[SensorSpec]:
+    def get_specs(self) -> list[SensorSpec]:
         """Returns List of Habitat sensor specs to be passed to `habitat-sim`."""
         orientation = qt.as_rotation_vector(qt.quaternion(*self.rotation))
 

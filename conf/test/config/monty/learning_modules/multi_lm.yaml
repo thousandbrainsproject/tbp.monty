@@ -1,0 +1,11 @@
+learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+learning_module_args:
+  # Need to set mmd even tighter here since we get more evidence through
+  # votes and mistaking similar objects during training becomes easier.
+  # During evaluation, we also test max_match_distance = 0.01 which should
+  # work once we have a few objects in memory.
+  max_match_distance: 0.0001
+  # TODO: this is not right
+  feature_weights:
+    patch:
+      hsv: ${np.array:[1, 0, 0]}

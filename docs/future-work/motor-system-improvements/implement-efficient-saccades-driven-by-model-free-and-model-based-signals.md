@@ -1,5 +1,13 @@
 ---
 title: Implement Efficient Saccades Driven by Model-Free and Model-Based Signals
+description: Use saliency in a larger RF to determine where to look next. Coordinate between SM and LM goal states.
+rfc: https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0012_extended_goal_state_functionality.md
+estimated-scope: large
+improved-metric: numsteps, accuracy, learning, goal-policy, multi-object
+output-type: RFC, prototype, monty-feature, PR, experiments, analysis, publication
+skills: research, literature-review, python, monty, refactoring, computer-vision
+contributor: scottcanoe
+status: in-progress
 ---
 
 Currently the main way that the distant agent moves is by performing small, random, saccade-like movements. In addition, the entire agent can teleport to a received goal-state in order to e.g. test a hypothesis. We would like to implement the ability to perform larger saccades that are driven by both model-free and model-based signals, depending on the situation.

@@ -1,0 +1,28 @@
+defaults:
+  - learning_module/tolerances/defaults@learning_module_0.learning_module_args.tolerances
+  - learning_module/feature_weights/defaults@learning_module_0.learning_module_args.feature_weights
+
+learning_module_0:
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+  learning_module_args:
+    max_match_distance: 0.01
+    # Higher threshold to avoid too many false positives during the first
+    # episodes. In the future we may consider some kind of learning schedule
+    x_percent_threshold: 50
+    graph_delta_thresholds:
+      patch:
+        distance: 0.01
+        pose_vectors: ${np.list_eval:[np.pi / 8, np.pi * 2, np.pi * 2]}
+        principal_curvatures_log: [1.0, 1.0]
+        hsv: [0.1, 1, 1]
+    # Since we have 100 min steps we want these steps to have been consistent
+    # with the mlh. If we keep this value at its default (1) it often happens
+    # that the episode just terminates once min steps is reached. Again, we
+    # try to avoid too many false positive in the first epochs.
+    object_evidence_threshold: 100
+    # Also the symmetry evidence increments a lot after 100 steps and easily
+    # reaches the default required evidence. Again, these are temporary fixes
+    # and we will probably want some more stable long term solutions.
+    required_symmetry_evidence: 20
+    hypotheses_updater_args:
+      max_nneighbors: 5

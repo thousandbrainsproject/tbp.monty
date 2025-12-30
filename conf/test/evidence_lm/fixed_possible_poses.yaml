@@ -1,0 +1,23 @@
+defaults:
+  - /test/evidence_lm/base@
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /experiment/config/monty/learning_modules/tolerances@config.monty_config.learning_modules_config.learning_module_0.learning_module_args.tolerances
+
+config:
+  monty_config:
+    monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
+    monty_args:
+      num_exploratory_steps: 10
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+        learning_module_args:
+          max_match_distance: 0.001
+          feature_weights:
+            patch:
+              hsv: ${np.array:[1, 0, 0]}
+          hypotheses_updater_args:
+            initial_possible_poses:
+              - [0, 0, 0]
+              - [45, 0, 0]
+              - [90, 0, 0]

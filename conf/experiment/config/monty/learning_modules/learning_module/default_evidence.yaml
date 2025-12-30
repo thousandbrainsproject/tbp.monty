@@ -1,0 +1,38 @@
+defaults:
+  - feature_weights/defaults@learning_module_args.feature_weights
+  - tolerances/defaults@learning_module_args.tolerances
+
+learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+learning_module_args:
+  # mmd of 0.015 get higher performance but slower run time
+  max_match_distance: 0.01 # =1cm
+  # smaller threshold reduces runtime but also performance
+  x_percent_threshold: 20
+  # Use this to update all hypotheses at every step as previously
+  # evidence_threshold_config: all
+  # Use this to update all hypotheses with evidence > 80% of max evidence (faster)
+  evidence_threshold_config: 80%
+  # use_multithreading: false
+  # NOTE: Currently not used when loading pretrained graphs.
+  max_graph_size: 0.3 # 30cm
+  num_model_voxels_per_dim: 100
+  gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+  gsg_args:
+    # Tolerance(s) when determining goal-state success
+    goal_tolerances:
+      location: 0.015 # distance in meters
+    # Factor that considers the number of elapsed steps as a possible
+    # condition for initiating a hypothesis-testing goal state;
+    # should be set to an integer reflecting a number of steps.
+    elapsed_steps_factor: 10
+    # Number of necessary steps for a hypothesis goal-state to be considered
+    min_post_goal_success_steps: 5
+    # Scale x-percent threshold to decide when we should focus on pose rather than determining object ID;
+    # should be bounded between 0:1.0; "mod" for modifier
+    x_percent_scale_factor: 0.75
+    # Distance from the object to the agent that is considered "close enough" to the object
+    desired_object_distance: 0.03
+  hypotheses_updater_args:
+    # Using a smaller max_nneighbors (5 instead of 10) makes runtime faster,
+    # but reduces performance a bit
+    max_nneighbors: 10

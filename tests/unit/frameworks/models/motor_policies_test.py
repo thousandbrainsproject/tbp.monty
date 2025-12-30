@@ -6,37 +6,42 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import unittest
-from typing import Dict
 
 import numpy as np
 
 from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
 from tbp.monty.frameworks.actions.actions import LookUp
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     MotorSystemState,
     SensorState,
 )
+from tbp.monty.frameworks.sensors import SensorID
 
 
 class BasePolicyTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.rng = np.random.RandomState(42)
-        self.agent_id = f"agent_id_{self.rng.randint(0, 999_999_999)}"
-        self.default_sensor_state: SensorState = {
-            "position": (0.0, 0.0, 0.0),
-            "rotation": (1.0, 0.0, 0.0, 0.0),
+        self.agent_id = AgentID(f"agent_id_{self.rng.randint(0, 999_999_999)}")
+        self.default_sensor_state = SensorState(
+            position=(0.0, 0.0, 0.0),
+            rotation=(1.0, 0.0, 0.0, 0.0),
+        )
+        self.agent_sensors = {
+            SensorID(
+                f"sensor_id_{self.rng.randint(0, 999_999_999)}"
+            ): self.default_sensor_state,
         }
-        self.agent_sensors: Dict[str, SensorState] = {
-            f"sensor_id_{self.rng.randint(0, 999_999_999)}": self.default_sensor_state,
-        }
-        self.default_agent_state: AgentState = {
-            "sensors": self.agent_sensors,
-            **self.default_sensor_state,
-        }
+        self.default_agent_state = AgentState(
+            sensors=self.agent_sensors,
+            position=self.default_sensor_state.position,
+            rotation=self.default_sensor_state.rotation,
+        )
 
         self.policy = BasePolicy(
             rng=self.rng,
@@ -47,14 +52,17 @@ class BasePolicyTest(unittest.TestCase):
         )
 
     def test_get_agent_state_selects_state_matching_agent_id(self):
-        expected_state: AgentState = {
-            "sensors": self.agent_sensors,
-            **self.default_sensor_state,
-        }
+        expected_state = AgentState(
+            sensors=self.agent_sensors,
+            position=self.default_sensor_state.position,
+            rotation=self.default_sensor_state.rotation,
+        )
         state = MotorSystemState(
             {
-                f"{self.agent_id}": expected_state,
-                "different_agent_id": {},
+                self.agent_id: expected_state,
+                AgentID("different_agent_id"): AgentState(
+                    sensors={}, position=(), rotation=()
+                ),
             }
         )
         self.assertEqual(self.policy.get_agent_state(state), expected_state)
@@ -64,7 +72,7 @@ class BasePolicyTest(unittest.TestCase):
     ):
         state = MotorSystemState(
             {
-                f"{self.agent_id}": self.default_agent_state,
+                self.agent_id: self.default_agent_state,
             }
         )
         self.assertFalse(self.policy.is_motor_only_step(state))
@@ -74,10 +82,12 @@ class BasePolicyTest(unittest.TestCase):
     ):
         state = MotorSystemState(
             {
-                f"{self.agent_id}": {
-                    **self.default_agent_state,
-                    "motor_only_step": True,
-                },
+                self.agent_id: AgentState(
+                    sensors=self.default_agent_state.sensors,
+                    position=self.default_agent_state.position,
+                    rotation=self.default_agent_state.rotation,
+                    motor_only_step=True,
+                ),
             }
         )
         self.assertTrue(self.policy.is_motor_only_step(state))
@@ -87,10 +97,12 @@ class BasePolicyTest(unittest.TestCase):
     ):
         state = MotorSystemState(
             {
-                f"{self.agent_id}": {
-                    **self.default_agent_state,
-                    "motor_only_step": False,
-                },
+                self.agent_id: AgentState(
+                    sensors=self.default_agent_state.sensors,
+                    position=self.default_agent_state.position,
+                    rotation=self.default_agent_state.rotation,
+                    motor_only_step=False,
+                ),
             }
         )
         self.assertFalse(self.policy.is_motor_only_step(state))

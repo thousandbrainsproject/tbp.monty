@@ -1,0 +1,24 @@
+defaults:
+  - surf_agent_unsupervised_10distinctobj
+  - config/monty/clear_monty_config@config
+  - config/monty/surface_and_view@config.monty_config
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/learning_modules/default_lfs_lm@config.monty_config.learning_module_configs
+  - config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+  - config/monty/sensor_modules/sensor_module/default_all_noisy_surf_agent@config.monty_config.sensor_module_configs.sensor_module_0
+
+config:
+  logging:
+    run_name: surf_agent_unsupervised_10distinctobj_noise
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 1000
+      min_train_steps: 100
+    sensor_module_configs:
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: true

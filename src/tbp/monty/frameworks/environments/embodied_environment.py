@@ -7,35 +7,44 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import abc
-import collections.abc
-from typing import Any, Dict, Optional, Sequence, Tuple
+from dataclasses import dataclass
+from typing import NewType, Sequence, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 
-__all__ = ["EmbodiedEnvironment", "ActionSpace", "VectorXYZ", "QuaternionWXYZ"]
+__all__ = [
+    "EmbodiedEnvironment",
+    "ObjectID",
+    "ObjectInfo",
+    "QuaternionWXYZ",
+    "SemanticID",
+    "VectorXYZ",
+]
+
+ObjectID = NewType("ObjectID", int)
+"""Unique identifier for an object in the environment."""
+
+SemanticID = NewType("SemanticID", int)
+"""Unique identifier for an object's semantic class."""
 
 VectorXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]
 
 
-class ActionSpace(collections.abc.Container):
-    """Represents the environment action space."""
+@dataclass
+class ObjectInfo:
+    """Contains the identifying information of an object created in the environment."""
 
-    @abc.abstractmethod
-    def sample(self):
-        """Sample the action space returning a random action."""
-        pass
+    object_id: ObjectID
+    semantic_id: SemanticID | None
 
 
 class EmbodiedEnvironment(abc.ABC):
-    @property
-    @abc.abstractmethod
-    def action_space(self):
-        """Returns list of all possible actions available in the environment."""
-        pass
-
     @abc.abstractmethod
     def add_object(
         self,
@@ -43,11 +52,9 @@ class EmbodiedEnvironment(abc.ABC):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: Optional[str] = None,
-        enable_physics: Optional[bool] = False,
-        object_to_avoid=False,
-        primary_target_object=None,
-    ):
+        semantic_id: SemanticID | None = None,
+        primary_target_object: ObjectID | None = None,
+    ) -> ObjectID:
         """Add an object to the environment.
 
         Args:
@@ -56,27 +63,19 @@ class EmbodiedEnvironment(abc.ABC):
             rotation: The initial rotation WXYZ quaternion of the object. Defaults to
                 (1,0,0,0).
             scale: The scale of the object to add. Defaults to (1,1,1).
-            semantic_id: Optional override for the object semantic ID.
-            enable_physics: Whether to enable physics on the object. Defaults to False.
-            object_to_avoid: If True, run collision checks to ensure the object will not
-                collide with any other objects in the scene. If collision is detected,
-                the object will be moved. Defaults to False.
-            primary_target_object: If not None, the added object will be positioned so
-                that it does not obscure the initial view of the primary target object
-                (which avoiding collision alone cannot guarantee). Used when adding
-                multiple objects. Defaults to None.
+            semantic_id: Optional override for the object semantic ID. Defaults to None.
+            primary_target_object: The ID of the primary target object. If not None, the
+                added object will be positioned so that it does not obscure the initial
+                view of the primary target object (which avoiding collision alone cannot
+                guarantee). Used when adding multiple objects. Defaults to None.
 
         Returns:
-            The newly added object.
-
-        TODO: This add_object interface is elevated from HabitatSim.add_object and is
-              quite specific to HabitatSim implementation. We should consider
-              refactoring this to be more generic.
+            The ID of the added object.
         """
         pass
 
     @abc.abstractmethod
-    def step(self, actions: Sequence[Action]) -> Dict[Any, Dict]:
+    def step(self, actions: Sequence[Action]) -> Observations:
         """Apply the given actions to the environment.
 
         Args:
@@ -92,12 +91,12 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_state(self):
-        """Return the state of the environment (and agent)."""
+    def get_state(self) -> ProprioceptiveState:
+        """Returns proprioceptive state of the agent and sensors."""
         pass
 
     @abc.abstractmethod
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         """Remove all objects from the environment.
 
         TODO: This remove_all_objects interface is elevated from
@@ -107,15 +106,16 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def reset(self):
+    def reset(self) -> Observations:
         """Reset enviroment to its initial state.
 
-        Return the environment's initial observations.
+        Returns:
+            The environment's initial observations.
         """
         pass
 
     @abc.abstractmethod
-    def close(self):
+    def close(self) -> None:
         """Close the environmnt releasing all resources.
 
         Any call to any other environment method may raise an exception

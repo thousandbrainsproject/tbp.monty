@@ -15,19 +15,9 @@ import copy
 import json
 import logging
 import math
-import os
 from dataclasses import dataclass, field
-from typing import (
-    Any,
-    Dict,
-    List,
-    Literal,
-    Mapping,
-    Optional,
-    Tuple,
-    Type,
-    cast,
-)
+from pathlib import Path
+from typing import Any, Literal, Mapping, cast
 
 import numpy as np
 import quaternion as qt
@@ -51,7 +41,10 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
     VectorXYZ,
 )
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environments.embodied_environment import SemanticID
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
+from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 
@@ -150,9 +143,9 @@ class BasePolicy(MotorPolicy):
     def __init__(
         self,
         rng,
-        action_sampler_args: Dict,
-        action_sampler_class: Type[ActionSampler],
-        agent_id: str,
+        action_sampler_args: dict,
+        action_sampler_class: type[ActionSampler],
+        agent_id: AgentID,
         switch_frequency,
         file_name=None,
         file_names_per_episode=None,
@@ -176,7 +169,7 @@ class BasePolicy(MotorPolicy):
         self.rng = rng
         self.agent_id = agent_id
 
-        self.action_sampler = action_sampler_class(rng=self.rng, **action_sampler_args)
+        self.action_sampler = action_sampler_class(**action_sampler_args)
 
         self.action_sequence = []
         self.timestep = 0
@@ -185,7 +178,7 @@ class BasePolicy(MotorPolicy):
         self.switch_frequency = float(switch_frequency)
         # Ensure our first action only samples from those that can be random
         self.action: Action | None = self.get_random_action(
-            self.action_sampler.sample(self.agent_id)
+            self.action_sampler.sample(self.agent_id, self.rng)
         )
 
         ###
@@ -235,7 +228,7 @@ class BasePolicy(MotorPolicy):
         """
         while True:
             if self.rng.rand() < self.switch_frequency:
-                action = self.action_sampler.sample(self.agent_id)
+                action = self.action_sampler.sample(self.agent_id, self.rng)
             if not isinstance(action, SetAgentPose) and not isinstance(
                 action, SetSensorRotation
             ):
@@ -264,11 +257,11 @@ class BasePolicy(MotorPolicy):
                 self.action_list = read_action_file(file_name)
 
     ###
-    # Other required abstract methods, methods called by Monty or Dataloader
+    # Other required abstract methods, methods called by Monty or Environment Interface
     ###
 
     def get_agent_state(self, state: MotorSystemState) -> AgentState:
-        """Get agent state (dict).
+        """Get agent state.
 
         Note:
             Assumes we only have one agent.
@@ -295,10 +288,7 @@ class BasePolicy(MotorPolicy):
             True if the current step is a motor-only step, False otherwise.
         """
         agent_state = self.get_agent_state(state)
-        if "motor_only_step" in agent_state.keys() and agent_state["motor_only_step"]:
-            return True
-        else:
-            return False
+        return agent_state.motor_only_step
 
     @property
     def last_action(self) -> Action:
@@ -338,7 +328,7 @@ class JumpToGoalStateMixin:
 
         Take the current driving goal state (in CMP format), and derive the
         corresponding Habitat compatible goal-state to pass through the Embodied
-        Dataloader.
+        Environment Interface.
 
         Returns:
             target_loc: Target location.
@@ -368,8 +358,7 @@ class JumpToGoalStateMixin:
 
             return target_loc, target_quat
 
-        else:
-            return None, None
+        return None, None
 
 
 @dataclass
@@ -379,7 +368,7 @@ class PositioningProcedureResult:
     For more on the terminated/truncated terminology, see https://farama.org/Gymnasium-Terminated-Truncated-Step-API.
     """
 
-    actions: List[Action] = field(default_factory=list)
+    actions: list[Action] = field(default_factory=list)
     """Actions to take."""
     success: bool = False
     """Whether the procedure succeeded in its positioning goal."""
@@ -401,7 +390,7 @@ class PositioningProcedure(BasePolicy):
     """
 
     @staticmethod
-    def depth_at_center(agent_id: str, observation: Any, sensor_id: str) -> float:
+    def depth_at_center(agent_id: AgentID, observation: Any, sensor_id: str) -> float:
         """Determine the depth of the central pixel for the sensor.
 
         Args:
@@ -423,7 +412,7 @@ class PositioningProcedure(BasePolicy):
     def positioning_call(
         self,
         observation: Mapping,
-        state: Optional[MotorSystemState] = None,
+        state: MotorSystemState | None = None,
     ) -> PositioningProcedureResult:
         """Return a list of actions to position the agent in the scene.
 
@@ -469,7 +458,7 @@ class GetGoodView(PositioningProcedure):
         good_view_percentage: float,
         multiple_objects_present: bool,
         sensor_id: str,
-        target_semantic_id: int,
+        target_semantic_id: SemanticID,
         allow_translation: bool = True,
         max_orientation_attempts: int = 1,
         **kwargs,
@@ -505,8 +494,8 @@ class GetGoodView(PositioningProcedure):
         self._executed_multiple_objects_orientation = False
 
     def compute_look_amounts(
-        self, relative_location: np.ndarray, state: Optional[MotorSystemState] = None
-    ) -> Tuple[float, float]:
+        self, relative_location: np.ndarray, state: MotorSystemState | None = None
+    ) -> tuple[float, float]:
         """Compute the amount to look down and left given a relative location.
 
         This function computes the amount needed to look down and left in order
@@ -547,8 +536,8 @@ class GetGoodView(PositioningProcedure):
     def find_location_to_look_at(
         self,
         sem3d_obs: np.ndarray,
-        image_shape: Tuple[int, int],
-        state: Optional[MotorSystemState] = None,
+        image_shape: tuple[int, int],
+        state: MotorSystemState | None = None,
     ) -> np.ndarray:
         """Find the location to look at in the observation.
 
@@ -589,14 +578,14 @@ class GetGoodView(PositioningProcedure):
         location_to_look_at = sem3d_obs_image[
             idx_loc_to_look_at[0], idx_loc_to_look_at[1], :3
         ]
-        camera_location = self.get_agent_state(state)["sensors"][
-            f"{self._sensor_id}.depth"
-        ]["position"]
-        agent_location = self.get_agent_state(state)["position"]
+        camera_location = (
+            self.get_agent_state(state)
+            .sensors[SensorID(f"{self._sensor_id}.depth")]
+            .position
+        )
+        agent_location = self.get_agent_state(state).position
         # Get the location of the object relative to sensor.
-        relative_location = location_to_look_at - (camera_location + agent_location)
-
-        return relative_location
+        return location_to_look_at - (camera_location + agent_location)
 
     def is_on_target_object(self, observation: Mapping) -> bool:
         """Check if a sensor is on the target object.
@@ -616,8 +605,7 @@ class GetGoodView(PositioningProcedure):
 
         # Check if the central pixel is on the target object.
         y_mid, x_mid = image_shape[0] // 2, image_shape[1] // 2
-        on_target_object = semantic[y_mid, x_mid] == self._target_semantic_id
-        return on_target_object
+        return semantic[y_mid, x_mid] == self._target_semantic_id
 
     def move_close_enough(self, observation: Mapping) -> Action | None:
         """Move closer to the object until we are close enough.
@@ -679,19 +667,19 @@ class GetGoodView(PositioningProcedure):
                         "Getting too close to other objects, not moving forward."
                     )
                     return None
-                else:
-                    logger.debug("Moving forward")
-                    return MoveForward(agent_id=self.agent_id, distance=0.01)
-            else:
-                logger.debug("Close enough.")
-                return None
-        else:
-            logger.debug("Enough percent visible.")
+
+                logger.debug("Moving forward")
+                return MoveForward(agent_id=self.agent_id, distance=0.01)
+
+            logger.debug("Close enough.")
             return None
 
+        logger.debug("Enough percent visible.")
+        return None
+
     def orient_to_object(
-        self, observation: Mapping, state: Optional[MotorSystemState] = None
-    ) -> List[Action]:
+        self, observation: Mapping, state: MotorSystemState | None = None
+    ) -> list[Action]:
         """Rotate sensors so that they are centered on the object using the view finder.
 
         The view finder needs to be in the same position as the sensor patch
@@ -732,7 +720,7 @@ class GetGoodView(PositioningProcedure):
     def positioning_call(
         self,
         observation: Mapping,
-        state: Optional[MotorSystemState] = None,
+        state: MotorSystemState | None = None,
     ) -> PositioningProcedureResult:
         if (
             self._multiple_objects_present
@@ -769,8 +757,8 @@ class GetGoodView(PositioningProcedure):
 
         if on_target_object:
             return PositioningProcedureResult(success=True, terminated=True)
-        else:
-            return PositioningProcedureResult(truncated=True)
+
+        return PositioningProcedureResult(truncated=True)
 
     def sensor_rotation_relative_to_world(self, state: MotorSystemState) -> Any:
         """Derives the positioning sensor's rotation relative to the world.
@@ -783,9 +771,11 @@ class GetGoodView(PositioningProcedure):
         """
         agent_state = self.get_agent_state(state)
         # Retrieve agent's rotation relative to the world.
-        agent_rotation = agent_state["rotation"]
+        agent_rotation = agent_state.rotation
         # Retrieve sensor's rotation relative to the agent.
-        sensor_rotation = agent_state["sensors"][f"{self._sensor_id}.depth"]["rotation"]
+        sensor_rotation = agent_state.sensors[
+            SensorID(f"{self._sensor_id}.depth")
+        ].rotation
         # Derive sensor's rotation relative to the world.
         return agent_rotation * sensor_rotation
 
@@ -839,7 +829,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 teleport) the agent to a specified goal state.
             **kwargs: Additional keyword arguments.
         """
-        super(InformedPolicy, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.min_perc_on_obj = min_perc_on_obj
         self.good_view_percentage = good_view_percentage
         self.desired_object_distance = desired_object_distance
@@ -924,36 +914,41 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 rotation_degrees=-last_action.rotation_degrees,
                 constraint_degrees=last_action.constraint_degrees,
             )
-        elif isinstance(last_action, LookUp):
+
+        if isinstance(last_action, LookUp):
             return LookUp(
                 agent_id=last_action.agent_id,
                 rotation_degrees=-last_action.rotation_degrees,
                 constraint_degrees=last_action.constraint_degrees,
             )
-        elif isinstance(last_action, TurnLeft):
+
+        if isinstance(last_action, TurnLeft):
             return TurnLeft(
                 agent_id=last_action.agent_id,
                 rotation_degrees=-last_action.rotation_degrees,
             )
-        elif isinstance(last_action, TurnRight):
+
+        if isinstance(last_action, TurnRight):
             return TurnRight(
                 agent_id=last_action.agent_id,
                 rotation_degrees=-last_action.rotation_degrees,
             )
-        elif isinstance(last_action, MoveForward):
+
+        if isinstance(last_action, MoveForward):
             return MoveForward(
                 agent_id=last_action.agent_id,
                 distance=-last_action.distance,
             )
-        elif isinstance(last_action, MoveTangentially):
+
+        if isinstance(last_action, MoveTangentially):
             return MoveTangentially(
                 agent_id=last_action.agent_id,
                 distance=-last_action.distance,
                 # Same direction, negative distance
                 direction=last_action.direction,
             )
-        else:
-            raise TypeError(f"Invalid action: {last_action}")
+
+        raise TypeError(f"Invalid action: {last_action}")
 
     def post_action(
         self, action: Action | None, state: MotorSystemState | None = None
@@ -977,7 +972,7 @@ class NaiveScanPolicy(InformedPolicy):
         # Mostly use version of InformedPolicy to get the good view in the beginning
         # TODO: maybe separate this out. Don't need to specify reverse_actions or
         # min_perc_on_obj for that.
-        super(NaiveScanPolicy, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # Specify this specific action space, otherwise it doesn't work
         self._naive_scan_actions = [
@@ -995,7 +990,7 @@ class NaiveScanPolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, _state: Optional[MotorSystemState] = None) -> Action:
+    def dynamic_call(self, _state: MotorSystemState | None = None) -> Action:
         """Return the next action in the spiral being executed.
 
         The MotorSystemState is ignored.
@@ -1011,16 +1006,15 @@ class NaiveScanPolicy(InformedPolicy):
             StopIteration: If the spiral has completed.
         """
         if self.steps_per_action * self.fixed_amount >= 90:
-            # Raise "StopIteration" to notify the dataloader we need to stop
+            # Raise "StopIteration" to notify the environment interface we need to stop
             # the experiment. This exception is automatically handled by any
             # python loop statements using iterators.
             # See https://docs.python.org/3/library/exceptions.html#StopIteration
-            raise StopIteration()
-        else:
-            self.check_cycle_action()
-            action = self._naive_scan_actions[self.current_action_id]
+            raise StopIteration
+
+        self.check_cycle_action()
         self.step_on_action += 1
-        return action
+        return self._naive_scan_actions[self.current_action_id]
 
     def pre_episode(self):
         super().pre_episode()
@@ -1116,7 +1110,7 @@ class SurfacePolicy(InformedPolicy):
         cannot sense the object, e.g. because it has fallen off its surface.
 
         Currently uses the raw observations returned from the viewfinder via the
-        dataloader, and not the extracted features from the sensor module.
+        environment interface, and not the extracted features from the sensor module.
         TODO M refactor this so that all sensory processing is done in the sensor
         module.
 
@@ -1142,9 +1136,9 @@ class SurfacePolicy(InformedPolicy):
             distance = (
                 depth_at_center
                 - self.desired_object_distance
-                - state["agent_id_0"]["sensors"][f"{view_sensor_id}.depth"]["position"][
-                    2
-                ]
+                - state[self.agent_id]
+                .sensors[SensorID(f"{view_sensor_id}.depth")]
+                .position[2]
             )
             logger.debug(f"Move to touch visible object, forward by {distance}")
 
@@ -1234,7 +1228,7 @@ class SurfacePolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
     def dynamic_call(
-        self, state: Optional[MotorSystemState] = None
+        self, state: MotorSystemState | None = None
     ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Return the next action to take.
 
@@ -1271,9 +1265,9 @@ class SurfacePolicy(InformedPolicy):
             self.attempting_to_find_object = True
             raise ObjectNotVisible  # Will result in moving to try to find the object
             # This is determined by some logic in embodied_data.py, in particular
-            # the next method of InformedEnvironmentDataLoader
+            # the next method of InformedEnvironmentInterface
 
-        elif self.last_surface_policy_action is None:
+        if self.last_surface_policy_action is None:
             logger.debug(
                 "Object coverage good at initialization: "
                 + str(
@@ -1284,7 +1278,9 @@ class SurfacePolicy(InformedPolicy):
             # In this case, we are on the first action, but the object view is already
             # good; therefore initialize the cycle of actions as if we had just
             # moved forward (e.g. to get a good view)
-            self.action = self.action_sampler.sample_move_forward(self.agent_id)
+            self.action = self.action_sampler.sample_move_forward(
+                self.agent_id, self.rng
+            )
             self.last_surface_policy_action = self.action
 
         return self.get_next_action(state)
@@ -1373,7 +1369,7 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             MoveTangentially action.
         """
-        action = self.action_sampler.sample_move_tangentially(self.agent_id)
+        action = self.action_sampler.sample_move_tangentially(self.agent_id, self.rng)
 
         # be careful if you're falling off the object!
         if self.processed_observations.get_feature_by_name("object_coverage") < 0.2:
@@ -1399,14 +1395,13 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             MoveForward action.
         """
-        action = MoveForward(
+        return MoveForward(
             agent_id=self.agent_id,
             distance=(
                 self.processed_observations.get_feature_by_name("min_depth")
                 - self.desired_object_distance
             ),
         )
-        return action
 
     def get_next_action(
         self, state: MotorSystemState
@@ -1435,17 +1430,20 @@ class SurfacePolicy(InformedPolicy):
 
         if isinstance(last_action, MoveForward):
             return self._orient_horizontal(state)
-        elif isinstance(last_action, OrientHorizontal):
+
+        if isinstance(last_action, OrientHorizontal):
             return self._orient_vertical(state)
-        elif isinstance(last_action, OrientVertical):
+
+        if isinstance(last_action, OrientVertical):
             return self._move_tangentially(state)
-        elif isinstance(last_action, MoveTangentially):
+
+        if isinstance(last_action, MoveTangentially):
             # orient around object if it's not centered in view
             if not self.processed_observations.get_on_object():
                 return self._orient_horizontal(state)
+
             # move to the desired_object_distance if it is in view
-            else:
-                return self._move_forward()
+            return self._move_forward()
 
     def tangential_direction(self, state: MotorSystemState) -> VectorXYZ:
         """Set the direction of the action to be a direction 0 - 2pi.
@@ -1470,7 +1468,7 @@ class SurfacePolicy(InformedPolicy):
         )
 
         direction = qt.rotate_vectors(
-            state[self.agent_id]["rotation"],
+            state[self.agent_id].rotation,
             [
                 np.cos(self.tangential_angle - np.pi / 2),
                 np.sin(self.tangential_angle + np.pi / 2),
@@ -1484,7 +1482,7 @@ class SurfacePolicy(InformedPolicy):
 
         return tuple(direction)
 
-    def horizontal_distances(self, rotation_degrees: float) -> Tuple[float, float]:
+    def horizontal_distances(self, rotation_degrees: float) -> tuple[float, float]:
         """Compute the horizontal and forward distances to move to.
 
         Compensate for a given rotation of a certain angle.
@@ -1506,7 +1504,7 @@ class SurfacePolicy(InformedPolicy):
 
         return move_left_distance, move_forward_distance
 
-    def vertical_distances(self, rotation_degrees: float) -> Tuple[float, float]:
+    def vertical_distances(self, rotation_degrees: float) -> tuple[float, float]:
         """Compute the down and forward distances to move to.
 
         Compensate for a given rotation of a certain angle.
@@ -1546,7 +1544,7 @@ class SurfacePolicy(InformedPolicy):
             Inverse quaternion rotation.
         """
         # Note that quaternion format is [w, x, y, z]
-        [w, x, y, z] = qt.as_float_array(state[self.agent_id]["rotation"])
+        [w, x, y, z] = qt.as_float_array(state[self.agent_id].rotation)
         # Note that scipy.spatial.transform.Rotation (v1.10.0) format is [x, y, z, w]
         [x, y, z, w] = rot.from_quat([x, y, z, w]).inv().as_quat()
         return qt.quaternion(w, x, y, z)
@@ -1586,7 +1584,7 @@ class SurfacePolicy(InformedPolicy):
 ###
 
 
-def read_action_file(file: str) -> List[Action]:
+def read_action_file(file: str) -> list[Action]:
     """Load a file with one action per line.
 
     Args:
@@ -1595,17 +1593,15 @@ def read_action_file(file: str) -> List[Action]:
     Returns:
         List of actions
     """
-    file = os.path.expanduser(file)
-    with open(file, "r") as f:
+    file = Path(file).expanduser()
+    with file.open() as f:
         file_read = f.read()
 
     lines = [line.strip() for line in file_read.split("\n") if line.strip()]
-    actions = [cast(Action, json.loads(line, cls=ActionJSONDecoder)) for line in lines]
-
-    return actions
+    return [cast("Action", json.loads(line, cls=ActionJSONDecoder)) for line in lines]
 
 
-def write_action_file(actions: List[Action], file: str) -> None:
+def write_action_file(actions: list[Action], file: str) -> None:
     """Write a list of actions to a file, one per line.
 
     Should be readable by read_action_file.
@@ -1614,12 +1610,15 @@ def write_action_file(actions: List[Action], file: str) -> None:
         actions: list of actions
         file: path to file to save actions to
     """
-    with open(file, "w") as f:
-        for action in actions:
-            f.write(f"{json.dumps(action, cls=ActionJSONEncoder)}\n")
+    with Path(file).open("w") as f:
+        f.writelines(
+            f"{json.dumps(action, cls=ActionJSONEncoder)}\n" for action in actions
+        )
 
 
-def get_perc_on_obj_semantic(semantic_obs, semantic_id=0):
+def get_perc_on_obj_semantic(
+    semantic_obs, semantic_id: SemanticID | Literal["any"] = "any"
+):
     """Get the percentage of pixels in the observation that land on the target object.
 
     If a semantic ID is provided, then only pixels on the target object are counted;
@@ -1630,19 +1629,19 @@ def get_perc_on_obj_semantic(semantic_obs, semantic_id=0):
 
     Args:
         semantic_obs: Semantic image observation.
-        semantic_id: Semantic ID of the target object.
+        semantic_id: Semantic ID of the target object. If "any", then pixels belonging
+            to any object are counted. Defaults to "any".
 
     Returns:
         perc_on_obj: Percentage of pixels on the object.
     """
     res = semantic_obs.shape[0] * semantic_obs.shape[1]
-    if semantic_id == 0:
+    if semantic_id == "any":
         csum = np.sum(semantic_obs >= 1)
     else:
         # Count only pixels on the target (e.g. primary target) object
         csum = np.sum(semantic_obs == semantic_id)
-    per_on_obj = csum / res
-    return per_on_obj
+    return csum / res
 
 
 class SurfacePolicyCurvatureInformed(SurfacePolicy):
@@ -1930,7 +1929,6 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # and the PC is predominantly defined in the z-direction; note that this
             # step will be weighted by the standard momentum, integrating the previous
             # movement, as we want to move in a consistent heading
-            alternative_movement = self.perform_standard_tang_step(state)
 
             # Note that we *don't* re-set the PC buffers, because with any luck,
             # the PC axes will be better defined on the next step; it was also found in
@@ -1938,7 +1936,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # the PC-guided actions) occasionally resulted in longer, more noisy
             # inference
 
-            return alternative_movement
+            return self.perform_standard_tang_step(state)
 
         self.update_tangential_reps(vec_form=rotated_form)
 
@@ -1960,7 +1958,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             self.following_heading_counter = 0
 
             return tuple(
-                qt.rotate_vectors(state["agent_id_0"]["rotation"], self.tangential_vec)
+                qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec)
             )
 
         # Otherwise our heading is good; we continue and use our original heading (or
@@ -1980,7 +1978,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.continuous_pc_steps += 1
 
         return tuple(
-            qt.rotate_vectors(state["agent_id_0"]["rotation"], self.tangential_vec)
+            qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec)
         )
 
     def perform_standard_tang_step(self, state: MotorSystemState) -> VectorXYZ:
@@ -2047,7 +2045,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         return tuple(
             qt.rotate_vectors(
-                state["agent_id_0"]["rotation"],
+                state[self.agent_id].rotation,
                 self.tangential_vec,
             )
         )
@@ -2147,8 +2145,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         if self.min_dir_pref:  # Follow minimal curvature direction
             return np.argmin(absolute_pcs)
 
-        else:
-            return np.argmax(absolute_pcs)
+        return np.argmax(absolute_pcs)
 
     def avoid_revisiting_locations(
         self,
@@ -2262,7 +2259,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
                     self.update_tangential_reps(vec_form=vec_copy)
 
-                    return None
+                    return
 
                 else:
                     # Search continues, but occasionally narrow the region in which we
@@ -2293,7 +2290,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         """
         assert np.linalg.norm(rotated_locs[-1]) == 0, "Should be centered to 0"
 
-        if (
+        return (
             (
                 get_angle_beefed_up(self.tangential_vec, rotated_locs[ii])
                 <= np.pi / self.conflict_divisor
@@ -2312,10 +2309,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 # (4mm), so this seems like a reasonable estimate
                 np.linalg.norm(rotated_locs[ii], ord=2) <= 0.025
             )
-        ):
-            return True
-        else:
-            return False
+        )
 
     def attempt_conflict_resolution(self, vec_copy):
         """Try to define direction vector that avoids revisiting previous locations."""
@@ -2397,9 +2391,7 @@ def theta_change(a, b):
     min_sep = a - b
 
     # If an angle has "looped" round, correct for this
-    min_sep = enforce_pi_bounds(min_sep)
-
-    return min_sep
+    return enforce_pi_bounds(min_sep)
 
 
 def enforce_pi_bounds(theta):

@@ -7,17 +7,18 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
-import abc
 import copy
 import json
 import logging
 import time
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, ClassVar
 
 import numpy as np
-import quaternion
+import quaternion as qt
 import torch
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
@@ -25,25 +26,7 @@ from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
 logger = logging.getLogger(__name__)
 
 
-class BaseBuffer:
-    @abc.abstractclassmethod
-    def __len__(self):
-        pass
-
-    @abc.abstractclassmethod
-    def append(self):
-        pass
-
-    @abc.abstractclassmethod
-    def __getitem__(self):
-        pass
-
-    @abc.abstractclassmethod
-    def reset(self):
-        pass
-
-
-class FeatureAtLocationBuffer(BaseBuffer):
+class FeatureAtLocationBuffer:
     """Buffer which stores features at locations coming into one LM. Also stores stats.
 
     Used for building graph models and logging detailed stats about an episode. The
@@ -86,6 +69,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             # LMs
             "matching_step_when_output_goal_set": [],
             "goal_state_achieved": [],
+            "mlh_prediction_error": [],
         }
         self.start_time = time.time()
 
@@ -187,10 +171,11 @@ class FeatureAtLocationBuffer(BaseBuffer):
         """
         if input_channel == "first":
             input_channel = self.get_first_sensory_input_channel()
+
         if len(self) > 0 and input_channel is not None:
             return self.locations[input_channel][-1]
-        else:
-            return None
+
+        return None
 
     def get_current_features(self, keys):
         """Get the current value of a specific feature.
@@ -220,13 +205,12 @@ class FeatureAtLocationBuffer(BaseBuffer):
         channel_pose = sensed_pose_features[input_channel]["pose_vectors"].reshape(
             (3, 3)
         )
-        sensed_pose = np.vstack(
+        return np.vstack(
             [
                 sensed_location,
                 channel_pose,
             ]
         )
-        return sensed_pose
 
     def get_last_obs_processed(self):
         """Check whether last sensation was processed by LM.
@@ -236,8 +220,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
         """
         if len(self) > 0:
             return self.stats["lm_processed_steps"][-1]
-        else:
-            return False
+        return False
 
     def get_currently_on_object(self):
         """Check whether last sensation was on object.
@@ -247,8 +230,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
         """
         if len(self) > 0:
             return self.on_object[-1]
-        else:
-            return False
+        return False
 
     def get_all_locations_on_object(self, input_channel=None):
         """Get all observed locations that were on the object.
@@ -281,8 +263,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
         """
         if len(self.input_states) > 1:
             return self.input_states[-2]
-        else:
-            return None
+        return None
 
     def get_nth_displacement(self, n, input_channel):
         """Get the nth displacement.
@@ -300,13 +281,18 @@ class FeatureAtLocationBuffer(BaseBuffer):
         Returns:
             The current displacement.
         """
-        if input_channel == "all" or input_channel is None:
-            all_disps = {}
-            for input_channel in self.displacements.keys():
-                all_disps[input_channel] = self.get_current_displacement(input_channel)
-            return all_disps
-        else:
-            return self.get_nth_displacement(-1, input_channel)
+        return self.get_nth_displacement(-1, input_channel)
+
+    def get_all_current_displacements(self):
+        """Get all current displacements.
+
+        Returns:
+            A dictionary mapping channels to all current displacements.
+        """
+        return {
+            channel: self.get_current_displacement(channel)
+            for channel in self.displacements.keys()
+        }
 
     def get_current_ppf(self, input_channel):
         """Get the current ppf.
@@ -330,8 +316,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             input_channel = self.get_first_sensory_input_channel()
         if "ppf" in self.displacements[input_channel].keys():
             return self.displacements[input_channel]["ppf"][1][0]
-        else:
-            return np.linalg.norm(self.displacements[input_channel]["displacement"][1])
+        return np.linalg.norm(self.displacements[input_channel]["displacement"][1])
 
     def get_all_features_on_object(self):
         """Get all observed features that were on the object.
@@ -437,22 +422,19 @@ class FeatureAtLocationBuffer(BaseBuffer):
             # of Monty matching steps that have taken place in the episode
             return self.get_num_matching_steps()
 
-        else:
-            return (
-                self.get_num_matching_steps()
-                - self.get_matching_step_when_output_goal_set()
-            )
+        return (
+            self.get_num_matching_steps()
+            - self.get_matching_step_when_output_goal_set()
+        )
 
     def get_infos_for_graph_update(self):
         """Return all stored infos require to update a graph in memory."""
-        infos = dict(
+        return dict(
             locations=self.get_all_locations_on_object(),
             features=self.get_all_features_on_object(),
             object_location_rel_body=self.stats["detected_location_rel_body"],
             location_rel_model=self.stats["detected_location_on_model"],
-            object_scale=self.stats["detected_scale"],
         )
-        return infos
 
     def get_first_sensory_input_channel(self):
         """Get name of first sensory (coming from SM) input channel in buffer.
@@ -516,7 +498,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             # sure the same index in different feature array corresponds to
             # the same time step and location.
             self.features[input_channel][attr_name] = np.full(
-                (len(self.locations), attr_shape), np.nan
+                (len(self) + 1, attr_shape), np.nan
             )
         else:
             padded_feat = self._fill_old_values_with_nans(
@@ -593,13 +575,13 @@ class FeatureAtLocationBuffer(BaseBuffer):
 class BufferEncoder(json.JSONEncoder):
     """Encoder to turn the buffer into a JSON compliant format."""
 
-    _encoders: Dict[type, Union[Callable, json.JSONEncoder]] = {}
+    _encoders: ClassVar[dict[type, Callable | json.JSONEncoder]] = {}
 
     @classmethod
     def register(
         cls,
         obj_type: type,
-        encoder: Union[Callable, Type[json.JSONEncoder]],
+        encoder: Callable | type[json.JSONEncoder],
     ) -> None:
         """Register an encoder.
 
@@ -628,7 +610,7 @@ class BufferEncoder(json.JSONEncoder):
         cls._encoders.pop(obj_type, None)
 
     @classmethod
-    def _find(cls, obj: Any) -> Optional[Callable]:
+    def _find(cls, obj: Any) -> Callable | None:
         """Attempt to find an appropriate encoder for an object.
 
         This method attempts to find an encoder for `obj` in such a way that respects
@@ -684,7 +666,7 @@ BufferEncoder.register(np.generic, lambda obj: obj.item())
 BufferEncoder.register(np.ndarray, lambda obj: obj.tolist())
 BufferEncoder.register(Rotation, lambda obj: obj.as_euler("xyz", degrees=True))
 BufferEncoder.register(torch.Tensor, lambda obj: obj.cpu().numpy())
-BufferEncoder.register(
-    quaternion.quaternion, lambda obj: quaternion.as_float_array(obj)
-)
+BufferEncoder.register(qt.quaternion, lambda obj: qt.as_float_array(obj))
 BufferEncoder.register(Action, ActionJSONEncoder)
+BufferEncoder.register(DictConfig, lambda obj: OmegaConf.to_object(obj))
+BufferEncoder.register(ListConfig, lambda obj: OmegaConf.to_object(obj))

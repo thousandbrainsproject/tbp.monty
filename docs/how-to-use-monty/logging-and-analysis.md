@@ -3,7 +3,7 @@ title: Logging and Analysis
 ---
 # Monty Loggers
 
-To manage the logging for an experiment you can specify the handlers that should be used in the `logging_config`. The logging config has two fields for handlers. One for `monty_handlers` and one for `wandb_handlers`. The latter will start a wandb session if it does not contain an empty list. The former can contain all other non-wandb handlers.
+To manage the logging for an experiment you can specify the handlers that should be used in the `logging` config. The logging config has two fields for handlers. One for `monty_handlers` and one for `wandb_handlers`. The latter will start a wandb session if it does not contain an empty list. The former can contain all other non-wandb handlers.
 
 ## List of all Logging Handlers
 
@@ -52,7 +52,7 @@ import os
 from tbp.monty.frameworks.utils.logging_utils import load_stats
 
 pretrain_path = os.path.expanduser("~/tbp/results/monty/pretrained_models/")
-pretrained_dict = pretrain_path + "pretrained_ycb_v10/surf_agent_1lm_10distinctobj/pretrained/"
+pretrained_dict = pretrain_path + "pretrained_ycb_v11/surf_agent_1lm_10distinctobj/pretrained/"
 
 log_path = os.path.expanduser("~/tbp/results/monty/projects/evidence_eval_runs/logs/")
 exp_name = "randrot_10distinctobj_surf_agent"
@@ -103,14 +103,14 @@ There are a range of graph plotting utils in the `plot_utils.py` file. Additiona
 
 ```python Pretrained Models
 import matplotlib.pyplot as plt
-from tbp.monty.frameworks.utils.plot_utils import plot_graph
+from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Visualize the object called 'mug' from the pretrained graphs loaded above from pretrained_dict
 plot_graph(lm_models['pretrained'][0]['mug']['patch'], rotation=120)
 plt.show()
 ```
 ```python Learning from Scratch Data
-from tbp.monty.frameworks.utils.plot_utils import plot_graph
+from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Visualize how the graph for the first object learned (new_object0) looks in epoch 3 in LM_0
 plot_graph(lm_models['3']['LM_0']['new_object0']['patch'])
@@ -130,28 +130,30 @@ Since Monty is a sensorimotor framework, everything happens as a timeseries of s
 
 > 📘 To Follow Along Here You Need to Use the Detailed Logger
 >
-> Detailed JSON stats are not logged by default since they can get large quickly. To be able to run the following analysis, you need to update the experiment config with this line:
+> Detailed JSON stats are not logged by default since they can get large quickly. To be able to run the following analysis, you need to ensure the experiment `config.logging.monty_handlers` configuration includes `DetailedJSONHandler`:
 >
-> `logging_config=DetailedEvidenceLMLoggingConfig(),`
->
-> Remember that you will also need to import `DetailedEvidenceLMLoggingConfig` at the top of the file.
+> ```yaml
+> config:
+>   logging:
+>     monty_handlers:
+>       - ...
+>       - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler}
+>       - ...
+> ```
 >
 > It is also recommended to not log too many episodes with the detailed logger so to keep the file size small, we recommend to also update the number of objects tested and number of epochs like this:
->
-> ```python
+> ```yaml
 > # Changes to make to the randrot_10distinctobj_surf_agent config to follow along:
-> experiment_args=EvalExperimentArgs(
->     model_name_or_path=model_path_10distinctobj,
->     n_eval_epochs=1, # <--- Setting n_eval_epochs to 1
->     max_total_steps=5000,
-> ),
-> logging_config=DetailedEvidenceLMLoggingConfig(), # <--- Setting the detailed logger
-> eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
->     object_names=get_object_names_by_idx(
->         0, 1, object_list=DISTINCT_OBJECTS # <--- Only testing one object
->     ),
->     object_init_sampler=RandomRotationObjectInitializer(),
-> ),
+> config:
+>   n_eval_epochs: 1 # <--- Setting n_eval_epochs to 1
+>   logging:
+>     monty_handlers:
+>       - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+>       # <--- Include detailed logging handler
+>       - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler}
+>   eval_env_interface_args:
+>     object_names:
+>       - mug # <--- Only testing one object
 > ```
 
 > 🚧 TODO: Add code for some of the animate functions
@@ -160,32 +162,43 @@ Since Monty is a sensorimotor framework, everything happens as a timeseries of s
 >
 > There are some animation functions for policy visualizations. @Niels do you think it makes sense to demo them here?
 
-Data generated from an experiment using the EvidenceLM (currently the default setup) is best plotted using a loop, as shown below.
+Data generated from an experiment using the EvidenceLM (currently the default setup) is best plotted using a loop, something similar as shown below. Note that you'll need to add code to define some of the placeholder variables.
 
 ```python
-from tbp.monty.frameworks.utils.plot_utils import (show_initial_hypotheses,
-                                                         plot_evidence_at_step)
+from tbp.monty.frameworks.utils.plot_utils_dev import (
+    plot_evidence_at_step,
+    show_initial_hypotheses,
+)
 
 episode = 0
-lm = 'LM_0'
-objects = ['mug','bowl','dice','banana'] # Up to 4 objects to visualize evidence for
+lm = "LM_0"
+objects = ["mug","bowl","dice","banana"] # Up to 4 objects to visualize evidence for
 current_evidence_update_threshold = -1
 save_fig = True
-save_path = exp_path + '/stepwise_examples/'
+save_path = exp_path + "/stepwise_examples/"
 
 # [optional] Show initial hypotheses for each point on the object
-show_initial_hypotheses(detailed_stats, episode, 'mug', rotation=[120,-90], axis=2,
-                        save_fig=save_fig, save_path=save_path)
+show_initial_hypotheses(
+    detailed_stats,
+    episode,
+    "mug",
+    rotation=[120,-90],
+    axis=2,
+    save_fig=save_fig,
+    save_path=save_path
+)
 # Plot the evidence for each hypothesis on each of the objects & show the observations used for updating
-for step in range(eval_stats['monty_matching_steps'][episode]):
-    plot_evidence_at_step(detailed_stats,
-                          lm_models,
-                              episode,
-                              step,
-                              objects,
-                              is_surface_sensor=True, # set this to False if not using the surface agent
-                              save_fig=save_fig,
-                              save_path=save_path)
+for step in range(eval_stats["monty_matching_steps"][episode]):
+    plot_evidence_at_step(
+        detailed_stats,
+        lm_models,
+        episode,
+        step,
+        objects,
+        is_surface_sensor=True, # set this to False if not using the surface agent
+        save_fig=save_fig,
+        save_path=save_path
+    )
 ```
 
 The above code should create an image like the one shown below for each step in the experiment and save it in a folder called `stepwise_examples` inside the logs folder of this experiment.
@@ -198,9 +211,10 @@ The above code should create an image like the one shown below for each step in 
 Since the episode statistics are saved in a .csv table, you can also do all the standard plot visualizations of this data (such as bar plots of # episodes correct, # of steps per episode, ...). For example you could create the plot below using this code:
 
 ```python
+import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns # For this you will have to install seaborn
-import matplotlib.pyplot as plt
+
 
 rot_errs = np.array(eval_stats[eval_stats["primary_performance"]=="correct"]["rotation_error"])
 rot_errs = rot_errs * 180 / np.pi

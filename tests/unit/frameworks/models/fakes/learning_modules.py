@@ -51,8 +51,8 @@ class FakeLearningModule(LearningModule):
     def set_experiment_mode(self, inputs):
         pass
 
-    def propose_goal_state(self) -> GoalState | None:
-        pass
+    def propose_goal_states(self) -> list[GoalState]:
+        return []
 
     def get_output(self):
         pass

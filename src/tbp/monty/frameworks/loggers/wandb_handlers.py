@@ -7,12 +7,14 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import json
 
 import numpy as np
 import pandas as pd
 import wandb
+from typing_extensions import override
 
 from tbp.monty.frameworks.loggers.monty_handlers import MontyHandler
 from tbp.monty.frameworks.utils.logging_utils import (
@@ -38,10 +40,10 @@ class WandbWrapper(MontyHandler):
         self,
         wandb_handlers: list,
         run_name: str,
-        wandb_group: str = None,
-        config: dict = None,
+        wandb_group: str | None = None,
+        config: dict | None = None,
         resume_wandb_run: bool = False,
-        wandb_id: str = None,
+        wandb_id: str | None = None,
     ):
         self.name = run_name
         self.group = wandb_group
@@ -110,9 +112,11 @@ class BasicWandbTableStatsHandler(WandbHandler):
     def log_level(cls):
         return "BASIC"
 
+    @override
     def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
         ###
         # Log basic statistics
+        # Ignore the episode value
         ###
 
         # Get stats data depending on mode (train or eval)
@@ -179,7 +183,7 @@ class DetailedWandbTableStatsHandler(BasicWandbTableStatsHandler):
             if a is not None:
                 o = {}
                 for key, value in dict(a).items():
-                    if key == "action" or key == "agent_id":
+                    if key in {"action", "agent_id"}:
                         continue  # don't duplicate action or agent_id in "params"
                     if isinstance(value, np.ndarray):
                         o[key] = value.tolist()
@@ -200,6 +204,7 @@ class BasicWandbChartStatsHandler(WandbHandler):
     def log_level(cls):
         return "BASIC"
 
+    @override
     def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
         basic_logs = data["BASIC"]
         mode_key = f"{mode}_overall_stats"
@@ -247,7 +252,10 @@ class DetailedWandbHandler(WandbHandler):
 
         return frames_per_sm
 
+    @override
     def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+        # mode is ignored when reporting this episode
+
         detailed_stats = data["DETAILED"]
         frames_per_sm = self.get_episode_frames(detailed_stats[episode])
         for sm, frames in frames_per_sm.items():

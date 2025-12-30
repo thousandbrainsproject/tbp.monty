@@ -9,6 +9,9 @@
 # https://opensource.org/licenses/MIT.
 import pytest
 
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.sensors import SensorID
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -30,15 +33,15 @@ class HabitatSimTest(unittest.TestCase):
         # Initialize the environment
         rotation_degrees = 10
         camera = SingleSensorAgent(
-            agent_id="camera",
-            sensor_id=sensor_id,
+            agent_id=AgentID("camera"),
+            sensor_id=SensorID(sensor_id),
             resolution=(64, 64),
             translation_step=0.25,
             rotation_step=rotation_degrees,
         )
         with HabitatSim(agents=[camera]) as sim:
             # Retrieve agent
-            agent = sim.get_agent("camera")
+            agent = sim.get_agent(AgentID("camera"))
             scene_node = agent._sensors[f"{sensor_id}.rgba"].object
 
             # Test initial conditions
@@ -48,7 +51,9 @@ class HabitatSimTest(unittest.TestCase):
             self.assertEqual(mn.Deg(look_angle), mn.Deg(0))
 
             # Look up until it reaches the defined constraint
-            action = LookUp(agent_id="camera", rotation_degrees=rotation_degrees)
+            action = LookUp(
+                agent_id=AgentID("camera"), rotation_degrees=rotation_degrees
+            )
             constraint = action.constraint_degrees
 
             for _ in range(int(constraint * 2 / rotation_degrees) + 1):
@@ -60,7 +65,9 @@ class HabitatSimTest(unittest.TestCase):
             self.assertEqual(mn.Deg(look_angle), mn.Deg(constraint))
 
             # Look down until it reaches the defined constraint
-            action = LookDown(agent_id="camera", rotation_degrees=rotation_degrees)
+            action = LookDown(
+                agent_id=AgentID("camera"), rotation_degrees=rotation_degrees
+            )
             constraint = action.constraint_degrees
 
             for _ in range(int(constraint * 2 / rotation_degrees) + 1):

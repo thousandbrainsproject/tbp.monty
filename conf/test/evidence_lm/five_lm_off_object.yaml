@@ -1,0 +1,9 @@
+defaults:
+  - /test/evidence_lm/five_lm@
+
+config:
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 80
+      min_train_steps: 12
+      min_eval_steps: 12

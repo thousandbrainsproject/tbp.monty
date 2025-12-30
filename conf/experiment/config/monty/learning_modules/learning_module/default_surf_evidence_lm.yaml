@@ -1,0 +1,7 @@
+defaults:
+  - default_evidence
+
+learning_module_args:
+  gsg_args:
+    desired_object_distance: 0.025
+

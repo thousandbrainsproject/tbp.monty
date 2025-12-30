@@ -1,5 +1,13 @@
 ---
 title: Add Top-Down Connections
+description: Add top-down connectivity option between LMs that can inform the receiving LM of the object ID and location it should likely be sensing.
+rfc: required
+estimated-scope: large
+improved-metric: numsteps, compositional
+output-type: prototype, analysis, PR, monty-feature, publication
+skills: python, monty, research
+contributor: 
+status: open
 ---
 
 In Monty systems, low-level LMs project to high-level LMs, where this projection occurs if their sensory receptive fields are co-aligned. Hierarchical connections should be able to learn a mapping between objects represented at these low-level LMs, and objects represented in the high-level LMs that frequently co-occur.

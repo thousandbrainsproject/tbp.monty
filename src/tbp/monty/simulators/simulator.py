@@ -6,13 +6,21 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from typing import Dict, List, Optional, Protocol, Sequence
+from __future__ import annotations
+
+from typing import Protocol, Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_environment import (
+    ObjectID,
+    ObjectInfo,
     QuaternionWXYZ,
+    SemanticID,
     VectorXYZ,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 
 
 class Simulator(Protocol):
@@ -24,11 +32,11 @@ class Simulator(Protocol):
     """
 
     # TODO - do we need a way to abstract the concept of "agent"?
-    def initialize_agent(self, agent_id, agent_state):
+    def initialize_agent(self, agent_id: AgentID, agent_state) -> None:
         """Update agent runtime state."""
         ...
 
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         """Remove all objects from the simulated environment."""
         ...
 
@@ -38,11 +46,9 @@ class Simulator(Protocol):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: Optional[str] = None,
-        enable_physics: bool = False,
-        object_to_avoid: bool = False,
-        primary_target_bb: Optional[List] = None,
-    ) -> None:
+        semantic_id: SemanticID | None = None,
+        primary_target_object: ObjectID | None = None,
+    ) -> ObjectInfo:
         """Add new object to simulated environment.
 
         Adds a new object based on the named object. This assumes that the set of
@@ -54,12 +60,13 @@ class Simulator(Protocol):
             rotation: Initial orientation of the object.
             scale: Initial object scale.
             semantic_id: Optional override for the object's semantic ID.
-            enable_physics: Whether to enable physics on the object.
-            object_to_avoid: If True, ensure the object is not colliding with
-              other objects.
-            primary_target_bb: If not None, this is a list of the min and
-              max corners of a bounding box for the primary object, used to prevent
-              obscuring the primary object with the new object.
+            primary_target_object: ID of the primary target object. If not None, the
+                added object will be positioned so that it does not obscure the initial
+                view of the primary target object (which avoiding collision alone cannot
+                guarantee). Used when adding multiple objects. Defaults to None.
+
+        Returns:
+            The added object's information.
         """
         ...
 
@@ -69,42 +76,28 @@ class Simulator(Protocol):
         ...
 
     @property
-    def action_space(self):
-        """Returns the set of all available actions."""
+    def states(self) -> ProprioceptiveState:
+        """Returns proprioceptive state of the agents and sensors."""
         ...
 
-    def get_agent(self, agent_id):
-        """Return agent instance."""
-        ...
-
-    @property
-    def observations(self):
-        """Get sensor observations."""
-        ...
-
-    @property
-    def states(self):
-        """Get agent and sensor states."""
-        ...
-
-    def apply_actions(self, actions: Sequence[Action]) -> Dict[str, Dict]:
+    def apply_actions(self, actions: Sequence[Action]) -> Observations:
         """Execute the given actions in the environment.
 
         Args:
             actions: The actions to execute.
 
         Returns:
-            A dictionary with the observations grouped by agent_id.
+            The observations from the simulator.
 
         Note:
             If the actions are an empty sequence, the current observations are returned.
         """
         ...
 
-    def reset(self):
+    def reset(self) -> Observations:
         """Reset the simulator."""
         ...
 
-    def close(self):
+    def close(self) -> None:
         """Close any resources used by the simulator."""
         ...

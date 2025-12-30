@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Literal, Tuple, Type
+from typing import Any, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -33,8 +33,10 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
 )
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
+    HypothesisDisplacerTelemetry,
 )
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
+    ChannelHypothesesUpdateTelemetry,
     HypothesesUpdateTelemetry,
     all_usable_input_channels,
 )
@@ -53,7 +55,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 
 
 @dataclass
-class ChannelHypothesesResamplingTelemetry:
+class ChannelHypothesesResamplingTelemetry(ChannelHypothesesUpdateTelemetry):
     """Hypotheses resampling telemetry for a channel.
 
     For a given input channel, this class stores which hypotheses were removed or
@@ -64,6 +66,7 @@ class ChannelHypothesesResamplingTelemetry:
         identified by `removed_ids`.
     """
 
+    channel_hypothesis_displacer_telemetry: HypothesisDisplacerTelemetry
     added_ids: npt.NDArray[np.int_]
     ages: npt.NDArray[np.int_]
     evidence_slopes: npt.NDArray[np.float64]
@@ -103,11 +106,11 @@ class ResamplingHypothesesUpdater:
         max_match_distance: float,
         tolerances: dict,
         evidence_threshold_config: Literal["all"],
-        feature_evidence_calculator: Type[FeatureEvidenceCalculator] = (
+        feature_evidence_calculator: type[FeatureEvidenceCalculator] = (
             DefaultFeatureEvidenceCalculator
         ),
         feature_evidence_increment: int = 1,
-        features_for_matching_selector: Type[FeaturesForMatchingSelector] = (
+        features_for_matching_selector: type[FeaturesForMatchingSelector] = (
             DefaultFeaturesForMatchingSelector
         ),
         hypotheses_count_multiplier: float = 1.0,
@@ -275,6 +278,9 @@ class ResamplingHypothesesUpdater:
 
         hypotheses_updates = []
         resampling_telemetry: dict[str, Any] = {}
+        channel_hypothesis_displacer_telemetry: dict[
+            str, HypothesisDisplacerTelemetry
+        ] = {}
 
         for input_channel in input_channels_to_use:
             # Calculate sample count for each type
@@ -305,7 +311,7 @@ class ResamplingHypothesesUpdater:
             # We only displace existing hypotheses since the newly resampled hypotheses
             # should not be affected by the displacement from the last sensory input.
             if existing_count > 0:
-                existing_hypotheses = (
+                existing_hypotheses, channel_hypothesis_displacer_telemetry = (
                     self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
                         channel_displacement=displacements[input_channel],
                         channel_features=features[input_channel],
@@ -335,6 +341,7 @@ class ResamplingHypothesesUpdater:
             if self.include_telemetry:
                 resampling_telemetry[input_channel] = asdict(
                     ChannelHypothesesResamplingTelemetry(
+                        channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry,
                         added_ids=(
                             np.arange(len(channel_hypotheses.evidence))[
                                 -len(informed_hypotheses.evidence) :
@@ -347,11 +354,16 @@ class ResamplingHypothesesUpdater:
                         removed_ids=remove_ids,
                     )
                 )
+            else:
+                # Still return prediction error.
+                # TODO: make this nicer like dependent on log_level.
+                resampling_telemetry[input_channel] = asdict(
+                    ChannelHypothesesUpdateTelemetry(
+                        channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry
+                    )
+                )
 
-        return (
-            hypotheses_updates,
-            resampling_telemetry if self.include_telemetry else None,
-        )
+        return hypotheses_updates, resampling_telemetry
 
     def _num_hyps_per_node(self, channel_features: dict) -> int:
         """Calculate the number of hypotheses per node.
@@ -368,8 +380,8 @@ class ResamplingHypothesesUpdater:
                 if channel_features["pose_fully_defined"]
                 else self.umbilical_num_poses
             )
-        else:
-            return len(self.initial_possible_poses)
+
+        return len(self.initial_possible_poses)
 
     def _sample_count(
         self,
@@ -378,7 +390,7 @@ class ResamplingHypothesesUpdater:
         graph_id: str,
         mapper: ChannelMapper,
         tracker: EvidenceSlopeTracker,
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         """Calculates the number of existing and informed hypotheses needed.
 
         Args:

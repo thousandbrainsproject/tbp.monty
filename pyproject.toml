@@ -16,20 +16,27 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Artificial Intelligence'
 ]
 dependencies = [
+    'eval_type_backport', # Needed to make pydantic work with future annotations, can be removed when we get to python 3.10
+    'hydra-core>=1.3.2',
     'importlib_resources', # imported via conda (conda-forge::importlib_resources)
     'matplotlib>=3.7.3', # imported via conda (conda-forge::matplotlib)
     'numpy', # imported via conda (conda-forge::numpy)
+    'omegaconf>=2.3.0',
     'pandas', # imported via conda (conda-forge::pandas)
     'pillow', # imported via conda (conda-forge::pillow)
+    'pydantic>=2.10.6',
     'numpy-quaternion==2023.0.3', # imported via conda (conda-forge::quaternion)
     'scikit-image', # imported via conda (conda-forge::scikit-image)
     'scikit-learn==1.3.2', # imported via conda (conda-forge::scikit-learn)
     'scipy>=1.10.1', # imported via conda (conda-forge::scipy)
     'sympy', # imported via conda (conda-forge::sympy)
     'torch==1.13.1', # imported via conda (pytorch::pytorch)
-    'torch-geometric==2.1.0.post1', # imported via conda (pyg::pyg)
-    'torch-sparse==0.6.15', # imported via conda (pytorch::pytorch-sparse)
-    'torch-scatter==2.0.9', # imported via conda (pytorch::pytorch-scatter)
+    'torch-geometric==2.1.0.post1;python_version=="3.8"', # imported via conda (pyg::pyg)
+    'torch-sparse==0.6.15;python_version=="3.8"', # imported via conda (pytorch::pytorch-sparse)
+    'torch-scatter==2.0.9;python_version=="3.8"', # imported via conda (pytorch::pytorch-scatter)
+    'torch-geometric>=2.1.0.post1;python_version=="3.9"', # for uv environment
+    'torch-sparse>=0.6.15;python_version=="3.9"', # for uv environment
+    'torch-scatter>=2.0.9;python_version=="3.9"', # for uv environment
     'tqdm', # imported via conda (conda-forge::tqdm)
     'typing-extensions',
     'wandb', # imported via conda (conda-forge::wandb)
@@ -46,7 +53,9 @@ simulator_habitat = [
     # HabitatSim is only installable via conda. These dependencies are listed here for
     # documentation and consistency.
     # NOTE: The version constraint is to prevent `uv` from failing trying to check all
-    # optional dependency sets are valid.
+    # optional dependency sets are valid. This is because there isn't a version of
+    # HabitatSim on PyPI that works for 3.8, and so it tries to solve for a 3.8 environment
+    # and fails.
     'habitat_sim;python_version=="3.9"', # imported via conda (aihabitat::habitat-sim)
 ]
 simulator_mujoco = [
@@ -55,8 +64,6 @@ simulator_mujoco = [
 analysis = [
     'ipython',
     'seaborn',
-    'vedo',
-    'trimesh',
 ]
 build = [
     'build'
@@ -69,13 +76,14 @@ dev = [
     'mypy==1.11.2',
 
     # Testing, code style, etc...
+    'parameterized==0.9.0',  # Supports Python 3.8
     'pytest==7.1.1',
     'pytest-xdist==2.5.0',
     'pytest-cov==3.0.0',
-    'unittest-parametrize',
+    'unittest-parametrize',  # Python >= 3.9
 
     # Python linter and formatter
-    'ruff==0.11.4',
+    'ruff==0.14.2',
 ]
 generate_api_docs_tool = [
     'docutils>=0.17',
@@ -95,13 +103,11 @@ github_readme_sync_tool = [
     'python-slugify',
     'nh3'
 ]
+future_work_widget_tool = [
+    'nh3',
+]
 print_version_tool = [
     'semver'
-]
-real_robots = [
-    'gym',
-    'opencv-python',
-    'real_robots'
 ]
 
 [project.urls]
@@ -116,7 +122,6 @@ experimental_namespace_package = true # recognize tbp.monty as a namespace packa
 ignore = ['DEP002']
 known_first_party = [
     'attr', # transitive dependency bundled with habitat-sim
-    'benchmarks', # benchmark configurations and scripts
     'magnum', # transitive dependency bundled with habitat-sim
     'quaternion', # transitive add-on for numpy installed via conda (conda-forge::quaternion)
     'tests',
@@ -132,7 +137,7 @@ ipython = 'IPython'
 minversion = '6.0'
 addopts = '-ra -n auto'
 testpaths = [
-    'tests/unit',
+    'tests',
 ]
 filterwarnings = [
     'ignore:.*:DeprecationWarning'
@@ -206,7 +211,6 @@ ignore = [
     # Original inherited flake8 ignores
     "D1", # D1XX: Missing Docstrings
     "ERA001", # ERA001: Found commented out code
-    "F541", # F541: f-string is missing placeholders
     "FIX001", # FIX001: Line contains FIXME, consider resolving the issue
     "FIX002", # FIX002: Line contains TODO, consider resolving the issue
     "N812", # N812: lowercase imported as non lowercase. Allow "import torch.nn.functional as F"
@@ -214,9 +218,6 @@ ignore = [
     "T203", # T203: pprint found
     # TODO: ruff=0.11.4 upgrade introduced the errors ignored below, resolve these
     "LOG015", # LOG015: root-logger-call,
-    "PTH208", # PTH208: os-listdir
-    "RUF022", # RUF022: unsorted-dunder-all
-    "TC006", # TC006: runtime-cast-value
     ###
     # TODO: ruff=0.7.1 migration introduced errors ignored below, resolve these
     "ANN001", # ANN001: Missing type annotation for function argument
@@ -227,90 +228,51 @@ ignore = [
     "ANN204", # ANN204: Missing return type annotation for special method
     "ANN206", # ANN206: Missing return type annotation for classmethod
     "ANN401", # ANN401: Dynamically typed expressions (typing.Any) are disallowed in {name}
-    # TODO: Address ARG002 right away
-    "ARG002", # ARG002: Unused method argument
     "COM812", # COM812: Trailing comma missing
     "DTZ005", # DTZ005: `datetime.datetime.now()` called without a `tz` argument
     "EM101", # EM101: Exception must not use a string literal, assign to variable first
     "EM102", # EM102: Exception must not use an f-string literal, assign to variable first
     "F403", # F403: from {name} import * used; unable to detect undefined names
-    "F841", # F841: Local variable {name} is assigned to but never used
-    "FA100", # FA100: Add `from __future__ import annotations` to simplify
     "FBT001", # FBT001: Boolean-typed positional argument in function definition
     "FBT002", # FBT002: Boolean default positional argument in function definition
-    "FBT003", # FBT003: Boolean positional value in function call
-    "FLY002", # FLY002: Consider {expression} instead of string join
     "G003", # G003: Logging statement uses `+`
     "G004", # G004: Logging statement uses f-string
-    "ISC001", # ISC001: Implicitly concatenated string literals on one line
-    "ISC003", # ISC003: Explicitly concatenated string should be implicitly concatenated
     "N804", # N804: First argument of a class method should be named `cls`
     "NPY002", # NPY002: Replace legacy `np.random.normal` call with `np.random.Generator`
-    "PD002", # PD002: `inplace=True` should be avoided; it has inconsistent behavior
-    "PD901", # PD901: Avoid using the generic variable name `df` for DataFrames
     "PERF203", # PERF203: `try`-`except` within a loop incurs performance overhead
     "PERF401", # PERF401: Use a list comprehension to create a transformed list
-    "PERF402", # PERF402: Use `list` or `list.copy` to create a copy of a list
     "PIE790", # PIE790: Unnecessary pass statement
-    "PIE807", # PIE807: Prefer `list` over useless lambda
-    "PLE0302", # PLE0302: The special method `__getitem__` expects 2 parameters, 1 was given
-    "PLR0402", # PLR0402: Use from {module} import {name} in lieu of alias
     "PLR0911", # PLR0911: Too many return statements
     "PLR0912", # PLR0912: Too many branches
     "PLR0913", # PLR0913: Too many arguments in function definition
     "PLR0915", # PLR0915: Too many statements
-    "PLR1704", # PLR1704: Redefining argument with the local name
-    "PLR1714", # PLR1714: Consider merging multiple comparisons: {expression}. Use a set if the elements are hashable.
     "PLR1730", # PLR1730: Replace `if` statement with {replacement}
     "PLR2004", # PLR2004: Magic value used in comparison, consider replacing {value} with a constant variable
-    "PLW0127", # PLW0127: Self-assignment of variable
     "PT009", # PT009: Use a regular `assert` instead of unittest-style `assertEqual`
     "PT018", # PT018: Assertion should be broken down into multiple parts
     "PT027", # PT027: Use `pytest.raises` instead of unittest-style `assertRaises`
-    "PTH103", # PTH103: `os.makedirs()` should be replaced by `Path.mkdir(parents=True)`
-    "PTH107", # PTH107: `os.remove()` should be replaced by `Path.unlink()`
-    "PTH110", # PTH110: `os.path.exists()` should be replaced by `Path.exists()`
-    "PTH111", # PTH111: `os.path.expanduser()` should be replaced by `Path.expanduser()`
-    "PTH118", # PTH118: `os.path.join()` should be replaced by `Path` with `/` operator
-    "PTH119", # PTH119: `os.path.basename()` should be replaced by `Path.name`
-    "PTH120", # PTH120: `os.path.dirname()` should be replaced by `Path.parent`
-    "PTH123", # PTH123: `open()` should be replaced by `Path.open()`
-    "RET501", # RET501: Do not explicitly `return None` in function if it is the only possible return value
     "RET503", # RET503: Missing explicit `return` at the end of function able to return non-`None` value
-    "RET504", # RET504: Unnecessary assignment to {name} before return statement
-    "RET505", # RET505: Unnecessary {branch} after return statement
-    "RET506", # RET506: Unnecessary `else` after `raise` statement
-    "RET508", # RET508: Unnecessary `else` after `break` statement
-    "RSE102", # RSE102: Unnecessary parentheses on raised exception
     "RUF005", # RUF005: Consider {expression} instead of concatenation
-    "RUF010", # RUF010: Use explicit conversion flag
-    "RUF012", # RUF012: Mutable class attributes should be annotated with `typing.ClassVar`
-    "RUF013", # RUF013: PEP 484 prohibits implicit `Optional`
     "RUF015", # RUF015: Prefer next({iterable}) over single element slice
     "S101", # S101: Use of `assert` detected
-    "S104", # S104: Possible binding to all interfaces
-    "S301", # S301: `pickle` and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue
-    "S311", # S311: Standard pseudo-random generators are not suitable for cryptographic purposes
-    "S605", # S605: Starting a process with a shell, possible injection detected
     "SIM102", # SIM102: Use a single `if` statement instead of nested `if` statements
-    "SIM103", # SIM103: Return the condition {condition} directly
     "SIM108", # SIM108: Use ternary operator {contents} instead of if-else-block
     "SIM117", # SIM117: Use a single `with` statement with multiple contexts instead of nested `with` statements
     "SIM118", # SIM118: Use `key in dict` instead of `key in dict.keys()`
-    "SIM910", # SIM910: Use {expected} instead of {actual}
     "SLF001", # SLF001: Private member accessed: {access}
-    "SLOT001", # SLOT001: Subclasses of `tuple` should define `__slots__`
     "TC001", # TC001: Move application import {} into a type-checking block
     "TC002", # TC002: Move third-party import {} into a type-checking block
     "TD001", # TD001: Invalid TODO tag: `FIXME`
     "TD002", # TD002: Missing author in TODO; try: `# TODO(<author_name>): ...` or `# TODO @<author_name>: ...`
     "TD003", # TD003: Missing issue link on the line following this TODO
     "TD004", # TD004: Missing colon in TODO
-    "TD005", # TD005: Missing issue description after `TODO`
     "TRY003", # TRY003: Avoid specifying long messages outside the exception class
-    "UP006", # UP006: Use `type` instead of `Type` for type annotation
-    "UP008", # UP008: Use `super()` instead of `super(__class__, self)`
-    "UP015", # UP015: Unnecessary open mode parameters
+]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "tbp.monty.frameworks.agents.AgentID",
+    "tbp.monty.frameworks.environments.embodied_environment.SemanticID"
 ]
 
 [tool.ruff.lint.flake8-comprehensions]
@@ -319,6 +281,13 @@ allow-dict-calls-with-keyword-arguments = true
 
 [tool.ruff.lint.flake8-copyright]
 author = "Thousand Brains Project"
+
+[tool.ruff.lint.isort]
+# wandb creates a folder called 'wandb' during local runs (not logged in)
+# this needs to be added to prevent isort from incorrectly sorting
+# It can be removed when a fix for this is released:
+# https://github.com/astral-sh/ruff/issues/10519
+known-third-party = ["wandb"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 18
@@ -338,5 +307,4 @@ namespaces = true
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
 
 [tool.uv]
-# Extra index for PyTorch extensions
-find-links = ["https://data.pyg.org/whl/torch-1.13.1+cpu.html"]
+no-build-isolation-package = ["torch-scatter", "torch-sparse"]

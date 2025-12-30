@@ -52,6 +52,7 @@
 \bCalli\b
 \bCLA\b
 \bcli\b
+\bCloudinary\b
 \bCNNs?\b
 \bcolliculus\b
 \bcompositionality\b
@@ -69,9 +70,10 @@
 \bDomnisoru\b
 \bDrost\b
 \bEitan\b
+\b[Ee]xplainers?\b
 \bexcitatory\b
 \bElsevier\b
-\bentorhinal\b
+\b[Ee]ntorhinal\b
 \beval\b
 \bfavicon\b
 \bFelleman\b
@@ -81,6 +83,7 @@
 \bGabor\b
 \bGauthier\b
 \bGavrikov\b
+\bGershman\b
 \bgithub\b
 \bGitHub\b
 \bGNNs?\b
@@ -116,8 +119,10 @@
 \bLLMs?\b
 \bLMs?\b
 \bloopdown\b
+\bMangalam\b
 \bMarkram\b
 \bmatplotlib\b
+\bMillidge\b
 \bMilner\b
 \bmisclassification\b
 \b[Mm]ixins?\b
@@ -180,6 +185,7 @@
 \bTGZ|tgz\b
 \bThrun\b
 \btimeseries\b
+\b[Tt]ooltips?\b
 \bTolman's\b
 \btransthalamic\b
 \bunmerged\b
@@ -193,7 +199,7 @@
 \bvoxel\b
 \bvoxels\b
 \bVSCode\b
-\bWalkthrough\b
+\b[Ww]alkthrough\b
 \bWardley\b
 \bwandb\b
 \bworldimages\b
@@ -203,3 +209,8 @@
 \bYouTube\b
 \bzsh\b
 \b[Dd]iscretizing\b
+\b[Mm]agnocellular\b
+\b[Pp]arvocellular\b
+\bKraus\b
+\b[Mm]onty\b
+\bKD-Tree\b

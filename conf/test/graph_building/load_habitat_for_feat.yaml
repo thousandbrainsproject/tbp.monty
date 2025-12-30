@@ -1,0 +1,19 @@
+defaults:
+  - /test/graph_building/load_habitat@
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+
+config:
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 20
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.feature_location_matching.FeatureGraphLM}
+        learning_module_args:
+          max_match_distance: 0.01
+          tolerances:
+            patch:
+              on_object: 0
+              rgba: [10, 10, 10, 10]
+              principal_curvatures: [5, 5]
+              pose_vectors: ${np.list_eval:[0.7, np.pi * 2, np.pi * 2]}  # angular difference

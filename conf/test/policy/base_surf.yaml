@@ -1,0 +1,13 @@
+defaults:
+  - /test/policy/base_dist@
+  - /experiment/config/monty/clear_monty_config@config
+  - /experiment/config/monty/surface_and_view@config.monty_config
+  - /experiment/config/environment/surface_view_finder_mount_habitat@config.env_interface_config
+
+config:
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 20
+  env_interface_config:
+    env_init_args:
+      data_path: null

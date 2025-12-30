@@ -1,0 +1,66 @@
+defaults:
+  - /test/evidence_lm/base@
+  - /experiment/config/monty/clear_monty_config@config
+  - /experiment/config/monty/five_lm@config.monty_config
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /test/config/monty/learning_modules/multi_lm@config.monty_config.learning_module_configs.learning_module_0
+  - /test/config/monty/learning_modules/multi_lm@config.monty_config.learning_module_configs.learning_module_1
+  - /test/config/monty/learning_modules/multi_lm@config.monty_config.learning_module_configs.learning_module_2
+  - /test/config/monty/learning_modules/multi_lm@config.monty_config.learning_module_configs.learning_module_3
+  - /test/config/monty/learning_modules/multi_lm@config.monty_config.learning_module_configs.learning_module_4
+  - /experiment/config/environment/clear_env_interface_config@config.env_interface_config
+  - /experiment/config/environment/five_lm_mount_habitat@config.env_interface_config
+
+config:
+  max_train_steps: 30
+  max_eval_steps: 30
+  max_total_steps: 60
+  min_lms_match: 5
+  monty_config:
+    monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
+    monty_args:
+      num_exploratory_steps: 30
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          tolerances:
+            patch_0:
+              hsv: ${np.array:[0.1, 1, 1]}
+              # We need to set curvature tolerance lower since different object
+              # views of sphere are too similar otherwise.
+              principal_curvatures_log: ${np.array:[0.1, 0.1]}
+      learning_module_1:
+        learning_module_args:
+          tolerances:
+            patch_1:
+              hsv: ${np.array:[0.1, 1, 1]}
+              # We need to set curvature tolerance lower since different object
+              # views of sphere are too similar otherwise.
+              principal_curvatures_log: ${np.array:[0.1, 0.1]}
+      learning_module_2:
+        learning_module_args:
+          tolerances:
+            patch_2:
+              hsv: ${np.array:[0.1, 1, 1]}
+              # We need to set curvature tolerance lower since different object
+              # views of sphere are too similar otherwise.
+              principal_curvatures_log: ${np.array:[0.1, 0.1]}
+      learning_module_3:
+        learning_module_args:
+          tolerances:
+            patch_3:
+              hsv: ${np.array:[0.1, 1, 1]}
+              # We need to set curvature tolerance lower since different object
+              # views of sphere are too similar otherwise.
+              principal_curvatures_log: ${np.array:[0.1, 0.1]}
+      learning_module_4:
+        learning_module_args:
+          tolerances:
+            patch_4:
+              hsv: ${np.array:[0.1, 1, 1]}
+              # We need to set curvature tolerance lower since different object
+              # views of sphere are too similar otherwise.
+              principal_curvatures_log: ${np.array:[0.1, 0.1]}
+  env_interface_config:
+    env_init_args:
+      data_path: null

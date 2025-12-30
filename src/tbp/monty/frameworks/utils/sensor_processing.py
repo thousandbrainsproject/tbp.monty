@@ -546,8 +546,7 @@ def center_neighbors(point_cloud, center_id, neighbor_patch_frac):
     neighbors = point_cloud[neighbors_idx, :]
 
     # Filter out points that do not lie on an object
-    neighbors_on_obj = neighbors[neighbors[:, 3] > 0, :3]
-    return neighbors_on_obj
+    return neighbors[neighbors[:, 3] > 0, :3]
 
 
 def weight_matrix(n_points, center_id, neighbor_patch_frac=2.13):
@@ -596,8 +595,7 @@ def pixel_dist_to_center(n_points, patch_width, center_id):
 
     # Compute relative distance to patch center
     pos_center = pos[point_idx == center_id]
-    dist_to_center = np.linalg.norm(pos - pos_center, axis=2)
-    return dist_to_center
+    return np.linalg.norm(pos - pos_center, axis=2)
 
 
 def point_pair_features(pos_i, pos_j, normal_i, normal_j):
@@ -665,5 +663,4 @@ def log_sign(to_scale):
     sign = np.sign(to_scale)  # preserve sign
     abs_vals = np.abs(to_scale)
     log_vals = np.log(abs_vals + 1)  # avoid extreme values around 0
-    scaled_vals = sign * log_vals
-    return scaled_vals
+    return sign * log_vals

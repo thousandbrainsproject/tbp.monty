@@ -10,8 +10,9 @@
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
-from tbp.monty.frameworks.loggers.exp_logger import TestLogger
+from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import Monty
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class MontyBase(Monty):
-    LOGGING_REGISTRY = dict(TEST=TestLogger)
+    LOGGING_REGISTRY: ClassVar[dict[str, type[BaseMontyLogger]]] = {"TEST": TestLogger}
 
     def __init__(
         self,
@@ -43,7 +44,7 @@ class MontyBase(Monty):
             learning_modules: list of learning modules
             motor_system: class instance that aggregates proposed motor outputs
                 of learning modules and decides next action. Conceptually, this is
-                the subcortical motor area. Note: EnvironmentDataLoader takes a
+                the subcortical motor area. Note: EnvironmentInterface takes a
                 motor_system as an argument. That motor system is the same as this
                 one.
             sm_to_agent_dict: dictionary mapping each sensor module id to the
@@ -186,8 +187,8 @@ class MontyBase(Monty):
         ):
             self.deal_with_time_out()
             return True
-        else:
-            return False
+
+        return False
 
     def deal_with_time_out(self):
         """Call any functions and logging in case of a time out."""
@@ -217,10 +218,7 @@ class MontyBase(Monty):
         else:
             sensory_inputs_from_lms = []
         # Combine sensory inputs from SMs and LMs to LM i
-        sensory_inputs = self._combine_inputs(
-            sensory_inputs_from_sms, sensory_inputs_from_lms
-        )
-        return sensory_inputs
+        return self._combine_inputs(sensory_inputs_from_sms, sensory_inputs_from_lms)
 
     def _combine_inputs(self, inputs_from_sms, inputs_from_lms) -> dict | None:
         """Combine all inputs to an LM into one dict.
@@ -284,9 +282,11 @@ class MontyBase(Monty):
         # Currently only use GSG outputs at inference
         if self.step_type == "matching_step":
             for lm in self.learning_modules:
-                goal_state = lm.propose_goal_state()
-                if goal_state is not None:
-                    self.gsg_outputs.append(goal_state)
+                goal_states = lm.propose_goal_states()
+                self.gsg_outputs.extend(goal_states)
+            for sm in self.sensor_modules:
+                goal_states = sm.propose_goal_states()
+                self.gsg_outputs.extend(goal_states)
 
     def _pass_infos_to_motor_system(self):
         """Pass input observations and goal states to the motor system."""
@@ -329,8 +329,7 @@ class MontyBase(Monty):
         self.step_type = "matching_step"
         for lm in self.learning_modules:
             lm.set_experiment_mode(mode)
-        for sm in self.sensor_modules:
-            sm.set_experiment_mode(mode)
+        # for sm in self.sensor_modules: sm.set_experiment_mode() unused & removed
 
     def pre_episode(self):
         self._is_done = False
@@ -345,9 +344,7 @@ class MontyBase(Monty):
     def post_episode(self):
         for lm in self.learning_modules:
             lm.post_episode()
-
-        for sm in self.sensor_modules:
-            sm.post_episode()
+        # for sm in self.sensor_modules: sm.post_episode() unused & removed
 
     ###
     # Methods for saving and loading
@@ -421,8 +418,7 @@ class MontyBase(Monty):
         # the agent (actuator) this sensor is attached to
         agent_id = self.sm_to_agent_dict[sensor_module_id]
         agent_obs = observations[agent_id]
-        sensor_obs = agent_obs[sensor_module_id]
-        return sensor_obs
+        return agent_obs[sensor_module_id]
 
     def get_agent_state(self):
         """Get state of agent (dict).
@@ -450,8 +446,10 @@ class MontyBase(Monty):
         if self.step_type == "matching_step":
             if self.experiment_mode == "train":
                 return self.min_train_steps
-            elif self.experiment_mode == "eval":
+
+            if self.experiment_mode == "eval":
                 return self.min_eval_steps
+
         elif self.step_type == "exploratory_step":
             return self.num_exploratory_steps
 
@@ -459,7 +457,7 @@ class MontyBase(Monty):
     def step_type_count(self):
         if self.step_type == "matching_step":
             return self.matching_steps
-        elif self.step_type == "exploratory_step":
+        if self.step_type == "exploratory_step":
             return self.exploratory_steps
 
     @property

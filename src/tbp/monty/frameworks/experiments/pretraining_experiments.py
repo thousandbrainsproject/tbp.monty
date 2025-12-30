@@ -9,15 +9,19 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
-import os
+from pathlib import Path
 
 import numpy as np
+from omegaconf import DictConfig, OmegaConf
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.environments.embodied_data import SaccadeOnImageDataLoader
-from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
-
-from .monty_experiment import MontyExperiment
+from tbp.monty.frameworks.environments.embodied_data import (
+    SaccadeOnImageEnvironmentInterface,
+)
+from tbp.monty.frameworks.experiments.monty_experiment import (
+    ExperimentMode,
+    MontyExperiment,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,21 +38,21 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
     models that can then be loaded at the beginning of an experiment.
     """
 
-    def __init__(self, config):
+    def __init__(self, config: DictConfig):
         # If we just add "pretrained" to dir at save time, then logs are stored in one
         # place and models in another. Changing the config ensures every reference to
         # output_dir has "pretrained" added to it
-        config = config_to_dict(config)
-        output_dir = config["logging_config"]["output_dir"]
-        config["logging_config"]["output_dir"] = os.path.join(output_dir, "pretrained")
+        config = OmegaConf.to_object(config)
+        output_dir = Path(config["logging"]["output_dir"])
+        config["logging"]["output_dir"] = output_dir / "pretrained"
         self.first_epoch_object_location = {}
         super().__init__(config)
 
     def setup_experiment(self, config):
         super().setup_experiment(config)
-        if "agents" in config["dataset_args"]["env_init_args"].keys():
+        if "agents" in config["env_interface_config"]["env_init_args"].keys():
             self.sensor_pos = np.array(
-                config["dataset_args"]["env_init_args"]["agents"][0]["agent_args"][
+                config["env_interface_config"]["env_init_args"]["agents"]["agent_args"][
                     "positions"
                 ]
             )
@@ -67,33 +71,24 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         objects.
         """
         self.pre_episode()
-        # set is_seeking_match False and goes in exploratory mode
-        self.model.step_type = "exploratory_step"
-        # Pass target info to model
-        target = self.dataloader.primary_target
-        self.model.detected_object = self.model.primary_target["object"]
-        for lm in self.model.learning_modules:
-            lm.detected_object = target["object"]
-            lm.buffer.stats["possible_matches"] = [target["object"]]
-            lm.buffer.stats["detected_location_on_model"] = (
-                self.first_epoch_object_location[target["object"]]
-            )
-            lm.buffer.stats["detected_location_rel_body"] = np.array(target["position"])
-            lm.buffer.stats["detected_rotation"] = target["euler_rotation"]
-            lm.detected_rotation_r = Rotation.from_quat(target["quat_rotation"]).inv()
-            lm.buffer.stats["detected_scale"] = target["scale"]
+        # Save compute if we are providing labels to all models, so don't need to
+        # perform matching parts of LM updates (default is matching_step)
+        all_lm_ids = [lm.learning_module_id for lm in self.model.learning_modules]
+        if set(self.supervised_lm_ids) == set(all_lm_ids):
+            self.model.switch_to_exploratory_step()
+
         # Collect data about the object (exploratory steps)
         num_steps = 0
-        for observation in self.dataloader:
+        for observation in self.env_interface:
             num_steps += 1
             if self.show_sensor_output:
-                is_saccade_on_image_data_loader = isinstance(
-                    self.dataloader, SaccadeOnImageDataLoader
+                is_saccade_on_image_env_interface = isinstance(
+                    self.env_interface, SaccadeOnImageEnvironmentInterface
                 )
                 self.live_plotter.show_observations(
                     *self.live_plotter.hardcoded_assumptions(observation, self.model),
                     num_steps,
-                    is_saccade_on_image_data_loader,
+                    is_saccade_on_image_env_interface,
                 )
             self.model.step(observation)
             if self.model.is_done:
@@ -104,25 +99,57 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             # TODO: should we use model.total_steps here?
             if self.model.episode_steps >= self.max_total_steps:
                 break
+
+        # Pass target info to model --> will overwrite (where specified)
+        # with the ground truth labels just before models are updated in memory.
+        target = self.env_interface.primary_target
+        self.model.detected_object = self.model.primary_target["object"]
+        for lm in self.model.learning_modules:
+            if lm.learning_module_id in self.supervised_lm_ids:
+                lm.detected_object = target["object"]
+                lm.buffer.stats["possible_matches"] = [target["object"]]
+                lm.buffer.stats["detected_location_on_model"] = (
+                    self.first_epoch_object_location[target["object"]]
+                )
+                lm.buffer.stats["detected_location_rel_body"] = np.array(
+                    target["position"]
+                )
+                lm.buffer.stats["detected_rotation"] = target["euler_rotation"]
+                lm.detected_rotation_r = Rotation.from_quat(
+                    target["quat_rotation"]
+                ).inv()
+                lm.buffer.stats["detected_scale"] = target["scale"]
+            else:
+                # wipe LMs hypotheses so we don't update those models
+                lm.detected_object = None
+                lm.detected_pose = None
+                lm.detected_rotation_r = None
+                lm.buffer.stats["detected_location_on_model"] = None
+                lm.buffer.stats["detected_location_rel_body"] = None
+                lm.buffer.stats["detected_rotation"] = None
+                lm.buffer.stats["detected_scale"] = None
+
         if len(self.model.learning_modules) > 1:
             for i, lm in enumerate(self.model.learning_modules):
                 if i == 0:
                     first_pos = self.sensor_pos[0]
                 else:
                     lm_offset = self.sensor_pos[i] - first_pos
-
-                    lm.buffer.stats["detected_location_rel_body"] += lm_offset
-                    # Rotate offset into model RF
-                    lm_offset_model_rf = lm.detected_rotation_r.apply(lm_offset)
-                    lm.buffer.stats["detected_location_on_model"] += lm_offset_model_rf
+                    if lm.detected_object:
+                        lm.buffer.stats["detected_location_rel_body"] += lm_offset
+                        # Rotate offset into model RF
+                        lm_offset_model_rf = lm.detected_rotation_r.apply(lm_offset)
+                        lm.buffer.stats["detected_location_on_model"] += (
+                            lm_offset_model_rf
+                        )
 
         # Update the model in memory
         self.post_episode(num_steps)
 
     def pre_episode(self):
         """Pre episode where we pass target object to the model for logging."""
-        self.model.pre_episode(self.dataloader.primary_target)
-        self.dataloader.pre_episode()
+        self.model.pre_episode(self.env_interface.primary_target)
+        self.env_interface.pre_episode()
 
         self.max_steps = self.max_train_steps  # no eval mode here
 
@@ -130,10 +157,10 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
         # if it's the first time this object is shown, save it's location. This is
         # needed to provide the correct offset from the learned model when supervising.
-        current_object = self.dataloader.primary_target["object"]
+        current_object = self.env_interface.primary_target["object"]
         if current_object not in self.first_epoch_object_location:
             self.first_epoch_object_location[current_object] = (
-                self.dataloader.primary_target["position"]
+                self.env_interface.primary_target["position"]
             )
 
         if self.show_sensor_output:
@@ -144,13 +171,11 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         self.logger_handler.post_epoch(self.logger_args)
 
         self.train_epochs += 1
-        self.train_dataloader.post_epoch()
-
-    def pre_epoch(self):
-        super().pre_epoch()
+        self.train_env_interface.post_epoch()
 
     def train(self):
         """Save state_dict at the end of training."""
+        self.experiment_mode = ExperimentMode.TRAIN
         self.logger_handler.pre_train(self.logger_args)
         self.model.set_experiment_mode("train")
         for sm in self.model.sensor_modules:

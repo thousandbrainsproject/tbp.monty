@@ -7,10 +7,10 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from typing import Optional
+from __future__ import annotations
 
 
-def get_edge_index(graph, previous_node, new_node) -> Optional[int]:
+def get_edge_index(graph, previous_node, new_node) -> int | None:
     """Get the edge index between two nodes in a graph.
 
     Args:

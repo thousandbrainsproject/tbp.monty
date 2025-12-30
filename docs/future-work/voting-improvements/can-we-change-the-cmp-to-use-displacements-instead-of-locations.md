@@ -1,6 +1,17 @@
 ---
 title: Can we change the CMP to use displacements instead of locations?
+description: Investigate using movement vectors instead of locations in the CMP and the implications it would have for Monty.
+rfc: required
+estimated-scope: medium
+improved-metric: 
+output-type: RFC
+skills: monty
+contributor: 
+status: open
 ---
+
+> [!NOTE]
+> Although, there is reasonable evidence that the brain may be using movements instead of locations, it is unclear whether there are any computational benefits to doing this. Since we haven't identified concrete benefits, the `improved-metric` field is left open. A first step to tackling this task would be to think through any functional implications of this change.
 
 Movement is core to how LMs process and model the world. Currently, an LM receives an observation encoded with a body-centric location, and then infers a displacement in object-centric coordinates. Similarly, goal-states are specified as a target location in body-centric coordinates, which are then acted upon.
 

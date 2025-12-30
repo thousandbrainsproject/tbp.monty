@@ -10,8 +10,43 @@
 from __future__ import annotations
 
 import abc
+from typing import Any, Dict, NewType
 
+import numpy as np
+import numpy.typing as npt
+
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.models.states import GoalState
+from tbp.monty.frameworks.sensors import SensorID
+
+Modality = NewType("Modality", str)
+"""Unique identifier for a modality."""
+
+
+class SensorObservations(Dict[Modality, npt.NDArray[Any]]):
+    """Observations from a sensor."""
+
+    rgba: npt.NDArray[np.int_]  # TODO: Verify specific type
+    depth: npt.NDArray[np.float64]  # TODO: Verify specific type
+    semantic: npt.NDArray[np.int_]  # TODO: Verify specific type
+    semantic_3d: npt.NDArray[np.int_]  # TODO: Verify specific type
+    sensor_frame_data: npt.NDArray[np.int_]  # TODO: Verify specific type
+    world_camera: npt.NDArray[np.int_]  # TODO: Verify specific type
+    pixel_loc: npt.NDArray[np.float64]  # TODO: Verify specific type
+    raw: npt.NDArray[np.uint8]
+
+
+class AgentObservations(Dict[SensorID, SensorObservations]):
+    """Observations from an agent."""
+
+    pass
+
+
+class Observations(Dict[AgentID, AgentObservations]):
+    """Observations from the environment."""
+
+    pass
 
 
 class Monty(metaclass=abc.ABCMeta):
@@ -52,7 +87,7 @@ class Monty(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def aggregate_sensory_inputs(self, observation):
-        """Receive data from dataloader/env, organize on a per sensor module basis."""
+        """Receive data from environment, organize on a per sensor module basis."""
         pass
 
     @abc.abstractmethod
@@ -192,8 +227,8 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def propose_goal_state(self) -> GoalState | None:
-        """Return the goal-state proposed by this LM's GSG if it exists."""
+    def propose_goal_states(self) -> list[GoalState]:
+        """Return the goal-states proposed by this LM's GSG if they exist."""
         pass
 
     @abc.abstractmethod
@@ -256,7 +291,7 @@ class ObjectModel(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def update_model(self, obersevations):
+    def update_model(self, observations):
         """Update an existing model with new observations."""
         pass
 
@@ -278,8 +313,8 @@ class GoalStateGenerator(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_output_goal_state(self):
-        """Return current output goal-state."""
+    def output_goal_states(self) -> list[GoalState]:
+        """Return output goal-states."""
         pass
 
     @abc.abstractmethod
@@ -298,7 +333,7 @@ class SensorModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def update_state(self, state):
+    def update_state(self, agent: AgentState):
         pass
 
     @abc.abstractmethod
@@ -315,11 +350,6 @@ class SensorModule(metaclass=abc.ABCMeta):
         """This method is called before each episode."""
         pass
 
-    @abc.abstractmethod
-    def post_episode(self):
-        """This method is called after each episode."""
-        pass
-
-    @abc.abstractmethod
-    def set_experiment_mode(self, mode: str):
-        pass
+    def propose_goal_states(self) -> list[GoalState]:
+        """Return the goal-states proposed by this Sensor Module."""
+        return []

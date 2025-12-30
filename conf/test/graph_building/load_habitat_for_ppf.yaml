@@ -1,0 +1,12 @@
+defaults:
+  - /test/graph_building/load_habitat@
+
+config:
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 20
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          match_attribute: PPF
+          tolerance: [0.001, 0.001, 0.001, 0.001]

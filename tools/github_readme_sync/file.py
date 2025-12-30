@@ -16,12 +16,18 @@ DEFAULT_IGNORE_DIRS = ["figures", "snippets"]
 DEFAULT_IGNORE_FILES = ["hierarchy.md"]
 
 
-def get_folders(file_path: str) -> list:
-    return [
-        name
-        for name in os.listdir(file_path)
-        if Path(file_path).joinpath(name).is_dir()
-    ]
+def get_folders(file_path: str) -> list[str]:
+    """Get a list of folder names in the specified directory.
+
+    The order of the returned folder names is not guaranteed.
+
+    Args:
+        file_path: Path to the directory to list folders from
+
+    Returns:
+        List of folder names in the directory
+    """
+    return [child.name for child in Path(file_path).iterdir() if child.is_dir()]
 
 
 def find_markdown_files(
@@ -43,7 +49,7 @@ def find_markdown_files(
     ignore_files = DEFAULT_IGNORE_FILES if ignore_files is None else ignore_files
 
     md_files = []
-    for root, _, files in os.walk(folder):
+    for root, _, files in os.walk(Path(folder).resolve()):
         path_parts = Path(root).parts
         if any(part.startswith(".") for part in path_parts):
             continue
@@ -67,5 +73,5 @@ def read_file_content(file_path: str) -> str:
     Returns:
         File content as string
     """
-    with open(file_path, "r", encoding="utf-8") as f:
+    with Path(file_path).open(encoding="utf-8") as f:
         return f.read()

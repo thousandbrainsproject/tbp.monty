@@ -1,0 +1,59 @@
+defaults:
+  - /experiment/config/defaults@config
+  - /experiment/config/logging/defaults@config.logging
+  - /experiment/config/monty/patch_and_view@config.monty_config
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /experiment/config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+  - /experiment/config/environment/omniglot@config.env_interface_config
+  - /experiment/config/environment_interface/omniglot@config.eval_env_interface_args
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+config:
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/omniglot/omniglot_training/pretrained/}
+  do_train: false
+  n_eval_epochs: 1
+  logging:
+    run_name: omniglot_inference
+  monty_config:
+    monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+        learning_module_args:
+          # xyz values are in larger range so need to increase mmd
+          max_match_distance: 5
+          tolerances:
+            patch:
+              principal_curvatures_log: ${np.ones:2}
+              pose_vectors: ${np.array:[45, 45, 45]}
+          # Surface normal always points up, so they are not useful
+          feature_weights:
+            patch:
+              pose_vectors: [0, 1, 0]
+          hypotheses_updater_args:
+            # We assume the letter is presented upright
+            initial_possible_poses: [[0, 0, 0]]
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_args:
+          sensor_module_id: patch
+          features:
+            - pose_vectors
+            - pose_fully_defined
+            - on_object
+            - principal_curvatures_log
+          save_raw_obs: false
+          # Need to set this lower since curvature is generally lower
+          pc1_is_pc2_threshold: 1
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: false
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.OmniglotEnvironmentInterface}
+  eval_env_interface_args:
+    # Using version 1 means testing on the same version of the character as trained.
+    # Version 2 is a new drawing of the previously seen characters. In this small test
+    # setting these are 3 characters from 2 alphabets.
+    versions: [1, 1, 1, 1, 1, 1]

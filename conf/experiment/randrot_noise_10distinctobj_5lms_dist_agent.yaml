@@ -1,0 +1,23 @@
+defaults:
+  - randrot_noise_10distinctobj_dist_agent
+  - config/monty/clear_monty_config@config
+  - config/monty/five_lm_sota@config.monty_config
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/learning_modules/default_5lm@config.monty_config.learning_module_configs
+  - config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+  - config/monty/sensor_modules/default_5sm@config.monty_config.sensor_module_configs
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/environment/clear_env_interface_config@config
+  - config/environment/five_lm_mount_habitat@config.env_interface_config
+
+config:
+  model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_5lms/pretrained/
+  n_eval_epochs: 10
+  min_lms_match: 3
+  logging:
+    run_name: randrot_noise_10distinctobj_5lms_dist_agent
+  monty_config:
+    monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching} # has custom evidence voting method
+    monty_args:
+      min_eval_steps: ${benchmarks.min_eval_steps}

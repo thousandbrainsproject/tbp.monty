@@ -19,14 +19,13 @@ init(autoreset=True)
 
 # Function to check if the terminal supports color
 def _supports_color():
-    if os.getenv("CI", "false").lower() == "true":
-        # Disable color in CI environments
-        return False
-    elif sys.platform == "win32":
-        return True  # Colorama handles color support on Windows
-    elif hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
-        return True  # Non-Windows platforms with a TTY
-    return False
+    running_in_ci = os.getenv("CI", "false").lower() == "true"
+
+    win32 = sys.platform == "win32"
+
+    isatty = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
+
+    return not running_in_ci and (win32 or isatty)
 
 
 # Set color constants based on whether color is supported

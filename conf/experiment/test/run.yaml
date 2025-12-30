@@ -1,0 +1,19 @@
+defaults:
+  - /experiment/config/defaults@config
+  - /experiment/config/logging/defaults@config.logging
+  - /test/config/monty/fake_single_camera@config.monty_config
+  - /experiment/config/environment/single_ptz_habitat@config.env_interface_config
+
+_target_: tbp.monty.frameworks.experiments.monty_experiment.MontyExperiment
+config:
+  max_train_steps: 10
+  max_eval_steps: 5
+  n_train_epochs: 2
+  n_eval_epochs: 1
+  logging:
+    monty_log_level: TEST
+    monty_handlers: []
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterface}
+  train_env_interface_args: {}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterface}
+  eval_env_interface_args: {}

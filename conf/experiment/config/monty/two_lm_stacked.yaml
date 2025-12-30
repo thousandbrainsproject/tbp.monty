@@ -1,0 +1,72 @@
+defaults:
+  - two_lm
+  - learning_modules/clear_learning_module_configs@
+  - sensor_modules/clear_sensor_module_configs@
+
+monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
+learning_module_configs:
+  learning_module_0:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+    learning_module_args:
+      k: 5
+      match_attribute: displacement
+  learning_module_1:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+    learning_module_args:
+      k: 5
+      match_attribute: displacement
+sensor_module_configs:
+  sensor_module_0:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_0
+      features:
+        # morphological features (nescessarry)
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        # non-morphological features (optional)
+        - object_coverage
+        - min_depth
+        - mean_depth
+        - hsv
+        - principal_curvatures_log
+      delta_thresholds:
+        on_object: 0
+        n_steps: 20
+        hsv: [0.1, 0.1, 0.1]
+        pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+        principal_curvatures_log: [2, 2]
+        distance: 0.01
+      save_raw_obs: true
+  sensor_module_1:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch_1
+      features:
+        # morphological features (nescessarry)
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        # non-morphological features (optional)
+        - object_coverage
+        - hsv
+        - principal_curvatures_log
+      delta_thresholds:
+        on_object: 0
+        n_steps: 100
+        hsv: [0.2, 0.2, 0.2]
+        pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+        principal_curvatures_log: [4, 4]
+        distance: 0.05
+      save_raw_obs: true
+  sensor_module_2:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+    sensor_module_args:
+      sensor_module_id: view_finder
+      save_raw_obs: true
+sm_to_lm_matrix:
+  - [0]
+  - [1]
+lm_to_lm_matrix: [[], [0]]
+lm_to_lm_vote_matrix: null

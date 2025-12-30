@@ -9,8 +9,8 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
-import os
 import shutil
+from pathlib import Path
 
 import numpy as np
 from tqdm import tqdm
@@ -46,12 +46,12 @@ class LoggerSDR:
             logger.warning("EvidenceSDR log path is set to None.")
             return
 
-        path = os.path.expanduser(path)
+        path = Path(path).expanduser()
 
         # overwrite existing logs
-        if os.path.exists(path):
+        if path.exists():
             shutil.rmtree(path)
-        os.makedirs(path)
+        path.mkdir(parents=True)
 
         self.path = path
         self.episode = 0
@@ -75,7 +75,7 @@ class LoggerSDR:
         """
         if hasattr(self, "path"):
             np.save(
-                os.path.join(self.path, f"episode_{str(self.episode).zfill(3)}.npy"),
+                self.path / f"episode_{self.episode:03d}.npy",
                 data,
             )
             self.episode += 1
@@ -319,8 +319,8 @@ class EncoderSDR:
 
         if np.all(np.array(target_overlaps.shape) > self.n_objects):
             logger.warning(
-                "Overlap targets have larger size than "
-                + f"{(self.n_objects, self.n_objects)}"
+                f"Overlap targets have larger size than "
+                f"{(self.n_objects, self.n_objects)}"
             )
             target_overlaps = target_overlaps[: self.n_objects, : self.n_objects]
 
@@ -667,8 +667,8 @@ class EvidenceSDRLMMixin:
         """
         if object_id in self.obj2id:
             return self.sdr_encoder.get_sdr(self.obj2id[object_id])
-        else:
-            return np.zeros(self.sdr_args["sdr_length"])
+
+        return np.zeros(self.sdr_args["sdr_length"])
 
 
 class EvidenceSDRGraphLM(EvidenceSDRLMMixin, EvidenceGraphLM):

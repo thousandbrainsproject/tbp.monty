@@ -1,0 +1,4 @@
+defaults:
+  - /test/policy/base_dist@
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - /experiment/config/monty/motor_system/informed_goal_state_driven@config.monty_config.motor_system_config

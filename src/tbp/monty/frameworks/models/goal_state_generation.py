@@ -40,7 +40,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
     Note all goal-states conform to the State-class cortical messaging protocol (CMP).
     """
 
-    def __init__(self, parent_lm, goal_tolerances=None, **kwargs) -> None:
+    def __init__(self, parent_lm, goal_tolerances=None, **_kwargs) -> None:
         """Initialize the GSG.
 
         Args:
@@ -124,15 +124,15 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
         self.driving_goal_state = received_goal_state
 
-    def get_output_goal_state(self) -> GoalState | None:
-        """Retrieve the output goal-state of the GSG.
+    def output_goal_states(self) -> list[GoalState]:
+        """Retrieve the output goal-states of the GSG.
 
         This is the goal-state projected to other LM's GSGs +/- motor-actuators.
 
         Returns:
-            Output goal-state of the GSG if it exists, otherwise None.
+            Output goal-states of the GSG if it exists, otherwise empty list.
         """
-        return self.output_goal_state
+        return [self.output_goal_state] if self.output_goal_state else []
 
     # ------------------- Main Algorithm -----------------------
 
@@ -179,9 +179,9 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         a GoalState object with a None value for the location, morphological features,
         etc, or some variation of this.
         """
-        return None
+        return
 
-    def _generate_goal_state(self, observations):
+    def _generate_goal_state(self, _observations):
         """Generate a new goal-state to send out to other LMs and/or motor actuators.
 
         Given the driving goal-state, and information from the parent LM of the GSG
@@ -311,12 +311,9 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             Whether the output goal-state was achieved.
         """
         if self.output_goal_state is not None:
-            goal_achieved = self._check_input_matches_sensory_prediction(observations)
+            return self._check_input_matches_sensory_prediction(observations)
 
-            return goal_achieved
-
-        else:
-            return False
+        return False
 
     def _check_input_matches_sensory_prediction(self, observations):
         """Check whether the input matches the sensory prediction.
@@ -358,13 +355,11 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         # case _check_states_different will return False, and we return goal_achieved as
         # False, as we cannot meaningfully evaluate whether this occured
 
-        input_changed = self._check_states_different(
+        return self._check_states_different(
             current_sensory_input,
             previous_sensory_input,
             diff_tolerances=self.goal_tolerances,
         )
-
-        return input_changed
 
     def _check_need_new_output_goal(self, output_goal_achieved) -> bool:
         """Determine whether the GSG should generate a new output goal-state.
@@ -375,10 +370,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         Returns:
             Whether the GSG should generate a new output goal-state.
         """
-        if output_goal_achieved:
-            return True
-        else:
-            return False
+        return bool(output_goal_achieved)
 
     def _check_keep_current_output_goal(self) -> bool:
         """Should we keep our current goal?
@@ -416,8 +408,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         if len(mask) == 0:
             return 0
 
-        else:
-            return np.linalg.norm(a[mask] - b[mask])
+        return np.linalg.norm(a[mask] - b[mask])
 
     # ------------------ Getters, Setters & Logging ---------------------
 
@@ -562,26 +553,21 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             A goal-state for the motor system.
         """
         # Determine where we want to test in the MLH graph
-        target_loc_id, target_separation = self._compute_graph_mismatch()
+        target_loc_id = self._compute_graph_mismatch()
 
         # Get pose information for the target point
         target_info = self._get_target_loc_info(target_loc_id)
 
         # Estimate how important this goal-state will be for the Monty-system as a
         # whole
-        goal_confidence = self._compute_goal_confidence(
-            lm_output_confidence=self.parent_lm.get_output().confidence,
-            separation=target_separation,
-        )
+        goal_confidence = self.parent_lm.get_output().confidence
 
         # Compute the goal-state (for the motor-actuator)
-        motor_goal_state = self._compute_goal_state_for_target_loc(
+        return self._compute_goal_state_for_target_loc(
             observations,
             target_info,
             goal_confidence=goal_confidence,
         )
-
-        return motor_goal_state
 
     def _compute_graph_mismatch(self):
         """Propose a point for the model to test.
@@ -638,7 +624,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # are going to focus on pose mismatch
         second_mlh_object = self.parent_lm.get_mlh_for_object(second_id)
 
-        top_mlh_graph = self.parent_lm.get_graph(top_id, input_channel="first").pos
+        sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
+
+        top_mlh_graph = self.parent_lm.get_graph(
+            top_id, input_channel=sensor_channel_name
+        ).pos
 
         if self.focus_on_pose:
             # Overwrite the second most likely hypothesis with the second most likely
@@ -688,21 +678,21 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # Perform kdtree search to identify the point with the most distant
         # nearest-neighbor
         # Note we ultimately want the target location to be one on the most likely
-        # graph, so we pass the top-MLH graph in as the qeury points
-        radius_node_dists = self.parent_lm.get_graph(
-            second_id, input_channel="first"
-        ).find_nearest_neighbors(
+        # graph, so we pass the top-MLH graph in as the query points
+        second_mlh_graph = self.parent_lm.get_graph(
+            second_id, input_channel=sensor_channel_name
+        )
+        radius_node_dists = second_mlh_graph.find_nearest_neighbors(
             top_mlh_graph,
             num_neighbors=1,
             return_distance=True,
         )
 
         target_loc_id = np.argmax(radius_node_dists)
-        target_loc_separation = np.max(radius_node_dists)
 
         self.prev_top_mlhs = [top_mlh, second_mlh_object]
 
-        return target_loc_id, target_loc_separation
+        return target_loc_id
 
     def _get_target_loc_info(self, target_loc_id):
         """Given a target location ID, get the target location and pose vectors.
@@ -726,46 +716,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             target_loc_id, surface_normal_mapping[0] : surface_normal_mapping[0] + 3
         ]
 
-        target_info = {
+        return {
             "hypothesis_to_test": mlh,
             "target_loc": target_loc,
             "target_surface_normal": target_surface_normal,
         }
-
-        return target_info
-
-    def _compute_goal_confidence(
-        self, lm_output_confidence, separation, space_size=1.0, confidence_weighting=0.1
-    ):
-        """Calculate the confidence of the goal-state.
-
-        The confidence is based on the e.g. separation in hypothesis-space between the
-        two MLH, and the confidence associated with the MLH classificaiton of the parent
-        LM. Currently just retuns the confidence of the parent LM but TODO M implement a
-        more sophisticated function.
-
-        TODO M How to normalize the displacement?
-        Could put through a sigmoid, that is perhaps scaled by the size of the object?
-        Could divide by e.g. the size of the object to make it likely to be <1, and
-        then clip it; that way any subtle differences between LMs is likely to be
-        preserved, i.e. rather than them all clipping to 1.0; can then just make
-        sure this value is weighted heavily compared to confidence when computing
-        the overall strenght of the goal-state.
-        - size of the object could be estimated from the minimum and maximum corners
-        - or use the max size of the graph --> Note this doesn't account for the
-        actual size of the object, and these grid-models are not currently used
-
-        Returns:
-            The confidence of the goal-state.
-        """
-        # Provisional implementation:
-        # squashed_displacement = np.clip(separation / space_size, 0, 1)
-        # goal_confidence = squashed_displacement + confidence_weighting
-        # * lm_output_confidence
-
-        goal_confidence = lm_output_confidence
-
-        return goal_confidence
 
     def _compute_goal_state_for_target_loc(
         self, observations, target_info, goal_confidence=1.0
@@ -842,30 +797,6 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             "matching_step_when_output_goal_set": None,
         }
 
-        motor_goal_state = GoalState(
-            location=np.array(target_loc),
-            morphological_features={
-                # Note the hypothesis-testing policy does not specify the roll of the
-                # agent, because this is not relevant to the task
-                "pose_vectors": np.array(
-                    [
-                        (-1) * target_surface_normal_rotated,
-                        [np.nan, np.nan, np.nan],
-                        [np.nan, np.nan, np.nan],
-                    ]
-                ),
-                "pose_fully_defined": None,
-                "on_object": 1,
-            },
-            non_morphological_features=None,
-            confidence=goal_confidence,
-            use_state=True,
-            sender_id=self.parent_lm.learning_module_id,
-            sender_type="GSG",
-            goal_tolerances=None,
-            info=info,
-        )
-
         # TODO M consider also using the below sensor-predicted state as an additional
         # evalaution of how much we have achieved our goal, i.e. consistent with the
         # object we thought we were on; could have more detailed information using the
@@ -893,7 +824,29 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         #     goal_tolerances=None,
         # )
 
-        return motor_goal_state
+        return GoalState(
+            location=np.array(target_loc),
+            morphological_features={
+                # Note the hypothesis-testing policy does not specify the roll of the
+                # agent, because this is not relevant to the task
+                "pose_vectors": np.array(
+                    [
+                        (-1) * target_surface_normal_rotated,
+                        [np.nan, np.nan, np.nan],
+                        [np.nan, np.nan, np.nan],
+                    ]
+                ),
+                "pose_fully_defined": None,
+                "on_object": 1,
+            },
+            non_morphological_features=None,
+            confidence=goal_confidence,
+            use_state=True,
+            sender_id=self.parent_lm.learning_module_id,
+            sender_type="GSG",
+            goal_tolerances=None,
+            info=info,
+        )
 
     def _check_need_new_output_goal(self, output_goal_achieved) -> bool:
         """Determine whether the GSG should generate a new output goal-state.
@@ -908,8 +861,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         if output_goal_achieved:
             return False
 
-        else:
-            return self._check_conditions_for_hypothesis_test()
+        return self._check_conditions_for_hypothesis_test()
 
     def _check_keep_current_output_goal(self) -> bool:
         """Determine whether the GSG should keep the current goal-state.
@@ -997,7 +949,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # place to test
         # TODO when optimizing, consider using np.any rather than np.all, i.e. as long
         # as there is any change in the top two MLH
-        elif self.prev_top_mlhs is not None and np.all(
+        if self.prev_top_mlhs is not None and np.all(
             [
                 self.prev_top_mlhs[0]["graph_id"],
                 self.prev_top_mlhs[1]["graph_id"],
@@ -1015,7 +967,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # TODO expand this to handle change in translationm/location pose as well
         # TODO add a parameter that specifies the angle between the two poses above
         # which we consider it a new pose (rather than it needing to be identical)
-        elif self.prev_top_mlhs is not None and np.all(
+        if self.prev_top_mlhs is not None and np.all(
             top_mlh["rotation"].as_euler("xyz")
             != self.prev_top_mlhs[0]["rotation"].as_euler("xyz")
         ):
@@ -1027,7 +979,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # Otherwise, if a sufficient number of steps have elapsed,
         # still perform a jump; note however that this threshold exponentially
         # increases, so that we avoid continuously returning to the same location
-        elif num_elapsed_steps % (self.wait_factor * self.elapsed_steps_factor) == 0:
+        if num_elapsed_steps % (self.wait_factor * self.elapsed_steps_factor) == 0:
             logger.debug(
                 "Hypothesis jump indicated: sufficient steps elapsed with no jump"
             )
@@ -1035,8 +987,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             self.wait_factor *= self.wait_growth_multiplier
             return True
 
-        else:
-            return False
+        return False
 
     def _get_num_steps_post_output_goal_generated(self):
         """Number of steps since last output goal-state.

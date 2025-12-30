@@ -12,20 +12,25 @@ from __future__ import annotations
 import numpy as np
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.models.states import State
 
 
 class FakeSensorModule(SensorModule):
     """Dummy placeholder class used only for tests."""
 
-    def __init__(self, sensor_module_id: str):
+    def __init__(
+        self,
+        rng,  # noqa: ARG002
+        sensor_module_id: str,
+    ):
         super().__init__()
         self.sensor_module_id = sensor_module_id
 
     def state_dict(self):
         pass
 
-    def update_state(self, state):
+    def update_state(self, agent: AgentState):
         pass
 
     def pre_episode(self):

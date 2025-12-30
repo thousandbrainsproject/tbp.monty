@@ -1,0 +1,20 @@
+defaults:
+  - init_args/patch_view_finder_multi_object_mount@env_init_args
+
+env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+# TODO: Some values are hardcoded, should come from env_init_args[agents][0].agent_args
+transform:
+  - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+    agent_id: ${monty.agent_id:agent_id_0} # env_init_args[agents][0].agent_args.agent_id
+    max_depth: 1
+  - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+    agent_id: ${monty.agent_id:agent_id_0}
+    sensor_ids: # env_init_args[agents][0].agent_args.sensor_ids
+      - patch
+      - view_finder
+    resolutions: [[64, 64], [64, 64]] # env_init_args[agents][0].agent_args.resolutions
+    world_coord: true
+    zooms: [10.0, 1.0] # env_init_args[agents][0].agent_args.zooms
+    get_all_points: true
+    use_semantic_sensor: true
+rng: null

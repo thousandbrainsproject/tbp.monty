@@ -124,7 +124,11 @@ def main():
         rdme.delete_version()
 
     elif args.command == "generate-index":
-        generate_index(args.folder, args.output_file)
+        output_file = args.output_file.strip()
+        if not output_file:
+            logging.error(f"{RED}Output file path cannot be empty{RESET}")
+            sys.exit(1)
+        generate_index(args.folder, Path(output_file))
 
 
 def check_readme_api_key():

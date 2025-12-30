@@ -10,12 +10,13 @@
 from __future__ import annotations
 
 import logging
-import os
+from typing import ClassVar
 
 import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.environments.embodied_environment import SemanticID
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
 from tbp.monty.frameworks.loggers.graph_matching_loggers import (
     BasicGraphMatchingLogger,
@@ -35,16 +36,16 @@ logger = logging.getLogger(__name__)
 class MontyForGraphMatching(MontyBase):
     """General Monty model for recognizing object using graphs."""
 
-    LOGGING_REGISTRY = dict(
+    LOGGING_REGISTRY: ClassVar[dict[str, type[BaseMontyLogger]]] = {
         # Don't do any formal logging, just save models. Used for pretraining.
-        SILENT=BaseMontyLogger,
+        "SILENT": BaseMontyLogger,
         # Log things like basic stats.csv files, data to reproduce experiments
-        BASIC=BasicGraphMatchingLogger,
+        "BASIC": BasicGraphMatchingLogger,
         # Utter deforestation
-        DETAILED=DetailedGraphMatchingLogger,
-        # Save specific stats nescessary for object similarity analysis.
-        SELECTIVE=SelectiveEvidenceLogger,
-    )
+        "DETAILED": DetailedGraphMatchingLogger,
+        # Save specific stats necessary for object similarity analysis.
+        "SELECTIVE": SelectiveEvidenceLogger,
+    }
 
     def __init__(self, *args, **kwargs):
         """Initialize and reset LM."""
@@ -171,7 +172,7 @@ class MontyForGraphMatching(MontyBase):
 
     def reset(self):
         """Reset monty status."""
-        self.union_of_possible_matches = None
+        pass
 
     # ------------------ Getters & Setters ---------------------
 
@@ -187,7 +188,7 @@ class MontyForGraphMatching(MontyBase):
     def load_state_dict_from_parallel(self, parallel_dirs, save=False):
         lm_dict = {}
         for pdir in parallel_dirs:
-            state_dict = torch.load(os.path.join(pdir, "model.pt"))
+            state_dict = torch.load(pdir / "model.pt")
             for lm in state_dict["lm_dict"].keys():
                 if lm not in lm_dict:
                     lm_dict[lm] = dict(
@@ -214,10 +215,10 @@ class MontyForGraphMatching(MontyBase):
         # Everything but lm dict for saving new model
         new_state_dict = {k: v for k, v in state_dict.items() if k != "lm_dict"}
         new_state_dict["lm_dict"] = lm_dict
-        load_dir = os.path.dirname(parallel_dirs[0])
+        load_dir = parallel_dirs[0].parent
 
         if save:
-            torch.save(new_state_dict, os.path.join(load_dir, "model.pt"))
+            torch.save(new_state_dict, load_dir / "model.pt")
 
         self.load_state_dict(new_state_dict)
 
@@ -265,35 +266,6 @@ class MontyForGraphMatching(MontyBase):
                 self.learning_modules[i].stepwise_targets_list.append(
                     self.learning_modules[i].stepwise_target_object
                 )
-
-    def _get_union_of_possible_matches(self):
-        """Take union of matches between LMs.
-
-        Update the union of possible matches returned by each learning module.
-        This is used to check the terminal condition that possible_matches is 0 or 1.
-
-        Returns:
-            Union of possible matches.
-        """
-        union_of_pm = None
-        for i, lm in enumerate(self.learning_modules):
-            if lm.buffer.get_num_observations_on_object() > 0:
-                pm = set(lm.get_possible_matches())
-            else:  # LM didn't get any observations yet -> don't make predictions.
-                # if we would use all memory IDs then time outs occur if the patch
-                # never gets on the object because it keeps the union of possible
-                # matches large.
-                # TODO: This LM may already have some IDs narrowed down by using
-                # incoming voted. Account for that.
-                pm = set()
-            logger.info(f"Possible matches for LM {i}: {pm}")
-            if union_of_pm is None:
-                union_of_pm = pm
-            else:
-                union_of_pm = set.union(union_of_pm, pm)
-        if len(self.learning_modules) > 1:
-            logger.info(f"Union of matches: {union_of_pm}")
-        return union_of_pm
 
     def _combine_votes(self, votes_per_lm):
         """Combine outgoing votes using lm_to_lm_vote_matrix matrix.
@@ -427,8 +399,14 @@ class MontyForGraphMatching(MontyBase):
                 self.send_vote_to_lm(self.learning_modules[i], i, combined_votes)
                 self.update_stats_after_vote(self.learning_modules[i])
 
-        # Update IoPM, needed for checking terminal condition
-        self.union_of_possible_matches = self._get_union_of_possible_matches()
+        # Log possible matches
+        for lm in self.learning_modules:
+            pm = (
+                lm.get_possible_matches()
+                if lm.buffer.get_num_observations_on_object()
+                else []
+            )
+            logger.info(f"Possible matches for {lm.learning_module_id}: {pm}")
 
     def _pass_infos_to_motor_system(self):
         """Pass input observations to the motor system.
@@ -533,7 +511,7 @@ class MontyForGraphMatching(MontyBase):
         """
         try:
             lm.stepwise_target_object = self.semantic_id_to_label[
-                sensory_inputs[0]._semantic_id
+                SemanticID(sensory_inputs[0]._semantic_id)
             ]
             logger.debug(f"Stepwise target: {lm.stepwise_target_object}")
         except KeyError:
@@ -585,14 +563,14 @@ class GraphLM(LearningModule):
                 the base modules if more specialized versions will be initialized in
                 child LMs. Defaults to True.
         """
-        super(GraphLM, self).__init__()
+        super().__init__()
         self.buffer = FeatureAtLocationBuffer()
         self.buffer.reset()
         self.learning_module_id = "LM_0"
 
         if initialize_base_modules:
             self.graph_memory = GraphMemory(k=None, graph_delta_thresholds=None)
-            self.gsg = GraphGoalStateGenerator(self, gsg_args=None)
+            self.gsg = GraphGoalStateGenerator(self)
             self.gsg.reset()
 
         self.mode = None  # initialize to neither training nor testing
@@ -721,15 +699,15 @@ class GraphLM(LearningModule):
         """
         pass
 
-    def propose_goal_state(self) -> GoalState | None:
-        """Return the goal-state proposed by this LM's GSG.
+    def propose_goal_states(self) -> list[GoalState]:
+        """Return the goal-states proposed by this LM's GSG.
 
-        Only returned if the LM/GSG was stepped, otherwise returns None goal-state.
+        Only returned if the LM/GSG was stepped, otherwise returns empty list.
         """
         if self.buffer.get_last_obs_processed() and self.gsg is not None:
-            return self.gsg.get_output_goal_state()
-        else:
-            return None
+            return self.gsg.output_goal_states()
+
+        return []
 
     def update_terminal_condition(self):
         """Check if we have reached a terminal condition for this episode.
@@ -861,7 +839,7 @@ class GraphLM(LearningModule):
             all_poses = poses
         return all_poses
 
-    def get_object_scale(self, object_id):
+    def get_object_scale(self, _object_id):
         """Get object scale. TODO: implement solution for detecting scale.
 
         Returns:
@@ -993,7 +971,7 @@ class GraphLM(LearningModule):
         if first_movement_detected:
             query = [
                 self._select_features_to_use(observations),
-                self.buffer.get_current_displacement(input_channel="all"),
+                self.buffer.get_all_current_displacements(),
             ]
         else:
             query = [
@@ -1158,7 +1136,6 @@ class GraphMemory(LMMemory):
         object_location_rel_body,
         location_rel_model,
         object_rotation,
-        object_scale,
     ):
         """Determine how to update memory and call corresponding function."""
         if graph_id is None:
@@ -1187,7 +1164,6 @@ class GraphMemory(LMMemory):
                         object_location_rel_body,
                         location_rel_model,
                         object_rotation,
-                        object_scale=object_scale,
                     )
                 else:
                     logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
@@ -1235,16 +1211,18 @@ class GraphMemory(LMMemory):
         """
         if input_channel is None:
             return self.models_in_memory[graph_id]
-        elif input_channel == "first":
+
+        if input_channel == "first":
             # Arbitrarily take first input channel. Mostly used as placeholder for now.
             # Usually this will be input from a sensor module but we do nothing to
             # guarantee this.
             first_channel = self.get_input_channels_in_graph(graph_id)[0]
             return self.models_in_memory[graph_id][first_channel]
-        elif input_channel in self.get_input_channels_in_graph(graph_id):
+
+        if input_channel in self.get_input_channels_in_graph(graph_id):
             return self.models_in_memory[graph_id][input_channel]
-        else:
-            raise ValueError(f"{graph_id} has no data stored for {input_channel}.")
+
+        raise ValueError(f"{graph_id} has no data stored for {input_channel}.")
 
     def get_feature_array(self, graph_id):
         return self.feature_array[graph_id]
@@ -1279,8 +1257,7 @@ class GraphMemory(LMMemory):
 
     def get_graph_node_ids(self, graph_id, input_channel):
         num_nodes = self.models_in_memory[graph_id][input_channel].x.shape[0]
-        node_ids = np.linspace(0, num_nodes - 1, num_nodes, dtype=int)
-        return node_ids
+        return np.linspace(0, num_nodes - 1, num_nodes, dtype=int)
 
     def get_num_nodes_in_graph(self, graph_id, input_channel=None):
         """Get number of nodes in graph.
@@ -1292,11 +1269,11 @@ class GraphMemory(LMMemory):
         """
         if input_channel is not None:
             return self.models_in_memory[graph_id][input_channel].x.shape[0]
-        else:
-            return sum(
-                self.get_num_nodes_in_graph(graph_id, input_channel)
-                for input_channel in self.get_input_channels_in_graph(graph_id)
-            )
+
+        return sum(
+            self.get_num_nodes_in_graph(graph_id, input_channel)
+            for input_channel in self.get_input_channels_in_graph(graph_id)
+        )
 
     def get_features_at_node(self, graph_id, input_channel, node_id, feature_keys=None):
         """Get features at a specific node in the graph.
@@ -1375,7 +1352,7 @@ class GraphMemory(LMMemory):
             graph_id: name of new graph.
             input_channel: ?
         """
-        logger.info(f"Adding a new graph to memory.")
+        logger.info("Adding a new graph to memory.")
         model = GraphObjectModel(
             object_id=graph_id,
         )
@@ -1405,7 +1382,6 @@ class GraphMemory(LMMemory):
         object_location_rel_body,
         location_rel_model,
         object_rotation,
-        object_scale,
     ):
         """Add new observations into an existing graph.
 
@@ -1417,7 +1393,6 @@ class GraphMemory(LMMemory):
             object_location_rel_body: location of object relative to body.
             location_rel_model: location of last observation relative to object model
             object_rotation: detected rotation of object model relative to world.
-            object_scale: detected scale of object model relative to world. Not used.
         """
         logger.info(f"Updating existing graph for {graph_id}")
 
@@ -1503,8 +1478,7 @@ class GraphMemory(LMMemory):
             ]:
                 continue
             feature_array_len += len(node_features[feature])
-        feature_array = np.zeros((num_nodes, feature_array_len)) * np.nan
-        return feature_array
+        return np.zeros((num_nodes, feature_array_len)) * np.nan
 
     def _extract_entries_with_content(self, features, locations):
         """Only keep features & locations at steps where information was received.

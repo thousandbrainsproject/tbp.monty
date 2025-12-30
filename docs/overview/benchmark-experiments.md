@@ -56,7 +56,7 @@ The following results are obtained from experiments using the 10-object subsets 
 
 ### Results
 
-!table[../../benchmarks/results/ycb_10objs.csv]
+!table[../../benchmarks/ycb_10objs.csv]
 
 ## Longer Experiments With all 77 YCB Objects
 
@@ -67,7 +67,7 @@ The following results are obtained from experiments on the entire YCB dataset (7
 
 ### Results
 
-!table[../../benchmarks/results/ycb_77objs.csv]
+!table[../../benchmarks/ycb_77objs.csv]
 
 ### Explanation of Some of the Results
 
@@ -97,7 +97,7 @@ An object is classified as detected correctly if the detected object ID is in th
 
 ### Results
 
-!table[../../benchmarks/results/ycb_unsupervised.csv]
+!table[../../benchmarks/ycb_unsupervised.csv]
 
 To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning, by definition, cannot be parallelized across epochs. Therefore these experiments were run without multiprocessing (using `run.py`) on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
 
@@ -111,7 +111,7 @@ More specifically, these experiments are run purely in evaluation mode (i.e., pr
 
 ### Results
 
-!table[../../benchmarks/results/ycb_unsupervised_inference.csv]
+!table[../../benchmarks/ycb_unsupervised_inference.csv]
 
 > [!WARNING]
 > 
@@ -120,6 +120,72 @@ More specifically, these experiments are run purely in evaluation mode (i.e., pr
 > We do not expect these experiments to have good performance until the RFC is implemented and [issue #214](https://github.com/thousandbrainsproject/tbp.monty/issues/214) is resolved.
 
 These experiments are currently run without multiprocessing (using `run.py`).
+
+# Compositional Datasets
+
+## Logos on Objects
+
+The following experiments evaluate Monty's ability to learn and infer compositional objects, where these consist of simple 3D objects (a disk, a cube, a cylinder, a sphere, and a mug) with 2D logos on their surface. The logos are either the [TBP](https://thousandbrains.org/) logo or the [Numenta](https://www.numenta.com/) logo. In the dataset, the logos can be in a standard orientation on the object, or oriented vertically. Finally, there is an instance of the mug with the TBP logo bent half-way along the logo at 45 degrees.
+
+![](../figures/overview/comp_logo_dataset_examples.png)
+
+We want to determine the ability of a Monty system with a hierarchy of LMs (here, a single low-level LM sending input to a single high-level LM) to build compositional models of these kinds of objects. To enable learning such models, we provide some amount of supervision to the LMs. The low and high-level LMs begin by learning the 3D objects and logos in isolation, as standalone objects. These are referred to as object "parts" in the configs. We then present Monty the compositional objects, while the low-level LM is set to perform unsupervised inference. Any object IDs it detects to the high level LM. The high level LM continues learning, and is provided with a supervised label for the compositional object (e.g. `024_mug_tbp_horz`).
+
+To measure performance, we introduced two new metrics:
+
+* `consistent_child_obj`, which measures when a learning module detects an object within the set of plausible children objects. For example, the consistent child objects for `mug_tbp_horz` would be `mug` and `tbp_logo`. We use this since the lower level LM doesn't have the compositional model and we have no ability, e.g. a semantic sensor, to know which part it was sensing.
+* `mlh_prediction_error`, which measures how closely the prediction of the most likely hypothesis matches the current input.
+
+### Results
+
+!table[../../benchmarks/logos_on_objects.csv]
+
+> [!WARNING]
+>
+> These benchmarks are not currently expected to have good performance and are used to track our research progress for compositional datasets.
+
+Note: To obtain these results, pretraining was run without parallelization across episodes, inference was run with parallelization.
+
+> [!NOTE]
+> You can download the data here:
+>
+> | Dataset | Archive Format | Download Link |
+> | --- | --- | --- |
+> | compositional_objects | tgz | [compositional_objects.tgz]((https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.tgz)) |
+> | compositional_objects | zip | [compositional_objects.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.zip) |
+> 
+> Unpack the archive in the `~/tbp/data/` folder. For example:
+>
+> ```plaintext tgz
+> mkdir -p ~/tbp/data/
+>
+> cd ~/tbp/data/
+>
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.tgz | tar -xzf -
+> ```
+> ```plaintext zip
+> mkdir -p ~/tbp/data/
+> 
+> cd ~/tbp/data/
+> 
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.zip
+> 
+> unzip compositional_objects.zip
+> ```
+>
+> To generate the pretrained models, run the following experiments in order:
+> ```
+> python run.py experiment=supervised_pre_training_flat_objects_wo_logos
+> python run.py experiment=supervised_pre_training_logos_after_flat_objects
+> python run.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_monolithic_models
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl2_comp_models
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl3_comp_models
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl4_comp_models
+> ```
+
 
 # Monty-Meets-World
 
@@ -192,7 +258,7 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 ### Results
 
-!table[../../benchmarks/results/montymeetsworld.csv]
+!table[../../benchmarks/montymeetsworld.csv]
 
 **Note that rotation errors are meaningless since no ground truth rotation is provided**
 

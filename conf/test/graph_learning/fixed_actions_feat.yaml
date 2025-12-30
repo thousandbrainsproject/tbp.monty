@@ -1,0 +1,24 @@
+defaults:
+  - /test/graph_learning/base@
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+
+config:
+  monty_config:
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.feature_location_matching.FeatureGraphLM}
+        learning_module_args:
+          max_match_distance: 0.001
+          tolerances:
+            patch:
+              on_object: 0
+              object_coverage: 0.5
+              rgba: [10, 10, 10, 10]
+              hsv: [0.1, 1, 1]
+              pose_vectors: [40, 40, 40]
+              principal_curvatures: [8, 8]
+              principal_curvatures_log: [2, 2]
+              gaussian_curvature: 10
+              mean_curvature: 5
+              gaussian_curvature_sc: 8
+              mean_curvature_sc: 4

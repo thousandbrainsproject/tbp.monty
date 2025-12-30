@@ -7,3 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from tbp.monty.hydra import register_resolvers
+
+# Initialize Hydra resolvers for test configs
+register_resolvers()

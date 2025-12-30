@@ -28,8 +28,8 @@ class TestComputePoseError(unittest.TestCase):
         """Test pose error matches the known angle between simple rotations."""
         rot1 = Rotation.from_euler("z", 0, degrees=True)
         rot2 = Rotation.from_euler("z", 10, degrees=True)
-        error = compute_pose_error(rot1, rot2)
-        self.assertAlmostEqual(error, np.deg2rad(10), places=6)
+        error = compute_pose_error(rot1, rot2, return_degrees=True)
+        self.assertAlmostEqual(error, 10, places=6)
 
     def test_min_error_from_list(self):
         """Test function returns the minimum error from a list of predicted rotations.
@@ -39,8 +39,8 @@ class TestComputePoseError(unittest.TestCase):
         """
         rotations_list = Rotation.from_euler("z", [0, 10, 20], degrees=True)
         target = Rotation.from_euler("z", 12, degrees=True)
-        error = compute_pose_error(rotations_list, target)
-        self.assertAlmostEqual(error, np.deg2rad(2), places=6)
+        error = compute_pose_error(rotations_list, target, return_degrees=True)
+        self.assertAlmostEqual(error, 2, places=6)
 
     def test_180_degree_rotation(self):
         """Test that the pose error for a 180-degree rotation is pi radians."""
@@ -58,8 +58,8 @@ class TestComputePoseError(unittest.TestCase):
         """
         rot1 = Rotation.from_euler("z", 10, degrees=True)
         rot2 = Rotation.from_euler("z", 210, degrees=True)
-        error = compute_pose_error(rot1, rot2)
-        self.assertAlmostEqual(error, np.deg2rad(160), places=6)
+        error = compute_pose_error(rot1, rot2, return_degrees=True)
+        self.assertAlmostEqual(error, 160, places=6)
 
     def test_rotation_object_from_quaternion_list(self):
         """Test that a Rotation object can be created from a list of quaternions.
