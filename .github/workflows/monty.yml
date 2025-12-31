@@ -205,8 +205,8 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           mkdir -p test_results/ruff
-          ruff check src tests conf
-          ruff format --check src tests conf
+          ruff check src tests conf run.py run_parallel.py
+          ruff format --check src tests conf run.py run_parallel.py
       - name: Changed files for a pull request
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && github.event_name == 'pull_request' }}
         id: changed_files_for_pull_request
@@ -225,8 +225,10 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
+          cat changed_files.txt
           cat changed_files.txt | grep -E '^src/|^tests/|^conf/' | grep '\.py$' > changed_files_filtered.txt
-          cat changed_files_filtered.txt | xargs ruff check --select CPY001 --config lint.flake8-copyright.notice-rgx='"Copyright\\s+.*2026"'
+          cat changed_files_filtered.txt
+          cat changed_files_filtered.txt | xargs ruff check --select CPY001 --config lint.flake8-copyright.notice-rgx='"Copyright\\s+.*2026"' -v run.py run_parallel.py
 
   check_types_monty:
     name: check-types-monty
