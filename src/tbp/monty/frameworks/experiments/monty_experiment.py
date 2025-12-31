@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-# touch for demo
 import copy
 import datetime
 import logging
