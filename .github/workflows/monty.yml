@@ -225,9 +225,11 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
-          cat changed_files.txt
           cat changed_files.txt | grep -E '^src/|^tests/|^conf/|^run.py$|^run_parallel.py$' | grep '\.py$' > changed_files_filtered.txt
-          cat changed_files_filtered.txt
+          if [ ! -s changed_files_filtered.txt ]; then
+            echo "No Python files changed"
+            exit 0
+          fi
           cat changed_files_filtered.txt | xargs ruff check --select CPY001 --config lint.flake8-copyright.notice-rgx='"Copyright\\s+.*2026"' -v
 
   check_types_monty:
