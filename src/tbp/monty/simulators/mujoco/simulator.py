@@ -131,14 +131,6 @@ class MuJoCoSimulator(Simulator):
             quat=rotation,
         )
 
-    @property
-    def num_objects(self) -> int:
-        return self._object_count
-
-    @property
-    def states(self) -> ProprioceptiveState:
-        return ProprioceptiveState({})
-
     @override
     def step(
         self, actions: Sequence[Action]
