@@ -75,24 +75,20 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def step(self, actions: Sequence[Action]) -> Observations:
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
         """Apply the given actions to the environment.
 
         Args:
             actions: The actions to apply to the environment.
 
         Returns:
-            The current observations and other environment information (i.e. sensor
-            pose) after the actions are applied.
+            The current observations and proprioceptive state.
 
         Note:
             If the actions are an empty sequence, the current observations are returned.
         """
-        pass
-
-    @abc.abstractmethod
-    def get_state(self) -> ProprioceptiveState:
-        """Returns proprioceptive state of the agent and sensors."""
         pass
 
     @abc.abstractmethod
@@ -106,11 +102,11 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         """Reset enviroment to its initial state.
 
         Returns:
-            The environment's initial observations.
+            The environment's initial observations and proprioceptive state.
         """
         pass
 
