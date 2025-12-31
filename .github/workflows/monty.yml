@@ -209,13 +209,11 @@ jobs:
           ruff format --check src tests conf run.py run_parallel.py
       - name: Changed files for a pull request
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && github.event_name == 'pull_request' }}
-        id: changed_files_for_pull_request
         working-directory: tbp.monty
         run: |
           git diff --name-only origin/${{ github.base_ref }} > changed_files.txt
       - name: Changed files for a push
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && github.event_name == 'push' }}
-        id: changed_files_for_push
         working-directory: tbp.monty
         run: |
           git diff --name-only ${{ github.sha }}^1 > changed_files.txt
