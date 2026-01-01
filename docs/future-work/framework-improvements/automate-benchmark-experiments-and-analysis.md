@@ -28,7 +28,7 @@ The tool would be better suited to Python. Transitioning from a Bash implementat
 
 Running the Monty benchmarks is time-consuming for researchers. Automating this process with the cli tool would be beneficial. However, implementing this feature in Bash proved challenging due to the numerous moving parts, and would be better suited to a full-fledged programming language.
 
-This RFC proposes rewriting the tool in Python to make maintainance and future enhancements easier. Using Python also ensures that both the research and engineering teams can more easily contribute to and maintain the tool moving forward.
+This RFC proposes rewriting the tool in Python to make maintenance and future enhancements easier. Using Python also ensures that both the research and engineering teams can more easily contribute to and maintain the tool moving forward.
 
 This rewrite will also allow us to add an option for JSON output format.
 
@@ -38,7 +38,7 @@ This work was partially completed in this branch which can be used as a referenc
 
 ### Branch Structure
 
-The paused implementation has the current merged and open branchs.
+The paused implementation has the current merged and open branches.
 
 ```
 main
