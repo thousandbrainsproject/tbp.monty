@@ -200,6 +200,7 @@ class DefaultHypothesesDisplacer:
             evidence=evidence,
             locations=search_locations,
             poses=possible_hypotheses.poses,
+            possible=possible_hypotheses.possible,
         ), HypothesisDisplacerTelemetry(mlh_prediction_error=mlh_prediction_error)
 
     def _calculate_evidence_for_new_locations(

@@ -194,6 +194,7 @@ class ChannelMapper:
             evidence=self.extract(hypotheses.evidence, channel),
             locations=self.extract(hypotheses.locations, channel),
             poses=self.extract(hypotheses.poses, channel),
+            possible=self.extract(hypotheses.possible, channel),
         )
 
     def update(
