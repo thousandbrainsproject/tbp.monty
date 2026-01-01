@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
@@ -20,13 +20,20 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     SemanticID,
     VectorXYZ,
 )
-from tbp.monty.frameworks.utils.dataclass_utils import create_dataclass_args
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.frameworks.utils.dataclass_utils import (
+    create_dataclass_args,
+)
 from tbp.monty.simulators.habitat import (
     HabitatAgent,
     HabitatSim,
     MultiSensorAgent,
     SingleSensorAgent,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 __all__ = [
     "AgentConfig",
@@ -93,7 +100,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
         objects: list[dict | ObjectConfig] | None = None,
         scene_id: str | None = None,
         seed: int = 42,
-        data_path: str | None = None,
+        data_path: str | Path | None = None,
     ):
         super().__init__()
         # TODO: Change the configuration to configure multiple agents
@@ -138,13 +145,15 @@ class HabitatEnvironment(EmbodiedEnvironment):
             primary_target_object,
         ).object_id
 
-    def step(self, actions: Sequence[Action]) -> dict[str, dict]:
-        return self._env.apply_actions(actions)
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
+        return self._env.step(actions)
 
     def remove_all_objects(self) -> None:
         return self._env.remove_all_objects()
 
-    def reset(self):
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         return self._env.reset()
 
     def close(self) -> None:
@@ -152,6 +161,3 @@ class HabitatEnvironment(EmbodiedEnvironment):
         if _env is not None:
             _env.close()
             self._env = None
-
-    def get_state(self):
-        return self._env.states

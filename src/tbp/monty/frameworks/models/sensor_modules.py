@@ -15,11 +15,15 @@ from enum import Enum
 from typing import Any, ClassVar, Protocol, TypedDict
 
 import numpy as np
-import quaternion
+import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    SensorState,
+)
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.sensor_processing import (
     log_sign,
@@ -47,7 +51,7 @@ class SnapshotTelemetry:
         self.poses = []
 
     def raw_observation(
-        self, raw_observation, rotation: quaternion.quaternion, position: np.ndarray
+        self, raw_observation, rotation: qt.quaternion, position: np.ndarray
     ):
         """Record a snapshot of a raw observation and its pose information.
 
@@ -59,7 +63,7 @@ class SnapshotTelemetry:
         self.raw_observations.append(raw_observation)
         self.poses.append(
             dict(
-                sm_rotation=quaternion.as_float_array(rotation),
+                sm_rotation=qt.as_float_array(rotation),
                 sm_location=np.array(position),
             )
         )
@@ -416,19 +420,20 @@ class Probe(SensorModule):
     def state_dict(self):
         return self._snapshot_telemetry.state_dict()
 
-    def update_state(self, state):
+    def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
-        # TODO: This stores the entire AgentState. Extract sensor-specific state.
-        self.state = state
+        sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
+        self.state = SensorState(
+            position=agent.position
+            + qt.rotate_vectors(agent.rotation, sensor.position),
+            rotation=agent.rotation * sensor.rotation,
+        )
+        self.motor_only_step = agent.motor_only_step
 
     def step(self, data) -> State | None:
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data,
-                self.state["rotation"],
-                self.state["location"]
-                if "location" in self.state.keys()
-                else self.state["position"],
+                data, self.state.rotation, self.state.position
             )
 
         return None
@@ -440,24 +445,24 @@ class Probe(SensorModule):
 
 
 class MessageNoise(Protocol):
-    def __call__(self, state: State) -> State: ...
+    def __call__(self, state: State, rng: np.random.RandomState) -> State: ...
 
 
-def no_message_noise(state: State) -> State:
-    """No noise function.
+class NoMessageNoise(MessageNoise):
+    def __call__(self, state: State, rng: np.random.RandomState) -> State:  # noqa: ARG002
+        """No noise function.
 
-    Returns:
-        State with no noise added.
-    """
-    return state
+        Returns:
+            State with no noise added.
+        """
+        return state
 
 
 class DefaultMessageNoise(MessageNoise):
-    def __init__(self, noise_params: dict[str, Any], rng):
+    def __init__(self, noise_params: dict[str, Any]):
         self.noise_params = noise_params
-        self.rng = rng
 
-    def __call__(self, state: State) -> State:
+    def __call__(self, state: State, rng: np.random.RandomState) -> State:
         """Add noise to features specified in noise_params.
 
         Noise params should have structure {"features":
@@ -472,6 +477,7 @@ class DefaultMessageNoise(MessageNoise):
 
         Args:
             state: State to add noise to.
+            rng: Random number generator.
 
         Returns:
             State with noise added.
@@ -484,7 +490,7 @@ class DefaultMessageNoise(MessageNoise):
                         # deviation specified in noise_params
                         # TODO: apply same rotation to both to make sure they stay
                         # orthogonal?
-                        noise_angles = self.rng.normal(
+                        noise_angles = rng.normal(
                             0, self.noise_params["features"][key], 3
                         )
                         noise_rotation = Rotation.from_euler(
@@ -498,6 +504,7 @@ class DefaultMessageNoise(MessageNoise):
                             self.add_noise_to_feat_value(
                                 feat_name=key,
                                 feat_val=state.morphological_features[key],
+                                rng=rng,
                             )
                         )
                 elif key in state.non_morphological_features:
@@ -505,19 +512,20 @@ class DefaultMessageNoise(MessageNoise):
                         self.add_noise_to_feat_value(
                             feat_name=key,
                             feat_val=state.non_morphological_features[key],
+                            rng=rng,
                         )
                     )
         if "location" in self.noise_params:
-            noise = self.rng.normal(0, self.noise_params["location"], 3)
+            noise = rng.normal(0, self.noise_params["location"], 3)
             state.location = state.location + noise
 
         return state
 
-    def add_noise_to_feat_value(self, feat_name, feat_val):
+    def add_noise_to_feat_value(self, feat_name, feat_val, rng: np.random.RandomState):
         if isinstance(feat_val, bool):
             # Flip boolean variable with probability specified in
             # noise_params
-            if self.rng.random() < self.noise_params["features"][feat_name]:
+            if rng.random() < self.noise_params["features"][feat_name]:
                 new_feat_val = not (feat_val)
             else:
                 new_feat_val = feat_val
@@ -526,7 +534,7 @@ class DefaultMessageNoise(MessageNoise):
             # Add gaussian noise with standard deviation specified in
             # noise_params
             shape = feat_val.shape
-            noise = self.rng.normal(0, self.noise_params["features"][feat_name], shape)
+            noise = rng.normal(0, self.noise_params["features"][feat_name], shape)
             new_feat_val = feat_val + noise
             if feat_name == "hsv":  # make sure hue stays in 0-1 range
                 new_feat_val[0] = np.clip(new_feat_val[0], 0, 1)
@@ -581,18 +589,22 @@ class HabitatSM(SensorModule):
             gaussian_curvature and mean_curvature should be used together to contain
             the same information as principal_curvatures.
         """
+        self._rng = rng
         self._habitat_observation_processor = HabitatObservationProcessor(
             features=features,
             sensor_module_id=sensor_module_id,
             pc1_is_pc2_threshold=pc1_is_pc2_threshold,
             is_surface_sm=is_surface_sm,
         )
+        # TODO: With DefaultMessageNoise not getting RNG on init anymore,
+        #       then we can initialize HabitatSM with MessageNoise, instead
+        #       of noise_params.
         if noise_params:
             self._message_noise: MessageNoise = DefaultMessageNoise(
-                noise_params=noise_params, rng=rng
+                noise_params=noise_params
             )
         else:
-            self._message_noise = no_message_noise
+            self._message_noise = NoMessageNoise()
         if delta_thresholds:
             self._state_filter: StateFilter = FeatureChangeFilter(
                 delta_thresholds=delta_thresholds
@@ -625,21 +637,15 @@ class HabitatSM(SensorModule):
         self.visited_locs = []
         self.visited_normals = []
 
-    def update_state(self, state):
+    def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
-        agent_position = state["position"]
-        sensor_position = state["sensors"][self.sensor_module_id + ".rgba"]["position"]
-        if "motor_only_step" in state.keys():
-            self.motor_only_step = state["motor_only_step"]
-        else:
-            self.motor_only_step = False
-
-        agent_rotation = state["rotation"]
-        sensor_rotation = state["sensors"][self.sensor_module_id + ".rgba"]["rotation"]
-        self.state = {
-            "location": agent_position + sensor_position,
-            "rotation": agent_rotation * sensor_rotation,
-        }
+        sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
+        self.state = SensorState(
+            position=agent.position
+            + qt.rotate_vectors(agent.rotation, sensor.position),
+            rotation=agent.rotation * sensor.rotation,
+        )
+        self.motor_only_step = agent.motor_only_step
 
     def state_dict(self):
         state_dict = self._snapshot_telemetry.state_dict()
@@ -658,17 +664,13 @@ class HabitatSM(SensorModule):
         """
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data,
-                self.state["rotation"],
-                self.state["location"]
-                if "location" in self.state.keys()
-                else self.state["position"],
+                data, self.state.rotation, self.state.position
             )
 
         observed_state, telemetry = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
-            observed_state = self._message_noise(observed_state)
+            observed_state = self._message_noise(observed_state, rng=self._rng)
 
         if self.motor_only_step:
             # Set interesting-features flag to False, as should not be passed to

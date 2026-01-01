@@ -17,7 +17,6 @@ pytest.importorskip(
 )
 
 import json
-import os
 import shutil
 import tempfile
 import unittest
@@ -33,10 +32,10 @@ from tbp.monty.frameworks.run_parallel import main
 
 class RunParallelTest(unittest.TestCase):
     def setUp(self):
-        self.output_dir = tempfile.mkdtemp()
+        self.output_dir = Path(tempfile.mkdtemp())
 
         def hydra_config(
-            test_name: str, output_dir: str, model_name_or_path: str | None = None
+            test_name: str, output_dir: Path, model_name_or_path: Path | None = None
         ) -> DictConfig:
             overrides = [
                 f"experiment=test/{test_name}",
@@ -58,32 +57,25 @@ class RunParallelTest(unittest.TestCase):
             )
             self.eval_cfg = hydra_config(
                 "eval",
-                output_dir=os.path.join(self.output_dir, "eval"),
-                model_name_or_path=os.path.join(self.output_dir, "pretrained"),
+                output_dir=self.output_dir / "eval",
+                model_name_or_path=self.output_dir / "pretrained",
             )
-            self.eval_lt_cfg = hydra_config(
-                "eval_lt", os.path.join(self.output_dir, "lt")
-            )
-            self.eval_gt_cfg = hydra_config(
-                "eval_gt", os.path.join(self.output_dir, "gt")
-            )
+            self.eval_lt_cfg = hydra_config("eval_lt", self.output_dir / "lt")
+            self.eval_gt_cfg = hydra_config("eval_gt", self.output_dir / "gt")
 
     def check_reproducibility_logs(self, serial_repro_dir, parallel_repro_dir):
-        s_param_files = sorted(p.name for p in Path(serial_repro_dir).glob("*target*"))
-        p_param_files = sorted(
-            p.name for p in Path(parallel_repro_dir).glob("*target*")
-        )
+        s_param_files = sorted(serial_repro_dir.glob("*target*"))
+        p_param_files = sorted(parallel_repro_dir.glob("*target*"))
 
         # Same param files for each episode. No more, no less.
-        self.assertEqual(set(s_param_files), set(p_param_files))
-        for file in s_param_files:
-            pfile = os.path.join(parallel_repro_dir, file)
-            sfile = os.path.join(serial_repro_dir, file)
-
-            with open(pfile) as f:
+        self.assertEqual(
+            {p.name for p in s_param_files}, {p.name for p in p_param_files}
+        )
+        for sfile, pfile in zip(s_param_files, p_param_files):
+            with pfile.open() as f:
                 ptarget = f.read()
 
-            with open(sfile) as f:
+            with sfile.open() as f:
                 starget = f.read()
 
             ptarget = json.loads(ptarget)
@@ -100,8 +92,7 @@ class RunParallelTest(unittest.TestCase):
         # serial run
         exp = hydra.utils.instantiate(self.supervised_pre_training_cfg.experiment)
         with exp:
-            exp.model.set_experiment_mode("train")
-            exp.train()
+            exp.run()
 
         # parallel run
         OmegaConf.clear_resolvers()  # main will re-register resolvers
@@ -111,16 +102,12 @@ class RunParallelTest(unittest.TestCase):
         # Compare results
         ###
         parallel_model = torch.load(
-            os.path.join(
-                self.output_dir,
-                self.supervised_pre_training_cfg.experiment.config.logging.run_name,
-                "pretrained",
-                "model.pt",
-            )
+            self.output_dir
+            / self.supervised_pre_training_cfg.experiment.config.logging.run_name
+            / "pretrained"
+            / "model.pt"
         )
-        serial_model = torch.load(
-            os.path.join(self.output_dir, "pretrained", "model.pt")
-        )
+        serial_model = torch.load(self.output_dir / "pretrained" / "model.pt")
 
         # Same objects
         self.assertEqual(
@@ -153,7 +140,7 @@ class RunParallelTest(unittest.TestCase):
         # serial run
         exp = hydra.utils.instantiate(self.eval_cfg.experiment)
         with exp:
-            exp.evaluate()
+            exp.run()
 
         # parallel run
         OmegaConf.clear_resolvers()  # main will re-register resolvers
@@ -162,10 +149,10 @@ class RunParallelTest(unittest.TestCase):
         ###
         # Compare results
         ###
-        eval_dir = os.path.join(self.output_dir, "eval")
-        parallel_eval_dir = os.path.join(eval_dir, "test_eval")
-        serial_repro_dir = os.path.join(eval_dir, "reproduce_episode_data")
-        parallel_repro_dir = os.path.join(parallel_eval_dir, "reproduce_episode_data")
+        eval_dir = self.output_dir / "eval"
+        parallel_eval_dir = eval_dir / "test_eval"
+        serial_repro_dir = eval_dir / "reproduce_episode_data"
+        parallel_repro_dir = parallel_eval_dir / "reproduce_episode_data"
 
         # Check that reproducibility logger has same files for both
         self.check_reproducibility_logs(serial_repro_dir, parallel_repro_dir)
@@ -175,17 +162,17 @@ class RunParallelTest(unittest.TestCase):
         # you don't know the execution order so it will have the same data, just
         # different order
 
-        scsv = pd.read_csv(os.path.join(eval_dir, "eval_stats.csv"))
-        pcsv = pd.read_csv(os.path.join(parallel_eval_dir, "eval_stats.csv"))
+        scsv = pd.read_csv(eval_dir / "eval_stats.csv")
+        pcsv = pd.read_csv(parallel_eval_dir / "eval_stats.csv")
 
         # We have to drop these columns because they are not the same in the parallel
         # and serial runs. In particular, 'stepwise_performance' and
         # 'stepwise_target_object' are derived from the mapping between semantic IDs to
         # names which depend on the number of objects in the environment, and
         # environments only have one object in parallel experiments.
-        for col in ["time", "stepwise_performance", "stepwise_target_object"]:
-            scsv.drop(columns=col, inplace=True)
-            pcsv.drop(columns=col, inplace=True)
+        drop_cols = ["time", "stepwise_performance", "stepwise_target_object"]
+        scsv = scsv.drop(columns=drop_cols)
+        pcsv = pcsv.drop(columns=drop_cols)
 
         self.assertTrue(pcsv.equals(scsv))
 
@@ -195,29 +182,26 @@ class RunParallelTest(unittest.TestCase):
         # serial run
         exp = hydra.utils.instantiate(self.eval_lt_cfg.experiment)
         with exp:
-            exp.evaluate()
+            exp.run()
 
         # parallel run
         OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.eval_lt_cfg)
 
-        eval_dir_lt = os.path.join(self.output_dir, "lt")
-        parallel_eval_dir_lt = os.path.join(eval_dir_lt, "test_eval_lt")
-        serial_repro_dir_lt = os.path.join(eval_dir_lt, "reproduce_episode_data")
-        parallel_repro_dir_lt = os.path.join(
-            parallel_eval_dir_lt, "reproduce_episode_data"
-        )
+        eval_dir_lt = self.output_dir / "lt"
+        parallel_eval_dir_lt = eval_dir_lt / "test_eval_lt"
+        serial_repro_dir_lt = eval_dir_lt / "reproduce_episode_data"
+        parallel_repro_dir_lt = parallel_eval_dir_lt / "reproduce_episode_data"
 
         # Check that reproducibility logger has same files for both
         self.check_reproducibility_logs(serial_repro_dir_lt, parallel_repro_dir_lt)
 
-        scsv_lt = pd.read_csv(os.path.join(eval_dir_lt, "eval_stats.csv"))
-        pcsv_lt = pd.read_csv(os.path.join(parallel_eval_dir_lt, "eval_stats.csv"))
+        scsv_lt = pd.read_csv(eval_dir_lt / "eval_stats.csv")
+        pcsv_lt = pd.read_csv(parallel_eval_dir_lt / "eval_stats.csv")
 
         # Remove columns that are not the same in the parallel and serial runs.
-        for col in ["time", "stepwise_performance", "stepwise_target_object"]:
-            scsv_lt.drop(columns=col, inplace=True)
-            pcsv_lt.drop(columns=col, inplace=True)
+        scsv_lt = scsv_lt.drop(columns=drop_cols)
+        pcsv_lt = pcsv_lt.drop(columns=drop_cols)
 
         self.assertTrue(pcsv_lt.equals(scsv_lt))
 
@@ -227,28 +211,25 @@ class RunParallelTest(unittest.TestCase):
         # serial run
         exp = hydra.utils.instantiate(self.eval_gt_cfg.experiment)
         with exp:
-            exp.evaluate()
+            exp.run()
 
         # parallel run
         OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.eval_gt_cfg)
 
-        eval_dir_gt = os.path.join(self.output_dir, "gt")
-        parallel_eval_dir_gt = os.path.join(eval_dir_gt, "test_eval_gt")
-        serial_repro_dir_gt = os.path.join(eval_dir_gt, "reproduce_episode_data")
-        parallel_repro_dir_gt = os.path.join(
-            parallel_eval_dir_gt, "reproduce_episode_data"
-        )
+        eval_dir_gt = self.output_dir / "gt"
+        parallel_eval_dir_gt = eval_dir_gt / "test_eval_gt"
+        serial_repro_dir_gt = eval_dir_gt / "reproduce_episode_data"
+        parallel_repro_dir_gt = parallel_eval_dir_gt / "reproduce_episode_data"
 
         # Check that reproducibility logger has same files for both
         self.check_reproducibility_logs(serial_repro_dir_gt, parallel_repro_dir_gt)
 
-        scsv_gt = pd.read_csv(os.path.join(eval_dir_gt, "eval_stats.csv"))
-        pcsv_gt = pd.read_csv(os.path.join(parallel_eval_dir_gt, "eval_stats.csv"))
+        scsv_gt = pd.read_csv(eval_dir_gt / "eval_stats.csv")
+        pcsv_gt = pd.read_csv(parallel_eval_dir_gt / "eval_stats.csv")
 
-        for col in ["time", "stepwise_performance", "stepwise_target_object"]:
-            scsv_gt.drop(columns=col, inplace=True)
-            pcsv_gt.drop(columns=col, inplace=True)
+        scsv_gt = scsv_gt.drop(columns=drop_cols)
+        pcsv_gt = pcsv_gt.drop(columns=drop_cols)
 
         self.assertTrue(pcsv_gt.equals(scsv_gt))
 

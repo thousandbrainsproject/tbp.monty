@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 
 import cProfile
-import os
 from pathlib import Path
 
 import pandas as pd
@@ -71,8 +70,8 @@ class ProfileExperimentMixin:
             )
 
     def make_profile_dir(self):
-        self.profile_dir = os.path.join(self.output_dir, "profile")
-        os.makedirs(self.profile_dir, exist_ok=True)
+        self.profile_dir = Path(self.output_dir) / "profile"
+        self.profile_dir.mkdir(exist_ok=True, parents=True)
 
     def setup_experiment(self, config):
         filename = "profile-setup_experiment.csv"
@@ -83,19 +82,17 @@ class ProfileExperimentMixin:
 
         self.make_profile_dir()
         df = make_stats_df(pr)
-        filepath = os.path.join(self.profile_dir, filename)
-        df.to_csv(filepath)
+        df.to_csv(self.profile_dir / filename)
 
     def run_episode(self):
         mode, epoch, episode = self.get_epoch_state()
-        filename = f"profile-{mode}_epoch_{epoch}_episode_{episode}.csv"
+        filename = f"profile-{mode.value}_epoch_{epoch}_episode_{episode}.csv"
         pr = cProfile.Profile()
         pr.enable()
         super().run_episode()
         pr.disable()
         df = make_stats_df(pr)
-        filepath = os.path.join(self.profile_dir, filename)
-        df.to_csv(filepath)
+        df.to_csv(self.profile_dir / filename)
 
     def train(self):
         filename = "profile-train.csv"
@@ -104,8 +101,7 @@ class ProfileExperimentMixin:
         super().train()
         pr.disable()
         df = make_stats_df(pr)
-        filepath = os.path.join(self.profile_dir, filename)
-        df.to_csv(filepath)
+        df.to_csv(self.profile_dir / filename)
 
     def evaluate(self):
         filename = "profile-evaluate.csv"
@@ -114,8 +110,7 @@ class ProfileExperimentMixin:
         super().evaluate()
         pr.disable()
         df = make_stats_df(pr)
-        filepath = os.path.join(self.profile_dir, filename)
-        df.to_csv(filepath)
+        df.to_csv(self.profile_dir / filename)
 
     def close(self):
         # If wandb is in use, send tables to wandb

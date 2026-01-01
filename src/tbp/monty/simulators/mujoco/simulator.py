@@ -14,7 +14,6 @@ from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 from typing_extensions import override
 
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_environment import (
     ObjectID,
     ObjectInfo,
@@ -22,6 +21,8 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     SemanticID,
     VectorXYZ,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.simulators.simulator import Simulator
 
 
@@ -53,9 +54,6 @@ class MuJoCoSimulator(Simulator):
     def _recompile(self) -> None:
         """Recompile the MuJoCo model while retaining any state data."""
         self.model, self.data = self.spec.recompile(self.model, self.data)
-
-    def initialize_agent(self, agent_id: AgentID, agent_state) -> None:
-        pass
 
     def remove_all_objects(self) -> None:
         self.spec = MjSpec()
@@ -133,24 +131,14 @@ class MuJoCoSimulator(Simulator):
             quat=rotation,
         )
 
-    @property
-    def num_objects(self) -> int:
-        return self._object_count
-
-    @property
-    def observations(self) -> None:
-        pass
-
-    @property
-    def states(self) -> None:
-        pass
-
     @override
-    def apply_actions(self, actions: Sequence[Action]) -> dict[str, dict]:
-        return {}
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
+        return Observations({}), ProprioceptiveState({})
 
-    def reset(self) -> None:
-        pass
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
+        return Observations({}), ProprioceptiveState({})
 
     def close(self) -> None:
         pass

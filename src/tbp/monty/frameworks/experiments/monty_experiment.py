@@ -12,8 +12,9 @@ from __future__ import annotations
 import copy
 import datetime
 import logging
-import os
 import pprint
+from enum import Enum
+from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
@@ -44,9 +45,18 @@ from tbp.monty.frameworks.utils.dataclass_utils import (
 )
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
 
-__all__ = ["MontyExperiment"]
+__all__ = ["ExperimentMode", "MontyExperiment"]
 
 logger = logging.getLogger("tbp.monty")
+
+
+class ExperimentMode(Enum):
+    """Experiment mode."""
+
+    EVAL = "eval"
+    """Evaluation mode."""
+    TRAIN = "train"
+    """Training mode."""
 
 
 class MontyExperiment:
@@ -67,12 +77,16 @@ class MontyExperiment:
 
         self.do_train = config["do_train"]
         self.do_eval = config["do_eval"]
+        self.experiment_mode = ExperimentMode.TRAIN
         self.max_eval_steps = config["max_eval_steps"]
         self.max_train_steps = config["max_train_steps"]
         self.max_total_steps = config["max_total_steps"]
         self.n_eval_epochs = config["n_eval_epochs"]
         self.n_train_epochs = config["n_train_epochs"]
-        self.model_path = config["model_name_or_path"]
+        if config["model_name_or_path"]:
+            self.model_path = Path(config["model_name_or_path"])
+        else:
+            self.model_path = None
         self.min_lms_match = config["min_lms_match"]
         self.rng = np.random.RandomState(config["seed"])
         self.show_sensor_output = config["show_sensor_output"]
@@ -85,8 +99,6 @@ class MontyExperiment:
         if self.show_sensor_output:
             self.live_plotter = LivePlotter()
 
-        logger.info(self.config)
-
     def setup_experiment(self, config: dict[str, Any]) -> None:
         """Set up the basic elements of a Monty experiment and initialize counters.
 
@@ -94,6 +106,7 @@ class MontyExperiment:
             config: config specifying variables of the experiment.
         """
         self.init_loggers(self.config["logging"])
+        logger.info(self.config)
         self.model = self.init_model(
             monty_config=config["monty_config"],
             model_path=self.model_path,
@@ -194,8 +207,8 @@ class MontyExperiment:
 
         # Load from checkpoint
         if model_path:
-            if "model.pt" not in model_path:
-                model_path = os.path.join(model_path, "model.pt")
+            if "model.pt" not in model_path.parts:
+                model_path = model_path / "model.pt"
             state_dict = torch.load(model_path)
             model.load_state_dict(state_dict)
 
@@ -266,6 +279,7 @@ class MontyExperiment:
             **env_interface_args,
             motor_system=self.model.motor_system,
             rng=self.rng,
+            seed=self.config["seed"],
         )
 
         assert env_interface.motor_system is self.model.motor_system
@@ -320,11 +334,13 @@ class MontyExperiment:
         self.python_log_level = logging_config["python_log_level"]
         self.log_to_file = logging_config["python_log_to_file"]
         self.log_to_stderr = logging_config["python_log_to_stderr"]
-        self.output_dir = logging_config["output_dir"]
+        self.output_dir = Path(logging_config["output_dir"])
         self.run_name = logging_config["run_name"]
 
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
+        self.output_dir.mkdir(exist_ok=True, parents=True)
+
+        # Treat as root logger
+        logger.propagate = False
 
         # Clear any existing tpb.monty logger handlers
         for handler in logger.handlers:
@@ -334,7 +350,7 @@ class MontyExperiment:
         python_logging_handlers: list[logging.Handler] = []
         if self.log_to_file:
             python_logging_handlers.append(
-                logging.FileHandler(os.path.join(self.output_dir, "log.txt"), mode="w")
+                logging.FileHandler(self.output_dir / "log.txt", mode="w")
             )
         if self.log_to_stderr:
             handler = logging.StreamHandler()
@@ -436,16 +452,14 @@ class MontyExperiment:
         )
 
     def get_epoch_state(self):
-        mode = self.model.experiment_mode
-
-        if mode == "train":
+        if self.experiment_mode is ExperimentMode.TRAIN:
             epoch = self.train_epochs
             episode = self.train_episodes
         else:
             epoch = self.eval_epochs
             episode = self.eval_episodes
 
-        return mode, epoch, episode
+        return self.experiment_mode, epoch, episode
 
     ####
     # Methods for running the experiment
@@ -476,7 +490,7 @@ class MontyExperiment:
         self.env_interface.pre_episode()
 
         self.max_steps = self.max_train_steps
-        if self.model.experiment_mode != "train":
+        if self.experiment_mode is not ExperimentMode.TRAIN:
             self.max_steps = self.max_eval_steps
 
         self.logger_handler.pre_episode(self.logger_args)
@@ -500,7 +514,7 @@ class MontyExperiment:
         self.logger_handler.post_episode(self.logger_args)
         self.model.post_episode()
 
-        if self.model.experiment_mode == "train":
+        if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_episodes += 1
             self.total_train_steps += steps
         else:
@@ -536,7 +550,7 @@ class MontyExperiment:
     def pre_epoch(self):
         """Set environment interface and call sub pre_epoch functions."""
         self.env_interface = self.train_env_interface
-        if self.model.experiment_mode != "train":
+        if self.experiment_mode is not ExperimentMode.TRAIN:
             self.env_interface = self.eval_env_interface
 
         self.env_interface.pre_epoch()
@@ -545,20 +559,28 @@ class MontyExperiment:
     def post_epoch(self):
         """Call sub post_epoch functions and save state dict."""
         # NOTE: maybe an option not to save everything every epoch?
-        self.save_state_dict(
-            output_dir=os.path.join(self.output_dir, f"{self.train_epochs}")
-        )
+        self.save_state_dict(output_dir=self.output_dir / f"{self.train_epochs}")
         self.logger_handler.post_epoch(self.logger_args)
 
-        if self.model.experiment_mode == "train":
+        if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_epochs += 1
             self.train_env_interface.post_epoch()
         else:
             self.eval_epochs += 1
             self.eval_env_interface.post_epoch()
 
+    def run(self):
+        """Run the experiment."""
+        if self.do_train:
+            self.train()
+
+        if self.do_eval:
+            self.evaluate()
+
     def train(self):
         """Run n_train_epochs."""
+        logger.info(f"running {self.n_train_epochs} train epochs")
+        self.experiment_mode = ExperimentMode.TRAIN
         self.logger_handler.pre_train(self.logger_args)
         self.model.set_experiment_mode("train")
         for _ in range(self.n_train_epochs):
@@ -567,6 +589,8 @@ class MontyExperiment:
 
     def evaluate(self):
         """Run n_eval_epochs."""
+        logger.info(f"running {self.n_eval_epochs} eval epochs")
+        self.experiment_mode = ExperimentMode.EVAL
         # TODO: check that number of eval epochs is at least as many as length
         # of environment interface number of rotations
         self.logger_handler.pre_eval(self.logger_args)
@@ -592,7 +616,7 @@ class MontyExperiment:
         model_state_dict = self.model.state_dict()
         exp_state_dict = self.state_dict()
         output_dir = output_dir if output_dir is not None else self.output_dir
-        os.makedirs(output_dir, exist_ok=True)
+        output_dir.mkdir(exist_ok=True, parents=True)
         # When performing evaluation with parallel runs on a remote server
         # (assumed if we are using parallel wandb logging), then don't save models;
         # these can fill a huge amount of hard-disk memory before they are cleaned up
@@ -601,21 +625,22 @@ class MontyExperiment:
         # TODO can consider a save frequency for training as well; e.g. currently
         # with training from scratch, we save +++ data
         if (
-            self.model.experiment_mode == "eval"
+            self.experiment_mode is ExperimentMode.EVAL
             and self.monty_logger.use_parallel_wandb_logging
         ):
             pass
         else:
             logger.info(f"saving model to {output_dir}")
-            torch.save(model_state_dict, os.path.join(output_dir, "model.pt"))
-            torch.save(exp_state_dict, os.path.join(output_dir, "exp_state_dict.pt"))
-            torch.save(self.config, os.path.join(output_dir, "config.pt"))
+            torch.save(model_state_dict, output_dir / "model.pt")
+            torch.save(exp_state_dict, output_dir / "exp_state_dict.pt")
+            torch.save(self.config, output_dir / "config.pt")
 
     def load_state_dict(self, load_dir):
         """Load state_dict of previous experiment."""
-        model_state_dict = torch.load(os.path.join(load_dir, "model.pt"))
-        exp_state_dict = torch.load(os.path.join(load_dir, "exp_state_dict.pt"))
-        config = torch.load(os.path.join(load_dir, "config.pt"))
+        load_dir = Path(load_dir)
+        model_state_dict = torch.load(load_dir / "model.pt")
+        exp_state_dict = torch.load(load_dir / "exp_state_dict.pt")
+        config = torch.load(load_dir / "config.pt")
         state_dict_keys = self.state_dict().keys()
 
         self.model.load_state_dict(model_state_dict)

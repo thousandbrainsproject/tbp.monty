@@ -7,13 +7,14 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
-import os
 import unittest
 from pathlib import Path
 
 import hydra
 import numpy as np
+import numpy.typing as npt
 from omegaconf import OmegaConf
 from typing_extensions import override
 
@@ -32,11 +33,22 @@ from tbp.monty.frameworks.environments.two_d_data import (
     SaccadeOnImageEnvironment,
     SaccadeOnImageFromStreamEnvironment,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    AgentObservations,
+    Modality,
+    Observations,
+    SensorObservations,
+)
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
+from tbp.monty.frameworks.models.motor_system_state import (
+    MotorSystemState,
+    ProprioceptiveState,
+)
+from tbp.monty.frameworks.sensors import SensorID
 
 AGENT_ID = AgentID("agent_id_0")
-SENSOR_ID = "sensor_id_0"
+SENSOR_ID = SensorID("sensor_id_0")
 NUM_STEPS = 10
 POSSIBLE_ACTIONS_DIST = [
     f"{AGENT_ID}.look_down",
@@ -46,7 +58,9 @@ POSSIBLE_ACTIONS_DIST = [
     f"{AGENT_ID}.turn_right",
 ]
 POSSIBLE_ACTIONS_ABS = [f"{AGENT_ID}.set_yaw", f"{AGENT_ID}.set_sensor_pitch"]
-EXPECTED_STATES = np.random.rand(NUM_STEPS)
+EXPECTED_STATES: npt.NDArray[np.uint8] = np.random.randint(
+    0, 256, size=NUM_STEPS, dtype=np.uint8
+)
 
 
 class FakeEnvironmentRel(EmbodiedEnvironment):
@@ -58,27 +72,41 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
         return ObjectID(-1)
 
     @override
-    def step(self, actions):
+    def step(self, actions) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
-        return {
-            f"{AGENT_ID}": {
-                f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
+        obs = Observations(
+            {
+                AGENT_ID: AgentObservations(
+                    {
+                        SENSOR_ID: SensorObservations(
+                            {Modality("raw"): EXPECTED_STATES[self._current_state]}
+                        )
+                    }
+                )
             }
-        }
+        )
+        return obs, ProprioceptiveState({})
 
-    def get_state(self):
-        return None
+    def get_state(self) -> ProprioceptiveState:
+        return ProprioceptiveState({})
 
     def remove_all_objects(self):
         pass
 
-    def reset(self):
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self._current_state = 0
-        return {
-            f"{AGENT_ID}": {
-                f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
+        obs = Observations(
+            {
+                AGENT_ID: AgentObservations(
+                    {
+                        SENSOR_ID: SensorObservations(
+                            {Modality("raw"): EXPECTED_STATES[self._current_state]}
+                        )
+                    }
+                )
             }
-        }
+        )
+        return obs, ProprioceptiveState({})
 
     def close(self):
         self._current_state = None
@@ -93,27 +121,41 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
         return ObjectID(-1)
 
     @override
-    def step(self, actions):
+    def step(self, actions) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
-        return {
-            f"{AGENT_ID}": {
-                f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
+        obs = Observations(
+            {
+                AGENT_ID: AgentObservations(
+                    {
+                        SENSOR_ID: SensorObservations(
+                            {Modality("raw"): EXPECTED_STATES[self._current_state]}
+                        )
+                    }
+                )
             }
-        }
+        )
+        return obs, ProprioceptiveState({})
 
-    def get_state(self):
-        return None
+    def get_state(self) -> ProprioceptiveState:
+        return ProprioceptiveState({})
 
     def remove_all_objects(self):
         pass
 
-    def reset(self):
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self._current_state = 0
-        return {
-            f"{AGENT_ID}": {
-                f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
+        obs = Observations(
+            {
+                AGENT_ID: AgentObservations(
+                    {
+                        SENSOR_ID: SensorObservations(
+                            {Modality("raw"): EXPECTED_STATES[self._current_state]}
+                        )
+                    }
+                )
             }
-        }
+        )
+        return obs, ProprioceptiveState({})
 
     def close(self):
         self._current_state = None
@@ -135,7 +177,8 @@ class EmbodiedDataTest(unittest.TestCase):
             ).test.config.monty.motor_system.motor_system_args.policy_args
 
     def test_embodied_env_interface_dist(self):
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
         base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
         base_policy_cfg_dist["agent_id"] = AGENT_ID
         motor_system_dist = MotorSystem(
@@ -146,30 +189,36 @@ class EmbodiedDataTest(unittest.TestCase):
             env,
             rng=rng,
             motor_system=motor_system_dist,
+            seed=seed,
         )
 
         for i in range(1, NUM_STEPS):
             obs_dist, _ = env_interface_dist.step(motor_system_dist())
             print(obs_dist)
             self.assertTrue(
-                np.all(obs_dist[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
+                np.all(
+                    obs_dist[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[i]
+                )
             )
 
-        initial_state, _ = env_interface_dist.reset()
+        initial_obs, _ = env_interface_dist.reset()
         self.assertTrue(
-            np.all(initial_state[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[0])
+            np.all(
+                initial_obs[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[0]
+            )
         )
         obs_dist, _ = env_interface_dist.step(motor_system_dist())
         self.assertFalse(
             np.all(
-                obs_dist[AGENT_ID][SENSOR_ID]["sensor"]
-                == initial_state[AGENT_ID][SENSOR_ID]["sensor"]
+                obs_dist[AGENT_ID][SENSOR_ID][Modality("raw")]
+                == initial_obs[AGENT_ID][SENSOR_ID][Modality("raw")]
             )
         )
 
     # @unittest.skip("debugging")
     def test_embodied_env_interface_abs(self):
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
         base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
 
@@ -181,29 +230,36 @@ class EmbodiedDataTest(unittest.TestCase):
             env,
             rng=rng,
             motor_system=motor_system_abs,
+            seed=seed,
         )
 
         for i in range(1, NUM_STEPS):
             obs_abs, _ = env_interface_abs.step(motor_system_abs())
             self.assertTrue(
-                np.all(obs_abs[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
+                np.all(
+                    obs_abs[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[i]
+                )
             )
 
         initial_state, _ = env_interface_abs.reset()
         self.assertTrue(
-            np.all(initial_state[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[0])
+            np.all(
+                initial_state[AGENT_ID][SENSOR_ID][Modality("raw")]
+                == EXPECTED_STATES[0]
+            )
         )
         obs_abs, _ = env_interface_abs.step(motor_system_abs())
         self.assertFalse(
             np.all(
-                obs_abs[AGENT_ID][SENSOR_ID]["sensor"]
-                == initial_state[AGENT_ID][SENSOR_ID]["sensor"]
+                obs_abs[AGENT_ID][SENSOR_ID][Modality("raw")]
+                == initial_state[AGENT_ID][SENSOR_ID][Modality("raw")]
             )
         )
 
     # @unittest.skip("debugging")
     def test_embodied_env_interface_dist_states(self):
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
         base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
         base_policy_cfg_dist["agent_id"] = AGENT_ID
 
@@ -212,19 +268,20 @@ class EmbodiedDataTest(unittest.TestCase):
         )
         env = FakeEnvironmentRel()
         env_interface_dist = EnvironmentInterface(
-            env=env, rng=rng, motor_system=motor_system_dist
+            env=env, rng=rng, motor_system=motor_system_dist, seed=seed
         )
 
         for i, item in enumerate(env_interface_dist):
             self.assertTrue(
-                np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
+                np.all(item[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[i])
             )
             if i >= NUM_STEPS - 1:
                 break
 
     # @unittest.skip("debugging")
     def test_embodied_env_interface_abs_states(self):
-        rng = np.random.RandomState(42)
+        seed = 42
+        rng = np.random.RandomState(seed)
 
         base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
@@ -234,12 +291,12 @@ class EmbodiedDataTest(unittest.TestCase):
         )
         env = FakeEnvironmentAbs()
         env_interface_abs = EnvironmentInterface(
-            env=env, rng=rng, motor_system=motor_system_abs
+            env=env, rng=rng, motor_system=motor_system_abs, seed=seed
         )
 
         for i, item in enumerate(env_interface_abs):
             self.assertTrue(
-                np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
+                np.all(item[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[i])
             )
             if i >= NUM_STEPS - 1:
                 break
@@ -301,19 +358,17 @@ class EmbodiedDataTest(unittest.TestCase):
 
     def test_saccade_on_image_env_interface(self):
         rng = np.random.RandomState(42)
-        sensor_id = "patch"
+        sensor_id = SensorID("patch")
         patch_size = 48
         expected_keys = ["depth", "rgba", "pixel_loc"]
 
-        data_path = os.path.join(
-            Path(__file__).parent, "resources/dataloader_test_images/"
-        )
+        data_path = Path(__file__).parent / "resources" / "dataloader_test_images"
 
         base_policy_cfg_rel = OmegaConf.to_object(self.policy_cfg_fragment)
         base_policy_cfg_rel["agent_id"] = AGENT_ID
 
         motor_system_rel = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_rel)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_rel), state=MotorSystemState()
         )
 
         env_init_args = {"patch_size": patch_size, "data_path": data_path}
@@ -351,13 +406,15 @@ class EmbodiedDataTest(unittest.TestCase):
 
     def test_saccade_on_image_stream_env_interface(self):
         rng = np.random.RandomState(42)
-        sensor_id = "patch"
+        sensor_id = SensorID("patch")
         patch_size = 48
         expected_keys = ["depth", "rgba", "pixel_loc"]
 
-        data_path = os.path.join(
-            Path(__file__).parent,
-            "resources/dataloader_test_images/0_numenta_mug/",
+        data_path = (
+            Path(__file__).parent
+            / "resources"
+            / "dataloader_test_images"
+            / "0_numenta_mug"
         )
 
         base_policy_cfg_rel = OmegaConf.to_object(self.policy_cfg_fragment)

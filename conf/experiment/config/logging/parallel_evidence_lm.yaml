@@ -14,4 +14,3 @@ wandb_handlers:
 wandb_group: "parallel_eval_runs"
 monty_log_level: "BASIC"
 python_log_level: "WARNING"
-log_parallel_wandb: true

@@ -1171,11 +1171,11 @@ class EvidenceGraphLM(GraphLM):
             mlh = self._get_mlh_dict_from_id(graph_id, mlh_id)
         else:
             highest_evidence_so_far = -np.inf
-            for graph_id in self.get_all_known_object_ids():
-                mlh_id = np.argmax(self.evidence[graph_id])
-                evidence = self.evidence[graph_id][mlh_id]
+            for next_graph_id in self.get_all_known_object_ids():
+                mlh_id = np.argmax(self.evidence[next_graph_id])
+                evidence = self.evidence[next_graph_id][mlh_id]
                 if evidence > highest_evidence_so_far:
-                    mlh = self._get_mlh_dict_from_id(graph_id, mlh_id)
+                    mlh = self._get_mlh_dict_from_id(next_graph_id, mlh_id)
                     highest_evidence_so_far = evidence
             if not mlh:  # No objects in memory
                 mlh = self.current_mlh

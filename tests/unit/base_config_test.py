@@ -10,13 +10,14 @@
 
 import pytest
 
+from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
 )
 
 import logging
-import os
 import shutil
 import tempfile
 import unittest
@@ -58,6 +59,7 @@ class BaseConfigTest(unittest.TestCase):
     def test_can_run_episode(self):
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.env_interface = exp.train_env_interface
             exp.run_episode()
@@ -66,6 +68,7 @@ class BaseConfigTest(unittest.TestCase):
     def test_can_run_train_epoch(self):
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.run_epoch()
 
@@ -73,6 +76,7 @@ class BaseConfigTest(unittest.TestCase):
     def test_can_run_eval_epoch(self):
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode("eval")
             exp.run_epoch()
 
@@ -168,7 +172,7 @@ class BaseConfigTest(unittest.TestCase):
             logger.info(info_message)
             logger.warning(warning_message)
 
-            with open(os.path.join(exp.output_dir, "log.txt")) as f:
+            with (exp.output_dir / "log.txt").open() as f:
                 log = f.read()
 
             self.assertTrue(info_message in log)
@@ -189,11 +193,56 @@ class BaseConfigTest(unittest.TestCase):
             logger.debug(debug_message)
             logger.warning(warning_message)
 
-            with open(os.path.join(exp.output_dir, "log.txt")) as f:
+            with (exp.output_dir / "log.txt").open() as f:
                 log = f.read()
 
             self.assertTrue(debug_message not in log)
             self.assertTrue(warning_message in log)
+
+
+class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
+    def setUp(self):
+        self.output_dir = tempfile.mkdtemp()
+
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=evidence_lm/base",
+                    "+experiment/config/logging@test.config.logging=detailed_evidence_lm",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+
+    def tearDown(self):
+        shutil.rmtree(self.output_dir)
+
+    def test_can_set_up(self):
+        """Canary for setup_experiment.
+
+        This could be part of the setUp method, but it's easier to debug if
+        something breaks the setup_experiment method if there's a separate test for it.
+        """
+        exp = hydra.utils.instantiate(self.cfg.test)
+        with exp:
+            pass
+
+    def test_logging_detailed_evidence_lm_config_creates_json(self) -> None:
+        """Test for the detailed evidence LM logging config.
+
+        This ensures the config can be composed, the experiment can be instantiated,
+        and that running an episode produces detailed logging json file.
+        """
+        exp = hydra.utils.instantiate(self.cfg.test)
+        with exp:
+            exp.model.set_experiment_mode("eval")
+            exp.run_epoch()
+
+        # Detailed logging handler should create a detailed_run_stats.json file
+        self.assertTrue(
+            (exp.output_dir / "detailed_run_stats.json").exists(),
+            "Expected detailed_run_stats.json file to be created",
+        )
 
 
 if __name__ == "__main__":

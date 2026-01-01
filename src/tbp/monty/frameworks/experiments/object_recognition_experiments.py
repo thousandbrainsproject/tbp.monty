@@ -9,15 +9,16 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
-import os
 
 import torch
 
 from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
 )
-
-from .monty_experiment import MontyExperiment
+from tbp.monty.frameworks.experiments.monty_experiment import (
+    ExperimentMode,
+    MontyExperiment,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         self.env_interface.pre_episode()
 
         self.max_steps = self.max_train_steps
-        if self.model.experiment_mode != "train":
+        if self.experiment_mode is not ExperimentMode.TRAIN:
             self.max_steps = self.max_eval_steps
 
         self.logger_handler.pre_episode(self.logger_args)
@@ -126,8 +127,8 @@ class MontyGeneralizationExperiment(MontyObjectRecognitionExperiment):
 
     def pre_episode(self):
         """Pre episode where we pass target object to the model for logging."""
-        if "model.pt" not in self.model_path:
-            model_path = os.path.join(self.model_path, "model.pt")
+        if "model.pt" not in self.model_path.parts:
+            model_path = self.model_path / "model.pt"
         state_dict = torch.load(model_path)
         print(f"loading models again from {model_path}")
         self.model.load_state_dict(state_dict)

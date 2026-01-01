@@ -13,7 +13,6 @@ from __future__ import annotations
 import copy
 import json
 import logging
-import os
 import shutil
 from collections import deque
 from itertools import chain
@@ -23,7 +22,7 @@ from sys import getsizeof
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import quaternion
+import quaternion as qt
 import torch
 from scipy.spatial.transform import Rotation
 
@@ -54,17 +53,17 @@ def load_stats(
     train_stats, eval_stats, detailed_stats, lm_models = None, None, None, None
     if load_train:
         print("...loading and checking train statistics...")
-        train_stats = pd.read_csv(os.path.join(exp_path, "train_stats.csv"))
+        train_stats = pd.read_csv(exp_path / "train_stats.csv")
 
     if load_eval:
         print("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp_path, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp_path / "eval_stats.csv")
 
     if load_detailed:
         print("...loading detailed run statistics...")
-        json_file = os.path.join(exp_path, "detailed_run_stats.json")
+        json_file = exp_path / "detailed_run_stats.json"
         try:
-            with open(json_file) as f:
+            with json_file.open() as f:
                 detailed_stats = json.load(f)
         except ValueError:
             detailed_stats = deserialize_json_chunks(json_file)
@@ -82,7 +81,7 @@ def load_models_from_dir(exp_path, pretrained_dict=None):
 
     if pretrained_dict is not None:
         lm_models["pretrained"] = {}
-        state_dict = torch.load(os.path.join(pretrained_dict, "model.pt"))
+        state_dict = torch.load(Path(pretrained_dict) / "model.pt")
         for lm_id in list(state_dict["lm_dict"].keys()):
             pretrained_models = state_dict["lm_dict"][lm_id]["graph_memory"]
             lm_models["pretrained"][lm_id] = pretrained_models
@@ -90,7 +89,7 @@ def load_models_from_dir(exp_path, pretrained_dict=None):
     for child in Path(exp_path).iterdir():
         folder = child.name
         if folder.isnumeric():
-            state_dict = torch.load(os.path.join(exp_path, folder, "model.pt"))
+            state_dict = torch.load(child / "model.pt")
             for lm_id in list(state_dict["lm_dict"].keys()):
                 epoch_models = state_dict["lm_dict"][lm_id]["graph_memory"]
                 if folder not in lm_models.keys():
@@ -125,7 +124,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
 
     detailed_json = {}
     stop = stop or np.inf
-    with open(json_file) as f:
+    with Path(json_file).open() as f:
         for line_counter, line in enumerate(f):
             if should_get_episode(start, stop, episodes, line_counter):
                 # NOTE: json logging is only used at inference time and inference
@@ -230,10 +229,7 @@ def get_unique_euler_poses(poses):
     Returns:
         unique_poses: array of unique poses
     """
-    all_poses = []
-    for path_poses in poses:
-        for pose in path_poses:
-            all_poses.append(pose)
+    all_poses = [pose for path_poses in poses for pose in path_poses]
     return np.unique(all_poses, axis=0)
 
 
@@ -842,9 +838,7 @@ def target_data_to_dict(target):
     output_dict["primary_target_object"] = target["object"]
     output_dict["primary_target_position"] = target["position"]
     output_dict["primary_target_rotation_euler"] = target["euler_rotation"]
-    output_dict["primary_target_rotation_quat"] = quaternion.as_float_array(
-        target["rotation"]
-    )
+    output_dict["primary_target_rotation_quat"] = qt.as_float_array(target["rotation"])
     # Currently scale is applied uniformly along all dimensions
     output_dict["primary_target_scale"] = target["scale"][0]
 

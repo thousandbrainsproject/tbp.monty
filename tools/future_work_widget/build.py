@@ -50,7 +50,7 @@ def build(
         if error_message is not None:
             return BuildResult(success=False, error_message=error_message)
 
-        with open(index_file, encoding="utf-8") as f:
+        with index_file.open(encoding="utf-8") as f:
             raw_data = json.load(f)
 
         total_items = len(raw_data)
@@ -70,7 +70,7 @@ def build(
             return _return_error_result(e, future_work_items, total_items)
         else:
             data_file = output_dir / "data.json"
-            with open(data_file, "w", encoding="utf-8") as f:
+            with data_file.open("w", encoding="utf-8") as f:
                 f.write(index.model_dump_json(indent=2, by_alias=True))
 
             return BuildResult(

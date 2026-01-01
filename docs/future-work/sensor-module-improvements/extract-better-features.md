@@ -6,7 +6,7 @@ estimated-scope: medium
 improved-metric: noise, accuracy, numsteps
 output-type: monty-feature, PR
 skills: python, research, computer-vision
-contributor: 
+contributor: tcdubs, ryan9186, roccolep
 status: evergreen
 ---
 

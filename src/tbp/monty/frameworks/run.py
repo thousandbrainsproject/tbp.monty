@@ -10,24 +10,23 @@ from __future__ import annotations
 
 import logging
 import os
-import pprint
 import time
 from pathlib import Path
 
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.hydra import register_resolvers
 
 logger = logging.getLogger(__name__)
 
 
-def print_config(config):
-    """Print config with nice formatting if config_args.print_config is True."""
+def print_config(config: DictConfig) -> None:
+    """Print config with nice formatting."""
     print("\n\n")
     print("Printing config below")
     print("-" * 100)
-    print(pprint.pformat(config))
+    print(OmegaConf.to_yaml(config))
     print("-" * 100)
 
 
@@ -46,18 +45,10 @@ def main(cfg: DictConfig):
     )
     cfg.experiment.config.logging.output_dir = str(output_dir)
 
-    os.makedirs(cfg.experiment.config.logging.output_dir, exist_ok=True)
+    output_dir.mkdir(exist_ok=True, parents=True)
     experiment = hydra.utils.instantiate(cfg.experiment)
     start_time = time.time()
-    with experiment as exp:
-        # TODO: Later will want to evaluate every x episodes or epochs
-        # this could probably be solved with just setting the logging freqency
-        # Since each trainng loop already does everything that eval does.
-        if exp.do_train:
-            print("---------training---------")
-            exp.train()
+    with experiment:
+        experiment.run()
 
-        if exp.do_eval:
-            print("---------evaluating---------")
-            exp.evaluate()
     logger.info(f"Done running {experiment} in {time.time() - start_time} seconds")

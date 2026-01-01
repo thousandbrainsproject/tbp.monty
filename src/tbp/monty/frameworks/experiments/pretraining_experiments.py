@@ -9,7 +9,7 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
-import os
+from pathlib import Path
 
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
@@ -18,8 +18,10 @@ from scipy.spatial.transform import Rotation
 from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
 )
-
-from .monty_experiment import MontyExperiment
+from tbp.monty.frameworks.experiments.monty_experiment import (
+    ExperimentMode,
+    MontyExperiment,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +43,8 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         # place and models in another. Changing the config ensures every reference to
         # output_dir has "pretrained" added to it
         config = OmegaConf.to_object(config)
-        output_dir = config["logging"]["output_dir"]
-        config["logging"]["output_dir"] = os.path.join(output_dir, "pretrained")
+        output_dir = Path(config["logging"]["output_dir"])
+        config["logging"]["output_dir"] = output_dir / "pretrained"
         self.first_epoch_object_location = {}
         super().__init__(config)
 
@@ -173,6 +175,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
     def train(self):
         """Save state_dict at the end of training."""
+        self.experiment_mode = ExperimentMode.TRAIN
         self.logger_handler.pre_train(self.logger_args)
         self.model.set_experiment_mode("train")
         for sm in self.model.sensor_modules:

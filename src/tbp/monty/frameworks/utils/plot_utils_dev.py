@@ -14,8 +14,8 @@ files to segment what is imported.
 
 from __future__ import annotations
 
-import os
-from typing import TYPE_CHECKING, Any, Sequence, cast
+from pathlib import Path
+from typing import Any, Sequence, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,9 +35,6 @@ from tbp.monty.frameworks.utils.plot_utils import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 from tbp.monty.frameworks.utils.transform_utils import numpy_to_scipy_quat
 
-if TYPE_CHECKING:
-    from numbers import Number
-
 
 def plot_graph(
     graph: Data | GraphObjectModel,
@@ -45,7 +42,7 @@ def plot_graph(
     show_edges: bool = False,
     show_trisurf: bool = False,
     show_axticks: bool = False,
-    rotation: Number = -80,
+    rotation: float = -80,
     ax_lim: Sequence | None = None,
     ax: Axes3D | None = None,
 ) -> Figure:
@@ -542,8 +539,7 @@ def show_initial_hypotheses(
     possible_ax = ["x", "y", "z"]
     plt.title(f"Possible Rotations along {possible_ax[axis]} axis")
     if save_fig:
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+        Path(save_path).mkdir(exist_ok=True, parents=True)
         print("figure saved at " + save_path)
         plt.savefig(
             save_path + f"initialH_{episode}_{obj}_{possible_ax[axis]}.png",
@@ -722,8 +718,7 @@ def plot_evidence_at_step(
         ax2.set_xticks([]), ax2.set_yticks([]), ax2.set_zticks([])
 
     if save_fig:
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+        Path(save_path).mkdir(exist_ok=True, parents=True)
         print("figure saved at " + save_path)
         plt.savefig(
             save_path + f"{episode}_{step}.png",
@@ -1024,13 +1019,13 @@ class PolicyPlot:
             # The location and rotation of the agent (temporarily) before it jumped back
             temp_agent_loc = self.detailed_stats[str(self.episode)]["motor_system"][
                 "action_details"
-            ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["position"]
+            ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")].position
 
             temp_agent_rot = Rotation.from_quat(
                 numpy_to_scipy_quat(
                     self.detailed_stats[str(self.episode)]["motor_system"][
                         "action_details"
-                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["rotation"]
+                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")].rotation
                 )
             )
 
@@ -1043,7 +1038,7 @@ class PolicyPlot:
                 x
                 for x in self.detailed_stats[str(self.episode)]["motor_system"][
                     "action_details"
-                ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["sensors"]
+                ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")].sensors
                 if "patch" in x and ".depth" in x
             ]
 
@@ -1051,18 +1046,18 @@ class PolicyPlot:
                 temp_sensor_loc = np.array(temp_agent_loc) + np.array(
                     self.detailed_stats[str(self.episode)]["motor_system"][
                         "action_details"
-                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["sensors"][
-                        sensor_key
-                    ]["position"]
+                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]
+                    .sensors[sensor_key]
+                    .position
                 )
 
                 partial_sensor_rot = Rotation.from_quat(
                     numpy_to_scipy_quat(
                         self.detailed_stats[str(self.episode)]["motor_system"][
                             "action_details"
-                        ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["sensors"][
-                            sensor_key
-                        ]["rotation"]
+                        ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]
+                        .sensors[sensor_key]
+                        .rotation
                     )
                 )
                 temp_sensor_rot = (
@@ -1217,8 +1212,7 @@ class PolicyPlot:
         self.ax.set_aspect("equal")
 
         if save_path is not None:
-            if not os.path.exists(save_path):
-                os.makedirs(save_path)
+            Path(save_path).mkdir(exist_ok=True, parents=True)
             print("figure saved at " + save_path)
             plt.savefig(
                 save_path + f"{self.episode}.png",
@@ -1301,8 +1295,7 @@ def plot_learned_graph(
         ax.view_init(view[0], view[1])
 
     if save_fig:
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+        Path(save_path).mkdir(exist_ok=True, parents=True)
         print("figure saved at " + save_path)
         plt.savefig(
             save_path + f"{episode}.png",
@@ -1370,9 +1363,9 @@ def plot_graph_mismatch(
     #         # internal estimates are
     #         corrected_current_loc = current_env_position - np.array(
     #             [0, 1.5, 0]
-    #         )  # TODO
-    #         # remove hard-coding of initial object position; note don't need to
-    #         # rotate because already fully in environmental-coordinates
+    #         )  # TODO: remove hard-coding of initial object position
+    #         # note don't need to rotate because already fully in
+    #         # environmental-coordinates
     #         gt_graph = gt_rotation.apply(gt_graph) - corrected_current_loc
     #         # Convert from environmental coordinates to the learned coordinate of
     #         # 2nd object
@@ -1472,8 +1465,7 @@ def plot_graph_mismatch(
         ax.view_init(view[0], view[1])
 
     if save_fig:
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+        Path(save_path).mkdir(exist_ok=True, parents=True)
         plt.savefig(
             fname=save_path + plot_name,
             dpi=300,
@@ -1561,8 +1553,7 @@ def plot_hotspots(
         ax.view_init(view[0], view[1])
 
     if save_fig:
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+        Path(save_path).mkdir(exist_ok=True, parents=True)
         print("figure saved at " + save_path)
         plt.savefig(
             save_path,

@@ -16,7 +16,7 @@ import time
 from typing import Any, Callable, ClassVar
 
 import numpy as np
-import quaternion
+import quaternion as qt
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from scipy.spatial.transform import Rotation
@@ -281,12 +281,18 @@ class FeatureAtLocationBuffer:
         Returns:
             The current displacement.
         """
-        if input_channel == "all" or input_channel is None:
-            all_disps = {}
-            for input_channel in self.displacements.keys():
-                all_disps[input_channel] = self.get_current_displacement(input_channel)
-            return all_disps
         return self.get_nth_displacement(-1, input_channel)
+
+    def get_all_current_displacements(self):
+        """Get all current displacements.
+
+        Returns:
+            A dictionary mapping channels to all current displacements.
+        """
+        return {
+            channel: self.get_current_displacement(channel)
+            for channel in self.displacements.keys()
+        }
 
     def get_current_ppf(self, input_channel):
         """Get the current ppf.
@@ -660,9 +666,7 @@ BufferEncoder.register(np.generic, lambda obj: obj.item())
 BufferEncoder.register(np.ndarray, lambda obj: obj.tolist())
 BufferEncoder.register(Rotation, lambda obj: obj.as_euler("xyz", degrees=True))
 BufferEncoder.register(torch.Tensor, lambda obj: obj.cpu().numpy())
-BufferEncoder.register(
-    quaternion.quaternion, lambda obj: quaternion.as_float_array(obj)
-)
+BufferEncoder.register(qt.quaternion, lambda obj: qt.as_float_array(obj))
 BufferEncoder.register(Action, ActionJSONEncoder)
 BufferEncoder.register(DictConfig, lambda obj: OmegaConf.to_object(obj))
 BufferEncoder.register(ListConfig, lambda obj: OmegaConf.to_object(obj))
