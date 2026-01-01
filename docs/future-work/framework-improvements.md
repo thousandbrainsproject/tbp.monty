@@ -5,7 +5,7 @@ description: Improvements we would like to make on the general code framework.
 These are the things we would like to implement:
 
 - [Add infrastructure for multiple agents that move independently](framework-improvements/add-infrastructure-for-multiple-agents-that-move-independently.md)
-- [Automate benchmark experiments & analysis](framework-improvements/automate-benchmark-experiments-analysis.md)
+- [Automate benchmark experiments and analysis](framework-improvements/automate-benchmark-experiments-and-analysis.md)
 - [Add more wandb logging for unsupervised learning](framework-improvements/add-more-wandb-logging-for-unsupervised-learning.md)
 - [Add GPU support for Monty](framework-improvements/add-gpu-support-for-monty.md)
 - [Use State class inside of LMs](framework-improvements/use-state-class-inside-of-lms.md)
