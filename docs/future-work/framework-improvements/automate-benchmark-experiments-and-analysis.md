@@ -1,5 +1,5 @@
 ---
-title: Automate Benchmark Experiments & Analysis
+title: Automate Benchmark Experiments and Analysis
 description: Automate the running and analysis of benchmark experiments.
 rfc: https://github.com/thousandbrainsproject/tbp.cli/blob/main/rfcs/0002_monty_benchmarks.md
 estimated-scope: large

@@ -156,7 +156,7 @@
   - [simplify-simulator-protocol](future-work/environment-improvements/simplify-simulator-protocol.md)
 - [framework-improvements](future-work/framework-improvements.md)
   - [add-infrastructure-for-multiple-agents-that-move-independently](future-work/framework-improvements/add-infrastructure-for-multiple-agents-that-move-independently.md)
-  - [automate-benchmark-experiments-analysis](future-work/framework-improvements/automate-benchmark-experiments-analysis.md)
+  - [automate-benchmark-experiments-and-analysis](future-work/framework-improvements/automate-benchmark-experiments-and-analysis.md)
   - [add-more-wandb-logging-for-unsupervised-learning](future-work/framework-improvements/add-more-wandb-logging-for-unsupervised-learning.md)
   - [add-gpu-support-for-monty](future-work/framework-improvements/add-gpu-support-for-monty.md)
   - [use-state-class-inside-of-lms](future-work/framework-improvements/use-state-class-inside-of-lms.md)
