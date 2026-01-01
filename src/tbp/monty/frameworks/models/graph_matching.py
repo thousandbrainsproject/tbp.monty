@@ -709,6 +709,15 @@ class GraphLM(LearningModule):
 
         return []
 
+    def _clear_possible_hyps(self):
+        """Clears the possible hypotheses by setting all hypotheses values to False."""
+        possible_hyps = getattr(self, "possible_hyps", None)
+        if possible_hyps is None:
+            return
+
+        for mask in possible_hyps.values():
+            mask[:] = False
+
     def update_terminal_condition(self):
         """Check if we have reached a terminal condition for this episode.
 

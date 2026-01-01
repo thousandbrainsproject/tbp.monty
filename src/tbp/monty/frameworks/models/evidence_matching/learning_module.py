@@ -1062,10 +1062,6 @@ class EvidenceGraphLM(GraphLM):
 
         return False
 
-    def _clear_possible_hyps(self):
-        for possible_hyps in self.possible_hyps.values():
-            possible_hyps[:] = False
-
     def _enough_symmetry_evidence_accumulated(self):
         """Check if enough evidence for symmetry has been accumulated.
 
