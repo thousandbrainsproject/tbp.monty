@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -332,6 +332,9 @@ class ResamplingHypothesesUpdater:
                 evidence=np.hstack(
                     [existing_hypotheses.evidence, informed_hypotheses.evidence]
                 ),
+                possible=np.hstack(
+                    [existing_hypotheses.possible, informed_hypotheses.possible]
+                ),
             )
             hypotheses_updates.append(channel_hypotheses)
 
@@ -495,6 +498,7 @@ class ResamplingHypothesesUpdater:
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
                 evidence=np.zeros(0),
+                possible=np.zeros(0, dtype=np.bool_),
             )
             return channel_hypotheses, remove_ids
 
@@ -512,6 +516,7 @@ class ResamplingHypothesesUpdater:
             locations=channel_hypotheses.locations[keep_ids],
             poses=channel_hypotheses.poses[keep_ids],
             evidence=channel_hypotheses.evidence[keep_ids],
+            possible=channel_hypotheses.possible[keep_ids],
         )
         return maintained_channel_hypotheses, remove_ids
 
@@ -563,6 +568,7 @@ class ResamplingHypothesesUpdater:
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
                 evidence=np.zeros(0),
+                possible=np.zeros(0, dtype=np.bool_),
             )
 
         num_hyps_per_node = self._num_hyps_per_node(channel_features)
@@ -640,6 +646,9 @@ class ResamplingHypothesesUpdater:
                 ]
             )
 
+        # newly sampled hypotheses cannot be possible
+        possible_hyp = np.zeros_like(selected_feature_evidence, dtype=np.bool_)
+
         # Add hypotheses to slope trackers
         tracker.add_hyp(selected_feature_evidence.shape[0], input_channel)
 
@@ -648,4 +657,5 @@ class ResamplingHypothesesUpdater:
             locations=selected_locations,
             poses=selected_rotations,
             evidence=selected_feature_evidence,
+            possible=possible_hyp,
         )

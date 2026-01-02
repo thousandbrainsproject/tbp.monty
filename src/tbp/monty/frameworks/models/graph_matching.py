@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -709,6 +709,15 @@ class GraphLM(LearningModule):
 
         return []
 
+    def _clear_possible_hyps(self):
+        """Clears the possible hypotheses by setting all hypotheses values to False."""
+        possible_hyps = getattr(self, "possible_hyps", None)
+        if possible_hyps is None:
+            return
+
+        for mask in possible_hyps.values():
+            mask[:] = False
+
     def update_terminal_condition(self):
         """Check if we have reached a terminal condition for this episode.
 
@@ -718,7 +727,7 @@ class GraphLM(LearningModule):
         possible_matches = self.get_possible_matches()
         # no possible matches
         if len(possible_matches) == 0:
-            self.last_possible_hypotheses = None
+            self._clear_possible_hyps()
             self.set_individual_ts("no_match")
             if (
                 self.buffer.get_num_observations_on_object() > 0
@@ -742,7 +751,7 @@ class GraphLM(LearningModule):
                 logger.info(f"{self.learning_module_id} recognized object {object_id}")
         # > 1 possible match
         else:
-            self.last_possible_hypotheses = None
+            self._clear_possible_hyps()
             logger.info(f"{self.learning_module_id} did not recognize an object yet.")
         return self.terminal_state
 

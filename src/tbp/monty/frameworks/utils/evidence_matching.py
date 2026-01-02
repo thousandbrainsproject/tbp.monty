@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -194,6 +194,7 @@ class ChannelMapper:
             evidence=self.extract(hypotheses.evidence, channel),
             locations=self.extract(hypotheses.locations, channel),
             poses=self.extract(hypotheses.poses, channel),
+            possible=self.extract(hypotheses.possible, channel),
         )
 
     def update(

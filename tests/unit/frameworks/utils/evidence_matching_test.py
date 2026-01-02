@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -125,6 +125,7 @@ class ChannelMapperTest(unittest.TestCase):
             evidence=np.arange(30).reshape(30, 1),
             locations=np.arange(30).reshape(30, 1),
             poses=np.arange(30).reshape(30, 1),
+            possible=np.arange(30).reshape(30, 1),
         )
 
         # Channel "B" occupies indices 5 to 15
