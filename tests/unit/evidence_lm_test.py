@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -10,8 +10,6 @@
 from __future__ import annotations
 
 import pytest
-
-from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
 
 pytest.importorskip(
     "habitat_sim",
@@ -30,6 +28,7 @@ import numpy as np
 import pandas as pd
 from omegaconf import DictConfig
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
@@ -177,6 +176,7 @@ class EvidenceLMTest(BaseGraphTest):
         gsg_args=None,
     ):
         graph_lm = EvidenceGraphLM(
+            rng=np.random.RandomState(),
             max_match_distance=0.005,
             tolerances={
                 "patch": {
@@ -243,7 +243,7 @@ class EvidenceLMTest(BaseGraphTest):
         # Train on second object
         obj_two_target = copy.deepcopy(self.placeholder_target)
         obj_two_target["object"] = "new_object1"
-        graph_lm.pre_episode(primary_target=obj_two_target)
+        graph_lm.pre_episode(rng=np.random.RandomState(), primary_target=obj_two_target)
         for observation in fake_obs_two:
             graph_lm.exploratory_step([observation])
         graph_lm.detected_object = obj_two_target["object"]
@@ -544,7 +544,9 @@ class EvidenceLMTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         # Don't need to give target object since we are not logging performance
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.pre_episode(
+            rng=np.random.RandomState(), primary_target=self.placeholder_target
+        )
         num_steps_checked_symmetry = 0
         for i in range(12):
             observation = fake_obs_test[i % 4]
@@ -596,7 +598,9 @@ class EvidenceLMTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         # Don't need to give target object since we are not logging performance
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.pre_episode(
+            rng=np.random.RandomState(), primary_target=self.placeholder_target
+        )
         target_evidence = 1
         for observation in fake_obs_test:
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
@@ -638,7 +642,9 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.pre_episode(
+            rng=np.random.RandomState(), primary_target=self.placeholder_target
+        )
         target_evidence = 1
         for observation in fake_obs_test:
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
@@ -679,7 +685,9 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.pre_episode(
+            rng=np.random.RandomState(), primary_target=self.placeholder_target
+        )
         target_evidence = 1
         for observation in fake_obs_test:
             observation.location = observation.location + np.ones(3)
@@ -727,7 +735,9 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.pre_episode(
+            rng=np.random.RandomState(), primary_target=self.placeholder_target
+        )
         for observation in fake_obs_test:
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
             graph_lm.matching_step([observation])
@@ -761,7 +771,9 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.pre_episode(
+            rng=np.random.RandomState(), primary_target=self.placeholder_target
+        )
         for i, observation in enumerate(fake_obs_test):
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
             graph_lm.matching_step([observation])
@@ -785,7 +797,9 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.pre_episode(
+            rng=np.random.RandomState(), primary_target=self.placeholder_target
+        )
         graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
         graph_lm.matching_step([fake_obs_test[0]])
 
@@ -806,7 +820,9 @@ class EvidenceLMTest(BaseGraphTest):
     ):
         """Helper function for hypothesis testing that retreives a target location."""
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.pre_episode(
+            rng=np.random.RandomState(), primary_target=self.placeholder_target
+        )
 
         # Observe 4 / 5 of the available features
         for ii in range(4):
@@ -962,7 +978,9 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.pre_episode(
+            rng=np.random.RandomState(), primary_target=self.placeholder_target
+        )
         # We start at evidence 0 since we don't get feature evidence at initialization
         for target_evidence, observation in enumerate(fake_obs_test):
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
@@ -995,7 +1013,9 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.pre_episode(
+            rng=np.random.RandomState(), primary_target=self.placeholder_target
+        )
         for step, observation in enumerate(fake_obs_test):
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
             graph_lm.matching_step([observation])
@@ -1055,7 +1075,9 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.pre_episode(
+            rng=np.random.RandomState(), primary_target=self.placeholder_target
+        )
         target_evidence = 1
         for step, observation in enumerate(fake_obs_test):
             if not observation.use_state:

@@ -12,7 +12,6 @@ To manage the logging for an experiment you can specify the handlers that should
 | **MontyHandler**                  | Abstract handler class.                                                                                                                                     |
 | **DetailedJSONHandler**           | Logs detailed information about every step in a .json file. This is for detailed analysis and visualization. For longer experiments, it is not recommended. |
 | **BasicCSVStatsHandler**          | Log a .csv file with one row per episode that contains the results and performance of this episode.                                                         |
-| **ReproduceEpisodeHandler**       | Logs action sequence and target such that an episode can be exactly reproduced.                                                                             |
 | **BasicWandbTableStatsHandler**   | Logs a table similar to the .csv table to wandb.                                                                                                            |
 | **BasicWandbChartStatsHandler**   | Logs episode stats to wandb charts. When running in parallel this is done at the end of a run. Otherwise one can follow the run stats live on wandb.       |
 | **DetailedWandbHandler**          | Logs animations of raw observations to wandb.                                                                                                               |

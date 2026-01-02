@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -34,6 +34,22 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     surface_normal_total_least_squares,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
+
+__all__ = [
+    "DefaultMessageNoise",
+    "FeatureChangeFilter",
+    "HabitatObservation",
+    "HabitatObservationProcessor",
+    "HabitatObservationProcessorTelemetry",
+    "HabitatSM",
+    "MessageNoise",
+    "NoMessageNoise",
+    "PassthroughStateFilter",
+    "Probe",
+    "SnapshotTelemetry",
+    "StateFilter",
+    "SurfaceNormalMethod",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -438,7 +454,7 @@ class Probe(SensorModule):
 
         return None
 
-    def pre_episode(self):
+    def pre_episode(self, rng: np.random.RandomState) -> None:  # noqa: ARG002
         """Reset buffer and is_exploring flag."""
         self._snapshot_telemetry.reset()
         self.is_exploring = False
@@ -551,7 +567,7 @@ class HabitatSM(SensorModule):
 
     def __init__(
         self,
-        rng,
+        rng: np.random.RandomState,
         sensor_module_id: str,
         features: list[str],
         save_raw_obs: bool = False,
@@ -626,9 +642,8 @@ class HabitatSM(SensorModule):
         self.visited_locs = []
         self.visited_normals = []
 
-    def pre_episode(self):
-        """Reset buffer and is_exploring flag."""
-        super().pre_episode()
+    def pre_episode(self, rng: np.random.RandomState) -> None:
+        self._rng = rng
         self._snapshot_telemetry.reset()
         self._state_filter.reset()
         self.is_exploring = False

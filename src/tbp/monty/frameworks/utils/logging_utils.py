@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -721,12 +721,13 @@ def add_pose_lm_episode_stats(lm, stats):
     return stats
 
 
-def get_stats_per_lm(model, target):
+def get_stats_per_lm(model, target, episode_seed: int):
     """Loop through lms and get stats.
 
     Args:
         model: model instance
         target: target object
+        episode_seed: RNG seed used for the episode
 
     Returns:
         performance_dict: dict with stats per lm
@@ -744,6 +745,7 @@ def get_stats_per_lm(model, target):
         lm_stats = add_policy_episode_stats(lm, lm_stats)
         lm_stats["monty_steps"] = model.episode_steps
         lm_stats["monty_matching_steps"] = model.matching_steps
+        lm_stats["episode_seed"] = episode_seed
         performance_dict[f"LM_{i}"] = lm_stats
         performance_dict[f"LM_{i}"].update(primary_target_dict)
         # Add LM-specific target information

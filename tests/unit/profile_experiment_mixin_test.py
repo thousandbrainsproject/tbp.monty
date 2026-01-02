@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -9,8 +9,6 @@
 from __future__ import annotations
 
 import pytest
-
-from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
 
 pytest.importorskip(
     "habitat_sim",
@@ -24,7 +22,11 @@ from unittest import TestCase
 
 import hydra
 
-from tbp.monty.frameworks.experiments import MontyExperiment, ProfileExperimentMixin
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
+from tbp.monty.frameworks.experiments.profile import (
+    ProfileExperimentMixin,
+)
 
 
 class InheritanceProfileExperimentMixinTest(TestCase):

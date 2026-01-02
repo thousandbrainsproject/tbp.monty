@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2021-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -47,6 +47,21 @@ from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSyst
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
+
+__all__ = [
+    "BasePolicy",
+    "GetGoodView",
+    "InformedPolicy",
+    "JumpToGoalStateMixin",
+    "MotorPolicy",
+    "NaiveScanPolicy",
+    "ObjectNotVisible",
+    "PositioningProcedure",
+    "PositioningProcedureResult",
+    "SurfacePolicy",
+    "SurfacePolicyCurvatureInformed",
+    "get_perc_on_obj_semantic",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +114,7 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def pre_episode(self) -> None:
+    def pre_episode(self, rng: np.random.RandomState) -> None:
         """Pre episode hook."""
         pass
 
@@ -142,7 +157,7 @@ class MotorPolicy(abc.ABC):
 class BasePolicy(MotorPolicy):
     def __init__(
         self,
-        rng,
+        rng: np.random.RandomState,
         action_sampler_args: dict,
         action_sampler_class: type[ActionSampler],
         agent_id: AgentID,
@@ -245,7 +260,8 @@ class BasePolicy(MotorPolicy):
         self.episode_step += 1
         self.action_sequence.append([action])
 
-    def pre_episode(self):
+    def pre_episode(self, rng: np.random.RandomState) -> None:
+        self.rng = rng
         self.episode_step = 0
         self.action_sequence = []
 
@@ -316,7 +332,7 @@ class JumpToGoalStateMixin:
     def __init__(self) -> None:
         self.driving_goal_state = None
 
-    def pre_episode(self):
+    def pre_episode(self, rng: np.random.RandomState) -> None:  # noqa: ARG002
         self.set_driving_goal_state(None)
 
     def set_driving_goal_state(self, goal_state):
@@ -841,11 +857,11 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # Are updated in Monty step method.
         self.processed_observations = None
 
-    def pre_episode(self):
+    def pre_episode(self, rng: np.random.RandomState) -> None:
         if self.use_goal_state_driven_actions:
-            JumpToGoalStateMixin.pre_episode(self)
+            JumpToGoalStateMixin.pre_episode(self, rng)
 
-        return super().pre_episode()
+        return super().pre_episode(rng)
 
     ###
     # Methods that define behavior of __call__
@@ -1016,8 +1032,8 @@ class NaiveScanPolicy(InformedPolicy):
         self.step_on_action += 1
         return self._naive_scan_actions[self.current_action_id]
 
-    def pre_episode(self):
-        super().pre_episode()
+    def pre_episode(self, rng: np.random.RandomState) -> None:
+        super().pre_episode(rng)
         self.steps_per_action = 1
         self.current_action_id = 0
         self.step_on_action = 0
@@ -1087,7 +1103,7 @@ class SurfacePolicy(InformedPolicy):
         self.attempting_to_find_object: bool = False
         self.last_surface_policy_action: Action | None = None
 
-    def pre_episode(self):
+    def pre_episode(self, rng: np.random.RandomState) -> None:
         self.tangential_angle = 0
         self.action = None  # Reset the first action for every episode
         self.touch_search_amount = 0  # Track how many rotations the agent has made
@@ -1097,7 +1113,7 @@ class SurfacePolicy(InformedPolicy):
 
         self.last_surface_policy_action = None
 
-        return super().pre_episode()
+        return super().pre_episode(rng)
 
     def touch_object(
         self, raw_observation, view_sensor_id: str, state: MotorSystemState
@@ -1719,8 +1735,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.min_general_steps = min_general_steps
         self.min_heading_steps = min_heading_steps
 
-    def pre_episode(self):
-        super().pre_episode()
+    def pre_episode(self, rng: np.random.RandomState) -> None:
+        super().pre_episode(rng)
 
         # == Variables for representing heading ==
         # We represent it both in angular and vector form as under different settings,

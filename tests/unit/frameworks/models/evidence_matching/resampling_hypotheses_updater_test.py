@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -125,8 +125,11 @@ class ResamplingHypothesesUpdaterTest(TestCase):
                 pose_defined=pose_defined,
                 graph_id=graph_id,
             )
-            self.assertEqual(
-                before_count * count_multiplier, (existing_count + informed_count)
+            # +/- 1 due to rounding errors in _sample_count
+            self.assertAlmostEqual(
+                before_count * count_multiplier,
+                (existing_count + informed_count),
+                delta=1,
             )
 
         # Reset mapper

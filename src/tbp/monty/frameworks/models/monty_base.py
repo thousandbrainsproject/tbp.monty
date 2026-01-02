@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -12,10 +12,14 @@ from __future__ import annotations
 import logging
 from typing import ClassVar
 
+import numpy as np
+
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import Monty
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
+
+__all__ = ["MontyBase"]
 
 logger = logging.getLogger(__name__)
 
@@ -331,15 +335,15 @@ class MontyBase(Monty):
             lm.set_experiment_mode(mode)
         # for sm in self.sensor_modules: sm.set_experiment_mode() unused & removed
 
-    def pre_episode(self):
+    def pre_episode(self, rng: np.random.RandomState):
         self._is_done = False
         self.reset_episode_steps()
         self.switch_to_matching_step()
         for lm in self.learning_modules:
-            lm.pre_episode()
+            lm.pre_episode(rng)
 
         for sm in self.sensor_modules:
-            sm.pre_episode()
+            sm.pre_episode(rng)
 
     def post_episode(self):
         for lm in self.learning_modules:

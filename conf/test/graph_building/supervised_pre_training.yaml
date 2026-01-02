@@ -6,7 +6,7 @@ defaults:
   - /experiment/config/environment_interface/per_object_train@config.train_env_interface_args
   - /experiment/config/environment_interface/per_object_eval@config.eval_env_interface_args
 
-_target_: tbp.monty.frameworks.experiments.MontySupervisedObjectPretrainingExperiment
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 config:
   do_eval: false
   supervised_lm_ids: "all"

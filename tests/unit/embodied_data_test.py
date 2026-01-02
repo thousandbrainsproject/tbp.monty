@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -33,6 +33,7 @@ from tbp.monty.frameworks.environments.two_d_data import (
     SaccadeOnImageEnvironment,
     SaccadeOnImageFromStreamEnvironment,
 )
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Modality,
@@ -190,6 +191,7 @@ class EmbodiedDataTest(unittest.TestCase):
             rng=rng,
             motor_system=motor_system_dist,
             seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
         )
 
         for i in range(1, NUM_STEPS):
@@ -201,7 +203,7 @@ class EmbodiedDataTest(unittest.TestCase):
                 )
             )
 
-        initial_obs, _ = env_interface_dist.reset()
+        initial_obs, _ = env_interface_dist.reset(rng)
         self.assertTrue(
             np.all(
                 initial_obs[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[0]
@@ -231,6 +233,7 @@ class EmbodiedDataTest(unittest.TestCase):
             rng=rng,
             motor_system=motor_system_abs,
             seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
         )
 
         for i in range(1, NUM_STEPS):
@@ -241,7 +244,7 @@ class EmbodiedDataTest(unittest.TestCase):
                 )
             )
 
-        initial_state, _ = env_interface_abs.reset()
+        initial_state, _ = env_interface_abs.reset(rng)
         self.assertTrue(
             np.all(
                 initial_state[AGENT_ID][SENSOR_ID][Modality("raw")]
@@ -268,7 +271,11 @@ class EmbodiedDataTest(unittest.TestCase):
         )
         env = FakeEnvironmentRel()
         env_interface_dist = EnvironmentInterface(
-            env=env, rng=rng, motor_system=motor_system_dist, seed=seed
+            env=env,
+            rng=rng,
+            motor_system=motor_system_dist,
+            seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
         )
 
         for i, item in enumerate(env_interface_dist):
@@ -291,7 +298,11 @@ class EmbodiedDataTest(unittest.TestCase):
         )
         env = FakeEnvironmentAbs()
         env_interface_abs = EnvironmentInterface(
-            env=env, rng=rng, motor_system=motor_system_abs, seed=seed
+            env=env,
+            rng=rng,
+            motor_system=motor_system_abs,
+            seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
         )
 
         for i, item in enumerate(env_interface_abs):
@@ -380,7 +391,7 @@ class EmbodiedDataTest(unittest.TestCase):
             scenes=[0, 0],
             versions=[0, 1],
         )
-        env_interface_rel.pre_episode()
+        env_interface_rel.pre_episode(rng)
         initial_state = next(env_interface_rel)
         sensed_data = initial_state[AGENT_ID][sensor_id]
         self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
@@ -397,7 +408,7 @@ class EmbodiedDataTest(unittest.TestCase):
             1,
             "Did not cycle to next scene version.",
         )
-        env_interface_rel.pre_episode()
+        env_interface_rel.pre_episode(rng)
         for i, obs in enumerate(env_interface_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
@@ -429,7 +440,7 @@ class EmbodiedDataTest(unittest.TestCase):
         env_interface_rel = SaccadeOnImageFromStreamEnvironmentInterface(
             env=env, rng=rng, motor_system=motor_system_rel
         )
-        env_interface_rel.pre_episode()
+        env_interface_rel.pre_episode(rng)
         initial_state = next(env_interface_rel)
         sensed_data = initial_state[AGENT_ID][sensor_id]
         self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)

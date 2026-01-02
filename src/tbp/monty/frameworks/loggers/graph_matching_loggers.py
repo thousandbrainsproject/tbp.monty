@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -208,7 +208,9 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 lm_0 (which lm)
                     stats
         """
-        performance_dict = get_stats_per_lm(model, logger_args["target"])
+        performance_dict = get_stats_per_lm(
+            model, logger_args["target"], logger_args["episode_seed"]
+        )
         target_dict = target_data_to_dict(logger_args["target"])
         if len(self.lms) == 0:  # first time function is called
             for lm in performance_dict.keys():

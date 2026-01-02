@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -23,6 +23,8 @@ from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
 )
 from tbp.monty.frameworks.models.states import State
+
+__all__ = ["MontyForNoResetEvidenceGraphMatching", "NoResetEvidenceGraphLM"]
 
 
 class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
@@ -67,10 +69,12 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         # TODO: Remove initialization logic from `pre_episode`
         self.init_pre_episode = False
 
-    def pre_episode(self, primary_target, semantic_id_to_label=None):
+    def pre_episode(
+        self, rng: np.random.RandomState, primary_target, semantic_id_to_label=None
+    ) -> None:
         if not self.init_pre_episode:
             self.init_pre_episode = True
-            return super().pre_episode(primary_target, semantic_id_to_label)
+            return super().pre_episode(rng, primary_target, semantic_id_to_label)
 
         # reset terminal state
         self._is_done = False

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -16,7 +16,6 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
-import json
 import shutil
 import tempfile
 import unittest
@@ -62,31 +61,6 @@ class RunParallelTest(unittest.TestCase):
             )
             self.eval_lt_cfg = hydra_config("eval_lt", self.output_dir / "lt")
             self.eval_gt_cfg = hydra_config("eval_gt", self.output_dir / "gt")
-
-    def check_reproducibility_logs(self, serial_repro_dir, parallel_repro_dir):
-        s_param_files = sorted(serial_repro_dir.glob("*target*"))
-        p_param_files = sorted(parallel_repro_dir.glob("*target*"))
-
-        # Same param files for each episode. No more, no less.
-        self.assertEqual(
-            {p.name for p in s_param_files}, {p.name for p in p_param_files}
-        )
-        for sfile, pfile in zip(s_param_files, p_param_files):
-            with pfile.open() as f:
-                ptarget = f.read()
-
-            with sfile.open() as f:
-                starget = f.read()
-
-            ptarget = json.loads(ptarget)
-            starget = json.loads(starget)
-
-            pkeys = set(ptarget.keys())
-            skeys = set(starget.keys())
-            self.assertEqual(pkeys, skeys)
-
-            for key in pkeys:
-                self.assertEqual(ptarget[key], starget[key])
 
     def test_run_parallel_equals_serial_for_various_n_eval_epochs(self):
         # serial run
@@ -151,11 +125,6 @@ class RunParallelTest(unittest.TestCase):
         ###
         eval_dir = self.output_dir / "eval"
         parallel_eval_dir = eval_dir / "test_eval"
-        serial_repro_dir = eval_dir / "reproduce_episode_data"
-        parallel_repro_dir = parallel_eval_dir / "reproduce_episode_data"
-
-        # Check that reproducibility logger has same files for both
-        self.check_reproducibility_logs(serial_repro_dir, parallel_repro_dir)
 
         # Check that csv files are the same
         # Note that you can't easily do this if they actually run in parallel because
@@ -190,11 +159,6 @@ class RunParallelTest(unittest.TestCase):
 
         eval_dir_lt = self.output_dir / "lt"
         parallel_eval_dir_lt = eval_dir_lt / "test_eval_lt"
-        serial_repro_dir_lt = eval_dir_lt / "reproduce_episode_data"
-        parallel_repro_dir_lt = parallel_eval_dir_lt / "reproduce_episode_data"
-
-        # Check that reproducibility logger has same files for both
-        self.check_reproducibility_logs(serial_repro_dir_lt, parallel_repro_dir_lt)
 
         scsv_lt = pd.read_csv(eval_dir_lt / "eval_stats.csv")
         pcsv_lt = pd.read_csv(parallel_eval_dir_lt / "eval_stats.csv")
@@ -219,11 +183,6 @@ class RunParallelTest(unittest.TestCase):
 
         eval_dir_gt = self.output_dir / "gt"
         parallel_eval_dir_gt = eval_dir_gt / "test_eval_gt"
-        serial_repro_dir_gt = eval_dir_gt / "reproduce_episode_data"
-        parallel_repro_dir_gt = parallel_eval_dir_gt / "reproduce_episode_data"
-
-        # Check that reproducibility logger has same files for both
-        self.check_reproducibility_logs(serial_repro_dir_gt, parallel_repro_dir_gt)
 
         scsv_gt = pd.read_csv(eval_dir_gt / "eval_stats.csv")
         pcsv_gt = pd.read_csv(parallel_eval_dir_gt / "eval_stats.csv")

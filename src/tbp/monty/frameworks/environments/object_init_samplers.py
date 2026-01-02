@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -10,13 +10,14 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 
 
 class Default:
-    def __call__(self, seed: int, epoch: int, episode: int):
-        seed = episode_seed(seed, epoch, episode)
+    def __call__(self, seed: int, mode: ExperimentMode, epoch: int, episode: int):  # noqa: ARG002
+        seed = episode_seed(seed, mode, episode)
         rng = np.random.RandomState(seed)
         euler_rotation = rng.uniform(0, 360, 3)
         q = Rotation.from_euler("xyz", euler_rotation, degrees=True).as_quat()
@@ -48,7 +49,7 @@ class Predefined(Default):
         self.scales = scales or [[1.0, 1.0, 1.0]]
         self.change_every_episode = change_every_episode
 
-    def __call__(self, _: int, epoch: int, episode: int):
+    def __call__(self, seed: int, mode: ExperimentMode, epoch: int, episode: int):  # noqa: ARG002
         mod_counter = episode if self.change_every_episode else epoch
         q = Rotation.from_euler(
             "xyz",
@@ -92,8 +93,8 @@ class RandomRotation(Default):
         else:
             self.scale = [1.0, 1.0, 1.0]
 
-    def __call__(self, seed: int, epoch: int, episode: int):
-        seed = episode_seed(seed, epoch, episode)
+    def __call__(self, seed: int, mode: ExperimentMode, epoch: int, episode: int):  # noqa: ARG002
+        seed = episode_seed(seed, mode, episode)
         rng = np.random.RandomState(seed)
         euler_rotation = rng.uniform(0, 360, 3)
         q = Rotation.from_euler("xyz", euler_rotation, degrees=True).as_quat()

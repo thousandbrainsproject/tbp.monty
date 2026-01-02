@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -27,11 +27,13 @@ from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
 from tbp.monty.frameworks.models.states import GoalState, State
 from tbp.monty.frameworks.sensors import SensorID
 
+__all__ = ["HabitatSalienceSM"]
+
 
 class HabitatSalienceSM(SensorModule):
     def __init__(
         self,
-        rng,
+        rng: np.random.RandomState,
         sensor_module_id: str,
         save_raw_obs: bool = False,
         salience_strategy_class: type[SalienceStrategy] = UniformSalienceStrategy,
@@ -148,8 +150,9 @@ class HabitatSalienceSM(SensorModule):
 
         return (weighted_salience - min_) / scale
 
-    def pre_episode(self):
+    def pre_episode(self, rng: np.random.RandomState) -> None:
         """This method is called before each episode."""
+        self._rng = rng
         self._goals.clear()
         self._return_inhibitor.reset()
         self._snapshot_telemetry.reset()

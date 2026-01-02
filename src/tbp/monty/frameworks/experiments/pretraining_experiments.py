@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -18,10 +18,12 @@ from scipy.spatial.transform import Rotation
 from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
 )
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.monty_experiment import (
-    ExperimentMode,
     MontyExperiment,
 )
+
+__all__ = ["MontySupervisedObjectPretrainingExperiment"]
 
 logger = logging.getLogger(__name__)
 
@@ -148,8 +150,22 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
     def pre_episode(self):
         """Pre episode where we pass target object to the model for logging."""
-        self.model.pre_episode(self.env_interface.primary_target)
-        self.env_interface.pre_episode()
+        if self.experiment_mode is ExperimentMode.TRAIN:
+            logger.info(
+                f"running train epoch {self.train_epochs} "
+                f"train episode {self.train_episodes}"
+            )
+        else:
+            logger.info(
+                f"running eval epoch {self.eval_epochs} "
+                f"eval episode {self.eval_episodes}"
+            )
+
+        self.reset_episode_rng()
+
+        # TODO: Fix invalid pre_episode signature call
+        self.model.pre_episode(self.rng, self.env_interface.primary_target)
+        self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps  # no eval mode here
 

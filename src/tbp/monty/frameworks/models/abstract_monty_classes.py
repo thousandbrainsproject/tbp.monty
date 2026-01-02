@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2021-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -19,6 +19,20 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.sensors import SensorID
+
+__all__ = [
+    "AgentObservations",
+    "GoalStateGenerator",
+    "LMMemory",
+    "LearningModule",
+    "Modality",
+    "Monty",
+    "ObjectModel",
+    "Observations",
+    "SensorModule",
+    "SensorObservations",
+]
+
 
 Modality = NewType("Modality", str)
 """Unique identifier for a modality."""
@@ -151,8 +165,12 @@ class Monty(metaclass=abc.ABCMeta):
     ###
 
     @abc.abstractmethod
-    def pre_episode(self):
-        """Recursively call pre_episode on child classes."""
+    def pre_episode(self, rng: np.random.RandomState) -> None:
+        """Recursively call pre_episode on child classes.
+
+        Args:
+            rng: The random number generator.
+        """
         pass
 
     @abc.abstractmethod
@@ -185,8 +203,12 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def pre_episode(self):
-        """Do things like reset buffers or possible_matches before training."""
+    def pre_episode(self, rng: np.random.RandomState) -> None:
+        """Do things like reset buffers or possible_matches before training.
+
+        Args:
+            rng: The random number generator.
+        """
         pass
 
     @abc.abstractmethod
@@ -346,8 +368,12 @@ class SensorModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def pre_episode(self):
-        """This method is called before each episode."""
+    def pre_episode(self, rng: np.random.RandomState) -> None:
+        """This method is called before each episode.
+
+        Args:
+            rng: The random number generator.
+        """
         pass
 
     def propose_goal_states(self) -> list[GoalState]:

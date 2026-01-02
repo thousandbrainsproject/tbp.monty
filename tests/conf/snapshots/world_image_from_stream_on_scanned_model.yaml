@@ -88,7 +88,6 @@ experiment:
       monty_log_level: BASIC
       monty_handlers:
       - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
-      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.ReproduceEpisodeHandler}
       wandb_handlers: []
       python_log_level: INFO
       python_log_to_file: true
