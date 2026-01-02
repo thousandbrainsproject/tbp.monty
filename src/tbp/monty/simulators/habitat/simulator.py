@@ -28,7 +28,6 @@ from habitat_sim.simulator import ObservationDict
 from habitat_sim.utils import common as sim_utils
 from importlib_resources import files
 
-from tbp.monty.experiments.simulator import ExperimentSimulator
 from tbp.monty.frameworks.actions.actions import (
     Action,
     LookDown,
@@ -47,6 +46,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.experiments.simulator import ExperimentSimulator
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
