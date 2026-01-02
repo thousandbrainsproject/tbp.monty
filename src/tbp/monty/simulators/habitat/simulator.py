@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -28,6 +28,7 @@ from habitat_sim.simulator import ObservationDict
 from habitat_sim.utils import common as sim_utils
 from importlib_resources import files
 
+from tbp.monty.experiments.simulator import ExperimentSimulator
 from tbp.monty.frameworks.actions.actions import (
     Action,
     LookDown,
@@ -69,7 +70,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     SemanticID,
     VectorXYZ,
 )
-from tbp.monty.simulators.simulator import ExperimentSimulator, Simulator
+from tbp.monty.simulators.simulator import Simulator
 
 DEFAULT_SCENE = "NONE"
 DEFAULT_PHYSICS_CONFIG = str(files(resources) / "default.physics_config.json")

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -13,6 +13,7 @@ from typing import Sequence
 from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 from typing_extensions import override
 
+from tbp.monty.experiments.simulator import ExperimentSimulator
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
     ObjectID,
@@ -23,7 +24,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
-from tbp.monty.simulators.simulator import ExperimentSimulator, Simulator
+from tbp.monty.simulators.simulator import Simulator
 
 
 class UnknownShapeType(RuntimeError):
