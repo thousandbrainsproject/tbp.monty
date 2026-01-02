@@ -23,14 +23,14 @@ from tbp.monty.frameworks.environments.embodied_environment import (
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
-from tbp.monty.simulators.simulator import Simulator
+from tbp.monty.simulators.simulator import ExperimentSimulator, Simulator
 
 
 class UnknownShapeType(RuntimeError):
     """Raised when an unknown shape is requested."""
 
 
-class MuJoCoSimulator(Simulator):
+class MuJoCoSimulator(Simulator, ExperimentSimulator):
     """Simulator implementation for MuJoCo.
 
     MuJoCo's data model consists of three parts, a spec defining the scene, a

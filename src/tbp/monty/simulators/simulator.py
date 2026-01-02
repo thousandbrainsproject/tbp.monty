@@ -30,6 +30,34 @@ class Simulator(Protocol):
     proprioceptive state to send to Monty.
     """
 
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
+        """Execute the given actions in the environment.
+
+        Args:
+            actions: The actions to execute.
+
+        Returns:
+            The observations from the simulator and proprioceptive state.
+
+        Note:
+            If the actions are an empty sequence, the current observations are returned.
+        """
+        ...
+
+    def close(self) -> None:
+        """Close any resources used by the simulator."""
+        ...
+
+
+class ExperimentSimulator(Protocol):
+    """A Protocol definingt interactions with simulated environments by experiments.
+
+    An ExperimentSimulator is responsible for adding/removing objects to/from a
+    simulated experiment environment, and resetting object states.
+    """
+
     def remove_all_objects(self) -> None:
         """Remove all objects from the simulated environment."""
         ...
@@ -64,30 +92,10 @@ class Simulator(Protocol):
         """
         ...
 
-    def step(
-        self, actions: Sequence[Action]
-    ) -> tuple[Observations, ProprioceptiveState]:
-        """Execute the given actions in the environment.
-
-        Args:
-            actions: The actions to execute.
-
-        Returns:
-            The observations from the simulator and proprioceptive state.
-
-        Note:
-            If the actions are an empty sequence, the current observations are returned.
-        """
-        ...
-
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         """Reset the simulator.
 
         Returns:
             The initial observations from the simulator and proprioceptive state.
         """
-        ...
-
-    def close(self) -> None:
-        """Close any resources used by the simulator."""
         ...
