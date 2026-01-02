@@ -524,7 +524,7 @@ class EvidenceGraphLM(GraphLM):
         """
         possible_object_hypotheses_ids = self.get_possible_hypothesis_ids(object_id)
         # Only try to determine object pose if the evidence for it is high enough.
-        if len(possible_object_hypotheses_ids):
+        if len(possible_object_hypotheses_ids) > 0:
             mlh = self.get_current_mlh()
             # Check if all possible poses are similar
             pose_is_unique = self._check_for_unique_poses(
@@ -1037,7 +1037,7 @@ class EvidenceGraphLM(GraphLM):
         Returns:
             Whether symmetry was detected.
         """
-        if not len(last_possible_object_hypotheses_ids):
+        if len(last_possible_object_hypotheses_ids) == 0:
             return False  # need more steps to meet symmetry condition
         logger.debug(
             f"\n\nchecking for symmetry for hp ids {possible_object_hypotheses_ids}"
