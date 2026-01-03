@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -46,6 +46,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.experiments.simulator import ExperimentSimulator
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
@@ -69,6 +70,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     SemanticID,
     VectorXYZ,
 )
+from tbp.monty.simulators.simulator import Simulator
 
 DEFAULT_SCENE = "NONE"
 DEFAULT_PHYSICS_CONFIG = str(files(resources) / "default.physics_config.json")
@@ -84,7 +86,7 @@ PRIMITIVE_OBJECT_TYPES = {
 }
 
 
-class HabitatSim(HabitatActuator):
+class HabitatSim(HabitatActuator, Simulator, ExperimentSimulator):
     """Habitat-sim interface for tbp.monty.
 
     This class wraps `habitat-sim <https://aihabitat.org/docs/habitat-sim>`_

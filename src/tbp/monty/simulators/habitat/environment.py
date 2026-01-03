@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -43,7 +43,6 @@ __all__ = [
     "SingleSensorAgentArgs",
 ]
 
-from tbp.monty.simulators.simulator import Simulator
 
 # Create agent and object configuration helper dataclasses
 
@@ -115,7 +114,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
             agent = agent_type(**args)
             self._agents.append(agent)
 
-        self._env: Simulator = HabitatSim(
+        self._env = HabitatSim(
             agents=self._agents,
             scene_id=scene_id,
             seed=seed,
