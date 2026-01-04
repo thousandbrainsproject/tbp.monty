@@ -203,35 +203,26 @@ def compute_weighted_structure_tensor_edge_features(
     Jyy = Iy * Iy  # noqa: N806
     Jxy = Ix * Iy  # noqa: N806
 
-    # Optional Gaussian blur to suppress noise
     Jxx = cv2.GaussianBlur(Jxx, (ksize, ksize), win_sigma)  # noqa: N806
     Jyy = cv2.GaussianBlur(Jyy, (ksize, ksize), win_sigma)  # noqa: N806
     Jxy = cv2.GaussianBlur(Jxy, (ksize, ksize), win_sigma)  # noqa: N806
 
-    # Step 2: Center-weighted aggregation
+    # Step 2a: Center-weighted aggregation
     r0, c0 = get_patch_center(*gray.shape)
     h, w = gray.shape
 
-    # Compute distance from center for all pixels
     rows, cols = np.meshgrid(np.arange(h), np.arange(w), indexing="ij")
     d_squared = (rows - r0) ** 2 + (cols - c0) ** 2
     d = np.sqrt(d_squared)
 
-    # Radial weight: Gaussian falloff from center
+    # Step 2b: Radial weight (Gaussian falloff from center)
     w_r = np.exp(-(d_squared) / (2.0 * sigma_r**2))
-    # Set weight to 0 for pixels beyond radius
     w_r[d > radius] = 0.0
-
-    # Gradient energy weight: favor pixels with stronger gradients
-    g = Ix**2 + Iy**2  # gradient energy at each pixel
-
-    # Combined weight: radial * gradient energy
+    g = Ix**2 + Iy**2
     w = w_r * g
 
-    # Aggregate tensor components
-    total_weight = np.sum(w)  # total weight
+    total_weight = np.sum(w)
     if total_weight < EPSILON:
-        # No significant weights, return no edge
         return 0.0, 0.0, 0.0
 
     Jxx_bar = np.sum(w * Jxx) / (total_weight + EPSILON)  # noqa: N806
@@ -251,33 +242,17 @@ def compute_weighted_structure_tensor_edge_features(
 
     # Step 4: Check if edge passes near patch center
     if max_center_offset is not None:
-        # Normal direction of edge
         nx = np.cos(gradient_theta)
         ny = np.sin(gradient_theta)
 
-        # Offsets from center (rows, cols already computed earlier)
         dr = rows - r0
         dc = cols - c0
 
-        # Signed distance of each pixel to the estimated line
         dist_normal = nx * dc + ny * dr
-
-        # Weighted mean distance (use same weights as for tensor)
         d_center = np.sum(w * dist_normal) / (total_weight + EPSILON)
 
         if abs(d_center) > max_center_offset:
-            # Edge does not pass close enough to the center
             return 0.0, 0.0, 0.0
-
-    # Step 5: Energy and coherence rejection
-    # Compute local gradient energy (using total weight as proxy)
-    # Area of circular window: π * radius²
-    area_window = np.pi * radius**2
-    local_energy = total_weight / (area_window + EPSILON)
-
-    # Reject if energy too low or coherence too low
-    # if local_energy < e_min or coherence < c_min:
-    #     return 0.0, 0.0, 0.0
 
     return float(edge_strength), float(coherence), float(tangent_theta)
 
@@ -287,7 +262,6 @@ def draw_2d_pose_on_patch(
     edge_direction: float | None = None,
     label_text: str | None = None,
     tangent_color: tuple[int, int, int] = (255, 255, 0),
-    normal_color: tuple[int, int, int] = (0, 255, 255),
     arrow_length: int = 20,
 ) -> np.ndarray:
     """Draw tangent/normal arrows and overlay debug text for a patch.
