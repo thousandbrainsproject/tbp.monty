@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import pyview
 from starlette.responses import FileResponse, Response
 from starlette.routing import Route
 from starlette.staticfiles import StaticFiles
@@ -43,10 +44,14 @@ class StaticFileCacheApp:
                 # Headers in ASGI are already a list of (bytes, bytes) tuples
                 headers = list(message.get("headers", []))
                 # Check if Cache-Control already exists
-                has_cache_control = any(header[0].lower() == b"cache-control" for header in headers)
+                has_cache_control = any(
+                    header[0].lower() == b"cache-control" for header in headers
+                )
                 if not has_cache_control:
                     # Add Cache-Control header: cache for 1 minute, allow revalidation
-                    headers.append((b"cache-control", b"public, max-age=60, must-revalidate"))
+                    headers.append(
+                        (b"cache-control", b"public, max-age=60, must-revalidate")
+                    )
                     message["headers"] = headers
             await original_send(message)
 
@@ -65,12 +70,12 @@ class StaticFileServer:
         # IMPORTANT: Register specific routes BEFORE mounting the static directory
         # This ensures specific routes take precedence over the mount
         # Use insert(0, ...) to put them at the beginning so they're checked first
-        # Add route to serve pyview's client JavaScript (needed for /static/assets/app.js)
+        # Add route to serve pyview's client JavaScript
+        # (needed for /static/assets/app.js)
         app.routes.insert(0, Route("/static/assets/app.js", self._serve_app_js))
 
         # Mount static files directory to serve CSS, JS, and other assets
         # Try to find PyView's static directory
-        import pyview
         pyview_path = Path(pyview.__file__).parent
         static_path = pyview_path / "static"
 
@@ -80,41 +85,52 @@ class StaticFileServer:
             # Wrap with cache app to add cache headers
             cached_static = StaticFileCacheApp(static_files)
             app.mount("/static", cached_static, name="static")
-            logger.info(f"Mounted static files from {static_path} with 1-minute cache headers")
+            logger.info(
+                "Mounted static files from %s with 1-minute cache headers", static_path
+            )
         else:
-            logger.warning(f"PyView static directory not found at: {static_path}")
+            logger.warning("PyView static directory not found at: %s", static_path)
 
     async def _serve_app_js(self, _request: Any) -> Any:
         """Serve pyview's client JavaScript."""
         try:
             # Get pyview package path
-            import pyview
-
             pyview_path = Path(pyview.__file__).parent
             client_js_path = pyview_path / "static" / "assets" / "app.js"
 
             if client_js_path.exists():
-                response = FileResponse(str(client_js_path), media_type="application/javascript")
+                response = FileResponse(
+                    str(client_js_path), media_type="application/javascript"
+                )
                 # Add cache headers: cache for 1 minute
-                response.headers["Cache-Control"] = "public, max-age=60, must-revalidate"
+                response.headers["Cache-Control"] = (
+                    "public, max-age=60, must-revalidate"
+                )
                 return response
             # Fallback: try alternative path
             alt_path = pyview_path / "assets" / "js" / "app.js"
             if alt_path.exists():
-                response = FileResponse(str(alt_path), media_type="application/javascript")
-                response.headers["Cache-Control"] = "public, max-age=60, must-revalidate"
+                response = FileResponse(
+                    str(alt_path), media_type="application/javascript"
+                )
+                response.headers["Cache-Control"] = (
+                    "public, max-age=60, must-revalidate"
+                )
                 return response
-            logger.error(f"Could not find pyview client JS at {client_js_path} or {alt_path}")
+            logger.error(
+                "Could not find pyview client JS at %s or %s",
+                client_js_path,
+                alt_path,
+            )
             return Response(
                 content="// PyView client not found",
                 media_type="application/javascript",
                 status_code=404,
             )
         except Exception as e:
-            logger.error(f"Error serving pyview client JS: {e}", exc_info=True)
+            logger.exception("Error serving pyview client JS: %s", e)
             return Response(
                 content="// Error loading client",
                 media_type="application/javascript",
                 status_code=500,
             )
-
