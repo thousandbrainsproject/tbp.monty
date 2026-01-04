@@ -129,13 +129,6 @@ class ZmqBroadcaster:
             message = json.dumps(payload).encode("utf-8")
             # Send JSON directly without topic prefix - message type is in the payload
             self._socket.send(message)
-            payload_preview = json.dumps(payload)[:100]
-            logger.debug(
-                "ZMQ sent message type '%s' (size: %d bytes): %s...",
-                message_type,
-                len(message),
-                payload_preview,
-            )
         except Exception as e:
             logger.exception("Failed to publish ZMQ message: %s", e)
 

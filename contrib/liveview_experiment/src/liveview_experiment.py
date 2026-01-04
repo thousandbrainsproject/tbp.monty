@@ -150,14 +150,6 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             status=normalized_status,
         )
 
-        logger.debug(
-            "Updated context: mode=%s, epoch=%d, step=%d, status=%s",
-            state.experiment_mode,
-            state.current_epoch,
-            state.current_step,
-            normalized_status,
-        )
-
     def _build_template_assigns(self, state: ExperimentState) -> dict[str, Any]:
         """Build template assigns dictionary from state.
 
@@ -202,14 +194,6 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         # Optional int values: use None for template conditionals,
         # but ensure they're never undefined
         # Optional string values: use empty string as default
-        logger.debug(
-            "Building template assigns: run_name=%s, experiment_name=%s, "
-            "current_step=%d, current_epoch=%d",
-            state.run_name,
-            state.experiment_name,
-            state.current_step,
-            state.current_epoch,
-        )
         return {
             # String values - always strings, never None
             "run_name": str(state.run_name) if state.run_name else "Experiment",
@@ -494,7 +478,6 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         }
         self.state_manager.update_metric(name, value, **metadata)
         self._update_context_from_state(socket)
-        logger.debug("Updated metric '%s' = %s", name, value)
         return True
 
     def _handle_data_update(
@@ -515,7 +498,6 @@ class ExperimentLiveView(LiveView[ExperimentState]):
 
         self.state_manager.update_data_stream(stream_name, data)
         self._update_context_from_state(socket)
-        logger.debug("Updated data stream '%s'", stream_name)
         return True
 
     def _handle_log_update(
@@ -536,7 +518,6 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         }
         self.state_manager.add_log(level, message, **metadata)
         self._update_context_from_state(socket)
-        logger.debug("Added log [%s]: %s", level, message)
         return True
 
     def _route_topic_to_handler(
@@ -567,34 +548,16 @@ class ExperimentLiveView(LiveView[ExperimentState]):
 
         # Handle general state update
         if payload == "update":
-            logger.debug(
-                "Received 'update' signal on topic '%s', updating context from state",
-                topic,
-            )
             self._update_context_from_state(socket)
-            logger.debug(
-                "Context updated, current step: %d, status: %s",
-                socket.context.current_step,
-                socket.context.status,
-            )
             return
 
         # Handle typed payloads
         if not isinstance(payload, dict):
-            logger.debug(
-                "Received InfoEvent from topic '%s' with non-dict payload: %s",
-                topic,
-                payload,
-            )
             return
 
         # Route to appropriate handler
         if self._route_topic_to_handler(topic, payload, socket):
             return
-
-        logger.debug(
-            "Received InfoEvent from topic '%s' with payload: %s", topic, payload
-        )
 
     async def handle_info(
         self, event: str | InfoEvent, socket: LiveViewSocket[ExperimentState]
@@ -611,15 +574,7 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             self._handle_info_event(event, socket)
         elif isinstance(event, str):
             if event == "update":
-                logger.info(
-                    "Received 'update' string signal, updating context from state"
-                )
                 self._update_context_from_state(socket)
-                logger.info(
-                    "Context updated, current step: %d, status: %s",
-                    socket.context.current_step,
-                    socket.context.status,
-                )
             else:
                 logger.debug("Received direct payload: %s", event)
 
@@ -687,13 +642,6 @@ class ExperimentLiveView(LiveView[ExperimentState]):
 
     async def render(self, assigns: ExperimentState | dict, meta: Any) -> str:
         """Render the HTML template."""
-        now = datetime.now(timezone.utc)
-        assigns_type = type(assigns)
-        logger.debug(
-            "Render called at %s, assigns type: %s",
-            now,
-            assigns_type,
-        )
 
         try:
             # Extract state from assigns (socket.context)
