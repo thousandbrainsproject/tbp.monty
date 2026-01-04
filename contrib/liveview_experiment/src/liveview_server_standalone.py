@@ -74,7 +74,10 @@ except ImportError as e:
     traceback.print_exc(file=sys.stderr)
     sys.exit(1)
 
+# Configure logging: DEBUG for our modules, INFO for everything else (including pyview)
 logging.basicConfig(level=logging.INFO)
+# Allow DEBUG for our modules only
+logging.getLogger("contrib.liveview_experiment").setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -306,16 +309,22 @@ async def run_zmq_subscriber(
                                             continue
                                     setattr(state_manager.experiment_state, key, value)
                                     updated_keys.append(key)
-                                    # Check if experiment has completed
+                                    # Check if experiment has completed or errored
                                     if (
                                         key == "status"
-                                        and value == "completed"
+                                        and value in ("completed", "error")
                                         and experiment_completed
                                     ):
-                                        logger.info(
-                                            "Experiment completed - will linger for "
-                                            "1 minute before shutdown"
-                                        )
+                                        if value == "completed":
+                                            logger.info(
+                                                "Experiment completed - will linger "
+                                                "for 1 minute before shutdown"
+                                            )
+                                        else:
+                                            logger.info(
+                                                "Experiment errored - will linger "
+                                                "for 1 minute before shutdown"
+                                            )
                                         experiment_completed.set()
                             # Update last_update timestamp
                             state_manager.experiment_state.last_update = datetime.now(
@@ -462,12 +471,22 @@ def main() -> None:
         shutdown_task = None
 
         async def monitor_completion_and_shutdown() -> None:
-            """Wait for experiment completion, then wait 1 minute before shutdown."""
+            """Wait for experiment completion or error, then wait 1 minute.
+
+            Shuts down the server after the experiment completes or errors.
+            """
             await experiment_completed.wait()
-            logger.info(
-                "Experiment completed. LiveView will linger for 1 minute "
-                "before shutdown..."
-            )
+            status = state_manager.experiment_state.status
+            if status == "error":
+                logger.info(
+                    "Experiment errored. LiveView will linger for 1 minute "
+                    "before shutdown..."
+                )
+            else:
+                logger.info(
+                    "Experiment completed. LiveView will linger for 1 minute "
+                    "before shutdown..."
+                )
             await asyncio.sleep(60)  # Wait 1 minute
             logger.info(
                 "1 minute linger period complete. Shutting down LiveView server..."

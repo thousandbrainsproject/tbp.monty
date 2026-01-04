@@ -191,16 +191,6 @@ class ExperimentStateManager:
                         logger.debug(
                             "Failed to manually trigger handle_info on socket: %s", e
                         )
-
-            logger.info(
-                "Broadcasted 'update' via pubsub to topic '%s' - "
-                "step=%d, status=%s, epoch=%d, connected_sockets=%d",
-                self.broadcast_topic,
-                self.experiment_state.current_step,
-                self.experiment_state.status,
-                self.experiment_state.current_epoch,
-                len(self.connected_sockets),
-            )
         except Exception as e:
             logger.exception("Failed to broadcast update via pubsub: %s", e)
 
