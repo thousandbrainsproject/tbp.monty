@@ -286,10 +286,13 @@ class MontyExperimentWithLiveView(MontyExperiment):
         }
         
         mode, epoch, episode = self.get_epoch_state()
+        # The epoch/episode counters represent COMPLETED counts (0-based)
+        # For display, we want to show the CURRENT epoch/episode (1-based)
+        # So we add 1 to show what's currently running
         state.update({
             "experiment_mode": mode.value,
-            "current_epoch": epoch,
-            "current_episode": episode,
+            "current_epoch": epoch + 1,  # Convert from 0-based completed count to 1-based current
+            "current_episode": episode + 1,  # Convert from 0-based completed count to 1-based current
         })
         
         self.broadcaster.publish_state(state)
