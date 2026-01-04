@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ run_name }} - Experiment Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .header-badges {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .status-badge.status-running { 
+            background: #10b981 !important; 
+            color: #ffffff !important; 
+            font-weight: 900 !important;
+        }
+        .status-badge.status-completed { 
+            background: #059669 !important; 
+            color: #ffffff !important; 
+            font-weight: 900 !important;
+        }
+        .status-badge.status-error { 
+            background: #ef4444 !important; 
+            color: #ffffff !important; 
+            font-weight: 900 !important;
+        }
+        .status-badge.status-initializing { 
+            background: #f59e0b !important; 
+            color: #ffffff !important; 
+            font-weight: 900 !important;
+        }
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px 16px;
+            margin-bottom: 12px;
+        }
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 11px;
+            padding: 2px 0;
+            min-width: 0;
+        }
+        .config-label {
+            color: #6b7280;
+            flex-shrink: 0;
+            margin-right: 8px;
+        }
+        .config-value {
+            color: #111827;
+            font-weight: 500;
+            text-align: right;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .stat-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 8px 12px;
+        }
+        .stat-label {
+            font-size: 10px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .section {
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #111827;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .info-label {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .info-value {
+            color: #111827;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .error-box {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
+            padding: 12px;
+            color: #991b1b;
+            margin-top: 16px;
+        }
+        .mode-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .mode-badge.mode-train { 
+            background: #3b82f6 !important; 
+            color: #ffffff !important; 
+            font-weight: 900 !important;
+        }
+        .mode-badge.mode-training { 
+            background: #2563eb !important; 
+            color: #ffffff !important; 
+            font-weight: 900 !important;
+        }
+        .mode-badge.mode-eval { 
+            background: #f59e0b !important; 
+            color: #ffffff !important; 
+            font-weight: 900 !important;
+        }
+        .mode-badge.mode-evaluating { 
+            background: #d97706 !important; 
+            color: #ffffff !important; 
+            font-weight: 900 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ run_name }}</h1>
+            <div class="header-badges">
+                {% if status == "running" %}
+                    {% if experiment_mode_display_upper and experiment_mode_display %}
+                    {# When running, show mode badge (TRAINING/EVALUATING) as the primary indicator #}
+                    <span class="mode-badge mode-{{ experiment_mode_display }}">{{ experiment_mode_display_upper }}</span>
+                    {% else %}
+                    {# Running but no mode, show running status #}
+                    <span class="status-badge status-running">RUNNING</span>
+                    {% endif %}
+                {% else %}
+                    {# Not running, show status badge (INITIALIZING, COMPLETED, ERROR) #}
+                    {% if status == "initializing" %}
+                    <span class="status-badge status-initializing">INITIALIZING</span>
+                    {% elif status == "completed" %}
+                    <span class="status-badge status-completed">COMPLETED</span>
+                    {% elif status == "error" %}
+                    <span class="status-badge status-error">ERROR</span>
+                    {% else %}
+                    <span class="status-badge status-initializing">INITIALIZING</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Experiment Configuration</div>
+            <div class="config-grid">
+                {% if environment_name %}
+                <div class="config-item">
+                    <span class="config-label">Environment:</span>
+                    <span class="config-value">{{ environment_name }}</span>
+                </div>
+                {% endif %}
+                {% if experiment_name %}
+                <div class="config-item" style="grid-column: 1 / -1;">
+                    <span class="config-label">Experiment:</span>
+                    <span class="config-value" style="white-space: normal; word-break: break-word; text-align: left;">{{ experiment_name }}</span>
+                </div>
+                {% endif %}
+                {% if config_path %}
+                <div class="config-item" style="grid-column: 1 / -1;">
+                    <span class="config-label">Config:</span>
+                    <span class="config-value" style="white-space: normal; word-break: break-word; text-align: left; font-size: 10px;">{{ config_path }}</span>
+                </div>
+                {% endif %}
+                {% if max_train_steps %}
+                <div class="config-item">
+                    <span class="config-label">Max Train Steps:</span>
+                    <span class="config-value">{{ max_train_steps }}</span>
+                </div>
+                {% endif %}
+                {% if max_eval_steps %}
+                <div class="config-item">
+                    <span class="config-label">Max Eval Steps:</span>
+                    <span class="config-value">{{ max_eval_steps }}</span>
+                </div>
+                {% endif %}
+                {% if max_total_steps %}
+                <div class="config-item">
+                    <span class="config-label">Max Total Steps:</span>
+                    <span class="config-value">{{ max_total_steps }}</span>
+                </div>
+                {% endif %}
+                {% if n_train_epochs %}
+                <div class="config-item">
+                    <span class="config-label">Train Epochs:</span>
+                    <span class="config-value">{{ n_train_epochs }}</span>
+                </div>
+                {% endif %}
+                {% if n_eval_epochs %}
+                <div class="config-item">
+                    <span class="config-label">Eval Epochs:</span>
+                    <span class="config-value">{{ n_eval_epochs }}</span>
+                </div>
+                {% endif %}
+                <div class="config-item">
+                    <span class="config-label">Training:</span>
+                    <span class="config-value">{% if do_train %}Yes{% else %}No{% endif %}</span>
+                </div>
+                <div class="config-item">
+                    <span class="config-label">Evaluation:</span>
+                    <span class="config-value">{% if do_eval %}Yes{% else %}No{% endif %}</span>
+                </div>
+                <div class="config-item">
+                    <span class="config-label">Show Sensor:</span>
+                    <span class="config-value">{% if show_sensor_output %}Yes{% else %}No{% endif %}</span>
+                </div>
+                {% if seed %}
+                <div class="config-item">
+                    <span class="config-label">Seed:</span>
+                    <span class="config-value">{{ seed }}</span>
+                </div>
+                {% endif %}
+                {% if min_lms_match %}
+                <div class="config-item">
+                    <span class="config-label">Min LMs Match:</span>
+                    <span class="config-value">{{ min_lms_match }}</span>
+                </div>
+                {% endif %}
+                {% if model_name_or_path %}
+                <div class="config-item" style="grid-column: 1 / -1;">
+                    <span class="config-label">Model:</span>
+                    <span class="config-value" style="font-size: 10px; word-break: break-all;">{{ model_name_or_path }}</span>
+                </div>
+                {% endif %}
+                {% if model_path %}
+                <div class="config-item" style="grid-column: 1 / -1;">
+                    <span class="config-label">Model Path:</span>
+                    <span class="config-value" style="font-size: 10px; word-break: break-all;">{{ model_path }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Current Epoch</div>
+                <div class="stat-value">{{ current_epoch }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Current Episode</div>
+                <div class="stat-value">{{ current_episode }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Current Step</div>
+                <div class="stat-value">{{ current_step }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Elapsed Time</div>
+                <div class="stat-value">{{ elapsed_time }}</div>
+            </div>
+        </div>
+
+        {% if total_train_steps > 0 or train_episodes > 0 or train_epochs > 0 %}
+        <div class="section">
+            <div class="section-title">Training Progress</div>
+            <div class="info-row">
+                <span class="info-label">Total Steps</span>
+                <span class="info-value">{{ total_train_steps }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Episodes</span>
+                <span class="info-value">{{ train_episodes }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Epochs</span>
+                <span class="info-value">{{ train_epochs }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if total_eval_steps > 0 or eval_episodes > 0 or eval_epochs > 0 %}
+        <div class="section">
+            <div class="section-title">Evaluation Progress</div>
+            <div class="info-row">
+                <span class="info-label">Total Steps</span>
+                <span class="info-value">{{ total_eval_steps }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Episodes</span>
+                <span class="info-value">{{ eval_episodes }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Epochs</span>
+                <span class="info-value">{{ eval_epochs }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="section">
+            <div class="section-title">Model Information</div>
+            <div class="info-row">
+                <span class="info-label">Learning Modules</span>
+                <span class="info-value">{{ learning_module_count }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Sensor Modules</span>
+                <span class="info-value">{{ sensor_module_count }}</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">System Information</div>
+            <div class="info-row">
+                <span class="info-label">Last Update</span>
+                <span class="info-value">{{ last_update }}</span>
+            </div>
+        </div>
+
+        {% if has_error %}
+        <div class="error-box">
+            <strong>Error:</strong> {{ error_message }}
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
+
