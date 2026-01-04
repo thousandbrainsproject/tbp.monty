@@ -11,7 +11,7 @@ import logging
 from collections import defaultdict
 from typing import Any
 
-from .types import HubDict, PubSubCallback  # noqa: TC001
+from .types import AsyncPubSubCallback, HubDict, PubSubCallback  # noqa: TC001
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class PubSub:
             logger.exception("Error in pub/sub callback for topic '%s': %s", topic, e)
 
     async def _call_async_callback(
-        self, callback: PubSubCallback, topic: str, payload: Any
+        self, callback: AsyncPubSubCallback, topic: str, payload: Any
     ) -> None:
         """Call a single async callback.
 
@@ -76,9 +76,11 @@ class PubSub:
         # Call all subscribers
         for callback in self.hub[topic]:
             if asyncio.iscoroutinefunction(callback):
+                # Type narrowing: we know it's async at runtime
                 await self._call_async_callback(callback, topic, payload)
             else:
-                self._call_callback(callback, topic, payload)
+                # Type narrowing: we know it's sync at runtime
+                self._call_callback(callback, topic, payload)  # type: ignore[arg-type]
 
     def subscribe(self, callback: PubSubCallback) -> None:
         """Subscribe to the topic.

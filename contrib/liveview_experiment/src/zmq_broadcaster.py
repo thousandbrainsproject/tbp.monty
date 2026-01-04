@@ -39,26 +39,28 @@ class ZmqBroadcaster:
             zmq_port: Port for ZMQ publisher socket. Defaults to 5555.
             zmq_host: Host for ZMQ publisher socket. Defaults to 127.0.0.1.
         """
-        if not ZMQ_AVAILABLE:
-            logger.warning("pyzmq not available. Install with: pip install pyzmq")
-            self._socket = None
-            self._context = None
-            return
-
         self.zmq_port = zmq_port
         self.zmq_host = zmq_host
         self._context: Any | None = None
         self._socket: Any | None = None
         self._connected = False
 
+        if not ZMQ_AVAILABLE:
+            logger.warning("pyzmq not available. Install with: pip install pyzmq")
+            return
+
     def connect(self) -> None:
         """Connect to ZMQ publisher socket."""
-        if not ZMQ_AVAILABLE or self._connected:
+        if not ZMQ_AVAILABLE or self._connected or zmq is None:
             return
 
         try:
             self._context = zmq.Context()
+            if self._context is None:
+                return
             self._socket = self._context.socket(zmq.PUB)
+            if self._socket is None:
+                return
             # Set socket options for better performance
             # LINGER: Wait up to 1 second for pending messages to be sent before closing
             # This ensures final messages (like "completed" status) are delivered
