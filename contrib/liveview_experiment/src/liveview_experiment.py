@@ -15,6 +15,7 @@ from pyview.vendor import ibis
 from pyview.vendor.ibis.loaders import FileReloader
 
 from .experiment_state import ExperimentState
+from .state_normalizer import StateNormalizer
 
 if TYPE_CHECKING:
     from .types import MessagePayload, TemplateAssigns
@@ -54,67 +55,8 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         Returns:
             New ExperimentState instance for socket context
         """
-
-        def safe_int(value: int | None) -> int:
-            return value if value is not None else 0
-
-        def safe_str(value: str | None, default: str = "") -> str:
-            return value if value is not None else default
-
-        def safe_bool(value: bool | None) -> bool:
-            return value if value is not None else False
-
         normalized_status = self._normalize_status(state.status)
-
-        return ExperimentState(
-            # Numeric values - preserve 0, default to 0 if None
-            total_train_steps=safe_int(state.total_train_steps),
-            train_episodes=safe_int(state.train_episodes),
-            train_epochs=safe_int(state.train_epochs),
-            total_eval_steps=safe_int(state.total_eval_steps),
-            eval_episodes=safe_int(state.eval_episodes),
-            eval_epochs=safe_int(state.eval_epochs),
-            current_epoch=safe_int(state.current_epoch),
-            current_episode=safe_int(state.current_episode),
-            current_step=safe_int(state.current_step),
-            learning_module_count=safe_int(state.learning_module_count),
-            sensor_module_count=safe_int(state.sensor_module_count),
-            # String values - preserve empty strings, provide defaults if None
-            experiment_mode=safe_str(state.experiment_mode, "train"),
-            run_name=safe_str(state.run_name, "Experiment"),
-            experiment_name=safe_str(state.experiment_name),
-            environment_name=safe_str(state.environment_name),
-            config_path=safe_str(state.config_path),
-            model_name_or_path=safe_str(state.model_name_or_path),
-            error_message=safe_str(state.error_message),
-            setup_message=safe_str(state.setup_message),
-            # Optional values - keep None for template conditionals
-            experiment_start_time=state.experiment_start_time,
-            last_update=state.last_update,
-            max_train_steps=state.max_train_steps,
-            max_eval_steps=state.max_eval_steps,
-            max_total_steps=state.max_total_steps,
-            n_train_epochs=state.n_train_epochs,
-            n_eval_epochs=state.n_eval_epochs,
-            seed=state.seed,
-            model_path=state.model_path,
-            min_lms_match=state.min_lms_match,
-            # Boolean values - explicit None checks
-            do_train=safe_bool(state.do_train),
-            do_eval=safe_bool(state.do_eval),
-            show_sensor_output=safe_bool(state.show_sensor_output),
-            # Complex values - always provide defaults
-            metrics=state.metrics.copy() if state.metrics is not None else {},
-            data_streams=(
-                state.data_streams.copy() if state.data_streams is not None else {}
-            ),
-            recent_logs=(
-                state.recent_logs.copy() if state.recent_logs is not None else []
-            ),
-            max_log_history=safe_int(state.max_log_history) or 100,
-            # Status - always defined
-            status=normalized_status,
-        )
+        return StateNormalizer.normalize(state, normalized_status)
 
     def _update_context_from_state(
         self, socket: LiveViewSocket[ExperimentState]
@@ -531,11 +473,10 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         """
         if isinstance(event, InfoEvent):
             self._handle_info_event(event, socket)
-        elif isinstance(event, str):
-            if event == "update":
-                self._update_context_from_state(socket)
-            else:
-                logger.debug("Received direct payload: %s", event)
+        elif event == "update":
+            self._update_context_from_state(socket)
+        else:
+            logger.debug("Received direct payload: %s", event)
 
     def _load_template(self) -> LiveTemplate:
         """Load and prepare template for rendering.

@@ -20,11 +20,9 @@ try:
 except ImportError:
     zmq = None  # type: ignore[assignment, unused-ignore]
 
-from starlette.routing import Route
 
 if TYPE_CHECKING:
     from starlette.requests import Request
-    from starlette.responses import JSONResponse
 
 # Add the contrib directory to the path so we can import
 CONTRIB_DIR = Path(__file__).parent.parent.parent
@@ -55,15 +53,11 @@ except ImportError as e:
 # The liveview_experiment module will import pyview, which is fine here
 # These are conditional imports (inside try block), so PLC0415 doesn't apply
 try:
+    from contrib.liveview_experiment.src.endpoint_registrar import EndpointRegistrar
     from contrib.liveview_experiment.src.liveview_experiment import (
         ExperimentLiveView,
     )
-    from contrib.liveview_experiment.src.pubsub_endpoint_handler import (
-        PubSubEndpointHandler,
-    )
-    from contrib.liveview_experiment.src.server_lifecycle import (
-        ServerLifecycleManager,
-    )
+    from contrib.liveview_experiment.src.server_orchestrator import ServerOrchestrator
     from contrib.liveview_experiment.src.server_setup import (
         LiveViewServerSetup,
     )
@@ -73,11 +67,8 @@ try:
     from contrib.liveview_experiment.src.static_file_server import (
         StaticFileServer,
     )
-    from contrib.liveview_experiment.src.zmq_context_manager import (
-        ZmqContextManager,
-    )
-    from contrib.liveview_experiment.src.zmq_message_handler import (
-        ZmqMessageHandler,
+    from contrib.liveview_experiment.src.zmq_message_processor import (
+        ZmqMessageProcessor,
     )
 except ImportError as e:
     print(f"ERROR: Failed to import LiveView modules: {e}", file=sys.stderr)
@@ -99,6 +90,10 @@ logger = logging.getLogger(__name__)
 
 async def handle_pubsub_request(request: Request) -> dict[str, str]:
     """Handle HTTP pub/sub requests from main process."""
+    from contrib.liveview_experiment.src.pubsub_endpoint_handler import (  # noqa: PLC0415
+        PubSubEndpointHandler,
+    )
+
     state_manager = request.app.state.state_manager
     response = await PubSubEndpointHandler.handle_request(request, state_manager)
     body_bytes = await response.body()
@@ -143,17 +138,7 @@ async def run_server(host: str, port: int, state_manager: Any = None) -> None:
     app.state.state_manager = state_manager
 
     # Add HTTP endpoint for cross-process pub/sub
-    try:
-
-        async def pubsub_endpoint(request: Request) -> JSONResponse:
-            """Handle HTTP pub/sub requests."""
-            return await PubSubEndpointHandler.handle_request(request, state_manager)
-
-        # Add route to app (PyView is based on Starlette)
-        app.routes.append(Route("/api/pubsub", pubsub_endpoint, methods=["POST"]))
-        logger.info("HTTP pub/sub endpoint registered at /api/pubsub")
-    except (ImportError, AttributeError) as e:
-        logger.warning("Could not register HTTP pub/sub endpoint: %s", e)
+    EndpointRegistrar.register_pubsub_endpoint(app, state_manager)
 
     config = uvicorn.Config(
         app,
@@ -226,27 +211,11 @@ async def run_zmq_subscriber(
     )
 
     try:
-        while True:
-            try:
-                message_bytes = socket.recv(zmq.NOBLOCK)
-                message_str = message_bytes.decode("utf-8")
-                payload = json.loads(message_str)
-                handler = ZmqMessageHandler(state_manager, experiment_completed)
-                await handler.process_message(payload)
-            except zmq.Again:
-                # No message available, yield to event loop
-                await asyncio.sleep(0.01)
-            except json.JSONDecodeError as e:
-                logger.warning("Failed to parse ZMQ message as JSON: %s", e)
-            except Exception as e:
-                logger.exception("Error processing ZMQ message: %s", e)
+        await ZmqMessageProcessor.process_messages(
+            socket, state_manager, experiment_completed
+        )
     finally:
-        if socket:
-            try:
-                socket.close()
-                await asyncio.sleep(0.1)
-            except (zmq.ZMQError, AttributeError) as e:
-                logger.debug("Error closing ZMQ socket: %s", e)
+        await ZmqMessageProcessor.close_socket(socket)
         logger.info("ZMQ subscriber closed")
 
 
@@ -268,58 +237,16 @@ def main() -> None:
         The ZMQ context is created at server startup and lives for the entire
         server lifetime, ensuring it persists longer than the subscriber task.
         """
-        # Create ZMQ context at server level (lives as long as server)
-        zmq_context = ZmqContextManager.create_context()
-
-        # Create state manager
         route_path = "/"
         state_manager = ExperimentStateManager(route_path=route_path)
 
-        # Create event to track experiment completion
-        experiment_completed = asyncio.Event()
-
-        # Create and configure application
-        app = LiveViewServerSetup.create_app(state_manager)
-
-        # Create server configuration
-        config = uvicorn.Config(
-            app,
-            host=args.host,
-            port=args.port,
-            log_level="info",
-            workers=1,
-            access_log=False,
+        await ServerOrchestrator.run_with_zmq(
+            args.host,
+            args.port,
+            args.zmq_port,
+            args.zmq_host,
+            state_manager,
         )
-        server = uvicorn.Server(config)
-
-        # Start ZMQ subscriber in background (uses server-level context)
-        zmq_task = None
-        if zmq_context:
-            zmq_task = asyncio.create_task(
-                run_zmq_subscriber(
-                    state_manager,
-                    zmq_context,
-                    args.zmq_port,
-                    args.zmq_host,
-                    experiment_completed,
-                )
-            )
-
-        # Create shutdown monitoring task
-        shutdown_task = asyncio.create_task(
-            ServerLifecycleManager.monitor_completion_and_shutdown(
-                experiment_completed, state_manager, server
-            )
-        )
-
-        try:
-            await ServerLifecycleManager.run_server(
-                server, args.host, args.port, state_manager
-            )
-        finally:
-            # Cleanup tasks and context
-            await ZmqContextManager.cleanup_tasks(shutdown_task, zmq_task)
-            await ZmqContextManager.cleanup_context(zmq_context)
 
     try:
         asyncio.run(run_with_zmq())

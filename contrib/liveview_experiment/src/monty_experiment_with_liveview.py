@@ -30,7 +30,9 @@ from tbp.monty.frameworks.experiments.monty_experiment import (
     MontyExperiment,
 )
 
+from .experiment_initializer import ExperimentInitializer
 from .metadata_extractor import MetadataExtractor
+from .state_update_builder import StateUpdateBuilder
 from .zmq_broadcaster import ZmqBroadcaster
 
 if TYPE_CHECKING:
@@ -38,8 +40,6 @@ if TYPE_CHECKING:
 else:
     from .types import ConfigDict  # noqa: TC001
 
-from .broadcaster_initializer import BroadcasterInitializer
-from .experiment_config_extractor import ExperimentConfigExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -78,11 +78,9 @@ class MontyExperimentWithLiveView(MontyExperiment):
         """
         logger.info("MontyExperimentWithLiveView.__init__ called")
 
-        # Initialize broadcaster to None (will be set up later if enabled)
         self.broadcaster: ZmqBroadcaster | None = None
 
-        # Extract and normalize configuration
-        config_values = ExperimentConfigExtractor.extract_liveview_config(
+        config_values = ExperimentInitializer.extract_config(
             config, liveview_port, liveview_host, enable_liveview, zmq_port
         )
         self.liveview_port = config_values["liveview_port"]
@@ -91,60 +89,23 @@ class MontyExperimentWithLiveView(MontyExperiment):
         self.zmq_port = config_values["zmq_port"]
         self.zmq_host = config_values["zmq_host"]
 
-        # Initialize parent class first
-        logger.info(
-            "MontyExperimentWithLiveView: About to call super().__init__(config)"
-        )
-        try:
-            super().__init__(config)
-            logger.info(
-                "MontyExperimentWithLiveView: super().__init__(config) completed"
-            )
-        except Exception:
-            logger.exception("MontyExperimentWithLiveView: Error in super().__init__")
-            raise
+        super().__init__(config)
 
-        # Set up ZMQ broadcaster for cross-process communication
-        # The LiveView server is started separately and listens to ZMQ
-        # Do this after parent init to avoid blocking during instantiation
         if self.enable_liveview:
-            self.broadcaster = self._setup_broadcaster()
-        else:
-            self.broadcaster = None
-            logger.info("LiveView broadcasting disabled")
-
-        # Track experiment state for broadcasting
-        if not hasattr(self, "_experiment_start_time"):
-            self._experiment_start_time = datetime.now(timezone.utc)
-            self._experiment_status = "initializing"
-
-    def _setup_broadcaster(self) -> ZmqBroadcaster | None:
-        """Set up ZMQ broadcaster and broadcast initial state.
-
-        Returns:
-            Broadcaster instance or None if setup failed
-        """
-        try:
-            broadcaster = ZmqBroadcaster(zmq_port=self.zmq_port, zmq_host=self.zmq_host)
-
-            self._experiment_start_time = datetime.now(timezone.utc)
-            self._experiment_status = "initializing"
             metadata = self._get_experiment_metadata()
-
-            BroadcasterInitializer.initialize_and_broadcast(
-                broadcaster,
+            self.broadcaster = ExperimentInitializer.setup_broadcaster(
+                self,
+                self.zmq_port,
+                self.zmq_host,
                 getattr(self, "run_name", "Experiment"),
                 metadata,
             )
+        else:
+            logger.info("LiveView broadcasting disabled")
 
-            return broadcaster
-        except (OSError, RuntimeError) as e:
-            logger.warning(
-                "Failed to initialize ZMQ broadcaster: %s. "
-                "Continuing without LiveView updates.",
-                e,
-            )
-            return None
+        if not hasattr(self, "_experiment_start_time"):
+            self._experiment_start_time = datetime.now(timezone.utc)
+            self._experiment_status = "initializing"
 
     def _get_experiment_metadata(self) -> dict[str, str]:
         """Get experiment metadata (environment, experiment name, config path).
@@ -165,89 +126,50 @@ class MontyExperimentWithLiveView(MontyExperiment):
 
         self._experiment_status = "running"
 
-        # Broadcast initial state with configuration details
-        if self.broadcaster:
-            metadata = self._get_experiment_metadata()
+        if not self.broadcaster:
+            return
 
-            # Build setup message (formatted configuration summary)
-            training_info = (
-                f"Training: {'Yes' if self.do_train else 'No'} "
-                f"(max steps: {self.max_train_steps}, epochs: {self.n_train_epochs})"
+        metadata = self._get_experiment_metadata()
+        model_path = getattr(self, "model_path", None)
+
+        setup_message = StateUpdateBuilder.build_setup_message(
+            metadata,
+            self.run_name,
+            self.do_train,
+            self.max_train_steps,
+            self.n_train_epochs,
+            self.do_eval,
+            self.max_eval_steps,
+            self.n_eval_epochs,
+            self.config,
+            model_path,
+        )
+
+        state_update = StateUpdateBuilder.build_initial_state_update(
+            self.run_name,
+            metadata,
+            self._experiment_start_time,
+            self._experiment_status,
+            self.max_train_steps,
+            self.max_eval_steps,
+            self.max_total_steps,
+            self.n_train_epochs,
+            self.n_eval_epochs,
+            self.do_train,
+            self.do_eval,
+            self.config,
+            setup_message,
+            model_path,
+        )
+
+        self.broadcaster.publish_state(state_update)
+
+        if hasattr(self, "model") and self.model:
+            model_info = StateUpdateBuilder.build_model_info_update(
+                len(self.model.learning_modules),
+                len(self.model.sensor_modules),
             )
-            eval_info = (
-                f"Evaluation: {'Yes' if self.do_eval else 'No'} "
-                f"(max steps: {self.max_eval_steps}, epochs: {self.n_eval_epochs})"
-            )
-            setup_lines = [
-                f"Experiment: {metadata['experiment_name']}",
-                f"Environment: {metadata['environment_name']}",
-                f"Config: {metadata['config_path']}",
-                f"Run: {self.run_name}",
-                training_info,
-                eval_info,
-            ]
-            if self.config.get("seed") is not None:
-                setup_lines.append(f"Seed: {self.config.get('seed')}")
-            if self.config.get("model_name_or_path"):
-                setup_lines.append(f"Model: {self.config.get('model_name_or_path')}")
-            if hasattr(self, "model_path") and self.model_path:
-                setup_lines.append(f"Model Path: {self.model_path}")
-            if self.config.get("min_lms_match") is not None:
-                setup_lines.append(f"Min LMs Match: {self.config.get('min_lms_match')}")
-            if self.config.get("show_sensor_output") is not None:
-                setup_lines.append(
-                    f"Show Sensor Output: {self.config.get('show_sensor_output')}"
-                )
-
-            setup_message = "\n".join(setup_lines)
-
-            state_update = {
-                "run_name": self.run_name,
-                "experiment_name": metadata["experiment_name"],
-                "environment_name": metadata["environment_name"],
-                "config_path": metadata["config_path"],
-                "experiment_start_time": self._experiment_start_time.isoformat(),
-                "status": self._experiment_status,
-                "max_train_steps": self.max_train_steps,
-                "max_eval_steps": self.max_eval_steps,
-                "max_total_steps": self.max_total_steps,
-                "n_train_epochs": self.n_train_epochs,
-                "n_eval_epochs": self.n_eval_epochs,
-                "do_train": self.do_train,
-                "do_eval": self.do_eval,
-                "show_sensor_output": (
-                    self.config.get("show_sensor_output", False)
-                    if hasattr(self, "config")
-                    else False
-                ),
-                "seed": self.config.get("seed") if hasattr(self, "config") else None,
-                "model_name_or_path": (
-                    self.config.get("model_name_or_path")
-                    if hasattr(self, "config")
-                    else None
-                ),
-                "min_lms_match": (
-                    self.config.get("min_lms_match")
-                    if hasattr(self, "config")
-                    else None
-                ),
-                "setup_message": setup_message,  # Cache the formatted setup message
-            }
-
-            # Add model path if available
-            if hasattr(self, "model_path") and self.model_path:
-                state_update["model_path"] = str(self.model_path)
-
-            self.broadcaster.publish_state(state_update)
-
-            # Add model info after model is initialized
-            if hasattr(self, "model") and self.model:
-                self.broadcaster.publish_state(
-                    {
-                        "learning_module_count": len(self.model.learning_modules),
-                        "sensor_module_count": len(self.model.sensor_modules),
-                    }
-                )
+            self.broadcaster.publish_state(model_info)
 
     def _update_state_from_experiment(self) -> None:
         """Update and broadcast experiment state."""

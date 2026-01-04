@@ -77,32 +77,72 @@ class ZmqConnectionManager:
             return False
 
         for attempt in range(max_retries):
-            try:
-                socket.connect(f"tcp://{zmq_host}:{zmq_port}")
-                time.sleep(0.1)  # Small delay to ensure connection is established
-                logger.info(
-                    "ZMQ broadcaster connected to tcp://%s:%d (attempt %d)",
-                    zmq_host,
-                    zmq_port,
-                    attempt + 1,
-                )
+            if ZmqConnectionManager._try_connect(
+                socket, zmq_host, zmq_port, attempt + 1
+            ):
                 return True
-            except zmq.ZMQError as e:
-                if attempt < max_retries - 1:
-                    logger.debug(
-                        "ZMQ connection attempt %d failed, retrying in %gs: %s",
-                        attempt + 1,
-                        retry_delay,
-                        e,
-                    )
-                    time.sleep(retry_delay)
-                else:
-                    logger.warning(
-                        "Failed to connect to ZMQ subscriber after %d attempts. "
-                        "Subscriber may not be ready yet. Continuing anyway.",
-                        max_retries,
-                    )
-                    # Continue anyway - ZMQ will auto-reconnect when subscriber is ready
-                    return True
+
+            if attempt < max_retries - 1:
+                ZmqConnectionManager._log_retry(attempt + 1, retry_delay)
+                time.sleep(retry_delay)
+            else:
+                ZmqConnectionManager._log_final_failure(max_retries)
+                return True  # Continue anyway - ZMQ will auto-reconnect
 
         return False
+
+    @staticmethod
+    def _try_connect(socket: Any, zmq_host: str, zmq_port: int, attempt: int) -> bool:
+        """Attempt to connect socket.
+
+        Args:
+            socket: ZMQ socket to connect
+            zmq_host: ZMQ host
+            zmq_port: ZMQ port
+            attempt: Attempt number
+
+        Returns:
+            True if connected, False otherwise
+        """
+        if zmq is None:
+            return False
+
+        try:
+            socket.connect(f"tcp://{zmq_host}:{zmq_port}")
+            time.sleep(0.1)  # Small delay to ensure connection is established
+            logger.info(
+                "ZMQ broadcaster connected to tcp://%s:%d (attempt %d)",
+                zmq_host,
+                zmq_port,
+                attempt,
+            )
+            return True
+        except zmq.ZMQError:
+            return False
+
+    @staticmethod
+    def _log_retry(attempt: int, retry_delay: float) -> None:
+        """Log retry attempt.
+
+        Args:
+            attempt: Attempt number
+            retry_delay: Delay before retry
+        """
+        logger.debug(
+            "ZMQ connection attempt %d failed, retrying in %gs",
+            attempt,
+            retry_delay,
+        )
+
+    @staticmethod
+    def _log_final_failure(max_retries: int) -> None:
+        """Log final connection failure.
+
+        Args:
+            max_retries: Maximum number of retries attempted
+        """
+        logger.warning(
+            "Failed to connect to ZMQ subscriber after %d attempts. "
+            "Subscriber may not be ready yet. Continuing anyway.",
+            max_retries,
+        )
