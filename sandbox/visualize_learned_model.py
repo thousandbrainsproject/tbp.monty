@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from vedo import Plotter, Points, Line
 
-from sandbox.model_loading_utils import load_object_model
+from model_loading_utils import load_object_model
 
 
 def _normalize_rows(V, eps=1e-12):
@@ -295,7 +295,7 @@ if __name__ == "__main__":
     # Set up paths
     pretrained_model_path = Path(
         "~/tbp/results/monty/pretrained_models/2d_sensor/"
-        "disk_learning_control/pretrained/model.pt"
+        "013_cylinder_tbp_vert_learning_2d_zoom30_blur5.0/pretrained/model.pt"
     ).expanduser()
 
     # Load the model to explore available objects
