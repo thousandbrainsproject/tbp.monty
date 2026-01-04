@@ -41,6 +41,36 @@ http://127.0.0.1:8000
 - **Pub/sub streaming**: Works on Python 3.8+ (see `STREAMING_USAGE.md`)
 - **Web dashboard**: Requires Python >= 3.11 (pyview-web). On Python 3.8, pub/sub streaming still works.
 
+## Architecture
+
+The LiveView system uses a two-process architecture with ZMQ pub/sub for cross-process communication:
+
+```mermaid
+flowchart LR
+    subgraph Users[" "]
+        User1("fa:fa-user User 1")
+        User2("fa:fa-user User 2")
+    end
+    
+    subgraph LiveViewServer["`Live View (py 3.11)`"]
+        StateManager@{ shape: das, label: "ExperimentStateManager\n(ZMQ SUB)" }
+        LiveView1[LiveView 1] -- subscribed to --> StateManager
+        LiveView2[LiveView 2] -- subscribed to --> StateManager
+    end
+    
+    subgraph MontyExperiment["Monty Experiment (py 3.8)"]
+        %% Sensors[Sensors] -- publishes via --> ZmqBroadcaster
+        %% LearningModules[Learning Modules] -- publishes via --> ZmqBroadcaster
+        %% ProgressLoggers[Progress Loggers] -- publishes via --> ZmqBroadcaster
+        Experiment[MontyExperimentWithLiveView] -- uses --> ZmqBroadcaster
+        ZmqBroadcaster@{ shape: das, label: "ZmqBroadcaster\n(ZMQ PUB)" }
+    end
+    
+    ZmqBroadcaster -. ZMQ messages .-> StateManager
+    LiveView1 -- serves to --> User1
+    LiveView2 -- serves to --> User2
+```
+
 ## Streaming Data from Parallel Processes
 
 The LiveView supports pub/sub for streaming data from parallel processes (threads, async tasks, etc.) into a unified dashboard. See `STREAMING_USAGE.md` for detailed examples.
