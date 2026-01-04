@@ -51,13 +51,13 @@ flowchart LR
         User1("fa:fa-user User 1")
         User2("fa:fa-user User 2")
     end
-    
+
     subgraph LiveViewServer["`Live View (py 3.11)`"]
         StateManager@{ shape: das, label: "ExperimentStateManager\n(ZMQ SUB)" }
         LiveView1[LiveView 1] -- subscribed to --> StateManager
         LiveView2[LiveView 2] -- subscribed to --> StateManager
     end
-    
+
     subgraph MontyExperiment["Monty Experiment (py 3.8)"]
         %% Sensors[Sensors] -- publishes via --> ZmqBroadcaster
         %% LearningModules[Learning Modules] -- publishes via --> ZmqBroadcaster
@@ -65,7 +65,7 @@ flowchart LR
         Experiment[MontyExperimentWithLiveView] -- uses --> ZmqBroadcaster
         ZmqBroadcaster@{ shape: das, label: "ZmqBroadcaster\n(ZMQ PUB)" }
     end
-    
+
     ZmqBroadcaster -. ZMQ messages .-> StateManager
     LiveView1 -- serves to --> User1
     LiveView2 -- serves to --> User2
@@ -76,6 +76,7 @@ flowchart LR
 The LiveView supports pub/sub for streaming data from parallel processes (threads, async tasks, etc.) into a unified dashboard. See `STREAMING_USAGE.md` for detailed examples.
 
 **Quick example:**
+
 ```python
 # From any parallel process
 broadcaster = experiment.broadcaster
@@ -90,11 +91,13 @@ await broadcaster.publish_data("sensor_data", {"value": 123})
 If you experience segmentation faults when running experiments, this may be due to conflicts between the LiveView server thread and native libraries (habitat-sim, torch). Try:
 
 1. **Disable LiveView temporarily**:
+
    ```yaml
    enable_liveview: false
    ```
 
 2. **Run without LiveView**:
+
    ```bash
    python run.py experiment=randrot_10distinctobj_surf_agent_with_liveview \
      hydra.searchpath=[contrib/liveview_experiment/conf] \
@@ -114,13 +117,61 @@ Run complexity analysis to check code quality:
 ```
 
 This analyzes:
+
 - Cyclomatic complexity
 - Nesting levels
 - Function length
 - Parameter counts
 - Maintainability Index
 
-Results are saved to `complexity_report.json`.
+## Experimental Features
+
+This `contrib/` experiment includes features not in regular tbp.monty:
+
+### Scripts
+
+- `setup.sh`: Environment detection, dependency installation, antlr4/setuptools compatibility workarounds
+- `run.sh`: Runs experiments with auto environment activation
+- `test.sh`: Runs Black, Ruff, mypy, pytest
+- `reformat.sh`: Auto-formats with Black
+- `common_env.sh`: Shared environment detection (conda/venv/system)
+
+### Code Quality Analysis
+
+`analyze_complexity.py` measures:
+
+- Cyclomatic complexity (radon)
+- Nesting levels
+- Function length
+- Parameter count (max 4 + \*args + \*\*kwargs)
+- Maintainability Index
+
+Calculates refactoring priority score. Outputs JSON. Integrates vulture for dead code detection.
+
+### Dual Python Version Architecture
+
+- Main process: Python 3.8 (tbp.monty environment)
+- LiveView server: Python 3.11+ (separate venv)
+
+Connected via ZMQ pub/sub. `ZmqBroadcaster` publishes; `ExperimentStateManager` subscribes. HTTP fallback when ZMQ unavailable.
+
+### PyView Integration
+
+Uses pyview-web (Python 3.11+) for server-pushed updates. `ExperimentLiveView` extends pyview's `LiveView`. Multiple browser tabs sync automatically. Updates throttled to 1/second.
+
+### ZMQ Pub/Sub
+
+Synchronous API for streaming from parallel processes:
+
+```python
+broadcaster = experiment.broadcaster
+broadcaster.publish_metric("loss", 0.5, epoch=1)
+broadcaster.publish_data("sensor_data", {"value": 123})
+```
+
+### Tooling
+
+Libraries: radon, vulture, ruff, mypy, black, pyview-web, uvicorn, pyzmq. Configured in `pyproject.toml` with stricter rules than tbp.monty.
 
 ## Customization
 
