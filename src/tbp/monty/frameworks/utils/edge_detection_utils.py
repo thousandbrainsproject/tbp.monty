@@ -9,11 +9,14 @@
 
 from __future__ import annotations
 
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 DEFAULT_WINDOW_SIGMA = 1.0
 DEFAULT_KERNEL_SIZE = 7
@@ -49,6 +52,83 @@ def project_onto_tangent_plane(v: np.ndarray, n: np.ndarray) -> np.ndarray:
         The projection of v onto the plane perpendicular to n.
     """
     return v - np.dot(v, n) * n
+
+
+def compute_arc_length_correction(
+    chord_length: float,
+    curvature: float,
+    threshold: float = 0.001,
+) -> float:
+    """Compute arc length from chord length using surface curvature.
+
+    For a circular arc with curvature k and chord length c, the arc length is:
+        arc = (2/k) * arcsin(k*c/2)
+
+    This corrects for the underestimation that occurs when projecting 3D
+    movement onto a tangent plane on curved surfaces.
+
+    Args:
+        chord_length: Projected displacement magnitude (chord of the arc).
+        curvature: Normal curvature in the direction of movement (1/radius).
+            Positive for convex surfaces, negative for concave.
+        threshold: Skip correction when |k*c| < threshold (already accurate).
+
+    Returns:
+        Estimated arc length. Returns chord_length unchanged if curvature
+        is negligible or would cause numerical issues.
+    """
+    kc = abs(curvature * chord_length)
+
+    if kc < threshold:
+        # Curvature effect negligible, chord ~ arc
+        return chord_length
+
+    if kc >= 2.0:
+        # Chord longer than diameter - invalid geometry, skip correction
+        return chord_length
+
+    # arc = (2/k) * arcsin(k*c/2)
+    arc_length = (2.0 / abs(curvature)) * np.arcsin(kc / 2.0)
+    return arc_length
+
+
+def is_geometric_edge(
+    depth_patch: np.ndarray,
+    edge_theta: float,
+    depth_threshold: float = 0.01,
+) -> bool:
+    """Check if detected edge is geometric (depth discontinuity) vs texture.
+
+    Geometric edges occur at object boundaries or surface creases where depth
+    changes abruptly. Texture edges occur on flat surfaces where depth is
+    continuous. This function computes the depth gradient perpendicular to
+    the detected edge direction and checks if it exceeds a threshold.
+
+    Args:
+        depth_patch: Depth image patch (same size as RGB patch used for edge
+            detection). Values should be in consistent units (e.g., meters).
+        edge_theta: Edge tangent angle in radians from RGB edge detection.
+        depth_threshold: Maximum allowed depth gradient magnitude for texture
+            edges. Edges with perpendicular depth gradient above this value
+            are classified as geometric.
+
+    Returns:
+        True if edge is geometric (should be filtered out), False if texture edge.
+    """
+    # Compute depth gradients using Sobel
+    depth_dx = cv2.Sobel(depth_patch, cv2.CV_32F, 1, 0, ksize=SOBEL_KERNEL_SIZE)
+    depth_dy = cv2.Sobel(depth_patch, cv2.CV_32F, 0, 1, ksize=SOBEL_KERNEL_SIZE)
+
+    # Direction perpendicular to edge (normal to edge line)
+    edge_normal_angle = edge_theta + np.pi / 2
+    nx = np.cos(edge_normal_angle)
+    ny = np.sin(edge_normal_angle)
+
+    # Depth gradient in direction perpendicular to edge, sampled at patch center
+    cy, cx = depth_patch.shape[0] // 2, depth_patch.shape[1] // 2
+    depth_gradient_perp = abs(nx * depth_dx[cy, cx] + ny * depth_dy[cy, cx])
+
+    return depth_gradient_perp > depth_threshold
 
 
 def get_patch_center(h: int, w: int) -> Tuple[int, int]:
@@ -551,3 +631,54 @@ def save_raw_rgb_patch(patch: np.ndarray, filepath: str) -> None:
         filepath: Path where the image should be saved.
     """
     plt.imsave(filepath, patch)
+
+
+def save_raw_rgb_if_needed(
+    save_raw_rgb: bool,
+    is_exploring: bool,
+    observed_state,
+    rgba_image: np.ndarray,
+    raw_rgb_base_dir: Path,
+    episode_counter: int,
+    step_counter: int,
+) -> int:
+    """Save raw RGB patch if saving is enabled and conditions are met.
+
+    Args:
+        save_raw_rgb: Whether to save raw RGB patches.
+        is_exploring: Whether the agent is currently exploring.
+        observed_state: Processed state from observation processor.
+        rgba_image: RGBA image patch from raw observation data.
+        raw_rgb_base_dir: Directory where raw RGB images should be saved.
+        episode_counter: Current episode number.
+        step_counter: Current step number within the episode.
+
+    Returns:
+        Updated step_counter (incremented if image was saved).
+    """
+    if not (
+        save_raw_rgb
+        and not is_exploring
+        and observed_state.get_on_object()
+    ):
+        return step_counter
+
+    # Extract RGB patch from RGBA if needed
+    if rgba_image.shape[2] == 4:
+        patch = rgba_image[:, :, :3]
+    else:
+        patch = rgba_image
+
+    # Create directory if it doesn't exist
+    raw_rgb_base_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate filename: ep{episode:02d}_step{step:03d}.png
+    # Uses same counters as debug_visualize
+    filename = (
+        f"ep{episode_counter:02d}_"
+        f"step{step_counter:03d}.png"
+    )
+    filepath = raw_rgb_base_dir / filename
+    save_raw_rgb_patch(patch, str(filepath))
+
+    return step_counter + 1
