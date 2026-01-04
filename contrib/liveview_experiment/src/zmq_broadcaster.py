@@ -10,7 +10,7 @@ import contextlib
 import json
 import logging
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 try:
     import zmq
@@ -20,11 +20,16 @@ except ImportError:
     ZMQ_AVAILABLE = False
     zmq = None  # type: ignore[assignment, unused-ignore]
 
-from .types import (  # noqa: TC001
-    MessagePayload,
-    MetricMetadata,
-    StateDict,
-)
+if TYPE_CHECKING:
+    from .types import MessagePayload, MetricMetadata, StateDict
+else:
+    from .types import (  # noqa: TC001
+        MessagePayload,
+        MetricMetadata,
+        StateDict,
+    )
+
+from .zmq_connection_manager import ZmqConnectionManager
 
 logger = logging.getLogger(__name__)
 
@@ -62,56 +67,16 @@ class ZmqBroadcaster:
             self._context = zmq.Context()
             if self._context is None:
                 return
-            self._socket = self._context.socket(zmq.PUB)
+
+            self._socket = ZmqConnectionManager.create_and_configure_socket(
+                self._context
+            )
             if self._socket is None:
                 return
-            # Set socket options for better performance
-            # LINGER: Wait up to 1 second for pending messages to be sent before closing
-            # This ensures final messages (like "completed" status) are delivered
-            self._socket.setsockopt(zmq.LINGER, 1000)  # 1 second linger time
-            self._socket.setsockopt(zmq.SNDHWM, 1000)  # High water mark for send queue
 
-            # PUB connects (client side) - subscriber binds and waits for us
-            # Retry connecting until subscriber is ready (handles slow joiner problem)
-            max_retries = 10
-            retry_delay = 0.5  # 500ms between retries
-            connected = False
-
-            for attempt in range(max_retries):
-                try:
-                    self._socket.connect(f"tcp://{self.zmq_host}:{self.zmq_port}")
-                    # Small delay to ensure connection is established
-                    time.sleep(0.1)
-                    connected = True
-                    logger.info(
-                        "ZMQ broadcaster connected to tcp://%s:%d (attempt %d)",
-                        self.zmq_host,
-                        self.zmq_port,
-                        attempt + 1,
-                    )
-                    break
-                except zmq.ZMQError as e:
-                    if attempt < max_retries - 1:
-                        logger.debug(
-                            "ZMQ connection attempt %d failed, retrying in %gs: %s",
-                            attempt + 1,
-                            retry_delay,
-                            e,
-                        )
-                        time.sleep(retry_delay)
-                    else:
-                        logger.warning(
-                            "Failed to connect to ZMQ subscriber after %d attempts. "
-                            "Subscriber may not be ready yet. Continuing anyway.",
-                            max_retries,
-                        )
-                        # Continue anyway - ZMQ will auto-reconnect
-                        # when subscriber is ready
-                        connected = (
-                            True  # Mark as connected so we can try to send messages
-                        )
-
-            self._connected = connected
+            self._connected = ZmqConnectionManager.connect_with_retry(
+                self._socket, self.zmq_host, self.zmq_port
+            )
         except Exception as e:
             logger.exception("Failed to connect ZMQ broadcaster: %s", e)
             self._socket = None

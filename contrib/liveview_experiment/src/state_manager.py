@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import time
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -16,14 +15,23 @@ except ImportError:
     from .pubsub_compat import PubSub, pub_sub_hub
 
 from .experiment_state import ExperimentState
-from .types import (  # noqa: TC001
-    MessagePayload,
-    MetricData,
-    MetricMetadata,
-)
+
+if TYPE_CHECKING:
+    from .types import MessagePayload, MetricData, MetricMetadata
+else:
+    from .types import (  # noqa: TC001
+        MessagePayload,
+        MetricData,
+        MetricMetadata,
+    )
 
 if TYPE_CHECKING:
     from pyview import LiveViewSocket
+
+from .broadcast_manager import BroadcastManager
+
+if TYPE_CHECKING:
+    from .liveview_experiment import ExperimentLiveView
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +54,6 @@ class ExperimentStateManager:
         )
         self.connected_sockets: set[LiveViewSocket[ExperimentState]] = set()
         if TYPE_CHECKING:
-            from .liveview_experiment import ExperimentLiveView  # noqa: PLC0415
-
             self.liveview_instance: ExperimentLiveView | None = None
         else:
             self.liveview_instance: Any = None  # Reference to LiveView instance
@@ -168,38 +174,12 @@ class ExperimentStateManager:
         Throttled to max once per second. Uses PyView's pubsub system to trigger
         handle_info on all subscribed sockets, which then update their context.
         """
-        current_time = time.time()
-        time_since_last_broadcast = current_time - self._last_broadcast_time
+        if not hasattr(self, "_broadcast_manager"):
+            self._broadcast_manager = BroadcastManager(
+                self, throttle_seconds=self._broadcast_throttle_seconds
+            )
 
-        # If less than throttle period has passed, mark as pending and return
-        if time_since_last_broadcast < self._broadcast_throttle_seconds:
-            self._pending_broadcast = True
-            return
-
-        # Reset throttle timer and pending flag
-        self._last_broadcast_time = current_time
-        self._pending_broadcast = False
-
-        # Use PyView's pubsub system to broadcast update (like mvg_departures)
-        # This triggers handle_info on all subscribed sockets
-        try:
-            pubsub = PubSub(pub_sub_hub, self.broadcast_topic)
-            # Send to the topic - PyView will route to all subscribed sockets
-            await pubsub.send_all_on_topic_async(self.broadcast_topic, "update")
-
-            # Also manually trigger handle_info on all connected sockets as fallback
-            # This ensures updates are delivered even if pubsub routing fails
-            if self.liveview_instance:
-                for socket in list(self.connected_sockets):
-                    try:
-                        # Manually call handle_info to ensure update is processed
-                        await self.liveview_instance.handle_info("update", socket)
-                    except (AttributeError, RuntimeError) as e:
-                        logger.debug(
-                            "Failed to manually trigger handle_info on socket: %s", e
-                        )
-        except Exception as e:
-            logger.exception("Failed to broadcast update via pubsub: %s", e)
+        await self._broadcast_manager.broadcast_if_needed()
 
     def update_metric(
         self, name: str, value: float, **metadata: MetricMetadata  # noqa: ARG002

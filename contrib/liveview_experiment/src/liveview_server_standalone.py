@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import contextlib
 import json
 import logging
 import sys
@@ -21,11 +20,11 @@ try:
 except ImportError:
     zmq = None  # type: ignore[assignment, unused-ignore]
 
-from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 if TYPE_CHECKING:
     from starlette.requests import Request
+    from starlette.responses import JSONResponse
 
 # Add the contrib directory to the path so we can import
 CONTRIB_DIR = Path(__file__).parent.parent.parent
@@ -59,11 +58,23 @@ try:
     from contrib.liveview_experiment.src.liveview_experiment import (
         ExperimentLiveView,
     )
+    from contrib.liveview_experiment.src.pubsub_endpoint_handler import (
+        PubSubEndpointHandler,
+    )
+    from contrib.liveview_experiment.src.server_lifecycle import (
+        ServerLifecycleManager,
+    )
+    from contrib.liveview_experiment.src.server_setup import (
+        LiveViewServerSetup,
+    )
     from contrib.liveview_experiment.src.state_manager import (
         ExperimentStateManager,
     )
     from contrib.liveview_experiment.src.static_file_server import (
         StaticFileServer,
+    )
+    from contrib.liveview_experiment.src.zmq_context_manager import (
+        ZmqContextManager,
     )
     from contrib.liveview_experiment.src.zmq_message_handler import (
         ZmqMessageHandler,
@@ -88,26 +99,11 @@ logger = logging.getLogger(__name__)
 
 async def handle_pubsub_request(request: Request) -> dict[str, str]:
     """Handle HTTP pub/sub requests from main process."""
-    try:
-        body = await request.json()
-        topic = body.get("topic")
-        payload = body.get("payload")
-
-        if topic and payload:
-            # Route to appropriate handler
-            state_manager = request.app.state.state_manager
-            if topic == state_manager.metrics_topic:
-                state_manager._handle_metric_message(topic, payload)
-            elif topic == state_manager.data_topic:
-                state_manager._handle_data_message(topic, payload)
-            elif topic == state_manager.logs_topic:
-                state_manager._handle_log_message(topic, payload)
-
-            return {"status": "ok"}
-        return {"status": "error", "message": "Missing topic or payload"}
-    except Exception as e:
-        logger.exception("Error handling pub/sub request: %s", e)
-        return {"status": "error", "message": str(e)}
+    state_manager = request.app.state.state_manager
+    response = await PubSubEndpointHandler.handle_request(request, state_manager)
+    body_bytes = await response.body()
+    result: dict[str, str] = json.loads(body_bytes.decode())
+    return result
 
 
 async def run_server(host: str, port: int, state_manager: Any = None) -> None:
@@ -149,32 +145,9 @@ async def run_server(host: str, port: int, state_manager: Any = None) -> None:
     # Add HTTP endpoint for cross-process pub/sub
     try:
 
-        async def pubsub_endpoint(request: Any) -> Any:
+        async def pubsub_endpoint(request: Request) -> JSONResponse:
             """Handle HTTP pub/sub requests."""
-            try:
-                body = await request.json()
-                topic = body.get("topic")
-                payload = body.get("payload")
-
-                if topic and payload:
-                    # Route to appropriate handler
-                    if topic == state_manager.metrics_topic:
-                        state_manager._handle_metric_message(topic, payload)
-                    elif topic == state_manager.data_topic:
-                        state_manager._handle_data_message(topic, payload)
-                    elif topic == state_manager.logs_topic:
-                        state_manager._handle_log_message(topic, payload)
-
-                    return JSONResponse({"status": "ok"})
-                return JSONResponse(
-                    {"status": "error", "message": "Missing topic or payload"},
-                    status_code=400,
-                )
-            except Exception as e:
-                logger.exception("Error handling pub/sub request: %s", e)
-                return JSONResponse(
-                    {"status": "error", "message": str(e)}, status_code=500
-                )
+            return await PubSubEndpointHandler.handle_request(request, state_manager)
 
         # Add route to app (PyView is based on Starlette)
         app.routes.append(Route("/api/pubsub", pubsub_endpoint, methods=["POST"]))
@@ -296,15 +269,7 @@ def main() -> None:
         server lifetime, ensuring it persists longer than the subscriber task.
         """
         # Create ZMQ context at server level (lives as long as server)
-        zmq_context = None
-        if zmq is not None:
-            try:
-                zmq_context = zmq.Context()
-                logger.info("ZMQ context created for server")
-            except Exception as e:
-                logger.exception("Failed to create ZMQ context: %s", e)
-        else:
-            logger.warning("pyzmq not available. ZMQ subscriber will not start.")
+        zmq_context = ZmqContextManager.create_context()
 
         # Create state manager
         route_path = "/"
@@ -313,59 +278,10 @@ def main() -> None:
         # Create event to track experiment completion
         experiment_completed = asyncio.Event()
 
-        # Create uvicorn server config and instance
-        app = PyView()
+        # Create and configure application
+        app = LiveViewServerSetup.create_app(state_manager)
 
-        # Configure static file serving
-        static_file_server = StaticFileServer()
-        static_file_server.register_routes(app)
-
-        # Create LiveView instance
-        live_view_instance = None
-
-        def create_live_view() -> Any:
-            nonlocal live_view_instance
-            live_view_instance = ExperimentLiveView(state_manager)
-            state_manager.liveview_instance = live_view_instance
-            return live_view_instance
-
-        app.add_live_view("/", create_live_view)
-        app.state.state_manager = state_manager
-
-        # Add HTTP endpoint for cross-process pub/sub
-        try:
-
-            async def pubsub_endpoint(request: Request) -> JSONResponse:
-                """Handle HTTP pub/sub requests."""
-                try:
-                    body = await request.json()
-                    topic = body.get("topic")
-                    payload = body.get("payload")
-
-                    if topic and payload:
-                        if topic == state_manager.metrics_topic:
-                            state_manager._handle_metric_message(topic, payload)
-                        elif topic == state_manager.data_topic:
-                            state_manager._handle_data_message(topic, payload)
-                        elif topic == state_manager.logs_topic:
-                            state_manager._handle_log_message(topic, payload)
-
-                        return JSONResponse({"status": "ok"})
-                    return JSONResponse(
-                        {"status": "error", "message": "Missing topic or payload"},
-                        status_code=400,
-                    )
-                except Exception as e:
-                    logger.exception("Error handling pub/sub request: %s", e)
-                    return JSONResponse(
-                        {"status": "error", "message": str(e)}, status_code=500
-                    )
-
-            app.routes.append(Route("/api/pubsub", pubsub_endpoint, methods=["POST"]))
-            logger.info("HTTP pub/sub endpoint registered at /api/pubsub")
-        except (ImportError, AttributeError) as e:
-            logger.warning("Could not register HTTP pub/sub endpoint: %s", e)
-
+        # Create server configuration
         config = uvicorn.Config(
             app,
             host=args.host,
@@ -389,68 +305,21 @@ def main() -> None:
                 )
             )
 
-        # Create a task to monitor for experiment completion
-        # and shut down after 1 minute
-        shutdown_task = None
-
-        async def monitor_completion_and_shutdown() -> None:
-            """Wait for experiment completion or error, then wait 1 minute.
-
-            Shuts down the server after the experiment completes or errors.
-            """
-            await experiment_completed.wait()
-            status = state_manager.experiment_state.status
-            if status == "error":
-                logger.info(
-                    "Experiment errored. LiveView will linger for 1 minute "
-                    "before shutdown..."
-                )
-            else:
-                logger.info(
-                    "Experiment completed. LiveView will linger for 1 minute "
-                    "before shutdown..."
-                )
-            await asyncio.sleep(60)  # Wait 1 minute
-            logger.info(
-                "1 minute linger period complete. Shutting down LiveView server..."
+        # Create shutdown monitoring task
+        shutdown_task = asyncio.create_task(
+            ServerLifecycleManager.monitor_completion_and_shutdown(
+                experiment_completed, state_manager, server
             )
-            # Stop the uvicorn server
-            server.should_exit = True
-
-        shutdown_task = asyncio.create_task(monitor_completion_and_shutdown())
+        )
 
         try:
-            # Run the web server
-            logger.info(
-                "Starting LiveView server on http://%s:%d", args.host, args.port
+            await ServerLifecycleManager.run_server(
+                server, args.host, args.port, state_manager
             )
-            logger.info("Listening to pub/sub topic: %s", state_manager.broadcast_topic)
-            await server.serve()
-        except KeyboardInterrupt:
-            logger.info("Server stopped by user")
         finally:
-            # Cancel shutdown task if still running
-            if shutdown_task and not shutdown_task.done():
-                shutdown_task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await shutdown_task
-
-            # Cancel ZMQ task when server stops
-            if zmq_task:
-                zmq_task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await zmq_task
-
-            # Terminate ZMQ context only after server and subscriber have stopped
-            if zmq_context:
-                try:
-                    await asyncio.sleep(
-                        0.1
-                    )  # Brief pause to ensure all operations complete
-                    zmq_context.term()
-                    logger.info("ZMQ context terminated")
-                except (AttributeError, RuntimeError) as e:
-                    logger.debug("Error terminating ZMQ context: %s", e)
+            # Cleanup tasks and context
+            await ZmqContextManager.cleanup_tasks(shutdown_task, zmq_task)
+            await ZmqContextManager.cleanup_context(zmq_context)
 
     try:
         asyncio.run(run_with_zmq())
