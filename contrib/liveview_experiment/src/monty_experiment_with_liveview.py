@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 try:
     from hydra.core.global_hydra import GlobalHydra
@@ -31,8 +31,15 @@ from tbp.monty.frameworks.experiments.monty_experiment import (
 )
 
 from .metadata_extractor import MetadataExtractor
-from .types import ConfigDict  # noqa: TC001
 from .zmq_broadcaster import ZmqBroadcaster
+
+if TYPE_CHECKING:
+    from .types import ConfigDict
+else:
+    from .types import ConfigDict  # noqa: TC001
+
+from .broadcaster_initializer import BroadcasterInitializer
+from .experiment_config_extractor import ExperimentConfigExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -74,46 +81,15 @@ class MontyExperimentWithLiveView(MontyExperiment):
         # Initialize broadcaster to None (will be set up later if enabled)
         self.broadcaster: ZmqBroadcaster | None = None
 
-        # Extract settings from config if not provided as parameters
-        if hasattr(config, "get"):
-            self.liveview_port = (
-                liveview_port
-                if liveview_port is not None
-                else config.get("liveview_port", 8000)
-            )
-            self.liveview_host = (
-                liveview_host
-                if liveview_host is not None
-                else config.get("liveview_host", "127.0.0.1")
-            )
-            self.enable_liveview = (
-                enable_liveview
-                if enable_liveview is not None
-                else config.get("enable_liveview", True)
-            )
-            self.zmq_port = (
-                zmq_port if zmq_port is not None else config.get("zmq_port", 5555)
-            )
-            # zmq_host defaults to liveview_host if not specified,
-            # but normalize to 127.0.0.1
-            zmq_host_from_config = config.get("zmq_host", None)
-            if zmq_host_from_config:
-                self.zmq_host = zmq_host_from_config
-            else:
-                self.zmq_host = self.liveview_host
-            # Normalize localhost to 127.0.0.1 for ZMQ
-            if not self.zmq_host or self.zmq_host == "localhost":
-                self.zmq_host = "127.0.0.1"
-        else:
-            self.liveview_port = liveview_port if liveview_port is not None else 8000
-            self.liveview_host = (
-                liveview_host if liveview_host is not None else "127.0.0.1"
-            )
-            self.enable_liveview = (
-                enable_liveview if enable_liveview is not None else True
-            )
-            self.zmq_port = zmq_port if zmq_port is not None else 5555
-            self.zmq_host = "127.0.0.1"  # Default to localhost for ZMQ
+        # Extract and normalize configuration
+        config_values = ExperimentConfigExtractor.extract_liveview_config(
+            config, liveview_port, liveview_host, enable_liveview, zmq_port
+        )
+        self.liveview_port = config_values["liveview_port"]
+        self.liveview_host = config_values["liveview_host"]
+        self.enable_liveview = config_values["enable_liveview"]
+        self.zmq_port = config_values["zmq_port"]
+        self.zmq_host = config_values["zmq_host"]
 
         # Initialize parent class first
         logger.info(
@@ -132,50 +108,43 @@ class MontyExperimentWithLiveView(MontyExperiment):
         # The LiveView server is started separately and listens to ZMQ
         # Do this after parent init to avoid blocking during instantiation
         if self.enable_liveview:
-            try:
-                self.broadcaster = ZmqBroadcaster(
-                    zmq_port=self.zmq_port, zmq_host=self.zmq_host
-                )
-                self.broadcaster.connect()
-                logger.info(
-                    "ZMQ broadcaster initialized on tcp://%s:%d",
-                    self.zmq_host,
-                    self.zmq_port,
-                )
-
-                # Broadcast initial state immediately so LiveView isn't empty
-                self._experiment_start_time = datetime.now(timezone.utc)
-                self._experiment_status = "initializing"
-                metadata = self._get_experiment_metadata()
-                self.broadcaster.publish_state(
-                    {
-                        "run_name": getattr(self, "run_name", "Experiment"),
-                        "experiment_name": metadata["experiment_name"],
-                        "environment_name": metadata["environment_name"],
-                        "config_path": metadata["config_path"],
-                        "experiment_start_time": (
-                            self._experiment_start_time.isoformat()
-                        ),
-                        "status": self._experiment_status,
-                        "experiment_mode": "train",  # Default mode
-                    }
-                )
-                logger.info("Initial state broadcasted to LiveView")
-            except (OSError, RuntimeError) as e:
-                logger.warning(
-                    "Failed to initialize ZMQ broadcaster: %s. "
-                    "Continuing without LiveView updates.",
-                    e,
-                )
-                self.broadcaster = None
+            self.broadcaster = self._setup_broadcaster()
         else:
             self.broadcaster = None
             logger.info("LiveView broadcasting disabled")
 
-        # Track experiment state for broadcasting (if broadcaster wasn't set up)
+        # Track experiment state for broadcasting
         if not hasattr(self, "_experiment_start_time"):
             self._experiment_start_time = datetime.now(timezone.utc)
             self._experiment_status = "initializing"
+
+    def _setup_broadcaster(self) -> ZmqBroadcaster | None:
+        """Set up ZMQ broadcaster and broadcast initial state.
+
+        Returns:
+            Broadcaster instance or None if setup failed
+        """
+        try:
+            broadcaster = ZmqBroadcaster(zmq_port=self.zmq_port, zmq_host=self.zmq_host)
+
+            self._experiment_start_time = datetime.now(timezone.utc)
+            self._experiment_status = "initializing"
+            metadata = self._get_experiment_metadata()
+
+            BroadcasterInitializer.initialize_and_broadcast(
+                broadcaster,
+                getattr(self, "run_name", "Experiment"),
+                metadata,
+            )
+
+            return broadcaster
+        except (OSError, RuntimeError) as e:
+            logger.warning(
+                "Failed to initialize ZMQ broadcaster: %s. "
+                "Continuing without LiveView updates.",
+                e,
+            )
+            return None
 
     def _get_experiment_metadata(self) -> dict[str, str]:
         """Get experiment metadata (environment, experiment name, config path).

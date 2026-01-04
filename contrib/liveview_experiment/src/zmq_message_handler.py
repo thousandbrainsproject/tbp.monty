@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
-
-from .types import MessagePayload  # noqa: TC001
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import asyncio
 
     from .state_manager import ExperimentStateManager
+    from .types import MessagePayload
+else:
+    from .types import MessagePayload  # noqa: TC001
 
 logger = logging.getLogger(__name__)
 
@@ -109,31 +110,55 @@ class ZmqMessageHandler:
                 continue
 
             # Handle datetime string conversion
-            if key in self._datetime_keys and isinstance(value, str):
-                parsed_value = self._parse_datetime(value)
-                if parsed_value is None:
-                    logger.warning("Failed to parse datetime for %s: %s", key, value)
-                    continue
-                value = parsed_value
+            value = self._normalize_value(key, value)
+            if value is None:
+                continue
 
             setattr(self.state_manager.experiment_state, key, value)
 
             # Check if experiment has completed or errored
-            if (
-                key == "status"
-                and value in ("completed", "error")
-                and self.experiment_completed
-            ):
-                status_msg = "completed" if value == "completed" else "errored"
-                logger.info(
-                    "Experiment %s - will linger for 1 minute before shutdown",
-                    status_msg,
-                )
-                self.experiment_completed.set()
+            self._check_completion(key, value)
 
         # Update last_update timestamp
         self.state_manager.experiment_state.last_update = datetime.now(timezone.utc)
         await self.state_manager.broadcast_update()
+
+    def _normalize_value(self, key: str, value: Any) -> Any:
+        """Normalize value based on its type (e.g., datetime conversion).
+
+        Args:
+            key: State key name
+            value: Raw value to normalize
+
+        Returns:
+            Normalized value or None if normalization failed
+        """
+        if key in self._datetime_keys and isinstance(value, str):
+            parsed_value = self._parse_datetime(value)
+            if parsed_value is None:
+                logger.warning("Failed to parse datetime for %s: %s", key, value)
+                return None
+            return parsed_value
+        return value
+
+    def _check_completion(self, key: str, value: Any) -> None:
+        """Check if experiment has completed and signal if needed.
+
+        Args:
+            key: State key name
+            value: State value
+        """
+        if (
+            key == "status"
+            and value in ("completed", "error")
+            and self.experiment_completed
+        ):
+            status_msg = "completed" if value == "completed" else "errored"
+            logger.info(
+                "Experiment %s - will linger for 1 minute before shutdown",
+                status_msg,
+            )
+            self.experiment_completed.set()
 
     @staticmethod
     def _parse_datetime(value: str) -> datetime | None:

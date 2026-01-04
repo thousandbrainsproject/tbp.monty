@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -14,7 +15,11 @@ from pyview.vendor import ibis
 from pyview.vendor.ibis.loaders import FileReloader
 
 from .experiment_state import ExperimentState
-from .types import MessagePayload, TemplateAssigns  # noqa: TC001
+
+if TYPE_CHECKING:
+    from .types import MessagePayload, TemplateAssigns
+else:
+    from .types import MessagePayload, TemplateAssigns  # noqa: TC001
 
 if TYPE_CHECKING:
     from .state_manager import ExperimentStateManager
@@ -610,7 +615,5 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             return LiveRender(live_template, template_assigns, meta)  # type: ignore[no-any-return]
         except Exception as e:
             logger.exception("Error rendering template: %s", e)
-            import traceback  # noqa: PLC0415
-
             traceback.print_exc()
             return self._create_error_template(e, meta)  # type: ignore[no-any-return]

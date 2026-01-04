@@ -9,9 +9,16 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections import defaultdict
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from .types import AsyncPubSubCallback, HubDict, PubSubCallback  # noqa: TC001
+if TYPE_CHECKING:
+    from .types import AsyncPubSubCallback, HubDict, PubSubCallback
+else:
+    from .types import (  # noqa: TC001
+        AsyncPubSubCallback,
+        HubDict,
+        PubSubCallback,
+    )
 
 logger = logging.getLogger(__name__)
 

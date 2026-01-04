@@ -5,14 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from .types import (  # noqa: TC001
-    DataStreams,
-    LogEntries,
-    MetricsDict,
-)
-
 if TYPE_CHECKING:
     from datetime import datetime
+
+    from .types import DataStreams, LogEntries, MetricsDict
+else:
+    from .types import (  # noqa: TC001
+        DataStreams,
+        LogEntries,
+        MetricsDict,
+    )
 
 
 @dataclass

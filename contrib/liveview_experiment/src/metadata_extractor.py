@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import TYPE_CHECKING, Any
 
-from .types import ConfigDict  # noqa: TC001
+if TYPE_CHECKING:
+    from .types import ConfigDict
+else:
+    from .types import ConfigDict  # noqa: TC001
 
 logger = logging.getLogger(__name__)
 
@@ -159,30 +163,75 @@ class MetadataExtractor:
 
         try:
             hydra_instance = GlobalHydra.instance()
-            if (
-                hydra_instance is None
-                or hydra_instance.hydra is None
-                or not hasattr(hydra_instance.hydra, "runtime")
-                or not hasattr(hydra_instance.hydra.runtime, "config_sources")
-            ):
+            config_sources = self._get_config_sources(hydra_instance)
+            if not config_sources:
                 return ""
 
-            cfg = hydra_instance.hydra
             # Look for experiment config file first
-            for source in cfg.runtime.config_sources:
-                if hasattr(source, "path"):
-                    path_str = str(source.path)
-                    if "experiment" in path_str and path_str.endswith(
-                        (".yaml", ".yml")
-                    ):
-                        return path_str
+            experiment_path = self._find_experiment_config(config_sources)
+            if experiment_path:
+                return experiment_path
 
             # Fallback to any config file
-            for source in cfg.runtime.config_sources:
-                path_str = str(getattr(source, "path", ""))
-                if path_str and path_str.endswith((".yaml", ".yml")):
-                    return path_str
+            return self._find_any_config_file(config_sources)
         except (AttributeError, RuntimeError) as e:
             logger.debug("Could not get config path from Hydra: %s", e)
+
+        return ""
+
+    @staticmethod
+    def _get_config_sources(hydra_instance: Any) -> list[Any] | None:
+        """Get config sources from Hydra instance.
+
+        Args:
+            hydra_instance: GlobalHydra instance
+
+        Returns:
+            List of config sources or None
+        """
+        if (
+            hydra_instance is None
+            or hydra_instance.hydra is None
+            or not hasattr(hydra_instance.hydra, "runtime")
+            or not hasattr(hydra_instance.hydra.runtime, "config_sources")
+        ):
+            return None
+
+        return list(hydra_instance.hydra.runtime.config_sources)
+
+    @staticmethod
+    def _find_experiment_config(config_sources: list[Any]) -> str:
+        """Find experiment config file in sources.
+
+        Args:
+            config_sources: List of config source objects
+
+        Returns:
+            Config path or empty string
+        """
+        for source in config_sources:
+            if not hasattr(source, "path"):
+                continue
+
+            path_str = str(source.path)
+            if "experiment" in path_str and path_str.endswith((".yaml", ".yml")):
+                return path_str
+
+        return ""
+
+    @staticmethod
+    def _find_any_config_file(config_sources: list[Any]) -> str:
+        """Find any config file in sources.
+
+        Args:
+            config_sources: List of config source objects
+
+        Returns:
+            Config path or empty string
+        """
+        for source in config_sources:
+            path_str = str(getattr(source, "path", ""))
+            if path_str and path_str.endswith((".yaml", ".yml")):
+                return path_str
 
         return ""
