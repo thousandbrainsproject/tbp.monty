@@ -246,6 +246,27 @@ else
     echo "✓ radon already installed" >&2
 fi
 
+# Install dev dependencies for code quality checks from pyproject.toml
+echo "Installing dev dependencies for code quality checks..." >&2
+cd "$LIVEVIEW_DIR"
+if [ -f "pyproject.toml" ]; then
+    if pip install -e ".[dev]" >&2; then
+        echo "✓ Dev dependencies installed from pyproject.toml" >&2
+    else
+        echo "Warning: Could not install dev dependencies from pyproject.toml" >&2
+        echo "Falling back to individual installations..." >&2
+        pip install "black>=24.0.0" "ruff>=0.4.0" "mypy>=1.0.0" "pytest>=8.0.0" "vulture>=2.0.0" >&2 || {
+            echo "Warning: Could not install dev dependencies. Code quality checks may not work." >&2
+        }
+    fi
+else
+    echo "Warning: pyproject.toml not found, installing dev dependencies individually..." >&2
+    pip install "black>=24.0.0" "ruff>=0.4.0" "mypy>=1.0.0" "pytest>=8.0.0" "vulture>=2.0.0" >&2 || {
+        echo "Warning: Could not install dev dependencies. Code quality checks may not work." >&2
+    }
+fi
+cd "$TBP_MONTY_ROOT"
+
 echo "" >&2
 echo "✓ Setup complete!" >&2
 echo "" >&2

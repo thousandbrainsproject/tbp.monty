@@ -9,19 +9,21 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections import defaultdict
-from typing import Any, Callable, Dict, List
+from typing import Any
+
+from .types import HubDict, PubSubCallback  # noqa: TC001
 
 logger = logging.getLogger(__name__)
 
 
 # Global pub/sub hub (singleton pattern like pyview)
-pub_sub_hub: Dict[str, List[Callable[[str, Any], None]]] = defaultdict(list)
+pub_sub_hub: HubDict = defaultdict(list)
 
 
 class PubSub:
     """Simple pub/sub implementation compatible with pyview-web interface."""
 
-    def __init__(self, hub: Dict[str, List[Callable[[str, Any], None]]], topic: str) -> None:
+    def __init__(self, hub: HubDict, topic: str) -> None:
         """Initialize PubSub.
 
         Args:
@@ -31,9 +33,11 @@ class PubSub:
         self.hub = hub
         self.topic = topic
 
-    def _call_callback(self, callback: Callable[[str, Any], None], topic: str, payload: Any) -> None:
+    def _call_callback(
+        self, callback: PubSubCallback, topic: str, payload: Any
+    ) -> None:
         """Call a single callback synchronously.
-        
+
         Args:
             callback: The callback function to call.
             topic: The topic name.
@@ -42,13 +46,13 @@ class PubSub:
         try:
             callback(topic, payload)
         except Exception as e:
-            logger.error(f"Error in pub/sub callback for topic '{topic}': {e}", exc_info=True)
+            logger.exception("Error in pub/sub callback for topic '%s': %s", topic, e)
 
     async def _call_async_callback(
-        self, callback: Callable[[str, Any], None], topic: str, payload: Any
+        self, callback: PubSubCallback, topic: str, payload: Any
     ) -> None:
         """Call a single async callback.
-        
+
         Args:
             callback: The async callback function to call.
             topic: The topic name.
@@ -57,7 +61,7 @@ class PubSub:
         try:
             await callback(topic, payload)
         except Exception as e:
-            logger.error(f"Error in pub/sub callback for topic '{topic}': {e}", exc_info=True)
+            logger.exception("Error in pub/sub callback for topic '%s': %s", topic, e)
 
     async def send_all_on_topic_async(self, topic: str, payload: Any) -> None:
         """Send a message to all subscribers on a topic.
@@ -68,7 +72,7 @@ class PubSub:
         """
         if topic not in self.hub:
             return
-        
+
         # Call all subscribers
         for callback in self.hub[topic]:
             if asyncio.iscoroutinefunction(callback):
@@ -76,7 +80,7 @@ class PubSub:
             else:
                 self._call_callback(callback, topic, payload)
 
-    def subscribe(self, callback: Callable[[str, Any], None]) -> None:
+    def subscribe(self, callback: PubSubCallback) -> None:
         """Subscribe to the topic.
 
         Args:
@@ -85,7 +89,7 @@ class PubSub:
         if callback not in self.hub[self.topic]:
             self.hub[self.topic].append(callback)
 
-    def unsubscribe(self, callback: Callable[[str, Any], None]) -> None:
+    def unsubscribe(self, callback: PubSubCallback) -> None:
         """Unsubscribe from the topic.
 
         Args:
@@ -93,4 +97,3 @@ class PubSub:
         """
         if callback in self.hub[self.topic]:
             self.hub[self.topic].remove(callback)
-
