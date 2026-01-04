@@ -13,9 +13,8 @@ import contextlib
 import json
 import logging
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 try:
     import zmq
@@ -24,6 +23,9 @@ except ImportError:
 
 from starlette.responses import JSONResponse
 from starlette.routing import Route
+
+if TYPE_CHECKING:
+    from starlette.requests import Request
 
 # Add the contrib directory to the path so we can import
 CONTRIB_DIR = Path(__file__).parent.parent.parent
@@ -63,6 +65,9 @@ try:
     from contrib.liveview_experiment.src.static_file_server import (
         StaticFileServer,
     )
+    from contrib.liveview_experiment.src.zmq_message_handler import (
+        ZmqMessageHandler,
+    )
 except ImportError as e:
     print(f"ERROR: Failed to import LiveView modules: {e}", file=sys.stderr)
     print(f"Python version: {sys.version}", file=sys.stderr)
@@ -81,7 +86,7 @@ logging.getLogger("contrib.liveview_experiment").setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-async def handle_pubsub_request(request: Any) -> Any:
+async def handle_pubsub_request(request: Request) -> dict[str, str]:
     """Handle HTTP pub/sub requests from main process."""
     try:
         body = await request.json()
@@ -99,6 +104,7 @@ async def handle_pubsub_request(request: Any) -> Any:
                 state_manager._handle_log_message(topic, payload)
 
             return {"status": "ok"}
+        return {"status": "error", "message": "Missing topic or payload"}
     except Exception as e:
         logger.exception("Error handling pub/sub request: %s", e)
         return {"status": "error", "message": str(e)}
@@ -191,12 +197,30 @@ async def run_server(host: str, port: int, state_manager: Any = None) -> None:
     await server.serve()
 
 
+def _create_zmq_socket(zmq_context: Any, zmq_host: str, zmq_port: int) -> Any:
+    """Create and configure ZMQ subscriber socket.
+
+    Args:
+        zmq_context: ZMQ context
+        zmq_host: ZMQ subscriber host
+        zmq_port: ZMQ subscriber port
+
+    Returns:
+        Configured ZMQ socket
+    """
+    socket = zmq_context.socket(zmq.SUB)
+    socket.setsockopt(zmq.LINGER, 1000)  # 1 second linger time
+    socket.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
+    socket.bind(f"tcp://{zmq_host}:{zmq_port}")
+    return socket
+
+
 async def run_zmq_subscriber(
-    state_manager: Any,
-    zmq_context: Any,
+    state_manager: ExperimentStateManager,
+    zmq_context: Any,  # zmq.Context type not available if zmq is None
     zmq_port: int,
     zmq_host: str,
-    experiment_completed: Any = None,
+    experiment_completed: asyncio.Event | None = None,
 ) -> None:
     """Run ZMQ subscriber to receive messages from experiment process.
 
@@ -218,19 +242,8 @@ async def run_zmq_subscriber(
         logger.error("ZMQ context not provided. ZMQ subscriber will not start.")
         return
 
-    # Create socket from the provided context (context lives as long as server)
-    socket = zmq_context.socket(zmq.SUB)
-    # Set LINGER to ensure messages are received before socket closes
-    socket.setsockopt(zmq.LINGER, 1000)  # 1 second linger time
-
-    # Subscribe to ALL messages (empty string = all messages)
-    socket.setsockopt_string(zmq.SUBSCRIBE, "")
-
-    # SUB binds (server side) - publishers will connect to us
-    socket.bind(f"tcp://{zmq_host}:{zmq_port}")
-
-    # Small delay to ensure binding is complete before publishers connect
-    await asyncio.sleep(0.2)
+    socket = _create_zmq_socket(zmq_context, zmq_host, zmq_port)
+    await asyncio.sleep(0.2)  # Ensure binding is complete
 
     logger.info(
         "ZMQ subscriber bound to tcp://%s:%d, subscribed to all messages, "
@@ -242,112 +255,22 @@ async def run_zmq_subscriber(
     try:
         while True:
             try:
-                # Receive message as bytes (no topic prefix - just JSON)
                 message_bytes = socket.recv(zmq.NOBLOCK)
                 message_str = message_bytes.decode("utf-8")
-
-                try:
-                    payload = json.loads(message_str)
-
-                    # Extract message type from payload (not from topic)
-                    msg_type = payload.get("type", "unknown")
-
-                    # Route to appropriate handler based on message type
-                    if msg_type == "metric":
-                        # Metric payload: {"type": "metric", "name": ...,
-                        # "value": ..., ...metadata}
-                        state_manager._handle_metric_message(
-                            state_manager.metrics_topic, payload
-                        )
-                        await state_manager.broadcast_update()
-                    elif msg_type == "data":
-                        # Data payload: {"type": "data", "stream": ..., ...data}
-                        data_payload = {
-                            "type": "data",
-                            "stream": payload.get("stream", "unknown"),
-                            "data": {
-                                k: v
-                                for k, v in payload.items()
-                                if k not in ("type", "stream")
-                            },
-                        }
-                        state_manager._handle_data_message(
-                            state_manager.data_topic, data_payload
-                        )
-                        await state_manager.broadcast_update()
-                    elif msg_type == "log":
-                        # Log payload: {"type": "log", "level": ...,
-                        # "message": ..., ...metadata}
-                        state_manager._handle_log_message(
-                            state_manager.logs_topic, payload
-                        )
-                        await state_manager.broadcast_update()
-                    elif msg_type == "state":
-                        # State payload: direct state updates
-                        # Update state directly
-                        if isinstance(payload, dict):
-                            updated_keys = []
-                            for key, value in payload.items():
-                                if key == "type":
-                                    continue  # Skip the type field
-                                if hasattr(state_manager.experiment_state, key):
-                                    # Handle datetime string conversion
-                                    if key in (
-                                        "experiment_start_time",
-                                        "last_update",
-                                    ) and isinstance(value, str):
-                                        try:
-                                            value = datetime.fromisoformat(
-                                                value.replace("Z", "+00:00")
-                                            )
-                                        except (ValueError, AttributeError):
-                                            logger.warning(
-                                                "Failed to parse datetime for %s: %s",
-                                                key,
-                                                value,
-                                            )
-                                            continue
-                                    setattr(state_manager.experiment_state, key, value)
-                                    updated_keys.append(key)
-                                    # Check if experiment has completed or errored
-                                    if (
-                                        key == "status"
-                                        and value in ("completed", "error")
-                                        and experiment_completed
-                                    ):
-                                        if value == "completed":
-                                            logger.info(
-                                                "Experiment completed - will linger "
-                                                "for 1 minute before shutdown"
-                                            )
-                                        else:
-                                            logger.info(
-                                                "Experiment errored - will linger "
-                                                "for 1 minute before shutdown"
-                                            )
-                                        experiment_completed.set()
-                            # Update last_update timestamp
-                            state_manager.experiment_state.last_update = datetime.now(
-                                timezone.utc
-                            )
-                            # Broadcast update to web UI
-                            await state_manager.broadcast_update()
-                    else:
-                        logger.warning("Unknown message type: %s, ignoring", msg_type)
-
-                except json.JSONDecodeError as e:
-                    logger.warning("Failed to parse ZMQ message as JSON: %s", e)
+                payload = json.loads(message_str)
+                handler = ZmqMessageHandler(state_manager, experiment_completed)
+                await handler.process_message(payload)
             except zmq.Again:
                 # No message available, yield to event loop
                 await asyncio.sleep(0.01)
+            except json.JSONDecodeError as e:
+                logger.warning("Failed to parse ZMQ message as JSON: %s", e)
             except Exception as e:
                 logger.exception("Error processing ZMQ message: %s", e)
     finally:
-        # Close socket only - context is managed at server level
         if socket:
             try:
                 socket.close()
-                # Small delay to ensure any pending operations complete
                 await asyncio.sleep(0.1)
             except (zmq.ZMQError, AttributeError) as e:
                 logger.debug("Error closing ZMQ socket: %s", e)
@@ -412,7 +335,7 @@ def main() -> None:
         # Add HTTP endpoint for cross-process pub/sub
         try:
 
-            async def pubsub_endpoint(request: Any) -> Any:
+            async def pubsub_endpoint(request: Request) -> JSONResponse:
                 """Handle HTTP pub/sub requests."""
                 try:
                     body = await request.json()

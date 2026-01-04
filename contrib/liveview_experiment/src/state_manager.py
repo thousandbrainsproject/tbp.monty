@@ -16,7 +16,11 @@ except ImportError:
     from .pubsub_compat import PubSub, pub_sub_hub
 
 from .experiment_state import ExperimentState
-from .types import MessagePayload, MetricData  # noqa: TC001
+from .types import (  # noqa: TC001
+    MessagePayload,
+    MetricData,
+    MetricMetadata,
+)
 
 if TYPE_CHECKING:
     from pyview import LiveViewSocket
@@ -41,9 +45,12 @@ class ExperimentStateManager:
             experiment_mode="train",
         )
         self.connected_sockets: set[LiveViewSocket[ExperimentState]] = set()
-        self.liveview_instance: Any = (
-            None  # Reference to LiveView instance for direct handle_info calls
-        )
+        if TYPE_CHECKING:
+            from .liveview_experiment import ExperimentLiveView  # noqa: PLC0415
+
+            self.liveview_instance: ExperimentLiveView | None = None
+        else:
+            self.liveview_instance: Any = None  # Reference to LiveView instance
         # Create route-specific topic based on path
         normalized_path = route_path.strip("/").replace("/", ":") or "root"
         self.broadcast_topic: str = f"experiment:updates:{normalized_path}"
@@ -93,7 +100,7 @@ class ExperimentStateManager:
         }
         return (name, value, metadata)
 
-    def _handle_metric_message(self, _topic: str, payload: Any) -> None:
+    def _handle_metric_message(self, _topic: str, payload: MessagePayload) -> None:
         """Handle metric message from pub/sub."""
         if not isinstance(payload, dict):
             return
@@ -105,7 +112,7 @@ class ExperimentStateManager:
         name, value, metadata = metric_data
         self.update_metric(name, value, **metadata)
 
-    def _handle_data_message(self, _topic: str, payload: Any) -> None:
+    def _handle_data_message(self, _topic: str, payload: MessagePayload) -> None:
         """Handle data stream message from pub/sub."""
         if isinstance(payload, dict) and payload.get("type") == "data":
             stream_name = payload.get("stream")
@@ -113,7 +120,7 @@ class ExperimentStateManager:
             if stream_name is not None and data is not None:
                 self.update_data_stream(stream_name, data)
 
-    def _handle_log_message(self, _topic: str, payload: Any) -> None:
+    def _handle_log_message(self, _topic: str, payload: MessagePayload) -> None:
         """Handle log message from pub/sub."""
         if isinstance(payload, dict) and payload.get("type") == "log":
             level = payload.get("level", "info")
@@ -194,17 +201,17 @@ class ExperimentStateManager:
         except Exception as e:
             logger.exception("Failed to broadcast update via pubsub: %s", e)
 
-    def update_metric(self, name: str, value: float, **metadata: Any) -> None:
+    def update_metric(
+        self, name: str, value: float, **metadata: MetricMetadata  # noqa: ARG002
+    ) -> None:
         """Update a metric in the state.
 
         Args:
             name: Metric name
             value: Metric value
-            **metadata: Additional metadata (e.g., epoch, step)
+            **metadata: Additional metadata (e.g., epoch, step) - currently unused
         """
-        if "metrics" not in self.experiment_state.metrics:
-            self.experiment_state.metrics["metrics"] = {}
-        self.experiment_state.metrics["metrics"][name] = {"value": value, **metadata}
+        self.experiment_state.metrics[name] = value
         self.experiment_state.last_update = datetime.now(timezone.utc)
 
     def update_data_stream(self, stream_name: str, data: MessagePayload) -> None:
@@ -217,7 +224,7 @@ class ExperimentStateManager:
         self.experiment_state.data_streams[stream_name] = data
         self.experiment_state.last_update = datetime.now(timezone.utc)
 
-    def add_log(self, level: str, message: str, **metadata: Any) -> None:
+    def add_log(self, level: str, message: str, **metadata: MetricMetadata) -> None:
         """Add a log message to the state.
 
         Args:

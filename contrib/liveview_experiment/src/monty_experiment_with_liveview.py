@@ -7,7 +7,6 @@ This class only sets up the ZMQ broadcaster to send updates.
 from __future__ import annotations
 
 import logging
-import os
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -31,6 +30,7 @@ from tbp.monty.frameworks.experiments.monty_experiment import (
     MontyExperiment,
 )
 
+from .metadata_extractor import MetadataExtractor
 from .types import ConfigDict  # noqa: TC001
 from .zmq_broadcaster import ZmqBroadcaster
 
@@ -46,7 +46,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
 
     def __init__(
         self,
-        config: Any,
+        config: ConfigDict,
         liveview_port: int | None = None,
         liveview_host: str | None = None,
         enable_liveview: bool | None = None,
@@ -178,75 +178,17 @@ class MontyExperimentWithLiveView(MontyExperiment):
             self._experiment_status = "initializing"
 
     def _get_experiment_metadata(self) -> dict[str, str]:
-        """Get experiment metadata (environment, experiment name, config path)."""
-        metadata = {
-            "environment_name": os.environ.get("CONDA_DEFAULT_ENV", ""),
-            "experiment_name": "",
-            "config_path": "",
-        }
+        """Get experiment metadata (environment, experiment name, config path).
 
-        # Try to get experiment name from Hydra or config
-        if HYDRA_AVAILABLE and GlobalHydra is not None:
-            try:
-                hydra_instance = GlobalHydra.instance()
-                if (
-                    hydra_instance is not None
-                    and hydra_instance.hydra is not None
-                    and hasattr(hydra_instance.hydra, "runtime")
-                    and hasattr(hydra_instance.hydra.runtime, "choices")
-                    and "experiment" in hydra_instance.hydra.runtime.choices
-                ):
-                    # Hydra stores experiment choices in runtime.choices
-                    metadata["experiment_name"] = hydra_instance.hydra.runtime.choices[
-                        "experiment"
-                    ]
-            except (AttributeError, RuntimeError) as e:
-                logger.debug("Could not get experiment name from Hydra: %s", e)
-
-        # Fallback: try to get from config or run_name
-        if not metadata["experiment_name"]:
-            if hasattr(self, "config") and hasattr(self.config, "get"):
-                # Check if experiment name is in the config
-                exp_config = self.config.get("experiment", {})
-                if isinstance(exp_config, dict) and "_name_" in exp_config:
-                    metadata["experiment_name"] = exp_config["_name_"]
-            if not metadata["experiment_name"]:
-                # Use run_name as fallback
-                metadata["experiment_name"] = getattr(self, "run_name", "") or ""
-
-        # Try to get config path from Hydra
-        if HYDRA_AVAILABLE and GlobalHydra is not None:
-            try:
-                hydra_instance = GlobalHydra.instance()
-                if (
-                    hydra_instance is not None
-                    and hydra_instance.hydra is not None
-                    and hasattr(hydra_instance.hydra, "runtime")
-                    and hasattr(hydra_instance.hydra.runtime, "config_sources")
-                ):
-                    cfg = hydra_instance.hydra
-                    # Look for experiment config file in config_sources
-                    for source in cfg.runtime.config_sources:
-                        if hasattr(source, "path"):
-                            path_str = str(source.path)
-                            # Look for experiment config files
-                            if "experiment" in path_str and path_str.endswith(
-                                (".yaml", ".yml")
-                            ):
-                                metadata["config_path"] = path_str
-                                break
-                    # If not found, get the first config source
-                    # that looks like a config file
-                    if not metadata["config_path"]:
-                        for source in cfg.runtime.config_sources:
-                            path_str = str(getattr(source, "path", ""))
-                            if path_str and path_str.endswith((".yaml", ".yml")):
-                                metadata["config_path"] = path_str
-                                break
-            except (AttributeError, RuntimeError) as e:
-                logger.debug("Could not get config path from Hydra: %s", e)
-
-        return metadata
+        Returns:
+            Dictionary with metadata fields
+        """
+        extractor = MetadataExtractor(
+            config=getattr(self, "config", None),
+            run_name=getattr(self, "run_name", None),
+        )
+        metadata = extractor.extract()
+        return metadata.to_dict()
 
     def setup_experiment(self, config: ConfigDict) -> None:
         """Set up the experiment and broadcast initial state."""

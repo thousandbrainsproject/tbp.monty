@@ -20,7 +20,11 @@ except ImportError:
     ZMQ_AVAILABLE = False
     zmq = None  # type: ignore[assignment, unused-ignore]
 
-from .types import StateDict  # noqa: TC001
+from .types import (  # noqa: TC001
+    MessagePayload,
+    MetricMetadata,
+    StateDict,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +118,7 @@ class ZmqBroadcaster:
             self._context = None
             self._connected = False
 
-    def publish(self, message_type: str, data: dict[str, Any]) -> None:
+    def publish(self, message_type: str, data: MessagePayload) -> None:
         """Publish a message to the ZMQ socket.
 
         Args:
@@ -132,7 +136,9 @@ class ZmqBroadcaster:
         except Exception as e:
             logger.exception("Failed to publish ZMQ message: %s", e)
 
-    def publish_metric(self, name: str, value: float, **metadata: Any) -> None:
+    def publish_metric(
+        self, name: str, value: float, **metadata: MetricMetadata
+    ) -> None:
         """Publish a metric update.
 
         Args:
@@ -142,7 +148,7 @@ class ZmqBroadcaster:
         """
         self.publish("metric", {"name": name, "value": value, **metadata})
 
-    def publish_data(self, stream_name: str, data: dict[str, Any]) -> None:
+    def publish_data(self, stream_name: str, data: MessagePayload) -> None:
         """Publish a data stream update.
 
         Args:
@@ -151,7 +157,7 @@ class ZmqBroadcaster:
         """
         self.publish("data", {"stream": stream_name, **data})
 
-    def publish_log(self, level: str, message: str, **metadata: Any) -> None:
+    def publish_log(self, level: str, message: str, **metadata: MetricMetadata) -> None:
         """Publish a log message.
 
         Args:

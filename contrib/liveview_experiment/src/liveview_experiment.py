@@ -14,6 +14,7 @@ from pyview.vendor import ibis
 from pyview.vendor.ibis.loaders import FileReloader
 
 from .experiment_state import ExperimentState
+from .types import MessagePayload, TemplateAssigns  # noqa: TC001
 
 if TYPE_CHECKING:
     from .state_manager import ExperimentStateManager
@@ -36,6 +37,80 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         # so it can call handle_info directly
         state_manager.liveview_instance = self
 
+    def _create_context_from_state(self, state: ExperimentState) -> ExperimentState:
+        """Create a new ExperimentState from the shared state.
+
+        Creates a copy with normalized values for use as socket context.
+        Preserves 0 values and provides safe defaults for None values.
+
+        Args:
+            state: Source experiment state
+
+        Returns:
+            New ExperimentState instance for socket context
+        """
+
+        def safe_int(value: int | None) -> int:
+            return value if value is not None else 0
+
+        def safe_str(value: str | None, default: str = "") -> str:
+            return value if value is not None else default
+
+        def safe_bool(value: bool | None) -> bool:
+            return value if value is not None else False
+
+        normalized_status = self._normalize_status(state.status)
+
+        return ExperimentState(
+            # Numeric values - preserve 0, default to 0 if None
+            total_train_steps=safe_int(state.total_train_steps),
+            train_episodes=safe_int(state.train_episodes),
+            train_epochs=safe_int(state.train_epochs),
+            total_eval_steps=safe_int(state.total_eval_steps),
+            eval_episodes=safe_int(state.eval_episodes),
+            eval_epochs=safe_int(state.eval_epochs),
+            current_epoch=safe_int(state.current_epoch),
+            current_episode=safe_int(state.current_episode),
+            current_step=safe_int(state.current_step),
+            learning_module_count=safe_int(state.learning_module_count),
+            sensor_module_count=safe_int(state.sensor_module_count),
+            # String values - preserve empty strings, provide defaults if None
+            experiment_mode=safe_str(state.experiment_mode, "train"),
+            run_name=safe_str(state.run_name, "Experiment"),
+            experiment_name=safe_str(state.experiment_name),
+            environment_name=safe_str(state.environment_name),
+            config_path=safe_str(state.config_path),
+            model_name_or_path=safe_str(state.model_name_or_path),
+            error_message=safe_str(state.error_message),
+            setup_message=safe_str(state.setup_message),
+            # Optional values - keep None for template conditionals
+            experiment_start_time=state.experiment_start_time,
+            last_update=state.last_update,
+            max_train_steps=state.max_train_steps,
+            max_eval_steps=state.max_eval_steps,
+            max_total_steps=state.max_total_steps,
+            n_train_epochs=state.n_train_epochs,
+            n_eval_epochs=state.n_eval_epochs,
+            seed=state.seed,
+            model_path=state.model_path,
+            min_lms_match=state.min_lms_match,
+            # Boolean values - explicit None checks
+            do_train=safe_bool(state.do_train),
+            do_eval=safe_bool(state.do_eval),
+            show_sensor_output=safe_bool(state.show_sensor_output),
+            # Complex values - always provide defaults
+            metrics=state.metrics.copy() if state.metrics is not None else {},
+            data_streams=(
+                state.data_streams.copy() if state.data_streams is not None else {}
+            ),
+            recent_logs=(
+                state.recent_logs.copy() if state.recent_logs is not None else []
+            ),
+            max_log_history=safe_int(state.max_log_history) or 100,
+            # Status - always defined
+            status=normalized_status,
+        )
+
     def _update_context_from_state(
         self, socket: LiveViewSocket[ExperimentState]
     ) -> None:
@@ -57,145 +132,79 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             self._set_socket_context(socket)
             return
 
-        # Normalize status
-        raw_status = state.status or "initializing"
-        normalized_status = raw_status.lower()
-        if normalized_status not in ("initializing", "running", "completed", "error"):
-            normalized_status = "initializing"
-
         # Replace the entire context object
         # (PyView detects object identity changes)
         # This ensures PyView detects the change and triggers a re-render
-        # Use explicit None checks to preserve 0 values
-        # (don't use 'or' which treats 0 as falsy)
-        socket.context = ExperimentState(
-            # Numeric values - preserve 0, default to 0 if None
-            total_train_steps=(
-                state.total_train_steps if state.total_train_steps is not None else 0
-            ),
-            train_episodes=(
-                state.train_episodes if state.train_episodes is not None else 0
-            ),
-            train_epochs=state.train_epochs if state.train_epochs is not None else 0,
-            total_eval_steps=(
-                state.total_eval_steps if state.total_eval_steps is not None else 0
-            ),
-            eval_episodes=state.eval_episodes if state.eval_episodes is not None else 0,
-            eval_epochs=state.eval_epochs if state.eval_epochs is not None else 0,
-            current_epoch=state.current_epoch if state.current_epoch is not None else 0,
-            current_episode=(
-                state.current_episode if state.current_episode is not None else 0
-            ),
-            current_step=state.current_step if state.current_step is not None else 0,
-            learning_module_count=(
-                state.learning_module_count
-                if state.learning_module_count is not None
-                else 0
-            ),
-            sensor_module_count=(
-                state.sensor_module_count
-                if state.sensor_module_count is not None
-                else 0
-            ),
-            # String values - preserve empty strings, provide defaults if None
-            experiment_mode=state.experiment_mode if state.experiment_mode else "train",
-            run_name=state.run_name if state.run_name else "Experiment",
-            experiment_name=(
-                state.experiment_name if state.experiment_name is not None else ""
-            ),
-            environment_name=(
-                state.environment_name if state.environment_name is not None else ""
-            ),
-            config_path=state.config_path if state.config_path is not None else "",
-            model_name_or_path=(
-                state.model_name_or_path if state.model_name_or_path is not None else ""
-            ),
-            error_message=(
-                state.error_message if state.error_message is not None else ""
-            ),
-            setup_message=(
-                state.setup_message if state.setup_message is not None else ""
-            ),
-            # Optional values - keep None for template conditionals
-            experiment_start_time=state.experiment_start_time,
-            last_update=state.last_update,
-            max_train_steps=state.max_train_steps,
-            max_eval_steps=state.max_eval_steps,
-            max_total_steps=state.max_total_steps,
-            n_train_epochs=state.n_train_epochs,
-            n_eval_epochs=state.n_eval_epochs,
-            seed=state.seed,
-            model_path=state.model_path,
-            min_lms_match=state.min_lms_match,
-            # Boolean values - explicit None checks
-            do_train=state.do_train if state.do_train is not None else False,
-            do_eval=state.do_eval if state.do_eval is not None else False,
-            show_sensor_output=(
-                state.show_sensor_output
-                if state.show_sensor_output is not None
-                else False
-            ),
-            # Complex values - always provide defaults
-            metrics=state.metrics.copy() if state.metrics is not None else {},
-            data_streams=(
-                state.data_streams.copy() if state.data_streams is not None else {}
-            ),
-            recent_logs=(
-                state.recent_logs.copy() if state.recent_logs is not None else []
-            ),
-            max_log_history=(
-                state.max_log_history if state.max_log_history is not None else 100
-            ),
-            # Status - always defined
-            status=normalized_status,
-        )
+        socket.context = self._create_context_from_state(state)
 
-    def _build_template_assigns(self, state: ExperimentState) -> dict[str, Any]:
-        """Build template assigns dictionary from state.
+    def _normalize_status(self, status: str | None) -> str:
+        """Normalize status to a valid value.
 
         Args:
-            state: The current experiment state.
+            status: Raw status string
 
         Returns:
-            Dictionary of template variables for rendering.
+            Normalized status string
         """
-        now = datetime.now(timezone.utc)
-        elapsed_time = None
-        if state.experiment_start_time:
-            elapsed = now - state.experiment_start_time
-            elapsed_time = str(elapsed).split(".")[0]  # Remove microseconds
+        normalized = (status or "initializing").lower()
+        valid_statuses = ("initializing", "running", "completed", "error")
+        return normalized if normalized in valid_statuses else "initializing"
 
-        last_update_str = "Never"
-        if state.last_update:
-            last_update_str = state.last_update.strftime("%Y-%m-%d %H:%M:%S UTC")
+    def _normalize_mode_display(self, mode: str | None) -> str:
+        """Normalize experiment mode for display.
 
-        # Normalize status - ensure it's always a valid value
-        normalized_status = (state.status or "initializing").lower()
-        if normalized_status not in ("initializing", "running", "completed", "error"):
-            normalized_status = "initializing"
+        Args:
+            mode: Raw mode string
 
-        # Normalize mode display: "train" -> "training", "eval" -> "evaluating"
-        # Ensure we always have a valid mode
-        raw_mode = state.experiment_mode or "train"
+        Returns:
+            Display-friendly mode string
+        """
+        raw_mode = mode or "train"
         if raw_mode == "train":
-            mode_display = "training"
-        elif raw_mode == "eval":
-            mode_display = "evaluating"
-        else:
-            # Fallback to "training" if mode is unrecognized or empty
-            mode_display = (
-                "training"
-                if not raw_mode or str(raw_mode).strip() == ""
-                else str(raw_mode)
-            )
+            return "training"
+        if raw_mode == "eval":
+            return "evaluating"
+        if not raw_mode or str(raw_mode).strip() == "":
+            return "training"
+        return str(raw_mode)
 
-        # Ensure all template variables are always defined, never None or undefined
-        # This prevents template engine from rendering "undefined" for missing variables
-        # Optional int values: use None for template conditionals,
-        # but ensure they're never undefined
-        # Optional string values: use empty string as default
+    def _format_elapsed_time(self, start_time: datetime | None) -> str:
+        """Format elapsed time since experiment start.
+
+        Args:
+            start_time: Experiment start time
+
+        Returns:
+            Formatted elapsed time string or "N/A"
+        """
+        if not start_time:
+            return "N/A"
+        elapsed = datetime.now(timezone.utc) - start_time
+        return str(elapsed).split(".")[0]  # Remove microseconds
+
+    def _format_last_update(self, last_update: datetime | None) -> str:
+        """Format last update timestamp.
+
+        Args:
+            last_update: Last update datetime
+
+        Returns:
+            Formatted timestamp string or "Never"
+        """
+        if not last_update:
+            return "Never"
+        return last_update.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    def _build_string_assigns(self, state: ExperimentState) -> dict[str, str]:
+        """Build string template assigns.
+
+        Args:
+            state: Experiment state
+
+        Returns:
+            Dictionary of string template variables
+        """
         return {
-            # String values - always strings, never None
             "run_name": str(state.run_name) if state.run_name else "Experiment",
             "experiment_name": (
                 str(state.experiment_name) if state.experiment_name else ""
@@ -208,97 +217,131 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             "model_name_or_path": (
                 str(state.model_name_or_path) if state.model_name_or_path else ""
             ),
-            "error_message": str(state.error_message) if state.error_message else "",
-            "setup_message": str(state.setup_message) if state.setup_message else "",
-            # Status and mode - always defined
-            "status": normalized_status,
-            "status_display": normalized_status.upper(),
-            "experiment_mode": str(raw_mode),
-            "experiment_mode_display": mode_display,
-            "experiment_mode_display_upper": mode_display.upper(),
-            # Numeric values - always integers, never None
-            "current_epoch": (
-                int(state.current_epoch) if state.current_epoch is not None else 0
-            ),
-            "current_episode": (
-                int(state.current_episode) if state.current_episode is not None else 0
-            ),
-            "current_step": (
-                int(state.current_step) if state.current_step is not None else 0
-            ),
-            "total_train_steps": (
-                int(state.total_train_steps)
-                if state.total_train_steps is not None
-                else 0
-            ),
-            "train_episodes": (
-                int(state.train_episodes) if state.train_episodes is not None else 0
-            ),
-            "train_epochs": (
-                int(state.train_epochs) if state.train_epochs is not None else 0
-            ),
-            "total_eval_steps": (
-                int(state.total_eval_steps) if state.total_eval_steps is not None else 0
-            ),
-            "eval_episodes": (
-                int(state.eval_episodes) if state.eval_episodes is not None else 0
-            ),
-            "eval_epochs": (
-                int(state.eval_epochs) if state.eval_epochs is not None else 0
-            ),
-            "learning_module_count": (
-                int(state.learning_module_count)
-                if state.learning_module_count is not None
-                else 0
-            ),
-            "sensor_module_count": (
-                int(state.sensor_module_count)
-                if state.sensor_module_count is not None
-                else 0
-            ),
-            # Optional numeric values - keep None for template conditionals,
-            # but ensure type safety
-            "max_train_steps": (
-                int(state.max_train_steps)
-                if state.max_train_steps is not None
-                else None
-            ),
-            "max_eval_steps": (
-                int(state.max_eval_steps) if state.max_eval_steps is not None else None
-            ),
-            "max_total_steps": (
-                int(state.max_total_steps)
-                if state.max_total_steps is not None
-                else None
-            ),
-            "n_train_epochs": (
-                int(state.n_train_epochs) if state.n_train_epochs is not None else None
-            ),
-            "n_eval_epochs": (
-                int(state.n_eval_epochs) if state.n_eval_epochs is not None else None
-            ),
-            "seed": int(state.seed) if state.seed is not None else None,
-            "min_lms_match": (
-                int(state.min_lms_match) if state.min_lms_match is not None else None
-            ),
-            # Boolean values - always booleans, never None
-            "do_train": bool(state.do_train) if state.do_train is not None else False,
-            "do_eval": bool(state.do_eval) if state.do_eval is not None else False,
-            "show_sensor_output": (
-                bool(state.show_sensor_output)
-                if state.show_sensor_output is not None
-                else False
-            ),
-            "has_error": bool(state.error_message),
-            # Time values - always strings
-            "elapsed_time": elapsed_time or "N/A",
-            "last_update": last_update_str,
-            # Complex values - always defined
-            "data_streams": (
-                state.data_streams if state.data_streams is not None else {}
-            ),
-            "recent_logs": state.recent_logs[-20:] if state.recent_logs else [],
+            "error_message": (str(state.error_message) if state.error_message else ""),
+            "setup_message": (str(state.setup_message) if state.setup_message else ""),
         }
+
+    def _build_numeric_assigns(self, state: ExperimentState) -> dict[str, int]:
+        """Build required numeric template assigns (always integers).
+
+        Args:
+            state: Experiment state
+
+        Returns:
+            Dictionary of numeric template variables
+        """
+
+        def safe_int(value: int | None) -> int:
+            return int(value) if value is not None else 0
+
+        return {
+            "current_epoch": safe_int(state.current_epoch),
+            "current_episode": safe_int(state.current_episode),
+            "current_step": safe_int(state.current_step),
+            "total_train_steps": safe_int(state.total_train_steps),
+            "train_episodes": safe_int(state.train_episodes),
+            "train_epochs": safe_int(state.train_epochs),
+            "total_eval_steps": safe_int(state.total_eval_steps),
+            "eval_episodes": safe_int(state.eval_episodes),
+            "eval_epochs": safe_int(state.eval_epochs),
+            "learning_module_count": safe_int(state.learning_module_count),
+            "sensor_module_count": safe_int(state.sensor_module_count),
+        }
+
+    def _build_optional_numeric_assigns(
+        self, state: ExperimentState
+    ) -> dict[str, int | None]:
+        """Build optional numeric template assigns (can be None).
+
+        Args:
+            state: Experiment state
+
+        Returns:
+            Dictionary of optional numeric template variables
+        """
+
+        def safe_int_or_none(value: int | None) -> int | None:
+            return int(value) if value is not None else None
+
+        return {
+            "max_train_steps": safe_int_or_none(state.max_train_steps),
+            "max_eval_steps": safe_int_or_none(state.max_eval_steps),
+            "max_total_steps": safe_int_or_none(state.max_total_steps),
+            "n_train_epochs": safe_int_or_none(state.n_train_epochs),
+            "n_eval_epochs": safe_int_or_none(state.n_eval_epochs),
+            "seed": safe_int_or_none(state.seed),
+            "min_lms_match": safe_int_or_none(state.min_lms_match),
+        }
+
+    def _build_boolean_assigns(self, state: ExperimentState) -> dict[str, bool]:
+        """Build boolean template assigns.
+
+        Args:
+            state: Experiment state
+
+        Returns:
+            Dictionary of boolean template variables
+        """
+
+        def safe_bool(value: bool | None) -> bool:
+            return bool(value) if value is not None else False
+
+        return {
+            "do_train": safe_bool(state.do_train),
+            "do_eval": safe_bool(state.do_eval),
+            "show_sensor_output": safe_bool(state.show_sensor_output),
+            "has_error": bool(state.error_message),
+        }
+
+    def _build_template_assigns(self, state: ExperimentState) -> TemplateAssigns:
+        """Build template assigns dictionary from state.
+
+        Args:
+            state: The current experiment state.
+
+        Returns:
+            Dictionary of template variables for rendering.
+        """
+        normalized_status = self._normalize_status(state.status)
+        raw_mode = state.experiment_mode or "train"
+        mode_display = self._normalize_mode_display(raw_mode)
+
+        assigns: dict[str, Any] = {}
+        assigns.update(self._build_string_assigns(state))
+        assigns.update(self._build_numeric_assigns(state))
+        assigns.update(self._build_optional_numeric_assigns(state))
+        assigns.update(self._build_boolean_assigns(state))
+
+        # Status and mode
+        assigns.update(
+            {
+                "status": normalized_status,
+                "status_display": normalized_status.upper(),
+                "experiment_mode": str(raw_mode),
+                "experiment_mode_display": mode_display,
+                "experiment_mode_display_upper": mode_display.upper(),
+            }
+        )
+
+        # Time values
+        assigns.update(
+            {
+                "elapsed_time": self._format_elapsed_time(state.experiment_start_time),
+                "last_update": self._format_last_update(state.last_update),
+            }
+        )
+
+        # Complex values
+        assigns.update(
+            {
+                "data_streams": (
+                    state.data_streams if state.data_streams is not None else {}
+                ),
+                "recent_logs": state.recent_logs[-20:] if state.recent_logs else [],
+            }
+        )
+
+        return assigns
 
     def _set_socket_context(self, socket: LiveViewSocket[ExperimentState]) -> None:
         """Set socket context with current state (like mvg_departures).
@@ -318,96 +361,7 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             state.current_step,
             state.current_epoch,
         )
-        # Normalize status
-        raw_status = state.status or "initializing"
-        normalized_status = raw_status.lower()
-        if normalized_status not in ("initializing", "running", "completed", "error"):
-            normalized_status = "initializing"
-
-        # Use cached setup_message if available, otherwise use default/empty
-        setup_message = state.setup_message if state.setup_message is not None else ""
-
-        # Use explicit None checks to preserve 0 values
-        # (don't use 'or' which treats 0 as falsy)
-        socket.context = ExperimentState(
-            # Numeric values - preserve 0, default to 0 if None
-            total_train_steps=(
-                state.total_train_steps if state.total_train_steps is not None else 0
-            ),
-            train_episodes=(
-                state.train_episodes if state.train_episodes is not None else 0
-            ),
-            train_epochs=state.train_epochs if state.train_epochs is not None else 0,
-            total_eval_steps=(
-                state.total_eval_steps if state.total_eval_steps is not None else 0
-            ),
-            eval_episodes=state.eval_episodes if state.eval_episodes is not None else 0,
-            eval_epochs=state.eval_epochs if state.eval_epochs is not None else 0,
-            current_epoch=state.current_epoch if state.current_epoch is not None else 0,
-            current_episode=(
-                state.current_episode if state.current_episode is not None else 0
-            ),
-            current_step=state.current_step if state.current_step is not None else 0,
-            learning_module_count=(
-                state.learning_module_count
-                if state.learning_module_count is not None
-                else 0
-            ),
-            sensor_module_count=(
-                state.sensor_module_count
-                if state.sensor_module_count is not None
-                else 0
-            ),
-            # String values - preserve empty strings, provide defaults if None
-            experiment_mode=state.experiment_mode if state.experiment_mode else "train",
-            run_name=state.run_name if state.run_name else "Experiment",
-            experiment_name=(
-                state.experiment_name if state.experiment_name is not None else ""
-            ),
-            environment_name=(
-                state.environment_name if state.environment_name is not None else ""
-            ),
-            config_path=state.config_path if state.config_path is not None else "",
-            model_name_or_path=(
-                state.model_name_or_path if state.model_name_or_path is not None else ""
-            ),
-            error_message=(
-                state.error_message if state.error_message is not None else ""
-            ),
-            setup_message=setup_message,
-            # Optional values - keep None for template conditionals
-            experiment_start_time=state.experiment_start_time,
-            last_update=state.last_update,
-            max_train_steps=state.max_train_steps,
-            max_eval_steps=state.max_eval_steps,
-            max_total_steps=state.max_total_steps,
-            n_train_epochs=state.n_train_epochs,
-            n_eval_epochs=state.n_eval_epochs,
-            seed=state.seed,
-            model_path=state.model_path,
-            min_lms_match=state.min_lms_match,
-            # Boolean values - explicit None checks
-            do_train=state.do_train if state.do_train is not None else False,
-            do_eval=state.do_eval if state.do_eval is not None else False,
-            show_sensor_output=(
-                state.show_sensor_output
-                if state.show_sensor_output is not None
-                else False
-            ),
-            # Complex values - always provide defaults
-            metrics=state.metrics.copy() if state.metrics is not None else {},
-            data_streams=(
-                state.data_streams.copy() if state.data_streams is not None else {}
-            ),
-            recent_logs=(
-                state.recent_logs.copy() if state.recent_logs is not None else []
-            ),
-            max_log_history=(
-                state.max_log_history if state.max_log_history is not None else 100
-            ),
-            # Status - always defined
-            status=normalized_status,
-        )
+        socket.context = self._create_context_from_state(state)
 
     async def mount(
         self, socket: LiveViewSocket[ExperimentState], _session: dict
@@ -458,7 +412,7 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         self.state_manager.unregister_socket(socket)
 
     def _handle_metric_update(
-        self, payload: dict[str, Any], socket: LiveViewSocket[ExperimentState]
+        self, payload: MessagePayload, socket: LiveViewSocket[ExperimentState]
     ) -> bool:
         """Handle metric update from pub/sub.
 
@@ -481,7 +435,7 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         return True
 
     def _handle_data_update(
-        self, payload: dict[str, Any], socket: LiveViewSocket[ExperimentState]
+        self, payload: MessagePayload, socket: LiveViewSocket[ExperimentState]
     ) -> bool:
         """Handle data stream update from pub/sub.
 
@@ -501,7 +455,7 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         return True
 
     def _handle_log_update(
-        self, payload: dict[str, Any], socket: LiveViewSocket[ExperimentState]
+        self, payload: MessagePayload, socket: LiveViewSocket[ExperimentState]
     ) -> bool:
         """Handle log update from pub/sub.
 
@@ -523,7 +477,7 @@ class ExperimentLiveView(LiveView[ExperimentState]):
     def _route_topic_to_handler(
         self,
         topic: str,
-        payload: dict[str, Any],
+        payload: MessagePayload,
         socket: LiveViewSocket[ExperimentState],
     ) -> bool:
         """Route topic to appropriate handler.
