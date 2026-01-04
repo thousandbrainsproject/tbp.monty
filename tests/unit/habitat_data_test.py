@@ -12,7 +12,6 @@ import pytest
 from omegaconf import OmegaConf
 
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.models.abstract_monty_classes import Modality
 from tbp.monty.frameworks.sensors import SensorID
 
 pytest.importorskip(
@@ -36,7 +35,7 @@ NUM_STEPS = 10
 DEFAULT_ACTUATION_AMOUNT = 0.25
 AGENT_ID = AgentID("camera")
 SENSOR_ID = SensorID("sensor_id_0")
-MODALITY = Modality("depth")
+MODALITY = "depth"
 EXPECTED_STATES = np.random.rand(NUM_STEPS, 64, 64, 1)
 
 

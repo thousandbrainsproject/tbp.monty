@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Dict, NewType
+from typing import Dict, TypedDict
 
 import numpy as np
 import numpy.typing as npt
@@ -20,11 +20,8 @@ from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.sensors import SensorID
 
-Modality = NewType("Modality", str)
-"""Unique identifier for a modality."""
 
-
-class SensorObservations(Dict[Modality, npt.NDArray[Any]]):
+class SensorObservations(TypedDict, total=False):
     """Observations from a sensor."""
 
     rgba: npt.NDArray[np.int_]  # TODO: Verify specific type
