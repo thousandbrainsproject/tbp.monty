@@ -32,7 +32,7 @@ from tbp.monty.frameworks.utils.edge_detection_utils import (
     DEFAULT_KERNEL_SIZE,
     DEFAULT_WINDOW_SIGMA,
     compute_arc_length_correction,
-    compute_edge_features_center_weighted,
+    compute_weighted_structure_tensor_edge_features,
     draw_2d_pose_on_patch,
     is_geometric_edge,
     normalize,
@@ -550,7 +550,7 @@ class TwoDPoseSM(SensorModule):
         c_min = self.edge_params.get("c_min", 0.75)
         e_min = self.edge_params.get("e_min", 0.01)
         edge_strength, coherence, edge_orientation = (
-            compute_edge_features_center_weighted(
+            compute_weighted_structure_tensor_edge_features(
                 patch,
                 win_sigma=win_sigma,
                 ksize=ksize,

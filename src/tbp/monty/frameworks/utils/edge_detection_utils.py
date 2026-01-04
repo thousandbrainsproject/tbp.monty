@@ -159,14 +159,12 @@ def gradient_to_tangent_angle(gradient_angle: float) -> float:
     return (tangent_angle + 2 * np.pi) % (2 * np.pi)
 
 
-def compute_edge_features_center_weighted(
+def compute_weighted_structure_tensor_edge_features(
     patch: np.ndarray,
     win_sigma: float = DEFAULT_WINDOW_SIGMA,
     ksize: int = DEFAULT_KERNEL_SIZE,
     radius: float = 14.0,
     sigma_r: float = 7.0,
-    c_min: float = 0.75,
-    e_min: float = 0.01,
     max_center_offset: float | None = None,
 ) -> Tuple[float, float, float]:
     """Compute edge features using center-weighted, global-aware structure tensor.
@@ -183,8 +181,6 @@ def compute_edge_features_center_weighted(
         radius: Radius of influence around center in pixels
             (e.g., 12-16 for 64x64 patch)
         sigma_r: Radial falloff parameter for center weighting (typically radius/2)
-        c_min: Minimum coherence threshold to accept edge (0.7-0.8 recommended)
-        e_min: Minimum local gradient energy threshold to accept as real edge
         max_center_offset: Maximum allowed distance from patch center to edge in pixels.
             If None, Step 4 (center proximity check) is skipped. If a float value is
             provided, edges that do not pass within this distance of the center are

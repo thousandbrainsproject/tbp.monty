@@ -16,7 +16,7 @@ from tqdm import tqdm
 
 from tbp.monty.frameworks.utils.edge_detection_utils import (
     compute_edge_features_at_center,
-    compute_edge_features_center_weighted,
+    compute_weighted_structure_tensor_edge_features,
 )
 
 # Edge detection thresholds matching two_d_sensor_module.py defaults
@@ -86,7 +86,7 @@ def process_single_image(patch: np.ndarray, output_path: Path) -> dict:
         compute_edge_features_at_center(patch)
     )
     center_aware_strength, center_aware_coherence, center_aware_theta = (
-        compute_edge_features_center_weighted(patch)
+        compute_weighted_structure_tensor_edge_features(patch)
     )
 
     # Create 1x2 subplot figure

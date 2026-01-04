@@ -9,7 +9,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from tbp.monty.frameworks.utils.edge_detection_utils import (
-    compute_edge_features_center_weighted,
+    compute_weighted_structure_tensor_edge_features,
     draw_2d_pose_on_patch,
 )
 
@@ -103,7 +103,7 @@ def main():
         # Process original image with different win_sigma values (no blur)
         for win_sigma in win_sigma_values:
             print(f"  Processing with win_sigma={win_sigma}...")
-            edge_strength, coherence, tangent_theta = compute_edge_features_center_weighted(
+            edge_strength, coherence, tangent_theta = compute_weighted_structure_tensor_edge_features(
                 image,
                 radius=params["radius"],
                 sigma_r=params["sigma_r"],
@@ -165,7 +165,7 @@ def main():
             blurred_image = cv2.cvtColor(blurred_bgr, cv2.COLOR_BGR2RGB)
             
             # Apply center-weighted edge detection
-            edge_strength_blur, coherence_blur, tangent_theta_blur = compute_edge_features_center_weighted(
+            edge_strength_blur, coherence_blur, tangent_theta_blur = compute_weighted_structure_tensor_edge_features(
                 blurred_image,
                 radius=params["radius"],
                 sigma_r=params["sigma_r"],
