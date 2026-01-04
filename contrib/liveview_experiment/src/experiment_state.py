@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
+
+from .types import (  # noqa: TC001
+    DataStreams,
+    LogEntries,
+    MetricsDict,
+)
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -56,14 +62,14 @@ class ExperimentState:
     sensor_module_count: int = 0
 
     # Performance metrics (can be extended)
-    metrics: dict[str, Any] = field(default_factory=dict)
+    metrics: MetricsDict = field(default_factory=dict)
 
     # Streaming data from parallel processes
     # Maps stream names to their latest data
-    data_streams: dict[str, dict[str, Any]] = field(default_factory=dict)
+    data_streams: DataStreams = field(default_factory=dict)
 
     # Recent log messages (for display)
-    recent_logs: list[dict[str, Any]] = field(default_factory=list)
+    recent_logs: LogEntries = field(default_factory=list)
     max_log_history: int = 100  # Maximum number of log messages to keep
 
     # Status
