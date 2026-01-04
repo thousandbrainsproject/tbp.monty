@@ -9,7 +9,7 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 12px;
             background: #f5f5f5;
         }
         .container {
@@ -17,21 +17,8 @@
             margin: 0 auto;
             background: white;
             border-radius: 8px;
-            padding: 16px;
+            padding: 12px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .header {
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 12px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 600;
         }
         .header-badges {
             display: flex;
@@ -124,11 +111,18 @@
         .section {
             margin-bottom: 16px;
         }
+        .section:first-child {
+            margin-top: 0;
+        }
         .section-title {
             font-size: 14px;
             font-weight: 600;
             margin-bottom: 8px;
+            margin-top: 0;
             color: #111827;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .info-row {
             display: flex;
@@ -188,34 +182,11 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>{{ run_name }}</h1>
-            <div class="header-badges">
-                {% if status == "running" %}
-                    {% if experiment_mode_display_upper and experiment_mode_display %}
-                    {# When running, show mode badge (TRAINING/EVALUATING) as the primary indicator #}
-                    <span class="mode-badge mode-{{ experiment_mode_display }}">{{ experiment_mode_display_upper }}</span>
-                    {% else %}
-                    {# Running but no mode, show running status #}
-                    <span class="status-badge status-running">RUNNING</span>
-                    {% endif %}
-                {% else %}
-                    {# Not running, show status badge (INITIALIZING, COMPLETED, ERROR) #}
-                    {% if status == "initializing" %}
-                    <span class="status-badge status-initializing">INITIALIZING</span>
-                    {% elif status == "completed" %}
-                    <span class="status-badge status-completed">COMPLETED</span>
-                    {% elif status == "error" %}
-                    <span class="status-badge status-error">ERROR</span>
-                    {% else %}
-                    <span class="status-badge status-initializing">INITIALIZING</span>
-                    {% endif %}
-                {% endif %}
-            </div>
-        </div>
-
         <div class="section">
-            <div class="section-title">Experiment Configuration</div>
+            <div class="section-title">
+                <span>Experiment Configuration</span>
+                <div class="header-badges">{% if status == "running" %}{% if experiment_mode_display_upper and experiment_mode_display and experiment_mode_display_upper != "" and experiment_mode_display != "" %}<span class="mode-badge mode-{{ experiment_mode_display }}">{{ experiment_mode_display_upper }}</span>{% else %}<span class="status-badge status-running">RUNNING</span>{% endif %}{% elif status == "initializing" %}<span class="status-badge status-initializing">INITIALIZING</span>{% elif status == "completed" %}<span class="status-badge status-completed">COMPLETED</span>{% elif status == "error" %}<span class="status-badge status-error">ERROR</span>{% else %}<span class="status-badge status-initializing">INITIALIZING</span>{% endif %}</div>
+            </div>
             <div class="config-grid">
                 {% if environment_name %}
                 <div class="config-item">
