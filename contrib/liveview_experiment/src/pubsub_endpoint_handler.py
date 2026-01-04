@@ -59,9 +59,12 @@ class PubSubEndpointHandler:
             topic: Message topic
             payload: Message payload
         """
-        if topic == state_manager.metrics_topic:
-            state_manager._handle_metric_message(topic, payload)
-        elif topic == state_manager.data_topic:
-            state_manager._handle_data_message(topic, payload)
-        elif topic == state_manager.logs_topic:
-            state_manager._handle_log_message(topic, payload)
+        handlers = {
+            state_manager.metrics_topic: state_manager._handle_metric_message,
+            state_manager.data_topic: state_manager._handle_data_message,
+            state_manager.logs_topic: state_manager._handle_log_message,
+        }
+
+        handler = handlers.get(topic)
+        if handler:
+            handler(topic, payload)
