@@ -12,6 +12,7 @@ import asyncio
 import logging
 import sys
 from pathlib import Path
+from typing import Any
 
 # Add the contrib directory to the path so we can import
 CONTRIB_DIR = Path(__file__).parent.parent.parent
@@ -164,7 +165,8 @@ async def run_zmq_subscriber(
     state_manager: Any, 
     zmq_context: Any, 
     zmq_port: int, 
-    zmq_host: str
+    zmq_host: str,
+    experiment_completed: Any = None
 ) -> None:
     """Run ZMQ subscriber to receive messages from experiment process.
     
@@ -176,6 +178,7 @@ async def run_zmq_subscriber(
         zmq_context: ZMQ context (must live as long as the server)
         zmq_port: ZMQ subscriber port
         zmq_host: ZMQ subscriber host
+        experiment_completed: Optional asyncio.Event to signal when experiment completes
     """
     try:
         import zmq
@@ -254,6 +257,10 @@ async def run_zmq_subscriber(
                                             continue
                                     setattr(state_manager.experiment_state, key, value)
                                     updated_keys.append(key)
+                                    # Check if experiment has completed
+                                    if key == "status" and value == "completed" and experiment_completed:
+                                        logger.info("Experiment completed - will linger for 1 minute before shutdown")
+                                        experiment_completed.set()
                             # Update last_update timestamp
                             state_manager.experiment_state.last_update = datetime.now(timezone.utc)
                             # Broadcast update to web UI
@@ -311,17 +318,109 @@ def main() -> None:
         route_path = "/"
         state_manager = ExperimentStateManager(route_path=route_path)
         
+        # Create event to track experiment completion
+        experiment_completed = asyncio.Event()
+        
+        # Create uvicorn server config and instance
+        app = PyView()
+        
+        # Configure static file serving
+        from contrib.liveview_experiment.src.static_file_server import StaticFileServer
+        static_file_server = StaticFileServer()
+        static_file_server.register_routes(app)
+        
+        # Create LiveView instance
+        live_view_instance = None
+        
+        def create_live_view() -> Any:
+            nonlocal live_view_instance
+            from contrib.liveview_experiment.src.liveview_experiment import ExperimentLiveView
+            live_view_instance = ExperimentLiveView(state_manager)
+            state_manager.liveview_instance = live_view_instance
+            return live_view_instance
+        
+        app.add_live_view("/", create_live_view)
+        app.state.state_manager = state_manager
+        
+        # Add HTTP endpoint for cross-process pub/sub
+        try:
+            from starlette.routing import Route
+            from starlette.responses import JSONResponse
+            
+            async def pubsub_endpoint(request: Any) -> Any:
+                """Handle HTTP pub/sub requests."""
+                try:
+                    import json
+                    body = await request.json()
+                    topic = body.get("topic")
+                    payload = body.get("payload")
+                    
+                    if topic and payload:
+                        if topic == state_manager.metrics_topic:
+                            state_manager._handle_metric_message(topic, payload)
+                        elif topic == state_manager.data_topic:
+                            state_manager._handle_data_message(topic, payload)
+                        elif topic == state_manager.logs_topic:
+                            state_manager._handle_log_message(topic, payload)
+                        
+                        return JSONResponse({"status": "ok"})
+                    return JSONResponse({"status": "error", "message": "Missing topic or payload"}, status_code=400)
+                except Exception as e:
+                    logger.error(f"Error handling pub/sub request: {e}", exc_info=True)
+                    return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+            
+            app.routes.append(Route("/api/pubsub", pubsub_endpoint, methods=["POST"]))
+            logger.info("HTTP pub/sub endpoint registered at /api/pubsub")
+        except Exception as e:
+            logger.warning(f"Could not register HTTP pub/sub endpoint: {e}")
+        
+        config = uvicorn.Config(
+            app,
+            host=args.host,
+            port=args.port,
+            log_level="info",
+            workers=1,
+            access_log=False,
+        )
+        server = uvicorn.Server(config)
+        
         # Start ZMQ subscriber in background (uses server-level context)
         zmq_task = None
         if zmq_context:
             zmq_task = asyncio.create_task(
-                run_zmq_subscriber(state_manager, zmq_context, args.zmq_port, args.zmq_host)
+                run_zmq_subscriber(state_manager, zmq_context, args.zmq_port, args.zmq_host, experiment_completed)
             )
         
+        # Create a task to monitor for experiment completion and shut down after 1 minute
+        shutdown_task = None
+        
+        async def monitor_completion_and_shutdown() -> None:
+            """Wait for experiment completion, then wait 1 minute before shutting down."""
+            await experiment_completed.wait()
+            logger.info("Experiment completed. LiveView will linger for 1 minute before shutdown...")
+            await asyncio.sleep(60)  # Wait 1 minute
+            logger.info("1 minute linger period complete. Shutting down LiveView server...")
+            # Stop the uvicorn server
+            server.should_exit = True
+        
+        shutdown_task = asyncio.create_task(monitor_completion_and_shutdown())
+        
         try:
-            # Run the web server with the shared state manager
-            await run_server(args.host, args.port, state_manager)
+            # Run the web server
+            logger.info(f"Starting LiveView server on http://{args.host}:{args.port}")
+            logger.info(f"Listening to pub/sub topic: {state_manager.broadcast_topic}")
+            await server.serve()
+        except KeyboardInterrupt:
+            logger.info("Server stopped by user")
         finally:
+            # Cancel shutdown task if still running
+            if shutdown_task and not shutdown_task.done():
+                shutdown_task.cancel()
+                try:
+                    await shutdown_task
+                except asyncio.CancelledError:
+                    pass
+            
             # Cancel ZMQ task when server stops
             if zmq_task:
                 zmq_task.cancel()

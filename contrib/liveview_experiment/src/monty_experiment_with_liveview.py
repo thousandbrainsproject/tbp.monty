@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
@@ -59,8 +58,6 @@ class MontyExperimentWithLiveView(MontyExperiment):
             zmq_port: Port for ZMQ publisher. Defaults to 5555.
         """
         logger.info("MontyExperimentWithLiveView.__init__ called")
-        print("LIVEVIEW: __init__ called", file=sys.stderr)
-        sys.stderr.flush()
         
         # Extract settings from config if not provided as parameters
         if hasattr(config, 'get'):
@@ -86,19 +83,11 @@ class MontyExperimentWithLiveView(MontyExperiment):
         
         # Initialize parent class first
         logger.info("MontyExperimentWithLiveView: About to call super().__init__(config)")
-        print("LIVEVIEW: About to call super().__init__(config)", file=sys.stderr)
-        sys.stderr.flush()
         try:
             super().__init__(config)
             logger.info("MontyExperimentWithLiveView: super().__init__(config) completed")
-            print("LIVEVIEW: super().__init__(config) completed", file=sys.stderr)
-            sys.stderr.flush()
         except Exception as e:
             logger.error(f"MontyExperimentWithLiveView: Error in super().__init__: {e}", exc_info=True)
-            print(f"LIVEVIEW: ERROR in super().__init__: {e}", file=sys.stderr)
-            import traceback
-            traceback.print_exc(file=sys.stderr)
-            sys.stderr.flush()
             raise
         
         # Set up ZMQ broadcaster for cross-process communication

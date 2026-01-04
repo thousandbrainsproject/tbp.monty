@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 try:
     # Use PyView's actual pubsub system (Python 3.11+)
@@ -35,16 +35,9 @@ class ExperimentStateManager:
         self.route_path = route_path
         # Initialize with default values so LiveView isn't empty
         self.experiment_state = ExperimentState(
-            run_name="Test Experiment",
-            experiment_name="tutorial_surf_agent_2obj_with_liveview",
-            environment_name="tbp.monty",
-            config_path="experiment/tutorial_surf_agent_2obj_with_liveview",
+            run_name="Experiment",
             status="initializing",
             experiment_mode="train",
-            current_step=42,  # Test value
-            current_epoch=1,  # Test value
-            do_train=True,
-            do_eval=False,
         )
         self.connected_sockets: set[LiveViewSocket[ExperimentState]] = set()
         self.liveview_instance: Any = None  # Reference to LiveView instance for direct handle_info calls
