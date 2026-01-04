@@ -33,7 +33,7 @@ Runs a Monty experiment with LiveView monitoring.
 ./contrib/liveview_experiment/scripts/run.sh [experiment_name]
 ```
 
-**Default:** `randrot_10distinctobj_surf_agent_with_liveview`
+**Default:** `tutorial_surf_agent_2obj_with_liveview`
 
 **What it does:**
 - Automatically detects and activates `tbp.monty` environment
