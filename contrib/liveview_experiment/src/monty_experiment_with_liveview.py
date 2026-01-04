@@ -15,7 +15,7 @@ from typing import Any
 try:
     from hydra.core.global_hydra import GlobalHydra
 except ImportError:
-    GlobalHydra = None  # type: ignore[assignment, unused-ignore]
+    GlobalHydra = None  # type: ignore[assignment, unused-ignore, misc]
 
 
 try:
@@ -70,6 +70,9 @@ class MontyExperimentWithLiveView(MontyExperiment):
             zmq_port: Port for ZMQ publisher. Defaults to 5555.
         """
         logger.info("MontyExperimentWithLiveView.__init__ called")
+
+        # Initialize broadcaster to None (will be set up later if enabled)
+        self.broadcaster: ZmqBroadcaster | None = None
 
         # Extract settings from config if not provided as parameters
         if hasattr(config, "get"):
