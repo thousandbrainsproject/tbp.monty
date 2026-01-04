@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -12,10 +12,7 @@ from __future__ import annotations
 import pytest
 
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environments.embodied_environment import (
-    SemanticID,
-)
-from tbp.monty.frameworks.models.abstract_monty_classes import Modality
+from tbp.monty.frameworks.environments.embodied_environment import SemanticID
 from tbp.monty.frameworks.sensors import SensorID
 
 pytest.importorskip(
@@ -108,7 +105,7 @@ class HabitatSimTest(unittest.TestCase):
             self.assertEqual(2, len(sensor_obs))
 
             # Check sensor resolution
-            shape = sensor_obs[Modality("depth")].shape
+            shape = sensor_obs["depth"].shape
             self.assertSequenceEqual((5, 5), shape[:2])
 
             # Check default action space
@@ -171,7 +168,7 @@ class HabitatSimTest(unittest.TestCase):
                 obs = sim.observations
                 agent_obs = obs[agent_id]
                 sensor_obs = agent_obs[sensor_id]
-                semantic = sensor_obs[Modality("semantic")]
+                semantic = sensor_obs["semantic"]
                 actual = np.unique(semantic[semantic.nonzero()])
                 self.assertEqual(actual, expected_obj_id)
                 self.assertEqual(env_obj.semantic_id, SemanticID(expected_obj_id))
@@ -200,7 +197,7 @@ class HabitatSimTest(unittest.TestCase):
             obs = sim.observations
             agent_obs = obs[agent_id]
             sensor_obs = agent_obs[sensor_id]
-            semantic = sensor_obs[Modality("semantic")]
+            semantic = sensor_obs["semantic"]
             actual = {SemanticID(s) for s in set(semantic[semantic.nonzero()])}
             self.assertSetEqual(expected, actual)
 
@@ -210,7 +207,7 @@ class HabitatSimTest(unittest.TestCase):
             obs, _ = sim.step([turn_left])
             obs = obs[agent_id]
             expected = {cylinder}
-            semantic = np.unique(obs[sensor_id][Modality("semantic")])
+            semantic = np.unique(obs[sensor_id]["semantic"])
             actual = {SemanticID(s) for s in set(semantic[semantic.nonzero()])}
             self.assertSetEqual(expected, actual)
 
@@ -218,7 +215,7 @@ class HabitatSimTest(unittest.TestCase):
             initial_obs, _ = sim.reset()
             obs = initial_obs[agent_id]
             expected = {cylinder, cube}
-            semantic = np.unique(obs[sensor_id][Modality("semantic")])
+            semantic = np.unique(obs[sensor_id]["semantic"])
 
             actual = {SemanticID(s) for s in set(semantic[semantic.nonzero()])}
             self.assertSetEqual(expected, actual)
@@ -278,13 +275,13 @@ class HabitatSimTest(unittest.TestCase):
 
             # Check initial cube observations before zoom
             obs = sim.observations
-            camera_obs = obs[agent_id][sensor_id][Modality("semantic")].tolist()
+            camera_obs = obs[agent_id][sensor_id]["semantic"].tolist()
             self.assertListEqual(expected_1x_zoom, camera_obs)
 
             # Apply 2X zoom to the camera
             camera.zoom(2.0)
             obs = sim.observations
-            camera_obs = obs[agent_id][sensor_id][Modality("semantic")].tolist()
+            camera_obs = obs[agent_id][sensor_id]["semantic"].tolist()
             self.assertListEqual(expected_2x_zoom, camera_obs)
 
             # Zoom out 0.5 restoring original zoom factor (1X)
@@ -791,7 +788,7 @@ class HabitatSimTest(unittest.TestCase):
 
             # Check original cube observations without scale
             obs = sim.observations
-            camera_obs = obs[agent_id][sensor_id][Modality("semantic")].tolist()
+            camera_obs = obs[agent_id][sensor_id]["semantic"].tolist()
             self.assertListEqual(expected_1x_zoom, camera_obs)
 
             # Apply 2X scale
@@ -805,7 +802,7 @@ class HabitatSimTest(unittest.TestCase):
                 semantic_id=SemanticID(1),
             )
             obs = sim.observations
-            camera_obs = obs[agent_id][sensor_id][Modality("semantic")].tolist()
+            camera_obs = obs[agent_id][sensor_id]["semantic"].tolist()
             self.assertListEqual(expected_2x_zoom, camera_obs)
 
             # On the second time, the old object is accessed
@@ -817,7 +814,7 @@ class HabitatSimTest(unittest.TestCase):
                 semantic_id=SemanticID(1),
             )
             obs = sim.observations
-            camera_obs = obs[agent_id][sensor_id][Modality("semantic")].tolist()
+            camera_obs = obs[agent_id][sensor_id]["semantic"].tolist()
             self.assertListEqual(expected_2x_zoom, camera_obs)
 
 

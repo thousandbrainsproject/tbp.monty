@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2021-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Dict, NewType
+from typing import Dict, TypedDict
 
 import numpy as np
 import numpy.typing as npt
@@ -20,11 +20,8 @@ from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.sensors import SensorID
 
-Modality = NewType("Modality", str)
-"""Unique identifier for a modality."""
 
-
-class SensorObservations(Dict[Modality, npt.NDArray[Any]]):
+class SensorObservations(TypedDict, total=False):
     """Observations from a sensor."""
 
     rgba: npt.NDArray[np.int_]  # TODO: Verify specific type
@@ -32,7 +29,7 @@ class SensorObservations(Dict[Modality, npt.NDArray[Any]]):
     semantic: npt.NDArray[np.int_]  # TODO: Verify specific type
     semantic_3d: npt.NDArray[np.int_]  # TODO: Verify specific type
     sensor_frame_data: npt.NDArray[np.int_]  # TODO: Verify specific type
-    world_camera: npt.NDArray[np.int_]  # TODO: Verify specific type
+    world_camera: npt.NDArray[np.float64]  # TODO: Verify specific type
     pixel_loc: npt.NDArray[np.float64]  # TODO: Verify specific type
     raw: npt.NDArray[np.uint8]
 
