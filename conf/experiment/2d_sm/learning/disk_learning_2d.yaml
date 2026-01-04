@@ -10,7 +10,7 @@ config:
   zoom: 30
   blur_sigma: 5.0
   logging:
-    run_name: disk_learning_2d_zoom${config.zoom}_blur${config.blur_sigma}
+    run_name: 013_cylinder_tbp_vert_learning_2d_zoom${config.zoom}_blur${config.blur_sigma}
   # Apply zoom, resolution, and blur to environment
   env_interface_config:
     env_init_args:

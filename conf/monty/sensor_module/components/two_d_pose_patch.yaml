@@ -8,6 +8,7 @@ sensor_module_args:
   features:
     - pose_vectors
     - pose_fully_defined
+    - principal_curvatures
     - on_object
     - object_coverage
     - rgba
