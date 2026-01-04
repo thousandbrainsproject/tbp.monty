@@ -50,7 +50,7 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "DTZ", "T10", "SIM", "ARG", 
 ignore = []
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
