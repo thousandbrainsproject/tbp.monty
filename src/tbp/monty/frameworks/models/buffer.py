@@ -16,7 +16,7 @@ import time
 from typing import Any, Callable, ClassVar
 
 import numpy as np
-import quaternion
+import quaternion as qt
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from scipy.spatial.transform import Rotation
@@ -666,9 +666,7 @@ BufferEncoder.register(np.generic, lambda obj: obj.item())
 BufferEncoder.register(np.ndarray, lambda obj: obj.tolist())
 BufferEncoder.register(Rotation, lambda obj: obj.as_euler("xyz", degrees=True))
 BufferEncoder.register(torch.Tensor, lambda obj: obj.cpu().numpy())
-BufferEncoder.register(
-    quaternion.quaternion, lambda obj: quaternion.as_float_array(obj)
-)
+BufferEncoder.register(qt.quaternion, lambda obj: qt.as_float_array(obj))
 BufferEncoder.register(Action, ActionJSONEncoder)
 BufferEncoder.register(DictConfig, lambda obj: OmegaConf.to_object(obj))
 BufferEncoder.register(ListConfig, lambda obj: OmegaConf.to_object(obj))

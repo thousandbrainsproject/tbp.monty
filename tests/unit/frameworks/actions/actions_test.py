@@ -13,6 +13,8 @@ import unittest
 from typing import cast
 from unittest.mock import Mock
 
+from numpy.random import RandomState
+
 from tbp.monty.frameworks.actions.actions import (
     ActionJSONDecoder,
     ActionJSONEncoder,
@@ -34,29 +36,33 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.agents import AgentID
 from tests.unit.frameworks.actions.fakes.action import FakeAction
 
+AGENT_ID = AgentID("test")
+RNG_SEED = 1337
+
 
 class ActionTest(unittest.TestCase):
     def test_action_name_is_class_name_in_snake_case(self) -> None:
         self.assertEqual("fake_action", FakeAction.action_name())
 
     def test_name_is_class_name_in_snake_case(self) -> None:
-        fake_action = FakeAction(agent_id=AgentID("test"))
+        fake_action = FakeAction(agent_id=AGENT_ID)
         self.assertEqual("fake_action", fake_action.name)
 
     def test_agent_id_returns_configured_agent_id(self) -> None:
-        fake_action = FakeAction(agent_id=AgentID("test"))
+        fake_action = FakeAction(agent_id=AGENT_ID)
         self.assertEqual("test", fake_action.agent_id)
 
 
 class LookDownTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.action = LookDown(agent_id=AgentID("test"), rotation_degrees=47)
+        self.action = LookDown(agent_id=AGENT_ID, rotation_degrees=47)
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_look_down(self) -> None:
         sampler = Mock()
         sampler.sample_look_down = Mock()
-        LookDown.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_look_down.assert_called_once_with("test")
+        LookDown.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_look_down.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_look_down(self) -> None:
         actuator = Mock()
@@ -71,9 +77,7 @@ class LookDownTest(unittest.TestCase):
         self.assertEqual(90, self.action.constraint_degrees)
 
     def test_constraint_degrees_returns_configured_constraint_degrees(self) -> None:
-        action = LookDown(
-            agent_id=AgentID("test"), rotation_degrees=47, constraint_degrees=45
-        )
+        action = LookDown(agent_id=AGENT_ID, rotation_degrees=47, constraint_degrees=45)
         self.assertEqual(45, action.constraint_degrees)
 
     def test_json_serialization(self) -> None:
@@ -89,7 +93,7 @@ class LookDownTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "rotation_degrees": 47,
                 "constraint_degrees": 90,
             },
@@ -98,13 +102,14 @@ class LookDownTest(unittest.TestCase):
 
 class LookUpTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.action = LookUp(agent_id=AgentID("test"), rotation_degrees=77)
+        self.action = LookUp(agent_id=AGENT_ID, rotation_degrees=77)
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_look_up(self) -> None:
         sampler = Mock()
         sampler.sample_look_up = Mock()
-        LookUp.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_look_up.assert_called_once_with("test")
+        LookUp.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_look_up.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_look_up(self) -> None:
         actuator = Mock()
@@ -119,9 +124,7 @@ class LookUpTest(unittest.TestCase):
         self.assertEqual(90, self.action.constraint_degrees)
 
     def test_constraint_degrees_returns_configured_constraint_degrees(self) -> None:
-        action = LookUp(
-            agent_id=AgentID("test"), rotation_degrees=77, constraint_degrees=45
-        )
+        action = LookUp(agent_id=AGENT_ID, rotation_degrees=77, constraint_degrees=45)
         self.assertEqual(45, action.constraint_degrees)
 
     def test_json_serialization(self) -> None:
@@ -137,7 +140,7 @@ class LookUpTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "rotation_degrees": 77,
                 "constraint_degrees": 90,
             },
@@ -146,13 +149,14 @@ class LookUpTest(unittest.TestCase):
 
 class MoveForwardTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.action = MoveForward(agent_id=AgentID("test"), distance=1)
+        self.action = MoveForward(agent_id=AGENT_ID, distance=1)
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_move_forward(self) -> None:
         sampler = Mock()
         sampler.sample_move_forward = Mock()
-        MoveForward.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_move_forward.assert_called_once_with("test")
+        MoveForward.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_move_forward.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_move_forward(self) -> None:
         actuator = Mock()
@@ -175,7 +179,7 @@ class MoveForwardTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "distance": 1,
             },
         )
@@ -184,14 +188,15 @@ class MoveForwardTest(unittest.TestCase):
 class MoveTangentiallyTest(unittest.TestCase):
     def setUp(self) -> None:
         self.action = MoveTangentially(
-            agent_id=AgentID("test"), distance=1, direction=(1, 2, 3)
+            agent_id=AGENT_ID, distance=1, direction=(1, 2, 3)
         )
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_move_tangentially(self) -> None:
         sampler = Mock()
         sampler.sample_move_tangentially = Mock()
-        MoveTangentially.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_move_tangentially.assert_called_once_with("test")
+        MoveTangentially.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_move_tangentially.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_move_tangentially(self) -> None:
         actuator = Mock()
@@ -218,17 +223,15 @@ class MoveTangentiallyTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "distance": 1,
                 "direction": (1, 2, 3),
             },
         )
-        action = MoveTangentially(
-            agent_id=AgentID("test"), distance=1, direction=(1, 2, 3)
-        )
+        action = MoveTangentially(agent_id=AGENT_ID, distance=1, direction=(1, 2, 3))
         d = dict(action)
         self.assertEqual(d["action"], action.name)
-        self.assertEqual(d["agent_id"], AgentID("test"))
+        self.assertEqual(d["agent_id"], AGENT_ID)
         self.assertEqual(d["distance"], 1)
         self.assertEqual(d["direction"], (1, 2, 3))
 
@@ -236,17 +239,18 @@ class MoveTangentiallyTest(unittest.TestCase):
 class OrientHorizontalTest(unittest.TestCase):
     def setUp(self) -> None:
         self.action = OrientHorizontal(
-            agent_id=AgentID("test"),
+            agent_id=AGENT_ID,
             rotation_degrees=90,
             left_distance=1,
             forward_distance=1,
         )
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_orient_horizontal(self) -> None:
         sampler = Mock()
         sampler.sample_orient_horizontal = Mock()
-        OrientHorizontal.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_orient_horizontal.assert_called_once_with("test")
+        OrientHorizontal.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_orient_horizontal.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_orient_horizontal(self) -> None:
         actuator = Mock()
@@ -277,7 +281,7 @@ class OrientHorizontalTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "rotation_degrees": 90,
                 "left_distance": 1,
                 "forward_distance": 1,
@@ -288,17 +292,18 @@ class OrientHorizontalTest(unittest.TestCase):
 class OrientVerticalTest(unittest.TestCase):
     def setUp(self) -> None:
         self.action = OrientVertical(
-            agent_id=AgentID("test"),
+            agent_id=AGENT_ID,
             rotation_degrees=90,
             down_distance=1,
             forward_distance=1,
         )
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_orient_vertical(self) -> None:
         sampler = Mock()
         sampler.sample_orient_vertical = Mock()
-        OrientVertical.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_orient_vertical.assert_called_once_with("test")
+        OrientVertical.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_orient_vertical.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_orient_vertical(self) -> None:
         actuator = Mock()
@@ -329,7 +334,7 @@ class OrientVerticalTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "rotation_degrees": 90,
                 "down_distance": 1,
                 "forward_distance": 1,
@@ -339,13 +344,14 @@ class OrientVerticalTest(unittest.TestCase):
 
 class SetAgentPitchTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.action = SetAgentPitch(agent_id=AgentID("test"), pitch_degrees=90)
+        self.action = SetAgentPitch(agent_id=AGENT_ID, pitch_degrees=90)
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_set_agent_pitch(self) -> None:
         sampler = Mock()
         sampler.sample_set_agent_pitch = Mock()
-        SetAgentPitch.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_set_agent_pitch.assert_called_once_with("test")
+        SetAgentPitch.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_set_agent_pitch.assert_called_once_with("test", self.rng)
 
     def test_delegates_to_actuate_set_agent_pitch(self) -> None:
         actuator = Mock()
@@ -368,7 +374,7 @@ class SetAgentPitchTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "pitch_degrees": 90,
             },
         )
@@ -377,14 +383,15 @@ class SetAgentPitchTest(unittest.TestCase):
 class SetAgentPoseTest(unittest.TestCase):
     def setUp(self) -> None:
         self.action = SetAgentPose(
-            agent_id=AgentID("test"), location=(1, 2, 3), rotation_quat=(1, 2, 3, 4)
+            agent_id=AGENT_ID, location=(1, 2, 3), rotation_quat=(1, 2, 3, 4)
         )
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_set_agent_pose(self) -> None:
         sampler = Mock()
         sampler.sample_set_agent_pose = Mock()
-        SetAgentPose.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_set_agent_pose.assert_called_once_with("test")
+        SetAgentPose.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_set_agent_pose.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_set_agent_pose(self) -> None:
         actuator = Mock()
@@ -411,32 +418,33 @@ class SetAgentPoseTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "location": (1, 2, 3),
                 "rotation_quat": (1, 2, 3, 4),
             },
         )
         action = SetAgentPose(
-            agent_id=AgentID("test"),
+            agent_id=AGENT_ID,
             location=(1, 2, 3),
             rotation_quat=(1, 2, 3, 4),
         )
         d = dict(action)
         self.assertEqual(d["action"], action.name)
-        self.assertEqual(d["agent_id"], AgentID("test"))
+        self.assertEqual(d["agent_id"], AGENT_ID)
         self.assertEqual(d["location"], (1, 2, 3))
         self.assertEqual(d["rotation_quat"], (1, 2, 3, 4))
 
 
 class SetSensorPitchTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.action = SetSensorPitch(agent_id=AgentID("test"), pitch_degrees=90)
+        self.action = SetSensorPitch(agent_id=AGENT_ID, pitch_degrees=90)
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_set_sensor_pitch(self) -> None:
         sampler = Mock()
         sampler.sample_set_sensor_pitch = Mock()
-        SetSensorPitch.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_set_sensor_pitch.assert_called_once_with("test")
+        SetSensorPitch.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_set_sensor_pitch.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_set_sensor_pitch(self) -> None:
         actuator = Mock()
@@ -459,7 +467,7 @@ class SetSensorPitchTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "pitch_degrees": 90,
             },
         )
@@ -468,14 +476,15 @@ class SetSensorPitchTest(unittest.TestCase):
 class SetSensorPoseTest(unittest.TestCase):
     def setUp(self) -> None:
         self.action = SetSensorPose(
-            agent_id=AgentID("test"), location=(1, 2, 3), rotation_quat=(1, 2, 3, 4)
+            agent_id=AGENT_ID, location=(1, 2, 3), rotation_quat=(1, 2, 3, 4)
         )
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_set_sensor_pose(self) -> None:
         sampler = Mock()
         sampler.sample_set_sensor_pose = Mock()
-        SetSensorPose.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_set_sensor_pose.assert_called_once_with("test")
+        SetSensorPose.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_set_sensor_pose.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_set_sensor_pose(self) -> None:
         actuator = Mock()
@@ -502,34 +511,33 @@ class SetSensorPoseTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "location": (1, 2, 3),
                 "rotation_quat": (1, 2, 3, 4),
             },
         )
         action = SetSensorPose(
-            agent_id=AgentID("test"),
+            agent_id=AGENT_ID,
             location=(1, 2, 3),
             rotation_quat=(1, 2, 3, 4),
         )
         d = dict(action)
         self.assertEqual(d["action"], action.name)
-        self.assertEqual(d["agent_id"], AgentID("test"))
+        self.assertEqual(d["agent_id"], AGENT_ID)
         self.assertEqual(d["location"], (1, 2, 3))
         self.assertEqual(d["rotation_quat"], (1, 2, 3, 4))
 
 
 class SetSensorRotationTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.action = SetSensorRotation(
-            agent_id=AgentID("test"), rotation_quat=(1, 2, 3, 4)
-        )
+        self.action = SetSensorRotation(agent_id=AGENT_ID, rotation_quat=(1, 2, 3, 4))
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_set_sensor_rotation(self) -> None:
         sampler = Mock()
         sampler.sample_set_sensor_rotation = Mock()
-        SetSensorRotation.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_set_sensor_rotation.assert_called_once_with("test")
+        SetSensorRotation.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_set_sensor_rotation.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_set_sensor_rotation(self) -> None:
         actuator = Mock()
@@ -552,26 +560,27 @@ class SetSensorRotationTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "rotation_quat": (1, 2, 3, 4),
             },
         )
-        action = SetSensorRotation(agent_id=AgentID("test"), rotation_quat=(1, 2, 3, 4))
+        action = SetSensorRotation(agent_id=AGENT_ID, rotation_quat=(1, 2, 3, 4))
         d = dict(action)
         self.assertEqual(d["action"], action.name)
-        self.assertEqual(d["agent_id"], AgentID("test"))
+        self.assertEqual(d["agent_id"], AGENT_ID)
         self.assertEqual(d["rotation_quat"], (1, 2, 3, 4))
 
 
 class SetYawTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.action = SetYaw(agent_id=AgentID("test"), rotation_degrees=90)
+        self.action = SetYaw(agent_id=AGENT_ID, rotation_degrees=90)
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_set_yaw(self) -> None:
         sampler = Mock()
         sampler.sample_set_yaw = Mock()
-        SetYaw.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_set_yaw.assert_called_once_with("test")
+        SetYaw.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_set_yaw.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_set_yaw(self) -> None:
         actuator = Mock()
@@ -594,7 +603,7 @@ class SetYawTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "rotation_degrees": 90,
             },
         )
@@ -602,13 +611,14 @@ class SetYawTest(unittest.TestCase):
 
 class TurnLeftTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.action = TurnLeft(agent_id=AgentID("test"), rotation_degrees=90)
+        self.action = TurnLeft(agent_id=AGENT_ID, rotation_degrees=90)
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_turn_left(self) -> None:
         sampler = Mock()
         sampler.sample_turn_left = Mock()
-        TurnLeft.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_turn_left.assert_called_once_with("test")
+        TurnLeft.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_turn_left.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_turn_left(self) -> None:
         actuator = Mock()
@@ -631,7 +641,7 @@ class TurnLeftTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "rotation_degrees": 90,
             },
         )
@@ -639,13 +649,14 @@ class TurnLeftTest(unittest.TestCase):
 
 class TurnRightTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.action = TurnRight(agent_id=AgentID("test"), rotation_degrees=90)
+        self.action = TurnRight(agent_id=AGENT_ID, rotation_degrees=90)
+        self.rng = RandomState(RNG_SEED)
 
     def test_delegates_to_sample_turn_right(self) -> None:
         sampler = Mock()
         sampler.sample_turn_right = Mock()
-        TurnRight.sample(agent_id=AgentID("test"), sampler=sampler)
-        sampler.sample_turn_right.assert_called_once_with("test")
+        TurnRight.sample(agent_id=AGENT_ID, sampler=sampler, rng=self.rng)
+        sampler.sample_turn_right.assert_called_once_with(AGENT_ID, self.rng)
 
     def test_delegates_to_actuate_turn_right(self) -> None:
         actuator = Mock()
@@ -668,7 +679,7 @@ class TurnRightTest(unittest.TestCase):
             d,
             {
                 "action": self.action.name,
-                "agent_id": AgentID("test"),
+                "agent_id": AGENT_ID,
                 "rotation_degrees": 90,
             },
         )

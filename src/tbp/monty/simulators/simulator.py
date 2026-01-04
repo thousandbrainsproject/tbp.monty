@@ -11,7 +11,6 @@ from __future__ import annotations
 from typing import Protocol, Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_environment import (
     ObjectID,
     ObjectInfo,
@@ -20,6 +19,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     VectorXYZ,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 
 
 class Simulator(Protocol):
@@ -29,11 +29,6 @@ class Simulator(Protocol):
     interact with, agents to do the interacting, and for collecting observations and
     proprioceptive state to send to Monty.
     """
-
-    # TODO - do we need a way to abstract the concept of "agent"?
-    def initialize_agent(self, agent_id: AgentID, agent_state) -> None:
-        """Update agent runtime state."""
-        ...
 
     def remove_all_objects(self) -> None:
         """Remove all objects from the simulated environment."""
@@ -69,32 +64,28 @@ class Simulator(Protocol):
         """
         ...
 
-    @property
-    def num_objects(self) -> int:
-        """Return the number of instantiated objects in the environment."""
-        ...
-
-    @property
-    def states(self):
-        """Get agent and sensor states."""
-        ...
-
-    def apply_actions(self, actions: Sequence[Action]) -> Observations:
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
         """Execute the given actions in the environment.
 
         Args:
             actions: The actions to execute.
 
         Returns:
-            The observations from the simulator.
+            The observations from the simulator and proprioceptive state.
 
         Note:
             If the actions are an empty sequence, the current observations are returned.
         """
         ...
 
-    def reset(self) -> Observations:
-        """Reset the simulator."""
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
+        """Reset the simulator.
+
+        Returns:
+            The initial observations from the simulator and proprioceptive state.
+        """
         ...
 
     def close(self) -> None:

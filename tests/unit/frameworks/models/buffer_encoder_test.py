@@ -12,7 +12,7 @@ import json
 import unittest
 
 import numpy as np
-import quaternion
+import quaternion as qt
 import torch
 from scipy.spatial.transform import Rotation
 
@@ -156,10 +156,10 @@ class BufferEncoderTest(unittest.TestCase):
         )
 
     def test_buffer_encoder_encodes_quaternions_by_default(self):
-        quat = quaternion.quaternion(0, 1, 0, 0)
+        quat = qt.quaternion(0, 1, 0, 0)
         self.assertEqual(
             json.loads(json.dumps(quat, cls=BufferEncoder)),
-            quaternion.as_float_array(quat).tolist(),
+            qt.as_float_array(quat).tolist(),
         )
 
     def test_buffer_encoder_encodes_actions_by_default(self):

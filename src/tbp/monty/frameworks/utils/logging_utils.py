@@ -22,7 +22,7 @@ from sys import getsizeof
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import quaternion
+import quaternion as qt
 import torch
 from scipy.spatial.transform import Rotation
 
@@ -838,9 +838,7 @@ def target_data_to_dict(target):
     output_dict["primary_target_object"] = target["object"]
     output_dict["primary_target_position"] = target["position"]
     output_dict["primary_target_rotation_euler"] = target["euler_rotation"]
-    output_dict["primary_target_rotation_quat"] = quaternion.as_float_array(
-        target["rotation"]
-    )
+    output_dict["primary_target_rotation_quat"] = qt.as_float_array(target["rotation"])
     # Currently scale is applied uniformly along all dimensions
     output_dict["primary_target_scale"] = target["scale"][0]
 

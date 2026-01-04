@@ -271,7 +271,7 @@ config:
 
 ```
 
-Note that we have changed the Monty experiment class and the logging config. We also opted for a policy whereby learning-modules generate actions to test hypotheses by producing "goal-states" for the low-level motor system (`MotorSystemConfigCurInformedSurfaceGoalStateDriven`).
+Note that we have changed the Monty experiment class and the logging config. We also opted for a policy whereby learning-modules generate actions to test hypotheses by producing "goal-states" for the low-level motor system.
 
 # Running the Experiment
 

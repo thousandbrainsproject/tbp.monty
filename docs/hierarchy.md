@@ -76,6 +76,7 @@
   - [typing-guide](contributing/style-guide/typing-guide.md)
 - [guides-for-maintainers](contributing/guides-for-maintainers.md)
   - [triage](contributing/guides-for-maintainers/triage.md)
+- [large-language-model-use](contributing/large-language-model-use.md)
 
 # community: Community
 - [code-of-conduct](community/code-of-conduct.md)

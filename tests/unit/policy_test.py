@@ -10,6 +10,8 @@
 
 import pytest
 
+from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -46,6 +48,10 @@ from tbp.monty.frameworks.models.goal_state_generation import (
 )
 from tbp.monty.frameworks.models.motor_policies import (
     get_perc_on_obj_semantic,
+)
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    ProprioceptiveState,
 )
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
@@ -163,51 +169,44 @@ class PolicyTest(unittest.TestCase):
     def test_can_run_informed_policy(self):
         exp = hydra.utils.instantiate(self.base_dist_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_spiral_policy(self):
         exp = hydra.utils.instantiate(self.spiral_cfg.test)
         with exp:
             # TODO: test that no two locations are the same
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_dist_agent_hypo_driven_policy(self):
         exp = hydra.utils.instantiate(self.dist_hypo_driven_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_surface_policy(self):
         exp = hydra.utils.instantiate(self.base_surf_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_curv_informed_policy(self) -> None:
         exp = hydra.utils.instantiate(self.curve_informed_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_surf_agent_hypo_driven_policy(self):
         exp = hydra.utils.instantiate(self.surf_hypo_driven_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self):
         exp = hydra.utils.instantiate(self.dist_hypo_driven_multi_lm_cfg.test)
         with exp:
-            exp.train()
-            exp.evaluate()
+            exp.run()
 
     # ==== MORE INVOLVED TESTS OF ACTION POLICIES ====
 
@@ -273,6 +272,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.dist_poor_initial_view_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
@@ -319,6 +319,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
@@ -375,6 +376,7 @@ class PolicyTest(unittest.TestCase):
 
             # Manually go through evaluation (i.e. methods in .evaluate()
             # and run_epoch())
+            exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode("eval")
             exp.pre_epoch()
             exp.pre_episode()
@@ -431,6 +433,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.dist_fixed_action_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
 
@@ -538,6 +541,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.surf_fixed_action_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
 
@@ -676,6 +680,7 @@ class PolicyTest(unittest.TestCase):
         """
         exp = hydra.utils.instantiate(self.rotated_cube_view_cfg.test)
         with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
@@ -696,7 +701,7 @@ class PolicyTest(unittest.TestCase):
             # current orientation
             agent_direction = np.array(
                 hab_utils.quat_rotate_vector(
-                    exp.model.motor_system._state[AgentID("agent_id_0")]["rotation"],
+                    exp.model.motor_system._state[AgentID("agent_id_0")].rotation,
                     [
                         0,
                         0,
@@ -730,9 +735,15 @@ class PolicyTest(unittest.TestCase):
         motor_system, motor_system_args = self.initialize_motor_system(motor_system_cfg)
 
         # Initialize motor-system state
-        motor_system._state = {
-            AgentID("agent_id_0"): {"rotation": qt.quaternion(1, 0, 0, 0)}
-        }
+        motor_system._state = ProprioceptiveState(
+            {
+                AgentID("agent_id_0"): AgentState(
+                    position=np.array([0, 0, 0]),  # unused
+                    rotation=qt.quaternion(1, 0, 0, 0),
+                    sensors={},  # unused
+                )
+            }
+        )
 
         # Step 1
         # fake_obs_pc contains observations including the surface normal and principal
@@ -824,9 +835,7 @@ class PolicyTest(unittest.TestCase):
         motor_system._policy.ignoring_pc_counter = motor_system_args["policy_args"][
             "min_general_steps"
         ]
-        motor_system._state[AgentID("agent_id_0")]["rotation"] = qt.quaternion(
-            0, 0, 1, 0
-        )
+        motor_system._state[AgentID("agent_id_0")].rotation = qt.quaternion(0, 0, 1, 0)
 
         motor_system._policy.processed_observations = self.fake_obs_pc[5]
         direction = motor_system._policy.tangential_direction(motor_system._state)
@@ -848,9 +857,15 @@ class PolicyTest(unittest.TestCase):
         motor_system, motor_system_args = self.initialize_motor_system(motor_system_cfg)
 
         # Initialize motor system state
-        motor_system._state = {
-            AgentID("agent_id_0"): {"rotation": qt.quaternion(1, 0, 0, 0)}
-        }
+        motor_system._state = ProprioceptiveState(
+            {
+                AgentID("agent_id_0"): AgentState(
+                    position=np.array([0, 0, 0]),  # unused
+                    rotation=qt.quaternion(1, 0, 0, 0),
+                    sensors={},  # unused
+                )
+            }
+        )
 
         # Step 1 : PC-guided information, but we haven't taken the minimum number of
         # non-PC steps, so take random step

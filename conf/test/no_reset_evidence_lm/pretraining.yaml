@@ -10,6 +10,7 @@ defaults:
 
 _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 config:
+  do_eval: false
   n_train_epochs: 3
   monty_config:
     monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}

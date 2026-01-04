@@ -14,7 +14,6 @@ from collections import defaultdict
 from typing import Tuple
 
 import habitat_sim
-import numpy as np
 import quaternion as qt
 from habitat_sim.agent import ActionSpec, ActuationSpec, AgentConfiguration, AgentState
 from typing_extensions import Literal
@@ -22,8 +21,8 @@ from typing_extensions import Literal
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
-    SensorID,
 )
+from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.simulators.habitat.sensors import (
     RGBDSensorConfig,
     SemanticSensorConfig,
@@ -98,7 +97,7 @@ class HabitatAgent:
         # Initialize agent state
         agent_state = AgentState()
         agent_state.position = self.position
-        rotation = np.quaternion(*self.rotation)
+        rotation = qt.quaternion(*self.rotation)
         agent_state.rotation = rotation
         simulator.initialize_agent(self.agent_id, agent_state)
 
