@@ -298,7 +298,13 @@ class MontyExperimentWithLiveView(MontyExperiment):
         """Update state before each step."""
         super().pre_step(step, observation)
         if self.broadcaster:
-            self.broadcaster.publish_state({"current_step": step})
+            # Calculate cumulative step count: total from previous episodes + current step in this episode
+            # This makes "Current Step" match the cumulative progress shown in "Total Steps"
+            if self.experiment_mode == ExperimentMode.TRAIN:
+                cumulative_step = self.total_train_steps + step
+            else:
+                cumulative_step = self.total_eval_steps + step
+            self.broadcaster.publish_state({"current_step": cumulative_step})
         self._update_state_from_experiment()
 
     def post_step(self, step: int, observation: Any) -> None:
