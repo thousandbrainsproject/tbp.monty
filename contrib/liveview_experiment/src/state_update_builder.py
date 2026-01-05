@@ -4,50 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from .experiment_config import (
-    CoreStateFields,
-    EvaluationConfig,
-    SetupMessageParams,
-    TrainingConfig,
-)
+from .experiment_config import CoreStateFields, SetupMessageParams  # noqa: TC001
 from .setup_message_builder import SetupMessageBuilder
 from .state_update_fields import StateUpdateFields
 
 
 class StateUpdateBuilder:
     """Builds state update dictionaries for experiment broadcasting."""
-
-    @staticmethod
-    def build_setup_message(
-        metadata: dict[str, str],
-        run_name: str,
-        training: TrainingConfig,
-        evaluation: EvaluationConfig,
-        config: dict[str, Any],
-        model_path: str | None = None,
-    ) -> str:
-        """Build formatted setup message string.
-
-        Args:
-            metadata: Experiment metadata dictionary
-            run_name: Experiment run name
-            training: Training configuration
-            evaluation: Evaluation configuration
-            config: Experiment configuration
-            model_path: Optional model path
-
-        Returns:
-            Formatted setup message
-        """
-        params = SetupMessageParams(
-            metadata=metadata,
-            run_name=run_name,
-            training=training,
-            evaluation=evaluation,
-            config=config,
-            model_path=model_path,
-        )
-        return StateUpdateBuilder.build_setup_message_from_params(params)
 
     @staticmethod
     def build_setup_message_from_params(params: SetupMessageParams) -> str:

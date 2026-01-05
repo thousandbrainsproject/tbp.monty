@@ -6,6 +6,8 @@ import logging
 import time
 from typing import Any
 
+from .experiment_config import ConnectionRetryParams  # noqa: TC001
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -56,19 +58,13 @@ class ZmqConnectionManager:
     @staticmethod
     def connect_with_retry(
         socket: Any,
-        zmq_host: str,
-        zmq_port: int,
-        max_retries: int = 10,
-        retry_delay: float = 0.5,  # zmq.Socket
+        params: ConnectionRetryParams,
     ) -> bool:
         """Connect socket with retry logic to handle slow joiner problem.
 
         Args:
             socket: ZMQ socket to connect
-            zmq_host: ZMQ host
-            zmq_port: ZMQ port
-            max_retries: Maximum number of connection attempts
-            retry_delay: Delay between retries in seconds
+            params: Connection parameters with retry settings
 
         Returns:
             True if connected, False otherwise
@@ -76,17 +72,17 @@ class ZmqConnectionManager:
         if zmq is None or socket is None:
             return False
 
-        for attempt in range(max_retries):
+        for attempt in range(params.max_retries):
             if ZmqConnectionManager._try_connect(
-                socket, zmq_host, zmq_port, attempt + 1
+                socket, params.zmq_host, params.zmq_port, attempt + 1
             ):
                 return True
 
-            if attempt < max_retries - 1:
-                ZmqConnectionManager._log_retry(attempt + 1, retry_delay)
-                time.sleep(retry_delay)
+            if attempt < params.max_retries - 1:
+                ZmqConnectionManager._log_retry(attempt + 1, params.retry_delay)
+                time.sleep(params.retry_delay)
             else:
-                ZmqConnectionManager._log_final_failure(max_retries)
+                ZmqConnectionManager._log_final_failure(params.max_retries)
                 return True  # Continue anyway - ZMQ will auto-reconnect
 
         return False

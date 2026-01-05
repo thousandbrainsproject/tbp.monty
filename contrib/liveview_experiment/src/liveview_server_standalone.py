@@ -54,6 +54,10 @@ except ImportError as e:
 # These are conditional imports (inside try block), so PLC0415 doesn't apply
 try:
     from contrib.liveview_experiment.src.endpoint_registrar import EndpointRegistrar
+    from contrib.liveview_experiment.src.experiment_config import (
+        ServerConfig,
+        ZmqSubscriberRunParams,
+    )
     from contrib.liveview_experiment.src.liveview_experiment import (
         ExperimentLiveView,
     )
@@ -98,6 +102,73 @@ async def handle_pubsub_request(request: Request) -> dict[str, str]:
     return result
 
 
+def _get_or_create_state_manager(state_manager: Any | None) -> ExperimentStateManager:
+    """Get or create state manager instance.
+
+    Args:
+        state_manager: Optional existing state manager
+
+    Returns:
+        State manager instance
+    """
+    if state_manager is None:
+        return ExperimentStateManager(route_path="/")
+    return state_manager  # type: ignore[no-any-return]
+
+
+def _configure_app(state_manager: ExperimentStateManager) -> PyView:
+    """Configure PyView application with routes and endpoints.
+
+    Args:
+        state_manager: Experiment state manager
+
+    Returns:
+        Configured PyView application
+    """
+    app = PyView()
+
+    # Configure static file serving
+    static_file_server = StaticFileServer()
+    static_file_server.register_routes(app)
+
+    # Create LiveView factory function
+    live_view_instance = None
+
+    def create_live_view() -> ExperimentLiveView:
+        nonlocal live_view_instance
+        live_view_instance = ExperimentLiveView(state_manager)
+        state_manager.liveview_instance = live_view_instance
+        return live_view_instance
+
+    app.add_live_view("/", create_live_view)
+    app.state.state_manager = state_manager
+    EndpointRegistrar.register_pubsub_endpoint(app, state_manager)
+
+    return app
+
+
+def _create_uvicorn_server(app: PyView, host: str, port: int) -> Any:  # uvicorn.Server
+    """Create and configure Uvicorn server.
+
+    Args:
+        app: PyView application
+        host: Server host
+        port: Server port
+
+    Returns:
+        Configured Uvicorn server
+    """
+    config = uvicorn.Config(
+        app,
+        host=host,
+        port=port,
+        log_level="info",
+        workers=1,
+        access_log=False,
+    )
+    return uvicorn.Server(config)
+
+
 async def run_server(host: str, port: int, state_manager: Any = None) -> None:
     """Run the LiveView server.
 
@@ -107,45 +178,9 @@ async def run_server(host: str, port: int, state_manager: Any = None) -> None:
         state_manager: Optional shared state manager instance.
             If None, creates a new one.
     """
-    # Use provided state manager or create a new one
-    if state_manager is None:
-        route_path = "/"
-        state_manager = ExperimentStateManager(route_path=route_path)
-
-    app = PyView()
-
-    # Configure static file serving (following mvg_departures approach)
-    static_file_server = StaticFileServer()
-    static_file_server.register_routes(app)
-
-    # Create a factory function that returns the LiveView instance
-    # Store the instance so we can use it for broadcasting
-    live_view_instance = None
-
-    def create_live_view() -> ExperimentLiveView:
-        nonlocal live_view_instance
-        live_view_instance = ExperimentLiveView(state_manager)
-        # Ensure state_manager has reference to this instance
-        state_manager.liveview_instance = live_view_instance
-        return live_view_instance
-
-    app.add_live_view("/", create_live_view)
-
-    # Store state_manager for HTTP pub/sub endpoint
-    app.state.state_manager = state_manager
-
-    # Add HTTP endpoint for cross-process pub/sub
-    EndpointRegistrar.register_pubsub_endpoint(app, state_manager)
-
-    config = uvicorn.Config(
-        app,
-        host=host,
-        port=port,
-        log_level="info",
-        workers=1,
-        access_log=False,
-    )
-    server = uvicorn.Server(config)
+    state_manager = _get_or_create_state_manager(state_manager)
+    app = _configure_app(state_manager)
+    server = _create_uvicorn_server(app, host, port)
 
     logger.info("Starting LiveView server on http://%s:%d", host, port)
     logger.info("Listening to pub/sub topic: %s", state_manager.broadcast_topic)
@@ -172,10 +207,7 @@ def _create_zmq_socket(zmq_context: Any, zmq_host: str, zmq_port: int) -> Any:
 
 async def run_zmq_subscriber(
     state_manager: ExperimentStateManager,
-    zmq_context: Any,  # zmq.Context type not available if zmq is None
-    zmq_port: int,
-    zmq_host: str,
-    experiment_completed: asyncio.Event | None = None,
+    params: ZmqSubscriberRunParams,
 ) -> None:
     """Run ZMQ subscriber to receive messages from experiment process.
 
@@ -184,32 +216,29 @@ async def run_zmq_subscriber(
 
     Args:
         state_manager: ExperimentStateManager instance
-        zmq_context: ZMQ context (must live as long as the server)
-        zmq_port: ZMQ subscriber port
-        zmq_host: ZMQ subscriber host
-        experiment_completed: Optional asyncio.Event to signal when experiment completes
+        params: ZMQ subscriber run parameters
     """
     if zmq is None:
         logger.error("pyzmq not available. ZMQ subscriber will not start.")
         return
 
-    if zmq_context is None:
+    if params.zmq_context is None:
         logger.error("ZMQ context not provided. ZMQ subscriber will not start.")
         return
 
-    socket = _create_zmq_socket(zmq_context, zmq_host, zmq_port)
+    socket = _create_zmq_socket(params.zmq_context, params.zmq_host, params.zmq_port)
     await asyncio.sleep(0.2)  # Ensure binding is complete
 
     logger.info(
         "ZMQ subscriber bound to tcp://%s:%d, subscribed to all messages, "
         "waiting for publishers",
-        zmq_host,
-        zmq_port,
+        params.zmq_host,
+        params.zmq_port,
     )
 
     try:
         await ZmqMessageProcessor.process_messages(
-            socket, state_manager, experiment_completed
+            socket, state_manager, params.experiment_completed
         )
     finally:
         await ZmqMessageProcessor.close_socket(socket)
@@ -237,13 +266,13 @@ def main() -> None:
         route_path = "/"
         state_manager = ExperimentStateManager(route_path=route_path)
 
-        await ServerOrchestrator.run_with_zmq(
-            args.host,
-            args.port,
-            args.zmq_port,
-            args.zmq_host,
-            state_manager,
+        config = ServerConfig(
+            host=args.host,
+            port=args.port,
+            zmq_port=args.zmq_port,
+            zmq_host=args.zmq_host,
         )
+        await ServerOrchestrator.run_with_zmq(config, state_manager)
 
     try:
         asyncio.run(run_with_zmq())

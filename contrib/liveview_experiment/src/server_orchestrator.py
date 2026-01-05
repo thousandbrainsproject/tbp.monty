@@ -10,6 +10,12 @@ from contrib.liveview_experiment.src.server_lifecycle import ServerLifecycleMana
 from contrib.liveview_experiment.src.server_setup import LiveViewServerSetup
 from contrib.liveview_experiment.src.zmq_context_manager import ZmqContextManager
 
+from .experiment_config import (
+    ServerConfig,
+    ZmqSubscriberParams,
+    ZmqSubscriberRunParams,
+)
+
 if TYPE_CHECKING:
     import uvicorn
 
@@ -28,29 +34,26 @@ class ServerOrchestrator:
 
     @staticmethod
     async def run_with_zmq(
-        host: str,
-        port: int,
-        zmq_port: int,
-        zmq_host: str,
+        config: ServerConfig,
         state_manager: ExperimentStateManager,
     ) -> None:
         """Run server with ZMQ subscriber.
 
         Args:
-            host: Server host
-            port: Server port
-            zmq_port: ZMQ subscriber port
-            zmq_host: ZMQ subscriber host
+            config: Server configuration
             state_manager: Experiment state manager
         """
         zmq_context = ZmqContextManager.create_context()
         experiment_completed = asyncio.Event()
 
         app = LiveViewServerSetup.create_app(state_manager)
-        server = ServerOrchestrator._create_server(app, host, port)
+        server = ServerOrchestrator._create_server(app, config.host, config.port)
 
+        zmq_params = ZmqSubscriberParams(
+            zmq_port=config.zmq_port, zmq_host=config.zmq_host
+        )
         zmq_task = ServerOrchestrator._start_zmq_subscriber(
-            zmq_context, state_manager, zmq_port, zmq_host, experiment_completed
+            zmq_context, state_manager, zmq_params, experiment_completed
         )
 
         shutdown_task = asyncio.create_task(
@@ -60,7 +63,9 @@ class ServerOrchestrator:
         )
 
         try:
-            await ServerLifecycleManager.run_server(server, host, port, state_manager)
+            await ServerLifecycleManager.run_server(
+                server, config.host, config.port, state_manager
+            )
         finally:
             await ZmqContextManager.cleanup_tasks(shutdown_task, zmq_task)
             await ZmqContextManager.cleanup_context(zmq_context)
@@ -94,8 +99,7 @@ class ServerOrchestrator:
     def _start_zmq_subscriber(
         zmq_context: Any | None,  # zmq.Context
         state_manager: ExperimentStateManager,
-        zmq_port: int,
-        zmq_host: str,
+        params: ZmqSubscriberParams,
         experiment_completed: asyncio.Event,
     ) -> asyncio.Task[Any] | None:
         """Start ZMQ subscriber task.
@@ -103,8 +107,7 @@ class ServerOrchestrator:
         Args:
             zmq_context: ZMQ context
             state_manager: Experiment state manager
-            zmq_port: ZMQ subscriber port
-            zmq_host: ZMQ subscriber host
+            params: ZMQ subscriber parameters
             experiment_completed: Event to signal completion
 
         Returns:
@@ -117,8 +120,10 @@ class ServerOrchestrator:
             run_zmq_subscriber,
         )
 
-        return asyncio.create_task(
-            run_zmq_subscriber(
-                state_manager, zmq_context, zmq_port, zmq_host, experiment_completed
-            )
+        run_params = ZmqSubscriberRunParams(
+            zmq_context=zmq_context,
+            zmq_port=params.zmq_port,
+            zmq_host=params.zmq_host,
+            experiment_completed=experiment_completed,
         )
+        return asyncio.create_task(run_zmq_subscriber(state_manager, run_params))

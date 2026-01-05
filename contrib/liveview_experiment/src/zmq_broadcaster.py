@@ -23,6 +23,7 @@ except ImportError:
 if TYPE_CHECKING:
     from .types import MessagePayload, MetricMetadata, StateDict
 
+from .experiment_config import ConnectionRetryParams
 from .zmq_connection_manager import ZmqConnectionManager
 
 logger = logging.getLogger(__name__)
@@ -68,8 +69,11 @@ class ZmqBroadcaster:
             if self._socket is None:
                 return
 
+            params = ConnectionRetryParams(
+                zmq_host=self.zmq_host, zmq_port=self.zmq_port
+            )
             self._connected = ZmqConnectionManager.connect_with_retry(
-                self._socket, self.zmq_host, self.zmq_port
+                self._socket, params
             )
         except Exception as e:
             logger.exception("Failed to connect ZMQ broadcaster: %s", e)
