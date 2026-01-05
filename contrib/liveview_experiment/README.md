@@ -30,16 +30,7 @@ pip install -e .  # Install tbp.monty package
 
 http://127.0.0.1:8000
 
-**Note**: On Python 3.8, the web dashboard is not available, but pub/sub streaming still works. Use `experiment.broadcaster` to stream data from parallel processes.
-
-## Details
-
-- **One-liner setup**: `./contrib/liveview_experiment/scripts/setup.sh` handles everything
-- Setup script automatically installs tbp.monty package if needed (handles antlr4/setuptools compatibility)
-- Run script starts experiment with LiveView monitoring
-- Config files stay in `contrib/` (git-friendly, no copying)
-- **Pub/sub streaming**: Works on Python 3.8+ (see `STREAMING_USAGE.md`)
-- **Web dashboard**: Requires Python >= 3.11 (pyview-web). On Python 3.8, pub/sub streaming still works.
+**Note**: On Python 3.8, the web dashboard is not available, but pub/sub streaming still works. See [`STREAMING_USAGE.md`](STREAMING_USAGE.md) for details.
 
 ## Architecture
 
@@ -71,97 +62,30 @@ flowchart LR
     LiveView2 -- serves to --> User2
 ```
 
+### Code Flow Overview
+
+**LiveView Server (Python 3.11+):**
+
+- [`main()`](src/liveview_server_standalone.py) - Entry point, starts server
+  - [`ServerOrchestrator.run_with_zmq()`](src/server_orchestrator.py) - Orchestrates server and [`run_zmq_subscriber()`](src/liveview_server_standalone.py)
+  - [`LiveViewServerSetup.create_app()`](src/server_setup.py) - Creates PyView app with [`ExperimentLiveView`](src/liveview_experiment.py)
+  - [`ExperimentStateManager`](src/state_manager.py) - Manages shared state, receives updates via [`ZmqMessageProcessor`](src/zmq_message_processor.py)
+
+**Experiment Process (Python 3.8):**
+
+- [`run.py`](../run.py) → [`main()`](../src/tbp/monty/frameworks/run.py) - Hydra instantiates experiment from config
+  - [`MontyExperimentWithLiveView`](src/monty_experiment_with_liveview.py) - Extends [`MontyExperiment`](../src/tbp/monty/frameworks/experiments/monty_experiment.py)
+  - Sets up [`ZmqBroadcaster`](src/zmq_broadcaster.py) via [`BroadcasterInitializer`](src/broadcaster_initializer.py)
+  - Overrides `pre_step()`, `post_step()`, `pre_episode()`, `post_epoch()`, `run()` to publish state updates
+
+**Configuration:**
+
+- Experiment config (e.g., [`randrot_10distinctobj_surf_agent_with_liveview.yaml`](conf/experiment/randrot_10distinctobj_surf_agent_with_liveview.yaml)) sets `zmq_port`, `liveview_port`, `enable_liveview`
+- [`MontyExperimentWithLiveView`](src/monty_experiment_with_liveview.py) reads config and initializes [`ZmqBroadcaster`](src/zmq_broadcaster.py) accordingly
+
 ## Streaming Data from Parallel Processes
 
-The LiveView supports pub/sub for streaming data from parallel processes (threads, async tasks, etc.) into a unified dashboard. See `STREAMING_USAGE.md` for detailed examples.
-
-**Quick example:**
-
-```python
-# From any parallel process
-broadcaster = experiment.broadcaster
-await broadcaster.publish_metric("loss", 0.5, epoch=1)
-await broadcaster.publish_data("sensor_data", {"value": 123})
-```
-
-## Troubleshooting
-
-### Segmentation Faults
-
-If you experience segmentation faults when running experiments, this may be due to conflicts between the LiveView server thread and native libraries (habitat-sim, torch). Try:
-
-1. **Disable LiveView temporarily**:
-
-   ```yaml
-   enable_liveview: false
-   ```
-
-2. **Run without LiveView**:
-
-   ```bash
-   python run.py experiment=randrot_10distinctobj_surf_agent_with_liveview \
-     hydra.searchpath=[contrib/liveview_experiment/conf] \
-     enable_liveview=false
-   ```
-
-3. **Check logs** for specific error messages
-
-The experiment will continue to run even if LiveView fails to start.
-
-## Code Quality
-
-Run complexity analysis to check code quality:
-
-```bash
-./contrib/liveview_experiment/scripts/analyze_complexity.sh
-```
-
-This analyzes:
-
-- Cyclomatic complexity
-- Nesting levels
-- Function length
-- Parameter counts
-- Maintainability Index
-
-## Experimental Features
-
-This `contrib/` experiment includes features not in regular tbp.monty:
-
-### Scripts
-
-- `setup.sh`: Environment detection, dependency installation, antlr4/setuptools compatibility workarounds
-- `run.sh`: Runs experiments with auto environment activation
-- `test.sh`: Runs Black, Ruff, mypy, pytest
-- `reformat.sh`: Auto-formats with Black
-- `common_env.sh`: Shared environment detection (conda/venv/system)
-
-### Code Quality Analysis
-
-`analyze_complexity.py` measures:
-
-- Cyclomatic complexity (radon)
-- Nesting levels
-- Function length
-- Parameter count (max 4 + \*args + \*\*kwargs)
-- Maintainability Index
-
-Calculates refactoring priority score. Outputs JSON. Integrates vulture for dead code detection.
-
-### Dual Python Version Architecture
-
-- Main process: Python 3.8 (tbp.monty environment)
-- LiveView server: Python 3.11+ (separate venv)
-
-Connected via ZMQ pub/sub. `ZmqBroadcaster` publishes; `ExperimentStateManager` subscribes. HTTP fallback when ZMQ unavailable.
-
-### PyView Integration
-
-Uses pyview-web (Python 3.11+) for server-pushed updates. `ExperimentLiveView` extends pyview's `LiveView`. Multiple browser tabs sync automatically. Updates throttled to 1/second.
-
-### ZMQ Pub/Sub
-
-Synchronous API for streaming from parallel processes:
+Stream data from parallel processes (threads, async tasks, etc.) into the dashboard. See [`STREAMING_USAGE.md`](STREAMING_USAGE.md) for examples.
 
 ```python
 broadcaster = experiment.broadcaster
@@ -169,13 +93,18 @@ broadcaster.publish_metric("loss", 0.5, epoch=1)
 broadcaster.publish_data("sensor_data", {"value": 123})
 ```
 
-### Tooling
-
-Libraries: radon, vulture, ruff, mypy, black, pyview-web, uvicorn, pyzmq. Configured in `pyproject.toml` with stricter rules than tbp.monty.
-
 ## Customization
 
-- Edit `templates/experiment.html` for UI changes
-- Edit experiment config to change port: `liveview_port: 8001`
+- Edit [`templates/experiment.html`](templates/experiment.html) for UI changes
+- Configure in experiment YAML: `liveview_port`, `zmq_port`, `enable_liveview` (see [`conf/experiment/`](conf/experiment/))
 - Use `experiment.broadcaster` to publish data from parallel processes
-- Disable LiveView if needed: `enable_liveview: false`
+
+## Code Quality
+
+Run complexity analysis:
+
+```bash
+./contrib/liveview_experiment/scripts/analyze_complexity.sh
+```
+
+See [`scripts/README.md`](scripts/README.md) for available scripts.
