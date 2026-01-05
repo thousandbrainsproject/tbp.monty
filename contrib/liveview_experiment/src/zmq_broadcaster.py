@@ -22,12 +22,6 @@ except ImportError:
 
 if TYPE_CHECKING:
     from .types import MessagePayload, MetricMetadata, StateDict
-else:
-    from .types import (  # noqa: TC001
-        MessagePayload,
-        MetricMetadata,
-        StateDict,
-    )
 
 from .zmq_connection_manager import ZmqConnectionManager
 

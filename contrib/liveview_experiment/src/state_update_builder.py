@@ -4,6 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from .experiment_config import (
+    CoreStateFields,
+    EvaluationConfig,
+    SetupMessageParams,
+    TrainingConfig,
+)
 from .setup_message_builder import SetupMessageBuilder
 from .state_update_fields import StateUpdateFields
 
@@ -15,97 +21,65 @@ class StateUpdateBuilder:
     def build_setup_message(
         metadata: dict[str, str],
         run_name: str,
-        do_train: bool,
-        max_train_steps: int,
-        n_train_epochs: int,
-        do_eval: bool,
-        max_eval_steps: int,
-        n_eval_epochs: int,
+        training: TrainingConfig,
+        evaluation: EvaluationConfig,
         config: dict[str, Any],
         model_path: str | None = None,
     ) -> str:
         """Build formatted setup message string.
 
         Args:
-            metadata: Experiment metadata
+            metadata: Experiment metadata dictionary
             run_name: Experiment run name
-            do_train: Whether training is enabled
-            max_train_steps: Maximum training steps
-            n_train_epochs: Number of training epochs
-            do_eval: Whether evaluation is enabled
-            max_eval_steps: Maximum evaluation steps
-            n_eval_epochs: Number of evaluation epochs
+            training: Training configuration
+            evaluation: Evaluation configuration
             config: Experiment configuration
             model_path: Optional model path
 
         Returns:
             Formatted setup message
         """
-        setup_lines = SetupMessageBuilder.build_core_lines(
-            metadata,
-            run_name,
-            do_train,
-            max_train_steps,
-            n_train_epochs,
-            do_eval,
-            max_eval_steps,
-            n_eval_epochs,
+        params = SetupMessageParams(
+            metadata=metadata,
+            run_name=run_name,
+            training=training,
+            evaluation=evaluation,
+            config=config,
+            model_path=model_path,
         )
-        SetupMessageBuilder.add_optional_lines(setup_lines, config, model_path)
+        return StateUpdateBuilder.build_setup_message_from_params(params)
+
+    @staticmethod
+    def build_setup_message_from_params(params: SetupMessageParams) -> str:
+        """Build setup message from parameters dataclass."""
+        setup_lines = SetupMessageBuilder.build_core_lines(
+            params.metadata,
+            params.run_name,
+            params.training,
+            params.evaluation,
+        )
+        SetupMessageBuilder.add_optional_lines(
+            setup_lines, params.config, params.model_path
+        )
         return "\n".join(setup_lines)
 
     @staticmethod
     def build_initial_state_update(
-        run_name: str,
-        metadata: dict[str, str],
-        experiment_start_time: Any,  # datetime
-        status: str,
-        max_train_steps: int,
-        max_eval_steps: int,
-        max_total_steps: int,
-        n_train_epochs: int,
-        n_eval_epochs: int,
-        do_train: bool,
-        do_eval: bool,
+        core_fields: CoreStateFields,
         config: dict[str, Any],
-        setup_message: str,
         model_path: str | None = None,
     ) -> dict[str, Any]:
         """Build initial state update dictionary.
 
         Args:
-            run_name: Experiment run name
-            metadata: Experiment metadata
-            experiment_start_time: Experiment start time
-            status: Experiment status
-            max_train_steps: Maximum training steps
-            max_eval_steps: Maximum evaluation steps
-            max_total_steps: Maximum total steps
-            n_train_epochs: Number of training epochs
-            n_eval_epochs: Number of evaluation epochs
-            do_train: Whether training is enabled
-            do_eval: Whether evaluation is enabled
+            core_fields: Core state fields
             config: Experiment configuration
-            setup_message: Formatted setup message
             model_path: Optional model path
 
         Returns:
             State update dictionary
         """
-        state_update = StateUpdateFields.build_core_fields(
-            run_name,
-            metadata,
-            experiment_start_time,
-            status,
-            max_train_steps,
-            max_eval_steps,
-            max_total_steps,
-            n_train_epochs,
-            n_eval_epochs,
-            do_train,
-            do_eval,
-            setup_message,
-        )
+        state_update = StateUpdateFields.build_core_fields(core_fields)
         state_update.update(StateUpdateFields.build_config_fields(config))
 
         if model_path:

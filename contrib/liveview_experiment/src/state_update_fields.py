@@ -4,59 +4,37 @@ from __future__ import annotations
 
 from typing import Any
 
+from .experiment_config import CoreStateFields  # noqa: TC001
+
 
 class StateUpdateFields:
     """Builds state update field dictionaries."""
 
     @staticmethod
-    def build_core_fields(
-        run_name: str,
-        metadata: dict[str, str],
-        experiment_start_time: Any,  # datetime
-        status: str,
-        max_train_steps: int,
-        max_eval_steps: int,
-        max_total_steps: int,
-        n_train_epochs: int,
-        n_eval_epochs: int,
-        do_train: bool,
-        do_eval: bool,
-        setup_message: str,
-    ) -> dict[str, Any]:
+    def build_core_fields(fields: CoreStateFields) -> dict[str, Any]:
         """Build core state update fields.
 
         Args:
-            run_name: Experiment run name
-            metadata: Experiment metadata
-            experiment_start_time: Experiment start time
-            status: Experiment status
-            max_train_steps: Maximum training steps
-            max_eval_steps: Maximum evaluation steps
-            max_total_steps: Maximum total steps
-            n_train_epochs: Number of training epochs
-            n_eval_epochs: Number of evaluation epochs
-            do_train: Whether training is enabled
-            do_eval: Whether evaluation is enabled
-            setup_message: Formatted setup message
+            fields: Core state fields
 
         Returns:
             Dictionary with core fields
         """
         return {
-            "run_name": run_name,
-            "experiment_name": metadata["experiment_name"],
-            "environment_name": metadata["environment_name"],
-            "config_path": metadata["config_path"],
-            "experiment_start_time": experiment_start_time.isoformat(),
-            "status": status,
-            "max_train_steps": max_train_steps,
-            "max_eval_steps": max_eval_steps,
-            "max_total_steps": max_total_steps,
-            "n_train_epochs": n_train_epochs,
-            "n_eval_epochs": n_eval_epochs,
-            "do_train": do_train,
-            "do_eval": do_eval,
-            "setup_message": setup_message,
+            "run_name": fields.run_name,
+            "experiment_name": fields.metadata["experiment_name"],
+            "environment_name": fields.metadata["environment_name"],
+            "config_path": fields.metadata["config_path"],
+            "experiment_start_time": fields.experiment_start_time.isoformat(),
+            "status": fields.status,
+            "max_train_steps": fields.limits.max_train_steps,
+            "max_eval_steps": fields.limits.max_eval_steps,
+            "max_total_steps": fields.limits.max_total_steps,
+            "n_train_epochs": fields.limits.n_train_epochs,
+            "n_eval_epochs": fields.limits.n_eval_epochs,
+            "do_train": fields.training.do_train,
+            "do_eval": fields.evaluation.do_eval,
+            "setup_message": fields.setup_message,
         }
 
     @staticmethod

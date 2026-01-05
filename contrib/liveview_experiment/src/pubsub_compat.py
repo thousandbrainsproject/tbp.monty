@@ -13,12 +13,6 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .types import AsyncPubSubCallback, HubDict, PubSubCallback
-else:
-    from .types import (  # noqa: TC001
-        AsyncPubSubCallback,
-        HubDict,
-        PubSubCallback,
-    )
 
 logger = logging.getLogger(__name__)
 

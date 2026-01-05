@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .types import ConfigDict
-else:
-    from .types import ConfigDict  # noqa: TC001
 
 
 class ExperimentConfigExtractor:

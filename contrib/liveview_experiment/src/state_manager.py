@@ -18,12 +18,6 @@ from .experiment_state import ExperimentState
 
 if TYPE_CHECKING:
     from .types import MessagePayload, MetricData, MetricMetadata
-else:
-    from .types import (  # noqa: TC001
-        MessagePayload,
-        MetricData,
-        MetricMetadata,
-    )
 
 if TYPE_CHECKING:
     from pyview import LiveViewSocket
