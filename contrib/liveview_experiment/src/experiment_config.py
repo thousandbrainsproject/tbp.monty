@@ -62,3 +62,61 @@ class CoreStateFields:
     training: TrainingConfig
     evaluation: EvaluationConfig
     setup_message: str
+
+
+@dataclass
+class LiveViewConfigOverrides:
+    """Optional overrides for LiveView configuration."""
+
+    liveview_port: int | None = None
+    liveview_host: str | None = None
+    enable_liveview: bool | None = None
+    zmq_port: int | None = None
+
+
+@dataclass
+class BroadcasterSetupParams:
+    """Parameters for setting up ZMQ broadcaster."""
+
+    zmq_port: int
+    zmq_host: str
+    run_name: str
+    metadata: dict[str, str]
+
+
+@dataclass
+class ConnectionRetryParams:
+    """Parameters for ZMQ connection with retry logic."""
+
+    zmq_host: str
+    zmq_port: int
+    max_retries: int = 10
+    retry_delay: float = 0.5
+
+
+@dataclass
+class ServerConfig:
+    """Configuration for LiveView server."""
+
+    host: str
+    port: int
+    zmq_port: int
+    zmq_host: str
+
+
+@dataclass
+class ZmqSubscriberParams:
+    """Parameters for ZMQ subscriber setup."""
+
+    zmq_port: int
+    zmq_host: str
+
+
+@dataclass
+class ZmqSubscriberRunParams:
+    """Parameters for running ZMQ subscriber."""
+
+    zmq_context: Any  # zmq.Context
+    zmq_port: int
+    zmq_host: str
+    experiment_completed: Any | None = None  # asyncio.Event | None

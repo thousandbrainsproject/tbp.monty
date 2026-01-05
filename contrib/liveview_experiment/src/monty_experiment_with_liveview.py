@@ -31,9 +31,11 @@ from tbp.monty.frameworks.experiments.monty_experiment import (
 )
 
 from .experiment_config import (
+    BroadcasterSetupParams,
     CoreStateFields,
     EvaluationConfig,
     ExperimentLimits,
+    LiveViewConfigOverrides,
     SetupMessageParams,
     TrainingConfig,
 )
@@ -85,9 +87,13 @@ class MontyExperimentWithLiveView(MontyExperiment):
 
         self.broadcaster: ZmqBroadcaster | None = None
 
-        self._extract_and_set_config(
-            config, liveview_port, liveview_host, enable_liveview, zmq_port
+        overrides = LiveViewConfigOverrides(
+            liveview_port=liveview_port,
+            liveview_host=liveview_host,
+            enable_liveview=enable_liveview,
+            zmq_port=zmq_port,
         )
+        self._extract_and_set_config(config, overrides)
         super().__init__(config)
 
         self._initialize_broadcaster_if_enabled()
@@ -96,15 +102,15 @@ class MontyExperimentWithLiveView(MontyExperiment):
     def _extract_and_set_config(
         self,
         config: ConfigDict,
-        liveview_port: int | None,
-        liveview_host: str | None,
-        enable_liveview: bool | None,
-        zmq_port: int | None,
+        overrides: LiveViewConfigOverrides,
     ) -> None:
-        """Extract and set LiveView configuration values."""
-        config_values = ExperimentInitializer.extract_config(
-            config, liveview_port, liveview_host, enable_liveview, zmq_port
-        )
+        """Extract and set LiveView configuration values.
+
+        Args:
+            config: Experiment configuration
+            overrides: LiveView configuration overrides
+        """
+        config_values = ExperimentInitializer.extract_config(config, overrides)
         self.liveview_port = config_values["liveview_port"]
         self.liveview_host = config_values["liveview_host"]
         self.enable_liveview = config_values["enable_liveview"]
@@ -115,13 +121,13 @@ class MontyExperimentWithLiveView(MontyExperiment):
         """Initialize ZMQ broadcaster if LiveView is enabled."""
         if self.enable_liveview:
             metadata = self._get_experiment_metadata()
-            self.broadcaster = ExperimentInitializer.setup_broadcaster(
-                self,
-                self.zmq_port,
-                self.zmq_host,
-                getattr(self, "run_name", "Experiment"),
-                metadata.to_dict(),
+            params = BroadcasterSetupParams(
+                zmq_port=self.zmq_port,
+                zmq_host=self.zmq_host,
+                run_name=getattr(self, "run_name", "Experiment"),
+                metadata=metadata.to_dict(),
             )
+            self.broadcaster = ExperimentInitializer.setup_broadcaster(self, params)
         else:
             logger.info("LiveView broadcasting disabled")
 

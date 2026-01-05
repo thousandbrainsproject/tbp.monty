@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from .types import ConfigDict
 
+from .experiment_config import LiveViewConfigOverrides
+
 
 class ExperimentConfigExtractor:
     """Extracts and normalizes configuration for LiveView experiments."""
@@ -14,69 +16,58 @@ class ExperimentConfigExtractor:
     @staticmethod
     def extract_liveview_config(
         config: ConfigDict,
-        liveview_port: int | None = None,
-        liveview_host: str | None = None,
-        enable_liveview: bool | None = None,
-        zmq_port: int | None = None,
+        overrides: LiveViewConfigOverrides | None = None,
     ) -> dict[str, Any]:
         """Extract LiveView configuration from config dict or parameters.
 
         Args:
             config: Experiment configuration dictionary
-            liveview_port: Override port for LiveView server
-            liveview_host: Override host for LiveView server
-            enable_liveview: Override enable flag
-            zmq_port: Override ZMQ port
+            overrides: Optional configuration overrides
 
         Returns:
             Dictionary with normalized configuration values
         """
+        if overrides is None:
+            overrides = LiveViewConfigOverrides()
+
         if hasattr(config, "get"):
-            return ExperimentConfigExtractor._extract_from_dict(
-                config, liveview_port, liveview_host, enable_liveview, zmq_port
-            )
-        return ExperimentConfigExtractor._extract_defaults(
-            liveview_port, liveview_host, enable_liveview, zmq_port
-        )
+            return ExperimentConfigExtractor._extract_from_dict(config, overrides)
+        return ExperimentConfigExtractor._extract_defaults(overrides)
 
     @staticmethod
     def _extract_from_dict(
         config: ConfigDict,
-        liveview_port: int | None,
-        liveview_host: str | None,
-        enable_liveview: bool | None,
-        zmq_port: int | None,
+        overrides: LiveViewConfigOverrides,
     ) -> dict[str, Any]:
         """Extract configuration from dict-like config object.
 
         Args:
             config: Config dictionary
-            liveview_port: Override port
-            liveview_host: Override host
-            enable_liveview: Override enable flag
-            zmq_port: Override ZMQ port
+            overrides: Configuration overrides
 
         Returns:
             Normalized configuration dictionary
         """
         result: dict[str, Any] = {
             "liveview_port": (
-                liveview_port
-                if liveview_port is not None
+                overrides.liveview_port
+                if overrides.liveview_port is not None
                 else config.get("liveview_port", 8000)
             ),
             "liveview_host": (
-                liveview_host
-                if liveview_host is not None
+                overrides.liveview_host
+                if overrides.liveview_host is not None
                 else config.get("liveview_host", "127.0.0.1")
             ),
             "enable_liveview": (
-                enable_liveview
-                if enable_liveview is not None
+                overrides.enable_liveview
+                if overrides.enable_liveview is not None
                 else config.get("enable_liveview", True)
             ),
             "zmq_port": (
-                zmq_port if zmq_port is not None else config.get("zmq_port", 5555)
+                overrides.zmq_port
+                if overrides.zmq_port is not None
+                else config.get("zmq_port", 5555)
             ),
         }
 
@@ -95,28 +86,32 @@ class ExperimentConfigExtractor:
 
     @staticmethod
     def _extract_defaults(
-        liveview_port: int | None,
-        liveview_host: str | None,
-        enable_liveview: bool | None,
-        zmq_port: int | None,
+        overrides: LiveViewConfigOverrides,
     ) -> dict[str, Any]:
         """Extract configuration using defaults when config is not dict-like.
 
         Args:
-            liveview_port: Override port
-            liveview_host: Override host
-            enable_liveview: Override enable flag
-            zmq_port: Override ZMQ port
+            overrides: Configuration overrides
 
         Returns:
             Normalized configuration dictionary
         """
         return {
-            "liveview_port": liveview_port if liveview_port is not None else 8000,
-            "liveview_host": (
-                liveview_host if liveview_host is not None else "127.0.0.1"
+            "liveview_port": (
+                overrides.liveview_port if overrides.liveview_port is not None else 8000
             ),
-            "enable_liveview": enable_liveview if enable_liveview is not None else True,
-            "zmq_port": zmq_port if zmq_port is not None else 5555,
+            "liveview_host": (
+                overrides.liveview_host
+                if overrides.liveview_host is not None
+                else "127.0.0.1"
+            ),
+            "enable_liveview": (
+                overrides.enable_liveview
+                if overrides.enable_liveview is not None
+                else True
+            ),
+            "zmq_port": (
+                overrides.zmq_port if overrides.zmq_port is not None else 5555
+            ),
             "zmq_host": "127.0.0.1",  # Default to localhost for ZMQ
         }

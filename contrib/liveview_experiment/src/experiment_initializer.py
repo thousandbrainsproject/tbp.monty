@@ -7,6 +7,10 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from .broadcaster_initializer import BroadcasterInitializer
+from .experiment_config import (  # noqa: TC001
+    BroadcasterSetupParams,
+    LiveViewConfigOverrides,
+)
 from .experiment_config_extractor import ExperimentConfigExtractor
 from .zmq_broadcaster import ZmqBroadcaster
 
@@ -22,54 +26,42 @@ class ExperimentInitializer:
     @staticmethod
     def extract_config(
         config: ConfigDict,
-        liveview_port: int | None,
-        liveview_host: str | None,
-        enable_liveview: bool | None,
-        zmq_port: int | None,
+        overrides: LiveViewConfigOverrides | None = None,
     ) -> dict[str, Any]:
         """Extract and normalize LiveView configuration.
 
         Args:
             config: Experiment configuration
-            liveview_port: Optional LiveView port override
-            liveview_host: Optional LiveView host override
-            enable_liveview: Optional enable flag override
-            zmq_port: Optional ZMQ port override
+            overrides: Optional configuration overrides
 
         Returns:
             Dictionary with normalized configuration values
         """
-        return ExperimentConfigExtractor.extract_liveview_config(
-            config, liveview_port, liveview_host, enable_liveview, zmq_port
-        )
+        return ExperimentConfigExtractor.extract_liveview_config(config, overrides)
 
     @staticmethod
     def setup_broadcaster(
         experiment: Any,
-        zmq_port: int,
-        zmq_host: str,
-        run_name: str,
-        metadata: dict[str, str],
+        params: BroadcasterSetupParams,
     ) -> ZmqBroadcaster | None:
         """Set up ZMQ broadcaster and broadcast initial state.
 
         Args:
             experiment: Experiment instance
-            zmq_port: ZMQ port
-            zmq_host: ZMQ host
-            run_name: Experiment run name
-            metadata: Experiment metadata dictionary
+            params: Broadcaster setup parameters
 
         Returns:
             Broadcaster instance or None if setup failed
         """
         try:
-            broadcaster = ZmqBroadcaster(zmq_port=zmq_port, zmq_host=zmq_host)
+            broadcaster = ZmqBroadcaster(
+                zmq_port=params.zmq_port, zmq_host=params.zmq_host
+            )
             experiment._experiment_start_time = datetime.now(timezone.utc)
             experiment._experiment_status = "initializing"
 
             BroadcasterInitializer.initialize_and_broadcast(
-                broadcaster, run_name, metadata
+                broadcaster, params.run_name, params.metadata
             )
 
             return broadcaster
