@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 try:
     import zmq
 except ImportError:
-    zmq = None
+    zmq = None  # type: ignore[assignment, unused-ignore]
 
 
 class ZmqMessageProcessor:

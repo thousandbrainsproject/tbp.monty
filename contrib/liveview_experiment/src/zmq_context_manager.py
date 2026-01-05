@@ -62,7 +62,16 @@ class ZmqContextManager:
             *tasks: Tasks to cancel and await
         """
         for task in tasks:
-            if task and not task.done():
-                task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await task
+            await ZmqContextManager._cancel_single_task(task)
+
+    @staticmethod
+    async def _cancel_single_task(task: asyncio.Task[Any] | None) -> None:
+        """Cancel a single task if it's not done.
+
+        Args:
+            task: Task to cancel
+        """
+        if task and not task.done():
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task

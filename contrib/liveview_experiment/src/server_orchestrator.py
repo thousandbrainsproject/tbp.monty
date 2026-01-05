@@ -6,6 +6,10 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, Any
 
+from contrib.liveview_experiment.src.server_lifecycle import ServerLifecycleManager
+from contrib.liveview_experiment.src.server_setup import LiveViewServerSetup
+from contrib.liveview_experiment.src.zmq_context_manager import ZmqContextManager
+
 if TYPE_CHECKING:
     import uvicorn
 
@@ -17,10 +21,6 @@ try:
     import uvicorn
 except ImportError:
     uvicorn = None
-
-from contrib.liveview_experiment.src.server_lifecycle import ServerLifecycleManager
-from contrib.liveview_experiment.src.server_setup import LiveViewServerSetup
-from contrib.liveview_experiment.src.zmq_context_manager import ZmqContextManager
 
 
 class ServerOrchestrator:
