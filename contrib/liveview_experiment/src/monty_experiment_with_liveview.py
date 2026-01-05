@@ -33,10 +33,10 @@ from tbp.monty.frameworks.experiments.monty_experiment import (
 from .experiment_initializer import ExperimentInitializer
 from .metadata_extractor import MetadataExtractor
 from .state_update_builder import StateUpdateBuilder
-from .zmq_broadcaster import ZmqBroadcaster
 
 if TYPE_CHECKING:
     from .types import ConfigDict
+    from .zmq_broadcaster import ZmqBroadcaster
 else:
     from .types import ConfigDict  # noqa: TC001
 

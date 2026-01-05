@@ -19,8 +19,6 @@ from .state_normalizer import StateNormalizer
 
 if TYPE_CHECKING:
     from .types import MessagePayload, TemplateAssigns
-else:
-    from .types import MessagePayload, TemplateAssigns  # noqa: TC001
 
 if TYPE_CHECKING:
     from .state_manager import ExperimentStateManager

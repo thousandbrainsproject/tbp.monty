@@ -14,9 +14,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-from contrib.liveview_experiment.src.pubsub_endpoint_handler import (
-    PubSubEndpointHandler,
-)
+try:
+    from contrib.liveview_experiment.src.pubsub_endpoint_handler import (
+        PubSubEndpointHandler,
+    )
+except ImportError:
+    PubSubEndpointHandler = None  # type: ignore[assignment, misc]
 
 try:
     from starlette.requests import Request
@@ -43,6 +46,10 @@ class EndpointRegistrar:
         """
         if Request is None or JSONResponse is None or Route is None:
             logger.warning("Starlette components not available, skipping endpoint")
+            return
+
+        if PubSubEndpointHandler is None:
+            logger.warning("PubSubEndpointHandler not available, skipping endpoint")
             return
 
         try:

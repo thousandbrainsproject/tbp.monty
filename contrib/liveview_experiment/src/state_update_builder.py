@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from .setup_message_builder import SetupMessageBuilder
+from .state_update_fields import StateUpdateFields
+
 
 class StateUpdateBuilder:
     """Builds state update dictionaries for experiment broadcasting."""
@@ -38,36 +41,17 @@ class StateUpdateBuilder:
         Returns:
             Formatted setup message
         """
-        training_info = (
-            f"Training: {'Yes' if do_train else 'No'} "
-            f"(max steps: {max_train_steps}, epochs: {n_train_epochs})"
+        setup_lines = SetupMessageBuilder.build_core_lines(
+            metadata,
+            run_name,
+            do_train,
+            max_train_steps,
+            n_train_epochs,
+            do_eval,
+            max_eval_steps,
+            n_eval_epochs,
         )
-        eval_info = (
-            f"Evaluation: {'Yes' if do_eval else 'No'} "
-            f"(max steps: {max_eval_steps}, epochs: {n_eval_epochs})"
-        )
-        setup_lines = [
-            f"Experiment: {metadata['experiment_name']}",
-            f"Environment: {metadata['environment_name']}",
-            f"Config: {metadata['config_path']}",
-            f"Run: {run_name}",
-            training_info,
-            eval_info,
-        ]
-
-        if config.get("seed") is not None:
-            setup_lines.append(f"Seed: {config.get('seed')}")
-        if config.get("model_name_or_path"):
-            setup_lines.append(f"Model: {config.get('model_name_or_path')}")
-        if model_path:
-            setup_lines.append(f"Model Path: {model_path}")
-        if config.get("min_lms_match") is not None:
-            setup_lines.append(f"Min LMs Match: {config.get('min_lms_match')}")
-        if config.get("show_sensor_output") is not None:
-            setup_lines.append(
-                f"Show Sensor Output: {config.get('show_sensor_output')}"
-            )
-
+        SetupMessageBuilder.add_optional_lines(setup_lines, config, model_path)
         return "\n".join(setup_lines)
 
     @staticmethod
@@ -108,34 +92,21 @@ class StateUpdateBuilder:
         Returns:
             State update dictionary
         """
-        state_update = {
-            "run_name": run_name,
-            "experiment_name": metadata["experiment_name"],
-            "environment_name": metadata["environment_name"],
-            "config_path": metadata["config_path"],
-            "experiment_start_time": experiment_start_time.isoformat(),
-            "status": status,
-            "max_train_steps": max_train_steps,
-            "max_eval_steps": max_eval_steps,
-            "max_total_steps": max_total_steps,
-            "n_train_epochs": n_train_epochs,
-            "n_eval_epochs": n_eval_epochs,
-            "do_train": do_train,
-            "do_eval": do_eval,
-            "show_sensor_output": (
-                config.get("show_sensor_output", False)
-                if hasattr(config, "get")
-                else False
-            ),
-            "seed": config.get("seed") if hasattr(config, "get") else None,
-            "model_name_or_path": (
-                config.get("model_name_or_path") if hasattr(config, "get") else None
-            ),
-            "min_lms_match": (
-                config.get("min_lms_match") if hasattr(config, "get") else None
-            ),
-            "setup_message": setup_message,
-        }
+        state_update = StateUpdateFields.build_core_fields(
+            run_name,
+            metadata,
+            experiment_start_time,
+            status,
+            max_train_steps,
+            max_eval_steps,
+            max_total_steps,
+            n_train_epochs,
+            n_eval_epochs,
+            do_train,
+            do_eval,
+            setup_message,
+        )
+        state_update.update(StateUpdateFields.build_config_fields(config))
 
         if model_path:
             state_update["model_path"] = str(model_path)
