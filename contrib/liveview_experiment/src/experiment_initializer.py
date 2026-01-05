@@ -58,7 +58,7 @@ class ExperimentInitializer:
             zmq_port: ZMQ port
             zmq_host: ZMQ host
             run_name: Experiment run name
-            metadata: Experiment metadata
+            metadata: Experiment metadata dictionary
 
         Returns:
             Broadcaster instance or None if setup failed

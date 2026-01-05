@@ -548,7 +548,14 @@ def print_priority_table(top_metrics: list[FunctionMetrics], limit: int = 30) ->
     if not top_metrics:
         return
 
-    from .table_formatter import TableFormatter  # noqa: PLC0415
+    try:
+        from .table_formatter import TableFormatter  # noqa: PLC0415
+    except ImportError:
+        # Add scripts directory to path for direct script execution
+        scripts_dir = Path(__file__).parent
+        if str(scripts_dir) not in sys.path:
+            sys.path.insert(0, str(scripts_dir))
+        from table_formatter import TableFormatter  # noqa: PLC0415
 
     metrics_with_paths = _prepare_metrics_paths(top_metrics, limit)
     col_widths = TableFormatter.calculate_column_widths(metrics_with_paths)
@@ -698,7 +705,14 @@ def main() -> None:
     top_priority_metrics = [m for m in regular_metrics if m.priority_score > 0]
     print_priority_table(top_priority_metrics, limit=30)
 
-    from .report_generator import ReportGenerator  # noqa: PLC0415
+    try:
+        from .report_generator import ReportGenerator  # noqa: PLC0415
+    except ImportError:
+        # Add scripts directory to path for direct script execution
+        scripts_dir = Path(__file__).parent
+        if str(scripts_dir) not in sys.path:
+            sys.path.insert(0, str(scripts_dir))
+        from report_generator import ReportGenerator  # noqa: PLC0415
 
     report_path = Path(__file__).parent.parent / "complexity_report.json"
     report_data = ReportGenerator.build_report_data(

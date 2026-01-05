@@ -11,8 +11,6 @@ if TYPE_CHECKING:
 
     from .state_manager import ExperimentStateManager
     from .types import MessagePayload
-else:
-    from .types import MessagePayload  # noqa: TC001
 
 logger = logging.getLogger(__name__)
 

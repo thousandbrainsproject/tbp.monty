@@ -30,16 +30,21 @@ from tbp.monty.frameworks.experiments.monty_experiment import (
     MontyExperiment,
 )
 
+from .experiment_config import (
+    CoreStateFields,
+    EvaluationConfig,
+    ExperimentLimits,
+    SetupMessageParams,
+    TrainingConfig,
+)
 from .experiment_initializer import ExperimentInitializer
-from .metadata_extractor import MetadataExtractor
+from .metadata_extractor import ExperimentMetadata, MetadataExtractor
 from .state_update_builder import StateUpdateBuilder
 
 if TYPE_CHECKING:
     from .types import ConfigDict
-    from .zmq_broadcaster import ZmqBroadcaster
-else:
-    from .types import ConfigDict  # noqa: TC001
 
+from .zmq_broadcaster import ZmqBroadcaster  # noqa: TC001
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +85,23 @@ class MontyExperimentWithLiveView(MontyExperiment):
 
         self.broadcaster: ZmqBroadcaster | None = None
 
+        self._extract_and_set_config(
+            config, liveview_port, liveview_host, enable_liveview, zmq_port
+        )
+        super().__init__(config)
+
+        self._initialize_broadcaster_if_enabled()
+        self._initialize_experiment_timing()
+
+    def _extract_and_set_config(
+        self,
+        config: ConfigDict,
+        liveview_port: int | None,
+        liveview_host: str | None,
+        enable_liveview: bool | None,
+        zmq_port: int | None,
+    ) -> None:
+        """Extract and set LiveView configuration values."""
         config_values = ExperimentInitializer.extract_config(
             config, liveview_port, liveview_host, enable_liveview, zmq_port
         )
@@ -89,8 +111,8 @@ class MontyExperimentWithLiveView(MontyExperiment):
         self.zmq_port = config_values["zmq_port"]
         self.zmq_host = config_values["zmq_host"]
 
-        super().__init__(config)
-
+    def _initialize_broadcaster_if_enabled(self) -> None:
+        """Initialize ZMQ broadcaster if LiveView is enabled."""
         if self.enable_liveview:
             metadata = self._get_experiment_metadata()
             self.broadcaster = ExperimentInitializer.setup_broadcaster(
@@ -98,27 +120,28 @@ class MontyExperimentWithLiveView(MontyExperiment):
                 self.zmq_port,
                 self.zmq_host,
                 getattr(self, "run_name", "Experiment"),
-                metadata,
+                metadata.to_dict(),
             )
         else:
             logger.info("LiveView broadcasting disabled")
 
+    def _initialize_experiment_timing(self) -> None:
+        """Initialize experiment start time and status if not already set."""
         if not hasattr(self, "_experiment_start_time"):
             self._experiment_start_time = datetime.now(timezone.utc)
             self._experiment_status = "initializing"
 
-    def _get_experiment_metadata(self) -> dict[str, str]:
+    def _get_experiment_metadata(self) -> ExperimentMetadata:
         """Get experiment metadata (environment, experiment name, config path).
 
         Returns:
-            Dictionary with metadata fields
+            Experiment metadata object
         """
         extractor = MetadataExtractor(
             config=getattr(self, "config", None),
             run_name=getattr(self, "run_name", None),
         )
-        metadata = extractor.extract()
-        return metadata.to_dict()
+        return extractor.extract()
 
     def setup_experiment(self, config: ConfigDict) -> None:
         """Set up the experiment and broadcast initial state."""
@@ -129,42 +152,77 @@ class MontyExperimentWithLiveView(MontyExperiment):
         if not self.broadcaster:
             return
 
+        self._broadcast_initial_state()
+        self._broadcast_model_info_if_available()
+
+    def _broadcast_initial_state(self) -> None:
+        """Broadcast initial experiment state."""
         metadata = self._get_experiment_metadata()
         model_path = getattr(self, "model_path", None)
 
-        setup_message = StateUpdateBuilder.build_setup_message(
-            metadata,
-            self.run_name,
-            self.do_train,
-            self.max_train_steps,
-            self.n_train_epochs,
-            self.do_eval,
-            self.max_eval_steps,
-            self.n_eval_epochs,
-            self.config,
-            model_path,
+        training = self._create_training_config()
+        evaluation = self._create_evaluation_config()
+        limits = self._create_experiment_limits()
+
+        metadata_dict = metadata.to_dict()
+        setup_params = SetupMessageParams(
+            metadata=metadata_dict,
+            run_name=self.run_name,
+            training=training,
+            evaluation=evaluation,
+            config=self.config,
+            model_path=model_path,
+        )
+        setup_message = StateUpdateBuilder.build_setup_message_from_params(setup_params)
+        core_fields = CoreStateFields(
+            run_name=self.run_name,
+            metadata=metadata_dict,
+            experiment_start_time=self._experiment_start_time,
+            status=self._experiment_status,
+            limits=limits,
+            training=training,
+            evaluation=evaluation,
+            setup_message=setup_message,
         )
 
         state_update = StateUpdateBuilder.build_initial_state_update(
-            self.run_name,
-            metadata,
-            self._experiment_start_time,
-            self._experiment_status,
-            self.max_train_steps,
-            self.max_eval_steps,
-            self.max_total_steps,
-            self.n_train_epochs,
-            self.n_eval_epochs,
-            self.do_train,
-            self.do_eval,
+            core_fields,
             self.config,
-            setup_message,
             model_path,
         )
 
-        self.broadcaster.publish_state(state_update)
+        if self.broadcaster:
+            self.broadcaster.publish_state(state_update)
 
-        if hasattr(self, "model") and self.model:
+    def _create_training_config(self) -> TrainingConfig:
+        """Create training configuration from experiment attributes."""
+        return TrainingConfig(
+            do_train=self.do_train,
+            max_train_steps=self.max_train_steps,
+            n_train_epochs=self.n_train_epochs,
+        )
+
+    def _create_evaluation_config(self) -> EvaluationConfig:
+        """Create evaluation configuration from experiment attributes."""
+        return EvaluationConfig(
+            do_eval=self.do_eval,
+            max_eval_steps=self.max_eval_steps,
+            n_eval_epochs=self.n_eval_epochs,
+        )
+
+    def _create_experiment_limits(self) -> ExperimentLimits:
+        """Create experiment limits from experiment attributes."""
+        return ExperimentLimits(
+            max_train_steps=self.max_train_steps,
+            max_eval_steps=self.max_eval_steps,
+            max_total_steps=self.max_total_steps,
+            n_train_epochs=self.n_train_epochs,
+            n_eval_epochs=self.n_eval_epochs,
+        )
+
+    def _broadcast_model_info_if_available(self) -> None:
+        """Broadcast model information if model is available."""
+        if hasattr(self, "model") and self.model and self.broadcaster:
             model_info = StateUpdateBuilder.build_model_info_update(
                 len(self.model.learning_modules),
                 len(self.model.sensor_modules),
