@@ -30,11 +30,11 @@ Below is a recommended workflow for researchers; however, it is guidance only, a
 
 When creating the fork, the owner should be set to the `thousandbrainsproject` organization:
 
-<img src="0000_code_guidance_for_researchers_and_community/create_new_Prototype_fork.png" alt="Create New Prototype Fork" width="500">
+<img src="0018_code_guidance_for_researchers_and_community/create_new_Prototype_fork.png" alt="Create New Prototype Fork" width="500">
 
 Give your fork a name like `feat.description_of_prototype` (for other examples of prefixes we use, see [RFC 10 - Conventional Commits](0010_conventional_commits.md); most Prototypes would best be described as `feat` or `perf` changes):
 
-<img src="0000_code_guidance_for_researchers_and_community/Prototype_fork_name.png" alt="Naming your Fork" width="500">
+<img src="0018_code_guidance_for_researchers_and_community/Prototype_fork_name.png" alt="Naming your Fork" width="500">
 
 If your Prototype is related to a particular [RFC](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc), it can be helpful to link to this RFC in the fork description, which will appear under the About heading.
 
@@ -62,13 +62,13 @@ If your Prototype is related to a particular [RFC](https://thousandbrainsproject
 
 The workflow is shown in the below diagram:
 
-<img src="0000_code_guidance_for_researchers_and_community/main_workflow.png" alt="Workflow with a Feature Fork" width="450">
+<img src="0018_code_guidance_for_researchers_and_community/main_workflow.png" alt="Workflow with a Feature Fork" width="450">
 
 Green arrows indicate pulling from upstream, blue arrows indicate PRs. Above the blue arrows, a suggestion is provided for whether a researcher or engineer would more suitable to review the PR. If you are contributing as a non-Maintainer, it will be the responsibility of the Maintainer you tag to determine who is most suitable to review the PR. NOTE that when implementing the IP, a researcher will pair with an engineer (i.e. it is not solely the responsibility of engineers to handle the IP process from start to finish).
 
 Below shows the potential follow-up workflow. In the example shown, the first Prototype (Prototype "A") did not demonstrate significant benefit, and the fork is archived without ever going through the IP process. A new fork is made to work on a new Prototype / feature.
 
-<img src="0000_code_guidance_for_researchers_and_community/follow_up_workflow.png" alt="Follow-up Workflow with a Second Fork" width="900">
+<img src="0018_code_guidance_for_researchers_and_community/follow_up_workflow.png" alt="Follow-up Workflow with a Second Fork" width="900">
 
 
 ### Regarding Code Quality Specified in Other Guideline
@@ -86,7 +86,7 @@ Below shows the potential follow-up workflow. In the example shown, the first Pr
 #### `dev` Branch as Intermediary
 - A slight modification to the above is to have an intermediary `dev` branch. This can serve as a useful end-point for more rapid PRs, where a single researcher might review these. Then, when the `dev` branch has reached a sufficient level of maturity, a PR to `main` can be opened, and feedback at that point sought from a broader set of the research team. This is shown diagrammatically below. TBP researchers are welcome to try this workflow to see if it provides a smoother process.
 
-<img src="0000_code_guidance_for_researchers_and_community/dev_workflow.png" alt="Using a `dev` Branch" width="450">
+<img src="0018_code_guidance_for_researchers_and_community/dev_workflow.png" alt="Using a `dev` Branch" width="450">
 
 #### `tbp.monty` as a Dependency
 - Another alternative is to have `tbp.monty` as a dependency, and simply subclass or overwrite any functions that need to be altered. See the [tbp.monty_project_template repository](https://github.com/thousandbrainsproject/tbp.monty_project_template) for an example of how to quickly set this up.
@@ -101,7 +101,7 @@ Below shows the potential follow-up workflow. In the example shown, the first Pr
 
 This approach is shown diagrammatically below:
 
-<img src="0000_code_guidance_for_researchers_and_community/single_fork_workflow.png" alt="Workflow with a Single Fork" width="900">
+<img src="0018_code_guidance_for_researchers_and_community/single_fork_workflow.png" alt="Workflow with a Single Fork" width="900">
 
 
 ### Discontinued Prototypes
