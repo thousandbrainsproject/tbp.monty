@@ -1,40 +1,40 @@
 # LiveView Experiment Monitor
 
-Real-time web dashboard for monitoring Monty experiments.
+A demonstration of server-side web UI patterns for monitoring Monty experiments, inspired by Erlang/Elixir LiveView. This implementation uses [pyview](https://github.com/ogrodnek/pyview) to provide real-time dashboards with minimal JavaScript, keeping most UI logic in server-side Python.
 
-## Prerequisites
+## Overview
 
-tbp.monty conda environment must be set up:
+This contrib demonstrates how to build interactive web interfaces for experiments without complex client-side JavaScript or polling. The architecture separates concerns: the experiment runs in one process (Python 3.8), while the web server runs in another (Python 3.11+), communicating via ZeroMQ pub/sub.
+
+## Quick Start
+
+**Prerequisites:** tbp.monty conda environment must be set up:
 
 ```bash
 conda env create
 conda activate tbp.monty
-pip install -e .  # Install tbp.monty package
+pip install -e .
 ```
 
-## Usage
-
-**1. Setup (one-time):**
+**Setup (one-time):**
 
 ```bash
 ./contrib/liveview_experiment/scripts/setup.sh
 ```
 
-**2. Run experiment:**
+**Run experiment with LiveView:**
 
 ```bash
 ./contrib/liveview_experiment/scripts/run.sh
 ```
 
-**3. View dashboard (if Python >= 3.11):**
+**View dashboard:**
 
 http://127.0.0.1:8000
 
-**Note**: On Python 3.8, the web dashboard is not available, but pub/sub streaming still works. See [`STREAMING_USAGE.md`](STREAMING_USAGE.md) for details.
-
 ## Architecture
 
-The LiveView system uses a two-process architecture with ZMQ pub/sub for cross-process communication:
+The system uses a **two-process, message-driven architecture** to bridge Python version constraints and enable real-time monitoring:
 
 ```mermaid
 flowchart LR
@@ -62,12 +62,25 @@ flowchart LR
     LiveView2 -- serves to --> User2
 ```
 
-### Code Flow Overview
+### Design Overview
+
+1. **Two-process separation**: Experiment (Python 3.8) and web server (Python 3.11+) run independently
+2. **Message-driven communication**: ZeroMQ pub/sub for inter-process updates
+3. **Server-side rendering**: pyview handles state management and UI updates in Python
+4. **No client-side polling**: WebSocket-based updates eliminate JavaScript polling loops
+
+### Communication Layers
+
+- **Inter-process**: ZeroMQ pub/sub (experiment → LiveView server)
+- **Intra-process**: pyview's Python-internal pub/sub (state manager → LiveView instances)
+- **Client-server**: WebSocket (LiveView → browser)
+
+### Code Flow
 
 **LiveView Server (Python 3.11+):**
 
 - [`main()`](src/liveview_server_standalone.py) - Entry point, starts server
-  - [`ServerOrchestrator.run_with_zmq()`](src/server_orchestrator.py) - Orchestrates server and [`run_zmq_subscriber()`](src/liveview_server_standalone.py)
+  - [`ServerOrchestrator.run_with_zmq()`](src/server_orchestrator.py) - Orchestrates server and ZMQ subscriber
   - [`LiveViewServerSetup.create_app()`](src/server_setup.py) - Creates PyView app with [`ExperimentLiveView`](src/liveview_experiment.py)
   - [`ExperimentStateManager`](src/state_manager.py) - Manages shared state, receives updates via [`ZmqMessageProcessor`](src/zmq_message_processor.py)
 
@@ -76,35 +89,31 @@ flowchart LR
 - [`run.py`](../run.py) → [`main()`](../src/tbp/monty/frameworks/run.py) - Hydra instantiates experiment from config
   - [`MontyExperimentWithLiveView`](src/monty_experiment_with_liveview.py) - Extends [`MontyExperiment`](../src/tbp/monty/frameworks/experiments/monty_experiment.py)
   - Sets up [`ZmqBroadcaster`](src/zmq_broadcaster.py) via [`BroadcasterInitializer`](src/broadcaster_initializer.py)
-  - Overrides `pre_step()`, `post_step()`, `pre_episode()`, `post_epoch()`, `run()` to publish state updates
+  - Overrides lifecycle methods (`pre_step()`, `post_step()`, `pre_episode()`, `post_epoch()`, `run()`) to publish state updates
 
 **Configuration:**
 
 - Experiment config (e.g., [`randrot_10distinctobj_surf_agent_with_liveview.yaml`](conf/experiment/randrot_10distinctobj_surf_agent_with_liveview.yaml)) sets `zmq_port`, `liveview_port`, `enable_liveview`
 - [`MontyExperimentWithLiveView`](src/monty_experiment_with_liveview.py) reads config and initializes [`ZmqBroadcaster`](src/zmq_broadcaster.py) accordingly
 
-## Streaming Data from Parallel Processes
-
-Stream data from parallel processes (threads, async tasks, etc.) into the dashboard. See [`STREAMING_USAGE.md`](STREAMING_USAGE.md) for examples.
-
-```python
-broadcaster = experiment.broadcaster
-broadcaster.publish_metric("loss", 0.5, epoch=1)
-broadcaster.publish_data("sensor_data", {"value": 123})
-```
-
 ## Customization
 
-- Edit [`templates/experiment.html`](templates/experiment.html) for UI changes
-- Configure in experiment YAML: `liveview_port`, `zmq_port`, `enable_liveview` (see [`conf/experiment/`](conf/experiment/))
-- Use `experiment.broadcaster` to publish data from parallel processes
+Each experiment can customize its LiveView by providing:
 
-## Code Quality
+- **HTML template**: Edit [`templates/experiment.html`](templates/experiment.html) or create experiment-specific templates
+- **Python LiveView class**: Extend or modify [`ExperimentLiveView`](src/liveview_experiment.py) for custom UI logic
+- **Configuration**: Set `liveview_port`, `zmq_port`, `enable_liveview` in experiment YAML (see [`conf/experiment/`](conf/experiment/))
 
-Run complexity analysis:
+## Scripts and Tools
 
-```bash
-./contrib/liveview_experiment/scripts/analyze_complexity.sh
-```
+This contrib includes single-shot scripts for common tasks:
 
-See [`scripts/README.md`](scripts/README.md) for available scripts.
+- `setup.sh` - One-time setup of LiveView server environment
+- `run.sh` - Run experiment with LiveView dashboard
+- `analyze_complexity.sh` - Code complexity analysis
+
+See [`scripts/README.md`](scripts/README.md) for all available scripts.
+
+## Notes
+
+This is a demonstration/prototype implementation. The patterns shown here (two-process architecture, message-driven design, server-side UI logic) can be adapted for other experiments or projects. The code quality reflects the exploratory nature of this work.
