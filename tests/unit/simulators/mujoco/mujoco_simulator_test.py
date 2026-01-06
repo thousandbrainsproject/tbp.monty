@@ -110,7 +110,6 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
     @staticmethod
     def assert_counts_equal(sim: MuJoCoSimulator, count: int) -> None:
         assert sim.model.ngeom == count
-        assert sim.num_objects == count
         assert len(sim.spec.geoms) == count
 
     @staticmethod

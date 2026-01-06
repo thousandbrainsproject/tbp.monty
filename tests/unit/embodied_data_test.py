@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import unittest
 from pathlib import Path
@@ -36,11 +37,15 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Modality,
     Observations,
-    SensorID,
     SensorObservations,
 )
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
+from tbp.monty.frameworks.models.motor_system_state import (
+    MotorSystemState,
+    ProprioceptiveState,
+)
+from tbp.monty.frameworks.sensors import SensorID
 
 AGENT_ID = AgentID("agent_id_0")
 SENSOR_ID = SensorID("sensor_id_0")
@@ -67,9 +72,9 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
         return ObjectID(-1)
 
     @override
-    def step(self, actions) -> Observations:
+    def step(self, actions) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
-        return Observations(
+        obs = Observations(
             {
                 AGENT_ID: AgentObservations(
                     {
@@ -80,16 +85,17 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
                 )
             }
         )
+        return obs, ProprioceptiveState({})
 
-    def get_state(self):
-        return None
+    def get_state(self) -> ProprioceptiveState:
+        return ProprioceptiveState({})
 
     def remove_all_objects(self):
         pass
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self._current_state = 0
-        return Observations(
+        obs = Observations(
             {
                 AGENT_ID: AgentObservations(
                     {
@@ -100,6 +106,7 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
                 )
             }
         )
+        return obs, ProprioceptiveState({})
 
     def close(self):
         self._current_state = None
@@ -114,9 +121,9 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
         return ObjectID(-1)
 
     @override
-    def step(self, actions) -> Observations:
+    def step(self, actions) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
-        return Observations(
+        obs = Observations(
             {
                 AGENT_ID: AgentObservations(
                     {
@@ -127,16 +134,17 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
                 )
             }
         )
+        return obs, ProprioceptiveState({})
 
-    def get_state(self):
-        return None
+    def get_state(self) -> ProprioceptiveState:
+        return ProprioceptiveState({})
 
     def remove_all_objects(self):
         pass
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self._current_state = 0
-        return Observations(
+        obs = Observations(
             {
                 AGENT_ID: AgentObservations(
                     {
@@ -147,6 +155,7 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
                 )
             }
         )
+        return obs, ProprioceptiveState({})
 
     def close(self):
         self._current_state = None
@@ -359,7 +368,7 @@ class EmbodiedDataTest(unittest.TestCase):
         base_policy_cfg_rel["agent_id"] = AGENT_ID
 
         motor_system_rel = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_rel)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_rel), state=MotorSystemState()
         )
 
         env_init_args = {"patch_size": patch_size, "data_path": data_path}

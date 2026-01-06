@@ -16,6 +16,7 @@ import numpy as np
 import numpy.typing as npt
 
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.sensors import SensorID
 
@@ -332,7 +333,7 @@ class SensorModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def update_state(self, state):
+    def update_state(self, agent: AgentState):
         pass
 
     @abc.abstractmethod

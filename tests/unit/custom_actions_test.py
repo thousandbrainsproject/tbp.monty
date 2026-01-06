@@ -57,7 +57,7 @@ class HabitatSimTest(unittest.TestCase):
             constraint = action.constraint_degrees
 
             for _ in range(int(constraint * 2 / rotation_degrees) + 1):
-                sim.apply_actions([action])
+                sim.step([action])
 
             rotation = scene_node.rotation
             look_vector = rotation.transform_vector(FRONT)
@@ -71,7 +71,7 @@ class HabitatSimTest(unittest.TestCase):
             constraint = action.constraint_degrees
 
             for _ in range(int(constraint * 2 / rotation_degrees) + 1):
-                sim.apply_actions([action])
+                sim.step([action])
 
             rotation = scene_node.rotation
             look_vector = rotation.transform_vector(FRONT)

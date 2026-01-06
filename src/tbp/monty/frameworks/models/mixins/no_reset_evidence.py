@@ -101,6 +101,8 @@ class TheoreticalLimitLMLoggingMixin:
         Returns:
             Updated statistics dictionary.
         """
+        assert isinstance(self, EvidenceGraphLM)
+
         stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items() if len(v)}
         stats["target_object_theoretical_limit"] = (
             self._theoretical_limit_target_object_pose_error()
@@ -113,6 +115,8 @@ class TheoreticalLimitLMLoggingMixin:
 
     def _hypotheses_updater_telemetry(self) -> HypothesesUpdaterTelemetry:
         """Returns HypothesesUpdaterTelemetry for all objects and input channels."""
+        assert isinstance(self, EvidenceGraphLM)
+
         stats: HypothesesUpdaterTelemetry = {}
         for graph_id, graph_telemetry in self.hypotheses_updater_telemetry.items():
             stats[graph_id] = {
@@ -136,6 +140,8 @@ class TheoreticalLimitLMLoggingMixin:
         Returns:
             HypothesesUpdaterChannelTelemetry for the given graph ID and input channel.
         """
+        assert isinstance(self, EvidenceGraphLM)
+
         mapper = self.channel_hypothesis_mapping[graph_id]
 
         if input_channel not in mapper.channels:
@@ -190,6 +196,8 @@ class TheoreticalLimitLMLoggingMixin:
         Returns:
             The minimum achievable rotation error (in radians).
         """
+        assert isinstance(self, EvidenceGraphLM)
+
         object_possible_poses = self.possible_poses[self.primary_target]
         if not len(object_possible_poses):
             return -1
@@ -208,6 +216,8 @@ class TheoreticalLimitLMLoggingMixin:
         Returns:
             The rotation error (in radians).
         """
+        assert isinstance(self, EvidenceGraphLM)
+
         obj_rotation = self.get_mlh_for_object(self.primary_target)["rotation"].inv()
         target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
         return compute_pose_error(obj_rotation, target_rotation)
