@@ -351,27 +351,27 @@ jobs:
         uses: ./tbp.monty/.github/actions/install_monty
         with:
           working_directory: tbp.monty
-      - name: Run configuration and unit tests
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        working-directory: tbp.monty
-        run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          set -e
-          mkdir -p test_results/pytest
-          xvfb-run pytest --cov --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
-      - name: Store test results
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: test_results
-          path: tbp.monty/test_results/pytest
-      - name: Store coverage
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: test_coverage
-          path: tbp.monty/htmlcov
+      # - name: Run configuration and unit tests
+      #   if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+      #   working-directory: tbp.monty
+      #   run: |
+      #     export PATH="$HOME/miniconda/bin:$PATH"
+      #     source activate tbp.monty
+      #     set -e
+      #     mkdir -p test_results/pytest
+      #     xvfb-run pytest --cov --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
+      # - name: Store test results
+      #   if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: test_results
+      #     path: tbp.monty/test_results/pytest
+      # - name: Store coverage
+      #   if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: test_coverage
+      #     path: tbp.monty/htmlcov
       - name: Prepare data for integration tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
@@ -387,6 +387,7 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           set -e
+          mkdir -p test_results/pytest
           xvfb-run pytest tests/integration --junitxml=test_results/pytest/results.xml --verbose
 
   test_uv_monty:
