@@ -7,6 +7,6 @@ env_interface_args:
     # - 007_disk_tbp_horz
     - 024_mug_tbp_horz
     # - 009_disk_numenta_horz
-    # - 011_cylinder
-    # - 016_sphere
+    - 011_cylinder
+    - 016_sphere
   object_init_sampler: ???

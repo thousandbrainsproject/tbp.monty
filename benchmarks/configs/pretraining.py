@@ -85,7 +85,9 @@ supervised_pretraining_logos_2d_sensor.update(
 # )
 
 # Update run name
-supervised_pretraining_logos_2d_sensor["logging_config"].run_name = "supervised_pretraining_logos_2d_sensor"
+supervised_pretraining_logos_2d_sensor[
+    "logging_config"
+].run_name = "supervised_pretraining_logos_2d_sensor"
 
 experiments = MyExperiments(
     supervised_pretraining_logos_2d_sensor=supervised_pretraining_logos_2d_sensor,

@@ -153,7 +153,11 @@ def process_single_image(patch: np.ndarray, output_path: Path) -> dict:
     # Return results dictionary
     return {
         "default": (default_strength, default_coherence, default_theta),
-        "center_aware": (center_aware_strength, center_aware_coherence, center_aware_theta),
+        "center_aware": (
+            center_aware_strength,
+            center_aware_coherence,
+            center_aware_theta,
+        ),
     }
 
 
@@ -183,7 +187,12 @@ def plot_histograms(
 
     # Edge strength histogram
     axes[0].hist(
-        default_strengths, bins=30, alpha=0.6, label="naive", color="blue", edgecolor="black"
+        default_strengths,
+        bins=30,
+        alpha=0.6,
+        label="naive",
+        color="blue",
+        edgecolor="black",
     )
     axes[0].hist(
         center_aware_strengths,
@@ -201,7 +210,12 @@ def plot_histograms(
 
     # Coherence histogram
     axes[1].hist(
-        default_coherences, bins=30, alpha=0.6, label="naive", color="blue", edgecolor="black"
+        default_coherences,
+        bins=30,
+        alpha=0.6,
+        label="naive",
+        color="blue",
+        edgecolor="black",
     )
     axes[1].hist(
         center_aware_coherences,
@@ -219,7 +233,12 @@ def plot_histograms(
 
     # Product histogram (strength * coherence)
     axes[2].hist(
-        default_products, bins=30, alpha=0.6, label="naive", color="blue", edgecolor="black"
+        default_products,
+        bins=30,
+        alpha=0.6,
+        label="naive",
+        color="blue",
+        edgecolor="black",
     )
     axes[2].hist(
         center_aware_products,
@@ -272,30 +291,36 @@ def select_folder_interactive(input_dir: Path) -> str:
         Selected folder name
     """
     folders = get_available_folders(input_dir)
-    
+
     if not folders:
         raise ValueError(f"No subdirectories found in {input_dir}")
-    
+
     print("\nAvailable folders:")
     for i, folder in enumerate(folders, 1):
         print(f"  {i}. {folder}")
-    
+
     while True:
         try:
-            choice = input(f"\nSelect folder (1-{len(folders)}) or folder name: ").strip()
-            
+            choice = input(
+                f"\nSelect folder (1-{len(folders)}) or folder name: "
+            ).strip()
+
             # Try to parse as number
             if choice.isdigit():
                 idx = int(choice) - 1
                 if 0 <= idx < len(folders):
                     return folders[idx]
                 else:
-                    print(f"Invalid number. Please enter a number between 1 and {len(folders)}.")
+                    print(
+                        f"Invalid number. Please enter a number between 1 and {len(folders)}."
+                    )
             # Try to match folder name
             elif choice in folders:
                 return choice
             else:
-                print(f"Invalid selection. Please enter a number (1-{len(folders)}) or folder name.")
+                print(
+                    f"Invalid selection. Please enter a number (1-{len(folders)}) or folder name."
+                )
         except KeyboardInterrupt:
             print("\nCancelled by user.")
             raise SystemExit(1)
@@ -316,8 +341,10 @@ def main():
     args = parser.parse_args()
 
     # Set up paths
-    input_dir = Path("/Users/hlee/tbp/feat.2d_sensor/results/synthetic_edge_test_images")
-    
+    input_dir = Path(
+        "/Users/hlee/tbp/feat.2d_sensor/results/synthetic_edge_test_images"
+    )
+
     # Select folder
     if args.folder:
         selected_folder = args.folder
@@ -329,9 +356,9 @@ def main():
     else:
         selected_folder = select_folder_interactive(input_dir)
         folder_path = input_dir / selected_folder
-    
+
     print(f"\nProcessing folder: {selected_folder}")
-    
+
     # Set up output directory
     output_dir = Path("results/synthetic_edge_test_images_comparison") / selected_folder
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -449,15 +476,14 @@ def main():
         )
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Processing complete!")
     print(f"Total images processed: {total_processed}")
     print(f"Total images failed: {total_failed}")
     print(f"Output directory: {output_dir.absolute()}")
     print(f"CSV results: {csv_path.absolute()}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
 
 if __name__ == "__main__":
     main()
-

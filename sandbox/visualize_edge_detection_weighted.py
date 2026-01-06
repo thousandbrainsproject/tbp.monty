@@ -147,9 +147,7 @@ def plot_histograms(
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
     # Edge strength histogram
-    axes[0].hist(
-        strengths, bins=30, alpha=0.7, color="orange", edgecolor="black"
-    )
+    axes[0].hist(strengths, bins=30, alpha=0.7, color="orange", edgecolor="black")
     axes[0].axvline(EDGE_THRESHOLD, color="red", linestyle="--", label="threshold")
     axes[0].set_xlabel("Edge Strength")
     axes[0].set_ylabel("Count")
@@ -157,9 +155,7 @@ def plot_histograms(
     axes[0].legend()
 
     # Coherence histogram
-    axes[1].hist(
-        coherences, bins=30, alpha=0.7, color="orange", edgecolor="black"
-    )
+    axes[1].hist(coherences, bins=30, alpha=0.7, color="orange", edgecolor="black")
     axes[1].axvline(COHERENCE_THRESHOLD, color="red", linestyle="--", label="threshold")
     axes[1].set_xlabel("Coherence")
     axes[1].set_ylabel("Count")
@@ -167,9 +163,7 @@ def plot_histograms(
     axes[1].legend()
 
     # Product histogram (strength * coherence = EC)
-    axes[2].hist(
-        products, bins=30, alpha=0.7, color="orange", edgecolor="black"
-    )
+    axes[2].hist(products, bins=30, alpha=0.7, color="orange", edgecolor="black")
     axes[2].axvline(
         MAX_STRENGTH_COHERENCE,
         color="green",
@@ -223,7 +217,9 @@ def select_folder_interactive(input_dir: Path) -> str:
 
     while True:
         try:
-            choice = input(f"\nSelect folder (1-{len(folders)}) or folder name: ").strip()
+            choice = input(
+                f"\nSelect folder (1-{len(folders)}) or folder name: "
+            ).strip()
 
             # Try to parse as number
             if choice.isdigit():
@@ -231,12 +227,16 @@ def select_folder_interactive(input_dir: Path) -> str:
                 if 0 <= idx < len(folders):
                     return folders[idx]
                 else:
-                    print(f"Invalid number. Please enter a number between 1 and {len(folders)}.")
+                    print(
+                        f"Invalid number. Please enter a number between 1 and {len(folders)}."
+                    )
             # Try to match folder name
             elif choice in folders:
                 return choice
             else:
-                print(f"Invalid selection. Please enter a number (1-{len(folders)}) or folder name.")
+                print(
+                    f"Invalid selection. Please enter a number (1-{len(folders)}) or folder name."
+                )
         except KeyboardInterrupt:
             print("\nCancelled by user.")
             raise SystemExit(1)
@@ -257,7 +257,9 @@ def main():
     args = parser.parse_args()
 
     # Set up paths
-    input_dir = Path("/Users/hlee/tbp/feat.2d_sensor/results/synthetic_edge_test_images")
+    input_dir = Path(
+        "/Users/hlee/tbp/feat.2d_sensor/results/synthetic_edge_test_images"
+    )
 
     # Select folder
     if args.folder:
@@ -274,7 +276,10 @@ def main():
     print(f"\nProcessing folder: {selected_folder}")
 
     # Set up output directory
-    output_dir = Path("results/synthetic_edge_test_images_comparison") / f"{selected_folder}_weighted"
+    output_dir = (
+        Path("results/synthetic_edge_test_images_comparison")
+        / f"{selected_folder}_weighted"
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Find PNG files in selected folder (not recursively)
@@ -371,15 +376,14 @@ def main():
         )
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Processing complete!")
     print(f"Total images processed: {total_processed}")
     print(f"Total images failed: {total_failed}")
     print(f"Output directory: {output_dir.absolute()}")
     print(f"CSV results: {csv_path.absolute()}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
 
 if __name__ == "__main__":
     main()
-

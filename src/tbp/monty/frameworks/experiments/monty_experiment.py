@@ -240,7 +240,9 @@ class MontyExperiment:
             **config["env_interface_args"],
         )
 
-        env_interface = self.create_env_interface(env_interface_class, env_interface_args)
+        env_interface = self.create_env_interface(
+            env_interface_class, env_interface_args
+        )
 
         if config["do_eval"]:
             self.train_env_interface = None

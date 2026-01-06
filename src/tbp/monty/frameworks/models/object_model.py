@@ -34,7 +34,10 @@ from tbp.monty.frameworks.utils.object_model_utils import (
     remove_close_points,
     torch_graph_to_numpy,
 )
-from tbp.monty.frameworks.utils.spatial_arithmetics import apply_rf_transform_to_points
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    apply_rf_transform_to_2d_surface,
+    apply_rf_transform_to_points,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,16 +45,21 @@ logger = logging.getLogger(__name__)
 class GraphObjectModel(ObjectModel):
     """Object model class that represents object as graphs."""
 
-    def __init__(self, object_id):
+    def __init__(self, object_id, is_2d_surface: bool = False):
         """Initialize the object model.
 
         Args:
             object_id: id of the object
+            is_2d_surface: If True, this model represents a 2D surface where
+                locations are cumulative surface coordinates [u, v, 0] rather
+                than 3D world positions. When updating such models, only the
+                xy-plane rotation and translation components are applied.
         """
         logger.info(f"init object model with id {object_id}")
         self.object_id = object_id
         self._graph = None
         self.has_ppf = False
+        self.is_2d_surface = is_2d_surface
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
@@ -78,13 +86,24 @@ class GraphObjectModel(ObjectModel):
         object_rotation,
     ):
         """Add new locations and features into grids and rebuild graph."""
-        rf_locations, rf_features = apply_rf_transform_to_points(
-            locations=locations,
-            features=features,
-            location_rel_model=location_rel_model,
-            object_location_rel_body=object_location_rel_body,
-            object_rotation=object_rotation,
-        )
+        if self.is_2d_surface:
+            # For 2D surface models, use specialized transform that only
+            # applies xy-plane rotation and translation
+            rf_locations, rf_features = apply_rf_transform_to_2d_surface(
+                locations_2d=locations,
+                features=features,
+                location_rel_model=location_rel_model,
+                object_location_rel_body=object_location_rel_body,
+                object_rotation=object_rotation,
+            )
+        else:
+            rf_locations, rf_features = apply_rf_transform_to_points(
+                locations=locations,
+                features=features,
+                location_rel_model=location_rel_model,
+                object_location_rel_body=object_location_rel_body,
+                object_rotation=object_rotation,
+            )
 
         all_locations, all_features = self._combine_graph_information(
             rf_locations,
@@ -335,7 +354,14 @@ class GridObjectModel(GraphObjectModel):
         - remove .norm as attribute and store as feature instead?
     """
 
-    def __init__(self, object_id, max_nodes, max_size, num_voxels_per_dim):
+    def __init__(
+        self,
+        object_id,
+        max_nodes,
+        max_size,
+        num_voxels_per_dim,
+        is_2d_surface: bool = False,
+    ):
         """Initialize a grid object model.
 
         Args:
@@ -346,6 +372,9 @@ class GridObjectModel(GraphObjectModel):
                 that can be represented and how locations are mapped into voxels.
             num_voxels_per_dim: number of voxels per dimension in the models grids.
                 Defines the resolution of the model.
+            is_2d_surface: If True, this model represents a 2D surface where
+                locations are cumulative surface coordinates [u, v, 0] rather
+                than 3D world positions.
         """
         logger.info(f"init object model with id {object_id}")
         self.object_id = object_id
@@ -353,6 +382,7 @@ class GridObjectModel(GraphObjectModel):
         self._max_nodes = max_nodes
         self._max_size = max_size  # 1=1meter
         self._num_voxels_per_dim = num_voxels_per_dim
+        self.is_2d_surface = is_2d_surface
         # Sparse, 4d torch tensors that store content in the voxels of the model grid.
         # number of observations in each voxel
         self._observation_count = None
@@ -396,13 +426,24 @@ class GridObjectModel(GraphObjectModel):
         object_rotation,
     ):
         """Add new locations and features into grids and rebuild graph."""
-        rf_locations, rf_features = apply_rf_transform_to_points(
-            locations=locations,
-            features=features,
-            location_rel_model=location_rel_model,
-            object_location_rel_body=object_location_rel_body,
-            object_rotation=object_rotation,
-        )
+        if self.is_2d_surface:
+            # For 2D surface models, use specialized transform that only
+            # applies xy-plane rotation and translation
+            rf_locations, rf_features = apply_rf_transform_to_2d_surface(
+                locations_2d=locations,
+                features=features,
+                location_rel_model=location_rel_model,
+                object_location_rel_body=object_location_rel_body,
+                object_rotation=object_rotation,
+            )
+        else:
+            rf_locations, rf_features = apply_rf_transform_to_points(
+                locations=locations,
+                features=features,
+                location_rel_model=location_rel_model,
+                object_location_rel_body=object_location_rel_body,
+                object_rotation=object_rotation,
+            )
         (
             feature_array,
             observation_feature_mapping,

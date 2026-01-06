@@ -8,3 +8,4 @@ learning_module_args:
   tolerance: 0.001
   use_relative_len: false
   graph_delta_thresholds: null
+  is_2d_surface: false

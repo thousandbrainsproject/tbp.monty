@@ -84,7 +84,14 @@ THICKNESS_VARIATIONS = [2, 4, 8, 14]
 RANDOM_INTERSECTIONS_COUNT = 20
 
 # Test Suite 8: Angled intersections
-ANGLED_INTERSECTION_OFFSETS = [0, 2, 4, 8, 16, 24]  # Y offset below center for intersection
+ANGLED_INTERSECTION_OFFSETS = [
+    0,
+    2,
+    4,
+    8,
+    16,
+    24,
+]  # Y offset below center for intersection
 ANGLED_INTERSECTION_ANGLES = list(range(0, 166, 15))  # 0 to 165 in 15-deg increments
 ANGLED_INTERSECTION_THICKNESSES = [2, 4, 8, 16]
 ANGLED_INTERSECTION_MAIN_THICKNESS = 2  # Fixed main vertical line thickness
@@ -451,9 +458,7 @@ def add_vertical_gradient(
     return np.clip(base, 0, 255).astype(np.uint8)
 
 
-def add_gaussian_noise(
-    image: np.ndarray, sigma: float = NOISE_SIGMA
-) -> np.ndarray:
+def add_gaussian_noise(image: np.ndarray, sigma: float = NOISE_SIGMA) -> np.ndarray:
     """Add Gaussian noise.
 
     Args:
@@ -656,9 +661,7 @@ def parse_suite_selection(input_str: str) -> List[int]:
         try:
             suite_num = int(part)
             if suite_num not in valid_suites:
-                raise ValueError(
-                    f"Invalid suite number: {suite_num}. Must be 1-9."
-                )
+                raise ValueError(f"Invalid suite number: {suite_num}. Must be 1-9.")
             suites.append(suite_num)
         except ValueError as e:
             if "Invalid suite number" in str(e):
@@ -694,10 +697,7 @@ def get_suite_selection_interactive() -> List[int]:
     print("  7 = Random line intersections")
     print("  8 = Angled intersections (vertical line + angled line)")
     print("  9 = Single angled lines offset from center")
-    print(
-        "\nEnter suite numbers (comma or space separated, "
-        "e.g., 1,2,3 or 1 2 3):"
-    )
+    print("\nEnter suite numbers (comma or space separated, e.g., 1,2,3 or 1 2 3):")
 
     while True:
         try:
@@ -713,9 +713,7 @@ def get_suite_selection_interactive() -> List[int]:
 # ============================================================================
 
 
-def generate_thickness_test_images(
-    output_dir: Path, contrast_level: str
-) -> None:
+def generate_thickness_test_images(output_dir: Path, contrast_level: str) -> None:
     """Generate test suite 1: vertical edges at center with varying thicknesses.
 
     Args:
@@ -784,9 +782,7 @@ def generate_offset_test_images(output_dir: Path, contrast_level: str) -> None:
             print(f"Generated: {filepath}")
 
 
-def generate_distraction_test_images(
-    output_dir: Path, contrast_level: str
-) -> None:
+def generate_distraction_test_images(output_dir: Path, contrast_level: str) -> None:
     """Generate test suite 3: vertical edge at center with distracting lines.
 
     Args:
@@ -808,9 +804,7 @@ def generate_distraction_test_images(
         # Draw main vertical edge at center
         create_vertical_edge(image, CENTER_X, MAIN_EDGE_THICKNESS, edge_color)
         # Draw horizontal distraction line
-        create_horizontal_line(
-            image, y_pos, DISTRACTION_THICKNESS, edge_color
-        )
+        create_horizontal_line(image, y_pos, DISTRACTION_THICKNESS, edge_color)
         filename = f"distraction_horizontal_y{y_pos}_{contrast_level}.png"
         filepath = output_dir / filename
         plt.imsave(filepath, image)
@@ -979,8 +973,7 @@ def generate_distraction_test_images(
         create_vertical_edge(image, CENTER_X, MAIN_EDGE_THICKNESS, edge_color)
         image = add_x_junction(image, center=center, color=edge_color)
         filename = (
-            f"distraction_xjunction_x{center[0]}_y{center[1]}_"
-            f"{contrast_level}.png"
+            f"distraction_xjunction_x{center[0]}_y{center[1]}_{contrast_level}.png"
         )
         filepath = output_dir / filename
         plt.imsave(filepath, image)
@@ -1043,8 +1036,7 @@ def generate_distraction_test_images(
             image, CENTER_X, MAIN_EDGE_THICKNESS, edge_color, gap_y_range=gap_range
         )
         filename = (
-            f"distraction_gapped_y{gap_range[0]}_{gap_range[1]}_"
-            f"{contrast_level}.png"
+            f"distraction_gapped_y{gap_range[0]}_{gap_range[1]}_{contrast_level}.png"
         )
         filepath = output_dir / filename
         plt.imsave(filepath, image)
@@ -1111,9 +1103,7 @@ def generate_distraction_test_images(
         print(f"Generated: {filepath}")
 
 
-def generate_angled_lines_test_images(
-    output_dir: Path, contrast_level: str
-) -> None:
+def generate_angled_lines_test_images(output_dir: Path, contrast_level: str) -> None:
     """Generate test suite 4: angled lines through center at different angles.
 
     Args:
@@ -1257,9 +1247,7 @@ def generate_horizontal_distraction_offset_test_images(
             y_position = CENTER_Y + offset
             # Only generate if line is within image bounds
             if 0 <= y_position < IMAGE_SIZE:
-                create_horizontal_line(
-                    image, y_position, dist_thick, edge_color
-                )
+                create_horizontal_line(image, y_position, dist_thick, edge_color)
 
                 # Save image
                 filename = (
@@ -1647,7 +1635,9 @@ def main(suites: List[int] = None):
         print("\nThe following output directories already exist:")
         for d in existing_dirs:
             print(f"  - {d.absolute()}")
-        response = input("Do you want to override existing files? (y/n): ").strip().lower()
+        response = (
+            input("Do you want to override existing files? (y/n): ").strip().lower()
+        )
         if response not in ("y", "yes"):
             print("Aborting. No files were modified.")
             return
@@ -1709,8 +1699,7 @@ def main(suites: List[int] = None):
     # Generate test suite 6: Vertical distraction with offsets
     if 6 in suites:
         print(
-            "\nGenerating Test Suite 6: Vertical Distraction Offsets "
-            "(High Contrast)..."
+            "\nGenerating Test Suite 6: Vertical Distraction Offsets (High Contrast)..."
         )
         generate_vertical_distraction_offset_test_images(
             vertical_distraction_offset_dir, "high"
@@ -1718,23 +1707,14 @@ def main(suites: List[int] = None):
 
     # Generate test suite 7: Random line intersections
     if 7 in suites:
-        print(
-            "\nGenerating Test Suite 7: Random Line Intersections "
-            "(High Contrast)..."
-        )
+        print("\nGenerating Test Suite 7: Random Line Intersections (High Contrast)...")
         generate_random_intersections_test_images(random_intersections_dir, "high")
-        print(
-            "\nGenerating Test Suite 7: Random Line Intersections "
-            "(Low Contrast)..."
-        )
+        print("\nGenerating Test Suite 7: Random Line Intersections (Low Contrast)...")
         generate_random_intersections_test_images(random_intersections_dir, "low")
 
     # Generate test suite 8: Angled intersections
     if 8 in suites:
-        print(
-            "\nGenerating Test Suite 8: Angled Intersections "
-            "(High Contrast)..."
-        )
+        print("\nGenerating Test Suite 8: Angled Intersections (High Contrast)...")
         generate_angled_intersections_test_images(angled_intersections_dir, "high")
 
     # Generate test suite 9: Single angled lines offset from center
@@ -1785,4 +1765,3 @@ if __name__ == "__main__":
             sys.exit(1)
 
     main(suites)
-

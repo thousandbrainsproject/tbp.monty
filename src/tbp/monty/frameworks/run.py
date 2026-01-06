@@ -40,10 +40,7 @@ def main(cfg: DictConfig):
         os.environ["HABITAT_SIM_LOG"] = "quiet"
     print(OmegaConf.to_yaml(cfg))
 
-    output_dir = (
-        Path(cfg.config.logging.output_dir)
-        / cfg.config.logging.run_name
-    )
+    output_dir = Path(cfg.config.logging.output_dir) / cfg.config.logging.run_name
     cfg.config.logging.output_dir = str(output_dir)
 
     output_dir.mkdir(exist_ok=True, parents=True)

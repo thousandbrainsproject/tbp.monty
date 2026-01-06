@@ -55,10 +55,10 @@ def calculate_accuracy_breakdown(df):
     total = len(df)
     correct_count = (df["primary_performance"] == "correct").sum()
     correct_mlh_count = (df["primary_performance"] == "correct_mlh").sum()
-    
+
     correct_pct = (correct_count / total) * 100
     correct_mlh_pct = (correct_mlh_count / total) * 100
-    
+
     return correct_pct, correct_mlh_pct
 
 
@@ -111,7 +111,7 @@ def create_comparison_plots(df1, df2, name1, name2, output_dir):
     # Calculate statistics for both experiments
     acc1 = calculate_accuracy(df1)
     acc2 = calculate_accuracy(df2)
-    
+
     # Calculate accuracy breakdown for stacked bars
     correct1, correct_mlh1 = calculate_accuracy_breakdown(df1)
     correct2, correct_mlh2 = calculate_accuracy_breakdown(df2)
@@ -140,27 +140,29 @@ def create_comparison_plots(df1, df2, name1, name2, output_dir):
     ax1 = axes[0]
     experiments = [name1, name2]
     accuracies = [acc1, acc2]
-    
+
     # Stacked bar data
     correct_values = [correct1, correct2]
     correct_mlh_values = [correct_mlh1, correct_mlh2]
-    
+
     # Colors: darker for correct, lighter for correct_mlh
     # Use experiment colors for correct, lighter versions for correct_mlh
     correct_colors = ["#1f77b4", "#ff7f0e"]
     correct_mlh_colors = ["#7fb3d3", "#ffb84d"]  # Lighter versions
-    
+
     # Create stacked bars
-    bars_correct = ax1.bar(experiments, correct_values, color=correct_colors, alpha=0.8, label="correct")
-    bars_correct_mlh = ax1.bar(
-        experiments, 
-        correct_mlh_values, 
-        bottom=correct_values, 
-        color=correct_mlh_colors, 
-        alpha=0.8, 
-        label="correct_mlh"
+    bars_correct = ax1.bar(
+        experiments, correct_values, color=correct_colors, alpha=0.8, label="correct"
     )
-    
+    bars_correct_mlh = ax1.bar(
+        experiments,
+        correct_mlh_values,
+        bottom=correct_values,
+        color=correct_mlh_colors,
+        alpha=0.8,
+        label="correct_mlh",
+    )
+
     ax1.set_ylabel("Accuracy (%)", fontsize=12)
     ax1.set_title("Accuracy Comparison", fontsize=14, fontweight="bold")
     ax1.set_ylim(0, 105)
@@ -202,7 +204,16 @@ def create_comparison_plots(df1, df2, name1, name2, output_dir):
     colors = ["#1f77b4", "#ff7f0e"]
     for pos, data, color in zip(range(len(experiments)), monty_data, colors):
         jitter = np.random.normal(0, 0.03, size=len(data))
-        ax2.scatter(pos + jitter, data, color=color, alpha=1.0, s=20, zorder=3, edgecolors='black', linewidths=0.5)
+        ax2.scatter(
+            pos + jitter,
+            data,
+            color=color,
+            alpha=1.0,
+            s=20,
+            zorder=3,
+            edgecolors="black",
+            linewidths=0.5,
+        )
     ax2.set_xticks(range(len(experiments)))
     ax2.set_xticklabels(experiments)
     ax2.set_ylabel("Monty Steps", fontsize=12)
@@ -259,7 +270,16 @@ def create_comparison_plots(df1, df2, name1, name2, output_dir):
     colors = ["#1f77b4", "#ff7f0e"]
     for pos, data, color in zip(range(len(experiments)), rot_data, colors):
         jitter = np.random.normal(0, 0.03, size=len(data))
-        ax3.scatter(pos + jitter, data, color=color, alpha=1.0, s=20, zorder=3, edgecolors='black', linewidths=0.5)
+        ax3.scatter(
+            pos + jitter,
+            data,
+            color=color,
+            alpha=1.0,
+            s=20,
+            zorder=3,
+            edgecolors="black",
+            linewidths=0.5,
+        )
     ax3.set_xticks(range(len(experiments)))
     ax3.set_xticklabels(experiments)
     ax3.set_ylabel("Rotation Error (degrees)", fontsize=12)
@@ -303,33 +323,35 @@ def create_comparison_plots(df1, df2, name1, name2, output_dir):
     # Also save individual plots
     # Accuracy (Stacked Bar)
     fig1, ax1 = plt.subplots(figsize=(6, 5))
-    
+
     # Stacked bar data
     correct_values = [correct1, correct2]
     correct_mlh_values = [correct_mlh1, correct_mlh2]
-    
+
     # Colors: darker for correct, lighter for correct_mlh
     # Use experiment colors for correct, lighter versions for correct_mlh
     correct_colors = ["#1f77b4", "#ff7f0e"]
     correct_mlh_colors = ["#7fb3d3", "#ffb84d"]  # Lighter versions
-    
+
     # Create stacked bars
-    bars_correct = ax1.bar(experiments, correct_values, color=correct_colors, alpha=0.8, label="correct")
-    bars_correct_mlh = ax1.bar(
-        experiments, 
-        correct_mlh_values, 
-        bottom=correct_values, 
-        color=correct_mlh_colors, 
-        alpha=0.8, 
-        label="correct_mlh"
+    bars_correct = ax1.bar(
+        experiments, correct_values, color=correct_colors, alpha=0.8, label="correct"
     )
-    
+    bars_correct_mlh = ax1.bar(
+        experiments,
+        correct_mlh_values,
+        bottom=correct_values,
+        color=correct_mlh_colors,
+        alpha=0.8,
+        label="correct_mlh",
+    )
+
     ax1.set_ylabel("Accuracy (%)", fontsize=12)
     ax1.set_title("Accuracy Comparison", fontsize=14, fontweight="bold")
     ax1.set_ylim(0, 105)
     ax1.grid(axis="y", alpha=0.3, linestyle="--")
     ax1.legend(loc="upper right", fontsize=10)
-    
+
     # Add value labels on bars (total accuracy)
     for i, acc in enumerate(accuracies):
         ax1.text(
@@ -370,7 +392,16 @@ def create_comparison_plots(df1, df2, name1, name2, output_dir):
     colors = ["#1f77b4", "#ff7f0e"]
     for pos, data, color in zip(range(len(experiments)), monty_data, colors):
         jitter = np.random.normal(0, 0.03, size=len(data))
-        ax2.scatter(pos + jitter, data, color=color, alpha=1.0, s=20, zorder=3, edgecolors='black', linewidths=0.5)
+        ax2.scatter(
+            pos + jitter,
+            data,
+            color=color,
+            alpha=1.0,
+            s=20,
+            zorder=3,
+            edgecolors="black",
+            linewidths=0.5,
+        )
     ax2.set_xticks(range(len(experiments)))
     ax2.set_xticklabels(experiments)
     ax2.set_ylabel("Monty Steps", fontsize=12)
@@ -430,7 +461,16 @@ def create_comparison_plots(df1, df2, name1, name2, output_dir):
     colors = ["#1f77b4", "#ff7f0e"]
     for pos, data, color in zip(range(len(experiments)), rot_data, colors):
         jitter = np.random.normal(0, 0.03, size=len(data))
-        ax3.scatter(pos + jitter, data, color=color, alpha=1.0, s=20, zorder=3, edgecolors='black', linewidths=0.5)
+        ax3.scatter(
+            pos + jitter,
+            data,
+            color=color,
+            alpha=1.0,
+            s=20,
+            zorder=3,
+            edgecolors="black",
+            linewidths=0.5,
+        )
     ax3.set_xticks(range(len(experiments)))
     ax3.set_xticklabels(experiments)
     ax3.set_ylabel("Rotation Error (degrees)", fontsize=12)

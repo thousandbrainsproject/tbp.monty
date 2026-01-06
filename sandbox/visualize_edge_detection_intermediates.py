@@ -87,11 +87,11 @@ def main():
 
     print(f"Loading image from: {input_path}")
     patch_rgb = plt.imread(str(input_path))
-    
+
     # Ensure RGB format (remove alpha channel if present)
     if patch_rgb.shape[2] == 4:
         patch_rgb = patch_rgb[:, :, :3]
-    
+
     print(f"Input image shape: {patch_rgb.shape}")
     print(f"Input image dtype: {patch_rgb.dtype}")
     print(f"Input image value range: [{patch_rgb.min():.3f}, {patch_rgb.max():.3f}]")
@@ -282,8 +282,12 @@ def main():
     print("=" * 60)
     print(f"Edge strength: {edge_strength:.6f}")
     print(f"Coherence: {coherence:.6f}")
-    print(f"Gradient theta: {gradient_theta:.6f} radians ({np.degrees(gradient_theta):.2f} degrees)")
-    print(f"Tangent theta: {tangent_theta:.6f} radians ({np.degrees(tangent_theta):.2f} degrees)")
+    print(
+        f"Gradient theta: {gradient_theta:.6f} radians ({np.degrees(gradient_theta):.2f} degrees)"
+    )
+    print(
+        f"Tangent theta: {tangent_theta:.6f} radians ({np.degrees(tangent_theta):.2f} degrees)"
+    )
     print("=" * 60)
     print()
 
@@ -293,7 +297,7 @@ def main():
         edge_direction=tangent_theta,
         label_text=f"E={edge_strength:.3f}, C={coherence:.3f}",
     )
-    
+
     save_image(
         annotated_patch,
         OUTPUT_DIR / "10_final_result.png",
@@ -304,46 +308,46 @@ def main():
 
     # Step 10: Create summary visualization
     fig, axes = plt.subplots(2, 3, figsize=(18, 12))
-    
+
     # Row 1: Input, grayscale, gradients
     axes[0, 0].imshow(patch_rgb)
     axes[0, 0].set_title("Input RGB", fontsize=12)
     axes[0, 0].axis("off")
-    
+
     axes[0, 1].imshow(gray, cmap="gray")
     axes[0, 1].plot(c, r, "r+", markersize=10, markeredgewidth=2)
     axes[0, 1].set_title("Grayscale (center marked)", fontsize=12)
     axes[0, 1].axis("off")
-    
+
     # Combine gradients for visualization
     gradient_magnitude = np.sqrt(Ix**2 + Iy**2)
     axes[0, 2].imshow(gradient_magnitude, cmap="viridis")
     axes[0, 2].plot(c, r, "r+", markersize=10, markeredgewidth=2)
     axes[0, 2].set_title("Gradient Magnitude", fontsize=12)
     axes[0, 2].axis("off")
-    
+
     # Row 2: Structure tensor components (after blur), final result
     axes[1, 0].imshow(Jxx, cmap="hot")
     axes[1, 0].plot(c, r, "r+", markersize=10, markeredgewidth=2)
     axes[1, 0].set_title("Jxx (blurred)", fontsize=12)
     axes[1, 0].axis("off")
-    
+
     axes[1, 1].imshow(Jyy, cmap="hot")
     axes[1, 1].plot(c, r, "r+", markersize=10, markeredgewidth=2)
     axes[1, 1].set_title("Jyy (blurred)", fontsize=12)
     axes[1, 1].axis("off")
-    
+
     axes[1, 2].imshow(annotated_patch)
     axes[1, 2].set_title(
         f"Final Result\nE={edge_strength:.3f}, C={coherence:.3f}\nθ={np.degrees(tangent_theta):.1f}°",
         fontsize=12,
     )
     axes[1, 2].axis("off")
-    
+
     plt.tight_layout()
     plt.savefig(OUTPUT_DIR / "summary_visualization.png", dpi=150, bbox_inches="tight")
     plt.close()
-    
+
     print("Saved: summary_visualization.png")
     print()
     print(f"All outputs saved to: {OUTPUT_DIR}")
@@ -351,4 +355,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

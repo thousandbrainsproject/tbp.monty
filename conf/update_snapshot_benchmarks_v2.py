@@ -43,9 +43,7 @@ def update_single_snapshot(
 
     experiment_path = experiment_dir / f"{experiment_name}.yaml"
     if not experiment_path.exists():
-        raise FileNotFoundError(
-            f"Experiment file not found: {experiment_path}"
-        )
+        raise FileNotFoundError(f"Experiment file not found: {experiment_path}")
 
     print(f"Updating snapshot: {experiment_path}")
     # Since we're in conf/, config_path="." works like in update_snapshots.py

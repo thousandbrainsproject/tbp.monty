@@ -82,8 +82,12 @@ def main():
     std_naive_error = np.std(naive_errors)
     std_weighted_error = np.std(weighted_errors)
 
-    print(f"Naive method:    mean error = {mean_naive_error:.2f}° ± {std_naive_error:.2f}°")
-    print(f"Weighted method: mean error = {mean_weighted_error:.2f}° ± {std_weighted_error:.2f}°")
+    print(
+        f"Naive method:    mean error = {mean_naive_error:.2f}° ± {std_naive_error:.2f}°"
+    )
+    print(
+        f"Weighted method: mean error = {mean_weighted_error:.2f}° ± {std_weighted_error:.2f}°"
+    )
 
     # Create bar plot
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -93,7 +97,15 @@ def main():
     stds = [std_naive_error, std_weighted_error]
     colors = ["#e74c3c", "#27ae60"]
 
-    bars = ax.bar(methods, means, yerr=stds, capsize=8, color=colors, edgecolor="black", linewidth=1.5)
+    bars = ax.bar(
+        methods,
+        means,
+        yerr=stds,
+        capsize=8,
+        color=colors,
+        edgecolor="black",
+        linewidth=1.5,
+    )
 
     # Add value labels on bars
     for bar, mean, std in zip(bars, means, stds):
@@ -109,7 +121,9 @@ def main():
         )
 
     ax.set_ylabel("Mean Angular Error (degrees)", fontsize=14)
-    ax.set_title("Edge Detection Accuracy: Naive vs Weighted", fontsize=18, fontweight="bold")
+    ax.set_title(
+        "Edge Detection Accuracy: Naive vs Weighted", fontsize=18, fontweight="bold"
+    )
     ax.set_ylim(0, max(means) + max(stds) + 5)
 
     # Style
@@ -132,4 +146,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

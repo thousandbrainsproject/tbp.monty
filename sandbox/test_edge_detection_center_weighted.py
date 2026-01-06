@@ -40,7 +40,7 @@ def main():
     """Test center-weighted edge detection on diagonal line pattern images."""
     # Input directory
     input_dir = Path("results/diagonal_line_patterns")
-    
+
     # Output directory for results
     output_dir = Path("results/edge_detection_results")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -81,7 +81,7 @@ def main():
 
     # win_sigma values to test (without blur)
     win_sigma_values = [0.5, 1.0, 1.5, 2.0]
-    
+
     # Gaussian blur parameters (sigma values to try)
     blur_sigmas = [0.5, 1.0, 1.5]
 
@@ -92,25 +92,27 @@ def main():
             continue
 
         print(f"\nProcessing {filename}...")
-        
+
         # Load image
         image = load_image(filepath)
         size = image.shape[0]  # Assume square images
-        
+
         # Get parameters for this size
         params = params_by_size.get(size, params_by_size[64])
-        
+
         # Process original image with different win_sigma values (no blur)
         for win_sigma in win_sigma_values:
             print(f"  Processing with win_sigma={win_sigma}...")
-            edge_strength, coherence, tangent_theta = compute_weighted_structure_tensor_edge_features(
-                image,
-                radius=params["radius"],
-                sigma_r=params["sigma_r"],
-                win_sigma=win_sigma,
-                ksize=params["ksize"],
-                c_min=0.75,
-                e_min=0.01,
+            edge_strength, coherence, tangent_theta = (
+                compute_weighted_structure_tensor_edge_features(
+                    image,
+                    radius=params["radius"],
+                    sigma_r=params["sigma_r"],
+                    win_sigma=win_sigma,
+                    ksize=params["ksize"],
+                    c_min=0.75,
+                    e_min=0.01,
+                )
             )
 
             # Convert angle to degrees for display
@@ -150,7 +152,7 @@ def main():
                 "tangent_theta_deg": tangent_theta_deg,
             }
             results_win_sigma.append(result_entry)
-            
+
             # Store the default win_sigma (1.0) result in the main results list for backward compatibility
             if win_sigma == 1.0:
                 results.append(result_entry)
@@ -158,25 +160,29 @@ def main():
         # Process with Gaussian blur
         for blur_sigma in blur_sigmas:
             print(f"  Processing with Gaussian blur (σ={blur_sigma})...")
-            
+
             # Apply Gaussian blur
             image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             blurred_bgr = cv2.GaussianBlur(image_bgr, (0, 0), blur_sigma)
             blurred_image = cv2.cvtColor(blurred_bgr, cv2.COLOR_BGR2RGB)
-            
+
             # Apply center-weighted edge detection
-            edge_strength_blur, coherence_blur, tangent_theta_blur = compute_weighted_structure_tensor_edge_features(
-                blurred_image,
-                radius=params["radius"],
-                sigma_r=params["sigma_r"],
-                win_sigma=params["win_sigma"],
-                ksize=params["ksize"],
-                c_min=0.75,
-                e_min=0.01,
+            edge_strength_blur, coherence_blur, tangent_theta_blur = (
+                compute_weighted_structure_tensor_edge_features(
+                    blurred_image,
+                    radius=params["radius"],
+                    sigma_r=params["sigma_r"],
+                    win_sigma=params["win_sigma"],
+                    ksize=params["ksize"],
+                    c_min=0.75,
+                    e_min=0.01,
+                )
             )
 
             # Convert angle to degrees for display
-            tangent_theta_deg_blur = np.degrees(tangent_theta_blur) if tangent_theta_blur > 0 else None
+            tangent_theta_deg_blur = (
+                np.degrees(tangent_theta_blur) if tangent_theta_blur > 0 else None
+            )
 
             # Print results
             print(f"    Edge strength: {edge_strength_blur:.4f}")
@@ -200,82 +206,97 @@ def main():
             print(f"    Saved annotated image: {output_path_blur}")
 
             # Store results
-            results_blurred.append({
-                "filename": filename,
-                "size": size,
-                "blur_sigma": blur_sigma,
-                "image": blurred_image,
-                "annotated_image": annotated_image_blur,
-                "edge_strength": edge_strength_blur,
-                "coherence": coherence_blur,
-                "tangent_theta": tangent_theta_blur,
-                "tangent_theta_deg": tangent_theta_deg_blur,
-            })
+            results_blurred.append(
+                {
+                    "filename": filename,
+                    "size": size,
+                    "blur_sigma": blur_sigma,
+                    "image": blurred_image,
+                    "annotated_image": annotated_image_blur,
+                    "edge_strength": edge_strength_blur,
+                    "coherence": coherence_blur,
+                    "tangent_theta": tangent_theta_blur,
+                    "tangent_theta_deg": tangent_theta_deg_blur,
+                }
+            )
 
     # Create summary visualizations
     if results_win_sigma:
         print("\n" + "=" * 60)
         print("Summary of Results (win_sigma variations):")
         print("=" * 60)
-        
+
         # Create summary visualizations for different win_sigma values
         for win_sigma in win_sigma_values:
-            win_sigma_results = [r for r in results_win_sigma if r["win_sigma"] == win_sigma]
+            win_sigma_results = [
+                r for r in results_win_sigma if r["win_sigma"] == win_sigma
+            ]
             if not win_sigma_results:
                 continue
-            
+
             # Print summary for this win_sigma
             print(f"\nwin_sigma={win_sigma}:")
             for r in win_sigma_results:
                 print(f"  {r['filename']} ({r['size']}x{r['size']}):")
                 print(f"    Edge Strength: {r['edge_strength']:.4f}")
                 print(f"    Coherence: {r['coherence']:.4f}")
-                if r['tangent_theta_deg'] is not None:
+                if r["tangent_theta_deg"] is not None:
                     print(f"    Tangent Angle: {r['tangent_theta_deg']:.2f}°")
                 else:
                     print(f"    Tangent Angle: No edge detected")
-            
+
             # Create a figure with all results side by side for this win_sigma
-            fig, axes = plt.subplots(1, len(win_sigma_results), figsize=(5 * len(win_sigma_results), 5))
+            fig, axes = plt.subplots(
+                1, len(win_sigma_results), figsize=(5 * len(win_sigma_results), 5)
+            )
             if len(win_sigma_results) == 1:
                 axes = [axes]
-            
+
             for idx, r in enumerate(win_sigma_results):
                 axes[idx].imshow(r["annotated_image"])
                 # Create subtitle with metrics
-                subtitle = (
-                    f"E={r['edge_strength']:.3f}, C={r['coherence']:.3f}"
-                    + (f", θ={r['tangent_theta_deg']:.1f}°" if r['tangent_theta_deg'] is not None else ", No edge")
+                subtitle = f"E={r['edge_strength']:.3f}, C={r['coherence']:.3f}" + (
+                    f", θ={r['tangent_theta_deg']:.1f}°"
+                    if r["tangent_theta_deg"] is not None
+                    else ", No edge"
                 )
                 axes[idx].set_title(
                     f"{r['filename']}\n{r['size']}x{r['size']} (win_σ={win_sigma})\n{subtitle}",
-                    fontsize=10
+                    fontsize=10,
                 )
                 axes[idx].axis("off")
-            
+
             plt.tight_layout()
-            summary_path = output_dir / f"edge_detection_summary_win_sigma_{win_sigma:.1f}.png"
+            summary_path = (
+                output_dir / f"edge_detection_summary_win_sigma_{win_sigma:.1f}.png"
+            )
             plt.savefig(summary_path, dpi=150, bbox_inches="tight")
             print(f"Saved summary visualization (win_σ={win_sigma}): {summary_path}")
             plt.close()
-        
+
         # Also create the default summary (win_sigma=1.0) with the original filename for backward compatibility
         if results:
             default_results = [r for r in results_win_sigma if r["win_sigma"] == 1.0]
             if default_results:
-                fig, axes = plt.subplots(1, len(default_results), figsize=(5 * len(default_results), 5))
+                fig, axes = plt.subplots(
+                    1, len(default_results), figsize=(5 * len(default_results), 5)
+                )
                 if len(default_results) == 1:
                     axes = [axes]
-                
+
                 for idx, r in enumerate(default_results):
                     axes[idx].imshow(r["annotated_image"])
-                    subtitle = (
-                        f"E={r['edge_strength']:.3f}, C={r['coherence']:.3f}"
-                        + (f", θ={r['tangent_theta_deg']:.1f}°" if r['tangent_theta_deg'] is not None else ", No edge")
+                    subtitle = f"E={r['edge_strength']:.3f}, C={r['coherence']:.3f}" + (
+                        f", θ={r['tangent_theta_deg']:.1f}°"
+                        if r["tangent_theta_deg"] is not None
+                        else ", No edge"
                     )
-                    axes[idx].set_title(f"{r['filename']}\n{r['size']}x{r['size']}\n{subtitle}", fontsize=10)
+                    axes[idx].set_title(
+                        f"{r['filename']}\n{r['size']}x{r['size']}\n{subtitle}",
+                        fontsize=10,
+                    )
                     axes[idx].axis("off")
-                
+
                 plt.tight_layout()
                 summary_path = output_dir / "edge_detection_summary.png"
                 plt.savefig(summary_path, dpi=150, bbox_inches="tight")
@@ -286,31 +307,40 @@ def main():
         if results_blurred:
             # Group by blur sigma
             for blur_sigma in blur_sigmas:
-                blurred_results = [r for r in results_blurred if r["blur_sigma"] == blur_sigma]
+                blurred_results = [
+                    r for r in results_blurred if r["blur_sigma"] == blur_sigma
+                ]
                 if not blurred_results:
                     continue
-                
-                fig, axes = plt.subplots(1, len(blurred_results), figsize=(5 * len(blurred_results), 5))
+
+                fig, axes = plt.subplots(
+                    1, len(blurred_results), figsize=(5 * len(blurred_results), 5)
+                )
                 if len(blurred_results) == 1:
                     axes = [axes]
-                
+
                 for idx, r in enumerate(blurred_results):
                     axes[idx].imshow(r["annotated_image"])
                     # Create subtitle with metrics
-                    subtitle = (
-                        f"E={r['edge_strength']:.3f}, C={r['coherence']:.3f}"
-                        + (f", θ={r['tangent_theta_deg']:.1f}°" if r['tangent_theta_deg'] is not None else ", No edge")
+                    subtitle = f"E={r['edge_strength']:.3f}, C={r['coherence']:.3f}" + (
+                        f", θ={r['tangent_theta_deg']:.1f}°"
+                        if r["tangent_theta_deg"] is not None
+                        else ", No edge"
                     )
                     axes[idx].set_title(
                         f"{r['filename']}\n{r['size']}x{r['size']} (blur σ={blur_sigma})\n{subtitle}",
-                        fontsize=10
+                        fontsize=10,
                     )
                     axes[idx].axis("off")
-                
+
                 plt.tight_layout()
-                summary_path_blur = output_dir / f"edge_detection_summary_blur_{blur_sigma:.1f}.png"
+                summary_path_blur = (
+                    output_dir / f"edge_detection_summary_blur_{blur_sigma:.1f}.png"
+                )
                 plt.savefig(summary_path_blur, dpi=150, bbox_inches="tight")
-                print(f"Saved blurred summary visualization (σ={blur_sigma}): {summary_path_blur}")
+                print(
+                    f"Saved blurred summary visualization (σ={blur_sigma}): {summary_path_blur}"
+                )
                 plt.close()
 
     print(f"\nProcessing complete! Results saved to: {output_dir.absolute()}")

@@ -140,7 +140,9 @@ def visualize_point_cloud_interactive(
 
     # Require pose_from_edge to draw edges
     if "pose_from_edge" not in features:
-        print("[viz] Warning: pose_from_edge not found in features. Edge lines will not be drawn.")
+        print(
+            "[viz] Warning: pose_from_edge not found in features. Edge lines will not be drawn."
+        )
         edge_mask = None
     else:
         edge_mask = np.asarray(features["pose_from_edge"], bool).reshape(-1)
@@ -194,14 +196,22 @@ def visualize_point_cloud_interactive(
                 scale_factors = (coherence_vals * edge_strength_vals) / 4.0
                 # Clamp to [0, 1] to ensure valid scaling
                 scale_factors = np.clip(scale_factors, 0.0, 1.0)
-                print(f"[viz] Using (coherence * edge_strength) / 4 to scale edge line lengths (range: [{scale_factors.min():.3f}, {scale_factors.max():.3f}])")
+                print(
+                    f"[viz] Using (coherence * edge_strength) / 4 to scale edge line lengths (range: [{scale_factors.min():.3f}, {scale_factors.max():.3f}])"
+                )
             else:
-                print("[viz] Warning: coherence/edge_strength found but have no valid values")
+                print(
+                    "[viz] Warning: coherence/edge_strength found but have no valid values"
+                )
         else:
             if "coherence" not in features:
-                print("[viz] No coherence feature found; using fixed scale for edge lines")
+                print(
+                    "[viz] No coherence feature found; using fixed scale for edge lines"
+                )
             if "edge_strength" not in features:
-                print("[viz] No edge_strength feature found; using fixed scale for edge lines")
+                print(
+                    "[viz] No edge_strength feature found; using fixed scale for edge lines"
+                )
 
         # Print counts for debugging (only on first draw)
         if len(edge_lines) == 0:
@@ -236,14 +246,22 @@ def visualize_point_cloud_interactive(
             p_start = p0 - half_scale * T[i]
             p_end = p0 + half_scale * T[i]
             new_lines.append(Line(p_start, p_end, c=tangent_color, lw=tangent_lw))
-            
+
             # Also draw unscaled edge (always using full arrow_scale) if enabled
             if show_unscaled_edge_lines:
                 half_scale_unscaled = 0.002 / 2
                 p_start_unscaled = p0 - half_scale_unscaled * T[i]
                 p_end_unscaled = p0 + half_scale_unscaled * T[i]
                 # Use mid-red with transparency for unscaled edges
-                new_unscaled_lines.append(Line(p_start_unscaled, p_end_unscaled, c=(200, 0, 0), alpha=0.6, lw=tangent_lw - 1))
+                new_unscaled_lines.append(
+                    Line(
+                        p_start_unscaled,
+                        p_end_unscaled,
+                        c=(200, 0, 0),
+                        alpha=0.6,
+                        lw=tangent_lw - 1,
+                    )
+                )
 
         if new_lines:
             plotter.add(*new_lines)
@@ -259,7 +277,9 @@ def visualize_point_cloud_interactive(
     if tangents is not None and edge_mask is not None:
         draw_edges()
     else:
-        print("[viz] No pose_vectors/tangents or pose_from_edge found; skipping tangent rendering.")
+        print(
+            "[viz] No pose_vectors/tangents or pose_from_edge found; skipping tangent rendering."
+        )
 
     # ----- Add color mode toggle button -----
     button_y_pos = 0.05

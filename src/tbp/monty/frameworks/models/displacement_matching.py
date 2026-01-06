@@ -33,6 +33,7 @@ class DisplacementGraphLM(GraphLM):
         tolerance=0.001,
         use_relative_len=False,
         graph_delta_thresholds=None,
+        is_2d_surface: bool = False,
     ):
         """Initialize Learning Module.
 
@@ -50,12 +51,16 @@ class DisplacementGraphLM(GraphLM):
                 of 0.001 (determined in remove_close_points). Can also specify
                 thresholds based on e.g. surface normal angle difference, or principal
                 curvature magnitude difference.
+            is_2d_surface: If True, object models use 2D surface coordinates
+                [u, v, 0] instead of 3D world positions. This affects how reference
+                frame transforms are applied during model updates.
         """
         super().__init__()
         self.graph_memory = DisplacementGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
             k=k,
             match_attribute=match_attribute,
+            is_2d_surface=is_2d_surface,
         )
 
         self.match_attribute = match_attribute
@@ -447,10 +452,17 @@ class DisplacementGraphLM(GraphLM):
 class DisplacementGraphMemory(GraphMemory):
     """Graph memory that stores graphs with displacements as edges."""
 
-    def __init__(self, match_attribute, *args, **kwargs):
-        """Initialize Graph memory."""
+    def __init__(self, match_attribute, is_2d_surface: bool = False, *args, **kwargs):
+        """Initialize Graph memory.
+
+        Args:
+            match_attribute: Which displacement to use for matching.
+            is_2d_surface: If True, create 2D surface models.
+            *args, **kwargs: Passed to parent GraphMemory.
+        """
         super().__init__(*args, **kwargs)
         self.match_attribute = match_attribute
+        self.is_2d_surface = is_2d_surface
 
     # =============== Public Interface Functions ===============
 
@@ -517,6 +529,7 @@ class DisplacementGraphMemory(GraphMemory):
 
         model = GraphObjectModel(
             object_id=graph_id,
+            is_2d_surface=self.is_2d_surface,
         )
         graph_delta_thresholds = (
             None

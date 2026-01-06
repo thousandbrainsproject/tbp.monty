@@ -377,6 +377,82 @@ def rotate_multiple_pose_dependent_features(features, ref_frame_rot) -> dict:
     return features
 
 
+def apply_rf_transform_to_2d_surface(
+    locations_2d: np.ndarray,
+    features: dict,
+    location_rel_model: np.ndarray,
+    object_location_rel_body: np.ndarray,
+    object_rotation: Rotation,
+) -> tuple[np.ndarray, dict]:
+    """Transform 2D surface coordinates between reference frames.
+
+    For 2D surface models where locations are [u, v, 0], standard 3D rotation
+    is geometrically invalid. This function extracts only the relevant 2D
+    components:
+    - Yaw (z-axis rotation) from the 3D object rotation
+    - XY components of the translation offset
+
+    Note on pose_vectors: For 2D surface models, pose_vectors represent
+    edge/curvature directions on the unrolled surface. Since the surface is
+    "flattened" into a 2D coordinate system, the 3D object rotation doesn't
+    apply to these directions. They remain in the surface's intrinsic frame.
+
+    Args:
+        locations_2d: 2D surface coordinates as [u, v, 0]. Shape (N, 3).
+            The z-component should be zero; non-zero values are ignored.
+        features: Features to transform.
+        location_rel_model: Detected location of the sensor on the object
+            (object reference frame).
+        object_location_rel_body: Location of the sensor in the body reference
+            frame.
+        object_rotation: scipy Rotation of the object. The inverse is applied
+            to transform observations into the model's reference frame.
+
+    Returns:
+        transformed_locations: Transformed 2D locations as [u', v', 0].
+        features: Features (pose_vectors not rotated for 2D surface models).
+    """
+    # Handle empty input
+    if len(locations_2d) == 0:
+        return locations_2d, features
+
+    # Validate z=0 constraint (warning only, not an error)
+    if not np.allclose(locations_2d[:, 2], 0, atol=1e-6):
+        logger.warning(
+            "2D surface locations have non-zero z values (max: %.6f); "
+            "z component will be ignored",
+            np.max(np.abs(locations_2d[:, 2])),
+        )
+
+    ref1 = np.array(location_rel_model)
+    ref2 = np.array(object_location_rel_body)
+
+    # Extract yaw angle (z-axis rotation) from the inverse rotation
+    # Using 'zyx' convention to isolate yaw as the first component
+    yaw = object_rotation.inv().as_euler("zyx", degrees=False)[0]
+    cos_t, sin_t = np.cos(yaw), np.sin(yaw)
+    R_2d = np.array([[cos_t, -sin_t], [sin_t, cos_t]])
+
+    # Extract 2D coordinates
+    uv = locations_2d[:, :2]
+    center = ref2[:2]
+
+    # Center, rotate, then apply offset (mirrors 3D transform logic)
+    uv_centered = uv - center
+    uv_rotated = (R_2d @ uv_centered.T).T
+
+    # 2D translation offset
+    delta_2d = (ref1 - ref2)[:2]
+    uv_transformed = uv_rotated + delta_2d + center
+
+    # Reconstruct [u, v, 0] format
+    transformed_locations = np.column_stack(
+        [uv_transformed, np.zeros(len(uv), dtype=locations_2d.dtype)]
+    )
+
+    return transformed_locations, features
+
+
 def apply_rf_transform_to_points(
     locations,
     features,

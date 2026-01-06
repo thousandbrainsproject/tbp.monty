@@ -60,4 +60,3 @@ def load_object_model(model_path, object_name, lm_id=0):
         "points": points,
         "features": feature_dict,
     }
-

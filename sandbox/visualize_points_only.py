@@ -121,7 +121,7 @@ def visualize_point_cloud_matplotlib(
     if dir1 is not None and valid_mask is not None and valid_mask.sum() > 0:
         valid_idx = np.where(valid_mask)[0]
         n_valid = len(valid_idx)
-        
+
         # Randomly sample a subset of points for arrows (max 50 points)
         max_arrows = min(50, n_valid)
         if n_valid > max_arrows:
@@ -129,7 +129,7 @@ def visualize_point_cloud_matplotlib(
             sampled_valid_idx = valid_idx[sampled_idx]
         else:
             sampled_valid_idx = valid_idx
-        
+
         sampled_points = points[sampled_valid_idx]
         sampled_dir1 = dir1[sampled_valid_idx]
         sampled_dir2 = dir2[sampled_valid_idx]
@@ -164,7 +164,9 @@ def visualize_point_cloud_matplotlib(
             label="dir2 (second principal direction)",
         )
         ax.legend()
-        print(f"[matplotlib] Added basis arrows for {len(sampled_valid_idx)} randomly sampled points (out of {n_valid} valid)")
+        print(
+            f"[matplotlib] Added basis arrows for {len(sampled_valid_idx)} randomly sampled points (out of {n_valid} valid)"
+        )
     else:
         print("[matplotlib] No valid pose_vectors found; skipping basis arrows")
 
@@ -239,12 +241,12 @@ def visualize_point_cloud_interactive(
     dir1_arrows = None
     dir2_arrows = None
     arrows_visible = True
-    
+
     dir1, dir2, valid_mask = extract_principal_curvature_directions(features, points)
     if dir1 is not None and valid_mask is not None and valid_mask.sum() > 0:
         valid_idx = np.where(valid_mask)[0]
         n_valid = len(valid_idx)
-        
+
         # Randomly sample a subset of points for arrows (max 50 points)
         max_arrows = min(50, n_valid)
         if n_valid > max_arrows:
@@ -252,7 +254,7 @@ def visualize_point_cloud_interactive(
             sampled_valid_idx = valid_idx[sampled_idx]
         else:
             sampled_valid_idx = valid_idx
-        
+
         sampled_points = points[sampled_valid_idx]
         sampled_dir1 = dir1[sampled_valid_idx]
         sampled_dir2 = dir2[sampled_valid_idx]
@@ -260,23 +262,21 @@ def visualize_point_cloud_interactive(
         # Create arrow endpoints for dir1 (red)
         dir1_starts = sampled_points
         dir1_ends = sampled_points + sampled_dir1 * arrow_length
-        dir1_arrows = Arrows(
-            dir1_starts, dir1_ends, c="red", alpha=0.7
-        )
+        dir1_arrows = Arrows(dir1_starts, dir1_ends, c="red", alpha=0.7)
         dir1_arrows.lw(2)  # Set line width after creation
         plotter.add(dir1_arrows)
 
         # Create arrow endpoints for dir2 (blue)
         dir2_starts = sampled_points
         dir2_ends = sampled_points + sampled_dir2 * arrow_length
-        dir2_arrows = Arrows(
-            dir2_starts, dir2_ends, c="blue", alpha=0.7
-        )
+        dir2_arrows = Arrows(dir2_starts, dir2_ends, c="blue", alpha=0.7)
         dir2_arrows.lw(2)  # Set line width after creation
         plotter.add(dir2_arrows)
 
-        print(f"[vedo] Added basis arrows for {len(sampled_valid_idx)} randomly sampled points (out of {n_valid} valid)")
-        
+        print(
+            f"[vedo] Added basis arrows for {len(sampled_valid_idx)} randomly sampled points (out of {n_valid} valid)"
+        )
+
         # Add toggle button for arrows
         def toggle_arrows(button, _event):
             nonlocal arrows_visible
@@ -290,7 +290,7 @@ def visualize_point_cloud_interactive(
                     dir2_arrows.on()
                     arrows_visible = True
                 plotter.render()
-        
+
         plotter.add_button(
             toggle_arrows,
             pos=(0.85, 0.05),
@@ -375,4 +375,3 @@ if __name__ == "__main__":
 
             traceback.print_exc()
             continue
-

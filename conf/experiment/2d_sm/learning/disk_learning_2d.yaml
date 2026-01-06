@@ -44,6 +44,10 @@ config:
         use_semantic_sensor: false
   # Debug visualization for learning
   monty_config:
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          is_2d_surface: false
     motor_system_config:
       motor_system_args:
         policy_args:

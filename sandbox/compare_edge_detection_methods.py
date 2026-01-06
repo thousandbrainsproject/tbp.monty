@@ -88,7 +88,9 @@ def process_single_image(patch: np.ndarray, output_path: Path) -> dict:
         # Filter edges using same thresholds as two_d_sensor_module.py
         has_edge = (strength > EDGE_THRESHOLD) and (coherence > COHERENCE_THRESHOLD)
         edge_direction = theta if has_edge else None
-        annotated_patch = draw_2d_pose_on_patch(patch.copy(), edge_direction=edge_direction)
+        annotated_patch = draw_2d_pose_on_patch(
+            patch.copy(), edge_direction=edge_direction
+        )
 
         # Display the annotated patch
         ax.imshow(annotated_patch)
@@ -107,7 +109,11 @@ def process_single_image(patch: np.ndarray, output_path: Path) -> dict:
     # Return results dictionary
     return {
         "default": (default_strength, default_coherence, default_theta),
-        "center_aware": (center_aware_strength, center_aware_coherence, center_aware_theta),
+        "center_aware": (
+            center_aware_strength,
+            center_aware_coherence,
+            center_aware_theta,
+        ),
         "histogram": (histogram_strength, histogram_coherence, histogram_theta),
     }
 
@@ -199,15 +205,14 @@ def main():
     csv_file.close()
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Processing complete!")
     print(f"Total images processed: {total_processed}")
     print(f"Total images failed: {total_failed}")
     print(f"Output directory: {output_dir.absolute()}")
     print(f"CSV results: {csv_path.absolute()}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
 
 if __name__ == "__main__":
     main()
-

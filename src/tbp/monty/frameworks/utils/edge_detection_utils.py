@@ -373,11 +373,7 @@ def save_raw_rgb_if_needed(
     Returns:
         Updated step_counter (incremented if image was saved).
     """
-    if not (
-        save_raw_rgb
-        and not is_exploring
-        and observed_state.get_on_object()
-    ):
+    if not (save_raw_rgb and not is_exploring and observed_state.get_on_object()):
         return step_counter
 
     # Extract RGB patch from RGBA if needed
@@ -391,10 +387,7 @@ def save_raw_rgb_if_needed(
 
     # Generate filename: ep{episode:02d}_step{step:03d}.png
     # Uses same counters as debug_visualize
-    filename = (
-        f"ep{episode_counter:02d}_"
-        f"step{step_counter:03d}.png"
-    )
+    filename = f"ep{episode_counter:02d}_step{step_counter:03d}.png"
     filepath = raw_rgb_base_dir / filename
     save_raw_rgb_patch(patch, str(filepath))
 
