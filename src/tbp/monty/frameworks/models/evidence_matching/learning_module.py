@@ -1073,11 +1073,6 @@ class EvidenceGraphLM(GraphLM):
         """
         return self.symmetry_evidence >= self.required_symmetry_evidence
 
-    def _clear_possible_hyps(self):
-        """Clears the possible hypotheses by setting all hypotheses values to False."""
-        for mask in self.possible_hyps.values():
-            mask[:] = False
-
     def update_terminal_condition(self):
         """Check if we have reached a terminal condition for this episode.
 
@@ -1085,11 +1080,10 @@ class EvidenceGraphLM(GraphLM):
             Terminal state of the LM.
         """
         if len(self.get_possible_matches()) != 1:
-            self._clear_possible_hyps()
-
-        super().update_terminal_condition()
-
-        return self.terminal_state
+            # Clears the possible hypotheses by setting all hypotheses values to False.
+            for mask in self.possible_hyps.values():
+                mask[:] = False
+        return super().update_terminal_condition()
 
     def _object_pose_to_features(self, pose):
         """Turn object rotation into pose feature like vectors.
