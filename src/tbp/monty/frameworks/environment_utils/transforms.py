@@ -132,8 +132,8 @@ class AddNoiseToRawDepthImage(Transform):
             NoDepthSensorPresent: if no depth sensor is present.
         """
         # loop over sensor modules
-        for sm in observations[self.agent_id].keys():
-            if "depth" in observations[self.agent_id][sm].keys():
+        for sm in observations[self.agent_id]:
+            if "depth" in observations[self.agent_id][sm]:
                 noise = rng.normal(
                     0,
                     self.sigma,
@@ -441,7 +441,7 @@ class DepthTo3DLocations(Transform):
             # We need a semantic map that masks off-object pixels. We can use the
             # ground-truth semantic map if it's available. Otherwise, we generate one
             # from the depth map and (temporarily) add it to the observation dict.
-            if "semantic" in agent_obs.keys():
+            if "semantic" in agent_obs:
                 semantic_patch = agent_obs["semantic"]
             else:
                 # The generated map uses depth observations to determine whether
