@@ -42,14 +42,14 @@ obs = Observations(
       {
         SensorID("patch_0"): SensorObservations(
           {
-            Modality("depth"): depth_sensed_by_patch_0,
-            Modality("rgba"): rgba_sensed_by_patch_0
+            "depth": depth_sensed_by_patch_0,
+            "rgba": rgba_sensed_by_patch_0
           }
         ),
         SensorID("patch_1"): SensorObservations(
           {
-            Modality("depth"): depth_sensed_by_patch_1,
-            Modality("semantic"): semantic_sensed_by_patch_1
+            "depth": depth_sensed_by_patch_1,
+            "semantic": semantic_sensed_by_patch_1
           }
         )
       }

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -28,7 +28,6 @@ from tbp.monty.frameworks.environments.embodied_environment import (
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
-    Modality,
     Observations,
     SensorObservations,
 )
@@ -129,17 +128,15 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                     {
                         SensorID("patch"): SensorObservations(
                             {
-                                Modality("depth"): depth,
-                                Modality("semantic"): np.array(~patch, dtype=int),
-                                Modality("rgba"): np.stack(
-                                    [depth, depth, depth], axis=2
-                                ),
+                                "depth": depth,
+                                "semantic": np.array(~patch, dtype=int),
+                                "rgba": np.stack([depth, depth, depth], axis=2),
                             }
                         ),
                         SensorID("view_finder"): SensorObservations(
                             {
-                                Modality("depth"): self.current_image,
-                                Modality("semantic"): np.array(~patch, dtype=int),
+                                "depth": self.current_image,
+                                "semantic": np.array(~patch, dtype=int),
                             }
                         ),
                     }
@@ -195,17 +192,15 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                     {
                         SensorID("patch"): SensorObservations(
                             {
-                                Modality("depth"): depth,
-                                Modality("semantic"): np.array(~patch, dtype=int),
-                                Modality("rgba"): np.stack(
-                                    [depth, depth, depth], axis=2
-                                ),
+                                "depth": depth,
+                                "semantic": np.array(~patch, dtype=int),
+                                "rgba": np.stack([depth, depth, depth], axis=2),
                             }
                         ),
                         SensorID("view_finder"): SensorObservations(
                             {
-                                Modality("depth"): self.current_image,
-                                Modality("semantic"): np.array(~patch, dtype=int),
+                                "depth": self.current_image,
+                                "semantic": np.array(~patch, dtype=int),
                             }
                         ),
                     }
@@ -365,20 +360,19 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                     {
                         SensorID("patch"): SensorObservations(
                             {
-                                Modality("depth"): depth_patch,
-                                Modality("rgba"): rgb_patch,
-                                Modality("semantic_3d"): depth3d_patch,
-                                Modality("sensor_frame_data"): sensor_frame_patch,
-                                Modality("world_camera"): self.world_camera,
-                                Modality(
-                                    "pixel_loc"
-                                ): self.current_loc,  # Save pixel loc for plotting
+                                "depth": depth_patch,
+                                "rgba": rgb_patch,
+                                "semantic_3d": depth3d_patch,
+                                "sensor_frame_data": sensor_frame_patch,
+                                "world_camera": self.world_camera,
+                                # Save pixel loc for plotting
+                                "pixel_loc": self.current_loc,
                             }
                         ),
                         SensorID("view_finder"): SensorObservations(
                             {
-                                Modality("depth"): self.current_depth_image,
-                                Modality("rgba"): self.current_rgb_image,
+                                "depth": self.current_depth_image,
+                                "rgba": self.current_rgb_image,
                             }
                         ),
                     }
@@ -457,18 +451,18 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                     {
                         SensorID("patch"): SensorObservations(
                             {
-                                Modality("depth"): depth_patch,
-                                Modality("rgba"): rgb_patch,
-                                Modality("semantic_3d"): depth3d_patch,
-                                Modality("sensor_frame_data"): sensor_frame_patch,
-                                Modality("world_camera"): self.world_camera,
-                                Modality("pixel_loc"): np.array(self.current_loc),
+                                "depth": depth_patch,
+                                "rgba": rgb_patch,
+                                "semantic_3d": depth3d_patch,
+                                "sensor_frame_data": sensor_frame_patch,
+                                "world_camera": self.world_camera,
+                                "pixel_loc": np.array(self.current_loc),
                             }
                         ),
                         SensorID("view_finder"): SensorObservations(
                             {
-                                Modality("depth"): self.current_depth_image,
-                                Modality("rgba"): self.current_rgb_image,
+                                "depth": self.current_depth_image,
+                                "rgba": self.current_rgb_image,
                             }
                         ),
                     }
@@ -558,11 +552,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         obs = Observations(
             {
                 agent_id: AgentObservations(
-                    {
-                        sensor_id: SensorObservations(
-                            {Modality("depth"): self.current_depth_image}
-                        )
-                    }
+                    {sensor_id: SensorObservations({"depth": self.current_depth_image})}
                 )
             }
         )
