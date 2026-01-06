@@ -24,8 +24,8 @@ TUTORIALS_DIR = EXPERIMENT_DIR / "tutorial"
 TUTORIALS = [
     t
     for t in [x.stem for x in TUTORIALS_DIR.glob("*.yaml")]
-    # skip omniglot tutorials due to pretrained model data dependencies
-    if t not in ["omniglot_inference", "omniglot_training"]
+    # skip omniglot inference tutorial due to omniglot_training prerequisite
+    if t not in ["omniglot_inference"]
 ]
 
 

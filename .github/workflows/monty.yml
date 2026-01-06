@@ -351,7 +351,7 @@ jobs:
         uses: ./tbp.monty/.github/actions/install_monty
         with:
           working_directory: tbp.monty
-      - name: Run python tests
+      - name: Run configuration and unit tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         run: |
@@ -372,6 +372,22 @@ jobs:
         with:
           name: test_coverage
           path: tbp.monty/htmlcov
+      - name: Prepare data for integration tests
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          set -e
+          python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
+      - name: Run integration tests
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          set -e
+          xvfb-run pytest tests/integration --junitxml=test_results/pytest/results.xml --verbose
 
   test_uv_monty:
     name: test-uv-monty
