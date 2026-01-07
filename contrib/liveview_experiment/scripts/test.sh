@@ -74,10 +74,11 @@ echo ""
 
 # 1. Check code formatting with Black
 echo "1. Checking code formatting with Black..."
-run_python_module black --check src scripts || {
+if ! run_python_module black --check src scripts 2>&1; then
+    echo "" >&2
     echo "✗ Formatting check failed. Run: black src scripts" >&2
     exit 1
-}
+fi
 echo "✓ Formatting check passed"
 echo ""
 
