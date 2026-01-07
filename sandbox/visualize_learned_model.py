@@ -22,7 +22,7 @@ def visualize_point_cloud_interactive(
     *,
     tangent_color="black",
     tangent_lw=3,
-    show_unscaled_edge_lines=True,
+    show_unscaled_edge_lines=False,
 ):
     """Create interactive 3D visualization with Vedo.
 
@@ -43,8 +43,14 @@ def visualize_point_cloud_interactive(
     points = np.asarray(model_data["points"], float)
     features = model_data["features"]
 
-    # Debug: print available features
+    # Debug: print available features and point cloud statistics
     print(f"[viz] Available features: {list(features.keys())}")
+    print(f"[viz] Points shape: {points.shape}")
+    print("[viz] Point bounds:")
+    print(f"  X: [{points[:, 0].min():.3f}, {points[:, 0].max():.3f}]")
+    print(f"  Y: [{points[:, 1].min():.3f}, {points[:, 1].max():.3f}]")
+    print(f"  Z: [{points[:, 2].min():.3f}, {points[:, 2].max():.3f}]")
+    print(f"  Center: {points.mean(axis=0)}")
 
     # State variables for edge lines
     edge_lines = []
@@ -299,12 +305,29 @@ def visualize_point_cloud_interactive(
         print("[viz] No color modes available, skipping color mode button")
 
     # ----- Axes & camera -----
+    # Calculate camera position based on point cloud bounds
+    center = points.mean(axis=0)
+    # Position camera at a distance proportional to the size of the point cloud
+    max_range = np.array(
+        [
+            points[:, 0].max() - points[:, 0].min(),
+            points[:, 1].max() - points[:, 1].min(),
+            points[:, 2].max() - points[:, 2].min(),
+        ]
+    ).max()
+    camera_distance = max_range * 1.5
+
+    camera_pos = (
+        center[0],
+        center[1] + camera_distance,
+        center[2] + camera_distance * 0.3,
+    )
     plotter.show(
         axes=dict(xtitle="X", ytitle="Y", ztitle="Z"),
-        viewup="y",
+        viewup="x",
         camera=dict(
-            pos=(0, 1.5, 0.2),
-            focal_point=(0, 1.5, 0),
+            pos=camera_pos,
+            focal_point=center,
             view_angle=45,
         ),
         interactive=True,
@@ -315,7 +338,7 @@ if __name__ == "__main__":
     # Set up paths
     pretrained_model_path = Path(
         "~/tbp/results/monty/pretrained_models/2d_sensor/"
-        "013_cylinder_tbp_vert_learning_2d_zoom30_blur5.0/pretrained/model.pt"
+        "cylinder_all_debug/pretrained/model.pt"
     ).expanduser()
 
     # Load the model to explore available objects

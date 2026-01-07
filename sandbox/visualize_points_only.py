@@ -45,8 +45,8 @@ def visualize_point_cloud_matplotlib(
 
     # Plot points
     ax.scatter(
-        points[:, 0],
         points[:, 1],
+        points[:, 0],
         points[:, 2],
         c=colors,
         s=20,
@@ -139,11 +139,11 @@ def visualize_point_cloud_interactive(
     )
     plotter.show(
         axes=dict(xtitle="X", ytitle="Y", ztitle="Z"),
-        viewup="x",
+        viewup="y",
         camera=dict(
             pos=camera_pos,
             focal_point=center,
-            view_angle=45,
+            view_angle=0,
         ),
         interactive=True,
     )

@@ -7,10 +7,10 @@ defaults:
 
 config:
   # 2D sensor parameters
-  zoom: 30
-  blur_sigma: 5.0
+  zoom: 10
+  blur_sigma: 0.1
   logging:
-    run_name: 013_cylinder_tbp_vert_learning_2d_zoom${config.zoom}_blur${config.blur_sigma}
+    run_name: cylinder_all_debug
   # Apply zoom, resolution, and blur to environment
   env_interface_config:
     env_init_args:
