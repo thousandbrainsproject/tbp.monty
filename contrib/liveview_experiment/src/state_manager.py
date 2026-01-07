@@ -221,17 +221,31 @@ class ExperimentStateManager:
             data: Data to store
         """
         # Route visualization streams to specialized handlers
-        if stream_name == EVIDENCE_CHART_STREAM:
-            self.visualization.process_evidence_data(data)
-        elif stream_name == MESH_VIEWER_STREAM:
-            self.visualization.process_mesh_data(data)
-        elif stream_name == SENSOR_IMAGES_STREAM:
-            self.visualization.process_sensor_images(data)
+        if stream_name in VISUALIZATION_STREAMS:
+            self._update_visualization_stream(stream_name, data)
         else:
-            # Generic data stream storage
-            self.experiment_state.data_streams[stream_name] = data
+            self._update_generic_data_stream(stream_name, data)
 
         self.experiment_state.last_update = datetime.now(timezone.utc)
+
+    def _update_visualization_stream(
+        self, stream_name: str, data: MessagePayload
+    ) -> None:
+        """Update one of the known visualization streams."""
+        handlers = {
+            EVIDENCE_CHART_STREAM: self.visualization.process_evidence_data,
+            MESH_VIEWER_STREAM: self.visualization.process_mesh_data,
+            SENSOR_IMAGES_STREAM: self.visualization.process_sensor_images,
+        }
+        handler = handlers.get(stream_name)
+        if handler is not None:
+            handler(data)
+
+    def _update_generic_data_stream(
+        self, stream_name: str, data: MessagePayload
+    ) -> None:
+        """Update a non-visualization data stream."""
+        self.experiment_state.data_streams[stream_name] = data
 
     def add_log(self, level: str, message: str, **metadata: MetricMetadata) -> None:
         """Add a log message to the state.
