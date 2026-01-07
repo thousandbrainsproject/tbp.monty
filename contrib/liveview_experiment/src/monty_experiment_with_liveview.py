@@ -6,10 +6,15 @@ This class only sets up the ZMQ broadcaster to send updates.
 
 from __future__ import annotations
 
+import base64
+import io
 import logging
 import time
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
+
+import numpy as np
+from PIL import Image  # type: ignore[import-untyped]
 
 try:
     from hydra.core.global_hydra import GlobalHydra
@@ -136,6 +141,11 @@ class MontyExperimentWithLiveView(MontyExperiment):
         if not hasattr(self, "_experiment_start_time"):
             self._experiment_start_time = datetime.now(timezone.utc)
             self._experiment_status = "initializing"
+        # Throttle image broadcasts (expensive to encode/transmit)
+        self._last_image_broadcast_time = 0.0
+        self._sensor_image_throttle_ms = getattr(
+            self.config, "sensor_image_throttle_ms", 500
+        )
 
     def _get_experiment_metadata(self) -> ExperimentMetadata:
         """Get experiment metadata (environment, experiment name, config path).
@@ -285,6 +295,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
         super().post_step(step, observation)
         self._update_state_from_experiment()
         self._broadcast_evidence_data(step)
+        self._broadcast_sensor_images(step, observation)
 
     def pre_episode(self) -> None:
         """Update state before each episode.
@@ -399,6 +410,166 @@ class MontyExperimentWithLiveView(MontyExperiment):
             return dict(zip(graph_ids, [float(e) for e in evidences]))
         except (AttributeError, TypeError, ValueError, KeyError, IndexError):
             return {}
+
+    def _broadcast_sensor_images(self, step: int, observation: Any) -> None:
+        """Broadcast sensor images for live visualization.
+
+        Captures camera image and depth image from sensor observations,
+        encodes them as base64 PNG, and broadcasts via ZMQ.
+
+        Images are throttled to avoid overwhelming the network/browser.
+
+        Args:
+            step: Current step number within the episode.
+            observation: The observation from the environment.
+        """
+        if not self.broadcaster or not hasattr(self, "model"):
+            return
+
+        # Throttle image broadcasts
+        current_time = time.time() * 1000  # Convert to ms
+        if (
+            current_time - self._last_image_broadcast_time
+            < self._sensor_image_throttle_ms
+        ):
+            return
+        self._last_image_broadcast_time = current_time
+
+        try:
+            images = self._extract_sensor_images(observation, step)
+            if images:
+                self.broadcaster.publish_data("sensor_images", images)
+        except (KeyError, AttributeError, TypeError, ValueError) as e:
+            # Don't let image extraction failures crash the experiment
+            logger.debug("Failed to extract sensor images: %s", e)
+
+    def _extract_sensor_images(
+        self, observation: Any, step: int
+    ) -> dict[str, Any] | None:
+        """Extract sensor images from observation and encode as base64.
+
+        Follows the same pattern as LivePlotter.hardcoded_assumptions().
+
+        Args:
+            observation: The observation from the environment.
+            step: Current step number within the episode.
+
+        Returns:
+            Dictionary with base64-encoded images, or None if extraction fails.
+        """
+        if not hasattr(self, "model") or not self.model:
+            return None
+
+        try:
+            # Get agent ID for observation access
+            if not hasattr(self.model, "motor_system"):
+                return None
+            agent_id = self.model.motor_system._policy.agent_id
+
+            # Extract view_finder (camera) image
+            camera_b64 = None
+            if "view_finder" in observation.get(agent_id, {}):
+                view_finder_obs = observation[agent_id]["view_finder"]
+                if "rgba" in view_finder_obs:
+                    rgba = view_finder_obs["rgba"]
+                    camera_b64 = self._numpy_to_base64_png(rgba)
+
+            # Extract depth image from first sensor module
+            depth_b64 = None
+            if self.model.sensor_modules:
+                first_sm_id = self.model.sensor_modules[0].sensor_module_id
+                if first_sm_id in observation.get(agent_id, {}):
+                    sm_obs = observation[agent_id][first_sm_id]
+                    if "depth" in sm_obs:
+                        depth = sm_obs["depth"]
+                        depth_b64 = self._depth_to_base64_png(depth)
+
+            if camera_b64 or depth_b64:
+                return {
+                    "camera_image": camera_b64,
+                    "depth_image": depth_b64,
+                    "step": step,
+                    "timestamp": time.time(),
+                }
+        except (KeyError, AttributeError, TypeError, IndexError) as e:
+            logger.debug("Error extracting sensor images: %s", e)
+
+        return None
+
+    def _numpy_to_base64_png(self, img_array: np.ndarray) -> str | None:
+        """Convert numpy RGBA array to base64-encoded PNG.
+
+        Args:
+            img_array: RGBA image as numpy array (H, W, 4) or RGB (H, W, 3).
+
+        Returns:
+            Base64-encoded PNG string, or None on failure.
+        """
+        try:
+            # Ensure array is uint8
+            if img_array.dtype != np.uint8:
+                if img_array.max() <= 1.0:
+                    img_array = (img_array * 255).astype(np.uint8)
+                else:
+                    img_array = img_array.astype(np.uint8)
+
+            # Create PIL Image
+            if img_array.shape[-1] == 4:
+                img = Image.fromarray(img_array, mode="RGBA")
+            else:
+                img = Image.fromarray(img_array, mode="RGB")
+
+            # Encode to PNG in memory
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG", optimize=True)
+            buffer.seek(0)
+
+            return base64.b64encode(buffer.read()).decode("utf-8")
+        except (ValueError, TypeError, OSError) as e:
+            logger.debug("Failed to encode image: %s", e)
+            return None
+
+    def _depth_to_base64_png(self, depth_array: np.ndarray) -> str | None:
+        """Convert depth array to base64-encoded PNG with colormap.
+
+        Args:
+            depth_array: Depth values as numpy array (H, W).
+
+        Returns:
+            Base64-encoded PNG string, or None on failure.
+        """
+        try:
+            # Normalize depth to 0-255
+            depth = np.array(depth_array)
+            if depth.size == 0:
+                return None
+
+            # Handle NaN/Inf values
+            depth = np.nan_to_num(depth, nan=0.0, posinf=0.0, neginf=0.0)
+
+            # Normalize to 0-1, then to 0-255
+            d_min, d_max = depth.min(), depth.max()
+            if d_max > d_min:
+                depth_norm = (depth - d_min) / (d_max - d_min)
+            else:
+                depth_norm = np.zeros_like(depth)
+
+            # Apply viridis-like colormap (simplified)
+            # For proper viridis, would use matplotlib, but keeping it simple
+            depth_uint8 = (depth_norm * 255).astype(np.uint8)
+
+            # Create grayscale image (inverted so closer = brighter)
+            img = Image.fromarray(255 - depth_uint8, mode="L")
+
+            # Encode to PNG
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG", optimize=True)
+            buffer.seek(0)
+
+            return base64.b64encode(buffer.read()).decode("utf-8")
+        except (ValueError, TypeError, OSError) as e:
+            logger.debug("Failed to encode depth image: %s", e)
+            return None
 
     def post_episode(self, steps: int) -> None:
         """Update state after each episode."""
