@@ -126,3 +126,31 @@ class TestStateNormalization:
         assert state.experiment_mode == "train"
         assert state.total_train_steps == 0
         assert state.current_step == 0
+
+
+def test_normalize_status_allows_abort_states() -> None:
+    """Abort-related statuses should be preserved, not mapped to 'initializing'."""
+    from contrib.liveview_experiment.src.liveview_experiment import ExperimentLiveView
+    from contrib.liveview_experiment.src.state_manager import ExperimentStateManager
+    from pyview.live_view import LiveViewSocket  # type: ignore[import-not-found]
+
+    manager = ExperimentStateManager(route_path="/")
+    view = ExperimentLiveView(manager)
+
+    # Use a dummy socket with minimal attributes required by _create_context_from_state
+    class DummySocket(LiveViewSocket):  # type: ignore[misc]
+        def __init__(self) -> None:
+            super().__init__(id="test-socket")
+
+    socket = DummySocket()
+    # Initialize context once so _update_context_from_state can run
+    view.mount(socket, {})  # type: ignore[arg-type]
+
+    # Simulate state coming from ZMQ with aborting / aborted
+    manager.experiment_state.status = "aborting"
+    view._update_context_from_state(socket)
+    assert socket.context.status == "aborting"
+
+    manager.experiment_state.status = "aborted"
+    view._update_context_from_state(socket)
+    assert socket.context.status == "aborted"
