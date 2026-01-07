@@ -61,17 +61,29 @@ class StaticFileCacheApp:
 class StaticFileServer:
     """Serves static files for the web application (reused from mvg_departures)."""
 
+    _local_static_path: Path | None = None
+
     def register_routes(self, app: PyView) -> None:
         """Register static file routes with the PyView app.
 
         Args:
             app: The PyView application instance.
         """
-        # IMPORTANT: Register specific routes BEFORE mounting the static directory
-        # This ensures specific routes take precedence over the mount
-        # Use insert(0, ...) to put them at the beginning so they're checked first
-        # Add route to serve pyview's client JavaScript
-        # (needed for /static/assets/app.js)
+        # Mount our local static files directory FIRST (higher priority)
+        # This allows us to override pyview's static files and add custom assets
+        local_static_path = Path(__file__).parent.parent / "static"
+        if local_static_path.exists():
+            # Mount at /static with higher priority by inserting first
+            app.routes.insert(0, Route("/static/{path:path}", self._serve_local_static))
+            self._local_static_path = local_static_path
+            logger.info("Mounted local static files from %s", local_static_path)
+        else:
+            self._local_static_path = None
+            logger.debug("No local static directory at: %s", local_static_path)
+
+        # IMPORTANT: Register specific routes AFTER the generic static route
+        # insert(0, ...) puts this at position 0, so it's checked FIRST
+        # This ensures /static/assets/app.js is handled before the generic route
         app.routes.insert(0, Route("/static/assets/app.js", self._serve_app_js))
 
         # Mount static files directory to serve CSS, JS, and other assets
@@ -90,6 +102,44 @@ class StaticFileServer:
             )
         else:
             logger.warning("PyView static directory not found at: %s", static_path)
+
+    async def _serve_local_static(self, request: Any) -> Any:
+        """Serve files from local static directory."""
+        if not self._local_static_path:
+            return Response(status_code=404, content="Not found")
+
+        path = request.path_params.get("path", "")
+        file_path = self._local_static_path / path
+
+        # Security check: ensure path doesn't escape static directory
+        try:
+            file_path = file_path.resolve()
+            if not str(file_path).startswith(str(self._local_static_path.resolve())):
+                return Response(status_code=403, content="Forbidden")
+        except (ValueError, OSError):
+            return Response(status_code=400, content="Invalid path")
+
+        if file_path.exists() and file_path.is_file():
+            # Determine media type
+            suffix = file_path.suffix.lower()
+            media_types = {
+                ".js": "application/javascript",
+                ".css": "text/css",
+                ".json": "application/json",
+                ".html": "text/html",
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".svg": "image/svg+xml",
+                ".gif": "image/gif",
+            }
+            media_type = media_types.get(suffix, "application/octet-stream")
+
+            response = FileResponse(str(file_path), media_type=media_type)
+            response.headers["Cache-Control"] = "public, max-age=60, must-revalidate"
+            return response
+
+        return Response(status_code=404, content="Not found")
 
     async def _serve_app_js(self, _request: Any) -> Any:
         """Serve pyview's client JavaScript."""

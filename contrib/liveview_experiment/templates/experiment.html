@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ run_name }} - Experiment Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Plotly.js for evidence charting -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <!-- Evidence Chart hooks - MUST load before pyview's app.js to register window.Hooks -->
+    <script src="/static/js/evidence-chart.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -195,7 +199,7 @@
         <div class="section">
             <div class="section-title">
                 <span>Experiment Configuration</span>
-                <div class="header-badges">{% if status == "running" %}{% if experiment_mode_display_upper and experiment_mode_display and experiment_mode_display_upper != "" and experiment_mode_display != "" %}<span id="connection-status-badge" class="mode-badge mode-{{ experiment_mode_display }}">{{ experiment_mode_display_upper }}</span>{% else %}<span id="connection-status-badge" class="status-badge status-running">RUNNING</span>{% endif %}{% elif status == "initializing" %}<span id="connection-status-badge" class="status-badge status-initializing">INITIALIZING</span>{% elif status == "completed" %}<span id="connection-status-badge" class="status-badge status-completed">COMPLETED</span>{% elif status == "error" %}<span id="connection-status-badge" class="status-badge status-error">ERROR</span>{% else %}<span id="connection-status-badge" class="status-badge status-initializing">INITIALIZING</span>{% endif %}</div>
+                <div class="header-badges">{% if status == "running" %}{% if experiment_mode_display_upper and experiment_mode_display and experiment_mode_display_upper != "" and experiment_mode_display != "" %}<span id="connection-status-badge" phx-hook="ConnectionStatus" class="mode-badge mode-{{ experiment_mode_display }}">{{ experiment_mode_display_upper }}</span>{% else %}<span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-running">RUNNING</span>{% endif %}{% elif status == "initializing" %}<span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-initializing">INITIALIZING</span>{% elif status == "completed" %}<span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-completed">COMPLETED</span>{% elif status == "error" %}<span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-error">ERROR</span>{% else %}<span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-initializing">INITIALIZING</span>{% endif %}</div>
             </div>
             <div class="config-grid">
                 {% if environment_name %}
@@ -270,16 +274,10 @@
                     <span class="config-value">{{ min_lms_match }}</span>
                 </div>
                 {% endif %}
-                {% if model_name_or_path %}
-                <div class="config-item" style="grid-column: 1 / -1;">
+                {% if model_name %}
+                <div class="config-item">
                     <span class="config-label">Model:</span>
-                    <span class="config-value" style="font-size: 10px; word-break: break-all;">{{ model_name_or_path }}</span>
-                </div>
-                {% endif %}
-                {% if model_path %}
-                <div class="config-item" style="grid-column: 1 / -1;">
-                    <span class="config-label">Model Path:</span>
-                    <span class="config-value" style="font-size: 10px; word-break: break-all;">{{ model_path }}</span>
+                    <span class="config-value" title="{{ model_path }}">{{ model_name }}</span>
                 </div>
                 {% endif %}
             </div>
@@ -360,143 +358,28 @@
             </div>
         </div>
 
+        <!-- Evidence Chart Section -->
+        <div class="section">
+            <div class="section-title">
+                <span>Evidence Over Time</span>
+                <span style="font-size: 11px; color: #6b7280; font-weight: normal;">
+                    {{ chart_point_count }} points
+                </span>
+            </div>
+            <!-- Chart data JSON - updated by LiveView DOM patching -->
+            <script type="application/json" id="chart-data">{{ chart_data_json }}</script>
+            <!-- Chart container with LiveView hook -->
+            <div phx-hook="EvidenceChart" phx-update="ignore" id="evidence-chart-wrapper">
+                <div id="evidence-chart-container" style="height: 300px; width: 100%; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px;"></div>
+            </div>
+        </div>
+
         {% if has_error %}
         <div class="error-box">
             <strong>Error:</strong> {{ error_message }}
         </div>
         {% endif %}
     </div>
-    <script>
-        // Connection state tracking - must be in global scope to survive DOM updates
-        if (!window._connectionStateTracker) {
-            window._connectionStateTracker = {
-                connectionState: "disconnected", // Start as disconnected until phx:open
-                originalStatusBadge: null,
-                originalStatusClasses: null,
-                originalStatusText: null,
-                initialized: false
-            };
-        }
-
-        // Find the connection status badge element
-        function getConnectionStatusBadge() {
-            return document.getElementById("connection-status-badge");
-        }
-
-        // Update connection status badge
-        function updateConnectionStatus() {
-            const badge = getConnectionStatusBadge();
-            if (!badge) {
-                console.log("Connection status badge not found");
-                return;
-            }
-
-            const tracker = window._connectionStateTracker;
-
-            // Store original state on first update if not already stored
-            if (!tracker.originalStatusBadge) {
-                tracker.originalStatusBadge = badge.cloneNode(true);
-                tracker.originalStatusClasses = badge.className;
-                tracker.originalStatusText = badge.textContent;
-                console.log("Stored original badge state:", tracker.originalStatusText, tracker.originalStatusClasses);
-            }
-
-            if (tracker.connectionState === "disconnected") {
-                // Show disconnected state (grey)
-                // Remove all status and mode classes
-                badge.classList.remove("status-running", "status-completed", "status-error", "status-initializing", "status-disconnected");
-                badge.classList.remove("mode-train", "mode-training", "mode-eval", "mode-evaluating");
-                // Keep mode-badge or status-badge class, but ensure we have status-badge for CSS
-                const isModeBadge = badge.classList.contains("mode-badge");
-                if (isModeBadge) {
-                    badge.classList.remove("mode-badge");
-                }
-                if (!badge.classList.contains("status-badge")) {
-                    badge.classList.add("status-badge");
-                }
-                // Add disconnected status
-                badge.classList.add("status-disconnected");
-                badge.textContent = "DISCONNECTED";
-                badge.setAttribute("title", "WebSocket connection: disconnected");
-                // Force style to ensure it's applied
-                badge.style.background = "#6b7280";
-                badge.style.color = "#ffffff";
-                console.log("Updated badge to DISCONNECTED");
-            } else {
-                // Restore original status badge
-                badge.className = tracker.originalStatusClasses;
-                badge.textContent = tracker.originalStatusText;
-                badge.removeAttribute("title");
-                // Remove any inline styles we added
-                badge.style.background = "";
-                badge.style.color = "";
-                console.log("Restored original badge:", tracker.originalStatusText);
-            }
-        }
-
-        // Initialize event listeners only once
-        if (!window._connectionStateTracker.initialized) {
-            window._connectionStateTracker.initialized = true;
-
-            // Listen to PyView connection events
-            window.addEventListener("phx:open", () => {
-                console.log("phx:open event received");
-                window._connectionStateTracker.connectionState = "connected";
-                updateConnectionStatus();
-            });
-
-            window.addEventListener("phx:disconnect", () => {
-                console.log("phx:disconnect event received");
-                window._connectionStateTracker.connectionState = "disconnected";
-                updateConnectionStatus();
-            });
-
-            window.addEventListener("phx:close", () => {
-                console.log("phx:close event received");
-                window._connectionStateTracker.connectionState = "disconnected";
-                updateConnectionStatus();
-            });
-
-            window.addEventListener("phx:connecting", () => {
-                console.log("phx:connecting event received");
-                // Keep showing disconnected while connecting
-                window._connectionStateTracker.connectionState = "disconnected";
-                updateConnectionStatus();
-            });
-
-            // Fallback: Check liveSocket connection state periodically
-            // This helps detect disconnection even if events don't fire
-            function checkConnectionState() {
-                try {
-                    if (window.liveSocket) {
-                        const socket = window.liveSocket.socket;
-                        if (socket) {
-                            const isConnected = socket.isConnected();
-                            const tracker = window._connectionStateTracker;
-                            if (!isConnected && tracker.connectionState === "connected") {
-                                console.log("WebSocket disconnected detected via socket check");
-                                tracker.connectionState = "disconnected";
-                                updateConnectionStatus();
-                            } else if (isConnected && tracker.connectionState === "disconnected") {
-                                console.log("WebSocket connected detected via socket check");
-                                tracker.connectionState = "connected";
-                                updateConnectionStatus();
-                            }
-                        }
-                    }
-                } catch (e) {
-                    // Ignore errors - socket might not be available yet
-                }
-            }
-
-            // Check connection state every second as fallback
-            setInterval(checkConnectionState, 1000);
-        }
-
-        // Update connection status after DOM updates
-        // This runs after each PyView update
-        updateConnectionStatus();
-    </script>
 </body>
 </html>
 
