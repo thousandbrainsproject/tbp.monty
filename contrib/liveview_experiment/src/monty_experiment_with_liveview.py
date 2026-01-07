@@ -183,7 +183,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
         # Throttle image broadcasts (expensive to encode/transmit)
         self._last_image_broadcast_time = 0.0
         self._sensor_image_throttle_ms = getattr(
-            self.config, "sensor_image_throttle_ms", 500
+            self.config, "sensor_image_throttle_ms", 100
         )
 
     def _get_experiment_metadata(self) -> ExperimentMetadata:
