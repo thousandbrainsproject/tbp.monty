@@ -12,7 +12,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from .types import AsyncPubSubCallback, HubDict, PubSubCallback
+    from .liveview_types import AsyncPubSubCallback, HubDict, PubSubCallback
 
 logger = logging.getLogger(__name__)
 

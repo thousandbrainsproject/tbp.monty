@@ -7,7 +7,7 @@ import os
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from .types import ConfigDict
+    from .liveview_types import ConfigDict
 
 logger = logging.getLogger(__name__)
 

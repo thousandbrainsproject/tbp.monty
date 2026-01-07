@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from .types import ConfigDict
+    from .liveview_types import ConfigDict
 
 from .experiment_config import LiveViewConfigOverrides
 

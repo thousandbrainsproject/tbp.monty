@@ -21,7 +21,7 @@ except ImportError:
     zmq = None  # type: ignore[assignment, unused-ignore]
 
 if TYPE_CHECKING:
-    from .types import MessagePayload, MetricMetadata, StateDict
+    from .liveview_types import MessagePayload, MetricMetadata, StateDict
 
 from .experiment_config import ConnectionRetryParams
 from .zmq_connection_manager import ZmqConnectionManager

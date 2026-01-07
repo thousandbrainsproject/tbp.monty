@@ -19,7 +19,7 @@ from .experiment_state import ExperimentState
 from .state_normalizer import StateNormalizer
 
 if TYPE_CHECKING:
-    from .types import MessagePayload, TemplateAssigns
+    from .liveview_types import MessagePayload, TemplateAssigns
 
 if TYPE_CHECKING:
     from .state_manager import ExperimentStateManager

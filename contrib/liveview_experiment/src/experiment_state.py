@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from .types import DataStreams, LogEntries, MetricsDict
+    from .liveview_types import DataStreams, LogEntries, MetricsDict
 
 
 @dataclass
