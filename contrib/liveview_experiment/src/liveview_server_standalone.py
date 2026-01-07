@@ -97,7 +97,8 @@ async def handle_pubsub_request(request: Request) -> dict[str, str]:
 
     state_manager = request.app.state.state_manager
     response = await PubSubEndpointHandler.handle_request(request, state_manager)
-    body_bytes = await response.body()
+    # response.body() is an async method that returns bytes
+    body_bytes = await response.body()  # type: ignore[operator]
     result: dict[str, str] = json.loads(body_bytes.decode())
     return result
 

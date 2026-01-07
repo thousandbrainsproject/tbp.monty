@@ -16,11 +16,15 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
 ]
 
-# Main dependencies are installed via setup.sh
-# This file primarily defines dev dependencies for code quality checks
-dependencies = []
+dependencies = [
+    "pyzmq>=25.0.0",
+]
 
 [project.optional-dependencies]
+liveview = [
+    "pyview-web>=0.8.1",
+    "uvicorn[standard]>=0.32.0",
+]
 dev = [
     "black>=24.0.0",
     "ruff>=0.4.0",
@@ -50,7 +54,7 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "DTZ", "T10", "SIM", "ARG", 
 ignore = []
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.14"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
@@ -69,6 +73,9 @@ module = [
     "uvicorn.*",
     "ibis.*",
     "tbp.monty.*",
+    "hydra.*",
+    "numpy.*",
+    "PIL.*",
 ]
 ignore_missing_imports = true
 

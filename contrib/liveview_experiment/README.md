@@ -25,8 +25,22 @@ pip install -e .
 **Run experiment with LiveView:**
 
 ```bash
-./contrib/liveview_experiment/scripts/run.sh
+./contrib/liveview_experiment/scripts/run.sh [experiment_name]
 ```
+
+The script supports two modes:
+
+1. **With LiveView config** (recommended for custom setups):
+
+   - If a config exists in `contrib/liveview_experiment/conf/experiment/`, it will be used with all values from the YAML
+   - Example: `./contrib/liveview_experiment/scripts/run.sh randrot_10distinctobj_surf_agent_with_liveview`
+
+2. **With base config** (works with any experiment, at least theoretically):
+   - If no LiveView config exists, the script uses the base config from `conf/experiment/` and automatically:
+     - Sets the LiveView experiment target
+     - Adds LiveView configuration (ports, host, enable flag)
+     - Disables wandb and excessive logging handlers
+   - Example: `./contrib/liveview_experiment/scripts/run.sh randrot_noise_77obj_5lms_dist_agent`
 
 **View dashboard:**
 
@@ -93,8 +107,24 @@ flowchart LR
 
 **Configuration:**
 
-- Experiment config (e.g., [`randrot_10distinctobj_surf_agent_with_liveview.yaml`](conf/experiment/randrot_10distinctobj_surf_agent_with_liveview.yaml)) sets `zmq_port`, `liveview_port`, `enable_liveview`
-- [`MontyExperimentWithLiveView`](src/monty_experiment_with_liveview.py) reads config and initializes [`ZmqBroadcaster`](src/zmq_broadcaster.py) accordingly
+The script supports two configuration approaches:
+
+1. **LiveView configs** (in `contrib/liveview_experiment/conf/experiment/`):
+
+   - Extend base configs and add LiveView-specific settings
+   - Set `_target_` to `MontyExperimentWithLiveView`
+   - Configure `zmq_port`, `liveview_port`, `enable_liveview`, and disable wandb
+   - Example: [`randrot_10distinctobj_surf_agent_with_liveview.yaml`](conf/experiment/randrot_10distinctobj_surf_agent_with_liveview.yaml)
+
+2. **Base configs** (in `conf/experiment/`):
+   - Use any existing experiment config directly
+   - The script automatically adds LiveView support via command-line options:
+     - Sets `_target_` to `MontyExperimentWithLiveView`
+     - Adds LiveView configuration fields
+     - Disables wandb and excessive logging handlers
+   - Example: `randrot_noise_77obj_5lms_dist_agent`
+
+[`MontyExperimentWithLiveView`](src/monty_experiment_with_liveview.py) reads config and initializes [`ZmqBroadcaster`](src/zmq_broadcaster.py) accordingly
 
 ## Customization
 

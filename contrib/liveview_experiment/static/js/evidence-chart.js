@@ -103,7 +103,7 @@ class EvidenceChart {
         
         Plotly.newPlot(this.container, [], layout, config);
         this.initialized = true;
-        console.log('EvidenceChart: Initialized with incremental push_event pattern');
+        // console.log('EvidenceChart: Initialized with incremental push_event pattern');
     }
     
     /**
@@ -145,8 +145,8 @@ class EvidenceChart {
         // Update chart
         this._render();
         
-        // Log progress
-        console.log(`EvidenceChart: +${data.new_points?.length || 0} points, total: ${this.evidenceHistory.length}`);
+        // Log progress (commented out to reduce console noise)
+        // console.log(`EvidenceChart: +${data.new_points?.length || 0} points, total: ${this.evidenceHistory.length}`);
     }
     
     /**
@@ -297,7 +297,7 @@ window.Hooks = window.Hooks || {};
  */
 window.Hooks.EvidenceChart = {
     mounted() {
-        console.log('EvidenceChart hook mounted');
+        // console.log('EvidenceChart hook mounted');
         
         // Initialize the chart
         this.chart = new EvidenceChart('evidence-chart-container', {
@@ -310,8 +310,8 @@ window.Hooks.EvidenceChart = {
         
         // Also listen for push_event (for future pyview support)
         this.handleEvent("chart_data", (data) => {
-            console.log('EvidenceChart: Received push_event with', 
-                data.new_points?.length || 0, 'new points');
+            // console.log('EvidenceChart: Received push_event with', 
+            //     data.new_points?.length || 0, 'new points');
             if (this.chart) {
                 this.chart.appendData(data);
             }
@@ -393,10 +393,13 @@ window.Hooks.EvidenceChart = {
  */
 window.Hooks.ConnectionStatus = {
     mounted() {
-        console.log('ConnectionStatus hook mounted');
+        // console.log('ConnectionStatus hook mounted');
         // Store original state for restoration
         this.originalClass = this.el.className;
         this.originalText = this.el.textContent;
+        
+        // Disable live socket debug logging
+        disableDebugOnce();
     },
     
     updated() {
@@ -428,7 +431,10 @@ window.Hooks.ConnectionStatus = {
     },
     
     reconnected() {
-        console.log('ConnectionStatus hook reconnected');
+        // console.log('ConnectionStatus hook reconnected');
+        // Disable live socket debug logging on reconnect
+        disableDebugOnce();
+        
         // Only restore if not in a terminal state
         const currentText = this.el.textContent.trim().toUpperCase();
         const terminalStates = ['COMPLETED', 'ERROR', 'ABORTED'];
@@ -449,6 +455,67 @@ window.Hooks.ConnectionStatus = {
         this.el.style.color = '';
     }
 };
+
+/**
+ * MaxEvidence Hook - updates the current max evidence display
+ */
+window.Hooks.MaxEvidence = {
+    mounted() {
+        // Listen for chart_data events which include max evidence
+        this.handleEvent("chart_data", (data) => {
+            if (data.current_max_evidence) {
+                this.updateMaxEvidence(data.current_max_evidence);
+            }
+        });
+    },
+    
+    updated() {
+        // Also check for max evidence in DOM updates
+        // This handles initial render and full page updates
+    },
+    
+    updateMaxEvidence(maxEvidence) {
+        const contentEl = document.getElementById('max-evidence-content');
+        if (!contentEl) return;
+        
+        if (maxEvidence && maxEvidence.object && maxEvidence.value !== undefined) {
+            contentEl.innerHTML = `
+                <span class="info-label">${maxEvidence.object}:</span>
+                <span class="info-value">${maxEvidence.value.toFixed(3)}</span>
+            `;
+        } else {
+            contentEl.innerHTML = `
+                <span class="info-label">N/A</span>
+                <span class="info-value"></span>
+            `;
+        }
+    }
+};
+
+/**
+ * Disable LiveView socket debug logging.
+ * Should be called after connection is established.
+ */
+function disableDebugOnce() {
+    try {
+        if (window.liveSocket) {
+            window.liveSocket.disableDebug();
+        }
+    } catch (e) {
+        // Silently fail - not critical
+    }
+}
+
+// Try to disable debug on page load (in case liveSocket is already available)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', disableDebugOnce);
+} else {
+    // DOM already loaded, try immediately
+    disableDebugOnce();
+}
+
+// Also try after a short delay to catch late initialization
+setTimeout(disableDebugOnce, 1000);
 
 // Export for module usage
 if (typeof module !== 'undefined' && module.exports) {

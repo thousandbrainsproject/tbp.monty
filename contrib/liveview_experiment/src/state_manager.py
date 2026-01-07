@@ -184,18 +184,22 @@ class ExperimentStateManager:
             len(self.connected_sockets),
         )
 
-    async def broadcast_update(self) -> None:
+    async def broadcast_update(self, force: bool = False) -> None:
         """Broadcast an update signal to all registered sockets via PyView pubsub.
 
         Throttled to max once per second. Uses PyView's pubsub system to trigger
         handle_info on all subscribed sockets, which then update their context.
+
+        Args:
+            force: If True, bypass throttling and broadcast immediately
+                   (useful for terminal states like aborted/completed/error)
         """
         if not hasattr(self, "_broadcast_manager"):
             self._broadcast_manager = BroadcastManager(
                 self, throttle_seconds=self._broadcast_throttle_seconds
             )
 
-        await self._broadcast_manager.broadcast_if_needed()
+        await self._broadcast_manager.broadcast_if_needed(force=force)
 
     def update_metric(
         self, name: str, value: float, **metadata: MetricMetadata  # noqa: ARG002

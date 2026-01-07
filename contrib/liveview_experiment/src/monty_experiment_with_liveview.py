@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from PIL import Image  # type: ignore[import-untyped]
+from PIL import Image
 
 try:
     from hydra.core.global_hydra import GlobalHydra
@@ -693,13 +693,11 @@ class MontyExperimentWithLiveView(MontyExperiment):
                 # Small delay to ensure final status message is sent
                 # before context cleanup
                 time.sleep(0.05)
-        except ExperimentAbortedError as e:
-            logger.warning("Experiment aborted: %s", e)
+        except ExperimentAbortedError:
+            logger.info("Experiment aborted by user via LiveView UI")
             self._experiment_status = "aborted"
             if self.broadcaster:
-                self.broadcaster.publish_state(
-                    {"status": self._experiment_status, "error_message": str(e)}
-                )
+                self.broadcaster.publish_state({"status": self._experiment_status})
                 time.sleep(0.05)
             # Don't re-raise abort - it's a controlled stop
         except Exception as e:

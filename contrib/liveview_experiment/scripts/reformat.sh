@@ -25,13 +25,31 @@ fi
 # Check if black is available
 if ! $BLACK --version &> /dev/null 2>&1; then
     echo "black not found. Installing dependencies..." >&2
-    if [ -d ".venv" ]; then
-        $PIP install -e ".[dev]"
-    elif command -v uv &> /dev/null; then
-        uv pip install -e ".[dev]"
-    else
+    # Check if we're in LiveView venv (Python 3.14+) or need to install individually
+    if [ -d ".liveview_venv" ] && [ "$PYTHON" = ".liveview_venv/bin/python" ]; then
+        # In LiveView venv - can install with extras
+        $PIP install -e ".[liveview,dev]"
+    elif [ -d ".venv" ]; then
+        # In a venv - try with dev extras
         $PIP install -e ".[dev]" || {
-            echo "Warning: Failed to install dev dependencies. Please run ./scripts/setup.sh first or install dependencies manually." >&2
+            # Fallback to individual install if pyview-web not available
+            $PIP install "black>=24.0.0" "ruff>=0.4.0" || {
+                echo "Warning: Failed to install dev tools. Please run ./scripts/setup.sh first." >&2
+                exit 1
+            }
+        }
+    elif command -v uv &> /dev/null; then
+        uv pip install -e ".[dev]" || {
+            # Fallback to individual install
+            uv pip install "black>=24.0.0" "ruff>=0.4.0" || {
+                echo "Warning: Failed to install dev tools. Please run ./scripts/setup.sh first." >&2
+                exit 1
+            }
+        }
+    else
+        # In Python 3.8 environment - install dev tools individually (no pyview-web)
+        $PIP install "black>=24.0.0" "ruff>=0.4.0" || {
+            echo "Warning: Failed to install dev tools. Please run ./scripts/setup.sh first or install dependencies manually." >&2
             exit 1
         }
     fi

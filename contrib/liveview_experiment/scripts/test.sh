@@ -1,7 +1,7 @@
 #!/bin/bash
 # Test script for LiveView Experiment
 # Runs all CI checks: formatting, linting, type checking, and tests
-# Automatically uses tbp.monty conda environment
+# Uses Python 3.14+ environment (LiveView venv) if available, otherwise tbp.monty (prefer latest)
 
 set -e
 
@@ -11,17 +11,42 @@ LIVEVIEW_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 cd "$LIVEVIEW_DIR"
 
-# Source common environment setup
-source "$SCRIPT_DIR/common_env.sh"
-
-# Check if dependencies are installed
-if ! run_python_module pytest --version &> /dev/null 2>&1; then
-    echo "Dependencies not found. Installing..." >&2
-    # Attempt to install dev dependencies using the detected pip
-    $PIP install -e ".[dev]" || {
-        echo "Error: Failed to install dev dependencies. Please run ./scripts/setup.sh first or install dependencies manually." >&2
-        exit 1
+# Check for LiveView venv (Python 3.11+) first
+LIVEVIEW_VENV="${LIVEVIEW_DIR}/.liveview_venv"
+if [ -d "$LIVEVIEW_VENV" ] && [ -f "$LIVEVIEW_VENV/bin/python" ]; then
+    export PYTHON="$LIVEVIEW_VENV/bin/python"
+    export PIP="$LIVEVIEW_VENV/bin/pip"
+    export RUN_CMD=""
+    echo "Using LiveView Python 3.14+ environment (prefer latest)" >&2
+    
+    # Define run_python_module function
+    run_python_module() {
+        $PYTHON -u -m "$@"
     }
+    
+    # Install dev dependencies if not present (check for black, which is needed first)
+    # Note: In venv, we need both liveview and dev extras
+    if ! $PYTHON -m black --version &> /dev/null 2>&1; then
+        echo "Installing dev dependencies in LiveView environment..." >&2
+        $PIP install -e ".[liveview,dev]" || {
+            echo "Error: Failed to install dev dependencies. Please run ./scripts/setup.sh first or install dependencies manually." >&2
+            exit 1
+        }
+    fi
+else
+    # Fall back to common environment setup (tbp.monty)
+    source "$SCRIPT_DIR/common_env.sh"
+    
+    # Check if dependencies are installed (check for black, which is needed first)
+    # Note: In Python 3.8 environment, we only install dev deps (no liveview extras)
+    if ! run_python_module black --version &> /dev/null 2>&1; then
+        echo "Dependencies not found. Installing dev tools (without LiveView dependencies)..." >&2
+        # Install dev tools individually (pyview-web requires Python 3.11+)
+        $PIP install "black>=24.0.0" "ruff>=0.4.0" "mypy>=1.0.0" "pytest>=8.0.0" "vulture>=2.0.0" || {
+            echo "Error: Failed to install dev tools. Please run ./scripts/setup.sh first or install dependencies manually." >&2
+            exit 1
+        }
+    fi
 fi
 
 # Function to run command with proper environment
