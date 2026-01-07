@@ -68,6 +68,8 @@ class ExperimentStateManager:
             self.liveview_instance: ExperimentLiveView | None = None
         else:
             self.liveview_instance: Any = None  # Reference to LiveView instance
+        # Command publisher is set by ServerOrchestrator
+        self.command_publisher: Any = None
         # Create route-specific topic based on path
         normalized_path = route_path.strip("/").replace("/", ":") or "root"
         self.broadcast_topic: str = f"experiment:updates:{normalized_path}"

@@ -191,6 +191,8 @@ class VisualizationState:
         self.object_names.clear()
         self.current_mesh_url = None
         self.sensor_images = SensorImages()
+        # Reset sent tracking for new experiment
+        self.reset_sent_tracking()
 
     def update_sensor_images(self, images: SensorImages) -> None:
         """Update the current sensor images.
