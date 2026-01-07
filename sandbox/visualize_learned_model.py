@@ -75,6 +75,15 @@ def visualize_point_cloud_interactive(
     color_mode_idx = 0
     point_cloud_obj = None
 
+    # State variable for edge-only filter
+    show_edge_only = False
+    original_points = points.copy()
+    original_features = {
+        k: np.asarray(v) if isinstance(v, (list, np.ndarray)) else v
+        for k, v in features.items()
+    }
+    # original_edge_mask and original_tangents will be set after edge_mask and tangents are defined
+
     def _get_colors_for_mode(mode_name, n_points):
         """Get colors for the specified mode."""
         if mode_name == "rgba" and "rgba" in features:
@@ -120,6 +129,91 @@ def visualize_point_cloud_interactive(
                     point_cloud_obj.pointcolors = colors
                     plotter.render()
 
+    def toggle_edge_filter_callback(button, _event):
+        """Toggle between showing all points and only edge points."""
+        nonlocal show_edge_only, point_cloud_obj, points, features, tangents, edge_mask
+
+        show_edge_only = not show_edge_only
+        button.switch()
+
+        if original_edge_mask is None:
+            print(
+                "[viz] Warning: pose_from_edge not available, cannot filter edge points"
+            )
+            return
+
+        # Filter points based on edge_mask
+        if show_edge_only:
+            # Show only edge points (use original_edge_mask for filtering)
+            if original_edge_mask is None:
+                print("[viz] Warning: No original edge mask available")
+                return
+            edge_indices = np.where(original_edge_mask)[0]
+            if len(edge_indices) == 0:
+                print("[viz] Warning: No edge points found")
+                return
+
+            points = original_points[edge_indices]
+            # Filter features
+            features = {}
+            for key, value in original_features.items():
+                if isinstance(value, np.ndarray) and value.shape[0] == len(
+                    original_points
+                ):
+                    features[key] = value[edge_indices]
+                else:
+                    features[key] = value
+
+            # Update edge_mask and tangents to match filtered points
+            edge_mask = original_edge_mask[edge_indices]
+            if original_tangents is not None:
+                tangents = original_tangents[edge_indices]
+            else:
+                tangents = None
+
+            print(
+                f"[viz] Filtered to {len(points)} edge points (out of {len(original_points)} total)"
+            )
+        else:
+            # Show all points
+            points = original_points.copy()
+            features = {
+                k: v.copy() if isinstance(v, np.ndarray) else v
+                for k, v in original_features.items()
+            }
+            # Restore original edge_mask and tangents
+            edge_mask = (
+                original_edge_mask.copy() if original_edge_mask is not None else None
+            )
+            tangents = (
+                original_tangents.copy() if original_tangents is not None else None
+            )
+
+            print(f"[viz] Showing all {len(points)} points")
+
+        # Recreate point cloud with filtered points
+        if point_cloud_obj is not None:
+            plotter.remove(point_cloud_obj)
+
+        n_points = len(points)
+        if available_color_modes:
+            colors = _get_colors_for_mode(
+                available_color_modes[color_mode_idx], n_points
+            )
+            point_cloud_obj = Points(points, r=10)
+            if colors is not None:
+                point_cloud_obj.pointcolors = colors
+        else:
+            point_cloud_obj = Points(points, r=10).color("gray")
+
+        plotter.add(point_cloud_obj)
+
+        # Redraw edges with filtered points
+        if tangents is not None and edge_mask is not None:
+            draw_edges()
+
+        plotter.render()
+
     plotter = Plotter(size=(1400, 1000), title=title or "Learned Point Cloud")
 
     # ----- Point colors -----
@@ -152,6 +246,10 @@ def visualize_point_cloud_interactive(
         edge_mask = None
     else:
         edge_mask = np.asarray(features["pose_from_edge"], bool).reshape(-1)
+
+    # Store original edge_mask and tangents for filtering (after they're defined)
+    original_edge_mask = edge_mask.copy() if edge_mask is not None else None
+    original_tangents = tangents.copy() if tangents is not None else None
 
     # ----- Draw tangents as Lines -----
     def draw_edges():
@@ -303,6 +401,20 @@ def visualize_point_cloud_interactive(
         print("[viz] Color mode button created successfully")
     else:
         print("[viz] No color modes available, skipping color mode button")
+
+    # ----- Add edge filter toggle button -----
+    if original_edge_mask is not None:
+        print("[viz] Creating edge filter button")
+        plotter.add_button(
+            toggle_edge_filter_callback,
+            pos=(0.85, button_y_pos + 0.08),
+            states=[" All Points ", " Edge Only "],
+            size=20,
+            font="Calco",
+        )
+        print("[viz] Edge filter button created successfully")
+    else:
+        print("[viz] No pose_from_edge available, skipping edge filter button")
 
     # ----- Axes & camera -----
     # Calculate camera position based on point cloud bounds

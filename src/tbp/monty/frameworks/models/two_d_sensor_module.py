@@ -321,10 +321,9 @@ class TwoDPoseSM(SensorModule):
         surface_normal = observed_state.get_surface_normal()
 
         if self._previous_location is None or surface_normal is None:
-            self._initialize_basis(observed_state)
+            self._initialize_basis(surface_normal)
             self._previous_location = current_location
             self._cumulative_2d_position = np.zeros(2)
-
             observed_state.location = np.array([0.0, 0.0, 0.0])
             return
 
@@ -332,41 +331,45 @@ class TwoDPoseSM(SensorModule):
         displacement_3d = current_location - self._previous_location
         chord_length = np.linalg.norm(displacement_3d)
 
-        # Use World-Anchored Basis
-        # Recalculates U and V from the Global Up (World-Y) at every step 
+        # 2. Parallel Transport: Update basis vectors to the new tangent plane
+        # Find the rotation that maps the old normal to the new normal
         self._update_basis(surface_normal)
 
-        du_projected = np.dot(displacement_3d, self._basis_u)
-        dv_projected = np.dot(displacement_3d, self._basis_v)
+        du_raw = np.dot(displacement_3d, self._basis_u)
+        dv_raw = np.dot(displacement_3d, self._basis_v)
+        direction_uv = np.array([du_raw, dv_raw])
+        dir_norm = np.linalg.norm(direction_uv)
+        if dir_norm > 1e-12:
+            direction_uv /= dir_norm
 
-        tan_length = np.sqrt(du_projected**2 + dv_projected**2)
-
-        step_magnitude = tan_length
         # Arc length correction
+        step_magnitude = chord_length
         principal_curvatures = observed_state.morphological_features.get(
             "principal_curvatures"
         )
         if principal_curvatures is not None and curvature_pose_vectors is not None:
             # Project movement onto tangent plane for curvature calculation
-            d_tan = (du_projected * self._basis_u) + (dv_projected * self._basis_v)
-            directional_curvature = self._get_directional_curvature(
-                d_tan,
-                principal_curvatures[0],
-                principal_curvatures[1],
-                curvature_pose_vectors[1],
-                curvature_pose_vectors[2],
-            )
-            step_magnitude = compute_arc_length_correction(
-                tan_length,
-                directional_curvature,
-            )
+            d_tan = project_onto_tangent_plane(displacement_3d, surface_normal)
+            tan_length = np.linalg.norm(d_tan)
+            if tan_length > 1e-12:
+                directional_curvature = self._get_directional_curvature(
+                    d_tan,
+                    principal_curvatures[0],
+                    principal_curvatures[1],
+                    curvature_pose_vectors[1],
+                    curvature_pose_vectors[2],
+                )
+                step_magnitude = compute_arc_length_correction(
+                    tan_length,
+                    directional_curvature,
+                )
 
-        scaled_step_magnitude = step_magnitude / tan_length
-        du = du_projected * scaled_step_magnitude
-        dv = dv_projected * scaled_step_magnitude
+        du = direction_uv[0] * step_magnitude
+        dv = direction_uv[1] * step_magnitude
         self._cumulative_2d_position[0] += du
         self._cumulative_2d_position[1] += dv
 
+        observed_state.set_displacement(np.array([du, dv, 0.0]))
         observed_state.location = np.array(
             [self._cumulative_2d_position[0], self._cumulative_2d_position[1], 0.0]
         )
@@ -388,33 +391,24 @@ class TwoDPoseSM(SensorModule):
         # Save current location for next step
         self._previous_location = current_location.copy()
 
-    def _initialize_basis(self, observed_state: State) -> None:
-        """Initializes basis by aligning with principal curvature directions."""
-        n = normalize(observed_state.get_surface_normal())
-        
-        # Extract principal directions from morphological features
-        # These are usually provided as part of curvature estimation
-        curvature_pose_vecs = observed_state.morphological_features.get("pose_vectors")
-        
-        # check if we have the principal directions (e1 and e2)
-        # Typically: [normal, max_dir, min_dir]
-        if curvature_pose_vecs is not None and len(curvature_pose_vecs) >= 3:
-            # Align V with the minimum curvature direction (the 'spine' of a cylinder)
-            # and U with the maximum curvature direction (the 'wrap' of a cylinder)
-            self._basis_v = normalize(curvature_pose_vecs[2]) 
-            self._basis_u = normalize(curvature_pose_vecs[1])
-            logger.info("Initialized basis using principal curvatures.")
-        else:
-            # Fallback to World-Y if curvature info is missing
-            logger.warning("Curvature directions missing; falling back to World-Y basis.")
-            world_up = np.array([0.0, 1.0, 0.0])
-            if abs(np.dot(n, world_up)) > 0.99:
-                world_up = np.array([0.0, 0.0, 1.0])
-            u = np.cross(n, world_up) # Use the correct parity we found earlier
-            self._basis_u = normalize(u)
-            self._basis_v = np.cross(n, self._basis_u)
+    def _initialize_basis(self, surface_normal: np.ndarray) -> None:
+        # Use World Up as the reference to keep the 'V' axis generally 'Up'
+        world_up = np.array([0, 1, 0])
 
-        self._previous_normal = n
+        # If the normal is pointing along the Y axis, use Z as fallback
+        if abs(np.dot(world_up, surface_normal)) > 0.95:
+            world_up = np.array([0, 0, 1])
+
+        # 1. Basis U is perpendicular to normal and the 'Up' vector
+        # This usually aligns U with the 'Horizon'
+        self._basis_u = np.cross(world_up, surface_normal)
+        self._basis_u /= np.linalg.norm(self._basis_u)
+
+        # 2. Basis V completes the right-handed system
+        # Given normal points to camera, this makes V point 'Up' on the surface
+        self._basis_v = np.cross(surface_normal, self._basis_u)
+
+        self._previous_normal = surface_normal
 
     def _update_basis(self, new_normal: np.ndarray) -> None:
         """Rotates the basis vectors to stay tangent to the new normal."""
