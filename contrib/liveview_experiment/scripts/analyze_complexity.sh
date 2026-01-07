@@ -1,10 +1,10 @@
 #!/bin/bash
-# Shell script wrapper for complexity analysis tool
+# Shell script wrapper for complexity analysis tool.
 #
 # Usage:
 #   ./scripts/analyze_complexity.sh [directory]
 #
-# If no directory is provided, defaults to src/
+# If no directory is provided, analyzes both src/ and scripts/ and runs vulture.
 
 set -euo pipefail
 
@@ -12,42 +12,37 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIVEVIEW_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ANALYZE_SCRIPT="$SCRIPT_DIR/analyze_complexity.py"
 
+# Prefer whatever `python` is on PATH (usually conda env when activated)
+PYTHON_BIN="${PYTHON:-python}"
+
 cd "$LIVEVIEW_DIR"
 
-# Source common environment setup
-source "$SCRIPT_DIR/common_env.sh"
-
-# Debug: show argument count and what we received
-echo "DEBUG: analyze_complexity.sh called with $# arguments: $*" >&2
-
-# Default to both src and scripts if no argument provided
-# If argument is provided, use it; otherwise analyze both source and scripts
 if [[ $# -eq 0 ]]; then
     # Analyze both source code and scripts
     echo "Analyzing source code and scripts..."
-    run_python "$ANALYZE_SCRIPT" "$LIVEVIEW_DIR/src" || exit $?
+    "$PYTHON_BIN" -u "$ANALYZE_SCRIPT" "$LIVEVIEW_DIR/src"
     echo ""
     echo "=================================================================================="
     echo "SCRIPTS ANALYSIS"
     echo "=================================================================================="
-    run_python "$ANALYZE_SCRIPT" "$LIVEVIEW_DIR/scripts" || exit $?
+    "$PYTHON_BIN" -u "$ANALYZE_SCRIPT" "$LIVEVIEW_DIR/scripts"
     echo ""
     echo "=================================================================================="
     echo "DEAD CODE DETECTION (vulture)"
     echo "=================================================================================="
     echo "Checking source code..."
-    if run_python_module vulture "$LIVEVIEW_DIR/src" --min-confidence 80; then
+    if "$PYTHON_BIN" -u -m vulture "$LIVEVIEW_DIR/src" --min-confidence 80; then
         echo "✓ No dead code found in source"
     fi
     echo ""
     echo "Checking scripts..."
-    if run_python_module vulture "$LIVEVIEW_DIR/scripts" --min-confidence 80; then
+    if "$PYTHON_BIN" -u -m vulture "$LIVEVIEW_DIR/scripts" --min-confidence 80; then
         echo "✓ No dead code found in scripts"
     fi
     exit 0
-else
-    TARGET_DIR="${1}"
 fi
+
+TARGET_DIR="${1}"
 
 # Convert to absolute path if relative
 if [[ ! "$TARGET_DIR" = /* ]]; then
@@ -66,5 +61,5 @@ if [[ ! -d "$TARGET_DIR" ]]; then
     exit 1
 fi
 
-# Run the analysis script (unbuffered output handled by run_python)
-run_python "$ANALYZE_SCRIPT" "$TARGET_DIR"
+# Run the analysis script directly
+"$PYTHON_BIN" -u "$ANALYZE_SCRIPT" "$TARGET_DIR"
