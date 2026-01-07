@@ -10,9 +10,9 @@ try:
     from starlette.responses import JSONResponse
     from starlette.routing import Route
 except ImportError:
-    Request = None
-    JSONResponse = None
-    Route = None
+    Request = None  # type: ignore[assignment, misc]
+    JSONResponse = None  # type: ignore[assignment, misc]
+    Route = None  # type: ignore[assignment, misc]
 
 from contrib.liveview_experiment.src.liveview_experiment import (
     ExperimentLiveView,

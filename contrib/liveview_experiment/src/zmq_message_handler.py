@@ -94,13 +94,12 @@ class ZmqMessageHandler:
         self.state_manager._handle_log_message(self.state_manager.logs_topic, payload)
         await self.state_manager.broadcast_update()
 
-    async def _handle_state(self, payload: MessagePayload) -> None:
-        """Handle state update message from ZMQ.
+    def _check_new_experiment(self, payload: MessagePayload) -> None:
+        """Check if this is a new experiment and reset visualization if needed.
 
         Args:
             payload: State message payload
         """
-        # Check if this is a new experiment (run_name changed)
         new_run_name = payload.get("run_name")
         if (
             new_run_name
@@ -114,6 +113,16 @@ class ZmqMessageHandler:
             )
             self.state_manager.visualization.clear()
 
+    def _update_state_from_payload(self, payload: MessagePayload) -> bool:
+        """Update experiment state from payload and detect completion.
+
+        Args:
+            payload: State message payload
+
+        Returns:
+            True if completion was detected, False otherwise
+        """
+        completion_detected = False
         for key, value in payload.items():
             if key == "type":
                 continue
@@ -129,11 +138,84 @@ class ZmqMessageHandler:
             setattr(self.state_manager.experiment_state, key, value)
 
             # Check if experiment has completed or errored
-            self._check_completion(key, value)
+            if self._check_completion(key, value):
+                completion_detected = True
+
+        return completion_detected
+
+    def _is_critical_update(
+        self,
+        completion_detected: bool,
+        old_status: str,
+        old_mode: str,
+        old_error: str | None,
+        old_run_name: str,
+    ) -> bool:
+        """Check if this update contains critical signals that need immediate broadcast.
+
+        Args:
+            completion_detected: Whether completion was detected
+            old_status: Previous status value
+            old_mode: Previous mode value
+            old_error: Previous error message
+            old_run_name: Previous run name
+
+        Returns:
+            True if this is a critical update requiring immediate broadcast
+        """
+        if completion_detected:
+            return True
+
+        new_status = self.state_manager.experiment_state.status
+        new_mode = self.state_manager.experiment_state.experiment_mode
+        new_error = self.state_manager.experiment_state.error_message
+        new_run_name = self.state_manager.experiment_state.run_name
+
+        # Status transitions are critical
+        # (especially initializing -> running, running -> aborting)
+        if old_status != new_status:
+            return True
+
+        # Error messages are critical
+        if new_error and (not old_error or old_error != new_error):
+            return True
+
+        # Mode transitions are important (train -> eval)
+        if old_mode != new_mode:
+            return True
+
+        # New experiment detection is critical (run_name changed)
+        return bool(new_run_name and new_run_name != old_run_name and old_run_name)
+
+    async def _handle_state(self, payload: MessagePayload) -> None:
+        """Handle state update message from ZMQ.
+
+        Args:
+            payload: State message payload
+        """
+        # Check if this is a new experiment (run_name changed)
+        self._check_new_experiment(payload)
+
+        # Capture old values before updating state
+        old_status = self.state_manager.experiment_state.status
+        old_mode = self.state_manager.experiment_state.experiment_mode
+        old_error = self.state_manager.experiment_state.error_message
+        old_run_name = self.state_manager.experiment_state.run_name
+
+        # Update state from payload and detect completion
+        completion_detected = self._update_state_from_payload(payload)
+
+        # Check if this is a critical update
+        critical_update = self._is_critical_update(
+            completion_detected, old_status, old_mode, old_error, old_run_name
+        )
 
         # Update last_update timestamp
         self.state_manager.experiment_state.last_update = datetime.now(timezone.utc)
-        await self.state_manager.broadcast_update()
+
+        # Force immediate broadcast for critical signals to ensure browser gets updates
+        # especially important for fast experiments and status transitions
+        await self.state_manager.broadcast_update(force=critical_update)
 
     def _normalize_value(self, key: str, value: Any) -> Any:
         """Normalize value based on its type (e.g., datetime conversion).
@@ -153,7 +235,7 @@ class ZmqMessageHandler:
             return parsed_value
         return value
 
-    def _check_completion(self, key: str, value: Any) -> None:
+    def _check_completion(self, key: str, value: Any) -> bool:
         """Check if experiment has completed and signal if needed.
 
         Signals completion for "completed", "error", and "aborted" statuses.
@@ -163,23 +245,29 @@ class ZmqMessageHandler:
         Args:
             key: State key name
             value: State value
+
+        Returns:
+            True if completion was detected, False otherwise
         """
-        if (
-            key == "status"
-            and value in ("completed", "error", "aborted")
-            and self.experiment_completed
-        ):
-            if value == "completed":
-                status_msg = "completed"
-            elif value == "error":
-                status_msg = "errored"
-            else:  # aborted
-                status_msg = "aborted"
-            logger.info(
-                "Experiment %s - shutdown monitor will check status",
-                status_msg,
-            )
-            self.experiment_completed.set()
+        if key != "status":
+            return False
+        if value not in ("completed", "error", "aborted"):
+            return False
+        if not self.experiment_completed:
+            return False
+
+        status_msg_map = {
+            "completed": "completed",
+            "error": "errored",
+            "aborted": "aborted",
+        }
+        status_msg = status_msg_map[value]
+        logger.info(
+            "Experiment %s - shutdown monitor will check status",
+            status_msg,
+        )
+        self.experiment_completed.set()
+        return True
 
     @staticmethod
     def _parse_datetime(value: str) -> datetime | None:

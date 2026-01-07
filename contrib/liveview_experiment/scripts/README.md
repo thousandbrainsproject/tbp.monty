@@ -6,7 +6,7 @@ One-shot setup and run scripts for LiveView experiment monitoring.
 
 ### `setup.sh`
 
-Installs pyview-web and uvicorn in the existing tbp.monty conda environment (Python 3.8).
+Sets up LiveView experiment monitoring with separate Python environments.
 
 **Usage:**
 ```bash
@@ -14,13 +14,17 @@ Installs pyview-web and uvicorn in the existing tbp.monty conda environment (Pyt
 ```
 
 **Prerequisites:**
-- tbp.monty conda environment must exist and be set up
+- tbp.monty conda environment must exist and be set up (Python 3.8)
 - Core dependencies (hydra-core, torch) must be installed
+- Python 3.14+ (or 3.11+) available for LiveView server (preferred)
 
 **What it does:**
 - Verifies tbp.monty environment exists
 - Checks core dependencies are installed
-- Installs pyview-web>=0.7.0 and uvicorn[standard]>=0.32.0 (same as my_mvg_departures)
+- Installs `pyzmq` in main Python 3.8 environment (for ZMQ communication)
+- Creates separate Python 3.14+ virtual environment (`.liveview_venv`) for LiveView server
+- Installs `pyview-web>=0.8.1` and `uvicorn[standard]>=0.32.0` only in the venv
+- Installs dev dependencies (black, ruff, mypy, pytest) in the venv
 
 ## Run Script
 
@@ -37,7 +41,7 @@ Runs a Monty experiment with LiveView monitoring.
 
 **What it does:**
 - Automatically detects and activates `tbp.monty` environment
-- Verifies pyview-web and uvicorn are installed
+- Starts LiveView server in Python 3.14+ venv (if available)
 - Runs the experiment with LiveView dashboard at http://127.0.0.1:8000
 
 ### Running a bigger experiment

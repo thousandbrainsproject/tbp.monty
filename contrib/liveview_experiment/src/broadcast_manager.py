@@ -38,12 +38,15 @@ class BroadcastManager:
         self._last_broadcast_time = 0.0
         self._pending_broadcast = False
 
-    async def broadcast_if_needed(self) -> None:
+    async def broadcast_if_needed(self, force: bool = False) -> None:
         """Broadcast update if throttle period has passed.
 
         Checks throttle and broadcasts via pubsub and direct socket calls.
+
+        Args:
+            force: If True, bypass throttling and broadcast immediately
         """
-        if not self._should_broadcast():
+        if not force and not self._should_broadcast():
             self._pending_broadcast = True
             return
 

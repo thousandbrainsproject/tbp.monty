@@ -71,16 +71,17 @@ if ! python -c "import hydra" 2>/dev/null; then
     exit 1
 fi
 
-# Check if config exists in contrib directory (git-friendly, non-destructive)
+# Check if LiveView config exists in contrib directory first (preferred)
 # Use absolute paths to ensure it works from any directory
 CONFIG_PATH="${LIVEVIEW_DIR}/conf/experiment/${EXPERIMENT_NAME}.yaml"
+IS_LIVEVIEW_CONFIG=false
 if [ ! -f "$CONFIG_PATH" ]; then
-    # Also check main experiment directory (for backwards compatibility)
-    CONFIG_PATH_MAIN="${TBP_MONTY_ROOT}/conf/experiment/${EXPERIMENT_NAME}.yaml"
-    if [ ! -f "$CONFIG_PATH_MAIN" ]; then
+    # Fall back to main experiment directory
+    CONFIG_PATH="${TBP_MONTY_ROOT}/conf/experiment/${EXPERIMENT_NAME}.yaml"
+    if [ ! -f "$CONFIG_PATH" ]; then
         echo "Error: Experiment config not found:" >&2
+        echo "  ${LIVEVIEW_DIR}/conf/experiment/${EXPERIMENT_NAME}.yaml" >&2
         echo "  ${CONFIG_PATH}" >&2
-        echo "  ${CONFIG_PATH_MAIN}" >&2
         echo "" >&2
         echo "Available experiments:" >&2
         if [ -d "${LIVEVIEW_DIR}/conf/experiment" ]; then
@@ -92,9 +93,10 @@ if [ ! -f "$CONFIG_PATH" ]; then
             ls -1 "${TBP_MONTY_ROOT}/conf/experiment"/*.yaml 2>/dev/null | sed 's|.*/|    |' | sed 's|\.yaml$||' || true
         fi
         exit 1
-    else
-        CONFIG_PATH="$CONFIG_PATH_MAIN"
     fi
+else
+    # Config is in contrib directory, so it's a LiveView config with values already defined
+    IS_LIVEVIEW_CONFIG=true
 fi
 
 echo "✓ Environment: $CONDA_DEFAULT_ENV" >&2
@@ -114,7 +116,7 @@ LIVEVIEW_HOST="127.0.0.1"
 LIVEVIEW_PORT="8000"
 ZMQ_PORT="5555"
 
-# Check for Python 3.11+ for LiveView server
+# Check for Python 3.14+ for LiveView server (prefer latest, fallback to 3.11+)
 if [ -d "${LIVEVIEW_DIR}/.liveview_venv" ]; then
     LIVEVIEW_PYTHON="${LIVEVIEW_DIR}/.liveview_venv/bin/python"
     if [ -f "$LIVEVIEW_PYTHON" ]; then
@@ -144,7 +146,7 @@ echo "Starting experiment..." >&2
 if [ -n "$LIVEVIEW_SERVER_PID" ]; then
     echo "LiveView dashboard available at: http://${LIVEVIEW_HOST}:${LIVEVIEW_PORT}" >&2
 else
-    echo "Note: LiveView server not started (Python 3.11+ not available)" >&2
+        echo "Note: LiveView server not started (Python 3.11+ not available, prefer 3.14+)" >&2
     echo "      Experiment will still publish to ZMQ (if server started separately)" >&2
 fi
 echo "Press Ctrl+C to stop" >&2
@@ -183,16 +185,35 @@ trap cleanup INT TERM EXIT
 cd "$TBP_MONTY_ROOT"
 
 # Run experiment - if it hangs, Ctrl-C will trigger the trap
-python run.py \
-    "experiment=${EXPERIMENT_NAME}" \
-    "hydra.searchpath=[${TBP_MONTY_ROOT}/conf,${LIVEVIEW_DIR}/conf]" \
-    "experiment.config.liveview_host=${LIVEVIEW_HOST}" \
-    "experiment.config.liveview_port=${LIVEVIEW_PORT}" \
-    "experiment.config.zmq_port=${ZMQ_PORT}" || {
-    EXPERIMENT_EXIT_CODE=$?
-    cleanup
-    exit $EXPERIMENT_EXIT_CODE
-}
+if [ "$IS_LIVEVIEW_CONFIG" = "true" ]; then
+    # LiveView config exists - use it as-is (values from yaml are defaults)
+    # Only override ports/host if needed (but they should already be in the config)
+    python run.py \
+        "experiment=${EXPERIMENT_NAME}" \
+        "hydra.searchpath=[${TBP_MONTY_ROOT}/conf,${LIVEVIEW_DIR}/conf]" || {
+        EXPERIMENT_EXIT_CODE=$?
+        cleanup
+        exit $EXPERIMENT_EXIT_CODE
+    }
+else
+    # Base config - add LiveView support via command line options
+    # Also disable wandb and excessive logging
+    python run.py \
+        "experiment=${EXPERIMENT_NAME}" \
+        "hydra.searchpath=[${TBP_MONTY_ROOT}/conf,${LIVEVIEW_DIR}/conf]" \
+        "experiment._target_=contrib.liveview_experiment.src.monty_experiment_with_liveview.MontyExperimentWithLiveView" \
+        "+experiment.config.liveview_host=${LIVEVIEW_HOST}" \
+        "+experiment.config.liveview_port=${LIVEVIEW_PORT}" \
+        "+experiment.config.zmq_port=${ZMQ_PORT}" \
+        "+experiment.config.enable_liveview=true" \
+        "+experiment.config.sensor_image_throttle_ms=100" \
+        "experiment.config.logging.wandb_handlers=[]" \
+        "experiment.config.logging.monty_handlers=[]" || {
+        EXPERIMENT_EXIT_CODE=$?
+        cleanup
+        exit $EXPERIMENT_EXIT_CODE
+    }
+fi
 
 EXPERIMENT_EXIT_CODE=$?
 

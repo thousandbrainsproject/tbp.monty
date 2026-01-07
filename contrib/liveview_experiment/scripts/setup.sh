@@ -1,8 +1,10 @@
 #!/bin/bash
 # Setup script for LiveView Experiment Monitor
-# Installs pyview-web and uvicorn in the existing tbp.monty conda environment (Python 3.8)
+# Sets up separate Python 3.14+ environment for LiveView server
+# Installs pyview-web and uvicorn only in the venv (not in main Python 3.8 environment)
+# Installs pyzmq in main environment for ZMQ communication
 
-set -euo pipefail
+set -eo pipefail
 
 # Find script and project directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,8 +44,11 @@ if [ -z "${CONDA_DEFAULT_ENV:-}" ] || [ "$CONDA_DEFAULT_ENV" != "tbp.monty" ]; t
     echo "Warning: tbp.monty conda environment is not activated." >&2
     echo "Activating now..." >&2
     echo "" >&2
+    # Initialize conda, handling potential unbound variable issues
     eval "$(conda shell.bash hook)" 2>/dev/null || true
-    conda activate tbp.monty || {
+    # Set MKL_INTERFACE_LAYER if not set to avoid unbound variable errors
+    export MKL_INTERFACE_LAYER="${MKL_INTERFACE_LAYER:-LP64,GNU}"
+    conda activate tbp.monty 2>&1 || {
         echo "Error: Could not activate tbp.monty environment." >&2
         echo "Please run: conda activate tbp.monty" >&2
         exit 1
@@ -136,37 +141,39 @@ echo "Installing LiveView dependencies..." >&2
 PYTHON_MAJOR=$(echo "$PYTHON_VERSION" | cut -d. -f1)
 PYTHON_MINOR=$(echo "$PYTHON_VERSION" | cut -d. -f2)
 
+# Initialize variables
+LIVEVIEW_VENV=""
+PYTHON311_CMD=""
+
 # Check if Python version supports pyview-web
 if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 11 ]; then
-    # Python 3.11+ - can install pyview-web directly
-    if ! python -c "import pyview" 2>/dev/null; then
-        echo "Installing pyview-web..." >&2
-        pip install "pyview-web>=0.7.0" >&2 || {
-            echo "Warning: Failed to install pyview-web" >&2
-        }
-        echo "✓ pyview-web installed" >&2
-    else
-        echo "✓ pyview-web already installed" >&2
-    fi
+    # Python 3.11+ - can install pyview-web directly (prefer 3.14+ for latest features)
+    # Upgrade pip first
+    pip install --upgrade --quiet pip >&2 || true
     
-    if ! python -c "import uvicorn" 2>/dev/null; then
-        echo "Installing uvicorn..." >&2
-        pip install "uvicorn[standard]>=0.32.0" >&2 || {
-            echo "Warning: Failed to install uvicorn" >&2
-        }
-        echo "✓ uvicorn installed" >&2
-    else
-        echo "✓ uvicorn already installed" >&2
-    fi
+    # Install the package with LiveView dependencies (only needed in Python 3.11+)
+    cd "$LIVEVIEW_DIR"
+    echo "Installing/upgrading liveview-experiment package with LiveView dependencies..." >&2
+    pip install --upgrade --quiet -e ".[liveview]" >&2 || {
+        echo "Warning: Failed to install/upgrade liveview-experiment package" >&2
+    }
+    
+    # Install dev dependencies for testing
+    echo "Installing/upgrading dev dependencies (black, ruff, mypy, pytest)..." >&2
+    pip install --upgrade --quiet -e ".[dev]" >&2 || {
+        echo "Warning: Failed to install/upgrade dev dependencies" >&2
+    }
+    
+    echo "✓ LiveView dependencies installed/upgraded" >&2
 else
-    # Python 3.8-3.10 - set up separate Python 3.11+ environment for LiveView server
-    echo "Python $PYTHON_VERSION detected (pyview-web requires >= 3.11)" >&2
-    echo "Setting up separate Python 3.11+ environment for LiveView server..." >&2
+    # Python 3.8-3.10 - set up separate Python 3.14+ environment for LiveView server (prefer latest)
+    echo "Python $PYTHON_VERSION detected (pyview-web requires >= 3.11, prefer 3.14+)" >&2
+    echo "Setting up separate Python 3.14+ environment for LiveView server..." >&2
     echo "" >&2
     
-    # Check if Python 3.11+ is available
-    PYTHON311_CMD=""
-    for cmd in python3.11 python3.12 python3.13 python3; do
+    # Check if Python 3.14+ is available (prefer latest, fallback to 3.11+)
+    # LIVEVIEW_VENV and PYTHON311_CMD already initialized above
+    for cmd in python3.14 python3.13 python3.12 python3.11 python3; do
         if command -v "$cmd" >/dev/null 2>&1; then
             PYTHON311_VERSION=$($cmd --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
             PYTHON311_MAJOR=$(echo "$PYTHON311_VERSION" | cut -d. -f1)
@@ -174,6 +181,9 @@ else
             if [ "$PYTHON311_MAJOR" -ge 3 ] && [ "$PYTHON311_MINOR" -ge 11 ]; then
                 PYTHON311_CMD="$cmd"
                 echo "✓ Found Python $PYTHON311_VERSION at: $PYTHON311_CMD" >&2
+                if [ "$PYTHON311_MINOR" -ge 14 ]; then
+                    echo "  Using Python 3.14+ for latest pyview-web features" >&2
+                fi
                 break
             fi
         fi
@@ -183,10 +193,10 @@ else
         echo "Warning: No Python 3.11+ found for LiveView server" >&2
         echo "  - Web dashboard will not be available" >&2
         echo "  - Pub/sub streaming system will still work" >&2
-        echo "  - Install Python 3.11+ to enable web dashboard" >&2
+        echo "  - Install Python 3.14+ (or 3.11+) to enable web dashboard" >&2
         echo "" >&2
     else
-        # Create a virtual environment for the LiveView server
+        # Create or update virtual environment for the LiveView server
         LIVEVIEW_VENV="${LIVEVIEW_DIR}/.liveview_venv"
         if [ ! -d "$LIVEVIEW_VENV" ]; then
             echo "Creating virtual environment for LiveView server..." >&2
@@ -194,13 +204,27 @@ else
                 echo "Warning: Could not create virtual environment" >&2
                 PYTHON311_CMD=""
             }
+        else
+            echo "Updating existing LiveView virtual environment..." >&2
         fi
         
         if [ -n "$PYTHON311_CMD" ] && [ -d "$LIVEVIEW_VENV" ]; then
-            echo "Installing pyview-web and pyzmq in LiveView virtual environment..." >&2
-            "$LIVEVIEW_VENV/bin/pip" install --quiet "pyview-web>=0.7.0" "uvicorn[standard]>=0.32.0" "pyzmq>=25.0.0" >&2 || {
-                echo "Warning: Could not install dependencies in virtual environment" >&2
+            # Upgrade pip first
+            "$LIVEVIEW_VENV/bin/pip" install --upgrade --quiet pip >&2 || true
+            
+            # Install the package with LiveView dependencies (only in the venv)
+            cd "$LIVEVIEW_DIR"
+            echo "Installing/upgrading liveview-experiment package with LiveView dependencies..." >&2
+            "$LIVEVIEW_VENV/bin/pip" install --upgrade --quiet -e ".[liveview]" >&2 || {
+                echo "Warning: Could not install/upgrade liveview-experiment package" >&2
             }
+            
+            # Install dev dependencies for testing
+            echo "Installing/upgrading dev dependencies (black, ruff, mypy, pytest)..." >&2
+            "$LIVEVIEW_VENV/bin/pip" install --upgrade --quiet -e ".[dev]" >&2 || {
+                echo "Warning: Could not install/upgrade dev dependencies" >&2
+            }
+            
             echo "✓ LiveView server environment ready" >&2
             echo "  - Main experiment: Python $PYTHON_VERSION" >&2
             echo "  - LiveView server: Python $PYTHON311_VERSION (separate process)" >&2
@@ -223,16 +247,16 @@ echo "✓ Experiment config found at:" >&2
 echo "  $CONFIG_SOURCE" >&2
 echo "" >&2
 
-# Install pyzmq for ZMQ-based communication (required for cross-process pub/sub)
+# Install pyzmq in main environment (needed for ZMQ communication from experiment)
+# LiveView dependencies (pyview-web, uvicorn) are only installed in the venv
 if ! python -c "import zmq" 2>/dev/null; then
     echo "Installing pyzmq for ZMQ communication..." >&2
-    pip install pyzmq >&2 || {
-        echo "Error: Could not install pyzmq. ZMQ communication will not work." >&2
-        exit 1
+    pip install --quiet "pyzmq>=25.0.0" >&2 || {
+        echo "Warning: Could not install pyzmq. ZMQ communication may not work." >&2
     }
     echo "✓ pyzmq installed" >&2
 else
-    echo "✓ pyzmq already installed" >&2
+    echo "✓ pyzmq available" >&2
 fi
 
 # Install radon for complexity analysis (optional but recommended)
@@ -246,26 +270,27 @@ else
     echo "✓ radon already installed" >&2
 fi
 
-# Install dev dependencies for code quality checks from pyproject.toml
-echo "Installing dev dependencies for code quality checks..." >&2
-cd "$LIVEVIEW_DIR"
-if [ -f "pyproject.toml" ]; then
-    if pip install -e ".[dev]" >&2; then
-        echo "✓ Dev dependencies installed from pyproject.toml" >&2
-    else
-        echo "Warning: Could not install dev dependencies from pyproject.toml" >&2
-        echo "Falling back to individual installations..." >&2
-        pip install "black>=24.0.0" "ruff>=0.4.0" "mypy>=1.0.0" "pytest>=8.0.0" "vulture>=2.0.0" >&2 || {
-            echo "Warning: Could not install dev dependencies. Code quality checks may not work." >&2
-        }
-    fi
+# Dev dependencies handling:
+# - If Python 3.11+, dev dependencies were already installed above with the package
+# - If Python < 3.11 and venv was created, dev dependencies are in the venv
+# - test.sh will use the venv (Python 3.14+) for running tests, so dev deps are available there
+# - We don't install the package in Python 3.8 environment (LiveView deps not needed there)
+if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 11 ]; then
+    # We're already in Python 3.11+, dev dependencies were installed above
+    echo "✓ Dev dependencies available (installed with package)" >&2
+elif [ -n "$PYTHON311_CMD" ] && [ -n "$LIVEVIEW_VENV" ] && [ -d "$LIVEVIEW_VENV" ]; then
+    # Using separate venv - dev dependencies are already installed there
+    echo "✓ Dev dependencies available in LiveView venv (Python 3.14+)" >&2
+    echo "  Note: Run tests with: ./scripts/test.sh (uses LiveView venv)" >&2
+    echo "  Note: LiveView dependencies only installed in venv, not in main Python 3.8 environment" >&2
 else
-    echo "Warning: pyproject.toml not found, installing dev dependencies individually..." >&2
-    pip install "black>=24.0.0" "ruff>=0.4.0" "mypy>=1.0.0" "pytest>=8.0.0" "vulture>=2.0.0" >&2 || {
-        echo "Warning: Could not install dev dependencies. Code quality checks may not work." >&2
-    }
+    # No venv available and Python < 3.11 - skip dev deps (they require pyview-web which needs 3.11+)
+    echo "Note: Dev dependencies not installed in Python 3.8 environment" >&2
+    echo "  They require pyview-web (needs Python 3.11+)" >&2
+    if [ -z "$PYTHON311_CMD" ]; then
+        echo "  Install Python 3.14+ to enable dev dependencies and testing" >&2
+    fi
 fi
-cd "$TBP_MONTY_ROOT"
 
 echo "" >&2
 echo "✓ Setup complete!" >&2

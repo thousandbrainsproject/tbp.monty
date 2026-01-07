@@ -107,10 +107,10 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         # This ensures PyView detects the change and triggers a re-render
         socket.context = self._create_context_from_state(state)
 
-    def _normalize_status(self, status: str | None) :  # type: ignore[override]
+    def _normalize_status(self, status: str | None) -> str:
         """Normalize status to a value understood by the UI.
 
-        We treat a small, explicit set of states as first‑class:
+        We treat a small, explicit set of states as first-class:
 
         - ``initializing``: LiveView waiting for first data
         - ``running``: experiment is in progress (train or eval)
@@ -119,7 +119,7 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         - ``aborting``: abort requested, experiment still shutting down
         - ``aborted``: experiment stopped early by the user
 
-        Any other non‑empty status string is passed through unchanged so that
+        Any other non-empty status string is passed through unchanged so that
         future extensions still show *something* sensible instead of silently
         mapping to ``initializing``.
         """
@@ -343,9 +343,16 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         sensor_images = viz_state.sensor_images
 
         # Wrap JSON in Markup to prevent HTML escaping in template
+        current_max = viz_state.current_max_evidence
         return {
             "chart_data_json": Markup(viz_state.get_chart_data_json()),
             "chart_point_count": viz_state.point_count,
+            "current_max_evidence_object": (
+                current_max[0] if current_max is not None else ""
+            ),
+            "current_max_evidence_value": (
+                f"{current_max[1]:.3f}" if current_max is not None else ""
+            ),
             # Sensor images (base64-encoded PNG)
             "camera_image_b64": sensor_images.camera_image,
             "depth_image_b64": sensor_images.depth_image,

@@ -404,6 +404,20 @@
             </div>
         </div>
 
+
+        <div class="section" id="max-evidence-section" phx-hook="MaxEvidence">
+            <div class="section-title">Current Max Evidence</div>
+            <div class="info-row" id="max-evidence-content">
+                {% if current_max_evidence_object %}
+                <span class="info-label">{{ current_max_evidence_object }}</span>
+                <span class="info-value">{{ current_max_evidence_value }}</span>
+                {% else %}
+                <span class="info-label">N/A</span>
+                <span class="info-value"></span>
+                {% endif %}
+            </div>
+        </div>
+
         <!-- Sensor Images Section -->
         {% if has_sensor_images %}
         <div class="section">

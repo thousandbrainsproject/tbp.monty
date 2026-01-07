@@ -235,6 +235,23 @@ class VisualizationState:
             return None
         return self.evidence_history[-1].step
 
+    @property
+    def current_max_evidence(self) -> tuple[str, float] | None:
+        """Current maximum evidence from the latest evidence point.
+
+        Returns:
+            Tuple of (object_name, evidence_value) for the object with highest evidence,
+            or None if no evidence data is available.
+        """
+        if not self.evidence_history:
+            return None
+        latest_point = self.evidence_history[-1]
+        if not latest_point.evidences:
+            return None
+        # Find the object with the maximum evidence
+        max_object = max(latest_point.evidences.items(), key=lambda x: x[1])
+        return (max_object[0], max_object[1])
+
     def get_unsent_data(self) -> dict[str, Any] | None:
         """Get only data points that haven't been sent via push_event yet.
 
@@ -259,11 +276,21 @@ class VisualizationState:
         # Get new episode markers
         new_markers = self.episode_markers[self._last_sent_episode_count :]
 
+        # Get current max evidence
+        max_evidence = self.current_max_evidence
+        max_evidence_data = None
+        if max_evidence is not None:
+            max_evidence_data = {
+                "object": max_evidence[0],
+                "value": max_evidence[1],
+            }
+
         return {
             "new_points": [p.to_dict() for p in new_points],
             "new_markers": [m.to_dict() for m in new_markers],
             "new_object_names": sorted(self.object_names),
             "total_points": current_count,
+            "current_max_evidence": max_evidence_data,
         }
 
     def mark_as_sent(self) -> None:
