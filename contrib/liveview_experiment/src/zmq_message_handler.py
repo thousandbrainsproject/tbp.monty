@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import asyncio
 
+    from .liveview_types import MessagePayload
     from .state_manager import ExperimentStateManager
-    from .types import MessagePayload
 
 logger = logging.getLogger(__name__)
 

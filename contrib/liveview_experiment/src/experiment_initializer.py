@@ -15,7 +15,7 @@ from .experiment_config_extractor import ExperimentConfigExtractor
 from .zmq_broadcaster import ZmqBroadcaster
 
 if TYPE_CHECKING:
-    from .types import ConfigDict
+    from .liveview_types import ConfigDict
 
 logger = logging.getLogger(__name__)
 

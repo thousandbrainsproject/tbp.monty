@@ -49,7 +49,7 @@ from .metadata_extractor import ExperimentMetadata, MetadataExtractor
 from .state_update_builder import StateUpdateBuilder
 
 if TYPE_CHECKING:
-    from .types import ConfigDict
+    from .liveview_types import ConfigDict
 
 from .command_subscriber import CommandSubscriber
 from .zmq_broadcaster import ZmqBroadcaster  # noqa: TC001

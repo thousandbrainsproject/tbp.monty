@@ -18,7 +18,7 @@ from .experiment_state import ExperimentState
 from .visualization_state import ChartBufferConfig, VisualizationStateManager
 
 if TYPE_CHECKING:
-    from .types import MessagePayload, MetricData, MetricMetadata
+    from .liveview_types import MessagePayload, MetricData, MetricMetadata
 
 if TYPE_CHECKING:
     from pyview import LiveViewSocket
