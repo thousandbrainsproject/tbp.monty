@@ -40,6 +40,24 @@ Runs a Monty experiment with LiveView monitoring.
 - Verifies pyview-web and uvicorn are installed
 - Runs the experiment with LiveView dashboard at http://127.0.0.1:8000
 
+### Running a bigger experiment
+
+The default `tutorial_surf_agent_2obj_with_liveview` is a small, fast tutorial
+configuration. To stress‑test the LiveView (more objects, more steps), you can
+run one of the larger contrib experiments. For example, from the `tbp.monty`
+repo root:
+
+```bash
+./contrib/liveview_experiment/scripts/run.sh randrot_10distinctobj_surf_agent_with_liveview
+```
+
+This will:
+
+- Start the standalone LiveView server on `http://127.0.0.1:8000`
+- Run the `randrot_10distinctobj_surf_agent_with_liveview` experiment in the
+  `tbp.monty` conda environment
+- Stream live evidence curves and sensor images into the dashboard
+
 ## Quick Start
 
 ```bash
