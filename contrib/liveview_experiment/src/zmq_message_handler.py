@@ -156,18 +156,27 @@ class ZmqMessageHandler:
     def _check_completion(self, key: str, value: Any) -> None:
         """Check if experiment has completed and signal if needed.
 
+        Signals completion for "completed", "error", and "aborted" statuses.
+        The shutdown monitor will check the status and decide whether to
+        actually shut down (aborted experiments keep the server running).
+
         Args:
             key: State key name
             value: State value
         """
         if (
             key == "status"
-            and value in ("completed", "error")
+            and value in ("completed", "error", "aborted")
             and self.experiment_completed
         ):
-            status_msg = "completed" if value == "completed" else "errored"
+            if value == "completed":
+                status_msg = "completed"
+            elif value == "error":
+                status_msg = "errored"
+            else:  # aborted
+                status_msg = "aborted"
             logger.info(
-                "Experiment %s - will linger for 1 minute before shutdown",
+                "Experiment %s - shutdown monitor will check status",
                 status_msg,
             )
             self.experiment_completed.set()
