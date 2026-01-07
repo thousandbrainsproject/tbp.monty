@@ -71,6 +71,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
     def __init__(
         self,
         config: ConfigDict,
+        *,
         liveview_port: int | None = None,
         liveview_host: str | None = None,
         enable_liveview: bool | None = None,
@@ -512,40 +513,73 @@ class MontyExperimentWithLiveView(MontyExperiment):
             return None
 
         try:
-            # Get agent ID for observation access
-            if not hasattr(self.model, "motor_system"):
+            agent_id = self._get_agent_id()
+            if agent_id is None:
                 return None
-            agent_id = self.model.motor_system._policy.agent_id
 
-            # Extract view_finder (camera) image
-            camera_b64 = None
-            if "view_finder" in observation.get(agent_id, {}):
-                view_finder_obs = observation[agent_id]["view_finder"]
-                if "rgba" in view_finder_obs:
-                    rgba = view_finder_obs["rgba"]
-                    camera_b64 = self._numpy_to_base64_png(rgba)
+            agent_observation = observation.get(agent_id, {})
 
-            # Extract depth image from first sensor module
-            depth_b64 = None
-            if self.model.sensor_modules:
-                first_sm_id = self.model.sensor_modules[0].sensor_module_id
-                if first_sm_id in observation.get(agent_id, {}):
-                    sm_obs = observation[agent_id][first_sm_id]
-                    if "depth" in sm_obs:
-                        depth = sm_obs["depth"]
-                        depth_b64 = self._depth_to_base64_png(depth)
+            camera_b64 = self._extract_camera_image_b64(agent_observation)
+            depth_b64 = self._extract_depth_image_b64(agent_observation)
 
-            if camera_b64 or depth_b64:
-                return {
-                    "camera_image": camera_b64,
-                    "depth_image": depth_b64,
-                    "step": step,
-                    "timestamp": time.time(),
-                }
+            if not (camera_b64 or depth_b64):
+                return None
+
+            return self._build_sensor_image_payload(camera_b64, depth_b64, step)
         except (KeyError, AttributeError, TypeError, IndexError) as e:
             logger.debug("Error extracting sensor images: %s", e)
+            return None
 
-        return None
+    def _get_agent_id(self) -> str | None:
+        """Safely get the agent id from the model."""
+        motor_system = getattr(self.model, "motor_system", None)
+        if motor_system is None or not hasattr(motor_system, "_policy"):
+            return None
+        agent_id = getattr(motor_system._policy, "agent_id", None)
+        return str(agent_id) if agent_id is not None else None
+
+    def _extract_camera_image_b64(self, agent_observation: Any) -> str | None:
+        """Extract base64-encoded camera image from agent observation."""
+        view_finder = agent_observation.get("view_finder")
+        if not isinstance(view_finder, dict):
+            return None
+
+        rgba = view_finder.get("rgba")
+        if rgba is None:
+            return None
+
+        return self._numpy_to_base64_png(rgba)
+
+    def _extract_depth_image_b64(self, agent_observation: Any) -> str | None:
+        """Extract base64-encoded depth image from agent observation."""
+        if not getattr(self.model, "sensor_modules", None):
+            return None
+
+        first_module = self.model.sensor_modules[0]
+        first_sm_id = getattr(first_module, "sensor_module_id", None)
+        if first_sm_id is None:
+            return None
+
+        sm_obs = agent_observation.get(first_sm_id)
+        if not isinstance(sm_obs, dict):
+            return None
+
+        depth = sm_obs.get("depth")
+        if depth is None:
+            return None
+
+        return self._depth_to_base64_png(depth)
+
+    def _build_sensor_image_payload(
+        self, camera_b64: str | None, depth_b64: str | None, step: int
+    ) -> dict[str, Any]:
+        """Build payload dictionary for sensor images."""
+        return {
+            "camera_image": camera_b64,
+            "depth_image": depth_b64,
+            "step": step,
+            "timestamp": time.time(),
+        }
 
     def _numpy_to_base64_png(self, img_array: np.ndarray) -> str | None:
         """Convert numpy RGBA array to base64-encoded PNG.
@@ -557,28 +591,35 @@ class MontyExperimentWithLiveView(MontyExperiment):
             Base64-encoded PNG string, or None on failure.
         """
         try:
-            # Ensure array is uint8
-            if img_array.dtype != np.uint8:
-                if img_array.max() <= 1.0:
-                    img_array = (img_array * 255).astype(np.uint8)
-                else:
-                    img_array = img_array.astype(np.uint8)
-
-            # Create PIL Image
-            if img_array.shape[-1] == 4:
-                img = Image.fromarray(img_array, mode="RGBA")
-            else:
-                img = Image.fromarray(img_array, mode="RGB")
-
-            # Encode to PNG in memory
-            buffer = io.BytesIO()
-            img.save(buffer, format="PNG", optimize=True)
-            buffer.seek(0)
-
-            return base64.b64encode(buffer.read()).decode("utf-8")
+            normalized = self._normalize_image_array(img_array)
+            img = self._create_pil_image_from_array(normalized)
+            return self._encode_image_to_base64(img)
         except (ValueError, TypeError, OSError) as e:
             logger.debug("Failed to encode image: %s", e)
             return None
+
+    def _normalize_image_array(self, img_array: np.ndarray) -> np.ndarray:
+        """Normalize an image array to uint8 RGB(A) format."""
+        if img_array.dtype != np.uint8:
+            max_value = float(img_array.max())
+            if max_value <= 1.0:
+                img_array = (img_array * 255).astype(np.uint8)
+            else:
+                img_array = img_array.astype(np.uint8)
+        return img_array
+
+    def _create_pil_image_from_array(self, img_array: np.ndarray) -> Image.Image:
+        """Create a PIL Image from a numpy array."""
+        if img_array.shape[-1] == 4:
+            return Image.fromarray(img_array, mode="RGBA")
+        return Image.fromarray(img_array, mode="RGB")
+
+    def _encode_image_to_base64(self, img: Image.Image) -> str:
+        """Encode a PIL Image as a base64 PNG string."""
+        buffer = io.BytesIO()
+        img.save(buffer, format="PNG", optimize=True)
+        buffer.seek(0)
+        return base64.b64encode(buffer.read()).decode("utf-8")
 
     def _depth_to_base64_png(self, depth_array: np.ndarray) -> str | None:
         """Convert depth array to base64-encoded PNG with colormap.

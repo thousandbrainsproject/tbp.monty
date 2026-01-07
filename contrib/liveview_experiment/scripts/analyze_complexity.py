@@ -297,11 +297,23 @@ def find_protocol_implementing_classes(
     """Find classes that implement protocols."""
     implementing_classes: set[str] = set()
     for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef):
-            base_names = get_protocol_base_names(node)
-            if _implements_protocol(base_names, protocol_classes, protocol_signatures):
-                implementing_classes.add(node.name)
+        if not isinstance(node, ast.ClassDef):
+            continue
+
+        if _class_implements_protocol(node, protocol_classes, protocol_signatures):
+            implementing_classes.add(node.name)
+
     return implementing_classes
+
+
+def _class_implements_protocol(
+    node: ast.ClassDef,
+    protocol_classes: set[str],
+    protocol_signatures: dict[str, set[str]],
+) -> bool:
+    """Check if a class definition implements any known protocol."""
+    base_names = get_protocol_base_names(node)
+    return _implements_protocol(base_names, protocol_classes, protocol_signatures)
 
 
 def check_if_protocol_method(
@@ -615,14 +627,22 @@ def _extract_protocol_from_file(
         py_file: Python file path
         protocol_signatures: Dict to update with protocol signatures
     """
+    tree = _parse_protocol_file(py_file)
+    if tree is None:
+        return
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef) and is_protocol_class(node, tree):
+            protocol_signatures[node.name] = _extract_method_names(node)
+
+
+def _parse_protocol_file(py_file: Path) -> ast.AST | None:
+    """Parse a Python file and return its AST, or None on error."""
     try:
         source_code = py_file.read_text(encoding="utf-8")
-        tree = ast.parse(source_code, filename=str(py_file))
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ClassDef) and is_protocol_class(node, tree):
-                protocol_signatures[node.name] = _extract_method_names(node)
+        return ast.parse(source_code, filename=str(py_file))
     except (SyntaxError, UnicodeDecodeError):
-        pass
+        return None
 
 
 def collect_protocol_signatures(root_dir: Path) -> dict[str, set[str]]:
@@ -720,10 +740,6 @@ def main() -> None:
     )
     ReportGenerator.save_report(report_path, report_data)
     print(f"\nDetailed report saved to: {report_path}")
-
-
-if __name__ == "__main__":
-    main()
 
 
 if __name__ == "__main__":

@@ -167,20 +167,25 @@ class CommandSubscriber:
     def _listen_loop(self) -> None:
         """Background loop to receive and process commands."""
         while self._running:
-            try:
-                # Non-blocking receive with timeout
-                message = self._socket.recv_string(zmq.NOBLOCK)
-                self._process_message(message)
-            except zmq.Again:
-                # No message available, continue
-                continue
-            except zmq.ZMQError as e:
-                if self._running:  # Only log if not shutting down
-                    logger.debug("ZMQ error in command listener: %s", e)
-                continue
-            except (AttributeError, ValueError, TypeError) as e:
-                logger.exception("Error in command listener: %s", e)
-                continue
+            self._receive_and_process_once()
+
+    def _receive_and_process_once(self) -> None:
+        """Receive a single command message (non-blocking) and process it."""
+        try:
+            # Non-blocking receive with timeout
+            message = self._socket.recv_string(zmq.NOBLOCK)
+        except zmq.Again:
+            # No message available, nothing to do
+            return
+        except zmq.ZMQError as e:
+            if self._running:  # Only log if not shutting down
+                logger.debug("ZMQ error in command listener: %s", e)
+            return
+        except (AttributeError, ValueError, TypeError) as e:
+            logger.exception("Error in command listener: %s", e)
+            return
+
+        self._process_message(message)
 
     def _process_message(self, message: str) -> None:
         """Process a received message.
@@ -189,33 +194,40 @@ class CommandSubscriber:
             message: Raw message string in format "topic json_payload".
         """
         try:
-            # Split topic from payload
-            parts = message.split(" ", 1)
-            if len(parts) != 2:
-                logger.debug("Invalid message format: %s", message[:50])
-                return
-
-            _topic, json_payload = parts
-            command = ReceivedCommand.from_json(json_payload)
+            command = self._parse_command(message)
             if command is None:
                 return
 
-            logger.info("Received command: %s", command.type)
-
-            # Set abort flag for quick checking
-            if command.type == "abort":
-                self._abort_requested.set()
-
-            # Invoke registered handlers
-            handlers = self._handlers.get(command.type, [])
-            for handler in handlers:
-                try:
-                    handler(command)
-                except (RuntimeError, ValueError, TypeError) as e:
-                    logger.exception("Handler error for %s: %s", command.type, e)
-
+            self._handle_parsed_command(command)
         except (ValueError, TypeError, KeyError) as e:
             logger.exception("Error processing command message: %s", e)
+
+    def _parse_command(self, message: str) -> ReceivedCommand | None:
+        """Parse a raw message string into a ReceivedCommand."""
+        # Split topic from payload
+        parts = message.split(" ", 1)
+        if len(parts) != 2:
+            logger.debug("Invalid message format: %s", message[:50])
+            return None
+
+        _topic, json_payload = parts
+        return ReceivedCommand.from_json(json_payload)
+
+    def _handle_parsed_command(self, command: ReceivedCommand) -> None:
+        """Handle a parsed command (set flags and call handlers)."""
+        logger.info("Received command: %s", command.type)
+
+        # Set abort flag for quick checking
+        if command.type == "abort":
+            self._abort_requested.set()
+
+        # Invoke registered handlers
+        handlers = self._handlers.get(command.type, [])
+        for handler in handlers:
+            try:
+                handler(command)
+            except (RuntimeError, ValueError, TypeError) as e:
+                logger.exception("Handler error for %s: %s", command.type, e)
 
     def is_abort_requested(self) -> bool:
         """Check if an abort command has been received.
