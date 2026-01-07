@@ -107,18 +107,34 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         # This ensures PyView detects the change and triggers a re-render
         socket.context = self._create_context_from_state(state)
 
-    def _normalize_status(self, status: str | None) -> str:
-        """Normalize status to a valid value.
+    def _normalize_status(self, status: str | None) :  # type: ignore[override]
+        """Normalize status to a value understood by the UI.
 
-        Args:
-            status: Raw status string
+        We treat a small, explicit set of states as first‑class:
 
-        Returns:
-            Normalized status string
+        - ``initializing``: LiveView waiting for first data
+        - ``running``: experiment is in progress (train or eval)
+        - ``completed``: experiment finished successfully
+        - ``error``: experiment crashed
+        - ``aborting``: abort requested, experiment still shutting down
+        - ``aborted``: experiment stopped early by the user
+
+        Any other non‑empty status string is passed through unchanged so that
+        future extensions still show *something* sensible instead of silently
+        mapping to ``initializing``.
         """
         normalized = (status or "initializing").lower()
-        valid_statuses = ("initializing", "running", "completed", "error")
-        return normalized if normalized in valid_statuses else "initializing"
+        valid_statuses = (
+            "initializing",
+            "running",
+            "completed",
+            "error",
+            "aborting",
+            "aborted",
+        )
+        if normalized in valid_statuses:
+            return normalized
+        return normalized
 
     def _normalize_mode_display(self, mode: str | None) -> str:
         """Normalize experiment mode for display.
