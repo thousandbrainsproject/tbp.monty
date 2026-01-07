@@ -324,10 +324,19 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             Dictionary with chart data and metadata for template.
         """
         viz_state = self.state_manager.visualization.state
+        sensor_images = viz_state.sensor_images
+
         # Wrap JSON in Markup to prevent HTML escaping in template
         return {
             "chart_data_json": Markup(viz_state.get_chart_data_json()),
             "chart_point_count": viz_state.point_count,
+            # Sensor images (base64-encoded PNG)
+            "camera_image_b64": sensor_images.camera_image,
+            "depth_image_b64": sensor_images.depth_image,
+            "sensor_image_step": sensor_images.step,
+            "has_sensor_images": bool(
+                sensor_images.camera_image or sensor_images.depth_image
+            ),
         }
 
     def _set_socket_context(self, socket: LiveViewSocket[ExperimentState]) -> None:

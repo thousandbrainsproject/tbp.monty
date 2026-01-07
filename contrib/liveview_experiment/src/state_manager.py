@@ -33,7 +33,12 @@ logger = logging.getLogger(__name__)
 # Well-known visualization stream names
 EVIDENCE_CHART_STREAM = "evidence_chart"
 MESH_VIEWER_STREAM = "mesh_viewer"
-VISUALIZATION_STREAMS = {EVIDENCE_CHART_STREAM, MESH_VIEWER_STREAM}
+SENSOR_IMAGES_STREAM = "sensor_images"
+VISUALIZATION_STREAMS = {
+    EVIDENCE_CHART_STREAM,
+    MESH_VIEWER_STREAM,
+    SENSOR_IMAGES_STREAM,
+}
 
 
 class ExperimentStateManager:
@@ -218,6 +223,8 @@ class ExperimentStateManager:
             self.visualization.process_evidence_data(data)
         elif stream_name == MESH_VIEWER_STREAM:
             self.visualization.process_mesh_data(data)
+        elif stream_name == SENSOR_IMAGES_STREAM:
+            self.visualization.process_sensor_images(data)
         else:
             # Generic data stream storage
             self.experiment_state.data_streams[stream_name] = data

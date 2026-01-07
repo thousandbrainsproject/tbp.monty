@@ -358,6 +358,36 @@
             </div>
         </div>
 
+        <!-- Sensor Images Section -->
+        {% if has_sensor_images %}
+        <div class="section">
+            <div class="section-title">
+                <span>Sensor Output</span>
+                <span style="font-size: 11px; color: #6b7280; font-weight: normal;">
+                    Step {{ sensor_image_step }}
+                </span>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                {% if camera_image_b64 %}
+                <div style="flex: 1; min-width: 200px;">
+                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Camera Image</div>
+                    <img src="data:image/png;base64,{{ camera_image_b64 }}" 
+                         alt="Camera view" 
+                         style="width: 100%; max-width: 300px; border: 1px solid #e5e7eb; border-radius: 4px;" />
+                </div>
+                {% endif %}
+                {% if depth_image_b64 %}
+                <div style="flex: 1; min-width: 200px;">
+                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Depth Image</div>
+                    <img src="data:image/png;base64,{{ depth_image_b64 }}" 
+                         alt="Depth view" 
+                         style="width: 100%; max-width: 300px; border: 1px solid #e5e7eb; border-radius: 4px;" />
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Evidence Chart Section -->
         <div class="section">
             <div class="section-title">

@@ -95,6 +95,44 @@ class EpisodeMarker:
 
 
 @dataclass
+class SensorImages:
+    """Container for sensor image snapshots.
+
+    Holds base64-encoded PNG images from sensors for inline HTML display.
+
+    Attributes:
+        camera_image: Base64-encoded camera/view_finder RGBA image.
+        depth_image: Base64-encoded depth image (grayscale).
+        step: Step number when images were captured.
+        timestamp: Unix timestamp when images were captured.
+    """
+
+    camera_image: str | None = None
+    depth_image: str | None = None
+    step: int = 0
+    timestamp: float | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        return {
+            "camera_image": self.camera_image,
+            "depth_image": self.depth_image,
+            "step": self.step,
+            "timestamp": self.timestamp,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> SensorImages:
+        """Create from dictionary."""
+        return cls(
+            camera_image=data.get("camera_image"),
+            depth_image=data.get("depth_image"),
+            step=data.get("step", 0),
+            timestamp=data.get("timestamp"),
+        )
+
+
+@dataclass
 class VisualizationState:
     """State container for all visualization data.
 
@@ -107,6 +145,7 @@ class VisualizationState:
         episode_markers: List of episode start markers.
         current_mesh_url: URL of currently displayed mesh (if any).
         object_names: Set of all object names seen so far.
+        sensor_images: Latest sensor image snapshots.
     """
 
     config: ChartBufferConfig = field(default_factory=ChartBufferConfig)
@@ -114,6 +153,7 @@ class VisualizationState:
     episode_markers: list[EpisodeMarker] = field(default_factory=list)
     current_mesh_url: str | None = None
     object_names: set[str] = field(default_factory=set)
+    sensor_images: SensorImages = field(default_factory=SensorImages)
     # Track what's been sent via push_event (for incremental updates)
     _last_sent_count: int = field(default=0, repr=False)
     _last_sent_episode_count: int = field(default=0, repr=False)
@@ -150,6 +190,15 @@ class VisualizationState:
         self.episode_markers.clear()
         self.object_names.clear()
         self.current_mesh_url = None
+        self.sensor_images = SensorImages()
+
+    def update_sensor_images(self, images: SensorImages) -> None:
+        """Update the current sensor images.
+
+        Args:
+            images: New sensor images to store.
+        """
+        self.sensor_images = images
 
     def get_chart_data_json(self) -> str:
         """Get chart data as JSON string for template embedding.
@@ -286,6 +335,15 @@ class VisualizationStateManager:
         mesh_url = data.get("mesh_url") or data.get("url")
         if mesh_url:
             self.state.current_mesh_url = mesh_url
+
+    def process_sensor_images(self, data: dict[str, Any]) -> None:
+        """Process sensor image data from telemetry stream.
+
+        Args:
+            data: Sensor images dictionary with camera_image, depth_image, etc.
+        """
+        images = SensorImages.from_dict(data)
+        self.state.update_sensor_images(images)
 
     def clear(self) -> None:
         """Clear all visualization data and reset state."""
