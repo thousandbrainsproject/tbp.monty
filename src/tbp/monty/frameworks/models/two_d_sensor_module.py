@@ -27,10 +27,10 @@ from tbp.monty.frameworks.models.sensor_modules import (
     FeatureChangeFilter,
     HabitatObservationProcessor,
     MessageNoise,
+    NoMessageNoise,
     PassthroughStateFilter,
     SnapshotTelemetry,
     StateFilter,
-    NoMessageNoise,
 )
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.edge_detection_utils import (
@@ -169,8 +169,10 @@ class TwoDPoseSM(SensorModule):
         self._cumulative_2d_position: np.ndarray = np.zeros(2)
         self.use_arc_length_correction = use_arc_length_correction
 
-        # Reference frame for cross-episode consistency
-        # These persist across episodes to ensure patches have same orientation
+        # TODO: Reference frame for cross-episode consistency (not yet implemented)
+        # These could be used to align the initial u-v frame with a canonical
+        # direction (e.g., world axis or primary curvature direction) to make
+        # 2D maps deterministic across exploration sessions.
         self._reference_u: np.ndarray | None = None  # Global U axis (world-aligned)
         self._reference_v: np.ndarray | None = None  # Global V axis (world-aligned)
 
@@ -192,18 +194,6 @@ class TwoDPoseSM(SensorModule):
         if self.debug_visualize or self.save_raw_rgb:
             self.episode_counter += 1
             self.step_counter = 0
-
-    def reset_reference_frame(self):
-        """Reset the 2D reference frame for learning a new object.
-
-        Call this when switching to a different object in multi-object learning.
-        This resets the global UV reference frame so the new object gets its own
-        coordinate system instead of inheriting from the previous object.
-        """
-        self._reference_u = None
-        self._reference_v = None
-        self._cumulative_2d_position = np.zeros(2)
-        self._previous_location = None
 
     def update_state(self, agent: AgentState):
         """Update information about the sensor's location and rotation."""
@@ -327,83 +317,106 @@ class TwoDPoseSM(SensorModule):
             observed_state.set_displacement(np.zeros(3))
             return
 
+        current_location = observed_state.location.copy()
         surface_normal = observed_state.get_surface_normal()
-        n = normalize(surface_normal)
 
-        # Compute world-anchored tangent frame at current position
-        t1, t2 = self._get_world_aligned_tangent_frame(n)
+        if self._previous_location is None or surface_normal is None:
+            self._initialize_basis(surface_normal)
+            self._previous_location = current_location
+            return
 
-        # Establish reference on first observation (persists across episodes)
-        if self._reference_u is None:
-            self._reference_u = t1.copy()
-            self._reference_v = t2.copy()
+        # Compute raw 3D displacement
+        displacement_3d = current_location - self._previous_location
+        chord_length = np.linalg.norm(displacement_3d)
 
-        # Handle axis swap: if t1 aligns better with reference_v than reference_u,
-        # the axes have swapped (can happen near poles where world-Z projection is small)
-        if abs(np.dot(t1, self._reference_u)) < abs(np.dot(t2, self._reference_u)):
-            t1, t2 = t2, -t1  # Swap to maintain identity (negate t1 to keep right-handed)
+        # 2. Parallel Transport: Update basis vectors to the new tangent plane
+        # Find the rotation that maps the old normal to the new normal
+        self._update_basis(surface_normal)
 
-        # Align signs with reference frame for consistency (handle 180° flips)
-        if np.dot(t1, self._reference_u) < 0:
-            t1 = -t1
-        if np.dot(t2, self._reference_v) < 0:
-            t2 = -t2
+        du_raw = np.dot(displacement_3d, self._basis_u)
+        dv_raw = np.dot(displacement_3d, self._basis_v)
+        direction_uv = np.array([du_raw, dv_raw])
+        dir_norm = np.linalg.norm(direction_uv)
+        if dir_norm > 1e-12:
+            direction_uv /= dir_norm
 
-        # Compute 3D displacement from previous position
-        if self._previous_location is None:
-            displacement_3d = np.zeros(3)
-        else:
-            displacement_3d = observed_state.location - self._previous_location
-
-        # Project displacement onto tangent plane
-        d_tan = project_onto_tangent_plane(displacement_3d, n)
-
-        # Apply arc length correction if enabled
-        principal_curvatures = observed_state.non_morphological_features.get(
+        # Arc length correction
+        step_magnitude = chord_length
+        principal_curvatures = observed_state.morphological_features.get(
             "principal_curvatures"
         )
-        if (
-            self.use_arc_length_correction
-            and principal_curvatures is not None
-            and curvature_pose_vectors is not None
-            and len(curvature_pose_vectors) >= 3
-        ):
-            chord_length = np.linalg.norm(d_tan)
-            if chord_length > 1e-12:
-                dir1 = curvature_pose_vectors[1]
-                dir2 = curvature_pose_vectors[2]
+        if principal_curvatures is not None and curvature_pose_vectors is not None:
+            # Project movement onto tangent plane for curvature calculation
+            d_tan = project_onto_tangent_plane(displacement_3d, surface_normal)
+            tan_length = np.linalg.norm(d_tan)
+            if tan_length > 1e-12:
                 directional_curvature = self._get_directional_curvature(
                     d_tan,
                     principal_curvatures[0],
                     principal_curvatures[1],
-                    dir1,
-                    dir2,
+                    curvature_pose_vectors[1],
+                    curvature_pose_vectors[2],
                 )
-                arc_length = compute_arc_length_correction(
-                    chord_length, directional_curvature
+                step_magnitude = compute_arc_length_correction(
+                    tan_length,
+                    directional_curvature,
                 )
-                d_tan = d_tan * (arc_length / chord_length)
 
-        # Project displacement onto world-anchored tangent frame
-        du = float(np.dot(d_tan, t1))
-        dv = float(np.dot(d_tan, t2))
-
-        # Accumulate directly (no rotation tracking needed)
+        du = direction_uv[0] * step_magnitude
+        dv = direction_uv[1] * step_magnitude
         self._cumulative_2d_position[0] += du
         self._cumulative_2d_position[1] += dv
 
-        # Save current location for next step
-        self._previous_location = observed_state.location.copy()
+        observed_state.set_displacement(np.array([du, dv, 0.0]))
+        observed_state.location_2d = np.array(
+            [self._cumulative_2d_position[0], self._cumulative_2d_position[1], 0.0]
+        )
 
-        # Update observed_state with 2D displacement and position
-        observed_state.set_displacement(
-            np.array([du, dv, 0.0], dtype=np.float64)
+        # Save current location for next step
+        self._previous_location = current_location.copy()
+
+    def _initialize_basis(self, surface_normal: np.ndarray) -> None:
+        """Creates an initial arbitrary but consistent 2D basis on the surface."""
+        # Choose a reference vector (World Z, or World X if normal is Z)
+        ref = (
+            np.array([0, 0, 1]) if abs(surface_normal[2]) < 0.9 else np.array([1, 0, 0])
         )
-        observed_state.location = np.array(
-            [self._cumulative_2d_position[0], self._cumulative_2d_position[1], 0.0],
-            dtype=np.float64,
-        )
-            # Don't update previous state when off-object
+        self._basis_u = np.cross(ref, surface_normal)
+        self._basis_u /= np.linalg.norm(self._basis_u)
+        self._basis_v = np.cross(surface_normal, self._basis_u)
+        self._previous_normal = surface_normal
+
+    def _update_basis(self, new_normal: np.ndarray) -> None:
+        """Rotates the basis vectors to stay tangent to the new normal."""
+        # Standard Parallel Transport (The 'Levi-Civita' connection)
+        # We rotate the basis vectors around the axis perpendicular to both normals
+        old_n = self._previous_normal
+        new_n = new_normal
+
+        axis = np.cross(old_n, new_n)
+        axis_len = np.linalg.norm(axis)
+
+        if axis_len > 1e-9:
+            axis /= axis_len
+            angle = np.arccos(np.clip(np.dot(old_n, new_n), -1.0, 1.0))
+
+            # Rodrigues' rotation formula to tilt the basis
+            def rotate(v, a, theta):
+                return (
+                    v * np.cos(theta)
+                    + np.cross(a, v) * np.sin(theta)
+                    + a * np.dot(a, v) * (1 - np.cos(theta))
+                )
+
+            self._basis_u = rotate(self._basis_u, axis, angle)
+            self._basis_v = rotate(self._basis_v, axis, angle)
+
+        # Ensure basis stays perfectly orthogonal to new normal
+        self._basis_u -= np.dot(self._basis_u, new_n) * new_n
+        self._basis_u /= np.linalg.norm(self._basis_u)
+        self._basis_v = np.cross(new_n, self._basis_u)
+
+        self._previous_normal = new_n
 
     def extract_2d_edge(
         self,
@@ -624,39 +637,3 @@ class TwoDPoseSM(SensorModule):
 
         # Euler's formula with both directions explicitly
         return k1 * cos_a**2 + k2 * cos_b**2
-
-    def _get_world_aligned_tangent_frame(
-        self,
-        surface_normal: np.ndarray,
-    ) -> tuple[np.ndarray, np.ndarray]:
-        """Compute tangent frame using world-Z as reference axis.
-
-        Uses cross product with world-up (Z axis) to get consistent tangent
-        directions. For a vertical cylinder, this gives:
-        - t1: circumferential direction
-        - t2: axial direction (along cylinder height)
-
-        Falls back to world-X if surface normal is parallel to world-Z (poles).
-
-        Args:
-            surface_normal: Unit surface normal vector.
-
-        Returns:
-            (t1, t2): Orthonormal tangent vectors forming right-handed basis
-                      with surface_normal.
-        """
-        world_up = np.array([0.0, 0.0, 1.0])
-
-        # Check for singularity (normal parallel to world_up)
-        if abs(np.dot(surface_normal, world_up)) > 0.99:
-            world_up = np.array([1.0, 0.0, 0.0])  # Fallback to X
-
-        # t1 = world_up × normal (circumferential for vertical cylinder)
-        t1 = np.cross(world_up, surface_normal)
-        t1 = t1 / np.linalg.norm(t1)
-
-        # t2 = normal × t1 (axial for vertical cylinder)
-        t2 = np.cross(surface_normal, t1)
-        t2 = t2 / np.linalg.norm(t2)
-
-        return t1, t2

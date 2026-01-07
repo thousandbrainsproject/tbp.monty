@@ -5,62 +5,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from vedo import Arrows, Points, Plotter
+from vedo import Points, Plotter
 
 from model_loading_utils import load_object_model
-
-
-def extract_principal_curvature_directions(features, points):
-    """Extract and validate principal curvature directions from pose_vectors.
-
-    Args:
-        features: dict of features from model_data
-        points: (N, 3) array of point positions
-
-    Returns:
-        tuple: (dir1, dir2, valid_mask) where:
-            - dir1: (N, 3) first principal direction vectors
-            - dir2: (N, 3) second principal direction vectors
-            - valid_mask: (N,) boolean array indicating valid directions
-    """
-    if "pose_vectors" not in features:
-        return None, None, None
-
-    # Extract pose_vectors
-    pv = np.asarray(features["pose_vectors"], float)
-
-    # Reshape from (N, 9) to (N, 3, 3) if needed
-    if pv.ndim == 2 and pv.shape[1] == 9:
-        pv = pv.reshape(-1, 3, 3)
-
-    # Align sizes
-    n_points = points.shape[0]
-    n_pose = pv.shape[0]
-    n_common = min(n_points, n_pose)
-
-    if n_common == 0:
-        return None, None, None
-
-    # Extract dir1 and dir2 (indices 1 and 2 in the 3x3 matrix)
-    # pose_vectors structure: [surface_normal, dir1, dir2]
-    dir1 = pv[:n_common, 1, :]  # First principal direction
-    dir2 = pv[:n_common, 2, :]  # Second principal direction
-
-    # Validate: check for finite, non-zero vectors
-    dir1_valid = np.isfinite(dir1).all(axis=1) & (np.linalg.norm(dir1, axis=1) > 1e-9)
-    dir2_valid = np.isfinite(dir2).all(axis=1) & (np.linalg.norm(dir2, axis=1) > 1e-9)
-    valid_mask = dir1_valid & dir2_valid
-
-    # Normalize directions
-    dir1_norm = np.linalg.norm(dir1, axis=1, keepdims=True)
-    dir2_norm = np.linalg.norm(dir2, axis=1, keepdims=True)
-    dir1_normalized = np.where(dir1_norm > 1e-9, dir1 / dir1_norm, dir1)
-    dir2_normalized = np.where(dir2_norm > 1e-9, dir2 / dir2_norm, dir2)
-
-    print(f"[basis_arrows] Found pose_vectors for {n_common} points")
-    print(f"[basis_arrows] Valid directions: {valid_mask.sum()} / {n_common}")
-
-    return dir1_normalized, dir2_normalized, valid_mask
 
 
 def visualize_point_cloud_matplotlib(
@@ -106,77 +53,22 @@ def visualize_point_cloud_matplotlib(
         alpha=0.6,
     )
 
-    # Calculate arrow length as 2% of bounding box diagonal
-    max_range = np.array(
-        [
-            points[:, 0].max() - points[:, 0].min(),
-            points[:, 1].max() - points[:, 1].min(),
-            points[:, 2].max() - points[:, 2].min(),
-        ]
-    ).max()
-    arrow_length = max_range * 0.02
-
-    # Extract and visualize principal curvature directions
-    dir1, dir2, valid_mask = extract_principal_curvature_directions(features, points)
-    if dir1 is not None and valid_mask is not None and valid_mask.sum() > 0:
-        valid_idx = np.where(valid_mask)[0]
-        n_valid = len(valid_idx)
-
-        # Randomly sample a subset of points for arrows (max 50 points)
-        max_arrows = min(50, n_valid)
-        if n_valid > max_arrows:
-            sampled_idx = np.random.choice(n_valid, size=max_arrows, replace=False)
-            sampled_valid_idx = valid_idx[sampled_idx]
-        else:
-            sampled_valid_idx = valid_idx
-
-        sampled_points = points[sampled_valid_idx]
-        sampled_dir1 = dir1[sampled_valid_idx]
-        sampled_dir2 = dir2[sampled_valid_idx]
-
-        # Draw dir1 arrows in red
-        ax.quiver(
-            sampled_points[:, 0],
-            sampled_points[:, 1],
-            sampled_points[:, 2],
-            sampled_dir1[:, 0] * arrow_length,
-            sampled_dir1[:, 1] * arrow_length,
-            sampled_dir1[:, 2] * arrow_length,
-            color="red",
-            arrow_length_ratio=0.3,
-            alpha=0.7,
-            linewidth=1.5,
-            label="dir1 (first principal direction)",
-        )
-
-        # Draw dir2 arrows in blue
-        ax.quiver(
-            sampled_points[:, 0],
-            sampled_points[:, 1],
-            sampled_points[:, 2],
-            sampled_dir2[:, 0] * arrow_length,
-            sampled_dir2[:, 1] * arrow_length,
-            sampled_dir2[:, 2] * arrow_length,
-            color="blue",
-            arrow_length_ratio=0.3,
-            alpha=0.7,
-            linewidth=1.5,
-            label="dir2 (second principal direction)",
-        )
-        ax.legend()
-        print(
-            f"[matplotlib] Added basis arrows for {len(sampled_valid_idx)} randomly sampled points (out of {n_valid} valid)"
-        )
-    else:
-        print("[matplotlib] No valid pose_vectors found; skipping basis arrows")
-
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
     ax.set_title(title or "Learned Point Cloud (Matplotlib)")
 
     # Set equal aspect ratio
-    max_range = max_range / 2.0
+    max_range = (
+        np.array(
+            [
+                points[:, 0].max() - points[:, 0].min(),
+                points[:, 1].max() - points[:, 1].min(),
+                points[:, 2].max() - points[:, 2].min(),
+            ]
+        ).max()
+        / 2.0
+    )
     mid_x = (points[:, 0].max() + points[:, 0].min()) * 0.5
     mid_y = (points[:, 1].max() + points[:, 1].min()) * 0.5
     mid_z = (points[:, 2].max() + points[:, 2].min()) * 0.5
@@ -227,7 +119,9 @@ def visualize_point_cloud_interactive(
 
     plotter.add(point_cloud_obj)
 
-    # Calculate arrow length as 2% of bounding box diagonal
+    # Calculate camera position based on point cloud bounds
+    center = points.mean(axis=0)
+    # Position camera at a distance proportional to the size of the point cloud
     max_range = np.array(
         [
             points[:, 0].max() - points[:, 0].min(),
@@ -235,76 +129,6 @@ def visualize_point_cloud_interactive(
             points[:, 2].max() - points[:, 2].min(),
         ]
     ).max()
-    arrow_length = max_range * 0.02
-
-    # Extract and visualize principal curvature directions
-    dir1_arrows = None
-    dir2_arrows = None
-    arrows_visible = True
-
-    dir1, dir2, valid_mask = extract_principal_curvature_directions(features, points)
-    if dir1 is not None and valid_mask is not None and valid_mask.sum() > 0:
-        valid_idx = np.where(valid_mask)[0]
-        n_valid = len(valid_idx)
-
-        # Randomly sample a subset of points for arrows (max 50 points)
-        max_arrows = min(50, n_valid)
-        if n_valid > max_arrows:
-            sampled_idx = np.random.choice(n_valid, size=max_arrows, replace=False)
-            sampled_valid_idx = valid_idx[sampled_idx]
-        else:
-            sampled_valid_idx = valid_idx
-
-        sampled_points = points[sampled_valid_idx]
-        sampled_dir1 = dir1[sampled_valid_idx]
-        sampled_dir2 = dir2[sampled_valid_idx]
-
-        # Create arrow endpoints for dir1 (red)
-        dir1_starts = sampled_points
-        dir1_ends = sampled_points + sampled_dir1 * arrow_length
-        dir1_arrows = Arrows(dir1_starts, dir1_ends, c="red", alpha=0.7)
-        dir1_arrows.lw(2)  # Set line width after creation
-        plotter.add(dir1_arrows)
-
-        # Create arrow endpoints for dir2 (blue)
-        dir2_starts = sampled_points
-        dir2_ends = sampled_points + sampled_dir2 * arrow_length
-        dir2_arrows = Arrows(dir2_starts, dir2_ends, c="blue", alpha=0.7)
-        dir2_arrows.lw(2)  # Set line width after creation
-        plotter.add(dir2_arrows)
-
-        print(
-            f"[vedo] Added basis arrows for {len(sampled_valid_idx)} randomly sampled points (out of {n_valid} valid)"
-        )
-
-        # Add toggle button for arrows
-        def toggle_arrows(button, _event):
-            nonlocal arrows_visible
-            if dir1_arrows is not None and dir2_arrows is not None:
-                if arrows_visible:
-                    dir1_arrows.off()
-                    dir2_arrows.off()
-                    arrows_visible = False
-                else:
-                    dir1_arrows.on()
-                    dir2_arrows.on()
-                    arrows_visible = True
-                plotter.render()
-
-        plotter.add_button(
-            toggle_arrows,
-            pos=(0.85, 0.05),
-            states=["Hide Arrows", "Show Arrows"],
-            size=20,
-            font="Calco",
-        )
-        print("[vedo] Added toggle button for arrows (arrows visible by default)")
-    else:
-        print("[vedo] No valid pose_vectors found; skipping basis arrows")
-
-    # Calculate camera position based on point cloud bounds
-    center = points.mean(axis=0)
-    # Position camera at a distance proportional to the size of the point cloud
     camera_distance = max_range * 1.5
 
     # ----- Axes & camera -----
