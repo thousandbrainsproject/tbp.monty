@@ -417,20 +417,10 @@ window.Hooks.ConnectionStatus = {
     
     disconnected() {
         console.log('ConnectionStatus hook disconnected');
-        // Check if experiment is in a terminal state - if so, preserve it
-        const currentText = this.el.textContent.trim().toUpperCase();
-        const terminalStates = ['COMPLETED', 'ERROR', 'ABORTED', 'ABORTING'];
-        const isTerminalState = terminalStates.some(state => 
-            currentText.includes(state) || this.el.className.includes(state.toLowerCase())
-        );
-        
-        if (isTerminalState) {
-            // Don't override terminal states - experiment ended, WebSocket disconnect is expected
-            console.log('Experiment in terminal state, preserving status:', currentText);
-            return;
-        }
-        
-        // Only show disconnected if experiment is still running
+        // When WebSocket disconnects, always show DISCONNECTED status
+        // This indicates the server is no longer reachable, regardless of
+        // experiment state. The experiment status (ABORTED, COMPLETED, etc.)
+        // is separate from connection status.
         this.el.className = 'status-badge status-disconnected';
         this.el.textContent = 'DISCONNECTED';
         this.el.style.background = '#6b7280';

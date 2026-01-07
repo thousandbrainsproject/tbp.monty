@@ -26,6 +26,10 @@ class ServerLifecycleManager:
     ) -> None:
         """Wait for experiment completion, then shut down after linger period.
 
+        The server will only shut down automatically for "completed" or "error"
+        statuses. If the experiment is "aborted", the server will continue running
+        indefinitely so users can inspect the final state.
+
         Args:
             experiment_completed: Event that signals when experiment completes
             state_manager: Experiment state manager
@@ -34,6 +38,20 @@ class ServerLifecycleManager:
         """
         await experiment_completed.wait()
         status = state_manager.experiment_state.status
+
+        # Never auto-shutdown for aborted experiments - let users inspect the state
+        if status == "aborted" or status == "aborting":
+            logger.info(
+                "Experiment was aborted. LiveView server will continue running "
+                "indefinitely. Press Ctrl+C to stop manually."
+            )
+            # Wait indefinitely (or until KeyboardInterrupt)
+            try:
+                while True:
+                    await asyncio.sleep(3600)  # Sleep in 1-hour chunks
+            except asyncio.CancelledError:
+                logger.info("Shutdown monitor cancelled")
+            return
 
         if status == "error":
             logger.info(
