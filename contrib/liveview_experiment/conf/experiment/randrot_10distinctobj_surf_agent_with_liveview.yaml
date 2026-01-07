@@ -26,5 +26,5 @@ config:
   # Set to false if experiencing segfaults or conflicts with native libraries
   enable_liveview: true
   # Throttle sensor image broadcasts (milliseconds between updates)
-  sensor_image_throttle_ms: 500
+  sensor_image_throttle_ms: 100
 

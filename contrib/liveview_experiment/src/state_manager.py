@@ -78,9 +78,9 @@ class ExperimentStateManager:
         self.data_topic: str = f"{self.broadcast_topic}:data"
         self.logs_topic: str = f"{self.broadcast_topic}:logs"
 
-        # Throttling for broadcasts (max once per second)
+        # Throttling for broadcasts (max ~10 times per second)
         self._last_broadcast_time: float = 0.0
-        self._broadcast_throttle_seconds: float = 1.0
+        self._broadcast_throttle_seconds: float = 0.1
         self._pending_broadcast: bool = False
 
         # Visualization state management with configurable buffering
