@@ -284,6 +284,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
         """Update state after each step."""
         super().post_step(step, observation)
         self._update_state_from_experiment()
+        self._broadcast_evidence_data(step)
 
     def pre_episode(self) -> None:
         """Update state before each episode.
@@ -312,6 +313,92 @@ class MontyExperimentWithLiveView(MontyExperiment):
 
         # Update LiveView state
         self._update_state_from_experiment()
+
+    def _broadcast_evidence_data(self, step: int) -> None:
+        """Broadcast evidence data for live visualization charts.
+
+        Extracts evidence scores from learning modules and publishes them
+        via the ZMQ telemetry stream for the LiveView chart.
+
+        Args:
+            step: Current step number within the episode.
+        """
+        if not self.broadcaster or not hasattr(self, "model"):
+            return
+
+        # Calculate cumulative step for consistent x-axis
+        if self.experiment_mode == ExperimentMode.TRAIN:
+            cumulative_step = self.total_train_steps + step
+            current_episode = self.train_episodes + 1
+        else:
+            cumulative_step = self.total_eval_steps + step
+            current_episode = self.eval_episodes + 1
+
+        # Get current target object
+        target_object = self._get_current_target_object()
+
+        # Extract evidence from each learning module
+        for lm_idx, lm in enumerate(self.model.learning_modules):
+            evidences = self._extract_lm_evidence(lm)
+            if not evidences:
+                continue
+
+            # Publish evidence chart data
+            self.broadcaster.publish_data(
+                "evidence_chart",
+                {
+                    "step": cumulative_step,
+                    "evidences": evidences,
+                    "target_object": target_object,
+                    "episode": current_episode,
+                    "lm_id": lm_idx,
+                    "timestamp": time.time(),
+                },
+            )
+
+    def _get_current_target_object(self) -> str:
+        """Get the current target object name.
+
+        Returns:
+            Target object name or empty string if not available.
+        """
+        if hasattr(self, "env_interface") and hasattr(
+            self.env_interface, "primary_target"
+        ):
+            target = self.env_interface.primary_target
+            if target:
+                return str(target)
+        return ""
+
+    def _extract_lm_evidence(self, lm: Any) -> dict[str, float]:
+        """Extract evidence scores from a learning module.
+
+        Uses the learning module's get_evidence_for_each_graph() method
+        if available, which returns max evidence per known object.
+
+        Args:
+            lm: A learning module instance.
+
+        Returns:
+            Dictionary mapping object names to their max evidence scores.
+        """
+        if not hasattr(lm, "get_evidence_for_each_graph"):
+            return {}
+
+        # Check if LM has any known objects (during training it may be empty)
+        if hasattr(lm, "get_all_known_object_ids"):
+            known_ids = lm.get_all_known_object_ids()
+            if not known_ids:
+                return {}
+
+        try:
+            graph_ids, evidences = lm.get_evidence_for_each_graph()
+            # Filter out placeholder values or empty results
+            if not graph_ids or graph_ids[0] == "patch_off_object":
+                return {}
+            return dict(zip(graph_ids, [float(e) for e in evidences]))
+        except (AttributeError, TypeError, ValueError, KeyError, IndexError):
+            return {}
 
     def post_episode(self, steps: int) -> None:
         """Update state after each episode."""

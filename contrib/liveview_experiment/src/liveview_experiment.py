@@ -8,7 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from pyview import LiveView, LiveViewSocket, is_connected
+from markupsafe import Markup
+from pyview import LiveView, LiveViewSocket
 from pyview.events import InfoEvent
 from pyview.template.live_template import LiveRender, LiveTemplate
 from pyview.vendor import ibis
@@ -55,6 +56,30 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         """
         normalized_status = self._normalize_status(state.status)
         return StateNormalizer.normalize(state, normalized_status)
+
+    def _extract_model_name(self, model_path: str | None) -> str:
+        """Extract a readable model name from a model path.
+
+        Extracts the meaningful model folder name from a full path like:
+        /path/to/pretrained_ycb_v11/surf_agent_1lm_10distinctobj/pretrained/
+        -> surf_agent_1lm_10distinctobj
+
+        Args:
+            model_path: Full path to model or None
+
+        Returns:
+            Short readable model name
+        """
+        if not model_path:
+            return ""
+        path_str = str(model_path).rstrip("/")
+        parts = path_str.split("/")
+        # Filter out common non-informative parts
+        skip_parts = {"pretrained", "pretrained_models", ""}
+        meaningful_parts = [p for p in parts[-3:] if p not in skip_parts]
+        if meaningful_parts:
+            return meaningful_parts[-1]  # Return the most specific part
+        return path_str.split("/")[-1] if parts else ""
 
     def _update_context_from_state(
         self, socket: LiveViewSocket[ExperimentState]
@@ -159,9 +184,7 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             ),
             "config_path": str(state.config_path) if state.config_path else "",
             "model_path": str(state.model_path) if state.model_path else "",
-            "model_name_or_path": (
-                str(state.model_name_or_path) if state.model_name_or_path else ""
-            ),
+            "model_name": self._extract_model_name(state.model_name_or_path),
             "error_message": (str(state.error_message) if state.error_message else ""),
             "setup_message": (str(state.setup_message) if state.setup_message else ""),
         }
@@ -286,7 +309,26 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             }
         )
 
+        # Visualization data
+        assigns.update(self._build_visualization_assigns())
+
         return assigns
+
+    def _build_visualization_assigns(self) -> dict[str, Any]:
+        """Build visualization-related template assigns.
+
+        Chart data is embedded as JSON for DOM transport.
+        push_event is attempted but falls back to JSON tag.
+
+        Returns:
+            Dictionary with chart data and metadata for template.
+        """
+        viz_state = self.state_manager.visualization.state
+        # Wrap JSON in Markup to prevent HTML escaping in template
+        return {
+            "chart_data_json": Markup(viz_state.get_chart_data_json()),
+            "chart_point_count": viz_state.point_count,
+        }
 
     def _set_socket_context(self, socket: LiveViewSocket[ExperimentState]) -> None:
         """Set socket context with current state (like mvg_departures).
@@ -315,19 +357,19 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         if not self.state_manager.register_socket(socket):
             return
 
-        # Set socket context with current state (like mvg_departures)
+        # Set socket context with current state
         self._set_socket_context(socket)
 
-        # Subscribe to the broadcast topic when socket is connected
-        # This is critical for receiving pubsub "update" messages
+        # Subscribe to pubsub when socket is connected (has subscribe method)
+        # mount is called with UnconnectedSocket during HTTP, and
+        # ConnectedLiveViewSocket when WebSocket connects
         socket_id = getattr(socket, "id", "unknown")
-        if is_connected(socket):
+        if hasattr(socket, "subscribe"):
             await self._subscribe_to_broadcast_topic(socket, socket_id)
-        else:
-            logger.debug(
-                "Socket %s not connected during mount, will subscribe when connected",
-                socket_id,
-            )
+            # Reset sent tracking so first push sends all accumulated data
+            self.state_manager.visualization.state.reset_sent_tracking()
+            # Push any existing chart data immediately
+            await self._push_chart_updates(socket)
 
     async def _subscribe_to_broadcast_topic(
         self, socket: LiveViewSocket[ExperimentState], socket_id: str
@@ -475,6 +517,32 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             self._update_context_from_state(socket)
         else:
             logger.debug("Received direct payload: %s", event)
+
+        # Push incremental chart data via dedicated channel (not DOM diff)
+        await self._push_chart_updates(socket)
+
+    async def _push_chart_updates(
+        self, socket: LiveViewSocket[ExperimentState]
+    ) -> None:
+        """Push incremental chart data via push_event.
+
+        Uses pyview's push_event to send only new data points to the client,
+        avoiding large DOM diffs for chart data. This follows the pattern
+        described in https://elixirschool.com/blog/live-view-with-channels
+
+        Args:
+            socket: LiveView socket (must be connected to push events)
+        """
+        # Only push if socket supports push_event (connected socket)
+        if not hasattr(socket, "push_event"):
+            return
+
+        viz_state = self.state_manager.visualization.state
+        unsent_data = viz_state.get_unsent_data()
+
+        if unsent_data is not None:
+            await socket.push_event("chart_data", unsent_data)
+            viz_state.mark_as_sent()
 
     def _load_template(self) -> LiveTemplate:
         """Load and prepare template for rendering.

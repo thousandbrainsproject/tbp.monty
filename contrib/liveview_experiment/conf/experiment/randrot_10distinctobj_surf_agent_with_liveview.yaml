@@ -11,6 +11,9 @@ config:
   max_total_steps: 5000
   logging:
     run_name: randrot_10distinctobj_surf_agent_with_liveview
+    # Use simpler logger that doesn't have the episode_performance bug
+    monty_handlers: []
+    wandb_handlers: []
   eval_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation

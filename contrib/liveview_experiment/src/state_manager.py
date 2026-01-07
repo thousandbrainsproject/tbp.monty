@@ -15,6 +15,7 @@ except ImportError:
     from .pubsub_compat import PubSub, pub_sub_hub
 
 from .experiment_state import ExperimentState
+from .visualization_state import ChartBufferConfig, VisualizationStateManager
 
 if TYPE_CHECKING:
     from .types import MessagePayload, MetricData, MetricMetadata
@@ -29,15 +30,26 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Well-known visualization stream names
+EVIDENCE_CHART_STREAM = "evidence_chart"
+MESH_VIEWER_STREAM = "mesh_viewer"
+VISUALIZATION_STREAMS = {EVIDENCE_CHART_STREAM, MESH_VIEWER_STREAM}
+
 
 class ExperimentStateManager:
     """Manages shared state for experiment LiveView and updates."""
 
-    def __init__(self, route_path: str = "/") -> None:
+    def __init__(
+        self,
+        route_path: str = "/",
+        chart_buffer_config: ChartBufferConfig | None = None,
+    ) -> None:
         """Initialize the state manager.
 
         Args:
             route_path: The path for this route, used to create a unique topic.
+            chart_buffer_config: Configuration for chart data buffering.
+                Defaults to keeping all points with 1-second throttling.
         """
         self.route_path = route_path
         # Initialize with default values so LiveView isn't empty
@@ -63,6 +75,9 @@ class ExperimentStateManager:
         self._last_broadcast_time: float = 0.0
         self._broadcast_throttle_seconds: float = 1.0
         self._pending_broadcast: bool = False
+
+        # Visualization state management with configurable buffering
+        self.visualization = VisualizationStateManager(chart_buffer_config)
 
         # Subscribe to pub/sub topics to auto-update state from broadcaster
         self._subscribe_to_topics()
@@ -191,11 +206,22 @@ class ExperimentStateManager:
     def update_data_stream(self, stream_name: str, data: MessagePayload) -> None:
         """Update a data stream in the state.
 
+        Routes visualization-specific streams to the visualization manager
+        for buffered history, and stores other streams directly.
+
         Args:
             stream_name: Name of the data stream
             data: Data to store
         """
-        self.experiment_state.data_streams[stream_name] = data
+        # Route visualization streams to specialized handlers
+        if stream_name == EVIDENCE_CHART_STREAM:
+            self.visualization.process_evidence_data(data)
+        elif stream_name == MESH_VIEWER_STREAM:
+            self.visualization.process_mesh_data(data)
+        else:
+            # Generic data stream storage
+            self.experiment_state.data_streams[stream_name] = data
+
         self.experiment_state.last_update = datetime.now(timezone.utc)
 
     def add_log(self, level: str, message: str, **metadata: MetricMetadata) -> None:
