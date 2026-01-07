@@ -6,6 +6,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, Any
 
+from contrib.liveview_experiment.src.command_publisher import CommandPublisher
 from contrib.liveview_experiment.src.server_lifecycle import ServerLifecycleManager
 from contrib.liveview_experiment.src.server_setup import LiveViewServerSetup
 from contrib.liveview_experiment.src.zmq_context_manager import ZmqContextManager
@@ -37,7 +38,7 @@ class ServerOrchestrator:
         config: ServerConfig,
         state_manager: ExperimentStateManager,
     ) -> None:
-        """Run server with ZMQ subscriber.
+        """Run server with ZMQ subscriber and command publisher.
 
         Args:
             config: Server configuration
@@ -45,6 +46,12 @@ class ServerOrchestrator:
         """
         zmq_context = ZmqContextManager.create_context()
         experiment_completed = asyncio.Event()
+
+        # Initialize command publisher for sending commands back to experiment
+        command_publisher = ServerOrchestrator._create_command_publisher(
+            config, zmq_context
+        )
+        state_manager.command_publisher = command_publisher
 
         app = LiveViewServerSetup.create_app(state_manager)
         server = ServerOrchestrator._create_server(app, config.host, config.port)
@@ -67,8 +74,39 @@ class ServerOrchestrator:
                 server, config.host, config.port, state_manager
             )
         finally:
+            if command_publisher:
+                command_publisher.close()
             await ZmqContextManager.cleanup_tasks(shutdown_task, zmq_task)
             await ZmqContextManager.cleanup_context(zmq_context)
+
+    @staticmethod
+    def _create_command_publisher(
+        config: ServerConfig,
+        zmq_context: Any,
+    ) -> CommandPublisher | None:
+        """Create and initialize command publisher.
+
+        Args:
+            config: Server configuration
+            zmq_context: ZMQ context
+
+        Returns:
+            Initialized command publisher, or None if initialization failed.
+        """
+        # Command port is subscriber port + 1 by convention
+        command_port = config.zmq_port + 1
+        publisher = CommandPublisher(host=config.zmq_host, port=command_port)
+
+        if publisher.initialize(zmq_context):
+            logger.info(
+                "Command publisher ready on port %d (subscriber on %d)",
+                command_port,
+                config.zmq_port,
+            )
+            return publisher
+
+        logger.warning("Command publisher failed to initialize")
+        return None
 
     @staticmethod
     def _create_server(app: Any, host: str, port: int) -> Any:  # PyView, uvicorn.Server

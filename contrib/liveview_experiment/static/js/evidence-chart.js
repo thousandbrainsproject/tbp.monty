@@ -386,6 +386,10 @@ window.Hooks.EvidenceChart = {
 
 /**
  * ConnectionStatus Hook - manages connection status badge
+ * 
+ * Only shows "disconnected" if the experiment hasn't reached a terminal state.
+ * Terminal states (completed, error, aborted) should be preserved even if
+ * the WebSocket temporarily disconnects.
  */
 window.Hooks.ConnectionStatus = {
     mounted() {
@@ -395,8 +399,38 @@ window.Hooks.ConnectionStatus = {
         this.originalText = this.el.textContent;
     },
     
+    updated() {
+        // On LiveView update, refresh stored state and ensure correct display
+        // This ensures terminal states from server are preserved
+        const currentText = this.el.textContent.trim().toUpperCase();
+        const terminalStates = ['COMPLETED', 'ERROR', 'ABORTED', 'ABORTING'];
+        const isTerminalState = terminalStates.some(state => 
+            currentText.includes(state) || this.el.className.includes(state.toLowerCase())
+        );
+        
+        if (isTerminalState) {
+            // Update stored state to reflect terminal status
+            this.originalClass = this.el.className;
+            this.originalText = this.el.textContent;
+        }
+    },
+    
     disconnected() {
         console.log('ConnectionStatus hook disconnected');
+        // Check if experiment is in a terminal state - if so, preserve it
+        const currentText = this.el.textContent.trim().toUpperCase();
+        const terminalStates = ['COMPLETED', 'ERROR', 'ABORTED', 'ABORTING'];
+        const isTerminalState = terminalStates.some(state => 
+            currentText.includes(state) || this.el.className.includes(state.toLowerCase())
+        );
+        
+        if (isTerminalState) {
+            // Don't override terminal states - experiment ended, WebSocket disconnect is expected
+            console.log('Experiment in terminal state, preserving status:', currentText);
+            return;
+        }
+        
+        // Only show disconnected if experiment is still running
         this.el.className = 'status-badge status-disconnected';
         this.el.textContent = 'DISCONNECTED';
         this.el.style.background = '#6b7280';
@@ -405,6 +439,20 @@ window.Hooks.ConnectionStatus = {
     
     reconnected() {
         console.log('ConnectionStatus hook reconnected');
+        // Only restore if not in a terminal state
+        const currentText = this.el.textContent.trim().toUpperCase();
+        const terminalStates = ['COMPLETED', 'ERROR', 'ABORTED'];
+        const isTerminalState = terminalStates.some(state => 
+            currentText.includes(state) || this.el.className.includes(state.toLowerCase())
+        );
+        
+        if (isTerminalState) {
+            // Preserve terminal state even on reconnect
+            console.log('Experiment in terminal state, preserving status:', currentText);
+            return;
+        }
+        
+        // Restore original state for running experiments
         this.el.className = this.originalClass;
         this.el.textContent = this.originalText;
         this.el.style.background = '';

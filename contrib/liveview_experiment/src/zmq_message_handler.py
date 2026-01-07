@@ -100,6 +100,20 @@ class ZmqMessageHandler:
         Args:
             payload: State message payload
         """
+        # Check if this is a new experiment (run_name changed)
+        new_run_name = payload.get("run_name")
+        if (
+            new_run_name
+            and new_run_name != self.state_manager.experiment_state.run_name
+            and self.state_manager.experiment_state.run_name  # Not initial empty state
+        ):
+            logger.info(
+                "New experiment detected: %s -> %s, resetting visualization state",
+                self.state_manager.experiment_state.run_name,
+                new_run_name,
+            )
+            self.state_manager.visualization.clear()
+
         for key, value in payload.items():
             if key == "type":
                 continue

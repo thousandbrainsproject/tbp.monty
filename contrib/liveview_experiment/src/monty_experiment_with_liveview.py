@@ -51,9 +51,14 @@ from .state_update_builder import StateUpdateBuilder
 if TYPE_CHECKING:
     from .types import ConfigDict
 
+from .command_subscriber import CommandSubscriber
 from .zmq_broadcaster import ZmqBroadcaster  # noqa: TC001
 
 logger = logging.getLogger(__name__)
+
+
+class ExperimentAbortedError(Exception):
+    """Exception raised when experiment is aborted via LiveView UI."""
 
 
 class MontyExperimentWithLiveView(MontyExperiment):
@@ -91,6 +96,8 @@ class MontyExperimentWithLiveView(MontyExperiment):
         logger.info("MontyExperimentWithLiveView.__init__ called")
 
         self.broadcaster: ZmqBroadcaster | None = None
+        self.command_subscriber: CommandSubscriber | None = None
+        self._abort_requested = False
 
         overrides = LiveViewConfigOverrides(
             liveview_port=liveview_port,
@@ -123,7 +130,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
         self.zmq_host = config_values["zmq_host"]
 
     def _initialize_broadcaster_if_enabled(self) -> None:
-        """Initialize ZMQ broadcaster if LiveView is enabled."""
+        """Initialize ZMQ broadcaster and command subscriber if LiveView is enabled."""
         if self.enable_liveview:
             metadata = self._get_experiment_metadata()
             params = BroadcasterSetupParams(
@@ -133,8 +140,39 @@ class MontyExperimentWithLiveView(MontyExperiment):
                 metadata=metadata.to_dict(),
             )
             self.broadcaster = ExperimentInitializer.setup_broadcaster(self, params)
+
+            # Initialize command subscriber (port = zmq_port + 1 by convention)
+            self._initialize_command_subscriber()
         else:
             logger.info("LiveView broadcasting disabled")
+
+    def _initialize_command_subscriber(self) -> None:
+        """Initialize the ZMQ command subscriber for receiving LiveView commands."""
+        command_port = self.zmq_port + 1
+        self.command_subscriber = CommandSubscriber(
+            host=self.zmq_host, port=command_port
+        )
+
+        if self.command_subscriber.initialize():
+            # Register abort handler
+            self.command_subscriber.register_handler(
+                "abort", self._handle_abort_command
+            )
+            self.command_subscriber.start()
+            logger.info("Command subscriber started on port %d", command_port)
+        else:
+            logger.warning("Failed to initialize command subscriber")
+            self.command_subscriber = None
+
+    def _handle_abort_command(self, command: Any) -> None:
+        """Handle abort command from LiveView.
+
+        Args:
+            command: The received abort command.
+        """
+        reason = command.payload.get("reason", "Unknown reason")
+        logger.warning("Abort command received: %s", reason)
+        self._abort_requested = True
 
     def _initialize_experiment_timing(self) -> None:
         """Initialize experiment start time and status if not already set."""
@@ -278,6 +316,9 @@ class MontyExperimentWithLiveView(MontyExperiment):
 
     def pre_step(self, step: int, observation: Any) -> None:
         """Update state before each step."""
+        # Check for abort request before processing step
+        self._check_abort_request()
+
         super().pre_step(step, observation)
         if self.broadcaster:
             # Calculate cumulative step count: total from previous episodes +
@@ -289,6 +330,16 @@ class MontyExperimentWithLiveView(MontyExperiment):
                 cumulative_step = self.total_eval_steps + step
             self.broadcaster.publish_state({"current_step": cumulative_step})
         self._update_state_from_experiment()
+
+    def _check_abort_request(self) -> None:
+        """Check if abort has been requested and raise exception if so."""
+        # Check both local flag and subscriber
+        if self._abort_requested:
+            raise ExperimentAbortedError("Experiment aborted via LiveView UI")
+
+        if self.command_subscriber and self.command_subscriber.is_abort_requested():
+            self._abort_requested = True
+            raise ExperimentAbortedError("Experiment aborted via LiveView UI")
 
     def post_step(self, step: int, observation: Any) -> None:
         """Update state after each step."""
@@ -601,6 +652,15 @@ class MontyExperimentWithLiveView(MontyExperiment):
                 # Small delay to ensure final status message is sent
                 # before context cleanup
                 time.sleep(0.05)
+        except ExperimentAbortedError as e:
+            logger.warning("Experiment aborted: %s", e)
+            self._experiment_status = "aborted"
+            if self.broadcaster:
+                self.broadcaster.publish_state(
+                    {"status": self._experiment_status, "error_message": str(e)}
+                )
+                time.sleep(0.05)
+            # Don't re-raise abort - it's a controlled stop
         except Exception as e:
             logger.exception("Experiment failed")
             self._experiment_status = "error"
@@ -616,7 +676,9 @@ class MontyExperimentWithLiveView(MontyExperiment):
             self._update_state_from_experiment()
 
     def close(self) -> None:
-        """Close the experiment and ZMQ broadcaster."""
+        """Close the experiment, ZMQ broadcaster, and command subscriber."""
+        if self.command_subscriber:
+            self.command_subscriber.close()
         if self.broadcaster:
             self.broadcaster.close()
         super().close()

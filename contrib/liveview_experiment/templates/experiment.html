@@ -192,6 +192,33 @@
             color: #ffffff !important; 
             font-weight: 900 !important;
         }
+        .status-badge.status-aborting { 
+            background: #dc2626 !important; 
+            color: #ffffff !important; 
+            font-weight: 900 !important;
+        }
+        .abort-button {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ffffff;
+            background: #ef4444;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: background 0.2s ease;
+        }
+        .abort-button:hover {
+            background: #dc2626;
+        }
+        .abort-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -199,7 +226,26 @@
         <div class="section">
             <div class="section-title">
                 <span>Experiment Configuration</span>
-                <div class="header-badges">{% if status == "running" %}{% if experiment_mode_display_upper and experiment_mode_display and experiment_mode_display_upper != "" and experiment_mode_display != "" %}<span id="connection-status-badge" phx-hook="ConnectionStatus" class="mode-badge mode-{{ experiment_mode_display }}">{{ experiment_mode_display_upper }}</span>{% else %}<span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-running">RUNNING</span>{% endif %}{% elif status == "initializing" %}<span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-initializing">INITIALIZING</span>{% elif status == "completed" %}<span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-completed">COMPLETED</span>{% elif status == "error" %}<span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-error">ERROR</span>{% else %}<span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-initializing">INITIALIZING</span>{% endif %}</div>
+                <div class="header-badges">
+                    {% if status == "aborting" %}
+                        <span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-aborting">ABORTING</span>
+                    {% elif status == "running" %}
+                        {% if experiment_mode_display_upper and experiment_mode_display and experiment_mode_display_upper != "" and experiment_mode_display != "" %}
+                            <span id="connection-status-badge" phx-hook="ConnectionStatus" class="mode-badge mode-{{ experiment_mode_display }}">{{ experiment_mode_display_upper }}</span>
+                        {% else %}
+                            <span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-running">RUNNING</span>
+                        {% endif %}
+                        <button class="abort-button" phx-click="abort_experiment" title="Stop the experiment">ABORT</button>
+                    {% elif status == "initializing" %}
+                        <span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-initializing">INITIALIZING</span>
+                    {% elif status == "completed" %}
+                        <span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-completed">COMPLETED</span>
+                    {% elif status == "error" %}
+                        <span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-error">ERROR</span>
+                    {% else %}
+                        <span id="connection-status-badge" phx-hook="ConnectionStatus" class="status-badge status-initializing">INITIALIZING</span>
+                    {% endif %}
+                </div>
             </div>
             <div class="config-grid">
                 {% if environment_name %}

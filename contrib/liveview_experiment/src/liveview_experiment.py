@@ -530,6 +530,58 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         # Push incremental chart data via dedicated channel (not DOM diff)
         await self._push_chart_updates(socket)
 
+    async def handle_event(
+        self,
+        event: str,
+        _payload: Any = None,
+        socket: LiveViewSocket[ExperimentState] | None = None,
+    ) -> None:
+        """Handle UI events from the client.
+
+        Args:
+            event: Event name (e.g., "abort_experiment").
+            _payload: Event payload data (optional, may be None for phx-click events).
+            socket: The socket that triggered the event (required).
+        """
+        if socket is None:
+            logger.warning("handle_event called without socket for event: %s", event)
+            return
+
+        # Normalize payload to empty dict if None
+        # (pyview may pass None for events without payload)
+        if _payload is None:
+            _payload = {}
+
+        if event == "abort_experiment":
+            await self._handle_abort_event(socket)
+        else:
+            logger.debug("Unknown event: %s", event)
+
+    async def _handle_abort_event(
+        self, socket: LiveViewSocket[ExperimentState]
+    ) -> None:
+        """Handle abort experiment request from UI.
+
+        Args:
+            socket: The socket that triggered the abort.
+        """
+        logger.info("Abort experiment requested from LiveView UI")
+
+        # Send abort command via ZMQ
+        if self.state_manager.command_publisher:
+            success = self.state_manager.command_publisher.abort_experiment(
+                reason="User requested abort via LiveView UI"
+            )
+            if success:
+                logger.info("Abort command sent successfully")
+                # Update local state to reflect pending abort
+                self.state_manager.experiment_state.status = "aborting"
+                self._update_context_from_state(socket)
+            else:
+                logger.error("Failed to send abort command")
+        else:
+            logger.warning("No command publisher available, cannot send abort")
+
     async def _push_chart_updates(
         self, socket: LiveViewSocket[ExperimentState]
     ) -> None:
