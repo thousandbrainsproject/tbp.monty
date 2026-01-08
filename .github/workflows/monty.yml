@@ -380,6 +380,9 @@ jobs:
           source activate tbp.monty
           set -e
           python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
+          git clone https://github.com/openai/omniglot.git ~/tbp/data/omniglot
+          unzip ~/tbp/data/omniglot/python/images_background.zip -d ~/tbp/data/omniglot/python/images_background
+          unzip ~/tbp/data/omniglot/python/strokes_background.zip -d ~/tbp/data/omniglot/python/strokes_background
       - name: Run tutorial tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty

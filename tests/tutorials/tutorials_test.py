@@ -44,17 +44,12 @@ class TrainingAndInferenceTest(TestCase):
                 config_name="experiment",
                 overrides=["experiment=tutorial/surf_agent_2obj_train"],
             )
-
             config.experiment.config.logging.output_dir = str(
                 run_name_output_dir(config)
             )
-
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
                 experiment.run()
-
-            for path in Path(config.experiment.config.logging.output_dir).iterdir():
-                print(path.absolute())
 
             config = hydra.compose(
                 config_name="experiment",
@@ -71,6 +66,52 @@ class UnsupervisedContinualLearningTest(TestCase):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=["experiment=tutorial/surf_agent_2obj_unsupervised"],
+            )
+            experiment = hydra.utils.instantiate(config.experiment)
+            with experiment:
+                experiment.run()
+
+
+class MultipleLearningModulesTest(TestCase):
+    def test_tutorial(self):
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=["experiment=tutorial/dist_agent_5lm_2obj_train"],
+            )
+            config.experiment.config.logging.output_dir = str(
+                run_name_output_dir(config)
+            )
+            experiment = hydra.utils.instantiate(config.experiment)
+            with experiment:
+                experiment.run()
+
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=["experiment=tutorial/dist_agent_5lm_2obj_eval"],
+            )
+            experiment = hydra.utils.instantiate(config.experiment)
+            with experiment:
+                experiment.run()
+
+
+class OmniglotTrainingAndInferenceTest(TestCase):
+    def test_tutorial(self):
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=["experiment=tutorial/omniglot_training"],
+            )
+            config.experiment.config.logging.output_dir = str(
+                run_name_output_dir(config)
+            )
+            experiment = hydra.utils.instantiate(config.experiment)
+            with experiment:
+                experiment.run()
+
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=["experiment=tutorial/omniglot_inference"],
             )
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
