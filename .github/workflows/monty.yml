@@ -431,7 +431,7 @@ jobs:
           source activate tbp.monty
           set -e
           mkdir -p test_results/pytest
-          xvfb-run pytest tests/tutorials --junitxml=test_results/pytest/results.xml --verbose
+          xvfb-run pytest tests/tutorials --junitxml=test_results/pytest/results.xml --verbose -n 1
 
   test_uv_monty:
     name: test-uv-monty
