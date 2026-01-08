@@ -29,6 +29,7 @@ def print_config(config: DictConfig) -> None:
     print(OmegaConf.to_yaml(config))
     print("-" * 100)
 
+
 def run_name_output_dir(config: DictConfig) -> Path:
     """Configure the output directory unique to the run name.
 
@@ -46,6 +47,7 @@ def run_name_output_dir(config: DictConfig) -> Path:
     )
     output_dir.mkdir(exist_ok=True, parents=True)
     return output_dir
+
 
 @hydra.main(config_path="../../../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
