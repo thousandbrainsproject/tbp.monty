@@ -380,8 +380,8 @@ class MontyExperimentWithLiveView(MontyExperiment):
     def _broadcast_evidence_data(self, step: int) -> None:
         """Broadcast evidence data for live visualization charts.
 
-        Extracts evidence scores from learning modules and publishes them
-        via the ZMQ telemetry stream for the LiveView chart.
+        Extracts evidence scores from all learning modules, aggregates them
+        into a single point per step, and publishes via ZMQ telemetry stream.
 
         Args:
             step: Current step number within the episode.
@@ -400,21 +400,36 @@ class MontyExperimentWithLiveView(MontyExperiment):
         # Get current target object
         target_object = self._get_current_target_object()
 
-        # Extract evidence from each learning module
-        for lm_idx, lm in enumerate(self.model.learning_modules):
+        # Aggregate evidence from all learning modules into a single point
+        # This prevents multiple points per step (one per LM) which causes zig-zag
+        aggregated_evidences: dict[str, list[float]] = {}
+
+        for lm in self.model.learning_modules:
             evidences = self._extract_lm_evidence(lm)
             if not evidences:
                 continue
 
-            # Publish evidence chart data
+            # Collect evidence for each object across all LMs
+            for obj_name, evidence_score in evidences.items():
+                if obj_name not in aggregated_evidences:
+                    aggregated_evidences[obj_name] = []
+                aggregated_evidences[obj_name].append(evidence_score)
+
+        # Average evidence across LMs for each object
+        final_evidences = {
+            obj_name: sum(scores) / len(scores)
+            for obj_name, scores in aggregated_evidences.items()
+        }
+
+        if final_evidences:
+            # Publish single aggregated evidence point per step
             self.broadcaster.publish_data(
                 "evidence_chart",
                 {
                     "step": cumulative_step,
-                    "evidences": evidences,
+                    "evidences": final_evidences,
                     "target_object": target_object,
                     "episode": current_episode,
-                    "lm_id": lm_idx,
                     "timestamp": time.time(),
                 },
             )
