@@ -18,6 +18,21 @@ class ServerLifecycleManager:
     """Manages server lifecycle including startup, monitoring, and shutdown."""
 
     @staticmethod
+    def _signal_abort_to_subscribers(
+        state_manager: ExperimentStateManager, reason: str
+    ) -> None:
+        """Send an abort command to all connected command subscribers if available."""
+        publisher = getattr(state_manager, "command_publisher", None)
+        if not publisher or not getattr(publisher, "is_initialized", False):
+            return
+
+        try:
+            publisher.abort_experiment(reason=reason)
+            logger.info("Abort signal sent to command subscribers: %s", reason)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Failed to send abort signal: %s", exc)
+
+    @staticmethod
     async def _wait_indefinitely_for_aborted() -> None:
         """Wait indefinitely for aborted experiments.
 
@@ -35,7 +50,10 @@ class ServerLifecycleManager:
 
     @staticmethod
     async def _shutdown_after_linger(
-        status: str, server: Any, linger_seconds: int
+        status: str,
+        server: Any,
+        linger_seconds: int,
+        state_manager: ExperimentStateManager,
     ) -> None:
         """Shut down server after linger period.
 
@@ -43,12 +61,16 @@ class ServerLifecycleManager:
             status: Experiment status
             server: Uvicorn server instance
             linger_seconds: Seconds to wait before shutdown
+            state_manager: Experiment state manager for sending abort notifications
         """
         status_msg = "errored" if status == "error" else "completed"
         logger.info(
             "Experiment %s. LiveView will linger for %d seconds before shutdown...",
             status_msg,
             linger_seconds,
+        )
+        ServerLifecycleManager._signal_abort_to_subscribers(
+            state_manager, f"LiveView server shutting down after {status}"
         )
         await asyncio.sleep(linger_seconds)
         logger.info(
@@ -85,7 +107,7 @@ class ServerLifecycleManager:
             return
 
         await ServerLifecycleManager._shutdown_after_linger(
-            status, server, linger_seconds
+            status, server, linger_seconds, state_manager
         )
 
     @staticmethod
@@ -135,6 +157,15 @@ class ServerLifecycleManager:
             await server.serve()
         except KeyboardInterrupt:
             logger.info("Server stopped by user")
+            # Update experiment state to aborted and broadcast to all clients
+            state_manager.experiment_state.status = "aborted"
+            await state_manager.broadcast_update(force=True)
+            # Signal abort to experiment process
+            ServerLifecycleManager._signal_abort_to_subscribers(
+                state_manager, "LiveView server interrupted (Ctrl+C)"
+            )
+            # Longer delay for parallel experiments to ensure broadcast reaches clients
+            await asyncio.sleep(1.0)
         finally:
             # Gracefully close all WebSocket connections before shutdown
             await ServerLifecycleManager._close_all_connections(state_manager)

@@ -423,6 +423,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
 
         if final_evidences:
             # Publish single aggregated evidence point per step
+            # Include run_name so server can partition by publisher in parallel mode
             self.broadcaster.publish_data(
                 "evidence_chart",
                 {
@@ -431,6 +432,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
                     "target_object": target_object,
                     "episode": current_episode,
                     "timestamp": time.time(),
+                    "run_name": self.run_name,
                 },
             )
 
@@ -594,6 +596,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
             "depth_image": depth_b64,
             "step": step,
             "timestamp": time.time(),
+            "run_name": self.run_name,
         }
 
     def _numpy_to_base64_png(self, img_array: np.ndarray) -> str | None:

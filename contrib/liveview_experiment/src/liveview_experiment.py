@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import traceback
@@ -226,6 +227,8 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             "train_episodes": safe_int(state.train_episodes),
             "train_epochs": safe_int(state.train_epochs),
             "total_eval_steps": safe_int(state.total_eval_steps),
+            # Backward compatibility for templates using eval_steps
+            "eval_steps": safe_int(state.total_eval_steps),
             "eval_episodes": safe_int(state.eval_episodes),
             "eval_epochs": safe_int(state.eval_epochs),
             "learning_module_count": safe_int(state.learning_module_count),
@@ -334,53 +337,86 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         """Build visualization-related template assigns.
 
         Uses phx-update='stream' pattern with PyView Stream API.
-        Only new evidence points are inserted into the stream.
+        Returns data partitioned by run_name for multi-publisher support.
 
         Returns:
-            Dictionary with chart data and metadata for template.
+            Dictionary with per-publisher chart data and metadata for template.
         """
-        viz_state = self.state_manager.visualization.state
-        sensor_images = viz_state.sensor_images
+        all_states = self.state_manager.visualization.get_all_states()
 
-        # Get unsent data to insert into stream
-        unsent_data = viz_state.get_unsent_data()
+        # Build per-publisher data
+        publishers = []
+        for run_name, viz_state in sorted(all_states.items()):
+            sensor_images = viz_state.sensor_images
 
-        # Build stream items from unsent data
-        new_stream_items = []
-        if unsent_data is not None:
-            for point in unsent_data.get("new_points", []):
-                new_stream_items.append(
-                    {
-                        "id": f"evidence-{point['step']}",
-                        "step": point["step"],
-                        "evidences": json.dumps(point["evidences"]),
-                        "target_object": point.get("target_object", ""),
-                        "episode": point.get("episode", ""),
-                    }
-                )
+            # Get unsent data to insert into stream
+            unsent_data = viz_state.get_unsent_data()
 
-            # Mark as sent after building stream
-            if new_stream_items:
-                viz_state.mark_as_sent()
+            # Build stream items from unsent data
+            new_stream_items = []
+            if unsent_data is not None:
+                for point in unsent_data.get("new_points", []):
+                    new_stream_items.append(
+                        {
+                            "id": f"evidence-{run_name}-{point['step']}",
+                            "step": point["step"],
+                            "evidences": json.dumps(point["evidences"]),
+                            "target_object": point.get("target_object", ""),
+                            "episode": point.get("episode", ""),
+                            "timestamp": point.get("timestamp", ""),
+                        }
+                    )
 
-        current_max = viz_state.current_max_evidence
-        return {
-            "evidence_stream": Stream(new_stream_items, name="evidence_stream"),
-            "chart_point_count": viz_state.point_count,
-            "current_max_evidence_object": (
-                current_max[0] if current_max is not None else ""
-            ),
-            "current_max_evidence_value": (
-                f"{current_max[1]:.3f}" if current_max is not None else ""
-            ),
-            # Sensor images (base64-encoded PNG)
-            "camera_image_b64": sensor_images.camera_image,
-            "depth_image_b64": sensor_images.depth_image,
-            "sensor_image_step": sensor_images.step,
-            "has_sensor_images": bool(
-                sensor_images.camera_image or sensor_images.depth_image
-            ),
-        }
+                # Mark as sent after building stream
+                if new_stream_items:
+                    viz_state.mark_as_sent()
+
+            current_max = viz_state.current_max_evidence
+            publishers.append(
+                {
+                    "run_name": run_name,
+                    "evidence_stream": Stream(
+                        new_stream_items, name=f"evidence_stream_{run_name}"
+                    ),
+                    "chart_point_count": viz_state.point_count,
+                    "current_max_evidence_object": (
+                        current_max[0] if current_max is not None else ""
+                    ),
+                    "current_max_evidence_value": (
+                        f"{current_max[1]:.3f}" if current_max is not None else ""
+                    ),
+                    # Sensor images (base64-encoded PNG)
+                    "camera_image_b64": sensor_images.camera_image,
+                    "depth_image_b64": sensor_images.depth_image,
+                    "sensor_image_step": sensor_images.step,
+                    "has_sensor_images": bool(
+                        sensor_images.camera_image or sensor_images.depth_image
+                    ),
+                }
+            )
+
+        # Backward compatibility: if only one publisher, expose it at top level
+        if len(publishers) == 1:
+            first_publisher = publishers[0]
+            return {
+                "publishers": publishers,
+                "multiple_publishers": False,
+                "evidence_stream": first_publisher["evidence_stream"],
+                "chart_point_count": first_publisher["chart_point_count"],
+                "current_max_evidence_object": first_publisher[
+                    "current_max_evidence_object"
+                ],
+                "current_max_evidence_value": first_publisher[
+                    "current_max_evidence_value"
+                ],
+                "camera_image_b64": first_publisher["camera_image_b64"],
+                "depth_image_b64": first_publisher["depth_image_b64"],
+                "sensor_image_step": first_publisher["sensor_image_step"],
+                "has_sensor_images": first_publisher["has_sensor_images"],
+            }
+
+        # Multi-publisher mode: only return publishers array
+        return {"publishers": publishers, "multiple_publishers": True}
 
     def _set_socket_context(self, socket: LiveViewSocket[ExperimentState]) -> None:
         """Set socket context with current state (like mvg_departures).
@@ -418,8 +454,6 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         socket_id = getattr(socket, "id", "unknown")
         if hasattr(socket, "subscribe"):
             await self._subscribe_to_broadcast_topic(socket, socket_id)
-            # Reset sent tracking so first render sends all accumulated data
-            self.state_manager.visualization.state.reset_sent_tracking()
 
     async def _subscribe_to_broadcast_topic(
         self, socket: LiveViewSocket[ExperimentState], socket_id: str
@@ -432,6 +466,10 @@ class ExperimentLiveView(LiveView[ExperimentState]):
                 socket_id,
                 self.state_manager.broadcast_topic,
             )
+            # Reset sent tracking for all publishers so first render sends
+            # all accumulated data
+            for viz_state in self.state_manager.visualization.get_all_states().values():
+                viz_state.reset_sent_tracking()
         except Exception as e:
             logger.exception(
                 "Failed to subscribe socket %s to topic %s: %s",
@@ -607,11 +645,15 @@ class ExperimentLiveView(LiveView[ExperimentState]):
 
         # Send abort command via ZMQ
         if self.state_manager.command_publisher:
-            success = self.state_manager.command_publisher.abort_experiment(
-                reason="User requested abort via LiveView UI"
+            # Run in executor to avoid blocking async event loop during sleep
+            loop = asyncio.get_event_loop()
+            success = await loop.run_in_executor(
+                None,
+                self.state_manager.command_publisher.abort_experiment,
+                "User requested abort via LiveView UI",
             )
             if success:
-                logger.info("Abort command sent successfully")
+                logger.info("Abort command sent successfully to all subscribers")
                 # Update local state to reflect pending abort
                 self.state_manager.experiment_state.status = "aborting"
                 self._update_context_from_state(socket)

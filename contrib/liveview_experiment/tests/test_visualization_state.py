@@ -291,7 +291,7 @@ class TestVisualizationStateManager:
         manager.clear()
 
         assert manager.state.point_count == 0
-        assert manager._last_episode is None
+        assert len(manager._last_episodes) == 0
 
     def test_uses_custom_config(self) -> None:
         config = ChartBufferConfig(max_points=10, throttle_ms=500)
