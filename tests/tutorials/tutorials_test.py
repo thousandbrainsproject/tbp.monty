@@ -34,6 +34,7 @@ class FistExperimentTest(TestCase):
             with experiment:
                 experiment.run()
 
+
 class TrainingAndInferenceTest(TestCase):
     def test_tutorial(self):
         with hydra.initialize(version_base=None, config_path="../../conf"):
@@ -52,6 +53,7 @@ class TrainingAndInferenceTest(TestCase):
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
                 experiment.run()
+
 
 class UnsupervisedContinualLearningTest(TestCase):
     def test_tutorial(self):
