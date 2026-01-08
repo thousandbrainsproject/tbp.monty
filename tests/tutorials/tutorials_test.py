@@ -19,11 +19,6 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
-from pathlib import Path
-
-EXPERIMENT_DIR = Path(__file__).parent.parent.parent / "conf" / "experiment"
-TUTORIALS_DIR = EXPERIMENT_DIR / "tutorial"
-
 
 class FistExperimentTest(TestCase):
     def test_tutorial(self):
