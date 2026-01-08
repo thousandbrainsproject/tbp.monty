@@ -637,9 +637,7 @@ def print_summary(
     param_count = _count_violations(regular_metrics, "parameters")
     print(f"Functions with too many parameters: {param_count}")
     # Maintainability Index overview for regular functions
-    low_mi_count = sum(
-        1 for m in regular_metrics if 0 < m.maintainability_index < 20
-    )
+    low_mi_count = sum(1 for m in regular_metrics if 0 < m.maintainability_index < 20)
     print(f"Functions with low Maintainability Index (< 20): {low_mi_count}")
 
 
@@ -761,17 +759,13 @@ def _print_function_details(metric: FunctionMetrics) -> None:
         param_info += "+*args"
     if metric.has_kwargs:
         param_info += "+**kwargs"
-    max_allowed = 4 + (1 if metric.has_varargs else 0) + (
-        1 if metric.has_kwargs else 0
-    )
+    max_allowed = 4 + (1 if metric.has_varargs else 0) + (1 if metric.has_kwargs else 0)
     print(
         f"    Parameters: {param_info} (max {max_allowed} allowed: "
         f"4 regular + *args + **kwargs)"
     )
     if metric.parameter_violation > 0:
-        print(
-            f"      → Over by {metric.parameter_violation} regular parameter(s)"
-        )
+        print(f"      → Over by {metric.parameter_violation} regular parameter(s)")
     print()
 
 
@@ -826,7 +820,8 @@ def print_protocol_methods(
             f"(max {max_allowed} allowed)"
         )
     print(
-        "  Note: Protocol methods maintain interface contracts and cannot be refactored."
+        "  Note: Protocol methods maintain interface contracts "
+        "and cannot be refactored."
     )
 
 
@@ -859,7 +854,10 @@ def main() -> None:
     top_priority_metrics = [m for m in regular_metrics if m.priority_score > 0]
     print_priority_table(top_priority_metrics, limit=30)
     print(
-        "Legend: Nest = Max nesting level, Complex = Cyclomatic complexity, Length = Lines of code, Params = Parameter count"
+        "Legend: Nest = Max nesting level, "
+        "Complex = Cyclomatic complexity, "
+        "Length = Lines of code, "
+        "Params = Parameter count"
     )
     print("\n" + "=" * 80)
     print("TOP REFACTORING PRIORITIES (DETAILED VIEW BY FILE)")
