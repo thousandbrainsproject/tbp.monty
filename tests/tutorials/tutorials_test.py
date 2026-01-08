@@ -12,6 +12,8 @@ from unittest import TestCase
 import hydra
 import pytest
 
+from tbp.monty.frameworks.run import run_name_output_dir
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -42,6 +44,11 @@ class TrainingAndInferenceTest(TestCase):
                 config_name="experiment",
                 overrides=["experiment=tutorial/surf_agent_2obj_train"],
             )
+
+            config.experiment.config.logging.output_dir = str(
+                run_name_output_dir(config)
+            )
+
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
                 experiment.run()
