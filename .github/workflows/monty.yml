@@ -372,7 +372,7 @@ jobs:
       #   with:
       #     name: test_coverage
       #     path: tbp.monty/htmlcov
-      - name: Prepare data for integration tests
+      - name: Prepare data for tutorial tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         run: |
@@ -380,7 +380,7 @@ jobs:
           source activate tbp.monty
           set -e
           python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
-      - name: Run integration tests
+      - name: Run tutorial tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         run: |
@@ -388,7 +388,7 @@ jobs:
           source activate tbp.monty
           set -e
           mkdir -p test_results/pytest
-          xvfb-run pytest tests/integration --junitxml=test_results/pytest/results.xml --verbose
+          xvfb-run pytest tests/tutorials --junitxml=test_results/pytest/results.xml --verbose
 
   test_uv_monty:
     name: test-uv-monty
