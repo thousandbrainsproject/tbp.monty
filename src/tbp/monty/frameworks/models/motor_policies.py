@@ -135,18 +135,12 @@ class MotorPolicy(abc.ABC):
         else:
             actions = self.dynamic_call(state)
 
-        if not isinstance(actions, list) or not all(
+        assert isinstance(actions, list) and all(
             isinstance(action, Action) for action in actions
-        ):
-            print("actions", actions)
-            raise ValueError("Actions must be a list of Action instances")
+        ), "Actions must be a list of Actions"
 
-        # assert isinstance(actions, list), "Actions must be a list"
-        # assert all(isinstance(action, Action) for action in actions), (
-        #     "Actions must be a list of Action instances"
-        # )
         self.post_action(actions, state)
-        return actions if isinstance(actions, list) else list(actions)
+        return actions
 
 
 class BasePolicy(MotorPolicy):
