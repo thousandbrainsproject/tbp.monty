@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -13,6 +14,25 @@ if TYPE_CHECKING:
     from .state_manager import ExperimentStateManager
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class StateSnapshot:
+    """Snapshot of experiment state for comparison.
+
+    Attributes:
+        status: Previous status value
+        mode: Previous mode value
+        error: Previous error message
+        run_name: Previous run name
+        completion_detected: Whether completion was detected
+    """
+
+    status: str
+    mode: str
+    error: str | None
+    run_name: str
+    completion_detected: bool
 
 
 class ZmqMessageHandler:
@@ -106,12 +126,17 @@ class ZmqMessageHandler:
             and new_run_name != self.state_manager.experiment_state.run_name
             and self.state_manager.experiment_state.run_name  # Not initial empty state
         ):
+            # In multi-publisher/parallel scenarios, we do NOT clear visualization
+            # state when a new run_name is detected. The visualization manager
+            # partitions data by run_name and aggregates progress across publishers.
+            # Clearing would drop evidence history and sensor snapshots, causing
+            # charts/images to disappear and CRDT-like counters to reset.
             logger.info(
-                "New experiment detected: %s -> %s, resetting visualization state",
+                "New experiment detected: %s -> %s; "
+                "preserving existing visualization states",
                 self.state_manager.experiment_state.run_name,
                 new_run_name,
             )
-            self.state_manager.visualization.clear()
 
     def _update_state_from_payload(self, payload: MessagePayload) -> bool:
         """Update experiment state from payload and detect completion.
@@ -143,27 +168,16 @@ class ZmqMessageHandler:
 
         return completion_detected
 
-    def _is_critical_update(
-        self,
-        completion_detected: bool,
-        old_status: str,
-        old_mode: str,
-        old_error: str | None,
-        old_run_name: str,
-    ) -> bool:
+    def _is_critical_update(self, snapshot: StateSnapshot) -> bool:
         """Check if this update contains critical signals that need immediate broadcast.
 
         Args:
-            completion_detected: Whether completion was detected
-            old_status: Previous status value
-            old_mode: Previous mode value
-            old_error: Previous error message
-            old_run_name: Previous run name
+            snapshot: Previous state snapshot for comparison
 
         Returns:
             True if this is a critical update requiring immediate broadcast
         """
-        if completion_detected:
+        if snapshot.completion_detected:
             return True
 
         new_status = self.state_manager.experiment_state.status
@@ -173,19 +187,21 @@ class ZmqMessageHandler:
 
         # Status transitions are critical
         # (especially initializing -> running, running -> aborting)
-        if old_status != new_status:
+        if snapshot.status != new_status:
             return True
 
         # Error messages are critical
-        if new_error and (not old_error or old_error != new_error):
+        if new_error and (not snapshot.error or snapshot.error != new_error):
             return True
 
         # Mode transitions are important (train -> eval)
-        if old_mode != new_mode:
+        if snapshot.mode != new_mode:
             return True
 
         # New experiment detection is critical (run_name changed)
-        return bool(new_run_name and new_run_name != old_run_name and old_run_name)
+        return bool(
+            new_run_name and new_run_name != snapshot.run_name and snapshot.run_name
+        )
 
     async def _handle_state(self, payload: MessagePayload) -> None:
         """Handle state update message from ZMQ.
@@ -196,19 +212,20 @@ class ZmqMessageHandler:
         # Check if this is a new experiment (run_name changed)
         self._check_new_experiment(payload)
 
-        # Capture old values before updating state
-        old_status = self.state_manager.experiment_state.status
-        old_mode = self.state_manager.experiment_state.experiment_mode
-        old_error = self.state_manager.experiment_state.error_message
-        old_run_name = self.state_manager.experiment_state.run_name
+        # Capture state snapshot before updating
+        snapshot = StateSnapshot(
+            status=self.state_manager.experiment_state.status,
+            mode=self.state_manager.experiment_state.experiment_mode,
+            error=self.state_manager.experiment_state.error_message,
+            run_name=self.state_manager.experiment_state.run_name,
+            completion_detected=False,
+        )
 
         # Update state from payload and detect completion
-        completion_detected = self._update_state_from_payload(payload)
+        snapshot.completion_detected = self._update_state_from_payload(payload)
 
         # Check if this is a critical update
-        critical_update = self._is_critical_update(
-            completion_detected, old_status, old_mode, old_error, old_run_name
-        )
+        critical_update = self._is_critical_update(snapshot)
 
         # Update last_update timestamp
         self.state_manager.experiment_state.last_update = datetime.now(timezone.utc)

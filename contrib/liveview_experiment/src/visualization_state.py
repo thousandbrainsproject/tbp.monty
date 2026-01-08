@@ -195,12 +195,24 @@ class VisualizationState:
         self.reset_sent_tracking()
 
     def update_sensor_images(self, images: SensorImages) -> None:
-        """Update the current sensor images.
+        """Update current sensor images, preserving existing when new data is None.
+
+        Only updates fields that have actual image data (not None) to persist
+        images across episode transitions when new episodes don't send images.
 
         Args:
-            images: New sensor images to store.
+            images: New sensor images to store (may have None fields).
         """
-        self.sensor_images = images
+        # Only update fields that have actual data to preserve existing images
+        if images.camera_image is not None:
+            self.sensor_images.camera_image = images.camera_image
+        if images.depth_image is not None:
+            self.sensor_images.depth_image = images.depth_image
+        # Always update step and timestamp if present
+        if images.step is not None:
+            self.sensor_images.step = images.step
+        if images.timestamp is not None:
+            self.sensor_images.timestamp = images.timestamp
 
     def get_chart_data_json(self) -> str:
         """Get chart data as JSON string for template embedding.
