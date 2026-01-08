@@ -219,6 +219,10 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         def safe_int(value: int | None) -> int:
             return int(value) if value is not None else 0
 
+        # For parallel runs, aggregate total_eval_steps across all publishers
+        # (CRDT-like sum)
+        aggregated_eval_steps = self._aggregate_total_eval_steps(state)
+
         return {
             "current_epoch": safe_int(state.current_epoch),
             "current_episode": safe_int(state.current_episode),
@@ -227,13 +231,45 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             "train_episodes": safe_int(state.train_episodes),
             "train_epochs": safe_int(state.train_epochs),
             "total_eval_steps": safe_int(state.total_eval_steps),
-            # Backward compatibility for templates using eval_steps
-            "eval_steps": safe_int(state.total_eval_steps),
+            # Aggregated eval steps across all publishers for parallel runs
+            "eval_steps": aggregated_eval_steps,
             "eval_episodes": safe_int(state.eval_episodes),
             "eval_epochs": safe_int(state.eval_epochs),
             "learning_module_count": safe_int(state.learning_module_count),
             "sensor_module_count": safe_int(state.sensor_module_count),
         }
+
+    def _aggregate_total_eval_steps(self, state: ExperimentState) -> int:
+        """Aggregate total eval steps across all publishers (CRDT-like sum).
+
+        For parallel runs, each publisher tracks its own step count in
+        evidence_history. Sum up the latest step from each publisher to get
+        the total cumulative eval steps.
+
+        Args:
+            state: Experiment state
+
+        Returns:
+            Aggregated total eval steps across all publishers
+        """
+        all_states = self.state_manager.visualization.get_all_states()
+        if not all_states:
+            # Fallback to state.total_eval_steps if no visualization data
+            return int(state.total_eval_steps) if state.total_eval_steps else 0
+
+        # Sum latest step from each publisher (each publisher's evidence history
+        # tracks cumulative steps within that run)
+        total = 0
+        for viz_state in all_states.values():
+            latest_step = viz_state.latest_step
+            if latest_step is not None:
+                total += latest_step
+
+        # If no visualization data yet, fallback to state
+        if total == 0 and state.total_eval_steps:
+            return int(state.total_eval_steps)
+
+        return total
 
     def _build_optional_numeric_assigns(
         self, state: ExperimentState
@@ -333,6 +369,102 @@ class ExperimentLiveView(LiveView[ExperimentState]):
 
         return assigns
 
+    def _build_stream_items(
+        self, run_name: str, unsent_data: dict[str, Any] | None
+    ) -> list[dict[str, Any]]:
+        """Build stream items from unsent visualization data.
+
+        Args:
+            run_name: Name of the publisher/run
+            unsent_data: Dictionary containing new data points
+
+        Returns:
+            List of stream items for the evidence chart
+        """
+        if unsent_data is None:
+            return []
+
+        stream_items = []
+        for point in unsent_data.get("new_points", []):
+            stream_items.append(
+                {
+                    "id": f"evidence-{run_name}-{point['step']}",
+                    "step": point["step"],
+                    "evidences": json.dumps(point["evidences"]),
+                    "target_object": point.get("target_object", ""),
+                    "episode": point.get("episode", ""),
+                    "timestamp": point.get("timestamp", ""),
+                }
+            )
+        return stream_items
+
+    def _build_publisher_data(self, run_name: str, viz_state: Any) -> dict[str, Any]:
+        """Build data dictionary for a single publisher.
+
+        Args:
+            run_name: Name of the publisher/run
+            viz_state: Visualization state for this publisher
+
+        Returns:
+            Dictionary containing all visualization data for this publisher
+        """
+        sensor_images = viz_state.sensor_images
+        unsent_data = viz_state.get_unsent_data()
+
+        new_stream_items = self._build_stream_items(run_name, unsent_data)
+
+        # Mark as sent after building stream
+        if new_stream_items:
+            viz_state.mark_as_sent()
+
+        current_max = viz_state.current_max_evidence
+        return {
+            "run_name": run_name,
+            "evidence_stream": Stream(
+                new_stream_items, name=f"evidence_stream_{run_name}"
+            ),
+            "chart_point_count": viz_state.point_count,
+            "current_max_evidence_object": (
+                current_max[0] if current_max is not None else ""
+            ),
+            "current_max_evidence_value": (
+                f"{current_max[1]:.3f}" if current_max is not None else ""
+            ),
+            "camera_image_b64": sensor_images.camera_image,
+            "depth_image_b64": sensor_images.depth_image,
+            "sensor_image_step": sensor_images.step,
+            "has_sensor_images": bool(
+                sensor_images.camera_image or sensor_images.depth_image
+            ),
+        }
+
+    def _build_single_publisher_assigns(
+        self, publishers: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Build backward-compatible assigns for single publisher mode.
+
+        Args:
+            publishers: List containing a single publisher's data
+
+        Returns:
+            Dictionary with publisher data at top level for backward compatibility
+        """
+        first_publisher = publishers[0]
+        return {
+            "publishers": publishers,
+            "multiple_publishers": False,
+            "evidence_stream": first_publisher["evidence_stream"],
+            "chart_point_count": first_publisher["chart_point_count"],
+            "current_max_evidence_object": first_publisher[
+                "current_max_evidence_object"
+            ],
+            "current_max_evidence_value": first_publisher["current_max_evidence_value"],
+            "camera_image_b64": first_publisher["camera_image_b64"],
+            "depth_image_b64": first_publisher["depth_image_b64"],
+            "sensor_image_step": first_publisher["sensor_image_step"],
+            "has_sensor_images": first_publisher["has_sensor_images"],
+        }
+
     def _build_visualization_assigns(self) -> dict[str, Any]:
         """Build visualization-related template assigns.
 
@@ -345,75 +477,14 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         all_states = self.state_manager.visualization.get_all_states()
 
         # Build per-publisher data
-        publishers = []
-        for run_name, viz_state in sorted(all_states.items()):
-            sensor_images = viz_state.sensor_images
-
-            # Get unsent data to insert into stream
-            unsent_data = viz_state.get_unsent_data()
-
-            # Build stream items from unsent data
-            new_stream_items = []
-            if unsent_data is not None:
-                for point in unsent_data.get("new_points", []):
-                    new_stream_items.append(
-                        {
-                            "id": f"evidence-{run_name}-{point['step']}",
-                            "step": point["step"],
-                            "evidences": json.dumps(point["evidences"]),
-                            "target_object": point.get("target_object", ""),
-                            "episode": point.get("episode", ""),
-                            "timestamp": point.get("timestamp", ""),
-                        }
-                    )
-
-                # Mark as sent after building stream
-                if new_stream_items:
-                    viz_state.mark_as_sent()
-
-            current_max = viz_state.current_max_evidence
-            publishers.append(
-                {
-                    "run_name": run_name,
-                    "evidence_stream": Stream(
-                        new_stream_items, name=f"evidence_stream_{run_name}"
-                    ),
-                    "chart_point_count": viz_state.point_count,
-                    "current_max_evidence_object": (
-                        current_max[0] if current_max is not None else ""
-                    ),
-                    "current_max_evidence_value": (
-                        f"{current_max[1]:.3f}" if current_max is not None else ""
-                    ),
-                    # Sensor images (base64-encoded PNG)
-                    "camera_image_b64": sensor_images.camera_image,
-                    "depth_image_b64": sensor_images.depth_image,
-                    "sensor_image_step": sensor_images.step,
-                    "has_sensor_images": bool(
-                        sensor_images.camera_image or sensor_images.depth_image
-                    ),
-                }
-            )
+        publishers = [
+            self._build_publisher_data(run_name, viz_state)
+            for run_name, viz_state in sorted(all_states.items())
+        ]
 
         # Backward compatibility: if only one publisher, expose it at top level
         if len(publishers) == 1:
-            first_publisher = publishers[0]
-            return {
-                "publishers": publishers,
-                "multiple_publishers": False,
-                "evidence_stream": first_publisher["evidence_stream"],
-                "chart_point_count": first_publisher["chart_point_count"],
-                "current_max_evidence_object": first_publisher[
-                    "current_max_evidence_object"
-                ],
-                "current_max_evidence_value": first_publisher[
-                    "current_max_evidence_value"
-                ],
-                "camera_image_b64": first_publisher["camera_image_b64"],
-                "depth_image_b64": first_publisher["depth_image_b64"],
-                "sensor_image_step": first_publisher["sensor_image_step"],
-                "has_sensor_images": first_publisher["has_sensor_images"],
-            }
+            return self._build_single_publisher_assigns(publishers)
 
         # Multi-publisher mode: only return publishers array
         return {"publishers": publishers, "multiple_publishers": True}

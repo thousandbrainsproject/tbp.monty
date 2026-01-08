@@ -10,6 +10,7 @@ import base64
 import io
 import logging
 import time
+from collections import defaultdict
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -377,6 +378,46 @@ class MontyExperimentWithLiveView(MontyExperiment):
         # Update LiveView state
         self._update_state_from_experiment()
 
+    def _calculate_cumulative_step(self, step: int) -> tuple[int, int]:
+        """Calculate cumulative step and current episode based on experiment mode.
+
+        Args:
+            step: Current step number within the episode
+
+        Returns:
+            Tuple of (cumulative_step, current_episode)
+        """
+        if self.experiment_mode == ExperimentMode.TRAIN:
+            cumulative_step = self.total_train_steps + step
+            current_episode = self.train_episodes + 1
+        else:
+            cumulative_step = self.total_eval_steps + step
+            current_episode = self.eval_episodes + 1
+        return cumulative_step, current_episode
+
+    def _aggregate_evidence_from_lms(self) -> dict[str, float]:
+        """Aggregate evidence from all learning modules.
+
+        Collects evidence from each LM and averages across LMs for each object.
+        This prevents multiple points per step which would cause zig-zag patterns.
+
+        Returns:
+            Dictionary mapping object names to averaged evidence scores
+        """
+        aggregated_evidences: dict[str, list[float]] = defaultdict(list)
+
+        for lm in self.model.learning_modules:
+            evidences = self._extract_lm_evidence(lm) or {}
+            # Collect evidence for each object across all LMs
+            for obj_name, evidence_score in evidences.items():
+                aggregated_evidences[obj_name].append(evidence_score)
+
+        # Average evidence across LMs for each object
+        return {
+            obj_name: sum(scores) / len(scores)
+            for obj_name, scores in aggregated_evidences.items()
+        }
+
     def _broadcast_evidence_data(self, step: int) -> None:
         """Broadcast evidence data for live visualization charts.
 
@@ -389,37 +430,9 @@ class MontyExperimentWithLiveView(MontyExperiment):
         if not self.broadcaster or not hasattr(self, "model"):
             return
 
-        # Calculate cumulative step for consistent x-axis
-        if self.experiment_mode == ExperimentMode.TRAIN:
-            cumulative_step = self.total_train_steps + step
-            current_episode = self.train_episodes + 1
-        else:
-            cumulative_step = self.total_eval_steps + step
-            current_episode = self.eval_episodes + 1
-
-        # Get current target object
+        cumulative_step, current_episode = self._calculate_cumulative_step(step)
         target_object = self._get_current_target_object()
-
-        # Aggregate evidence from all learning modules into a single point
-        # This prevents multiple points per step (one per LM) which causes zig-zag
-        aggregated_evidences: dict[str, list[float]] = {}
-
-        for lm in self.model.learning_modules:
-            evidences = self._extract_lm_evidence(lm)
-            if not evidences:
-                continue
-
-            # Collect evidence for each object across all LMs
-            for obj_name, evidence_score in evidences.items():
-                if obj_name not in aggregated_evidences:
-                    aggregated_evidences[obj_name] = []
-                aggregated_evidences[obj_name].append(evidence_score)
-
-        # Average evidence across LMs for each object
-        final_evidences = {
-            obj_name: sum(scores) / len(scores)
-            for obj_name, scores in aggregated_evidences.items()
-        }
+        final_evidences = self._aggregate_evidence_from_lms()
 
         if final_evidences:
             # Publish single aggregated evidence point per step

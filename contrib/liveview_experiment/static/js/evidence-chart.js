@@ -247,7 +247,11 @@ class EvidenceChart {
             
             const x0 = marker.start_step || 0;
             const x1 = nextMarker ? nextMarker.start_step : maxStep;
-            const color = getObjectColor(marker.target_object, i);
+            
+            // Use episode number to vary color in parallel runs, so each episode
+            // within a publisher gets a distinct background band
+            const colorIndex = marker.episode !== undefined ? marker.episode : i;
+            const color = getObjectColor(marker.target_object, colorIndex);
             
             shapes.push({
                 type: 'rect',
