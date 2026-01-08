@@ -456,11 +456,26 @@
                     {{ chart_point_count }} points
                 </span>
             </div>
-            <!-- Chart data JSON - updated by LiveView DOM patching -->
-            <script type="application/json" id="chart-data">{{ chart_data_json }}</script>
-            <!-- Chart container with LiveView hook -->
-            <div phx-hook="EvidenceChart" phx-update="ignore" id="evidence-chart-wrapper">
-                <div id="evidence-chart-container" style="height: 300px; width: 100%; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px;"></div>
+            <!-- Chart wrapper with hook -->
+            <div phx-hook="EvidenceChart" id="evidence-chart-wrapper">
+                <!-- Visible chart with phx-update="ignore" -->
+                <div id="evidence-chart-container" 
+                     phx-update="ignore"
+                     style="height: 300px; width: 100%; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px;">
+                </div>
+                <!-- Hidden streamed data container -->
+                <div id="evidence-stream" 
+                     phx-update="stream" 
+                     style="display: none;">
+                    {% for dom_id, point in evidence_stream %}
+                    <div id="{{ dom_id }}"
+                         data-step="{{ point.step }}"
+                         data-evidences='{{ point.evidences }}'
+                         data-target-object="{{ point.target_object }}"
+                         data-episode="{{ point.episode }}">
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
 

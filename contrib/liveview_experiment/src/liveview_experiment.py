@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from markupsafe import Markup
-from pyview import LiveView, LiveViewSocket
+from pyview import LiveView, LiveViewSocket, Stream
 from pyview.events import InfoEvent
 from pyview.template.live_template import LiveRender, LiveTemplate
 from pyview.vendor import ibis
@@ -333,8 +333,8 @@ class ExperimentLiveView(LiveView[ExperimentState]):
     def _build_visualization_assigns(self) -> dict[str, Any]:
         """Build visualization-related template assigns.
 
-        Chart data is embedded as JSON for DOM transport.
-        push_event is attempted but falls back to JSON tag.
+        Uses phx-update='stream' pattern with PyView Stream API.
+        Only new evidence points are inserted into the stream.
 
         Returns:
             Dictionary with chart data and metadata for template.
@@ -342,10 +342,30 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         viz_state = self.state_manager.visualization.state
         sensor_images = viz_state.sensor_images
 
-        # Wrap JSON in Markup to prevent HTML escaping in template
+        # Get unsent data to insert into stream
+        unsent_data = viz_state.get_unsent_data()
+
+        # Build stream items from unsent data
+        new_stream_items = []
+        if unsent_data is not None:
+            for point in unsent_data.get("new_points", []):
+                new_stream_items.append(
+                    {
+                        "id": f"evidence-{point['step']}",
+                        "step": point["step"],
+                        "evidences": json.dumps(point["evidences"]),
+                        "target_object": point.get("target_object", ""),
+                        "episode": point.get("episode", ""),
+                    }
+                )
+
+            # Mark as sent after building stream
+            if new_stream_items:
+                viz_state.mark_as_sent()
+
         current_max = viz_state.current_max_evidence
         return {
-            "chart_data_json": Markup(viz_state.get_chart_data_json()),
+            "evidence_stream": Stream(new_stream_items, name="evidence_stream"),
             "chart_point_count": viz_state.point_count,
             "current_max_evidence_object": (
                 current_max[0] if current_max is not None else ""
@@ -398,10 +418,8 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         socket_id = getattr(socket, "id", "unknown")
         if hasattr(socket, "subscribe"):
             await self._subscribe_to_broadcast_topic(socket, socket_id)
-            # Reset sent tracking so first push sends all accumulated data
+            # Reset sent tracking so first render sends all accumulated data
             self.state_manager.visualization.state.reset_sent_tracking()
-            # Push any existing chart data immediately
-            await self._push_chart_updates(socket)
 
     async def _subscribe_to_broadcast_topic(
         self, socket: LiveViewSocket[ExperimentState], socket_id: str
@@ -550,9 +568,6 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         else:
             logger.debug("Received direct payload: %s", event)
 
-        # Push incremental chart data via dedicated channel (not DOM diff)
-        await self._push_chart_updates(socket)
-
     async def handle_event(
         self,
         event: str,
@@ -604,29 +619,6 @@ class ExperimentLiveView(LiveView[ExperimentState]):
                 logger.error("Failed to send abort command")
         else:
             logger.warning("No command publisher available, cannot send abort")
-
-    async def _push_chart_updates(
-        self, socket: LiveViewSocket[ExperimentState]
-    ) -> None:
-        """Push incremental chart data via push_event.
-
-        Uses pyview's push_event to send only new data points to the client,
-        avoiding large DOM diffs for chart data. This follows the pattern
-        described in https://elixirschool.com/blog/live-view-with-channels
-
-        Args:
-            socket: LiveView socket (must be connected to push events)
-        """
-        # Only push if socket supports push_event (connected socket)
-        if not hasattr(socket, "push_event"):
-            return
-
-        viz_state = self.state_manager.visualization.state
-        unsent_data = viz_state.get_unsent_data()
-
-        if unsent_data is not None:
-            await socket.push_event("chart_data", unsent_data)
-            viz_state.mark_as_sent()
 
     def _load_template(self) -> LiveTemplate:
         """Load and prepare template for rendering.

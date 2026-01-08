@@ -289,87 +289,163 @@ class EvidenceChart {
 window.Hooks = window.Hooks || {};
 
 /**
- * EvidenceChart Hook - receives data via JSON tag (DOM patching)
+ * EvidenceChart Hook - receives data via phx-update='stream'
  * 
- * Hybrid approach: reads from JSON tag on updates since pyview's
- * push_event doesn't work with handle_info context.
- * Keeps handleEvent listener for future push_event support.
+ * Uses the proper LiveView stream pattern:
+ * - Chart has phx-update="ignore" so it's not re-rendered
+ * - Data container has phx-update="stream" for efficient updates
+ * - Hook reads all data on updated() and uses Plotly.react() for efficient diffing
  */
 window.Hooks.EvidenceChart = {
     mounted() {
         // console.log('EvidenceChart hook mounted');
+        this.chartEl = document.getElementById('evidence-chart-container');
+        this.dataContainer = document.getElementById('evidence-stream');
         
-        // Initialize the chart
-        this.chart = new EvidenceChart('evidence-chart-container', {
-            liveFollow: true,
-            xRangeWindow: 100
-        });
-        
-        // Load initial data from JSON tag
-        this._loadFromJsonTag();
-        
-        // Also listen for push_event (for future pyview support)
-        this.handleEvent("chart_data", (data) => {
-            // console.log('EvidenceChart: Received push_event with', 
-            //     data.new_points?.length || 0, 'new points');
-            if (this.chart) {
-                this.chart.appendData(data);
-            }
-        });
-        
-        // Set up MutationObserver to watch for JSON tag changes
-        this._setupObserver();
-    },
-    
-    _loadFromJsonTag() {
-        const dataEl = document.getElementById('chart-data');
-        if (!dataEl || !this.chart) return;
-        
-        try {
-            const data = JSON.parse(dataEl.textContent || '{}');
-            if (data.evidence_history && data.evidence_history.length > 0) {
-                // Reset and load full data (JSON tag contains all history)
-                this.chart.reset();
-                this.chart.appendData({
-                    new_points: data.evidence_history,
-                    new_markers: data.episode_markers || [],
-                    new_object_names: data.object_names || [],
-                    total_points: data.evidence_history.length
-                });
-            }
-        } catch (e) {
-            console.warn('EvidenceChart: Failed to parse JSON tag:', e);
+        if (!this.chartEl) {
+            console.warn('EvidenceChart: Chart container not found');
+            return;
         }
+        
+        // Initialize empty chart
+        this.initializeChart();
     },
     
-    _setupObserver() {
-        const dataEl = document.getElementById('chart-data');
-        if (!dataEl) return;
+    initializeChart() {
+        const layout = {
+            title: {
+                text: 'Evidence Over Time',
+                font: { size: 14 }
+            },
+            xaxis: {
+                title: 'Step',
+                showgrid: true,
+                gridcolor: '#e5e7eb',
+            },
+            yaxis: {
+                title: 'Evidence Score',
+                showgrid: true,
+                gridcolor: '#e5e7eb',
+            },
+            showlegend: true,
+            legend: {
+                orientation: 'h',
+                y: -0.2,
+            },
+            margin: { t: 40, r: 20, b: 60, l: 60 },
+            paper_bgcolor: 'white',
+            plot_bgcolor: '#fafafa',
+        };
         
-        this.observer = new MutationObserver(() => {
-            this._loadFromJsonTag();
-        });
+        const config = {
+            responsive: true,
+            displayModeBar: true,
+            modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+        };
         
-        this.observer.observe(dataEl, {
-            childList: true,
-            characterData: true,
-            subtree: true
-        });
+        Plotly.newPlot(this.chartEl, [], layout, config);
     },
     
     updated() {
-        // DOM was updated by LiveView - reload data from JSON tag
-        this._loadFromJsonTag();
+        // On each update, read all data points from stream and update chart
+        const points = this.getAllDataPoints();
+        
+        if (points.length === 0) return;
+        
+        // Build traces from all points
+        const traces = this.buildTraces(points);
+        
+        // Use Plotly.react for efficient updates (only changes what's different)
+        Plotly.react(this.chartEl, traces, {
+            ...this.chartEl.layout,
+            xaxis: {
+                ...this.chartEl.layout.xaxis,
+                range: this.calculateXRange(points),
+            },
+        });
+    },
+    
+    getAllDataPoints() {
+        if (!this.dataContainer) return [];
+        
+        const points = [];
+        const streamItems = this.dataContainer.querySelectorAll('[data-step]');
+        
+        streamItems.forEach(el => {
+            try {
+                const step = parseInt(el.dataset.step);
+                const evidences = JSON.parse(el.dataset.evidences || '{}');
+                const targetObject = el.dataset.targetObject || '';
+                const episode = el.dataset.episode ? parseInt(el.dataset.episode) : null;
+                
+                points.push({
+                    step,
+                    evidences,
+                    target_object: targetObject,
+                    episode
+                });
+            } catch (e) {
+                console.warn('Failed to parse stream item:', e);
+            }
+        });
+        
+        // Sort by step to ensure correct order
+        return points.sort((a, b) => a.step - b.step);
+    },
+    
+    buildTraces(points) {
+        // Get all unique object names
+        const objectNames = new Set();
+        points.forEach(point => {
+            Object.keys(point.evidences).forEach(name => objectNames.add(name));
+        });
+        
+        const traces = [];
+        let index = 0;
+        
+        objectNames.forEach(objName => {
+            const x = [];
+            const y = [];
+            
+            points.forEach(point => {
+                if (point.evidences[objName] !== undefined) {
+                    x.push(point.step);
+                    y.push(point.evidences[objName]);
+                }
+            });
+            
+            if (x.length > 0) {
+                traces.push({
+                    x: x,
+                    y: y,
+                    name: objName,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: getObjectColor(objName, index),
+                        width: 2,
+                    },
+                });
+                index++;
+            }
+        });
+        
+        return traces;
+    },
+    
+    calculateXRange(points) {
+        if (points.length === 0) return null;
+        
+        const maxStep = Math.max(...points.map(p => p.step));
+        const minStep = Math.max(0, maxStep - 100);  // Show last 100 steps
+        
+        return [minStep, maxStep + 5];
     },
     
     destroyed() {
         console.log('EvidenceChart hook destroyed');
-        if (this.observer) {
-            this.observer.disconnect();
-        }
-        if (this.chart) {
-            this.chart.destroy();
-            this.chart = null;
+        if (this.chartEl) {
+            Plotly.purge(this.chartEl);
         }
     },
     
@@ -379,8 +455,8 @@ window.Hooks.EvidenceChart = {
     
     reconnected() {
         console.log('EvidenceChart hook reconnected');
-        // On reconnect, reload from JSON tag
-        this._loadFromJsonTag();
+        // On reconnect, re-read data and update
+        this.updated();
     }
 };
 
