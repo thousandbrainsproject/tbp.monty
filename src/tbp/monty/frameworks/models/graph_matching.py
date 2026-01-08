@@ -482,19 +482,17 @@ class MontyForGraphMatching(MontyBase):
         # TODO M clean up the below when refactoring the surface-agent policy
         if hasattr(self.motor_system._policy, "tangent_locs"):
             last_action = self.motor_system._policy.last_action
-
-            if last_action is not None:
-                if last_action.name == "orient_vertical":
-                    # Only append locations associated with performing a tangential
-                    # action, rather than some form of corrective movement; these
-                    # movements are performed immediately after "orient_vertical"
-                    # TODO generalize to multiple sensor modules
-                    self.motor_system._policy.tangent_locs.append(
-                        self.sensor_modules[0].visited_locs[-1]
-                    )
-                    self.motor_system._policy.tangent_norms.append(
-                        self.sensor_modules[0].visited_normals[-1]
-                    )
+            if last_action and last_action[0].name == "orient_vertical":
+                # Only append locations associated with performing a tangential
+                # action, rather than some form of corrective movement; these
+                # movements are performed immediately after "orient_vertical"
+                # TODO generalize to multiple sensor modules
+                self.motor_system._policy.tangent_locs.append(
+                    self.sensor_modules[0].visited_locs[-1]
+                )
+                self.motor_system._policy.tangent_norms.append(
+                    self.sensor_modules[0].visited_normals[-1]
+                )
 
     # ------------------------ Helper --------------------------
     def _set_stepwise_targets(self, lm, sensory_inputs):

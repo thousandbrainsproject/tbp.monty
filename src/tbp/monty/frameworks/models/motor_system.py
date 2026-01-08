@@ -33,7 +33,7 @@ class MotorSystem:
         self._state = state
 
     @property
-    def last_action(self) -> Action:
+    def last_action(self) -> list[Action]:
         """Returns the last action taken by the motor system."""
         return self._policy.last_action
 
