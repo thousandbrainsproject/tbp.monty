@@ -112,6 +112,7 @@ class OmniglotTrainingAndInferenceTest(TestCase):
             with experiment:
                 experiment.run()
 
+
 class MontyMeetsWorld2DImageInferenceTest(TestCase):
     def test_tutorial(self):
         with hydra.initialize(version_base=None, config_path="../../conf"):
