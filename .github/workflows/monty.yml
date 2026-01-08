@@ -422,10 +422,10 @@ jobs:
           unzip ~/tbp/data/omniglot/python/images_background.zip -d ~/tbp/data/omniglot/python
           unzip ~/tbp/data/omniglot/python/strokes_background.zip -d ~/tbp/data/omniglot/python
           mkdir -p ~/tbp/data/worldimages
-          curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar -xzf - -C ~/tbp/data/worldimages
+          curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar -xzf - -C ~/tbp/data
           ls -la ~/tbp/data/worldimages
           mkdir -p ~/tbp/data/pretrained_ycb_v11
-          curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v11.tgz | tar -xzf - -C ~/tbp/data/pretrained_ycb_v11
+          curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v11.tgz | tar -xzf - -C ~/tbp/data
           ls -la ~/tbp/data/pretrained_ycb_v11
       - name: Test tutorials
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
