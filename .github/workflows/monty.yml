@@ -419,10 +419,8 @@ jobs:
           set -e
           python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
           git clone https://github.com/brendenlake/omniglot.git ~/tbp/data/omniglot
-          unzip ~/tbp/data/omniglot/python/images_background.zip -d ~/tbp/data/omniglot/python/images_background
-          unzip ~/tbp/data/omniglot/python/strokes_background.zip -d ~/tbp/data/omniglot/python/strokes_background
-          ls -la ~/tbp/data/omniglot/python/images_background
-          ls -la ~/tbp/data/omniglot/python/strokes_background
+          unzip ~/tbp/data/omniglot/python/images_background.zip -d ~/tbp/data/omniglot/python
+          unzip ~/tbp/data/omniglot/python/strokes_background.zip -d ~/tbp/data/omniglot/python
           mkdir -p ~/tbp/data/worldimages
           curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar -xzf - -C ~/tbp/data/worldimages
           ls -la ~/tbp/data/worldimages
