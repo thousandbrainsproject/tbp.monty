@@ -46,6 +46,9 @@ class TrainingAndInferenceTest(TestCase):
             with experiment:
                 experiment.run()
 
+            for path in Path(config.experiment.config.logging.output_dir).iterdir():
+                print(path.absolute())
+
             config = hydra.compose(
                 config_name="experiment",
                 overrides=["experiment=tutorial/surf_agent_2obj_eval"],
