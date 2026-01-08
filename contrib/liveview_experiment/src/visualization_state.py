@@ -305,24 +305,26 @@ class VisualizationState:
 
 
 class VisualizationStateManager:
-    """Manages visualization state with support for multiple chart types.
+    """Manages visualization state with support for multiple publishers.
 
     This manager processes visualization-specific data messages and maintains
-    buffered history for real-time charting.
+    buffered history for real-time charting. Supports multiple publishers
+    (e.g., parallel experiments) by partitioning data by run_name.
 
     Example usage:
         config = ChartBufferConfig(max_points=1000)
         manager = VisualizationStateManager(config)
 
-        # Process incoming data
+        # Process incoming data with run_name
         manager.process_evidence_data({
             "step": 42,
             "evidences": {"mug": 0.8, "bowl": 0.2},
-            "target_object": "mug"
+            "target_object": "mug",
+            "run_name": "exp_0"
         })
 
-        # Get data for template
-        chart_json = manager.state.get_chart_data_json()
+        # Get data for all publishers
+        all_states = manager.get_all_states()
     """
 
     def __init__(self, config: ChartBufferConfig | None = None) -> None:
@@ -332,49 +334,103 @@ class VisualizationStateManager:
             config: Chart buffer configuration. Uses defaults if not provided.
         """
         self.config = config or ChartBufferConfig()
-        self.state = VisualizationState(config=self.config)
-        self._last_episode: int | None = None
+        # Dictionary of run_name -> VisualizationState
+        self.states: dict[str, VisualizationState] = {}
+        # Track last episode per publisher
+        self._last_episodes: dict[str, int | None] = {}
+
+    def _get_or_create_state(self, run_name: str) -> VisualizationState:
+        """Get existing state for run_name or create new one.
+
+        Args:
+            run_name: Publisher identifier.
+
+        Returns:
+            VisualizationState instance for this publisher.
+        """
+        if run_name not in self.states:
+            self.states[run_name] = VisualizationState(config=self.config)
+            self._last_episodes[run_name] = None
+        return self.states[run_name]
 
     def process_evidence_data(self, data: dict[str, Any]) -> None:
         """Process evidence chart data from telemetry stream.
 
         Args:
-            data: Evidence data dictionary with step, evidences, etc.
+            data: Evidence data dictionary with step, evidences, run_name, etc.
         """
+        run_name = data.get("run_name", "default")
+        state = self._get_or_create_state(run_name)
         point = EvidencePoint.from_dict(data)
-        self.state.append_evidence(point)
+        state.append_evidence(point)
 
-        # Check for episode transition
+        # Check for episode transition (per-publisher tracking)
         episode = data.get("episode")
-        if episode is not None and episode != self._last_episode:
+        last_episode = self._last_episodes.get(run_name)
+        if episode is not None and episode != last_episode:
             marker = EpisodeMarker(
                 start_step=point.step,
                 target_object=point.target_object,
                 episode=episode,
             )
-            self.state.add_episode_marker(marker)
-            self._last_episode = episode
+            state.add_episode_marker(marker)
+            self._last_episodes[run_name] = episode
 
     def process_mesh_data(self, data: dict[str, Any]) -> None:
         """Process mesh viewer data from telemetry stream.
 
         Args:
-            data: Mesh data dictionary with mesh_url, object_name, etc.
+            data: Mesh data dictionary with mesh_url, object_name, run_name, etc.
         """
+        run_name = data.get("run_name", "default")
+        state = self._get_or_create_state(run_name)
         mesh_url = data.get("mesh_url") or data.get("url")
         if mesh_url:
-            self.state.current_mesh_url = mesh_url
+            state.current_mesh_url = mesh_url
 
     def process_sensor_images(self, data: dict[str, Any]) -> None:
         """Process sensor image data from telemetry stream.
 
         Args:
-            data: Sensor images dictionary with camera_image, depth_image, etc.
+            data: Sensor images dict with camera_image, depth_image, run_name.
         """
+        run_name = data.get("run_name", "default")
+        state = self._get_or_create_state(run_name)
         images = SensorImages.from_dict(data)
-        self.state.update_sensor_images(images)
+        state.update_sensor_images(images)
+
+    def get_all_states(self) -> dict[str, VisualizationState]:
+        """Get all publisher states.
+
+        Returns:
+            Dictionary mapping run_name to VisualizationState.
+        """
+        return self.states
+
+    def get_state(self, run_name: str) -> VisualizationState | None:
+        """Get state for specific publisher.
+
+        Args:
+            run_name: Publisher identifier.
+
+        Returns:
+            VisualizationState if exists, None otherwise.
+        """
+        return self.states.get(run_name)
+
+    @property
+    def state(self) -> VisualizationState:
+        """Backward compatibility: get first/default state.
+
+        Returns:
+            The first publisher's state, or creates default if empty.
+        """
+        if not self.states:
+            return self._get_or_create_state("default")
+        return next(iter(self.states.values()))
 
     def clear(self) -> None:
         """Clear all visualization data and reset state."""
-        self.state.clear()
-        self._last_episode = None
+        for state in self.states.values():
+            state.clear()
+        self._last_episodes.clear()

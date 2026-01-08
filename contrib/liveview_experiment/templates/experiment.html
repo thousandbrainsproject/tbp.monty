@@ -122,6 +122,30 @@
             font-weight: 600;
             color: #111827;
         }
+        .table-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        .table-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+        .table-title {
+            padding: 10px;
+            background: #f3f4f6;
+            font-weight: 600;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .table-row {
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .table-row.alt { background: #f9fafb; }
+        .table-row:last-child { border-bottom: none; }
         .section {
             margin-bottom: 16px;
         }
@@ -247,164 +271,149 @@
                     {% endif %}
                 </div>
             </div>
-            <div class="config-grid">
-                {% if environment_name %}
-                <div class="config-item">
-                    <span class="config-label">Environment:</span>
-                    <span class="config-value">{{ environment_name }}</span>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="table-card">
+                        <div class="table-title">Experiment Details</div>
+                        {% if environment_name %}
+                        <div class="table-row alt"><span>Environment</span><span style="font-weight: 600;">{{ environment_name }}</span></div>
+                        {% endif %}
+                        {% if experiment_name %}
+                        <div class="table-row"><span>Experiment</span><span style="font-weight: 600; word-break: break-word;">{{ experiment_name }}</span></div>
+                        {% endif %}
+                        {% if config_path %}
+                        <div class="table-row alt"><span>Config</span><span style="font-weight: 600; font-size: 10px; word-break: break-word;">{{ config_path }}</span></div>
+                        {% endif %}
+                        {% if model_name %}
+                        <div class="table-row"><span>Model</span><span style="font-weight: 600;" title="{{ model_path }}">{{ model_name }}</span></div>
+                        {% endif %}
+                    </div>
+                    <div class="table-card">
+                        <div class="table-title">Model Information</div>
+                        <div class="table-row alt"><span>Learning Modules</span><span style="font-weight: 600;">{{ learning_module_count }}</span></div>
+                        <div class="table-row"><span>Sensor Modules</span><span style="font-weight: 600;">{{ sensor_module_count }}</span></div>
+                        <div class="table-row alt"><span>Min LMs Match</span><span style="font-weight: 600;">{{ min_lms_match }}</span></div>
+                    </div>
                 </div>
-                {% endif %}
-                {% if experiment_name %}
-                <div class="config-item" style="grid-column: 1 / -1;">
-                    <span class="config-label">Experiment:</span>
-                    <span class="config-value" style="white-space: normal; word-break: break-word; text-align: left;">{{ experiment_name }}</span>
+                <div class="table-card">
+                    <div class="table-title">Training &amp; Evaluation</div>
+                    {% if max_train_steps %}
+                    <div class="table-row alt"><span>Max Train Steps</span><span style="font-weight: 600;">{{ max_train_steps }}</span></div>
+                    {% endif %}
+                    {% if max_eval_steps %}
+                    <div class="table-row"><span>Max Eval Steps</span><span style="font-weight: 600;">{{ max_eval_steps }}</span></div>
+                    {% endif %}
+                    {% if max_total_steps %}
+                    <div class="table-row alt"><span>Max Total Steps</span><span style="font-weight: 600;">{{ max_total_steps }}</span></div>
+                    {% endif %}
+                    {% if n_train_epochs %}
+                    <div class="table-row"><span>Train Epochs</span><span style="font-weight: 600;">{{ n_train_epochs }}</span></div>
+                    {% endif %}
+                    {% if n_eval_epochs %}
+                    <div class="table-row alt"><span>Eval Epochs</span><span style="font-weight: 600;">{{ n_eval_epochs }}</span></div>
+                    {% endif %}
+                    <div class="table-row"><span>Training</span><span style="font-weight: 600;">{% if do_train %}Yes{% else %}No{% endif %}</span></div>
+                    <div class="table-row alt"><span>Evaluation</span><span style="font-weight: 600;">{% if do_eval %}Yes{% else %}No{% endif %}</span></div>
+                    <div class="table-row"><span>Show Sensor</span><span style="font-weight: 600;">{% if show_sensor_output %}Yes{% else %}No{% endif %}</span></div>
+                    {% if seed %}
+                    <div class="table-row alt"><span>Seed</span><span style="font-weight: 600;">{{ seed }}</span></div>
+                    {% endif %}
+                    {% if min_lms_match %}
+                    <div class="table-row"><span>Min LMs Match</span><span style="font-weight: 600;">{{ min_lms_match }}</span></div>
+                    {% endif %}
                 </div>
-                {% endif %}
-                {% if config_path %}
-                <div class="config-item" style="grid-column: 1 / -1;">
-                    <span class="config-label">Config:</span>
-                    <span class="config-value" style="white-space: normal; word-break: break-word; text-align: left; font-size: 10px;">{{ config_path }}</span>
-                </div>
-                {% endif %}
-                {% if max_train_steps %}
-                <div class="config-item">
-                    <span class="config-label">Max Train Steps:</span>
-                    <span class="config-value">{{ max_train_steps }}</span>
-                </div>
-                {% endif %}
-                {% if max_eval_steps %}
-                <div class="config-item">
-                    <span class="config-label">Max Eval Steps:</span>
-                    <span class="config-value">{{ max_eval_steps }}</span>
-                </div>
-                {% endif %}
-                {% if max_total_steps %}
-                <div class="config-item">
-                    <span class="config-label">Max Total Steps:</span>
-                    <span class="config-value">{{ max_total_steps }}</span>
-                </div>
-                {% endif %}
-                {% if n_train_epochs %}
-                <div class="config-item">
-                    <span class="config-label">Train Epochs:</span>
-                    <span class="config-value">{{ n_train_epochs }}</span>
-                </div>
-                {% endif %}
-                {% if n_eval_epochs %}
-                <div class="config-item">
-                    <span class="config-label">Eval Epochs:</span>
-                    <span class="config-value">{{ n_eval_epochs }}</span>
-                </div>
-                {% endif %}
-                <div class="config-item">
-                    <span class="config-label">Training:</span>
-                    <span class="config-value">{% if do_train %}Yes{% else %}No{% endif %}</span>
-                </div>
-                <div class="config-item">
-                    <span class="config-label">Evaluation:</span>
-                    <span class="config-value">{% if do_eval %}Yes{% else %}No{% endif %}</span>
-                </div>
-                <div class="config-item">
-                    <span class="config-label">Show Sensor:</span>
-                    <span class="config-value">{% if show_sensor_output %}Yes{% else %}No{% endif %}</span>
-                </div>
-                {% if seed %}
-                <div class="config-item">
-                    <span class="config-label">Seed:</span>
-                    <span class="config-value">{{ seed }}</span>
-                </div>
-                {% endif %}
-                {% if min_lms_match %}
-                <div class="config-item">
-                    <span class="config-label">Min LMs Match:</span>
-                    <span class="config-value">{{ min_lms_match }}</span>
-                </div>
-                {% endif %}
-                {% if model_name %}
-                <div class="config-item">
-                    <span class="config-label">Model:</span>
-                    <span class="config-value" title="{{ model_path }}">{{ model_name }}</span>
-                </div>
-                {% endif %}
             </div>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Current Epoch</div>
-                <div class="stat-value">{{ current_epoch }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Current Episode</div>
-                <div class="stat-value">{{ current_episode }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Current Step</div>
-                <div class="stat-value">{{ current_step }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Elapsed Time</div>
-                <div class="stat-value">{{ elapsed_time }}</div>
+        <!-- Evaluation Progress and Run Status (two columns) -->
+        <div class="section" style="margin-top: 16px;">
+            <div class="section-title">Evaluation &amp; Run Status</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+                <div class="table-card">
+                    <div class="table-title">Evaluation Progress</div>
+                    <div class="table-row alt"><span>Total Eval Steps</span><span style="font-weight: 600;">{{ eval_steps }}</span></div>
+                    <div class="table-row"><span>Eval Episodes</span><span style="font-weight: 600;">{{ eval_episodes }}</span></div>
+                    <div class="table-row alt"><span>Train Mode</span><span style="font-weight: 600;">{% if do_train %}Enabled{% else %}Disabled{% endif %}</span></div>
+                </div>
+                <div class="table-card">
+                    <div class="table-title">Run Status</div>
+                    <div class="table-row alt"><span>Current Epoch</span><span style="font-weight: 600;">{{ current_epoch }}</span></div>
+                    <div class="table-row"><span>Elapsed Time</span><span style="font-weight: 600;">{{ elapsed_time }}</span></div>
+                    <div class="table-row alt"><span>Last Update</span><span style="font-weight: 600;">{{ last_update }}</span></div>
+                </div>
             </div>
         </div>
 
-        {% if total_train_steps > 0 or train_episodes > 0 or train_epochs > 0 %}
+        <!-- Multi-Publisher Support: Show sensor images and stats stacked vertically -->
+        {% if publishers %}
+            {% for publisher in publishers %}
+            {% if publisher.run_name != "default" or publisher.chart_point_count > 0 or publisher.has_sensor_images %}
         <div class="section">
-            <div class="section-title">Training Progress</div>
-            <div class="info-row">
-                <span class="info-label">Total Steps</span>
-                <span class="info-value">{{ total_train_steps }}</span>
+            <div class="section-title">
+                <span>Episode: {{ publisher.run_name }}</span>
+                <span style="font-size: 11px; color: #6b7280; font-weight: normal;">
+                    Step {{ publisher.sensor_image_step }} • {{ publisher.chart_point_count }} evidence points
+                </span>
             </div>
+            
+            <!-- Current Max Evidence inline -->
             <div class="info-row">
-                <span class="info-label">Episodes</span>
-                <span class="info-value">{{ train_episodes }}</span>
+                <span class="info-label">Max Evidence:</span>
+                {% if publisher.current_max_evidence_object %}
+                <span class="info-value">{{ publisher.current_max_evidence_object }} ({{ publisher.current_max_evidence_value }})</span>
+                {% else %}
+                <span class="info-value">N/A</span>
+                {% endif %}
             </div>
-            <div class="info-row">
-                <span class="info-label">Epochs</span>
-                <span class="info-value">{{ train_epochs }}</span>
+
+            <!-- Sensor Images Side by Side -->
+            {% if publisher.has_sensor_images %}
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px;">
+                {% if publisher.camera_image_b64 %}
+                <div style="flex: 1; min-width: 200px;">
+                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Camera Image</div>
+                    <img src="data:image/png;base64,{{ publisher.camera_image_b64 }}" 
+                         alt="Camera view" 
+                         style="width: 100%; max-width: 300px; border: 1px solid #e5e7eb; border-radius: 4px;" />
+                </div>
+                {% endif %}
+                {% if publisher.depth_image_b64 %}
+                <div style="flex: 1; min-width: 200px;">
+                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Depth Image</div>
+                    <img src="data:image/png;base64,{{ publisher.depth_image_b64 }}" 
+                         alt="Depth view" 
+                         style="width: 100%; max-width: 300px; border: 1px solid #e5e7eb; border-radius: 4px;" />
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Evidence Chart -->
+            <div phx-hook="EvidenceChart" id="evidence-chart-wrapper-{{ publisher.run_name }}" style="margin-top: 12px;">
+                <div id="evidence-chart-container-{{ publisher.run_name }}" 
+                     phx-update="ignore"
+                     style="height: 250px; width: 100%; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px;">
+                </div>
+                <!-- Hidden streamed data container -->
+                <div id="evidence-stream-{{ publisher.run_name }}" 
+                     phx-update="stream" 
+                     style="display: none;">
+                    {% for dom_id, point in publisher.evidence_stream %}
+                    <div id="{{ dom_id }}"
+                         data-step="{{ point.step }}"
+                         data-evidences='{{ point.evidences }}'
+                         data-target-object="{{ point.target_object }}"
+                         data-episode="{{ point.episode }}"
+                         data-timestamp="{{ point.timestamp }}">
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
-        {% endif %}
-
-        {% if total_eval_steps > 0 or eval_episodes > 0 or eval_epochs > 0 %}
-        <div class="section">
-            <div class="section-title">Evaluation Progress</div>
-            <div class="info-row">
-                <span class="info-label">Total Steps</span>
-                <span class="info-value">{{ total_eval_steps }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Episodes</span>
-                <span class="info-value">{{ eval_episodes }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Epochs</span>
-                <span class="info-value">{{ eval_epochs }}</span>
-            </div>
-        </div>
-        {% endif %}
-
-        <div class="section">
-            <div class="section-title">Model Information</div>
-            <div class="info-row">
-                <span class="info-label">Learning Modules</span>
-                <span class="info-value">{{ learning_module_count }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Sensor Modules</span>
-                <span class="info-value">{{ sensor_module_count }}</span>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">System Information</div>
-            <div class="info-row">
-                <span class="info-label">Last Update</span>
-                <span class="info-value">{{ last_update }}</span>
-            </div>
-        </div>
-
-
+            {% endif %}
+            {% endfor %}
+        {% else %}
+        <!-- Single publisher backward compatibility -->
         <div class="section" id="max-evidence-section" phx-hook="MaxEvidence">
             <div class="section-title">Current Max Evidence</div>
             <div class="info-row" id="max-evidence-content">
@@ -472,12 +481,14 @@
                          data-step="{{ point.step }}"
                          data-evidences='{{ point.evidences }}'
                          data-target-object="{{ point.target_object }}"
-                         data-episode="{{ point.episode }}">
+                         data-episode="{{ point.episode }}"
+                         data-timestamp="{{ point.timestamp }}">
                     </div>
                     {% endfor %}
                 </div>
             </div>
         </div>
+        {% endif %}
 
         {% if has_error %}
         <div class="error-box">

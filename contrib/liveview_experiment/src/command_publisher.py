@@ -131,7 +131,15 @@ class CommandPublisher:
             True if command was sent successfully.
         """
         command = Command(type="abort", payload={"reason": reason})
-        return self.publish(command)
+        success = self.publish(command)
+
+        if success:
+            # Allow ZMQ PUB/SUB time to deliver abort to all subscribers
+            # Helpful for parallel runs with many workers
+            time.sleep(0.5)
+            logger.debug("Abort command propagation delay complete")
+
+        return success
 
     def close(self) -> None:
         """Close the socket and clean up resources."""

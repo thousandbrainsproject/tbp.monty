@@ -190,10 +190,23 @@ class EvidenceChart {
             const x = [];
             const y = [];
             
+            let lastEpisode = null;
+            
             history.forEach(point => {
                 if (point.evidences && point.evidences[objName] !== undefined) {
-                    x.push(point.step);
+                    // Detect episode transitions and insert NaN to create vertical drop
+                    if (lastEpisode !== null && point.episode !== undefined && point.episode !== lastEpisode) {
+                        // Add NaN gap to create discontinuity (vertical line)
+                        x.push(point.step);
+                        y.push(NaN);
+                    }
+                    
+                    x.push(point.step || 0);
                     y.push(point.evidences[objName]);
+                    
+                    if (point.episode !== undefined) {
+                        lastEpisode = point.episode;
+                    }
                 }
             });
             
@@ -208,6 +221,7 @@ class EvidenceChart {
                         color: getObjectColor(objName, index),
                         width: 2,
                     },
+                    connectgaps: false,  // Don't connect across NaN gaps
                 });
             }
         });
@@ -222,15 +236,16 @@ class EvidenceChart {
         if (markers.length === 0) return [];
         
         const shapes = [];
+        
         const maxStep = history.length > 0 
-            ? Math.max(...history.map(p => p.step)) 
+            ? Math.max(...history.map(p => p.step || 0))
             : 100;
         
         for (let i = 0; i < markers.length; i++) {
             const marker = markers[i];
             const nextMarker = markers[i + 1];
             
-            const x0 = marker.start_step;
+            const x0 = marker.start_step || 0;
             const x1 = nextMarker ? nextMarker.start_step : maxStep;
             const color = getObjectColor(marker.target_object, i);
             
@@ -260,7 +275,8 @@ class EvidenceChart {
             return null;
         }
         
-        const maxStep = Math.max(...history.map(p => p.step));
+        const steps = history.map(p => p.step || 0);
+        const maxStep = Math.max(...steps);
         const minStep = Math.max(0, maxStep - this.options.xRangeWindow);
         
         return [minStep, maxStep + 5];
@@ -295,15 +311,34 @@ window.Hooks = window.Hooks || {};
  * - Chart has phx-update="ignore" so it's not re-rendered
  * - Data container has phx-update="stream" for efficient updates
  * - Hook reads all data on updated() and uses Plotly.react() for efficient diffing
+ * 
+ * Supports multiple chart instances with different container IDs for
+ * parallel publisher visualization (e.g., evidence-chart-wrapper-exp_0).
  */
 window.Hooks.EvidenceChart = {
     mounted() {
-        // console.log('EvidenceChart hook mounted');
-        this.chartEl = document.getElementById('evidence-chart-container');
-        this.dataContainer = document.getElementById('evidence-stream');
+        // Extract publisher-specific IDs from this hook's element
+        const wrapperId = this.el.id;  // e.g., "evidence-chart-wrapper-exp_0" or "evidence-chart-wrapper"
+        
+        // Extract suffix (run_name) from wrapper ID
+        const suffix = wrapperId.replace('evidence-chart-wrapper', '');
+        
+        // Build container and stream IDs with the same suffix
+        this.containerId = 'evidence-chart-container' + suffix;
+        this.streamId = 'evidence-stream' + suffix;
+        
+        console.log(`EvidenceChart hook mounted: wrapper=${wrapperId}, container=${this.containerId}, stream=${this.streamId}`);
+        
+        this.chartEl = document.getElementById(this.containerId);
+        this.dataContainer = document.getElementById(this.streamId);
         
         if (!this.chartEl) {
-            console.warn('EvidenceChart: Chart container not found');
+            console.error(`EvidenceChart: Chart container not found: ${this.containerId}`);
+            return;
+        }
+        
+        if (!this.dataContainer) {
+            console.error(`EvidenceChart: Stream container not found: ${this.streamId}`);
             return;
         }
         
@@ -318,7 +353,7 @@ window.Hooks.EvidenceChart = {
                 font: { size: 14 }
             },
             xaxis: {
-                title: 'Step',
+                title: 'Time (s)',
                 showgrid: true,
                 gridcolor: '#e5e7eb',
             },
@@ -354,6 +389,7 @@ window.Hooks.EvidenceChart = {
         
         // Build traces from all points
         const traces = this.buildTraces(points);
+        const shapes = this.buildEpisodeShapes(points);
         
         // Use Plotly.react for efficient updates (only changes what's different)
         Plotly.react(this.chartEl, traces, {
@@ -362,6 +398,7 @@ window.Hooks.EvidenceChart = {
                 ...this.chartEl.layout.xaxis,
                 range: this.calculateXRange(points),
             },
+            shapes,
         });
     },
     
@@ -377,20 +414,26 @@ window.Hooks.EvidenceChart = {
                 const evidences = JSON.parse(el.dataset.evidences || '{}');
                 const targetObject = el.dataset.targetObject || '';
                 const episode = el.dataset.episode ? parseInt(el.dataset.episode) : null;
+                const timestamp = el.dataset.timestamp ? parseFloat(el.dataset.timestamp) : null;
                 
                 points.push({
                     step,
                     evidences,
                     target_object: targetObject,
-                    episode
+                    episode,
+                    timestamp
                 });
             } catch (e) {
                 console.warn('Failed to parse stream item:', e);
             }
         });
         
-        // Sort by step to ensure correct order
-        return points.sort((a, b) => a.step - b.step);
+        // Sort by timestamp (or step as fallback) to ensure correct order
+        return points.sort((a, b) => {
+            const aTime = a.timestamp || a.step || 0;
+            const bTime = b.timestamp || b.step || 0;
+            return aTime - bTime;
+        });
     },
     
     buildTraces(points) {
@@ -407,10 +450,26 @@ window.Hooks.EvidenceChart = {
             const x = [];
             const y = [];
             
+            let lastEpisode = null;
             points.forEach(point => {
                 if (point.evidences[objName] !== undefined) {
-                    x.push(point.step);
+                    // Insert gap to create vertical drop on episode change
+                    if (
+                        lastEpisode !== null &&
+                        point.episode !== null &&
+                        point.episode !== undefined &&
+                        point.episode !== lastEpisode
+                    ) {
+                        x.push(point.step || 0);
+                        y.push(NaN);
+                    }
+
+                    x.push(point.step || 0);
                     y.push(point.evidences[objName]);
+
+                    if (point.episode !== null && point.episode !== undefined) {
+                        lastEpisode = point.episode;
+                    }
                 }
             });
             
@@ -435,11 +494,69 @@ window.Hooks.EvidenceChart = {
     
     calculateXRange(points) {
         if (points.length === 0) return null;
-        
-        const maxStep = Math.max(...points.map(p => p.step));
+        const steps = points.map(p => p.step || 0);
+        const maxStep = Math.max(...steps);
         const minStep = Math.max(0, maxStep - 100);  // Show last 100 steps
-        
         return [minStep, maxStep + 5];
+    },
+
+    buildEpisodeShapes(points) {
+        if (points.length === 0) return [];
+
+        const shapes = [];
+        let currentEpisode = null;
+        let startStep = null;
+        let targetObject = '';
+
+        points.forEach((point, idx) => {
+            const ep = point.episode;
+            const step = point.step || 0;
+
+            if (currentEpisode === null) {
+                currentEpisode = ep;
+                startStep = step;
+                targetObject = point.target_object || '';
+                return;
+            }
+
+            if (ep !== currentEpisode) {
+                const color = getObjectColor(targetObject || 'episode', shapes.length);
+                shapes.push({
+                    type: 'rect',
+                    xref: 'x',
+                    yref: 'paper',
+                    x0: startStep,
+                    x1: step,
+                    y0: 0,
+                    y1: 1,
+                    fillcolor: color,
+                    opacity: 0.08,
+                    line: { width: 0 },
+                });
+                currentEpisode = ep;
+                startStep = step;
+                targetObject = point.target_object || '';
+            }
+
+            // Last point - close the final band
+            if (idx === points.length - 1) {
+                const color = getObjectColor(targetObject || 'episode', shapes.length);
+                shapes.push({
+                    type: 'rect',
+                    xref: 'x',
+                    yref: 'paper',
+                    x0: startStep,
+                    x1: step + 1,
+                    y0: 0,
+                    y1: 1,
+                    fillcolor: color,
+                    opacity: 0.08,
+                    line: { width: 0 },
+                });
+            }
+        });
+
+        return shapes;
     },
     
     destroyed() {
@@ -496,14 +613,21 @@ window.Hooks.ConnectionStatus = {
     
     disconnected() {
         console.log('ConnectionStatus hook disconnected');
-        // When WebSocket disconnects, always show DISCONNECTED status
-        // This indicates the server is no longer reachable, regardless of
-        // experiment state. The experiment status (ABORTED, COMPLETED, etc.)
-        // is separate from connection status.
-        this.el.className = 'status-badge status-disconnected';
-        this.el.textContent = 'DISCONNECTED';
-        this.el.style.background = '#6b7280';
-        this.el.style.color = '#ffffff';
+        // Preserve terminal states (ABORTED, COMPLETED, ERROR) even on disconnect
+        const currentText = this.originalText?.trim().toUpperCase() || '';
+        const terminalStates = ['COMPLETED', 'ERROR', 'ABORTED', 'ABORTING'];
+        const isTerminalState = terminalStates.some(state => 
+            currentText.includes(state) || this.originalClass?.includes(state.toLowerCase())
+        );
+        
+        if (!isTerminalState) {
+            // Only show DISCONNECTED if not in a terminal state
+            this.el.className = 'status-badge status-disconnected';
+            this.el.textContent = 'DISCONNECTED';
+            this.el.style.background = '#6b7280';
+            this.el.style.color = '#ffffff';
+        }
+        // Otherwise, keep the terminal state badge visible
     },
     
     reconnected() {
