@@ -111,3 +111,14 @@ class OmniglotTrainingAndInferenceTest(TestCase):
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
                 experiment.run()
+
+class MontyMeetsWorld2DImageInferenceTest(TestCase):
+    def test_tutorial(self):
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=["experiment=tutorial/monty_meets_world_2dimage_inference"],
+            )
+            experiment = hydra.utils.instantiate(config.experiment)
+            with experiment:
+                experiment.run()
