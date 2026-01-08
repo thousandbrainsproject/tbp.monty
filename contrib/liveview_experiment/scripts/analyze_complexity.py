@@ -598,6 +598,26 @@ def _count_violations(metrics: list[FunctionMetrics], violation_type: str) -> in
     return sum(1 for m in metrics if check(m)) if check else 0
 
 
+def _has_nesting_violation(metric: FunctionMetrics) -> bool:
+    """Check if metric has nesting violation."""
+    return metric.max_nesting_level > 2
+
+
+def _has_complexity_violation(metric: FunctionMetrics) -> bool:
+    """Check if metric has complexity violation."""
+    return metric.cyclomatic_complexity > 10
+
+
+def _has_length_violation(metric: FunctionMetrics) -> bool:
+    """Check if metric has length violation."""
+    return metric.function_length > 50
+
+
+def _has_parameter_violation(metric: FunctionMetrics) -> bool:
+    """Check if metric has parameter violation."""
+    return metric.parameter_violation > 0
+
+
 def print_summary(
     all_metrics: list[FunctionMetrics],
     regular_metrics: list[FunctionMetrics],
@@ -616,6 +636,11 @@ def print_summary(
     print(f"Functions with length > 50: {length_count}")
     param_count = _count_violations(regular_metrics, "parameters")
     print(f"Functions with too many parameters: {param_count}")
+    # Maintainability Index overview for regular functions
+    low_mi_count = sum(
+        1 for m in regular_metrics if 0 < m.maintainability_index < 20
+    )
+    print(f"Functions with low Maintainability Index (< 20): {low_mi_count}")
 
 
 def _extract_protocol_from_file(
@@ -700,6 +725,111 @@ def _separate_metrics(
     return protocol_metrics, regular_metrics
 
 
+def _group_metrics_by_file(
+    metrics: list[FunctionMetrics],
+) -> dict[str, list[FunctionMetrics]]:
+    """Group metrics by file path."""
+    groups: dict[str, list[FunctionMetrics]] = {}
+    for m in metrics:
+        groups.setdefault(m.file_path, []).append(m)
+    return groups
+
+
+def _get_file_priority(file_metrics: list[FunctionMetrics]) -> float:
+    """Get the maximum priority score for a file."""
+    return max(m.priority_score for m in file_metrics) if file_metrics else 0.0
+
+
+def _print_function_details(metric: FunctionMetrics) -> None:
+    """Print detailed information about a function metric."""
+    print(
+        f"  Function: {metric.function_name} (lines "
+        f"{metric.line_start}-{metric.line_end})"
+    )
+    print(
+        f"    Priority: {format_priority(metric.priority_score)} "
+        f"({metric.priority_score:.1f})"
+    )
+    print(
+        f"    Nesting: {metric.max_nesting_level} (max 2 allowed)\n"
+        f"    Complexity: {metric.cyclomatic_complexity} (recommended < 10)\n"
+        f"    Length: {metric.function_length} lines (recommended < 50)\n"
+        f"    Maintainability Index: {metric.maintainability_index:.1f}"
+    )
+    param_info = str(metric.parameter_count)
+    if metric.has_varargs:
+        param_info += "+*args"
+    if metric.has_kwargs:
+        param_info += "+**kwargs"
+    max_allowed = 4 + (1 if metric.has_varargs else 0) + (
+        1 if metric.has_kwargs else 0
+    )
+    print(
+        f"    Parameters: {param_info} (max {max_allowed} allowed: "
+        f"4 regular + *args + **kwargs)"
+    )
+    if metric.parameter_violation > 0:
+        print(
+            f"      → Over by {metric.parameter_violation} regular parameter(s)"
+        )
+    print()
+
+
+def print_detailed_file_view(
+    regular_metrics: list[FunctionMetrics], project_root: Path
+) -> None:
+    """Print detailed view grouped by file with top functions per file."""
+    file_groups = _group_metrics_by_file(regular_metrics)
+    sorted_files = sorted(
+        file_groups.items(), key=lambda kv: _get_file_priority(kv[1]), reverse=True
+    )
+    for file_path, file_metrics in sorted_files[:20]:
+        # File header
+        try:
+            rel_path = Path(file_path).relative_to(project_root)
+        except ValueError:
+            rel_path = Path(file_path)
+        max_priority = _get_file_priority(file_metrics)
+        print(f"\n{format_priority(max_priority)} {rel_path}")
+        print("-" * 80)
+        # Top metrics per file
+        top_metrics = sorted(
+            file_metrics, key=lambda m: m.priority_score, reverse=True
+        )[:5]
+        for metric in top_metrics:
+            _print_function_details(metric)
+
+
+def print_protocol_methods(
+    protocol_metrics: list[FunctionMetrics], project_root: Path
+) -> None:
+    """Print protocol/interface methods with parameter violations."""
+    offenders = [m for m in protocol_metrics if _has_parameter_violation(m)]
+    if not offenders:
+        return
+    print("\n" + "=" * 80)
+    print("PROTOCOL/INTERFACE METHODS (excluded from refactoring priorities)")
+    print("=" * 80)
+    for m in sorted(offenders, key=lambda x: (x.file_path, x.function_name)):
+        try:
+            rel_path = Path(m.file_path).relative_to(project_root)
+        except ValueError:
+            rel_path = Path(m.file_path)
+        param_info = str(m.parameter_count)
+        if m.has_varargs:
+            param_info += "+*args"
+        if m.has_kwargs:
+            param_info += "+**kwargs"
+        max_allowed = 4 + (1 if m.has_varargs else 0) + (1 if m.has_kwargs else 0)
+        print(
+            f"  {rel_path}: {m.function_name} — params {param_info} "
+            f"(max {max_allowed} allowed)"
+        )
+    print(
+        "  Note: Protocol methods maintain interface contracts and cannot be refactored."
+    )
+
+
 def main() -> None:
     """Main entry point."""
     root_dir = _get_root_directory()
@@ -719,11 +849,22 @@ def main() -> None:
 
     print_summary(all_metrics, regular_metrics, protocol_metrics)
 
+    # Protocol section before tabular view to align with MVG output
+    project_root = Path(__file__).parent.parent.parent
+    print_protocol_methods(protocol_metrics, project_root)
+
     print("\n" + "=" * 80)
-    print("TOP REFACTORING PRIORITIES")
+    print("TOP REFACTORING PRIORITIES (TABULAR VIEW)")
     print("=" * 80)
     top_priority_metrics = [m for m in regular_metrics if m.priority_score > 0]
     print_priority_table(top_priority_metrics, limit=30)
+    print(
+        "Legend: Nest = Max nesting level, Complex = Cyclomatic complexity, Length = Lines of code, Params = Parameter count"
+    )
+    print("\n" + "=" * 80)
+    print("TOP REFACTORING PRIORITIES (DETAILED VIEW BY FILE)")
+    print("=" * 80)
+    print_detailed_file_view(regular_metrics, project_root)
 
     try:
         from .report_generator import ReportGenerator  # noqa: PLC0415
