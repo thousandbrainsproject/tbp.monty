@@ -380,6 +380,7 @@ jobs:
       labels: tbp-linux-x64-ubuntu-nvidia-4core-t4gpu
     timeout-minutes: 120
     needs:
+      - install_monty
       - should_run_monty
       - test_monty
     steps:
