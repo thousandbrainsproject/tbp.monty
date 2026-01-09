@@ -993,7 +993,7 @@ class NaiveScanPolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, _state: MotorSystemState | None = None) -> Action:
+    def dynamic_call(self, _state: MotorSystemState | None = None) -> list[Action]:
         """Return the next action in the spiral being executed.
 
         The MotorSystemState is ignored.
@@ -1017,7 +1017,7 @@ class NaiveScanPolicy(InformedPolicy):
 
         self.check_cycle_action()
         self.step_on_action += 1
-        return self._naive_scan_actions[self.current_action_id]
+        return [self._naive_scan_actions[self.current_action_id]]
 
     def pre_episode(self):
         super().pre_episode()
@@ -1232,7 +1232,7 @@ class SurfacePolicy(InformedPolicy):
     ###
     def dynamic_call(
         self, state: MotorSystemState | None = None
-    ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
+    ) -> list[OrientHorizontal | OrientVertical | MoveTangentially | MoveForward]:
         """Return the next action to take.
 
         This requires self.processed_observations to be updated at every step
@@ -1281,15 +1281,16 @@ class SurfacePolicy(InformedPolicy):
             # In this case, we are on the first action, but the object view is already
             # good; therefore initialize the cycle of actions as if we had just
             # moved forward (e.g. to get a good view)
-            self.action = self.action_sampler.sample_move_forward(
-                self.agent_id, self.rng
-            )
-            self.last_surface_policy_action = self.action
+            self.action = [
+                self.action_sampler.sample_move_forward(self.agent_id, self.rng)
+            ]
+            self.last_surface_policy_action = self.action[0]
 
-        return self.get_next_action(state)
+        next_action = self.get_next_action(state)
+        return [] if next_action is None else [next_action]
 
     def post_action(
-        self, action: Action, state: MotorSystemState | None = None
+        self, action: Sequence[Action], state: MotorSystemState | None = None
     ) -> None:
         """Temporary SurfacePolicy post_action to distinguish types of last action.
 
@@ -1321,7 +1322,7 @@ class SurfacePolicy(InformedPolicy):
             return
 
         super().post_action(action, state)
-        self.last_surface_policy_action = action
+        self.last_surface_policy_action = action[-1]
 
     def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
         """Orient the agent horizontally.
