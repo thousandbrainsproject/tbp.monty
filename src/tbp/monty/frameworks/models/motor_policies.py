@@ -17,7 +17,7 @@ import logging
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal, Mapping, cast
+from typing import Any, Literal, Mapping, Sequence, cast
 
 import numpy as np
 import quaternion as qt
@@ -58,7 +58,7 @@ class MotorPolicy(abc.ABC):
         self.is_predefined = False
 
     @abc.abstractmethod
-    def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:
+    def dynamic_call(self, state: MotorSystemState | None = None) -> Sequence[Action]:
         """Use this method when actions are not predefined.
 
         Args:
@@ -78,7 +78,7 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def post_action(
-        self, action: Action | None, state: MotorSystemState | None = None
+        self, action: Sequence[Action], state: MotorSystemState | None = None
     ) -> None:
         """This post action hook will automatically be called at the end of __call__.
 
@@ -104,7 +104,7 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def predefined_call(self) -> Action:
+    def predefined_call(self) -> Sequence[Action]:
         """Use this method when actions are predefined.
 
         Returns:
@@ -177,9 +177,11 @@ class BasePolicy(MotorPolicy):
         self.episode_count = 0
         self.switch_frequency = float(switch_frequency)
         # Ensure our first action only samples from those that can be random
-        self.action: Action | None = self.get_random_action(
-            self.action_sampler.sample(self.agent_id, self.rng)
-        )
+        self.action: list[Action] = [
+            self.get_random_action(
+                [self.action_sampler.sample(self.agent_id, self.rng)]
+            )
+        ]
 
         ###
         # Load data for predefined actions and amounts if specified
@@ -206,7 +208,7 @@ class BasePolicy(MotorPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, _state: MotorSystemState | None = None) -> Action | None:
+    def dynamic_call(self, _state: MotorSystemState | None = None) -> Sequence[Action]:
         """Return a random action.
 
         The MotorSystemState is ignored.
@@ -220,25 +222,24 @@ class BasePolicy(MotorPolicy):
         """
         return self.get_random_action(self.action)
 
-    def get_random_action(self, action: Action) -> Action:
+    def get_random_action(self, action: Sequence[Action]) -> list[Action]:
         """Returns random action sampled from allowable actions.
 
         Enables expanding the action space of the base policy with actions that
         we don't necessarily want to randomly sample
         """
+        action = action[0]
         while True:
             if self.rng.rand() < self.switch_frequency:
                 action = self.action_sampler.sample(self.agent_id, self.rng)
-            if not isinstance(action, SetAgentPose) and not isinstance(
-                action, SetSensorRotation
-            ):
-                return action
+            if not isinstance(action, (SetAgentPose, SetSensorRotation)):
+                return [action]
 
-    def predefined_call(self) -> Action:
+    def predefined_call(self) -> Sequence[Action]:
         return self.action_list[self.episode_step % len(self.action_list)]
 
     def post_action(
-        self, action: Action | None, _: MotorSystemState | None = None
+        self, action: Sequence[Action], _: MotorSystemState | None = None
     ) -> None:
         self.action = action
         self.timestep += 1
@@ -851,7 +852,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:
+    def dynamic_call(self, state: MotorSystemState | None = None) -> Sequence[Action]:
         """Return the next action to take.
 
         This requires self.processed_observations to be updated at every step
@@ -873,8 +874,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
     def fixme_undo_last_action(
         self,
-    ) -> LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially:
-        """Returns an action that undoes last action for supported actions.
+    ) -> list[
+        LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially
+    ]:
+        """Returns the actions that undo the last action for supported actions.
 
         Previous InformedPolicy.dynamic_call() implementation when not on object:
 
