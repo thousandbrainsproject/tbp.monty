@@ -20,8 +20,8 @@ pytest.importorskip(
 )
 
 
-class FistExperimentTest(TestCase):
-    def test_tutorial(self):
+class TutorialsTest(TestCase):
+    def test_first_experiment(self):
         with hydra.initialize(version_base=None, config_path="../../conf"):
             config = hydra.compose(
                 config_name="experiment",
@@ -31,9 +31,7 @@ class FistExperimentTest(TestCase):
             with experiment:
                 experiment.run()
 
-
-class TrainingAndInferenceTest(TestCase):
-    def test_tutorial(self):
+    def test_training_and_inference(self):
         with hydra.initialize(version_base=None, config_path="../../conf"):
             config = hydra.compose(
                 config_name="experiment",
@@ -54,9 +52,7 @@ class TrainingAndInferenceTest(TestCase):
             with experiment:
                 experiment.run()
 
-
-class UnsupervisedContinualLearningTest(TestCase):
-    def test_tutorial(self):
+    def test_unsupervised_continual_learning(self):
         with hydra.initialize(version_base=None, config_path="../../conf"):
             config = hydra.compose(
                 config_name="experiment",
@@ -66,9 +62,7 @@ class UnsupervisedContinualLearningTest(TestCase):
             with experiment:
                 experiment.run()
 
-
-class MultipleLearningModulesTest(TestCase):
-    def test_tutorial(self):
+    def test_multiple_learning_modules(self):
         with hydra.initialize(version_base=None, config_path="../../conf"):
             config = hydra.compose(
                 config_name="experiment",
@@ -89,17 +83,14 @@ class MultipleLearningModulesTest(TestCase):
             with experiment:
                 experiment.run()
 
-
-class OmniglotTrainingAndInferenceTest(TestCase):
-    def test_tutorial(self):
+    def test_omniglot_training_and_inference(self):
         with hydra.initialize(version_base=None, config_path="../../conf"):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=["experiment=tutorial/omniglot_training"],
             )
-            config.experiment.config.logging.output_dir = str(
-                run_name_output_dir(config)
-            )
+            inference_output_dir = str(run_name_output_dir(config))
+            config.experiment.config.logging.output_dir = inference_output_dir
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
                 experiment.run()
@@ -108,13 +99,14 @@ class OmniglotTrainingAndInferenceTest(TestCase):
                 config_name="experiment",
                 overrides=["experiment=tutorial/omniglot_inference"],
             )
+            config.experiment.config.model_name_or_path = (
+                f"{inference_output_dir}/pretrained/"
+            )
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
                 experiment.run()
 
-
-class MontyMeetsWorld2DImageInferenceTest(TestCase):
-    def test_tutorial(self):
+    def test_monty_meets_world_2dimage_inference(self):
         with hydra.initialize(version_base=None, config_path="../../conf"):
             config = hydra.compose(
                 config_name="experiment",
