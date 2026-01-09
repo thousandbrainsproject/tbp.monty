@@ -7,17 +7,19 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from unittest import TestCase
 
-import hydra
 import pytest
-
-from tbp.monty.frameworks.run import run_name_output_dir
 
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
 )
+
+from unittest import TestCase
+
+import hydra
+
+from tbp.monty.frameworks.run import run_name_output_dir
 
 
 class TutorialsTest(TestCase):
@@ -141,6 +143,7 @@ class TutorialsTest(TestCase):
                     "experiment.config.n_eval_epochs=1",
                     "experiment.config.max_eval_steps=3",
                     "experiment.config.max_total_steps=3",
+                    "experiment.config.monty_config.monty_args.num_exploratory_steps=3",
                 ],
             )
             experiment = hydra.utils.instantiate(config.experiment)
