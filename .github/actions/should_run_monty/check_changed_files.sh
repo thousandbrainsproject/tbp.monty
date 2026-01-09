@@ -7,7 +7,7 @@ do
      [[ $changed_file != .rsyncignore ]] &&
      [[ $changed_file != .vale/* ]] &&
      [[ $changed_file != .vscode/* ]] &&
-     [[ $changed_file != conf/* ]] &&
+     [[ $changed_file != benchmarks/* ]] &&
      [[ $changed_file != docs/* ]] &&
      [[ $changed_file != rfcs/* ]] &&
      [[ $changed_file != tools/* ]] &&
