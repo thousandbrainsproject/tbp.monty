@@ -112,6 +112,7 @@ class TutorialsTest(TestCase):
                 config_name="experiment",
                 overrides=["experiment=tutorial/monty_meets_world_2dimage_inference"],
             )
+            config.experiment.config.logging.wandb_handlers = []
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
                 experiment.run()
