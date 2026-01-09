@@ -274,13 +274,13 @@ class ResamplingHypothesesUpdaterTest(TestCase):
 
 class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
     def setUp(self) -> None:
-        mock_graph_memory = Mock()
-        mock_graph_memory.get_input_channels_in_graph = Mock(return_value=["patch1"])
-        mock_graph_memory.get_locations_in_graph = Mock(return_value=np.zeros((5, 3)))
+        # We'll add specific mocked functions for the graph memory in
+        # individual tests, since they'll change from test to test.
+        self.mock_graph_memory = Mock()
 
         self.updater = ResamplingHypothesesUpdater(
             feature_weights={},
-            graph_memory=mock_graph_memory,
+            graph_memory=self.mock_graph_memory,
             max_match_distance=0,
             tolerances={},
             evidence_threshold_config="all",
@@ -288,33 +288,51 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
 
         hypotheses_displacer = Mock()
         hypotheses_displacer.displace_hypotheses_and_compute_evidence = Mock(
+            # Have the displacer return the given hypotheses without displacement
+            # since we're not testing that.
             side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
         )
         self.updater.hypotheses_displacer = hypotheses_displacer
 
-        tracker1 = Mock()
-        tracker1.removable_indices_mask = Mock(
-            return_value=np.ones((5,), dtype=np.bool_)
-        )
-        tracker1.calculate_keep_and_remove_ids = Mock(
-            return_value=(
-                np.array([False, True, True, False, False]),
-                np.array([True, False, False, True, True]),
-            )
-        )
-        trackers = {"object1": tracker1}
-        self.updater.evidence_slope_trackers = trackers
-
     def test_update_hypotheses_ids_map_correctly(self) -> None:
         """Test that hypotheses ids map correctly when some are deleted."""
-        mapper = ChannelMapper(channel_sizes={"patch1": 5})
+        channel_size = 5
+
         hypotheses = Hypotheses(
-            evidence=np.array([1, 2, 3, 4, 5]),
-            locations=np.zeros((5, 3)),
-            poses=np.zeros((5, 3, 3)),
+            # Give each evidence a unique value so we can track which values are
+            # remaining in the returned hypotheses
+            evidence=np.array(range(channel_size)),
+            locations=np.zeros((channel_size, 3)),
+            poses=np.zeros((channel_size, 3, 3)),
+            # We're going to keep the second and third elements, so set
+            # them to some values we can test later, True and False, respectively.
             possible=np.array([False, True, False, False, False]),
         )
 
+        # Add graph memory mock methods
+        self.mock_graph_memory.get_input_channels_in_graph = Mock(
+            return_value=["patch1"]
+        )
+        self.mock_graph_memory.get_locations_in_graph = Mock(
+            return_value=np.zeros((channel_size, 3))
+        )
+
+        # Mock out the evidence_slope_trackers
+        tracker1 = Mock()
+        tracker1.removable_indices_mask = Mock(
+            return_value=np.ones((channel_size,), dtype=np.bool_)
+        )
+        tracker1.calculate_keep_and_remove_ids = Mock(
+            return_value=(
+                # keep_ids
+                np.array([False, True, True, False, False]),
+                # remove_ids
+                np.array([True, False, False, True, True]),
+            )
+        )
+        self.updater.evidence_slope_trackers = {"object1": tracker1}
+
+        mapper = ChannelMapper(channel_sizes={"patch1": channel_size})
         channel_hyps, _ = self.updater.update_hypotheses(
             hypotheses=hypotheses,
             features={"patch1": {"pose_fully_defined": True}},
@@ -323,5 +341,6 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
             mapper=mapper,
             evidence_update_threshold=0,
         )
+
         assert_array_equal(channel_hyps[0].possible, np.array([True, False]))
-        assert_array_equal(channel_hyps[0].evidence, np.array([2, 3]))
+        assert_array_equal(channel_hyps[0].evidence, np.array([1, 2]))
