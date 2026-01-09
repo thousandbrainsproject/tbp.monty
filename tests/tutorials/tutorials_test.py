@@ -117,14 +117,12 @@ class TutorialsTest(TestCase):
                 config_name="experiment",
                 overrides=[
                     "experiment=tutorial/omniglot_inference",
+                    f"experiment.config.model_name_or_path={inference_output_dir}/pretrained/",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
                     "experiment.config.max_eval_steps=3",
                     "experiment.config.max_total_steps=3",
                 ],
-            )
-            config.experiment.config.model_name_or_path = (
-                f"{inference_output_dir}/pretrained/"
             )
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
@@ -137,6 +135,7 @@ class TutorialsTest(TestCase):
                 overrides=[
                     "experiment=tutorial/monty_meets_world_2dimage_inference",
                     # Non-interactive
+                    "experiment.config.logging.wandb_handlers=[]",
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
@@ -144,7 +143,6 @@ class TutorialsTest(TestCase):
                     "experiment.config.max_total_steps=3",
                 ],
             )
-            config.experiment.config.logging.wandb_handlers = []
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
                 experiment.run()
