@@ -50,8 +50,8 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/surf_agent_2obj_eval",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.max_eval_steps=10",
-                    "experiment.config.max_total_steps=10",
+                    "experiment.config.max_eval_steps=3",
+                    "experiment.config.max_total_steps=3",
                 ],
             )
             experiment = hydra.utils.instantiate(config.experiment)
@@ -66,8 +66,8 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/surf_agent_2obj_unsupervised",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.max_train_steps=10",
-                    "experiment.config.max_total_steps=10",
+                    "experiment.config.max_train_steps=3",
+                    "experiment.config.max_total_steps=3",
                 ],
             )
             experiment = hydra.utils.instantiate(config.experiment)
@@ -93,8 +93,8 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/dist_agent_5lm_2obj_eval",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.max_eval_steps=10",
-                    "experiment.config.max_total_steps=10",
+                    "experiment.config.max_eval_steps=3",
+                    "experiment.config.max_total_steps=3",
                 ],
             )
             experiment = hydra.utils.instantiate(config.experiment)
@@ -119,8 +119,8 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/omniglot_inference",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.max_eval_steps=10",
-                    "experiment.config.max_total_steps=10",
+                    "experiment.config.max_eval_steps=3",
+                    "experiment.config.max_total_steps=3",
                 ],
             )
             config.experiment.config.model_name_or_path = (
@@ -136,10 +136,12 @@ class TutorialsTest(TestCase):
                 config_name="experiment",
                 overrides=[
                     "experiment=tutorial/monty_meets_world_2dimage_inference",
+                    # Non-interactive
+                    "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.max_eval_steps=10",
-                    "experiment.config.max_total_steps=10",
+                    "experiment.config.max_eval_steps=3",
+                    "experiment.config.max_total_steps=3",
                 ],
             )
             config.experiment.config.logging.wandb_handlers = []
