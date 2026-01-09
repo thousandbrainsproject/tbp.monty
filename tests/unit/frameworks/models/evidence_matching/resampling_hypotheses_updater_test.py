@@ -294,6 +294,7 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
             side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
         )
         self.updater.hypotheses_displacer = hypotheses_displacer
+
     def test_init_fails_when_passed_invalid_evidence_threshold_config(self) -> None:
         """Test that the updater only accepts "all" for evidence_threshold_config."""
         with self.assertRaises(InvalidEvidenceThresholdConfig):
