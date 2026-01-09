@@ -856,7 +856,7 @@ class EvidenceGraphLM(GraphLM):
                 self.possible_locations[graph_id] = np.empty((0, 3))
                 self.possible_poses[graph_id] = np.empty((0, 3, 3))
                 self.evidence[graph_id] = np.empty((0,))
-                self.possible_hyps[graph_id] = np.empty((0,))
+                self.possible_hyps[graph_id] = np.empty((0,), dtype=np.bool_)
 
             # If there exists other channels, add current mean evidence to give the
             # new hypotheses a fighting chance.
