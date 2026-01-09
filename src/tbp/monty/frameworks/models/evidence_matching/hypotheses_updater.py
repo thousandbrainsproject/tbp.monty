@@ -64,7 +64,7 @@ class HypothesesUpdater(Protocol):
         graph_id: str,
         mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry, float]:
+    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Args:
@@ -191,7 +191,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         graph_id: str,
         mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry, float]:
+    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Updates existing hypothesis space or initializes a new hypothesis space
@@ -225,7 +225,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 f"No input channels observed for {graph_id} that are stored in the "
                 "model. Not updating evidence."
             )
-            return []
+            return [], {}
 
         hypotheses_updates = []
         telemetry: dict[str, Any] = {}

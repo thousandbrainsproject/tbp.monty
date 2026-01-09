@@ -32,6 +32,7 @@ import hydra
 from tbp.monty.frameworks.utils.evidence_matching import (
     ChannelMapper,
     EvidenceSlopeTracker,
+    InvalidEvidenceThresholdConfig,
 )
 
 
@@ -293,6 +294,16 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
             side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
         )
         self.updater.hypotheses_displacer = hypotheses_displacer
+    def test_init_fails_when_passed_invalid_evidence_threshold_config(self) -> None:
+        """Test that the updater only accepts "all" for evidence_threshold_config."""
+        with self.assertRaises(InvalidEvidenceThresholdConfig):
+            ResamplingHypothesesUpdater(
+                feature_weights={},
+                graph_memory=self.mock_graph_memory,
+                max_match_distance=0,
+                tolerances={},
+                evidence_threshold_config="invalid",  # type: ignore[arg-type]
+            )
 
     def test_update_hypotheses_ids_map_correctly(self) -> None:
         """Test that hypotheses ids map correctly when some are deleted."""
@@ -317,7 +328,8 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
             return_value=np.zeros((channel_size, 3))
         )
 
-        # Mock out the evidence_slope_trackers
+        # Mock out the evidence_slope_trackers so we can control which values
+        # are removed from the list of hypotheses
         tracker1 = Mock()
         tracker1.removable_indices_mask = Mock(
             return_value=np.ones((channel_size,), dtype=np.bool_)
