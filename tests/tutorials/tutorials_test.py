@@ -46,7 +46,13 @@ class TutorialsTest(TestCase):
 
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/surf_agent_2obj_eval"],
+                overrides=[
+                    "experiment=tutorial/surf_agent_2obj_eval",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_eval_epochs=1",
+                    "experiment.config.max_eval_steps=10",
+                    "experiment.config.max_total_steps=10",
+                ],
             )
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
@@ -56,7 +62,13 @@ class TutorialsTest(TestCase):
         with hydra.initialize(version_base=None, config_path="../../conf"):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/surf_agent_2obj_unsupervised"],
+                overrides=[
+                    "experiment=tutorial/surf_agent_2obj_unsupervised",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_train_epochs=1",
+                    "experiment.config.max_train_steps=10",
+                    "experiment.config.max_total_steps=10",
+                ],
             )
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
@@ -77,7 +89,13 @@ class TutorialsTest(TestCase):
 
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/dist_agent_5lm_2obj_eval"],
+                overrides=[
+                    "experiment=tutorial/dist_agent_5lm_2obj_eval",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_eval_epochs=1",
+                    "experiment.config.max_eval_steps=10",
+                    "experiment.config.max_total_steps=10",
+                ],
             )
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
@@ -97,7 +115,13 @@ class TutorialsTest(TestCase):
 
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/omniglot_inference"],
+                overrides=[
+                    "experiment=tutorial/omniglot_inference",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_eval_epochs=1",
+                    "experiment.config.max_eval_steps=10",
+                    "experiment.config.max_total_steps=10",
+                ],
             )
             config.experiment.config.model_name_or_path = (
                 f"{inference_output_dir}/pretrained/"
@@ -110,7 +134,13 @@ class TutorialsTest(TestCase):
         with hydra.initialize(version_base=None, config_path="../../conf"):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/monty_meets_world_2dimage_inference"],
+                overrides=[
+                    "experiment=tutorial/monty_meets_world_2dimage_inference",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_eval_epochs=1",
+                    "experiment.config.max_eval_steps=10",
+                    "experiment.config.max_total_steps=10",
+                ],
             )
             config.experiment.config.logging.wandb_handlers = []
             experiment = hydra.utils.instantiate(config.experiment)
