@@ -6,7 +6,18 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from unittest.mock import Mock
+
+import numpy as np
 import pytest
+from numpy.ma.testutils import assert_array_equal
+
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
+    Hypotheses,
+)
+from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (  # noqa: E501
+    ResamplingHypothesesUpdater,
+)
 
 pytest.importorskip(
     "habitat_sim",
@@ -259,3 +270,58 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         # test existing to informed ratio
         self._count_ratio(rlm, pose_defined=True)
         self._count_ratio(rlm, pose_defined=False)
+
+
+class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
+    def setUp(self) -> None:
+        mock_graph_memory = Mock()
+        mock_graph_memory.get_input_channels_in_graph = Mock(return_value=["patch1"])
+        mock_graph_memory.get_locations_in_graph = Mock(return_value=np.zeros((5, 3)))
+
+        self.updater = ResamplingHypothesesUpdater(
+            feature_weights={},
+            graph_memory=mock_graph_memory,
+            max_match_distance=0,
+            tolerances={},
+            evidence_threshold_config="all",
+        )
+
+        hypotheses_displacer = Mock()
+        hypotheses_displacer.displace_hypotheses_and_compute_evidence = Mock(
+            side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
+        )
+        self.updater.hypotheses_displacer = hypotheses_displacer
+
+        tracker1 = Mock()
+        tracker1.removable_indices_mask = Mock(
+            return_value=np.ones((5,), dtype=np.bool_)
+        )
+        tracker1.calculate_keep_and_remove_ids = Mock(
+            return_value=(
+                np.array([False, True, True, False, False]),
+                np.array([True, False, False, True, True]),
+            )
+        )
+        trackers = {"object1": tracker1}
+        self.updater.evidence_slope_trackers = trackers
+
+    def test_update_hypotheses_ids_map_correctly(self) -> None:
+        """Test that hypotheses ids map correctly when some are deleted."""
+        mapper = ChannelMapper(channel_sizes={"patch1": 5})
+        hypotheses = Hypotheses(
+            evidence=np.array([1, 2, 3, 4, 5]),
+            locations=np.zeros((5, 3)),
+            poses=np.zeros((5, 3, 3)),
+            possible=np.array([False, True, False, False, False]),
+        )
+
+        channel_hyps, _ = self.updater.update_hypotheses(
+            hypotheses=hypotheses,
+            features={"patch1": {"pose_fully_defined": True}},
+            displacements={"patch1": None},
+            graph_id="object1",
+            mapper=mapper,
+            evidence_update_threshold=0,
+        )
+        assert_array_equal(channel_hyps[0].possible, np.array([True, False]))
+        assert_array_equal(channel_hyps[0].evidence, np.array([2, 3]))
