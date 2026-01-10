@@ -17,10 +17,10 @@ Monty uses the _right-up-backward_ [axes convention](https://en.wikipedia.org/wi
 Note that the forward direction corresponds to the _negative z-axis_. While users with a background in 3D graphics (esp. OpenGL) may be accustomed to this convention, but many find it unintuitive at first.
 
 For spherical coordinates, we use the convention that places azimuth = 0 and elevation = 0 down the forward axis. More explicitly,
-  - Azimuth (or Yaw) is measured away from the forward axis.
-  - Elevation (or Pitch) is measured up from the horizontal plane.
+  - Azimuth (or yaw) is measured away from the forward axis.
+  - Elevation (or pitch) is measured up from the horizontal plane.
 
-While not uncommon in 3D graphics, this convention does differ from the [physics convention](https://en.wikipedia.org/wiki/Spherical_coordinate_system). As such, it's important to take care when interpreting angles or mapping between Cartesian and spherical coordinates. Should you need to handle conversions between Cartesian and spherical coordinates in your code, the following convention-compliant conversion formulae are provided as a reference:
+While not uncommon in 3D graphics, this convention does differ from the [physics convention](https://en.wikipedia.org/wiki/Spherical_coordinate_system). As such, it's important to take care when interpreting angles or mapping between Cartesian and spherical coordinates. Should you need to handle these conversions, the following convention-compliant formulae are provided as a reference:
 
 ![](../../figures/how-monty-works/cartesian_spherical_conversions.png#width=400px)
 
