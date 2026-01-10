@@ -22,8 +22,7 @@ For spherical coordinates, we use the convention that places azimuth = 0 and ele
 
 While not uncommon in 3D graphics, this convention does differ from the [physics convention](https://en.wikipedia.org/wiki/Spherical_coordinate_system). As such, it's important to take care when interpreting angles or mapping between Cartesian and spherical coordinates. Should you need to handle conversions between Cartesian and spherical coordinates in your code, the following convention-compliant conversion formulae are provided as a reference:
 
-<img src="../../figures/how-monty-works/cartesian_spherical_conversions.png" width="50%">
-<!-- ![](../../figures/how-monty-works/cartesian_spherical_conversions.png#width=400px) -->
+![](../../figures/how-monty-works/cartesian_spherical_conversions.png#width=400px)
 
 
 <!-- ### Example: Distant Agent -->
