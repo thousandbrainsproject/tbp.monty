@@ -7,8 +7,6 @@ This document describes Monty's adopted 3D conventions and provides a few common
 
 ### Conventions and Conversions
 
-![](../../figures/how-monty-works/coordinate_conventions.png)
-
 Monty uses the _right-up-backward_ [axes convention](https://en.wikipedia.org/wiki/Axes_conventions), meaning that
  - The x-axis points to the right.
  - The y-axis points up.
@@ -17,8 +15,10 @@ Monty uses the _right-up-backward_ [axes convention](https://en.wikipedia.org/wi
 Note that the forward direction corresponds to the _negative z-axis_. While users with a background in 3D graphics (esp. OpenGL) may be accustomed to this convention, but many find it unintuitive at first.
 
 For spherical coordinates, we use the convention that places azimuth = 0 and elevation = 0 down the forward axis. More explicitly,
-  - Azimuth (or yaw) is measured away from the forward axis.
-  - Elevation (or pitch) is measured up from the horizontal plane.
+  - Azimuth is measured away from the forward axis.
+  - Elevation is measured up from the horizontal plane.
+
+![Cartesian and spherical axes conventions. (Left) Monty uses the right-up-backward axes convention. The forward direction (i.e., -Z) is indicated by a dotted line. (Right) Azimuth and elevation are centered down the forward (-Z) axis.](../../figures/how-monty-works/coordinate_conventions.png)
 
 While not uncommon in 3D graphics, this convention does differ from the [physics convention](https://en.wikipedia.org/wiki/Spherical_coordinate_system). As such, it's important to take care when interpreting angles or mapping between Cartesian and spherical coordinates. Should you need to handle these conversions, the following convention-compliant formulae are provided as a reference:
 
