@@ -126,12 +126,19 @@ class MotorPolicy(abc.ABC):
             The actions to take.
         """
         if self.is_predefined:
-            action: Action | None = self.predefined_call()
+            action: Sequence[Action] = self.predefined_call()
         else:
-            action = self.dynamic_call(state)
-        self.post_action(action, state)
-        return [action] if action else []
+            action: Sequence[Action] = self.dynamic_call(state)
 
+        # Runtime check for now.
+        assert isinstance(action, Sequence) and all(
+            isinstance(a, Action) for a in action
+        )
+
+        self.post_action(action, state)
+
+        # Enforce return type of list[Action]
+        return action if isinstance(action, list) else list(action)
 
 class BasePolicy(MotorPolicy):
     def __init__(
@@ -230,7 +237,8 @@ class BasePolicy(MotorPolicy):
                 return [action]
 
     def predefined_call(self) -> Sequence[Action]:
-        return self.action_list[self.episode_step % len(self.action_list)]
+        action = self.action_list[self.episode_step % len(self.action_list)]
+        return action if isinstance(action, Sequence) else [action]
 
     def post_action(
         self, action: Sequence[Action], _: MotorSystemState | None = None
@@ -284,10 +292,6 @@ class BasePolicy(MotorPolicy):
         """
         agent_state = self.get_agent_state(state)
         return agent_state.motor_only_step
-
-    @property
-    def last_action(self) -> Action:
-        return self.action
 
     def state_dict(self):
         return {"timestep": self.timestep, "episode_step": self.episode_step}
@@ -904,51 +908,66 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         yet clear to me what to do for actions that do not support undo.
         """
         last_action = self.action
+        undo_actions: list[Action] = []
+        for last_action in reversed(self.action):
+            if isinstance(last_action, LookDown):
+                undo_actions.append(
+                    LookDown(
+                        agent_id=last_action.agent_id,
+                        rotation_degrees=-last_action.rotation_degrees,
+                        constraint_degrees=last_action.constraint_degrees,
+                    )
+                )
 
-        if isinstance(last_action, LookDown):
-            return LookDown(
-                agent_id=last_action.agent_id,
-                rotation_degrees=-last_action.rotation_degrees,
-                constraint_degrees=last_action.constraint_degrees,
-            )
+            elif isinstance(last_action, LookUp):
+                undo_actions.append(
+                    LookUp(
+                        agent_id=last_action.agent_id,
+                        rotation_degrees=-last_action.rotation_degrees,
+                        constraint_degrees=last_action.constraint_degrees,
+                    )
+                )
 
-        if isinstance(last_action, LookUp):
-            return LookUp(
-                agent_id=last_action.agent_id,
-                rotation_degrees=-last_action.rotation_degrees,
-                constraint_degrees=last_action.constraint_degrees,
-            )
+            elif isinstance(last_action, TurnLeft):
+                undo_actions.append(
+                    TurnLeft(
+                        agent_id=last_action.agent_id,
+                        rotation_degrees=-last_action.rotation_degrees,
+                    )
+                )
 
-        if isinstance(last_action, TurnLeft):
-            return TurnLeft(
-                agent_id=last_action.agent_id,
-                rotation_degrees=-last_action.rotation_degrees,
-            )
+            elif isinstance(last_action, TurnRight):
+                undo_actions.append(
+                    TurnRight(
+                        agent_id=last_action.agent_id,
+                        rotation_degrees=-last_action.rotation_degrees,
+                    )
+                )
 
-        if isinstance(last_action, TurnRight):
-            return TurnRight(
-                agent_id=last_action.agent_id,
-                rotation_degrees=-last_action.rotation_degrees,
-            )
+            elif isinstance(last_action, MoveForward):
+                undo_actions.append(
+                    MoveForward(
+                        agent_id=last_action.agent_id,
+                        distance=-last_action.distance,
+                    )
+                )
 
-        if isinstance(last_action, MoveForward):
-            return MoveForward(
-                agent_id=last_action.agent_id,
-                distance=-last_action.distance,
-            )
+            elif isinstance(last_action, MoveTangentially):
+                undo_actions.append(
+                    MoveTangentially(
+                        agent_id=last_action.agent_id,
+                        distance=-last_action.distance,
+                        # Same direction, negative distance
+                        direction=last_action.direction,
+                    )
+                )
 
-        if isinstance(last_action, MoveTangentially):
-            return MoveTangentially(
-                agent_id=last_action.agent_id,
-                distance=-last_action.distance,
-                # Same direction, negative distance
-                direction=last_action.direction,
-            )
-
-        raise TypeError(f"Invalid action: {last_action}")
+            else:
+                raise TypeError(f"Invalid action: {last_action}")
+        return undo_actions
 
     def post_action(
-        self, action: Action | None, state: MotorSystemState | None = None
+        self, action: Sequence[Action], state: MotorSystemState | None = None
     ) -> None:
         self.action = action
         self.timestep += 1
