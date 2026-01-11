@@ -726,11 +726,13 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             # Results in us seemlessly transitioning into the typical
             # corrective movements (forward or orientation) of the surface-agent
             # policy
-            self.motor_system._policy.action = MoveTangentially(
-                agent_id=self.motor_system._policy.agent_id,
-                distance=0.0,
-                direction=(0, 0, 0),
-            )
+            self.motor_system._policy.action = [
+                MoveTangentially(
+                    agent_id=self.motor_system._policy.agent_id,
+                    distance=0.0,
+                    direction=(0, 0, 0),
+                )
+            ]
 
             # TODO cleanup where this is performed, and make variable names more general
             # TODO also only log this when we are doing detailed logging
