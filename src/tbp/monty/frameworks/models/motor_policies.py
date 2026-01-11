@@ -1103,7 +1103,7 @@ class SurfacePolicy(InformedPolicy):
 
     def pre_episode(self):
         self.tangential_angle = 0
-        self.action = None  # Reset the first action for every episode
+        self.action = []  # Reset the first action for every episode
         self.touch_search_amount = 0  # Track how many rotations the agent has made
         # along the horizontal plane searching for an object; when this reaches 360,
         # try searching along the vertical plane, or for 720, performing a random
