@@ -178,7 +178,7 @@ class BasePolicy(MotorPolicy):
         self.episode_count = 0
         self.switch_frequency = float(switch_frequency)
         # Ensure our first action only samples from those that can be random
-        self.action: list[Action] = self.get_random_action(
+        self.action: Sequence[Action] = self.get_random_action(
             [self.action_sampler.sample(self.agent_id, self.rng)]
         )
 
@@ -221,18 +221,19 @@ class BasePolicy(MotorPolicy):
         """
         return self.get_random_action(self.action)
 
-    def get_random_action(self, action: Sequence[Action]) -> list[Action]:
+    def get_random_action(self, action: Sequence[Action]) -> Sequence[Action]:
         """Returns random action sampled from allowable actions.
 
         Enables expanding the action space of the base policy with actions that
         we don't necessarily want to randomly sample
         """
-        action = action[0]
         while True:
             if self.rng.rand() < self.switch_frequency:
-                action = self.action_sampler.sample(self.agent_id, self.rng)
-            if not isinstance(action, (SetAgentPose, SetSensorRotation)):
-                return [action]
+                action = [self.action_sampler.sample(self.agent_id, self.rng)]
+            if not any(
+                isinstance(a, (SetAgentPose, SetSensorRotation)) for a in action
+            ):
+                return action
 
     def predefined_call(self) -> Sequence[Action]:
         action = self.action_list[self.episode_step % len(self.action_list)]
