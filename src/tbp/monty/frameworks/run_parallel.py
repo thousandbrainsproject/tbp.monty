@@ -612,7 +612,11 @@ def run_episodes_parallel(
         )
     print(f"Wandb setup took {time.time() - start_time} seconds")
     start_time = time.time()
-    with mp.Pool(num_parallel) as p:
+    # Use maxtasksperchild=1 to force fresh worker processes for each task.
+    # This ensures Habitat simulator resources are fully released after each
+    # experiment, preventing hangs during pool shutdown.
+    p = mp.Pool(num_parallel, maxtasksperchild=1)
+    try:
         if train:
             # NOTE: since we don't use wandb logging for training right now
             # it is also not covered here. Might want to add that in the future.
@@ -636,6 +640,9 @@ def run_episodes_parallel(
             run.log(overall_stats)
         else:
             p.map(single_evaluate, experiments)
+    finally:
+        p.close()
+        p.join()
     end_time = time.time()
     total_time = end_time - start_time
 
