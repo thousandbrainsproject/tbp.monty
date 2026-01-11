@@ -178,11 +178,9 @@ class BasePolicy(MotorPolicy):
         self.episode_count = 0
         self.switch_frequency = float(switch_frequency)
         # Ensure our first action only samples from those that can be random
-        self.action: list[Action] = [
-            self.get_random_action(
-                [self.action_sampler.sample(self.agent_id, self.rng)]
-            )
-        ]
+        self.action: list[Action] = self.get_random_action(
+            [self.action_sampler.sample(self.agent_id, self.rng)]
+        )
 
         ###
         # Load data for predefined actions and amounts if specified
