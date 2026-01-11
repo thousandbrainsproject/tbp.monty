@@ -284,10 +284,6 @@ class BasePolicy(MotorPolicy):
         agent_state = self.get_agent_state(state)
         return agent_state.motor_only_step
 
-    @property
-    def last_action(self) -> Action:
-        return self.action
-
     def state_dict(self):
         return {"timestep": self.timestep, "episode_step": self.episode_step}
 
