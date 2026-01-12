@@ -239,7 +239,18 @@ class FeatureAtLocationBuffer:
             All observed locations that were on the object.
         """
         if input_channel is None:
-            return self.locations
+            # Pad each channel's locations to the full buffer length.
+            # Also filter locations by global on_object.
+            global_on_object_ids = np.where(self.on_object)[0]
+            result = {}
+            for channel in self.locations.keys():
+                channel_locs = self.locations[channel]
+                if len(channel_locs) < len(self):
+                    padded = np.full((len(self), channel_locs.shape[1]), np.nan)
+                    padded[: len(channel_locs)] = channel_locs
+                    channel_locs = padded
+                result[channel] = channel_locs[global_on_object_ids]
+            return result
         if input_channel == "first":
             input_channel = self.get_first_sensory_input_channel()
         on_object_ids = np.where(self.features[input_channel]["on_object"])[0]
