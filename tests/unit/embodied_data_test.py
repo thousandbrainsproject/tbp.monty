@@ -25,9 +25,9 @@ from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
     SaccadeOnImageFromStreamEnvironmentInterface,
 )
-from tbp.monty.frameworks.environments.embodied_environment import (
-    EmbodiedEnvironment,
+from tbp.monty.frameworks.environments.environment import (
     ObjectID,
+    SteppableObjectEnvironment,
 )
 from tbp.monty.frameworks.environments.two_d_data import (
     SaccadeOnImageEnvironment,
@@ -63,7 +63,7 @@ EXPECTED_STATES: npt.NDArray[np.uint8] = np.random.randint(
 )
 
 
-class FakeEnvironmentRel(EmbodiedEnvironment):
+class FakeEnvironmentRel(SteppableObjectEnvironment):
     def __init__(self):
         self._current_state = 0
 
@@ -112,7 +112,7 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
         self._current_state = None
 
 
-class FakeEnvironmentAbs(EmbodiedEnvironment):
+class FakeEnvironmentAbs(SteppableObjectEnvironment):
     def __init__(self):
         self._current_state = 0
 

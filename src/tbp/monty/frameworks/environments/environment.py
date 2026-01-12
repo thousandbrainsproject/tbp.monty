@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,20 +9,21 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import abc
 from dataclasses import dataclass
-from typing import NewType, Sequence, Tuple
+from typing import NewType, Protocol, Sequence, Tuple, runtime_checkable
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 
 __all__ = [
-    "EmbodiedEnvironment",
+    "ObjectEnvironment",
     "ObjectID",
     "ObjectInfo",
     "QuaternionWXYZ",
     "SemanticID",
+    "SteppableEnvironment",
+    "SteppableObjectEnvironment",
     "VectorXYZ",
 ]
 
@@ -44,8 +45,41 @@ class ObjectInfo:
     semantic_id: SemanticID | None
 
 
-class EmbodiedEnvironment(abc.ABC):
-    @abc.abstractmethod
+@runtime_checkable
+class SteppableEnvironment(Protocol):
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
+        """Apply the given actions to the environment.
+
+        Args:
+            actions: The actions to apply to the environment.
+
+        Returns:
+            The current observations and proprioceptive state.
+
+        Note:
+            If the actions are an empty sequence, the current observations are returned.
+        """
+        pass
+
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
+        """Reset enviroment to its initial state.
+
+        Returns:
+            The environment's initial observations and proprioceptive state.
+        """
+        pass
+
+    def close(self) -> None:
+        """Close the environment releasing all resources.
+
+        Any call to any other environment method may raise an exception
+        """
+        pass
+
+
+class ObjectEnvironment(Protocol):
     def add_object(
         self,
         name: str,
@@ -74,24 +108,6 @@ class EmbodiedEnvironment(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
-    def step(
-        self, actions: Sequence[Action]
-    ) -> tuple[Observations, ProprioceptiveState]:
-        """Apply the given actions to the environment.
-
-        Args:
-            actions: The actions to apply to the environment.
-
-        Returns:
-            The current observations and proprioceptive state.
-
-        Note:
-            If the actions are an empty sequence, the current observations are returned.
-        """
-        pass
-
-    @abc.abstractmethod
     def remove_all_objects(self) -> None:
         """Remove all objects from the environment.
 
@@ -101,19 +117,6 @@ class EmbodiedEnvironment(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
-    def reset(self) -> tuple[Observations, ProprioceptiveState]:
-        """Reset enviroment to its initial state.
 
-        Returns:
-            The environment's initial observations and proprioceptive state.
-        """
-        pass
-
-    @abc.abstractmethod
-    def close(self) -> None:
-        """Close the environmnt releasing all resources.
-
-        Any call to any other environment method may raise an exception
-        """
-        pass
+class SteppableObjectEnvironment(SteppableEnvironment, ObjectEnvironment, Protocol):
+    pass

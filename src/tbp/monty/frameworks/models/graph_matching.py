@@ -16,7 +16,7 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.environments.embodied_environment import SemanticID
+from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
 from tbp.monty.frameworks.loggers.graph_matching_loggers import (
     BasicGraphMatchingLogger,

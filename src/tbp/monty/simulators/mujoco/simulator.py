@@ -14,7 +14,7 @@ from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 from typing_extensions import override
 
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.environments.embodied_environment import (
+from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
     QuaternionWXYZ,

@@ -63,7 +63,7 @@ __all__ = [
     "HabitatSim",
 ]
 
-from tbp.monty.frameworks.environments.embodied_environment import (
+from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
     QuaternionWXYZ,

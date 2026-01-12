@@ -13,11 +13,12 @@ from dataclasses import asdict, dataclass, is_dataclass
 from typing import TYPE_CHECKING, Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.environments.embodied_environment import (
-    EmbodiedEnvironment,
+from tbp.monty.frameworks.environments.environment import (
+    ObjectEnvironment,
     ObjectID,
     QuaternionWXYZ,
     SemanticID,
+    SteppableEnvironment,
     VectorXYZ,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
@@ -82,7 +83,7 @@ class AgentConfig:
     agent_args: dict | type[HabitatAgentArgs]
 
 
-class HabitatEnvironment(EmbodiedEnvironment):
+class HabitatEnvironment(SteppableEnvironment, ObjectEnvironment):
     """habitat-sim environment compatible with Monty.
 
     Attributes:

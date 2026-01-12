@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from tbp.monty.frameworks.environments.embodied_environment import (
+from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
     QuaternionWXYZ,

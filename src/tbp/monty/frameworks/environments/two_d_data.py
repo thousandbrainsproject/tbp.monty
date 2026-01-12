@@ -22,9 +22,9 @@ from scipy.ndimage import gaussian_filter
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import DepthTo3DLocations
-from tbp.monty.frameworks.environments.embodied_environment import (
-    EmbodiedEnvironment,
+from tbp.monty.frameworks.environments.environment import (
     ObjectID,
+    SteppableEnvironment,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
@@ -49,7 +49,7 @@ __all__ = [
 ]
 
 
-class OmniglotEnvironment(EmbodiedEnvironment):
+class OmniglotEnvironment(SteppableEnvironment):
     """Environment for Omniglot dataset."""
 
     def __init__(self, patch_size=10, data_path=None):
@@ -267,7 +267,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self._current_state = None
 
 
-class SaccadeOnImageEnvironment(EmbodiedEnvironment):
+class SaccadeOnImageEnvironment(SteppableEnvironment):
     """Environment for moving over a 2D image with depth channel.
 
     Images should be stored in .png format for rgb and .data format for depth.
