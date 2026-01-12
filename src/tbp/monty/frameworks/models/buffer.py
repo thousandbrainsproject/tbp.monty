@@ -355,16 +355,13 @@ class FeatureAtLocationBuffer:
 
             channel_features_on_object = {}
             for feature in self.features[input_channel].keys():
-                # Pad end of array with 0s if last steps of episode were off object
+                # Pad end of array with nans if last steps of episode were off object
                 # for this channel
                 if self.features[input_channel][feature].shape[0] < len(self):
-                    self.features[input_channel][feature].resize(
-                        (
-                            len(self),
-                            self.features[input_channel][feature].shape[1],
-                        ),
-                        refcheck=False,
-                    )
+                    existing = self.features[input_channel][feature]
+                    padded = np.full((len(self), existing.shape[1]), np.nan)
+                    padded[: existing.shape[0]] = existing
+                    self.features[input_channel][feature] = padded
                 logger.debug(
                     f"{input_channel} observations for feature {feature} have "
                     f"shape {np.array(self.features[input_channel][feature]).shape}"
