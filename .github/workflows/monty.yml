@@ -11,6 +11,9 @@ on:
   pull_request:
     branches:
       - main
+  merge_group:
+    types:
+      - checks_requested
 
 env:
   UV_PYTHON: 3.9.22 # version of Python to use in `uv` environment
@@ -217,6 +220,11 @@ jobs:
         working-directory: tbp.monty
         run: |
           git diff --name-only ${{ github.sha }}^1 > changed_files.txt
+      - name: Changed files for a merge group
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && github.event_name == 'merge_group' }}
+        working-directory: tbp.monty
+        run: |
+          git diff --name-only ${{ github.event.merge_group.head_sha }}^1 > changed_files.txt
       - name: Check Copyright 2026
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
@@ -308,7 +316,7 @@ jobs:
         uses: ./tbp.monty/.github/actions/should_run_monty
         with:
           git_base_ref: ${{ github.base_ref }}
-          git_sha: ${{ github.sha }}
+          git_sha: ${{ github.event.merge_group.head_sha || github.sha }}
           github_event_name: ${{ github.event_name }}
           working_directory: tbp.monty
 

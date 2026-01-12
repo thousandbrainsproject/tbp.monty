@@ -481,7 +481,7 @@ class MontyForGraphMatching(MontyBase):
 
         # TODO M clean up the below when refactoring the surface-agent policy
         if hasattr(self.motor_system._policy, "tangent_locs"):
-            last_action = self.motor_system._policy.last_action
+            last_action = self.motor_system._policy.action
 
             if last_action is not None:
                 if last_action.name == "orient_vertical":
