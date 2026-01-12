@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import OrderedDict as OrderedDictType
 
 import numpy as np
 import numpy.typing as npt
@@ -39,7 +38,7 @@ class ChannelMapper:
         Args:
             channel_sizes: Dictionary of {channel_name: size}.
         """
-        self.channel_sizes: OrderedDictType[str, int] = (
+        self.channel_sizes: OrderedDict[str, int] = (
             OrderedDict(channel_sizes) if channel_sizes else OrderedDict()
         )
 
