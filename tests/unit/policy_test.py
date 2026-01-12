@@ -444,7 +444,7 @@ class PolicyTest(unittest.TestCase):
             for loader_step, observation in enumerate(exp.env_interface):
                 exp.model.step(observation)
 
-                last_action = exp.model.motor_system._policy.action
+                last_action = exp.model.motor_system._policy.action[0]
 
                 if loader_step == 3:
                     stored_action = last_action
