@@ -128,17 +128,10 @@ class MotorPolicy(abc.ABC):
         if self.is_predefined:
             action: Sequence[Action] = self.predefined_call()
         else:
-            action: Sequence[Action] = self.dynamic_call(state)
-
-        # Runtime check for now.
-        assert isinstance(action, Sequence) and all(
-            isinstance(a, Action) for a in action
-        )
+            action = self.dynamic_call(state)
 
         self.post_action(action, state)
-
-        # Enforce return type of list[Action]
-        return action if isinstance(action, list) else list(action)
+        return list(action)
 
 
 class BasePolicy(MotorPolicy):
