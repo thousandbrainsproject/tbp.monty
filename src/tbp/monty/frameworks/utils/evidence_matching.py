@@ -496,7 +496,7 @@ def evidence_update_threshold(
     if evidence_all_channels.size == 0:
         return 0.0
 
-    if type(evidence_threshold_config) in [int, float]:
+    if isinstance(evidence_threshold_config, (int, float)):
         return evidence_threshold_config
 
     if evidence_threshold_config == "mean":
@@ -517,7 +517,7 @@ def evidence_update_threshold(
         return max_global_evidence - x_percent_of_max
 
     if evidence_threshold_config == "x_percent_threshold":
-        x_percent_of_max = max_global_evidence / 100 * x_percent_threshold
+        x_percent_of_max = max_global_evidence / 100 * float(x_percent_threshold)
         return max_global_evidence - x_percent_of_max
 
     if evidence_threshold_config == "all":
