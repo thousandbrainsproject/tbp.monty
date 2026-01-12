@@ -86,14 +86,13 @@ class ChannelMapper:
         Raises:
             ValueError: If the channel is not found.
         """
-        if channel_name not in self.channel_sizes:
-            raise ValueError(f"Channel '{channel_name}' not found.")
-
         start = 0
         for name, size in self.channel_sizes.items():
             if name == channel_name:
                 return (start, start + size)
             start += size
+
+        raise ValueError(f"Channel '{channel_name}' not found.")
 
     def resize_channel_by(self, channel_name: str, value: int) -> None:
         """Increases or decreases the channel by a specific amount.
