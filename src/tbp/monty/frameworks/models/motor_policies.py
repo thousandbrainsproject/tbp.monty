@@ -140,6 +140,7 @@ class MotorPolicy(abc.ABC):
         # Enforce return type of list[Action]
         return action if isinstance(action, list) else list(action)
 
+
 class BasePolicy(MotorPolicy):
     def __init__(
         self,
