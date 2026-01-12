@@ -29,7 +29,7 @@ Monty experiments are defined using a nested dictionary. These dictionaries defi
   - `monty_args`: Arguments supplied to the Monty class.
   - `sensor_module_configs`: `Mapping[str:Mapping]`
   - `learning_module_configs`: `Mapping[str:Mapping]`
-  - `motor_system_config`: `dataclass` (e.g., `MotorSystemConfigCurvatureInformedSurface`)
+  - `motor_system_config`: configuration of the motor system and motor policies.
   - `sm_to_agent_dict`: mapping of which sensors connect to which sensor modules.
   - `sm_to_lm_matrix`: mapping of which sensor modules connect to which learning modules.
   - `lm_to_lm_matrix`: hierarchical connectivity between learning modules.
@@ -182,7 +182,7 @@ Briefly, we specified our experiment class and the number of epochs to run. We a
     - `sensor_module_1` will be a `Probe` which we can use for logging. We could also store raw observations from the viewfinder for later visualization/analysis if needed. This sensor module is not connected to a learning module and, therefore, is not used for learning. It is called `view_finder` since it helps initialize each episode on the object.
   - `learning_module_configs`: a dictionary specifying the learning module class and arguments. This dictionary specifies that
     - `learning_module_0` will be a `GraphLM` that constructs a graph of the object being explored.
-  - `motor_system_config`: a `MotorSystemConfigCurvatureInformedSurface` config object that specifies a motor policy class to use. This policy here will move orthogonal to the surface of the object with a preference of following principal curvatures that are sensed. When doing pretraining with the distant agent, the `MotorSystemConfigNaiveScanSpiral` policy is recommended since it ensures even coverage of the object from the available view point.
+  - `motor_system_config`: a motor system config object that specifies a motor policy class to use. This policy here will move orthogonal to the surface of the object with a preference of following principal curvatures that are sensed. When doing pretraining with the distant agent, the `/experiment/config/monty/motor_system/naive_scan_spiral` policy is recommended since it ensures even coverage of the object from the available view point.
 
 To get an idea of what each sensor module sees and the information passed on to the learning module, check out the documentation on [observations, transforms, and sensor modules](../../how-monty-works/observations-transforms-sensor-modules.md). To learn more about how learning modules construct object graphs from sensor output, refer to the [graph building](../../how-monty-works/learning-module/object-models.md#graph-building) documentation.
 

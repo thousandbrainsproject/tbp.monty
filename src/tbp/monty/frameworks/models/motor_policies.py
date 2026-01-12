@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2021-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -68,12 +68,6 @@ class MotorPolicy(abc.ABC):
         Returns:
             The action to take.
         """
-        pass
-
-    @property
-    @abc.abstractmethod
-    def last_action(self) -> Action:
-        """Returns the last action taken by the motor policy."""
         pass
 
     @abc.abstractmethod
@@ -906,7 +900,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         An Action.undo of some sort would be a better solution, however it is not
         yet clear to me what to do for actions that do not support undo.
         """
-        last_action = self.last_action
+        last_action = self.action
 
         if isinstance(last_action, LookDown):
             return LookDown(
@@ -1424,7 +1418,7 @@ class SurfacePolicy(InformedPolicy):
         if not hasattr(self, "processed_observations"):
             return None
 
-        # TODO: Revert to last_action = self.last_action once TouchObject positioning
+        # TODO: Revert to last_action = self.action once TouchObject positioning
         #       procedure is implemented
         last_action = self.last_surface_policy_action
 
