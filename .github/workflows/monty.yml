@@ -412,6 +412,8 @@ jobs:
         continue-on-error: true
         run: |
           uv venv --seed
+          # Need to install torch separately because torch-scatter doesn't declare it properly
+          uv pip install torch==1.13.1
           uv sync --locked --extra dev --extra simulator_mujoco
       - name: Run tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
