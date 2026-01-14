@@ -359,7 +359,7 @@ jobs:
         uses: ./tbp.monty/.github/actions/install_monty
         with:
           working_directory: tbp.monty
-      - name: Run python tests
+      - name: Run configuration and unit tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         run: |
@@ -380,6 +380,68 @@ jobs:
         with:
           name: test_coverage
           path: tbp.monty/htmlcov
+
+  test_tutorials:
+    name: test-tutorials
+    runs-on:
+      group: tbp.monty
+      labels: tbp-linux-x64-ubuntu-nvidia-4core-t4gpu
+    timeout-minutes: 120
+    needs:
+      - install_monty
+      - should_run_monty
+      - test_monty
+    steps:
+      - name: Restore cache
+        id: restore_cache
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/miniconda
+          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
+      - name: Install dependencies
+        # Installing before checkout because GitLFS is missing from the image
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          sudo apt update -y
+          sudo apt install -y --no-install-recommends xvfb libegl1-mesa-dev git-lfs
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
+      - name: Install Monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
+        uses: ./tbp.monty/.github/actions/install_monty
+        with:
+          working_directory: tbp.monty
+      - name: Download data for tutorials
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          set -e
+          python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
+          git clone https://github.com/brendenlake/omniglot.git ~/tbp/data/omniglot
+          unzip -qq ~/tbp/data/omniglot/python/images_background.zip -d ~/tbp/data/omniglot/python
+          unzip -qq ~/tbp/data/omniglot/python/strokes_background.zip -d ~/tbp/data/omniglot/python
+          mkdir -p ~/tbp/data/worldimages
+          curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar -xzf - -C ~/tbp/data
+          mkdir -p ~/tbp/results/monty/pretrained_models/pretrained_ycb_v11
+          curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v11.tgz | tar -xzf - -C ~/tbp/results/monty/pretrained_models
+      - name: Test tutorials
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          set -e
+          mkdir -p test_results/pytest
+          xvfb-run pytest tests/tutorials --junitxml=test_results/pytest/results.xml --verbose -n 1
 
   test_uv_monty:
     name: test-uv-monty
