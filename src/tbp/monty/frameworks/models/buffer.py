@@ -583,7 +583,7 @@ class FeatureAtLocationBuffer:
 class BufferEncoder(json.JSONEncoder):
     """Encoder to turn the buffer into a JSON compliant format."""
 
-    _encoders: ClassVar[dict[type, Callable | json.JSONEncoder]] = {}
+    _encoders: ClassVar[dict[type, Callable]] = {}
 
     @classmethod
     def register(
@@ -667,7 +667,7 @@ class BufferEncoder(json.JSONEncoder):
         encoder = self._find(obj)
         if encoder is not None:
             return encoder(obj)
-        return json.JSONEncoder.default(self, obj)
+        return super().default(obj)
 
 
 BufferEncoder.register(np.generic, lambda obj: obj.item())
