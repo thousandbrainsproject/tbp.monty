@@ -30,7 +30,7 @@ def print_config(config: DictConfig) -> None:
     print("-" * 100)
 
 
-def run_name_output_dir(config: DictConfig) -> Path:
+def output_dir_from_run_name(config: DictConfig) -> Path:
     """Configure the output directory unique to the run name.
 
     The output directory is created if it does not exist.
@@ -58,7 +58,7 @@ def main(cfg: DictConfig):
     print_config(cfg)
     register_resolvers()
 
-    cfg.experiment.config.logging.output_dir = str(run_name_output_dir(cfg))
+    cfg.experiment.config.logging.output_dir = str(output_dir_from_run_name(cfg))
 
     experiment = hydra.utils.instantiate(cfg.experiment)
     start_time = time.time()

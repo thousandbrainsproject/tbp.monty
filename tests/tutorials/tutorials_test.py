@@ -19,7 +19,7 @@ from unittest import TestCase
 
 import hydra
 
-from tbp.monty.frameworks.run import run_name_output_dir
+from tbp.monty.frameworks.run import output_dir_from_run_name
 
 
 class TutorialsTest(TestCase):
@@ -40,7 +40,7 @@ class TutorialsTest(TestCase):
                 overrides=["experiment=tutorial/surf_agent_2obj_train"],
             )
             config.experiment.config.logging.output_dir = str(
-                run_name_output_dir(config)
+                output_dir_from_run_name(config)
             )
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
@@ -83,7 +83,7 @@ class TutorialsTest(TestCase):
                 overrides=["experiment=tutorial/dist_agent_5lm_2obj_train"],
             )
             config.experiment.config.logging.output_dir = str(
-                run_name_output_dir(config)
+                output_dir_from_run_name(config)
             )
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
@@ -109,7 +109,7 @@ class TutorialsTest(TestCase):
                 config_name="experiment",
                 overrides=["experiment=tutorial/omniglot_training"],
             )
-            inference_output_dir = str(run_name_output_dir(config))
+            inference_output_dir = str(output_dir_from_run_name(config))
             config.experiment.config.logging.output_dir = inference_output_dir
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
