@@ -193,7 +193,7 @@ Still from Ubuntu, enter this to launch VS Code with Monty:
 cd ~/tbp && code .
 ```
 
-The `code .` command launches both VS Code for Windows and the Linux VS Code Server directly into WSL's current directory.
+The `code .` command launches both VS Code for Windows and the Linux VS Code Server directly into the current directory of WSL.
 
 
 # 7. Run unit tests and a benchmark
