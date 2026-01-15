@@ -526,9 +526,6 @@ class HabitatSim(HabitatActuator, Simulator, ExperimentSimulator):
             TypeError: If the action type is invalid
             ValueError: If the action name is invalid
         """
-        if not actions:
-            return self.observations
-
         for action in actions:
             action_name = self.action_name(action)
             if action_name not in self._action_space:

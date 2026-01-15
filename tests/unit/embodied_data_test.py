@@ -16,7 +16,6 @@ import hydra
 import numpy as np
 import numpy.typing as npt
 from omegaconf import OmegaConf
-from typing_extensions import override
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_data import (
@@ -27,7 +26,7 @@ from tbp.monty.frameworks.environments.embodied_data import (
 )
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
-    SteppableObjectEnvironment,
+    SimulatedObjectEnvironment,
 )
 from tbp.monty.frameworks.environments.two_d_data import (
     SaccadeOnImageEnvironment,
@@ -62,16 +61,14 @@ EXPECTED_STATES: npt.NDArray[np.uint8] = np.random.randint(
 )
 
 
-class FakeEnvironmentRel(SteppableObjectEnvironment):
+class FakeEnvironmentRel(SimulatedObjectEnvironment):
     def __init__(self):
         self._current_state = 0
 
-    @override
-    def add_object(self, *args, **kwargs) -> ObjectID:
+    def add_object(self, *_, **__) -> ObjectID:
         return ObjectID(-1)
 
-    @override
-    def step(self, actions) -> tuple[Observations, ProprioceptiveState]:
+    def step(self, _) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
         obs = Observations(
             {
@@ -111,16 +108,14 @@ class FakeEnvironmentRel(SteppableObjectEnvironment):
         self._current_state = None
 
 
-class FakeEnvironmentAbs(SteppableObjectEnvironment):
+class FakeEnvironmentAbs(SimulatedObjectEnvironment):
     def __init__(self):
         self._current_state = 0
 
-    @override
-    def add_object(self, *args, **kwargs) -> ObjectID:
+    def add_object(self, *_, **__) -> ObjectID:
         return ObjectID(-1)
 
-    @override
-    def step(self, actions) -> tuple[Observations, ProprioceptiveState]:
+    def step(self, _) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
         obs = Observations(
             {
@@ -162,6 +157,7 @@ class FakeEnvironmentAbs(SteppableObjectEnvironment):
 
 class FakeOmniglotEnvironment(FakeEnvironmentAbs):
     def __init__(self):
+        super().__init__()
         self.alphabet_names = ["name_one", "name_two", "name_three"]
 
 
@@ -330,7 +326,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
         env = FakeOmniglotEnvironment()
         omniglot_data_loader_abs = OmniglotEnvironmentInterface(
-            env=env,
+            env=env,  # TODO: FakeOmniglotEnvironment is not an OmniglotEnvironment
             rng=rng,
             motor_system=motor_system_abs,
             alphabets=alphabets,

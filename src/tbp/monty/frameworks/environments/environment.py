@@ -10,20 +10,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import NewType, Protocol, Sequence, Tuple, runtime_checkable
+from typing import NewType, Protocol, Sequence, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 
 __all__ = [
+    "Environment",
     "ObjectEnvironment",
     "ObjectID",
     "ObjectInfo",
     "QuaternionWXYZ",
+    "ResettableEnvironment",
     "SemanticID",
-    "SteppableEnvironment",
-    "SteppableObjectEnvironment",
+    "SimulatedEnvironment",
+    "SimulatedObjectEnvironment",
     "VectorXYZ",
 ]
 
@@ -45,8 +47,7 @@ class ObjectInfo:
     semantic_id: SemanticID | None
 
 
-@runtime_checkable
-class SteppableEnvironment(Protocol):
+class Environment(Protocol):
     def step(
         self, actions: Sequence[Action]
     ) -> tuple[Observations, ProprioceptiveState]:
@@ -63,16 +64,8 @@ class SteppableEnvironment(Protocol):
         """
         pass
 
-    def reset(self) -> tuple[Observations, ProprioceptiveState]:
-        """Reset enviroment to its initial state.
-
-        Returns:
-            The environment's initial observations and proprioceptive state.
-        """
-        pass
-
     def close(self) -> None:
-        """Close the environment releasing all resources.
+        """Close the environment and release all resources.
 
         Any call to any other environment method may raise an exception
         """
@@ -118,5 +111,23 @@ class ObjectEnvironment(Protocol):
         pass
 
 
-class SteppableObjectEnvironment(SteppableEnvironment, ObjectEnvironment, Protocol):
+class ResettableEnvironment(Protocol):
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
+        """Reset the environment to its initial state.
+
+        Returns:
+            The environment's initial observations and proprioceptive state.
+        """
+        pass
+
+
+# Intersection type
+class SimulatedEnvironment(Environment, ResettableEnvironment, Protocol):
+    pass
+
+
+# Intersection type
+class SimulatedObjectEnvironment(
+    Environment, ObjectEnvironment, ResettableEnvironment, Protocol
+):
     pass

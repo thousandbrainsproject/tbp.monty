@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -31,11 +31,12 @@ from tbp.monty.frameworks.environment_utils.transforms import TransformContext
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     SemanticID,
-    SteppableObjectEnvironment,
+    SimulatedObjectEnvironment,
 )
 from tbp.monty.frameworks.environments.two_d_data import (
     OmniglotEnvironment,
     SaccadeOnImageEnvironment,
+    SaccadeOnImageFromStreamEnvironment,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
@@ -94,7 +95,7 @@ class EnvironmentInterface:
 
     def __init__(
         self,
-        env: SteppableObjectEnvironment,
+        env: SimulatedObjectEnvironment,
         motor_system: MotorSystem,
         rng,
         seed: int,
@@ -506,6 +507,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
     def pre_episode(self):
         super().pre_episode()
+        # TODO: self.env._agents is not part of SimulatedObjectEnvironment
         if self.env._agents[0].action_space_type != "surface_agent":
             on_target_object = self.get_good_view_with_patch_refinement()
             if self.num_distractors == 0:
@@ -843,7 +845,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        self._observation, proprioceptive_state = self.reset()
+        self._observation, proprioceptive_state = self.step([])
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -945,7 +947,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        self._observation, proprioceptive_state = self.reset()
+        self._observation, proprioceptive_state = self.step([])
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -1013,7 +1015,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
 
     def __init__(
         self,
-        env: SaccadeOnImageEnvironment,
+        env: SaccadeOnImageFromStreamEnvironment,
         motor_system: MotorSystem,
         rng,
         transform=None,
@@ -1024,7 +1026,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
 
         Args:
             env: An instance of a class that implements
-                :class:`SaccadeOnImageEnvironment`.
+                :class:`SaccadeOnImageFromStreamEnvironment`.
             motor_system: The motor system.
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
@@ -1043,7 +1045,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        self._observation, proprioceptive_state = self.reset()
+        self._observation, proprioceptive_state = self.step([])
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
