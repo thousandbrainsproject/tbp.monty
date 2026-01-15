@@ -381,8 +381,8 @@ jobs:
           name: test_coverage
           path: tbp.monty/htmlcov
 
-  test_tutorials:
-    name: test-tutorials
+  test_tutorials_monty:
+    name: test-tutorials-monty
     runs-on:
       group: tbp.monty
       labels: tbp-linux-x64-ubuntu-nvidia-4core-t4gpu
