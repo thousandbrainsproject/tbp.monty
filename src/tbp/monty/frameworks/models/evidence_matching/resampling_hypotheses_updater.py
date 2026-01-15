@@ -252,9 +252,6 @@ class ResamplingHypothesesUpdater:
         # Dictionary of slope trackers, one for each graph_id
         self.evidence_slope_trackers: dict[str, EvidenceSlopeTracker] = {}
 
-        # Dictionary of resampling telemetry for each channel in each graph_id
-        self.resampling_telemetry: dict[str, dict[str, HypothesesUpdateTelemetry]] = {}
-
     def pre_step(self) -> None:
         """Runs once per step before updating the hypotheses.
 
@@ -408,8 +405,6 @@ class ResamplingHypothesesUpdater:
                     max_slope=self.max_slope,
                 )
             )
-
-        self.resampling_telemetry[graph_id] = resampling_telemetry
 
         # Still return prediction error.
         # TODO: make this nicer like dependent on log_level.

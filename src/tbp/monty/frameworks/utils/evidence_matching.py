@@ -86,6 +86,9 @@ class ChannelMapper:
         Raises:
             ValueError: If the channel is not found.
         """
+        if channel_name not in self.channel_sizes:
+            raise ValueError(f"Channel '{channel_name}' not found.")
+
         start = 0
         for name, size in self.channel_sizes.items():
             if name == channel_name:
@@ -228,7 +231,7 @@ class ChannelMapper:
 
         start, end = self.channel_range(channel)
 
-        if (self.channel_sizes[channel] == data.shape[0]) and original.shape[0] > end:
+        if self.channel_sizes[channel] == data.shape[0]:
             # returns a view not a copy
             original[start:end] = data
         else:

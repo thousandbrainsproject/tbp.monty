@@ -6,16 +6,12 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-import copy
 from unittest.mock import Mock
 
 import numpy as np
 import pytest
 from numpy.ma.testutils import assert_array_equal
 
-from tbp.monty.frameworks.experiments import (
-    MontySupervisedObjectPretrainingExperiment,
-)
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
     Hypotheses,
 )
@@ -36,6 +32,7 @@ import hydra
 from tbp.monty.frameworks.utils.evidence_matching import (
     ChannelMapper,
     EvidenceSlopeTracker,
+    HypothesesSelection,
     InvalidEvidenceThresholdConfig,
 )
 
@@ -55,19 +52,13 @@ class ResamplingHypothesesUpdaterTest(TestCase):
                 ],
             )
 
-    def get_resampling_updater(self):
-        train_config = copy.deepcopy(self.pretraining_configs)
-        with MontySupervisedObjectPretrainingExperiment(train_config) as train_exp:
-            train_exp.setup_experiment(train_exp.config)
-
-        return train_exp.model.learning_modules[0].hypotheses_updater
-
     def get_pretrained_resampling_lm(self):
         exp = hydra.utils.instantiate(self.cfg.test)
         with exp:
             exp.run()
 
         rlm = exp.model.learning_modules[0]
+        rlm.hypotheses_updater.sampling_burst_steps = 5
         rlm.channel_hypothesis_mapping["capsule3DSolid"] = ChannelMapper()
         rlm.hypotheses_updater.evidence_slope_trackers["capsule3DSolid"] = (
             EvidenceSlopeTracker(min_age=0)
@@ -181,10 +172,6 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         self._resampling_multiplier_maximum(rlm, pose_defined=True)
         self._resampling_multiplier_maximum(rlm, pose_defined=False)
 
-        # test existing to informed ratio
-        self._count_ratio(rlm, pose_defined=True)
-        self._count_ratio(rlm, pose_defined=False)
-
 
 class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
     def setUp(self) -> None:
@@ -199,6 +186,7 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
             tolerances={},
             evidence_threshold_config="all",
         )
+        self.updater.max_slope = 1.0
 
         hypotheses_displacer = Mock()
         hypotheses_displacer.displace_hypotheses_and_compute_evidence = Mock(
@@ -245,15 +233,9 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
         # Mock out the evidence_slope_trackers so we can control which values
         # are removed from the list of hypotheses
         tracker1 = Mock()
-        tracker1.removable_indices_mask = Mock(
-            return_value=np.ones((channel_size,), dtype=np.bool_)
-        )
-        tracker1.calculate_keep_and_remove_ids = Mock(
-            return_value=(
-                # keep_ids
-                np.array([False, True, True, False, False]),
-                # remove_ids
-                np.array([True, False, False, True, True]),
+        tracker1.select_hypotheses = Mock(
+            return_value=HypothesesSelection(
+                maintain_mask=np.array([False, True, True, False, False])
             )
         )
         self.updater.evidence_slope_trackers = {"object1": tracker1}
