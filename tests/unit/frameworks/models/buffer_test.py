@@ -92,7 +92,7 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         """Create a fresh buffer for each test."""
         self.buffer = FeatureAtLocationBuffer()
 
-    def test_get_all_features_on_object_pads_with_nans_not_zeros(self):
+    def test_get_all_features_on_object_pads_with_nans(self):
         """Test that features are padded with nans when channel array is shorter.
 
         When a channel doesn't send data at certain steps, the feature array needs
@@ -142,11 +142,11 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         # Row 2 for SM_step should be valid values (e.g., identity pose)
         self.assertFalse(np.any(np.isnan(sm_pose_vectors[1])))
 
-        # Row 2 for LM_step should be nans (not zeros)
+        # Row 2 for LM_step should be nans
         # This tests the padding is done with nan values.
         self.assertTrue(
             np.all(np.isnan(lm_pose_vectors[1])),
-            "Expected nan padding for missing step 2, but got zeros or other values",
+            "Expected nan padding for missing step 2, but got other values",
         )
 
     def test_get_all_locations_on_object_pads_and_filters_like_features(self):
