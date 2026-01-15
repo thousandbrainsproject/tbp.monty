@@ -201,6 +201,120 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
             )
 
 
+class PadToTargetLengthTest(unittest.TestCase):
+    """Tests for FeatureAtLocationBuffer._pad_to_target_length method."""
+
+    def setUp(self):
+        self.buffer = FeatureAtLocationBuffer()
+        # Add 3 steps to the buffer
+        for i in range(3):
+            state = create_mock_state(
+                sender_id="SM_0",
+                sender_type="SM",
+                location=np.array([float(i), float(i), float(i)]),
+                on_object=True,
+            )
+            self.buffer.append([state])
+
+    def test_pads_shorter_array_to_buffer_length(self):
+        # Create a 2x3 array (shorter than buffer length of 3)
+        existing = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+
+        # Pad to buffer length (should default to len(self) = 3)
+        padded = self.buffer._pad_to_target_length(existing)
+
+        # Should have 3 rows
+        self.assertEqual(padded.shape[0], 3)
+        self.assertEqual(padded.shape[1], 3)
+
+        # First 2 rows should match existing data
+        np.testing.assert_array_equal(padded[:2], existing[:2])
+
+        # Last row should be all nans
+        self.assertTrue(np.all(np.isnan(padded[2])))
+
+    def test_returns_unchanged_when_already_at_target(self):
+        # Create a 3x3 array (same length as buffer)
+        existing = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+
+        padded = self.buffer._pad_to_target_length(existing)
+        np.testing.assert_array_equal(padded, existing)
+
+    def test_returns_unchanged_when_longer_than_target(self):
+        # Create a 5x3 array (longer than buffer length of 3)
+        existing = np.array(
+            [
+                [1.0, 2.0, 3.0],
+                [4.0, 5.0, 6.0],
+                [7.0, 8.0, 9.0],
+                [10.0, 11.0, 12.0],
+                [13.0, 14.0, 15.0],
+            ]
+        )
+
+        padded = self.buffer._pad_to_target_length(existing)
+        np.testing.assert_array_equal(padded, existing)
+
+    def test_pads_with_explicit_target_length(self):
+        # Create a 2x3 array
+        existing = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+
+        # Pad to explicit target length of 5
+        padded = self.buffer._pad_to_target_length(existing, target_length=5)
+
+        # Should have 5 rows (padded from 2 to 5)
+        self.assertEqual(padded.shape[0], 5)
+
+        # Columns should not have changed (i.e., 3)
+        self.assertEqual(padded.shape[1], 3)
+
+        # First 2 rows should match existing data
+        np.testing.assert_array_equal(padded[:2], existing[:2])
+
+        # Last 3 rows should be all nans
+        self.assertTrue(np.all(np.isnan(padded[2:, :])))
+
+    def test_pads_empty_array_with_explicit_new_val_len(self):
+        # Create an empty array
+        existing = np.empty((0, 0))
+
+        # Pad with explicit new_val_len
+        padded = self.buffer._pad_to_target_length(
+            existing, target_length=3, new_val_len=5
+        )
+
+        # Rows padded to 3
+        self.assertEqual(padded.shape[0], 3)
+
+        # Columns extended to `new_val_len=5`
+        self.assertEqual(padded.shape[1], 5)
+
+        # All values should be nan
+        self.assertTrue(np.all(np.isnan(padded)))
+
+    def test_raises_error_for_empty_array_without_new_val_len(self):
+        # Create an empty array
+        existing = np.empty((0, 0))
+
+        # Should raise ValueError when new_val_len is not provided
+        with self.assertRaises(ValueError) as context:
+            self.buffer._pad_to_target_length(existing)
+
+        self.assertIn("Cannot infer width from empty array", str(context.exception))
+
+    def test_raises_error_for_column_dimension_mismatch(self):
+        # Create a 2x3 array
+        existing = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+
+        # Should raise ValueError when new_val_len conflicts with existing width
+        with self.assertRaises(ValueError) as context:
+            self.buffer._pad_to_target_length(existing, target_length=4, new_val_len=5)
+
+        self.assertIn("Column dimension mismatch", str(context.exception))
+        self.assertIn("has 3 columns", str(context.exception))
+        self.assertIn("new_val_len=5", str(context.exception))
+
+
 class BufferEncoderTest(unittest.TestCase):
     def setUp(self):
         """Ensure BufferEncoder does not contain any encoders created during tests."""
