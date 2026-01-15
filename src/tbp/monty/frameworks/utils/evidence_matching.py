@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -9,8 +9,6 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from dataclasses import dataclass
-from typing import OrderedDict as OrderedDictType
 
 import numpy as np
 import numpy.typing as npt
@@ -40,7 +38,7 @@ class ChannelMapper:
         Args:
             channel_sizes: Dictionary of {channel_name: size}.
         """
-        self.channel_sizes: OrderedDictType[str, int] = (
+        self.channel_sizes: OrderedDict[str, int] = (
             OrderedDict(channel_sizes) if channel_sizes else OrderedDict()
         )
 
@@ -88,9 +86,6 @@ class ChannelMapper:
         Raises:
             ValueError: If the channel is not found.
         """
-        if channel_name not in self.channel_sizes:
-            raise ValueError(f"Channel '{channel_name}' not found.")
-
         start = 0
         for name, size in self.channel_sizes.items():
             if name == channel_name:
@@ -195,6 +190,7 @@ class ChannelMapper:
             evidence=self.extract(hypotheses.evidence, channel),
             locations=self.extract(hypotheses.locations, channel),
             poses=self.extract(hypotheses.poses, channel),
+            possible=self.extract(hypotheses.possible, channel),
         )
 
     def update(
@@ -609,7 +605,7 @@ def evidence_update_threshold(
     if evidence_all_channels.size == 0:
         return 0.0
 
-    if type(evidence_threshold_config) in [int, float]:
+    if isinstance(evidence_threshold_config, (int, float)):
         return evidence_threshold_config
 
     if evidence_threshold_config == "mean":
@@ -630,7 +626,7 @@ def evidence_update_threshold(
         return max_global_evidence - x_percent_of_max
 
     if evidence_threshold_config == "x_percent_threshold":
-        x_percent_of_max = max_global_evidence / 100 * x_percent_threshold
+        x_percent_of_max = max_global_evidence / 100 * float(x_percent_threshold)
         return max_global_evidence - x_percent_of_max
 
     if evidence_threshold_config == "all":
@@ -641,20 +637,6 @@ def evidence_update_threshold(
         "[int, float, '[int]%', 'mean', "
         "'median', 'all', 'x_percent_threshold']"
     )
-
-
-@dataclass
-class ConsistentHypothesesIds:
-    """Contains hypotheses ids for symmetry detection.
-
-    These ids will be updated when using the `ResamplingHypothesesUpdater`.
-    The update makes sure the ids are consistent across matching steps despite
-    resizing of hypothesis spaces.
-    """
-
-    hypotheses_ids: npt.NDArray[np.int_]
-    channel_sizes: OrderedDictType[str, int]
-    graph_id: str
 
 
 class InvalidEvidenceThresholdConfig(ValueError):

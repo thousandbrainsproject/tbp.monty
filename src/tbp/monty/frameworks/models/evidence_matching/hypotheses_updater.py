@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -35,10 +35,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
     HypothesisDisplacerTelemetry,
 )
-from tbp.monty.frameworks.utils.evidence_matching import (
-    ChannelMapper,
-    ConsistentHypothesesIds,
-)
+from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_initial_possible_poses,
     possible_sensed_directions,
@@ -79,7 +76,7 @@ class HypothesesUpdater(Protocol):
         graph_id: str,
         mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry, float]:
+    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Args:
@@ -93,19 +90,6 @@ class HypothesesUpdater(Protocol):
 
         Returns:
             The list of channel hypotheses updates to be applied.
-        """
-        ...
-
-    def remap_hypotheses_ids_to_present(
-        self, hypotheses_ids: ConsistentHypothesesIds
-    ) -> ConsistentHypothesesIds:
-        """Update hypotheses ids based on resizing of hypothesis space.
-
-        Args:
-            hypotheses_ids: Hypotheses ids to be updated
-
-        Returns:
-            The list of the updated hypotheses ids.
         """
         ...
 
@@ -231,7 +215,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         graph_id: str,
         mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry, float]:
+    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Updates existing hypothesis space or initializes a new hypothesis space
@@ -265,7 +249,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 f"No input channels observed for {graph_id} that are stored in the "
                 "model. Not updating evidence."
             )
-            return []
+            return [], {}
 
         hypotheses_updates = []
         telemetry: dict[str, Any] = {}
@@ -436,28 +420,17 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             evidence = np.array(nwmf_stacked) * self.feature_evidence_increment
         else:
             evidence = np.zeros(initial_possible_channel_rotations.shape[0])
+
+        # New hypotheses cannot be possible
+        initial_possible_hyps = np.zeros_like(evidence, dtype=np.bool_)
+
         return ChannelHypotheses(
             input_channel=input_channel,
             evidence=evidence,
             locations=initial_possible_channel_locations,
             poses=initial_possible_channel_rotations,
+            possible=initial_possible_hyps,
         )
-
-    def remap_hypotheses_ids_to_present(
-        self, hypotheses_ids: ConsistentHypothesesIds
-    ) -> ConsistentHypothesesIds:
-        """Update hypotheses ids based on resizing of hypothesis space.
-
-        We do not resize the hypotheses space when using `DefaultHypothesesUpdater`,
-        therefore, we return the same ids without update.
-
-        Args:
-            hypotheses_ids: Hypotheses ids to be updated
-
-        Returns:
-            The list of the updated hypotheses ids.
-        """
-        return hypotheses_ids
 
 
 def all_usable_input_channels(

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -31,11 +31,6 @@ class MotorSystem:
         """
         self._policy = policy
         self._state = state
-
-    @property
-    def last_action(self) -> Action:
-        """Returns the last action taken by the motor system."""
-        return self._policy.last_action
 
     def post_episode(self) -> None:
         """Post episode hook."""

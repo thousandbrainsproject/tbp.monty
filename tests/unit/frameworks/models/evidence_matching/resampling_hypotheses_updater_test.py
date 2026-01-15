@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -6,9 +6,22 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from collections import OrderedDict
+import copy
+from unittest.mock import Mock
 
+import numpy as np
 import pytest
+from numpy.ma.testutils import assert_array_equal
+
+from tbp.monty.frameworks.experiments import (
+    MontySupervisedObjectPretrainingExperiment,
+)
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
+    Hypotheses,
+)
+from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (  # noqa: E501
+    ResamplingHypothesesUpdater,
+)
 
 pytest.importorskip(
     "habitat_sim",
@@ -22,17 +35,9 @@ import hydra
 
 from tbp.monty.frameworks.utils.evidence_matching import (
     ChannelMapper,
-    ConsistentHypothesesIds,
     EvidenceSlopeTracker,
+    InvalidEvidenceThresholdConfig,
 )
-
-
-def make_consistent_ids(graph_id, sizes, ids):
-    return ConsistentHypothesesIds(
-        graph_id=graph_id,
-        channel_sizes=OrderedDict(sizes),
-        hypotheses_ids=np.asarray(ids, dtype=np.int64),
-    )
 
 
 class ResamplingHypothesesUpdaterTest(TestCase):
@@ -176,144 +181,92 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         self._resampling_multiplier_maximum(rlm, pose_defined=True)
         self._resampling_multiplier_maximum(rlm, pose_defined=False)
 
-    def _single_channel_no_changes(self, updater):
-        updater.resampling_telemetry = {
-            "mug": {"patch": {"removed_ids": [], "added_ids": []}}
-        }
-        hyp_ids = make_consistent_ids(
-            graph_id="mug", sizes=[("patch", 5)], ids=[0, 1, 3, 4]
+        # test existing to informed ratio
+        self._count_ratio(rlm, pose_defined=True)
+        self._count_ratio(rlm, pose_defined=False)
+
+
+class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
+    def setUp(self) -> None:
+        # We'll add specific mocked functions for the graph memory in
+        # individual tests, since they'll change from test to test.
+        self.mock_graph_memory = Mock()
+
+        self.updater = ResamplingHypothesesUpdater(
+            feature_weights={},
+            graph_memory=self.mock_graph_memory,
+            max_match_distance=0,
+            tolerances={},
+            evidence_threshold_config="all",
         )
 
-        hyp_ids = updater.remap_hypotheses_ids_to_present(hyp_ids)
-        np.testing.assert_array_equal(hyp_ids.hypotheses_ids, np.array([0, 1, 3, 4]))
-
-    def _single_channel_with_removals_shifts(self, updater):
-        updater.resampling_telemetry = {
-            "mug": {"patch": {"removed_ids": [1, 4, 6], "added_ids": []}}
-        }
-        hyp_ids = make_consistent_ids(
-            graph_id="mug", sizes=[("patch", 8)], ids=[0, 2, 3, 5, 7]
+        hypotheses_displacer = Mock()
+        hypotheses_displacer.displace_hypotheses_and_compute_evidence = Mock(
+            # Have the displacer return the given hypotheses without displacement
+            # since we're not testing that.
+            side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
         )
-        hyp_ids = updater.remap_hypotheses_ids_to_present(hyp_ids)
+        self.updater.hypotheses_displacer = hypotheses_displacer
 
-        # Shift per searchsorted([1,4,6], x, 'left'): 0->0, 2->1, 3->1, 5->2, 7->3
-        # new locals after shifting:  [0,1,2,3,4]
-        np.testing.assert_array_equal(hyp_ids.hypotheses_ids, np.array([0, 1, 2, 3, 4]))
+    def test_init_fails_when_passed_invalid_evidence_threshold_config(self) -> None:
+        """Test that the updater only accepts "all" for evidence_threshold_config."""
+        with self.assertRaises(InvalidEvidenceThresholdConfig):
+            ResamplingHypothesesUpdater(
+                feature_weights={},
+                graph_memory=self.mock_graph_memory,
+                max_match_distance=0,
+                tolerances={},
+                evidence_threshold_config="invalid",  # type: ignore[arg-type]
+            )
 
-    def _single_channel_full_remap_misses_added(self, updater):
-        """Tests that added ids do not show up in remapping.
+    def test_update_hypotheses_ids_map_correctly(self) -> None:
+        """Test that hypotheses ids map correctly when some are deleted."""
+        channel_size = 5
 
-        The remapping function finds the mapping between ids from the previous step
-        to the current time step. The added_ids did not exist in previous steps,
-        therefore should not appear in the mapping.
-        """
-        added_ids = [5, 6]
-
-        updater.resampling_telemetry = {
-            "mug": {"patch": {"removed_ids": [], "added_ids": added_ids}}
-        }
-        hyp_ids = make_consistent_ids(
-            graph_id="mug", sizes=[("patch", 5)], ids=list(range(5))
+        hypotheses = Hypotheses(
+            # Give each evidence a unique value so we can track which values are
+            # remaining in the returned hypotheses
+            evidence=np.array(range(channel_size)),
+            locations=np.zeros((channel_size, 3)),
+            poses=np.zeros((channel_size, 3, 3)),
+            # We're going to keep the second and third elements, so set
+            # them to some values we can test later, True and False, respectively.
+            possible=np.array([False, True, False, False, False]),
         )
-        hyp_ids = updater.remap_hypotheses_ids_to_present(hyp_ids)
 
-        # In patch0: locals ids = [0,1,2,3,4]; removed = []; shift = [0,0,0,0,0].
-        # So [0,1,2,3,4] becomes [0,1,2,3,4]
-        np.testing.assert_array_equal(hyp_ids.hypotheses_ids, np.array([0, 1, 2, 3, 4]))
-
-        # Added ids should NOT appear in the remapped ids
-        self.assertFalse(np.isin(added_ids, hyp_ids.hypotheses_ids).any())
-
-    def _multi_channel_rebase_due_to_resizing(self, updater):
-        updater.resampling_telemetry = {
-            "mug": {
-                "patch0": {"removed_ids": [1, 3], "added_ids": [5, 6]},
-                "patch1": {"removed_ids": [2], "added_ids": [4]},
-            }
-        }
-        hyp_ids = make_consistent_ids(
-            graph_id="mug", sizes=[("patch0", 5), ("patch1", 4)], ids=[0, 2, 4, 5, 7]
+        # Add graph memory mock methods
+        self.mock_graph_memory.get_input_channels_in_graph = Mock(
+            return_value=["patch1"]
         )
-        hyp_ids = updater.remap_hypotheses_ids_to_present(hyp_ids)
-
-        # In patch0: locals ids = [0,2,4]; removed = [1,3]; shift = [0,1,2].
-        # So [0, 2, 4] becomes [0, 1, 2]
-
-        # new bases are the same since patch0 removed 2 and added 2.
-        # So new_bases = [0,5]
-
-        # In patch1: locals ids = [0,2]; removed = [2]; new base = 5
-        # So [5, 7] becomes [5]
-        np.testing.assert_array_equal(hyp_ids.hypotheses_ids, np.array([0, 1, 2, 5]))
-
-    def _rebase_when_first_channel_shrinks(self, updater):
-        updater.resampling_telemetry = {
-            "mug": {
-                "patch0": {"removed_ids": [1, 3], "added_ids": []},  # shrink by 2
-                "patch1": {"removed_ids": [], "added_ids": []},
-            }
-        }
-        hyp_ids = make_consistent_ids(
-            graph_id="mug",
-            sizes=[("patch0", 5), ("patch1", 4)],
-            ids=[0, 2, 4, 5, 7],
+        self.mock_graph_memory.get_locations_in_graph = Mock(
+            return_value=np.zeros((channel_size, 3))
         )
-        hyp_ids = updater.remap_hypotheses_ids_to_present(hyp_ids)
 
-        # In patch0: local = [0,2,4]; removed = [1,3]; shifts = [0,1,2]
-        # So [0,2,4] becomes [0,1,2]
-
-        # New bases: [0,3] so patch1 base is 3 (not 5)
-
-        # In patch 1: locals = [0,2]
-        # So [5,7] becomes [3,5]
-        np.testing.assert_array_equal(hyp_ids.hypotheses_ids, np.array([0, 1, 2, 3, 5]))
-
-    def _rebase_when_first_channel_grows(self, updater):
-        updater.resampling_telemetry = {
-            "mug": {
-                "patch0": {"removed_ids": [], "added_ids": [5, 6]},  # grow by 2
-                "patch1": {"removed_ids": [], "added_ids": []},
-            }
-        }
-        hyp_ids = make_consistent_ids(
-            graph_id="mug",
-            sizes=[("patch0", 5), ("patch1", 4)],
-            ids=[0, 4, 5, 6, 8],
+        # Mock out the evidence_slope_trackers so we can control which values
+        # are removed from the list of hypotheses
+        tracker1 = Mock()
+        tracker1.removable_indices_mask = Mock(
+            return_value=np.ones((channel_size,), dtype=np.bool_)
         )
-        out = updater.remap_hypotheses_ids_to_present(hyp_ids)
-
-        # In patch0: local = [0,4]; added = [5,6]; No shifts
-        # So [0,4] becomes [0,4]
-
-        # New bases: [0,7]
-
-        # In patch 1: locals = [0,2,4]
-        # So [0,1,3] becomes [7,8,10]
-        np.testing.assert_array_equal(out.hypotheses_ids, np.array([0, 4, 7, 8, 10]))
-
-    def _all_ids_removed_in_a_channel(self, updater):
-        updater.resampling_telemetry = {
-            "mug": {
-                "patch0": {"removed_ids": [0, 1, 2], "added_ids": []},
-                "patch1": {"removed_ids": [], "added_ids": []},
-            }
-        }
-        hyp_ids = make_consistent_ids(
-            graph_id="mug", sizes=[("patch0", 3), ("patch1", 3)], ids=[0, 1, 2, 3, 4, 5]
+        tracker1.calculate_keep_and_remove_ids = Mock(
+            return_value=(
+                # keep_ids
+                np.array([False, True, True, False, False]),
+                # remove_ids
+                np.array([True, False, False, True, True]),
+            )
         )
-        hyp_ids = updater.remap_hypotheses_ids_to_present(hyp_ids)
+        self.updater.evidence_slope_trackers = {"object1": tracker1}
 
-        # Removed [0, 1, 2], so [3, 4, 5] was rebased to [0, 1, 2]
-        np.testing.assert_array_equal(hyp_ids.hypotheses_ids, np.array([0, 1, 2]))
+        mapper = ChannelMapper(channel_sizes={"patch1": channel_size})
+        channel_hyps, _ = self.updater.update_hypotheses(
+            hypotheses=hypotheses,
+            features={"patch1": {"pose_fully_defined": True}},
+            displacements={"patch1": None},
+            graph_id="object1",
+            mapper=mapper,
+            evidence_update_threshold=0,
+        )
 
-    def test_remap_hypotheses_ids(self):
-        updater = self.get_resampling_updater()
-
-        self._single_channel_no_changes(updater)
-        self._single_channel_with_removals_shifts(updater)
-        self._single_channel_full_remap_misses_added(updater)
-        self._multi_channel_rebase_due_to_resizing(updater)
-        self._rebase_when_first_channel_shrinks(updater)
-        self._rebase_when_first_channel_grows(updater)
-        self._all_ids_removed_in_a_channel(updater)
+        assert_array_equal(channel_hyps[0].possible, np.array([True, False]))
+        assert_array_equal(channel_hyps[0].evidence, np.array([1, 2]))

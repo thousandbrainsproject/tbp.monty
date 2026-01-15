@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
 import numpy as np
@@ -42,7 +42,6 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
 )
 from tbp.monty.frameworks.utils.evidence_matching import (
     ChannelMapper,
-    ConsistentHypothesesIds,
     EvidenceSlopeTracker,
     HypothesesSelection,
     InvalidEvidenceThresholdConfig,
@@ -383,6 +382,9 @@ class ResamplingHypothesesUpdater:
                 evidence=np.hstack(
                     [existing_hypotheses.evidence, informed_hypotheses.evidence]
                 ),
+                possible=np.hstack(
+                    [existing_hypotheses.possible, informed_hypotheses.possible]
+                ),
             )
             hypotheses_updates.append(channel_hypotheses)
 
@@ -545,6 +547,7 @@ class ResamplingHypothesesUpdater:
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
                 evidence=np.zeros(0),
+                possible=np.zeros(0, dtype=np.bool_),
             )
 
         # Update tracker by removing the remove_ids
@@ -556,6 +559,7 @@ class ResamplingHypothesesUpdater:
             locations=channel_hypotheses.locations[maintain_ids],
             poses=channel_hypotheses.poses[maintain_ids],
             evidence=channel_hypotheses.evidence[maintain_ids],
+            possible=channel_hypotheses.possible[maintain_ids],
         )
 
     def _sample_informed(
@@ -606,6 +610,7 @@ class ResamplingHypothesesUpdater:
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
                 evidence=np.zeros(0),
+                possible=np.zeros(0, dtype=np.bool_),
             )
 
         num_hyps_per_node = self._num_hyps_per_node(channel_features)
@@ -683,6 +688,9 @@ class ResamplingHypothesesUpdater:
                 ]
             )
 
+        # newly sampled hypotheses cannot be possible
+        possible_hyp = np.zeros_like(selected_feature_evidence, dtype=np.bool_)
+
         # Add hypotheses to slope trackers
         tracker.add_hyp(selected_feature_evidence.shape[0], input_channel)
 
@@ -691,97 +699,8 @@ class ResamplingHypothesesUpdater:
             locations=selected_locations,
             poses=selected_rotations,
             evidence=selected_feature_evidence,
+            possible=possible_hyp,
         )
-
-    def remap_hypotheses_ids_to_present(
-        self,
-        hypotheses_ids: ConsistentHypothesesIds,
-    ) -> ConsistentHypothesesIds:
-        """Update hypotheses ids based on resizing of hypothesis space.
-
-        This function will receive hypotheses ids in a hypothesis space from
-        the previous timestep and find the ids of those same hypotheses in the
-        current hypothesis space (i.e. after resizing).
-
-        Within a single channel, we only need the `removed_ids` to shift the
-        `hypotheses_ids`. This is because `added_ids` are appended to the end
-        of the channel. However, when dealing with multiple stacked channels,
-        the resizing of one channel affects the subsequent channels.
-
-        We perform two main operations here:
-        - Channel rebasing: This takes care of the full channel shift that is needed
-            due to resizing of preceding channels. This is done by changing the
-            starting index of the whole channel.
-        - Channel-specific id shifting: This uses the `removed_ids` to shift the ids
-            within the channel itself.
-
-        Note that we do not remap the full hypothesis space, we only remap
-        a selection of hypotheses ids (defined using `ConsistentHypothesesIds`).
-        To remap the full hypothesis space, `hypotheses_ids` should contain all of
-        the ids in the hypothesis space.
-
-        Args:
-            hypotheses_ids: Previous timestep hypotheses ids to be updated
-
-        Returns:
-            The list of the updated hypotheses ids in the current timestep/hypothesis
-                space.
-        """
-        # Exit if no hypotheses_ids or no telemetry for this graph
-        if (
-            hypotheses_ids is None
-            or hypotheses_ids.graph_id not in self.resampling_telemetry
-            or not len(hypotheses_ids.channel_sizes)
-        ):
-            return hypotheses_ids
-
-        telemetry = self.resampling_telemetry[hypotheses_ids.graph_id]
-        ids = np.asarray(hypotheses_ids.hypotheses_ids, dtype=np.int64)
-        names, sizes = zip(*hypotheses_ids.channel_sizes.items())
-        sizes = np.asarray(sizes, dtype=np.int64)
-        starts = np.r_[0, np.cumsum(sizes)[:-1]]
-
-        # Collect removed and added counts per channel for "rebasing" ids
-        # Note that rebasing ids is important to cancel out the id shift
-        # effect of `added_ids` in preceding channels.
-        removed_map = {}
-        rem_counts, add_counts = [], []
-        for name in names:
-            removed_ids = np.asarray(telemetry[name]["removed_ids"], np.int64)
-            removed_map[name] = np.sort(removed_ids)
-            rem_counts.append(removed_ids.size)
-            add_counts.append(len(telemetry[name]["added_ids"]))
-        rem_counts = np.asarray(rem_counts, dtype=np.int64)
-        add_counts = np.asarray(add_counts, dtype=np.int64)
-
-        # Calculate the new bases of all channels after deletions and appended additions
-        new_lens = sizes - rem_counts + add_counts
-        new_bases = np.r_[0, np.cumsum(new_lens)[:-1]]
-
-        out = []
-        for name, start, size, new_base in zip(names, starts, sizes, new_bases):
-            # Pick only the ids that belong to this channel's original span
-            channel_mask = (ids >= start) & (ids < start + size)
-            if not channel_mask.any():
-                continue
-
-            # Convert from global to channel-local indices
-            local = ids[channel_mask] - start
-            channel_removed_ids = removed_map[name]
-
-            if channel_removed_ids.size:
-                # Drop removed ids
-                keep_mask = ~np.isin(local, channel_removed_ids)
-                if keep_mask.any():
-                    keep_ids = local[keep_mask]
-                    # Shift non-dropped ids left by how many removed indices are less
-                    shift = np.searchsorted(channel_removed_ids, keep_ids, side="left")
-                    out.append(new_base + (keep_ids - shift))  # Rebase and shift ids
-            else:
-                out.append(new_base + local)  # Only rebase ids
-
-        new_ids = np.concatenate(out) if out else np.empty(0, dtype=np.int64)
-        return replace(hypotheses_ids, hypotheses_ids=new_ids)
 
     def _max_global_slope(self) -> float:
         """Compute the maximum slope over all objects and channels.
