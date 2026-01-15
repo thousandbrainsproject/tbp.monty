@@ -57,9 +57,7 @@ POSSIBLE_ACTIONS_DIST = [
     f"{AGENT_ID}.turn_right",
 ]
 POSSIBLE_ACTIONS_ABS = [f"{AGENT_ID}.set_yaw", f"{AGENT_ID}.set_sensor_pitch"]
-EXPECTED_STATES: npt.NDArray[np.uint8] = np.random.randint(
-    0, 256, size=NUM_STEPS, dtype=np.uint8
-)
+EXPECTED_STATES: npt.NDArray[np.uint8] = np.arange(0, NUM_STEPS, dtype=np.uint8)
 
 
 class FakeEnvironmentRel(EmbodiedEnvironment):
