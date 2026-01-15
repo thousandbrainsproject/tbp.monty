@@ -11,6 +11,9 @@ on:
   pull_request:
     branches:
       - main
+  merge_group:
+    types:
+      - checks_requested
 
 jobs:
   check_docs:
@@ -102,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     outputs:
-      should_run_docs: ${{ steps.should_run.outputs.should_run_docs }}
+      should_run_docs: ${{ steps.should_run_docs.outputs.should_run_docs }}
     steps:
       - name: Checkout tbp.monty
         uses: actions/checkout@v4
@@ -110,43 +113,11 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
-      - name: Filter by path for a pull request
-        if: ${{ github.event_name == 'pull_request' }}
-        id: filter_by_path_pr
-        working-directory: tbp.monty
-        run: |
-          git diff --name-only origin/${{ github.base_ref }} > changed_files.txt
-          while IFS= read -r changed_file
-          do
-            echo $changed_file
-            if [[ $changed_file == .github/workflows/docs.yml ]] ||
-               [[ $changed_file == docs/* ]] ||
-               [[ $changed_file == rfcs/* ]] ||
-               [[ $changed_file == src/tbp/monty/__init__.py ]] ||
-               [[ $changed_file == tools/github_readme_sync/* ]]; then
-              echo "should_run_docs=true" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-          done < changed_files.txt
-      - name: Filter by path for a push
-        if: ${{ github.event_name == 'push' }}
-        id: filter_by_path_push
-        working-directory: tbp.monty
-        run: |
-          git diff --name-only ${{ github.sha }}^1 > changed_files.txt
-          while IFS= read -r changed_file
-          do
-            echo $changed_file
-            if [[ $changed_file == .github/workflows/docs.yml ]] ||
-               [[ $changed_file == docs/* ]] ||
-               [[ $changed_file == rfcs/* ]] ||
-               [[ $changed_file == src/tbp/monty/__init__.py ]] ||
-               [[ $changed_file == tools/github_readme_sync/* ]]; then
-              echo "should_run_docs=true" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-          done < changed_files.txt
-      - name: Should run
-        id: should_run
-        if: ${{ steps.filter_by_path_pr.outputs.should_run_docs == 'true' || steps.filter_by_path_push.outputs.should_run_docs == 'true'}}
-        run: echo "should_run_docs=true" >> $GITHUB_OUTPUT
+      - name: Should Run Docs
+        id: should_run_docs
+        uses: ./tbp.monty/.github/actions/should_run_docs
+        with:
+          git_base_ref: ${{ github.base_ref }}
+          git_sha: ${{ github.event.merge_group.head_sha || github.sha }}
+          github_event_name: ${{ github.event_name }}
+          working_directory: tbp.monty

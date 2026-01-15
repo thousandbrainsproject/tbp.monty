@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -469,7 +469,7 @@ def find_step_on_new_object(
 
 def possible_sensed_directions(
     sensed_directions: np.ndarray, num_hyps_per_node: int
-) -> np.ndarray:
+) -> list[np.ndarray]:
     """Returns the possible sensed directions for all nodes.
 
     This function determines the possible sensed directions for a given set of sensed

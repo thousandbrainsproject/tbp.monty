@@ -160,6 +160,14 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                             rotation=self.rotation,
                             position=sensor_position,
                         ),
+                        SensorID("view_finder" + ".depth"): SensorState(
+                            rotation=self.rotation,
+                            position=sensor_position,
+                        ),
+                        SensorID("view_finder" + ".rgba"): SensorState(
+                            rotation=self.rotation,
+                            position=sensor_position,
+                        ),
                     },
                     rotation=self.rotation,
                     position=np.array([0, 0, 0]),
@@ -397,6 +405,14 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                         ),
                         SensorID("patch" + ".rgba"): SensorState(
                             rotation=self.rotation, position=sensor_position
+                        ),
+                        SensorID("view_finder" + ".depth"): SensorState(
+                            rotation=self.rotation,
+                            position=sensor_position,
+                        ),
+                        SensorID("view_finder" + ".rgba"): SensorState(
+                            rotation=self.rotation,
+                            position=sensor_position,
                         ),
                     },
                     rotation=self.rotation,

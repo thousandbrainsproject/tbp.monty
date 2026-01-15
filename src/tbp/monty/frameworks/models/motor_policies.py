@@ -85,12 +85,6 @@ class MotorPolicy(abc.ABC):
         """
         pass
 
-    @property
-    @abc.abstractmethod
-    def last_action(self) -> Action:
-        """Returns the last action taken by the motor policy."""
-        pass
-
     @abc.abstractmethod
     def post_action(
         self, action: Action | None, state: MotorSystemState | None = None
@@ -305,10 +299,6 @@ class BasePolicy(MotorPolicy):
         """
         agent_state = self.get_agent_state(state)
         return agent_state.motor_only_step
-
-    @property
-    def last_action(self) -> Action:
-        return self.action
 
     def state_dict(self):
         return {"timestep": self.timestep, "episode_step": self.episode_step}
@@ -922,7 +912,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         An Action.undo of some sort would be a better solution, however it is not
         yet clear to me what to do for actions that do not support undo.
         """
-        last_action = self.last_action
+        last_action = self.action
 
         if isinstance(last_action, LookDown):
             return LookDown(
@@ -1440,7 +1430,7 @@ class SurfacePolicy(InformedPolicy):
         if not hasattr(self, "processed_observations"):
             return None
 
-        # TODO: Revert to last_action = self.last_action once TouchObject positioning
+        # TODO: Revert to last_action = self.action once TouchObject positioning
         #       procedure is implemented
         last_action = self.last_surface_policy_action
 

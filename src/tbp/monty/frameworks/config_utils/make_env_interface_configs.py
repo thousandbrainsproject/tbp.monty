@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,13 +9,15 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from typing import Literal
+
 import numpy as np
 
 
 def make_sensor_positions_on_grid(
     n_sensors: int,
     delta: float = 0.01,
-    order_by: str = "distance",
+    order_by: Literal["distance", "spiral"] = "distance",
     add_view_finder: bool = True,
 ) -> np.ndarray:
     """Generate sensor positions on a 2D grid.
@@ -113,13 +115,12 @@ def make_sensor_positions_on_grid(
                 if current_dir % 2 == 0:
                     steps += 1
 
-    indices = np.array(indices)[:n_sensors]
+    indices = indices[:n_sensors]
 
     # Convert indices to locations in agent space.
-    positions = []
-    for idx in indices:
-        positions.append((x[idx[0], idx[1]] * delta, y[idx[0], idx[1]] * delta))
-    positions = np.array(positions)
+    positions = np.array(
+        [[x[idx[0], idx[1]] * delta, y[idx[0], idx[1]] * delta] for idx in indices]
+    )
 
     # Add z-positions.
     positions = np.hstack((positions, np.zeros([positions.shape[0], 1])))

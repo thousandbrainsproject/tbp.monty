@@ -485,7 +485,7 @@ class MontyForGraphMatching(MontyBase):
 
         # TODO M clean up the below when refactoring the surface-agent policy
         if hasattr(self.motor_system._policy, "tangent_locs"):
-            last_action = self.motor_system._policy.last_action
+            last_action = self.motor_system._policy.action
 
             if last_action is not None:
                 if last_action.name == "orient_vertical":
@@ -728,7 +728,6 @@ class GraphLM(LearningModule):
         possible_matches = self.get_possible_matches()
         # no possible matches
         if len(possible_matches) == 0:
-            self.last_possible_hypotheses = None
             self.set_individual_ts("no_match")
             if (
                 self.buffer.get_num_observations_on_object() > 0
@@ -752,7 +751,6 @@ class GraphLM(LearningModule):
                 logger.info(f"{self.learning_module_id} recognized object {object_id}")
         # > 1 possible match
         else:
-            self.last_possible_hypotheses = None
             logger.info(f"{self.learning_module_id} did not recognize an object yet.")
         return self.terminal_state
 
