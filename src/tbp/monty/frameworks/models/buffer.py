@@ -16,6 +16,7 @@ import time
 from typing import Any, Callable, ClassVar
 
 import numpy as np
+import numpy.typing as npt
 import quaternion as qt
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -475,7 +476,7 @@ class FeatureAtLocationBuffer:
             # If no symmetry was detected, this will be None.
             self.stats["symmetric_rotations_ts"] = self.stats["symmetric_rotations"]
 
-    def _global_on_object_ids(self) -> np.ndarray:
+    def _global_on_object_ids(self) -> npt.NDArray[np.bool_]:
         """Get indices of steps where at least one input was on the object.
 
         Returns:
