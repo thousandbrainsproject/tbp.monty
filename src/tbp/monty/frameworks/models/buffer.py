@@ -372,7 +372,7 @@ class FeatureAtLocationBuffer:
                     f"shape {padded_feature.shape}"
                 )
                 # Get feature at each time step where the global on_object flag was
-                # True (at least one input was on object, not nescessarily this
+                # True (at least one input was on object, not necessarily this
                 # features input channel).
                 channel_features_on_object[feature] = padded_feature[
                     global_on_object_ids
