@@ -241,7 +241,7 @@ class FeatureAtLocationBuffer:
         if input_channel is None:
             # Pad each channel's locations to the full buffer length.
             # Also filter locations by global on_object.
-            global_on_object_ids = np.where(self.on_object)[0]
+            global_on_object_ids = self._global_on_object_ids()
             result = {}
             for channel in self.locations.keys():
                 channel_locs = self.locations[channel]
@@ -348,7 +348,7 @@ class FeatureAtLocationBuffer:
         """
         all_features_on_object = {}
         # Number of steps where at least one input was on the object
-        global_on_object_ids = np.where(self.on_object)[0]
+        global_on_object_ids = self._global_on_object_ids()
         logger.debug(
             f"Observed {np.array(self.locations).shape} locations, "
             f"{len(global_on_object_ids)} global on object"
@@ -480,6 +480,14 @@ class FeatureAtLocationBuffer:
             self.stats["individual_ts_rot"] = self.stats["detected_rotation_quat"]
             # If no symmetry was detected, this will be None.
             self.stats["symmetric_rotations_ts"] = self.stats["symmetric_rotations"]
+
+    def _global_on_object_ids(self) -> np.ndarray:
+        """Get indices of steps where at least one input was on the object.
+
+        Returns:
+            Array of indices where self.on_object is True.
+        """
+        return np.where(self.on_object)[0]
 
     def _add_attr_to_feature_buffer(self, input_channel, attr_name, attr_value):
         """Add attribute to feature buffer.
