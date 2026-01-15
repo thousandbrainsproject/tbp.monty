@@ -20,7 +20,7 @@ A fresh Linux installation is recommended for Monty. If desired, you may attempt
 Regarding the Linux distribution, [Ubuntu 24.04 LTS](https://apps.microsoft.com/detail/9nz3klhxdjp5) is recommended. Once installed, its filesystem can directly be accessed via the "Linux" section in the Windows File Explorer, which should normally point to `\\wsl.localhost\Ubuntu-24.04\` or `\\wsl$\Ubuntu-24.04\` 
 
 > [!NOTE]
-> If you plan on using Git for Windows on the WSL filesystem, enter this command on Windows in PowerShell or CMD or Git Bash:
+> If you plan on using Git for Windows on the WSL filesystem, Git might return an error saying `unsafe repository (\\wsl... is owned by someone else)` since it's a network share, which you can bypass by entering this command on Windows in PowerShell or CMD or Git Bash:
 > ```shell
 > git config --global --add safe.directory "*"
 > ```
@@ -193,7 +193,7 @@ Still from Ubuntu, enter this to launch VS Code with Monty:
 cd ~/tbp && code .
 ```
 
-The `code .` command launches both VS Code for Windows and the Linux VS Code Server directly into the active WSL folder.
+The `code .` command launches both VS Code for Windows and the Linux VS Code Server directly into WSL's current directory.
 
 
 # 7. Run unit tests and a benchmark
