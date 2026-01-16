@@ -699,11 +699,13 @@ class EvidenceGraphLM(GraphLM):
             return possible_object_hypotheses_ids
         return np.empty((0,), dtype=np.int64)
 
-    def get_evidence_for_each_graph(self):
+    def get_evidence_for_each_graph(
+        self,
+    ) -> tuple[list[str], npt.NDArray[np.float64]]:
         """Return maximum evidence count for a pose on each graph."""
         graph_ids = self.get_all_known_object_ids()
         if graph_ids[0] not in self.evidence.keys():
-            return ["patch_off_object"], [0]
+            return ["patch_off_object"], np.array([0])
 
         available_graph_ids = []
         available_graph_evidences = []
