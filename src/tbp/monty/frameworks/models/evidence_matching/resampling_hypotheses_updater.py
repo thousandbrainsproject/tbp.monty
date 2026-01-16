@@ -706,7 +706,7 @@ class ResamplingHypothesesUpdater:
         """Compute the maximum slope over all objects and channels.
 
         Returns:
-            The maximum global slope if finitie, otherwise float("nan")
+            The maximum global slope if finite, otherwise float("nan")
         """
         max_slope = float("-inf")
 
