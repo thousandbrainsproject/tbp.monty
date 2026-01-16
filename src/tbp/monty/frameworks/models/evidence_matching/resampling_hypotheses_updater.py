@@ -520,7 +520,7 @@ class ResamplingHypothesesUpdater:
         input_channel: str,
         mapper: ChannelMapper,
         tracker: EvidenceSlopeTracker,
-    ) -> tuple[ChannelHypotheses, npt.NDArray[np.int_]]:
+    ) -> ChannelHypotheses:
         """Samples the specified number of existing hypotheses to retain.
 
         Args:
@@ -533,8 +533,7 @@ class ResamplingHypothesesUpdater:
                 graph_id
 
         Returns:
-            A tuple of sampled existing hypotheses and the IDs of the hypotheses to
-            remove.
+            The sampled existing hypotheses.
         """
         maintain_ids = hypotheses_selection.maintain_ids
 
