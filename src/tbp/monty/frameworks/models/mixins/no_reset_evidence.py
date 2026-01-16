@@ -145,10 +145,6 @@ class TheoreticalLimitLMLoggingMixin:
         mapper = self.channel_hypothesis_mapping[graph_id]
 
         if input_channel not in mapper.channels:
-            channel_evidence = np.empty(shape=(0,), dtype=np.float64)
-            channel_rotations_inv = np.empty(shape=(0, 3, 3), dtype=np.float64)
-            channel_locations = np.empty(shape=(0, 3), dtype=np.float64)
-
             return HypothesesUpdaterChannelTelemetry(
                 hypotheses_updater=channel_telemetry.copy(),
                 evidence=np.empty(shape=(0,), dtype=np.float64),
