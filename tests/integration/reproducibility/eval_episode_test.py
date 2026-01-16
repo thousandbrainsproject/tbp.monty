@@ -123,9 +123,6 @@ class EvalEpisodeTest(unittest.TestCase):
             self.training_config = hydra_config(
                 "reproducibility_supervised_training",
                 self.output_dir,
-                # Note: Since training episodes are not reproducible between run.py and
-                #       run_parallel.py, we must use the same fixed actions for both the
-                #       serial and parallel runs to get the same training results.
                 fixed_actions_path=(
                     Path(__file__).parent / "supervised_training_actions.jsonl"
                 ),

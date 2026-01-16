@@ -290,7 +290,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 # but still have an overall performance of correct (or other).
                 episode_performance = p
 
-        if episode_performance is not None:
+        if episode_performance:
             for p in self.performance_options:
                 stats[f"episode_{p}"] = int(p == episode_performance)
                 stats[f"num_{p}"] += int(p == episode_performance)
