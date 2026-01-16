@@ -38,22 +38,23 @@ from tbp.monty.frameworks.utils.evidence_matching import (
 
 
 class ResamplingHypothesesUpdaterTest(TestCase):
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Runs once for all tests in this class."""
+        super().setUpClass()
 
-        self.output_dir = tempfile.mkdtemp()
+        cls.output_dir = tempfile.mkdtemp()
 
         with hydra.initialize(version_base=None, config_path="../../../../../conf"):
-            self.cfg = hydra.compose(
+            cls.cfg = hydra.compose(
                 config_name="test",
                 overrides=[
                     "test=frameworks/models/evidence_matching/resampling_hypothese_updater",
-                    f"test.config.logging.output_dir={self.output_dir}",
+                    f"test.config.logging.output_dir={cls.output_dir}",
                 ],
             )
 
-    def get_pretrained_resampling_lm(self):
-        exp = hydra.utils.instantiate(self.cfg.test)
+        exp = hydra.utils.instantiate(cls.cfg.test)
         with exp:
             exp.run()
 
@@ -63,7 +64,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         rlm.hypotheses_updater.evidence_slope_trackers["capsule3DSolid"] = (
             EvidenceSlopeTracker(min_age=0)
         )
-        return rlm
+        cls.rlm = rlm
 
     def _graph_node_count(self, rlm, graph_id):
         """Returns the number of graph points on a specific graph object."""
@@ -91,36 +92,6 @@ class ResamplingHypothesesUpdaterTest(TestCase):
             mapper=rlm.channel_hypothesis_mapping[graph_id],
             tracker=rlm.hypotheses_updater.evidence_slope_trackers[graph_id],
         )
-
-    def _resampling_multiplier(self, rlm):
-        """Tests that the resampling multiplier correctly scales the hypothesis space.
-
-        The resampling multiplier parameter is used to scale the hypothesis space
-        between steps. For example, a multiplier of 2, will request to increase the
-        number of hypotheses by 2x the number of graph nodes.
-        """
-        graph_id = "capsule3DSolid"
-        pose_defined = True
-        graph_num_nodes = self._graph_node_count(rlm, graph_id)
-        before_count = graph_num_nodes * self._num_hyps_multiplier(rlm, pose_defined)
-        rlm.channel_hypothesis_mapping[graph_id].add_channel("patch", before_count)
-        rlm.hypotheses_updater.evidence_slope_trackers[graph_id].add_hyp(
-            before_count, "patch"
-        )
-        resampling_multipliers = [0.5, 1, 2]
-
-        for resampling_multiplier in resampling_multipliers:
-            _, informed_count = self.run_sample_count(
-                rlm=rlm,
-                resampling_multiplier=resampling_multiplier,
-                deletion_trigger_slope=0.0,
-                pose_defined=pose_defined,
-                graph_id=graph_id,
-            )
-            self.assertEqual(graph_num_nodes * resampling_multiplier, informed_count)
-
-        # Reset mapper
-        rlm.channel_hypothesis_mapping[graph_id] = ChannelMapper()
 
     def _resampling_multiplier_maximum(self, rlm, pose_defined):
         """Tests that the resampling multiplier respects the maximum scaling boundary.
@@ -157,20 +128,45 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         # Reset mapper
         rlm.channel_hypothesis_mapping[graph_id] = ChannelMapper()
 
-    def test_sampling_count(self):
-        """This function tests different aspects of _sample_count.
+    def test_resampling_multiplier(self):
+        """Tests that the resampling multiplier correctly scales the hypothesis space.
 
-        We define three different tests of `_sample_count`:
-            - Testing the requested count for initialization of hypotheses space
-            - Testing the resampling multiplier parameter
-            - Testing the resampling multiplier parameter maximum limit
+        The resampling multiplier parameter is used to scale the hypothesis space
+        between steps. For example, a multiplier of 2, will request to increase the
+        number of hypotheses by 2x the number of graph nodes.
         """
-        rlm = self.get_pretrained_resampling_lm()
+        graph_id = "capsule3DSolid"
+        pose_defined = True
+        graph_num_nodes = self._graph_node_count(self.rlm, graph_id)
+        before_count = graph_num_nodes * self._num_hyps_multiplier(
+            self.rlm, pose_defined
+        )
+        self.rlm.channel_hypothesis_mapping[graph_id].add_channel("patch", before_count)
+        self.rlm.hypotheses_updater.evidence_slope_trackers[graph_id].add_hyp(
+            before_count, "patch"
+        )
+        resampling_multipliers = [0.5, 1, 2]
 
-        # test count multiplier
-        self._resampling_multiplier(rlm)
-        self._resampling_multiplier_maximum(rlm, pose_defined=True)
-        self._resampling_multiplier_maximum(rlm, pose_defined=False)
+        for resampling_multiplier in resampling_multipliers:
+            _, informed_count = self.run_sample_count(
+                rlm=self.rlm,
+                resampling_multiplier=resampling_multiplier,
+                deletion_trigger_slope=0.0,
+                pose_defined=pose_defined,
+                graph_id=graph_id,
+            )
+            self.assertEqual(graph_num_nodes * resampling_multiplier, informed_count)
+
+        # Reset mapper
+        self.rlm.channel_hypothesis_mapping[graph_id] = ChannelMapper()
+
+    def test_resampling_multiplier_maximum_pose_defined(self):
+        """Test that resampling multiplier respects maximum scaling (pose defined)."""
+        self._resampling_multiplier_maximum(self.rlm, pose_defined=True)
+
+    def test_resampling_multiplier_maximum_pose_undefined(self):
+        """Test that resampling multiplier respects maximum scaling (pose undefined)."""
+        self._resampling_multiplier_maximum(self.rlm, pose_defined=False)
 
 
 class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
