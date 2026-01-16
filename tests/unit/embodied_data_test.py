@@ -65,10 +65,17 @@ class FakeEnvironmentRel(SimulatedObjectEnvironment):
     def __init__(self):
         self._current_state = 0
 
-    def add_object(self, *_, **__) -> ObjectID:
+    def add_object(
+        self,
+        *args,  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
+    ) -> ObjectID:
         return ObjectID(-1)
 
-    def step(self, _) -> tuple[Observations, ProprioceptiveState]:
+    def step(
+        self,
+        actions,  # noqa: ARG002
+    ) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
         obs = Observations(
             {

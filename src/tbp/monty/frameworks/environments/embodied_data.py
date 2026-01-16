@@ -74,7 +74,7 @@ class EnvironmentInterface:
     returned by `motor_system` is applied.
 
     Attributes:
-        env: An instance of a class that implements :class:`Environment`.
+        env: An instance of a class that implements :class:`SimulatedObjectEnvironment`.
         motor_system: :class:`MotorSystem`
         rng: Random number generator to use.
         seed: The configured random seed.
@@ -845,7 +845,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        self._observation, proprioceptive_state = self.step([])
+        self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -947,7 +947,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        self._observation, proprioceptive_state = self.step([])
+        self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -1045,7 +1045,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        self._observation, proprioceptive_state = self.step([])
+        self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )

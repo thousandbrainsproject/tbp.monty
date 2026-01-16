@@ -121,12 +121,10 @@ class ResettableEnvironment(Protocol):
         pass
 
 
-# Intersection type
 class SimulatedEnvironment(Environment, ResettableEnvironment, Protocol):
     pass
 
 
-# Intersection type
 class SimulatedObjectEnvironment(
     Environment, ObjectEnvironment, ResettableEnvironment, Protocol
 ):

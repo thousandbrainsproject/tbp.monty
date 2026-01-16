@@ -46,7 +46,6 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
 )
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.experiments.simulator import ExperimentSimulator
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
@@ -86,7 +85,7 @@ PRIMITIVE_OBJECT_TYPES = {
 }
 
 
-class HabitatSim(HabitatActuator, Simulator, ExperimentSimulator):
+class HabitatSim(HabitatActuator, Simulator):
     """Habitat-sim interface for tbp.monty.
 
     This class wraps `habitat-sim <https://aihabitat.org/docs/habitat-sim>`_
