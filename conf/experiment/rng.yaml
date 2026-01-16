@@ -1,7 +1,0 @@
-defaults:
-  - randrot_noise_10distinctobj_surf_agent
-
-config:
-  logging:
-    python_log_level: DEBUG
-    wandb_handlers: []
