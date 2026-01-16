@@ -569,7 +569,7 @@ class HypothesesSelection:
 
     def __len__(self) -> int:
         """Returns the total number of hypotheses in the selection."""
-        return int(self._maintain_mask.size)
+        return self._maintain_mask.size
 
 
 def evidence_update_threshold(
