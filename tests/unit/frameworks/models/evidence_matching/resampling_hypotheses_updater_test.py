@@ -186,7 +186,6 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
             tolerances={},
             evidence_threshold_config="all",
         )
-        self.updater.max_slope = 1.0
 
         hypotheses_displacer = Mock()
         hypotheses_displacer.displace_hypotheses_and_compute_evidence = Mock(
@@ -210,6 +209,9 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
     def test_update_hypotheses_ids_map_correctly(self) -> None:
         """Test that hypotheses ids map correctly when some are deleted."""
         channel_size = 5
+
+        # Mocked out because it is accessed by the telemetry
+        self.updater.max_slope = Mock()
 
         hypotheses = Hypotheses(
             # Give each evidence a unique value so we can track which values are
