@@ -363,7 +363,7 @@ class ResamplingHypothesesUpdater:
 
             # We only displace existing hypotheses since the newly resampled hypotheses
             # should not be affected by the displacement from the last sensory input.
-            if len(hypotheses_selection.maintain_ids) > 0:
+            if len(hypotheses_selection.maintain_ids):
                 existing_hypotheses, channel_hypothesis_displacer_telemetry = (
                     self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
                         channel_displacement=displacements[input_channel],
