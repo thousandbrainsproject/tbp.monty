@@ -376,7 +376,7 @@ class EvidenceGraphLM(GraphLM):
             sensed_pose = self.buffer.get_current_pose(input_channel="first")
 
             possible_states = {}
-            evidences = get_scaled_evidences(self.get_all_evidences())
+            evidences = get_scaled_evidences(self.evidence)
             for graph_id in evidences.keys():
                 interesting_hyp = np.where(
                     evidences[graph_id] > self.vote_evidence_threshold
@@ -715,10 +715,6 @@ class EvidenceGraphLM(GraphLM):
                 available_graph_evidences.append(np.max(self.evidence[graph_id]))
 
         return available_graph_ids, np.array(available_graph_evidences)
-
-    def get_all_evidences(self):
-        """Return evidence for each pose on each graph (pointer)."""
-        return self.evidence
 
     def hyp_evidences_for_object(self, object_id):
         """Return evidences for a specific object_id."""
