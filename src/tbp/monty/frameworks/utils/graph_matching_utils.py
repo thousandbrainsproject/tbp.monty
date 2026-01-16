@@ -238,12 +238,11 @@ def get_scaled_evidences(evidences, per_object=False):
     """
     scaled_evidences = {}
     if per_object:
-        for graph_id in evidences.keys():
-            if len(evidences[graph_id]):
-                graph_evidences = evidences[graph_id]
+        for graph_id, graph_evidences in evidences.items():
+            if len(graph_evidences):
                 min_evidence = np.min(graph_evidences)
                 max_evidence = np.max(graph_evidences)
-                scaled_evidences[graph_id] = (evidences[graph_id] - min_evidence) / (
+                scaled_evidences[graph_id] = (graph_evidences - min_evidence) / (
                     max_evidence - min_evidence
                 )
                 # put in range(-1, 1)
@@ -251,14 +250,12 @@ def get_scaled_evidences(evidences, per_object=False):
     else:
         min_evidence = np.inf
         max_evidence = -np.inf
-        for graph_id in evidences.keys():
-            graph_evidences = evidences[graph_id]
+        for graph_evidences in evidences.values():
             if len(graph_evidences):
                 min_evidence = min(min_evidence, np.min(graph_evidences))
                 max_evidence = max(max_evidence, np.max(graph_evidences))
 
-        for graph_id in evidences.keys():
-            graph_evidences = evidences[graph_id]
+        for graph_id, graph_evidences in evidences.items():
             if max_evidence >= 1:
                 scaled_evidences[graph_id] = (graph_evidences - min_evidence) / (
                     max_evidence - min_evidence
