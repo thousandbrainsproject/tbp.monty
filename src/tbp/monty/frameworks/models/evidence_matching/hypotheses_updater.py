@@ -15,6 +15,7 @@ from typing import Any, Dict, Literal, Optional, Protocol
 
 import numpy as np
 from scipy.spatial.transform import Rotation
+from typing_extensions import Self
 
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
     DefaultFeatureEvidenceCalculator,
@@ -56,17 +57,18 @@ class ChannelHypothesesUpdateTelemetry:
 
 
 class HypothesesUpdater(Protocol):
-    def pre_step(self) -> None:
-        """Runs once per step before updating the hypotheses."""
-        ...
+    def __enter__(self) -> Self:
+        """Enter context manager, runs before updating the hypotheses.
 
-    def post_step(self) -> None:
-        """Runs once per step after updating the hypotheses."""
-        ...
+        Returns:
+            Self: The context manager instance.
+        """
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit context manager, runs after updating the hypotheses."""
 
     def reset(self) -> None:
         """Resets updater at the beginning of an episode."""
-        ...
 
     def update_hypotheses(
         self,
@@ -195,17 +197,19 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             use_features_for_matching=self.use_features_for_matching,
         )
 
-    def pre_step(self) -> None:
-        """Runs once per step before updating the hypotheses."""
-        ...
+    def __enter__(self) -> Self:
+        """Enter context manager, runs before updating the hypotheses.
 
-    def post_step(self) -> None:
-        """Runs once per step after updating the hypotheses."""
-        ...
+        Returns:
+            Self: The context manager instance.
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit context manager, runs after updating the hypotheses."""
 
     def reset(self) -> None:
         """Resets updater at the beginning of an episode."""
-        ...
 
     def update_hypotheses(
         self,

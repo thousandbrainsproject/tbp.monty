@@ -742,37 +742,34 @@ class EvidenceGraphLM(GraphLM):
 
     def _update_possible_matches(self, query):
         """Update evidence for each hypothesis instead of removing them."""
-        self.hypotheses_updater.pre_step()
-
-        thread_list = []
-        for graph_id in self.get_all_known_object_ids():
+        with self.hypotheses_updater:
+            thread_list = []
+            for graph_id in self.get_all_known_object_ids():
+                if self.use_multithreading:
+                    # assign separate thread on same CPU to each objects update.
+                    # Since the updates of different objects are independent of
+                    # each other we can do this.
+                    t = threading.Thread(
+                        target=self._update_evidence,
+                        args=(query[0], query[1], graph_id),
+                    )
+                    thread_list.append(t)
+                else:  # This can be useful for debugging.
+                    self._update_evidence(query[0], query[1], graph_id)
             if self.use_multithreading:
-                # assign separate thread on same CPU to each objects update.
-                # Since the updates of different objects are independent of
-                # each other we can do this.
-                t = threading.Thread(
-                    target=self._update_evidence,
-                    args=(query[0], query[1], graph_id),
-                )
-                thread_list.append(t)
-            else:  # This can be useful for debugging.
-                self._update_evidence(query[0], query[1], graph_id)
-        if self.use_multithreading:
-            # TODO: deal with keyboard interrupt
-            for thread in thread_list:
-                # start executing _update_evidence in each thread.
-                thread.start()
-            for thread in thread_list:
-                # call this to prevent main thread from continuing in code
-                # before all evidences are updated.
-                thread.join()
-        # NOTE: would not need to do this if we are still voting
-        # Call this update in the step method?
-        self.possible_matches = self._threshold_possible_matches()
-        self.previous_mlh = self.current_mlh
-        self.current_mlh = self._calculate_most_likely_hypothesis()
-
-        self.hypotheses_updater.post_step()
+                # TODO: deal with keyboard interrupt
+                for thread in thread_list:
+                    # start executing _update_evidence in each thread.
+                    thread.start()
+                for thread in thread_list:
+                    # call this to prevent main thread from continuing in code
+                    # before all evidences are updated.
+                    thread.join()
+            # NOTE: would not need to do this if we are still voting
+            # Call this update in the step method?
+            self.possible_matches = self._threshold_possible_matches()
+            self.previous_mlh = self.current_mlh
+            self.current_mlh = self._calculate_most_likely_hypothesis()
 
     def _update_evidence(
         self,

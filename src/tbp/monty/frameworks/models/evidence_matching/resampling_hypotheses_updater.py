@@ -15,6 +15,7 @@ from typing import Any, Literal
 import numpy as np
 import numpy.typing as npt
 from scipy.spatial.transform import Rotation
+from typing_extensions import Self
 
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
     DefaultFeatureEvidenceCalculator,
@@ -252,11 +253,14 @@ class ResamplingHypothesesUpdater:
         # Dictionary of slope trackers, one for each graph_id
         self.evidence_slope_trackers: dict[str, EvidenceSlopeTracker] = {}
 
-    def pre_step(self) -> None:
-        """Runs once per step before updating the hypotheses.
+    def __enter__(self) -> Self:
+        """Enter context manager, runs before updating the hypotheses.
 
         We calculate the max slope and update resampling parameters before running the
         hypotheses update loop/threads over all the graph_ids and channels.
+
+        Returns:
+            Self: The context manager instance.
         """
         self.max_slope = self._max_global_slope()
 
@@ -266,8 +270,10 @@ class ResamplingHypothesesUpdater:
         ):
             self.sampling_burst_steps = self.sampling_burst_duration
 
-    def post_step(self) -> None:
-        """Runs once per step after updating the hypotheses.
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit context manager, runs after updating the hypotheses.
 
         We decrement the burst steps by 1 every step for the duration of the burst.
         """
