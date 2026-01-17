@@ -10,6 +10,8 @@ from unittest.mock import Mock
 
 import numpy as np
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 from numpy.ma.testutils import assert_array_equal
 
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
@@ -250,3 +252,243 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
 
         assert_array_equal(channel_hyps[0].possible, np.array([True, False]))
         assert_array_equal(channel_hyps[0].evidence, np.array([1, 2]))
+
+    def test_burst_triggers_when_max_slope_at_or_below_threshold(self) -> None:
+        """Test that burst triggers when max_slope <= burst_trigger_slope.
+
+        When the maximum global slope is at or below the burst trigger threshold
+        and we are not already in a burst (sampling_burst_steps == 0), entering
+        the context manager should set sampling_burst_steps to sampling_burst_duration.
+        """
+        self.updater.burst_trigger_slope = 1.0
+        self.updater.sampling_burst_duration = 5
+        self.updater.sampling_burst_steps = 0
+
+        # Set a low-slope tracker to trigger a burst.
+        # max_slope (0.5) <= burst_trigger_slope (1.0)
+        tracker = EvidenceSlopeTracker(min_age=0)
+        tracker.add_hyp(3, "patch")
+        tracker.update(np.array([0.0, 0.2, 0.1]), "patch")
+        tracker.update(np.array([0.25, 0.5, -0.1]), "patch")
+        self.updater.evidence_slope_trackers = {"object1": tracker}
+
+        # We would have 3 slopes (0.25, 0.3, -0.2), of which the maximum
+        # will be 0.3
+        expected_max_slope = 0.3
+
+        # The context manager will set the sampling_burst_steps to the
+        # sampling_burst_duration when a burst is triggered
+        expected_burst_steps = self.updater.sampling_burst_duration
+
+        with self.updater:
+            self.assertEqual(self.updater.max_slope, expected_max_slope)
+            self.assertEqual(self.updater.sampling_burst_steps, expected_burst_steps)
+
+    def test_burst_does_not_trigger_when_max_slope_above_threshold(self) -> None:
+        """Test that burst does NOT trigger when max_slope > burst_trigger_slope.
+
+        When the maximum global slope is above the burst trigger threshold,
+        no burst should be triggered even if sampling_burst_steps == 0.
+        """
+        self.updater.burst_trigger_slope = 1.0
+        self.updater.sampling_burst_duration = 5
+        self.updater.sampling_burst_steps = 0
+
+        tracker = EvidenceSlopeTracker(min_age=0)
+        tracker.add_hyp(3, "patch")
+        # Initial evidence then high update produces high slope
+        tracker.update(np.array([0.0, 0.0, 0.0]), "patch")
+        tracker.update(np.array([2.0, 2.0, 2.0]), "patch")
+        self.updater.evidence_slope_trackers = {"object1": tracker}
+
+        # We would have 3 slopes (2.0, 2.0, 2.0), of which the maximum
+        # will be 2.0
+        expected_max_slope = 2.0
+
+        with self.updater:
+            self.assertEqual(self.updater.max_slope, expected_max_slope)
+            self.assertEqual(self.updater.sampling_burst_steps, 0)
+
+    def test_burst_does_not_trigger_when_already_in_burst(self) -> None:
+        """Test that burst does NOT trigger when already in a burst.
+
+        When sampling_burst_steps > 0 (already in a burst), no new burst
+        should be triggered even if max_slope <= burst_trigger_slope.
+        """
+        self.updater.burst_trigger_slope = 1.0
+        self.updater.sampling_burst_duration = 5
+        self.updater.sampling_burst_steps = 3  # Already in a burst
+
+        tracker = EvidenceSlopeTracker(min_age=0)
+        tracker.add_hyp(3, "patch")
+        tracker.update(np.array([0.0, 0.0, 0.0]), "patch")
+        tracker.update(np.array([0.5, 0.5, 0.5]), "patch")
+        self.updater.evidence_slope_trackers = {"object1": tracker}
+
+        # We would have 3 slopes (0.5, 0.5, 0.5), of which the maximum
+        # will be 0.5 (less than burst_trigger_slope)
+        expected_max_slope = 0.5
+
+        with self.updater:
+            self.assertEqual(self.updater.max_slope, expected_max_slope)
+            self.assertEqual(self.updater.sampling_burst_steps, 3)
+
+    def test_sampling_burst_steps_decrements_in_exit(self) -> None:
+        """Test that sampling_burst_steps decrements by 1 in __exit__.
+
+        When exiting the context manager with sampling_burst_steps > 0,
+        it should be decremented by 1.
+        """
+        self.updater.sampling_burst_steps = 3
+
+        with self.updater:
+            pass
+
+        self.assertEqual(self.updater.sampling_burst_steps, 2)
+
+    def test_sampling_burst_steps_does_not_go_negative(self) -> None:
+        """Test that sampling_burst_steps does not go below 0.
+
+        When sampling_burst_steps is already 0 and no burst is triggered,
+        exiting should not decrement it below 0.
+        """
+        self.updater.sampling_burst_steps = 0
+        self.updater.burst_trigger_slope = 1.0
+
+        # High-slope tracker to prevent a burst
+        tracker = EvidenceSlopeTracker(min_age=0)
+        tracker.add_hyp(3, "patch")
+        tracker.update(np.array([0.0, 0.0, 0.0]), "patch")
+        tracker.update(np.array([2.0, 2.0, 2.0]), "patch")
+        self.updater.evidence_slope_trackers = {"object1": tracker}
+
+        with self.updater:
+            self.assertEqual(self.updater.sampling_burst_steps, 0)
+
+        self.assertEqual(self.updater.sampling_burst_steps, 0)
+
+    @given(
+        resampling_multiplier=st.floats(min_value=0.0, max_value=3.0),
+        graph_num_nodes=st.integers(min_value=1, max_value=100),
+        pose_fully_defined=st.booleans(),
+    )
+    def test_sample_count_returns_informed_count_during_burst(
+        self, resampling_multiplier, graph_num_nodes, pose_fully_defined
+    ) -> None:
+        """Test informed_count with various resampling parameters.
+
+        When sampling_burst_steps > 0, _sample_count should calculate and
+        return a positive informed_count based on graph nodes and resampling_multiplier.
+
+        The resampling_multiplier is capped at num_hyps_per_node:
+            - 2 for pose_fully_defined=True,
+            - umbilical_num_poses for pose_fully_defined=False
+
+        Informed_count cannot exceed graph_num_nodes * num_hyps_per_node.
+        """
+        self.updater.sampling_burst_steps = 3
+        self.updater.resampling_multiplier = resampling_multiplier
+        channel_features = {"pose_fully_defined": pose_fully_defined}
+        num_hyps_per_node = self.updater._num_hyps_per_node(
+            channel_features=channel_features
+        )
+
+        self.mock_graph_memory.get_locations_in_graph = Mock(
+            return_value=np.zeros((graph_num_nodes, 3))
+        )
+
+        tracker = EvidenceSlopeTracker(min_age=0)
+        mapper = ChannelMapper()
+
+        _, informed_count = self.updater._sample_count(
+            input_channel="patch",
+            channel_features=channel_features,
+            graph_id="object1",
+            mapper=mapper,
+            tracker=tracker,
+        )
+
+        # The number of required hypotheses cannot be negative
+        self.assertGreaterEqual(informed_count, 0)
+
+        # Divisible by num_hyps_per_node
+        self.assertEqual(informed_count % num_hyps_per_node, 0)
+
+        # Cannot exceed the available max number of hypotheses
+        self.assertLessEqual(informed_count, graph_num_nodes * num_hyps_per_node)
+
+    def test_sample_count_returns_zero_informed_count_when_not_in_burst(self) -> None:
+        """Test that _sample_count returns informed_count == 0 when not in burst.
+
+        When sampling_burst_steps == 0, _sample_count should return
+        informed_count == 0 regardless of other parameters.
+        """
+        self.updater.sampling_burst_steps = 0
+        self.updater.resampling_multiplier = 0.4
+
+        tracker = EvidenceSlopeTracker(min_age=0)
+        mapper = ChannelMapper()
+
+        _, informed_count = self.updater._sample_count(
+            input_channel="patch",
+            channel_features={"pose_fully_defined": True},
+            graph_id="object1",
+            mapper=mapper,
+            tracker=tracker,
+        )
+
+        self.assertEqual(informed_count, 0)
+
+    def test_burst_lasts_exactly_sampling_burst_duration_steps(self) -> None:
+        """Test that burst lasts for exactly sampling_burst_duration steps.
+
+        When a burst is triggered, it should last for exactly sampling_burst_duration
+        steps (i.e., sampling_burst_steps should decrement from sampling_burst_duration
+        down to 0 over that many context manager cycles). During the burst,
+        re-triggering is prevented by the `sampling_burst_steps > 0` condition.
+        """
+        self.updater.burst_trigger_slope = 1.0
+        self.updater.sampling_burst_duration = 5
+        self.updater.sampling_burst_steps = 0
+
+        # Low max_slope hypotheses to trigger a burst in the first iteration.
+        tracker = EvidenceSlopeTracker(min_age=0)
+        tracker.add_hyp(3, "patch")
+        tracker.update(np.array([0.0, 0.0, 0.0]), "patch")
+        tracker.update(np.array([0.5, 0.5, 0.5]), "patch")
+        self.updater.evidence_slope_trackers = {"object1": tracker}
+
+        burst_steps_history = []
+        for _ in range(5):
+            with self.updater:
+                burst_steps_history.append(self.updater.sampling_burst_steps)
+
+        self.assertEqual(burst_steps_history, [5, 4, 3, 2, 1])
+        self.assertEqual(self.updater.sampling_burst_steps, 0)
+
+    def test_max_global_slope_returns_inf_when_no_trackers(self) -> None:
+        """Test that _max_global_slope returns -inf when no trackers exist.
+
+        When evidence_slope_trackers is empty, _max_global_slope should
+        return -inf (which is less than any burst_trigger_slope threshold,
+        effectively triggering a sampling burst).
+        """
+        self.updater.evidence_slope_trackers = {}
+
+        max_slope = self.updater._max_global_slope()
+
+        self.assertEqual(max_slope, float("-inf"))
+
+    def test_burst_triggers_on_first_step_with_no_trackers(self) -> None:
+        """Test that burst triggers on first step when no trackers exist.
+
+        At the start of an episode (no trackers), max_slope is -inf which is
+        below any threshold, so a burst should be triggered.
+        """
+        self.updater.burst_trigger_slope = 1.0
+        self.updater.sampling_burst_duration = 5
+        self.updater.sampling_burst_steps = 0
+        self.updater.evidence_slope_trackers = {}
+
+        with self.updater:
+            self.assertEqual(self.updater.sampling_burst_steps, 5)
