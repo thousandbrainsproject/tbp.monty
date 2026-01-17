@@ -710,15 +710,11 @@ class EvidenceGraphLM(GraphLM):
         available_graph_ids = []
         available_graph_evidences = []
         for graph_id in graph_ids:
-            if len(self.hyp_evidences_for_object(graph_id)):
+            if len(self.evidence[graph_id]):
                 available_graph_ids.append(graph_id)
                 available_graph_evidences.append(np.max(self.evidence[graph_id]))
 
         return available_graph_ids, np.array(available_graph_evidences)
-
-    def hyp_evidences_for_object(self, object_id):
-        """Return evidences for a specific object_id."""
-        return self.evidence[object_id]
 
     # ------------------ Logging & Saving ----------------------
     def collect_stats_to_save(self):
@@ -836,7 +832,7 @@ class EvidenceGraphLM(GraphLM):
             f"evidence update for {graph_id} took "
             f"{np.round(end_time - start_time, 2)} seconds."
         )
-        graph_evidence = self.hyp_evidences_for_object(graph_id)
+        graph_evidence = self.evidence[graph_id]
         if len(graph_evidence):
             assert not np.isnan(np.max(self.evidence[graph_id])), (
                 "evidence contains NaN."
@@ -1238,14 +1234,14 @@ class EvidenceGraphLM(GraphLM):
         """
         mlh = {}
         if graph_id is not None:
-            graph_evidence = self.hyp_evidences_for_object(graph_id)
+            graph_evidence = self.evidence[graph_id]
             if len(graph_evidence):
                 mlh_id = np.argmax(graph_evidence)
                 mlh = self._get_mlh_dict_from_id(graph_id, mlh_id)
         else:
             highest_evidence_so_far = -np.inf
             for next_graph_id in self.get_all_known_object_ids():
-                graph_evidence = self.hyp_evidences_for_object(next_graph_id)
+                graph_evidence = self.evidence[next_graph_id]
                 if len(graph_evidence):
                     mlh_id = np.argmax(graph_evidence)
                     evidence = graph_evidence[mlh_id]

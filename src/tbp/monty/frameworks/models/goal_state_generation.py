@@ -916,7 +916,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         if second_id is None:
             # If we only have one object with a single hypothesis, we should not
             # attempt to generate a goal state.
-            if len(self.parent_lm.hyp_evidences_for_object(top_id)) == 1:
+            if len(self.parent_lm.evidence[top_id]) == 1:
                 return False
 
             # If we only know (i.e. have learned) about one object, we can focus on pose
@@ -944,7 +944,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         ) or len(pm_base_thresh) == 1:
             # If we only have one object with a single hypothesis, we should not
             # attempt to generate a goal state.
-            if len(self.parent_lm.hyp_evidences_for_object(top_id)) == 1:
+            if len(self.parent_lm.evidence[top_id]) == 1:
                 return False
 
             # We always focus on pose if there is just 1 possible match - if we are part
