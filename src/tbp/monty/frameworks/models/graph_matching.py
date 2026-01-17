@@ -145,8 +145,6 @@ class MontyForGraphMatching(MontyBase):
                 all_lms_no_match = False
 
         if all_lms_no_match:
-            # Take more exploratory steps if we are building a new graph
-            self.num_exploratory_steps = self.num_exploratory_steps * 10
             # No need to check any other conditions if all LMs have no_match
             return True
 

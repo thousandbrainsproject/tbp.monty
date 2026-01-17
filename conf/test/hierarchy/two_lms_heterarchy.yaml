@@ -3,13 +3,17 @@ defaults:
   - /experiment/config/monty/clear_monty_config@config
   - /experiment/config/monty/two_lm_stacked@config.monty_config
   - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - /experiment/config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
+  - /experiment/config/monty/motor_system/policy/naive_scan@config.monty_config.motor_system_config.motor_system_args.policy_args
   - /experiment/config/environment/two_lm_stacked_distant_mount_habitat@config.env_interface_config
 
 config:
+  seed: 44
   min_lms_match: 2
   monty_config:
     monty_args:
-      num_exploratory_steps: 100
+      num_exploratory_steps: 30
       min_train_steps: 3
     learning_module_configs:
       learning_module_0:
@@ -24,6 +28,7 @@ config:
           max_graph_size: 0.2
           num_model_voxels_per_dim: 50
           max_nodes_per_graph: 50
+          object_evidence_threshold: 20
       learning_module_1:
         learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
         learning_module_args:
@@ -44,6 +49,16 @@ config:
           max_graph_size: 0.3
           num_model_voxels_per_dim: 50
           max_nodes_per_graph: 50
+          object_evidence_threshold: 20
+    sensor_module_configs:
+      sensor_module_1:
+        sensor_module_args:
+          delta_thresholds:
+            distance: 0.02
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          fixed_amount: 10
   env_interface_config:
     env_init_args:
       data_path: null
