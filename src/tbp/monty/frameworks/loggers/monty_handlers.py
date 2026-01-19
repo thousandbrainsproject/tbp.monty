@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -44,8 +44,9 @@ class MontyHandler(metaclass=abc.ABCMeta):
     def close(self):
         pass
 
-    @abc.abstractclassmethod
-    def log_level(self):
+    @classmethod
+    @abc.abstractmethod
+    def log_level(cls):
         """Handlers filter information from the data they receive.
 
         This class method specifies the level they filter at.

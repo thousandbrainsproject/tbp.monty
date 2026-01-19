@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -444,7 +444,7 @@ class PolicyTest(unittest.TestCase):
             for loader_step, observation in enumerate(exp.env_interface):
                 exp.model.step(observation)
 
-                last_action = exp.model.motor_system.last_action
+                last_action = exp.model.motor_system._policy.action
 
                 if loader_step == 3:
                     stored_action = last_action
