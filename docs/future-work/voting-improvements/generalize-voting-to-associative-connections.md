@@ -28,7 +28,7 @@ To begin tackling this item, a suggested approach is given below:
 - Currently, votes are compiled based on `graph_ids` in `send_out_vote`, and also filtered with `graph_ids` when being received and passed to `_update_evidence_with_vote`. 
 - Instead, when we compile and receive votes, these should be filtered such that if a receiving model ID has a strong association with another model ID, then the former is the key that unlocks access to the votes from the latter. In this sense, a receiving model in a receiving column will "listen" for votes coming from other models in other columns that pass a minimum association-strength threshold.
 - We would need to ensure that when receiving votes, these can come from multiple models, if multiple models surpass the threshold of associative strength.
-- It shouldn't be necessary to modify the CMP signals. Associative connections can be stored at the level of Monty, similar to the existing connectivity matrices.
+- Associative connections can be stored by a receiving LM, in that each LM will internally track what external IDs were associated with certain models. Note that it shouldn't be necessary to modify the CMP signals to track associative connections or their strength.
 
 ### Advantages of This Approach
 - This way, most of the machinery of voting at inference time remains unchanged - in particular, the way the k-d tree is used to account for spatial information when voting would remain unchanged. The assumption is that as long as an association is strong, the models can talk with one another in the same reference frame. This is reasonable given that they will have learned similar structured models if those associative connections are good.
