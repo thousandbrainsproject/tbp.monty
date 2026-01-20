@@ -9,7 +9,6 @@ defaults:
   - /experiment/config/environment/two_lm_stacked_distant_mount_habitat@config.env_interface_config
 
 config:
-  seed: 44
   min_lms_match: 2
   monty_config:
     monty_args:
