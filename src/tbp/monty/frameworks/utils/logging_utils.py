@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -383,9 +383,10 @@ def get_time_stats(all_ds, all_conditions) -> pd.DataFrame:
                         ]
                     )
                 )
-    time_stats = pd.concat(time_stats, axis=1).T
-    time_stats.columns = ["model_type", "time", "step"]
-    return time_stats
+
+    df = pd.concat(time_stats, axis=1).T
+    df.columns = ["model_type", "time", "step"]
+    return df
 
 
 def compute_pose_errors(
@@ -440,10 +441,11 @@ def compute_pose_error(
     Returns:
         The minimum angular error in radians (or degrees if `return_degrees` is True).
     """
-    rotation_error = np.min(compute_pose_errors(predicted_rotation, target_rotation))
-    if return_degrees:
-        return rotation_error * 180 / np.pi
-    return rotation_error
+    rotation_error: float = np.min(  # type: ignore[assignment]
+        compute_pose_errors(predicted_rotation, target_rotation)
+    )
+
+    return rotation_error * 180 / np.pi if return_degrees else rotation_error
 
 
 def print_overall_stats(stats):

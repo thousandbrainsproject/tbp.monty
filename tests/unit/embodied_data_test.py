@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -35,7 +35,6 @@ from tbp.monty.frameworks.environments.two_d_data import (
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
-    Modality,
     Observations,
     SensorObservations,
 )
@@ -58,9 +57,7 @@ POSSIBLE_ACTIONS_DIST = [
     f"{AGENT_ID}.turn_right",
 ]
 POSSIBLE_ACTIONS_ABS = [f"{AGENT_ID}.set_yaw", f"{AGENT_ID}.set_sensor_pitch"]
-EXPECTED_STATES: npt.NDArray[np.uint8] = np.random.randint(
-    0, 256, size=NUM_STEPS, dtype=np.uint8
-)
+EXPECTED_STATES: npt.NDArray[np.uint8] = np.arange(0, NUM_STEPS, dtype=np.uint8)
 
 
 class FakeEnvironmentRel(EmbodiedEnvironment):
@@ -79,7 +76,7 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
                 AGENT_ID: AgentObservations(
                     {
                         SENSOR_ID: SensorObservations(
-                            {Modality("raw"): EXPECTED_STATES[self._current_state]}
+                            {"raw": EXPECTED_STATES[self._current_state]}
                         )
                     }
                 )
@@ -100,7 +97,7 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
                 AGENT_ID: AgentObservations(
                     {
                         SENSOR_ID: SensorObservations(
-                            {Modality("raw"): EXPECTED_STATES[self._current_state]}
+                            {"raw": EXPECTED_STATES[self._current_state]}
                         )
                     }
                 )
@@ -128,7 +125,7 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
                 AGENT_ID: AgentObservations(
                     {
                         SENSOR_ID: SensorObservations(
-                            {Modality("raw"): EXPECTED_STATES[self._current_state]}
+                            {"raw": EXPECTED_STATES[self._current_state]}
                         )
                     }
                 )
@@ -149,7 +146,7 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
                 AGENT_ID: AgentObservations(
                     {
                         SENSOR_ID: SensorObservations(
-                            {Modality("raw"): EXPECTED_STATES[self._current_state]}
+                            {"raw": EXPECTED_STATES[self._current_state]}
                         )
                     }
                 )
@@ -196,22 +193,18 @@ class EmbodiedDataTest(unittest.TestCase):
             obs_dist, _ = env_interface_dist.step(motor_system_dist())
             print(obs_dist)
             self.assertTrue(
-                np.all(
-                    obs_dist[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[i]
-                )
+                np.all(obs_dist[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
             )
 
         initial_obs, _ = env_interface_dist.reset()
         self.assertTrue(
-            np.all(
-                initial_obs[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[0]
-            )
+            np.all(initial_obs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[0])
         )
         obs_dist, _ = env_interface_dist.step(motor_system_dist())
         self.assertFalse(
             np.all(
-                obs_dist[AGENT_ID][SENSOR_ID][Modality("raw")]
-                == initial_obs[AGENT_ID][SENSOR_ID][Modality("raw")]
+                obs_dist[AGENT_ID][SENSOR_ID]["raw"]
+                == initial_obs[AGENT_ID][SENSOR_ID]["raw"]
             )
         )
 
@@ -236,23 +229,18 @@ class EmbodiedDataTest(unittest.TestCase):
         for i in range(1, NUM_STEPS):
             obs_abs, _ = env_interface_abs.step(motor_system_abs())
             self.assertTrue(
-                np.all(
-                    obs_abs[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[i]
-                )
+                np.all(obs_abs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
             )
 
         initial_state, _ = env_interface_abs.reset()
         self.assertTrue(
-            np.all(
-                initial_state[AGENT_ID][SENSOR_ID][Modality("raw")]
-                == EXPECTED_STATES[0]
-            )
+            np.all(initial_state[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[0])
         )
         obs_abs, _ = env_interface_abs.step(motor_system_abs())
         self.assertFalse(
             np.all(
-                obs_abs[AGENT_ID][SENSOR_ID][Modality("raw")]
-                == initial_state[AGENT_ID][SENSOR_ID][Modality("raw")]
+                obs_abs[AGENT_ID][SENSOR_ID]["raw"]
+                == initial_state[AGENT_ID][SENSOR_ID]["raw"]
             )
         )
 
@@ -273,7 +261,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
         for i, item in enumerate(env_interface_dist):
             self.assertTrue(
-                np.all(item[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[i])
+                np.all(item[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
             )
             if i >= NUM_STEPS - 1:
                 break
@@ -296,7 +284,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
         for i, item in enumerate(env_interface_abs):
             self.assertTrue(
-                np.all(item[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[i])
+                np.all(item[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
             )
             if i >= NUM_STEPS - 1:
                 break
