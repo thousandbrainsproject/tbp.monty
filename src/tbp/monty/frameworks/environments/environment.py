@@ -48,6 +48,8 @@ class ObjectInfo:
 
 
 class Environment(Protocol):
+    """Base protocol for all environments that support steppable actions."""
+
     def step(
         self, actions: Sequence[Action]
     ) -> tuple[Observations, ProprioceptiveState]:
@@ -73,6 +75,8 @@ class Environment(Protocol):
 
 
 class ObjectEnvironment(Protocol):
+    """Protocol for environments that support adding and removing objects."""
+
     def add_object(
         self,
         name: str,
@@ -112,6 +116,8 @@ class ObjectEnvironment(Protocol):
 
 
 class ResettableEnvironment(Protocol):
+    """Protocol for environments that can be reset to their initial state."""
+
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         """Reset the environment to its initial state.
 
@@ -122,10 +128,14 @@ class ResettableEnvironment(Protocol):
 
 
 class SimulatedEnvironment(Environment, ResettableEnvironment, Protocol):
+    """Protocol for steppable and resettable simulated environments."""
+
     pass
 
 
 class SimulatedObjectEnvironment(
     Environment, ObjectEnvironment, ResettableEnvironment, Protocol
 ):
+    """Protocol for steppable and resettable simulated object environments."""
+
     pass
