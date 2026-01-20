@@ -24,9 +24,9 @@ channels:
 
 # Note: Remember to update recipe/meta.yaml when updating this file.
 dependencies:
-  - python=3.8
+  - python=3.9
 
-  - aihabitat::habitat-sim=0.2.2
+  - aihabitat::habitat-sim=0.2.4
   - aihabitat::withbullet
   - conda-forge::cmake>=3.14.0
   - conda-forge::importlib_resources
