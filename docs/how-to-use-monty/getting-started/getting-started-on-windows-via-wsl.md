@@ -15,7 +15,15 @@ Follow the Microsoft guide to install Windows Subsystem for Linux: https://learn
 
 It is important that you complete every step of their guide, otherwise you may encounter issues during the next steps below.
 
-Regarding the Linux distribution, [Ubuntu 24.04 LTS](https://apps.microsoft.com/detail/9nz3klhxdjp5) is recommended. Once installed, the Linux filesystem can directly be accessed via the "Linux" section in the Windows File Explorer, which should normally point to this path: `\\wsl.localhost\Ubuntu-24.04\`
+A fresh Linux installation is recommended for Monty. If desired, you may attempt to re-use an existing Linux installation, but be aware you might run into GPU-related errors if default libraries and settings were significantly altered.
+
+Regarding the Linux distribution, [Ubuntu 24.04 LTS](https://apps.microsoft.com/detail/9nz3klhxdjp5) is recommended. Once installed, its filesystem can directly be accessed via the "Linux" section in the Windows File Explorer, which should normally point to `\\wsl.localhost\Ubuntu-24.04\` or `\\wsl$\Ubuntu-24.04\` 
+
+> [!NOTE]
+> If you plan on using Git for Windows on the WSL filesystem, Git might return an error saying `unsafe repository (\\wsl... is owned by someone else)` since it's a network share, which you can bypass by entering this command on Windows in PowerShell or CMD or Git Bash:
+> ```shell
+> git config --global --add safe.directory "*"
+> ```
 
 
 # 2. Install Miniconda
@@ -65,6 +73,9 @@ conda activate tbp.monty
 
 This might take a few minutes or more to run, depending on your download speed.
 
+> [!WARNING]
+> Avoid manually installing or updating Habitat-Sim. `conda env create` will automatically install the required version.
+
 > [!NOTE]
 > By default, Conda will activate the base environment when you open a new terminal. If you'd prefer to have the Monty environment active by default, enter this:
 > 
@@ -78,16 +89,10 @@ This might take a few minutes or more to run, depending on your download speed.
 > echo '[ "$PWD" = "$HOME" ] && cd tbp' >> ~/.bashrc
 > ```
 
-Next, install libopengl0 to allow running Habitat-Sim:
+Then, install libopengl0 to allow running Habitat-Sim:
 
 ```shell
 sudo apt -y install libopengl0
-```
-
-Then, configure Linux to directly use Windows GPU drivers:
-
-```shell
-echo "export GALLIUM_DRIVER=d3d12" >> ~/.bashrc && exec $SHELL
 ```
 
 > [!WARNING]
@@ -115,6 +120,15 @@ Optionally, you can get the [Monty-Meets-World datasets](../../overview/benchmar
 mkdir -p ~/tbp/data/ && cd "$_"
 curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab.tgz | tar -xzf -
 curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar -xzf -
+```
+
+and the [Omniglot](../tutorials/using-monty-in-a-custom-application.md#example-1-omniglot) dataset:
+
+```shell
+sudo apt -y install unzip
+mkdir -p ~/tbp/data/ && cd "$_"
+git clone https://github.com/brendenlake/omniglot.git && cd omniglot/python
+unzip images_background.zip && unzip strokes_background.zip
 ```
 
 
@@ -159,11 +173,13 @@ export WANDB_DIR=${MONTY_LOGS}/wandb
 
 # 6. Prepare VS Code
 
-Install VS Code (the Windows version): https://code.visualstudio.com/download
+Install VS Code for Windows: https://code.visualstudio.com/download
 
 Install the WSL extension: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl
 
 Install the Python extension: https://marketplace.visualstudio.com/items?itemName=ms-python.python
+
+Install the Ruff extension: https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff
 
 From Ubuntu, initialize the settings file for the repo:
 
@@ -176,6 +192,8 @@ Still from Ubuntu, enter this to launch VS Code with Monty:
 ```shell
 cd ~/tbp && code .
 ```
+
+The `code .` command launches both VS Code for Windows and the Linux VS Code Server directly into the current directory of WSL.
 
 
 # 7. Run unit tests and a benchmark

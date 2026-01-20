@@ -137,7 +137,8 @@ ipython = 'IPython'
 minversion = '6.0'
 addopts = '-ra -n auto'
 testpaths = [
-    'tests',
+    'tests/conf',
+    'tests/unit',
 ]
 filterwarnings = [
     'ignore:.*:DeprecationWarning'
