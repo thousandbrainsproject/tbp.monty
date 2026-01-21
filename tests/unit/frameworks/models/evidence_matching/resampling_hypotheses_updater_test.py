@@ -416,21 +416,29 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
         # Cannot exceed the available max number of hypotheses
         self.assertLessEqual(informed_count, graph_num_nodes * num_hyps_per_node)
 
-    def test_sample_count_returns_zero_informed_count_when_not_in_burst(self) -> None:
+    @given(
+        resampling_multiplier=st.floats(min_value=0.0, max_value=2.0),
+        pose_fully_defined=st.booleans(),
+    )
+    def test_sample_count_returns_zero_informed_count_when_not_in_burst(
+        self,
+        resampling_multiplier: float,
+        pose_fully_defined: bool,
+    ) -> None:
         """Test that _sample_count returns informed_count == 0 when not in burst.
 
         When sampling_burst_steps == 0, _sample_count should return
-        informed_count == 0 regardless of other parameters.
+        informed_count == 0 regardless of other parameters (e.g, resampling_multiplier).
         """
         self.updater.sampling_burst_steps = 0
-        self.updater.resampling_multiplier = 0.4
+        self.updater.resampling_multiplier = resampling_multiplier
 
         tracker = EvidenceSlopeTracker(min_age=0)
         mapper = ChannelMapper()
 
         _, informed_count = self.updater._sample_count(
             input_channel="patch",
-            channel_features={"pose_fully_defined": True},
+            channel_features={"pose_fully_defined": pose_fully_defined},
             graph_id="object1",
             mapper=mapper,
             tracker=tracker,
