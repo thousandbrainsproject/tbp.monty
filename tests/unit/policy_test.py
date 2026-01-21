@@ -282,7 +282,7 @@ class PolicyTest(unittest.TestCase):
             # TODO M remove the following train-wreck during refactor
             view = observation[exp.model.motor_system._policy.agent_id]["view_finder"]
             semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
-            perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
+            perc_on_target_obj = get_perc_on_obj_semantic(semantic)
 
             config = self.dist_poor_initial_view_cfg.test.config
 
@@ -295,7 +295,7 @@ class PolicyTest(unittest.TestCase):
                 f"vs target of {target_perc_on_target_obj}"
             )
 
-            points_on_target_obj = semantic == 1
+            points_on_target_obj = semantic >= 1
             closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
 
             target_closest_point = config["monty_config"]["motor_system_config"][
@@ -339,7 +339,7 @@ class PolicyTest(unittest.TestCase):
             config = self.surf_poor_initial_view_cfg.test.config
 
             points_on_target_obj = (
-                view["semantic_3d"][:, 3].reshape(view["depth"].shape) == 1
+                view["semantic_3d"][:, 3].reshape(view["depth"].shape) >= 1
             )
             closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
 

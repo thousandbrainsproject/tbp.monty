@@ -427,7 +427,9 @@ class DepthTo3DLocations(Transform):
                     is `True` (default), then the coordinates are in the world's
                     reference frame and are in the sensor's reference frame otherwise.
                     It is structured as a 2D array with shape (n_pixels, 4) with
-                    columns containing x-, y-, z-coordinates, and a semantic ID.
+                    columns containing x-, y-, z-coordinates, and a semantic ID. If
+                    use_semantic_sensor is False, the semantic ID is set to 10000,
+                    indicating an unknown object ID.
                 - "world_camera": Sensor-to-world coordinate frame transform. Included
                     only when `self.world_coord` is `True` (default).
                 - "sensor_frame_data": 3D coordinates for each pixel relative to the
@@ -480,6 +482,11 @@ class DepthTo3DLocations(Transform):
                     semantic_patch,
                     default_on_surface_th,
                 )
+
+            if not self.use_semantic_sensor:
+                # set 1's to large number that wouldn't be in semantic_id_to_label to
+                # signal that this doesn't represent a specific label ID
+                surface_patch[surface_patch == 1] = 10000
 
             # Approximate true world coordinates
             x, y = np.meshgrid(

@@ -611,6 +611,8 @@ def get_graph_lm_episode_stats(lm):
             if lm.stepwise_target_object in target_to_graph:
                 stepwise_performance = "correct"
                 # TODO eventually add rotation and translation error
+            elif lm.stepwise_target_object == "no_label":
+                stepwise_performance = "no_label"
             else:
                 stepwise_performance = "confused"
 
