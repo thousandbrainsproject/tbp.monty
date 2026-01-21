@@ -64,14 +64,14 @@ class Environment(Protocol):
         Note:
             If the actions are an empty sequence, the current observations are returned.
         """
-        pass
+        ...
 
     def close(self) -> None:
         """Close the environment and release all resources.
 
         Any call to any other environment method may raise an exception
         """
-        pass
+        ...
 
 
 class ObjectEnvironment(Protocol):
@@ -103,7 +103,7 @@ class ObjectEnvironment(Protocol):
         Returns:
             The ID of the added object.
         """
-        pass
+        ...
 
     def remove_all_objects(self) -> None:
         """Remove all objects from the environment.
@@ -112,7 +112,7 @@ class ObjectEnvironment(Protocol):
               HabitatSim.remove_all_objects and is quite specific to HabitatSim
               implementation. We should consider refactoring this to be more generic.
         """
-        pass
+        ...
 
 
 class ResettableEnvironment(Protocol):
@@ -124,18 +124,14 @@ class ResettableEnvironment(Protocol):
         Returns:
             The environment's initial observations and proprioceptive state.
         """
-        pass
+        ...
 
 
 class SimulatedEnvironment(Environment, ResettableEnvironment, Protocol):
-    """Protocol for steppable and resettable simulated environments."""
-
     pass
 
 
 class SimulatedObjectEnvironment(
     Environment, ObjectEnvironment, ResettableEnvironment, Protocol
 ):
-    """Protocol for steppable and resettable simulated object environments."""
-
     pass

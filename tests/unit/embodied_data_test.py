@@ -88,9 +88,6 @@ class FakeEnvironmentRel(SimulatedObjectEnvironment):
         )
         return obs, ProprioceptiveState({})
 
-    def get_state(self) -> ProprioceptiveState:
-        return ProprioceptiveState({})
-
     def remove_all_objects(self):
         pass
 
@@ -134,9 +131,6 @@ class FakeEnvironmentAbs(SimulatedObjectEnvironment):
             }
         )
         return obs, ProprioceptiveState({})
-
-    def get_state(self) -> ProprioceptiveState:
-        return ProprioceptiveState({})
 
     def remove_all_objects(self):
         pass
