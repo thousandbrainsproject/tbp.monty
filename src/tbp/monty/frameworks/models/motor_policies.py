@@ -1819,12 +1819,15 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 # Only append locations associated with performing a tangential
                 # action, rather than some form of corrective movement; these
                 # movements are performed immediately after "orient_vertical"
-                self.motor_system._policy.tangent_locs.append(
+                self.tangent_locs.append(
                     percept.location,
                 )
-                self.motor_system._policy.tangent_norms.append(
-                    percept.morphological_features["pose_vectors"][0]
-                )
+                if "pose_vectors" in percept.morphological_features:
+                    self.tangent_norms.append(
+                        percept.morphological_features["pose_vectors"][0]
+                    )
+                else:
+                    self.tangent_norms.append(None)
 
     def update_action_details(self):
         """Store informaton for later logging.
