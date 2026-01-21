@@ -117,8 +117,6 @@ class SurfaceNormalMethod(Enum):
 @dataclass
 class HabitatObservationProcessorTelemetry:
     processed_obs: State
-    visited_loc: Any
-    visited_normal: Any | None
 
 
 class HabitatObservationProcessor:
@@ -269,10 +267,6 @@ class HabitatObservationProcessor:
 
         telemetry = HabitatObservationProcessorTelemetry(
             processed_obs=observed_state,
-            visited_loc=observed_state.location,
-            visited_normal=morphological_features["pose_vectors"][0]
-            if "pose_vectors" in morphological_features.keys()
-            else None,
         )
 
         return observed_state, telemetry
@@ -635,12 +629,6 @@ class HabitatSM(SensorModule):
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
-        # Store visited locations in global environment coordinates to help inform
-        # more intelligent motor-policies
-        # TODO consider adding a flag or mixin to determine when these are actually
-        # saved
-        self.visited_locs = []
-        self.visited_normals = []
 
     def pre_episode(self, rng: np.random.RandomState) -> None:
         self._rng = rng
@@ -649,8 +637,6 @@ class HabitatSM(SensorModule):
         self.is_exploring = False
         self.processed_obs = []
         self.states = []
-        self.visited_locs = []
-        self.visited_normals = []
 
     def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
@@ -697,8 +683,6 @@ class HabitatSM(SensorModule):
         if not self.is_exploring:
             self.processed_obs.append(telemetry.processed_obs.__dict__)
             self.states.append(self.state)
-            self.visited_locs.append(telemetry.visited_loc)
-            self.visited_normals.append(telemetry.visited_normal)
 
         return observed_state
 
