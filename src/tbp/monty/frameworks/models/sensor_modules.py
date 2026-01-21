@@ -114,11 +114,6 @@ class SurfaceNormalMethod(Enum):
     """Naive"""
 
 
-@dataclass
-class HabitatObservationProcessorTelemetry:
-    processed_obs: State
-
-
 class HabitatObservationProcessor:
     """Processes Habitat observations into a Cortical Message."""
 
@@ -187,9 +182,7 @@ class HabitatObservationProcessor:
         self._surface_normal_method = surface_normal_method
         self._weight_curvature = weight_curvature
 
-    def process(
-        self, observation: HabitatObservation
-    ) -> tuple[State, HabitatObservationProcessorTelemetry]:
+    def process(self, observation: HabitatObservation) -> State:
         """Processes observation.
 
         Args:
@@ -265,11 +258,7 @@ class HabitatObservationProcessor:
         # This is just for logging! Do not use _ attributes for matching
         observed_state._semantic_id = semantic_id
 
-        telemetry = HabitatObservationProcessorTelemetry(
-            processed_obs=observed_state,
-        )
-
-        return observed_state, telemetry
+        return observed_state
 
     def _extract_and_add_features(
         self,
@@ -668,7 +657,7 @@ class HabitatSM(SensorModule):
                 data, self.state.rotation, self.state.position
             )
 
-        observed_state, telemetry = self._habitat_observation_processor.process(data)
+        observed_state = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
             observed_state = self._message_noise(observed_state, rng=self._rng)
@@ -681,7 +670,7 @@ class HabitatSM(SensorModule):
         observed_state = self._state_filter(observed_state)
 
         if not self.is_exploring:
-            self.processed_obs.append(telemetry.processed_obs.__dict__)
+            self.processed_obs.append(observed_state.__dict__)
             self.states.append(self.state)
 
         return observed_state
