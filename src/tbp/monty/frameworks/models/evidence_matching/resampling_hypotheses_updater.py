@@ -277,8 +277,9 @@ class ResamplingHypothesesUpdater:
 
         We decrement the burst steps by 1 every step for the duration of the burst.
         """
-        if self.sampling_burst_steps > 0:
-            self.sampling_burst_steps -= 1
+        if not exc_type:
+            if self.sampling_burst_steps > 0:
+                self.sampling_burst_steps -= 1
 
     def update_hypotheses(
         self,
