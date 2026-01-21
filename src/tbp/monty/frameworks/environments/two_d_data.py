@@ -22,10 +22,7 @@ from scipy.ndimage import gaussian_filter
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import DepthTo3DLocations
-from tbp.monty.frameworks.environments.embodied_environment import (
-    EmbodiedEnvironment,
-    ObjectID,
-)
+from tbp.monty.frameworks.environments.environment import SimulatedEnvironment
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Observations,
@@ -48,7 +45,7 @@ __all__ = [
 ]
 
 
-class OmniglotEnvironment(EmbodiedEnvironment):
+class OmniglotEnvironment(SimulatedEnvironment):
     """Environment for Omniglot dataset."""
 
     def __init__(self, patch_size=10, data_path=None):
@@ -74,11 +71,6 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self.current_image, self.locations = self.load_new_character_data()
         # Just for compatibility. TODO: find cleaner way to do this.
         self._agents = [type("FakeAgent", (object,), {"action_space_type": "2d"})()]
-
-    def add_object(self, *args, **kwargs) -> ObjectID:
-        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
-        #      interface and how the class hierarchy is defined and used.
-        raise NotImplementedError("OmniglotEnvironment does not support adding objects")
 
     def step(
         self, actions: Sequence[Action]
@@ -181,13 +173,6 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self.character_version = version_id
         self.current_image, self.locations = self.load_new_character_data()
 
-    def remove_all_objects(self) -> None:
-        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
-        #      interface and how the class hierarchy is defined and used.
-        raise NotImplementedError(
-            "OmniglotEnvironment does not support removing all objects"
-        )
-
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self.step_num = 0
         patch = self.get_image_patch(
@@ -270,7 +255,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self._current_state = None
 
 
-class SaccadeOnImageEnvironment(EmbodiedEnvironment):
+class SaccadeOnImageEnvironment(SimulatedEnvironment):
     """Environment for moving over a 2D image with depth channel.
 
     Images should be stored in .png format for rgb and .data format for depth.
@@ -319,13 +304,6 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         # Instantiate once and reuse when checking action name in step()
         # TODO Use 2D-specific actions instead of overloading? Habitat actions
         self._valid_actions = ["look_up", "look_down", "turn_left", "turn_right"]
-
-    def add_object(self, *args, **kwargs) -> ObjectID:
-        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
-        #      interface and how the class hierarchy is defined and used.
-        raise NotImplementedError(
-            "SaccadeOnImageEnvironment does not support adding objects"
-        )
 
     def step(
         self, actions: Sequence[Action]
@@ -436,13 +414,6 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             self.current_scene_point_cloud,
             self.current_sf_scene_point_cloud,
         ) = self.get_3d_scene_point_cloud()
-
-    def remove_all_objects(self) -> None:
-        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
-        #      interface and how the class hierarchy is defined and used.
-        raise NotImplementedError(
-            "SaccadeOnImageEnvironment does not support removing all objects"
-        )
 
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         """Reset environment and extract image patch.

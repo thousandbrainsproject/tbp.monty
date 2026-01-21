@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2021-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -28,7 +28,6 @@ from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
     SaccadeOnImageFromStreamEnvironmentInterface,
 )
-from tbp.monty.frameworks.environments.embodied_environment import EmbodiedEnvironment
 from tbp.monty.frameworks.loggers.exp_logger import (
     BaseMontyLogger,
     LoggingCallbackHandler,
@@ -216,7 +215,6 @@ class MontyExperiment:
 
     def init_env(self, env_init_func, env_init_args):
         self.env = env_init_func(**env_init_args)
-        assert isinstance(self.env, EmbodiedEnvironment)
 
     def load_environment_interfaces(self, config):
         # Initialize everything needed for environment interface
