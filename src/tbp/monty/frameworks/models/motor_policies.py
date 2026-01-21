@@ -44,6 +44,7 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
+from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
@@ -846,6 +847,14 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # Observations after passing through sensor modules.
         # Are updated in Monty step method.
         self.processed_observations = None
+
+    @property
+    def processed_observations(self) -> State | None:
+        return self._processed_observations
+
+    @processed_observations.setter
+    def processed_observations(self, percept: State | None) -> None:
+        self._processed_observations = percept
 
     def pre_episode(self, rng: np.random.RandomState) -> None:
         if self.use_goal_state_driven_actions:
@@ -1795,6 +1804,27 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 avoidance_heading=[],
                 z_defined_pc=[],
             )
+
+    @property
+    def processed_observations(self) -> State | None:
+        return self._processed_observations
+
+    @processed_observations.setter
+    def processed_observations(self, percept: State | None) -> None:
+        self._processed_observations = percept
+
+        last_action = self.action
+        if last_action is not None:
+            if last_action.name == "orient_vertical":
+                # Only append locations associated with performing a tangential
+                # action, rather than some form of corrective movement; these
+                # movements are performed immediately after "orient_vertical"
+                self.motor_system._policy.tangent_locs.append(
+                    self.sensor_modules[0].visited_locs[-1]
+                )
+                self.motor_system._policy.tangent_norms.append(
+                    self.sensor_modules[0].visited_normals[-1]
+                )
 
     def update_action_details(self):
         """Store informaton for later logging.
