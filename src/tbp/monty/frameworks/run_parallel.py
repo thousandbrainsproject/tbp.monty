@@ -31,6 +31,7 @@ from tbp.monty.frameworks.environments.embodied_data import (
 from tbp.monty.frameworks.environments.object_init_samplers import (
     Predefined,
 )
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.pretraining_experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
@@ -38,13 +39,14 @@ from tbp.monty.frameworks.experiments.profile import ProfileExperimentMixin
 from tbp.monty.frameworks.loggers.monty_handlers import (
     BasicCSVStatsHandler,
     DetailedJSONHandler,
-    ReproduceEpisodeHandler,
 )
 from tbp.monty.frameworks.utils.logging_utils import (
     maybe_rename_existing_dir,
     maybe_rename_existing_file,
 )
 from tbp.monty.hydra import register_resolvers
+
+__all__ = ["main"]
 
 logger = logging.getLogger(__name__)
 
@@ -128,23 +130,6 @@ def post_parallel_profile_cleanup(parallel_dirs: Iterable[Path], base_dir: Path,
     post_parallel_log_cleanup(episode_csvs, episode_outfile, cat_fn=cat_csv)
     post_parallel_log_cleanup(setup_csvs, setup_outfile, cat_fn=cat_csv)
     post_parallel_log_cleanup(overall_csvs, overall_outfile, cat_fn=cat_csv)
-
-
-def move_reproducibility_data(base_dir: Path, parallel_dirs: Iterable[Path]):
-    outdir = base_dir / "reproduce_episode_data"
-    if outdir.exists():
-        shutil.rmtree(outdir)
-
-    outdir.mkdir(parents=True)
-    repro_dirs = [pdir / "reproduce_episode_data" for pdir in parallel_dirs]
-
-    # Headache to accont for the fact that everyone is episode 0
-    for cnt, rdir in enumerate(repro_dirs):
-        episode0actions = rdir / "eval_episode_0_actions.jsonl"
-        episode0target = rdir / "eval_episode_0_target.txt"
-        assert episode0actions.exists() and episode0target.exists()
-        episode0actions.rename(outdir / f"eval_episode_{cnt}_actions.jsonl")
-        episode0target.rename(outdir / f"eval_episode_{cnt}_target.txt")
 
 
 def print_config(config: DictConfig) -> None:
@@ -279,7 +264,9 @@ def generate_parallel_eval_configs(
     n_epochs = experiment.config["n_eval_epochs"]
     seed = experiment.config["seed"]
 
-    params = sample_params_to_init_args(sampler(seed, epoch_count, episode_count))
+    params = sample_params_to_init_args(
+        sampler(seed, ExperimentMode.EVAL, epoch_count, episode_count)
+    )
 
     # Try to mimic the exact workflow instead of guessing
     while epoch_count < n_epochs:
@@ -288,7 +275,10 @@ def generate_parallel_eval_configs(
 
             # No training
             new_experiment["config"].update(
-                do_eval=True, do_train=False, n_eval_epochs=1
+                do_eval=True,
+                do_train=False,
+                episode=episode_count,
+                n_eval_epochs=1,
             )
 
             # Save results in parallel subdir of output_dir, update run_name
@@ -305,8 +295,6 @@ def generate_parallel_eval_configs(
             else:
                 new_experiment["config"]["logging"]["log_parallel_wandb"] = False
 
-            new_experiment["config"]["logging"]["episode_id_parallel"] = episode_count
-
             new_experiment["config"]["eval_env_interface_args"].update(
                 object_names=[obj],
                 object_init_sampler=Predefined(**params),
@@ -315,11 +303,13 @@ def generate_parallel_eval_configs(
             new_experiments.append(new_experiment)
             episode_count += 1
             params = sample_params_to_init_args(
-                sampler(seed, epoch_count, episode_count)
+                sampler(seed, ExperimentMode.EVAL, epoch_count, episode_count)
             )
 
         epoch_count += 1
-        params = sample_params_to_init_args(sampler(seed, epoch_count, episode_count))
+        params = sample_params_to_init_args(
+            sampler(seed, ExperimentMode.EVAL, epoch_count, episode_count)
+        )
 
     return new_experiments
 
@@ -399,11 +389,11 @@ def single_evaluate(experiment):
             # `self.use_parallel_wandb_logging` set to True
             # This way, the logger does not flush its buffer in the
             # `exp.run()` call above.
-            return get_episode_stats(exp, "eval")
+            return get_episode_stats(exp, "eval", exp.config.episode)
 
 
-def get_episode_stats(exp, mode):
-    eval_stats = exp.monty_logger.get_formatted_overall_stats(mode, 0)
+def get_episode_stats(exp, mode, episode: int = 0):
+    eval_stats = exp.monty_logger.get_formatted_overall_stats(mode, episode)
     exp.monty_logger.flush()
     # Remove overall stats field since they are only averaged over 1 episode
     # and might cause confusion.
@@ -510,10 +500,6 @@ def post_parallel_eval(experiments: list[Mapping], base_dir: Path) -> None:
             outfile = base_dir / filename
             maybe_rename_existing_file(outfile)
             post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_csv)
-            continue
-
-        if issubclass(handler, ReproduceEpisodeHandler):
-            move_reproducibility_data(base_dir, parallel_dirs)
             continue
 
     if experiments[0]["config"]["logging"]["python_log_to_file"]:

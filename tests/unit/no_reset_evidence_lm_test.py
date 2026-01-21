@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -9,8 +9,6 @@
 from __future__ import annotations
 
 import pytest
-
-from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
 
 pytest.importorskip(
     "habitat_sim",
@@ -26,6 +24,7 @@ from typing import Any
 import hydra
 import numpy as np
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 

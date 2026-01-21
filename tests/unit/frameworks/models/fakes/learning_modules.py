@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,14 +9,18 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import numpy as np
+
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.frameworks.models.states import GoalState
+
+__all__ = ["FakeLearningModule"]
 
 
 class FakeLearningModule(LearningModule):
     """Dummy placeholder class used only for tests."""
 
-    def __init__(self):
+    def __init__(self, rng: np.random.RandomState):  # noqa: ARG002
         self.test_attr_1 = True
         self.test_attr_2 = True
 
@@ -42,7 +46,7 @@ class FakeLearningModule(LearningModule):
         self.test_attr_1 = state_dict["test_attr_1"]
         self.test_attr_2 = state_dict["test_attr_2"]
 
-    def pre_episode(self):
+    def pre_episode(self, rng: np.random.RandomState) -> None:
         pass
 
     def post_episode(self):

@@ -1,0 +1,44 @@
+defaults:
+  - /experiment/config/supervised_pretraining@config
+  - /experiment/config/logging/pretrain@config.logging
+  - /experiment/config/monty/patch_and_view@config.monty_config
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - /experiment/test/config/monty/motor_system/fixed@config.monty_config.motor_system_config
+  - /experiment/config/monty/args/clear_monty_args@config.monty_config
+  - /experiment/config/monty/args/defaults@config.monty_config.monty_args
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /experiment/config/environment/patch_view_finder_mount_habitat@config.env_interface_config
+  - /experiment/config/environment/init_args/clear_env_init_args@config.env_interface_config
+  - /experiment/config/environment/init_args/patch_view_mount@config.env_interface_config.env_init_args
+  - /experiment/config/environment_interface/per_object_train@config.train_env_interface_args
+  - /experiment/config/environment_interface/per_object_eval@config.eval_env_interface_args
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+config:
+  n_train_epochs: 3
+  logging:
+    monty_log_level: BASIC
+    run_name: test_supervised_training_reproducibility
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 10
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+        learning_module_args:
+          k: 5
+          match_attribute: displacement
+  env_interface_config:
+    env_init_args:
+      data_path: null
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  train_env_interface_args:
+    object_names:
+      - capsule3DSolid
+      - cubeSolid
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+      rotations:
+        - [0.0, 0.0, 0.0]
+        - [0.0, 45.0, 0.0]
+        - [0.0, 135.0, 0.0]

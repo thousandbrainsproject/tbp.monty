@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -14,7 +14,9 @@ from pathlib import Path
 import pandas as pd
 import wandb
 
-from tbp.monty.frameworks.experiments import MontyExperiment
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
+
+__all__ = ["ProfileExperimentMixin"]
 
 
 def make_stats_df(stats):

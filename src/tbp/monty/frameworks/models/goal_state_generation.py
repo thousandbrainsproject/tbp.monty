@@ -17,6 +17,8 @@ from tbp.monty.frameworks.models.abstract_monty_classes import GoalStateGenerato
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.utils.communication_utils import get_state_from_channel
 
+__all__ = ["EvidenceGoalStateGenerator", "GraphGoalStateGenerator"]
+
 logger = logging.getLogger(__name__)
 
 
@@ -940,7 +942,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         )
 
         if (
-            len(pm_smaller_thresh) == 1 and (self.parent_lm.rng.uniform() <= 0.5)
+            len(pm_smaller_thresh) == 1 and (self.parent_lm._rng.uniform() <= 0.5)
         ) or len(pm_base_thresh) == 1:
             # If we only have one object with a single hypothesis, we should not
             # attempt to generate a goal state.

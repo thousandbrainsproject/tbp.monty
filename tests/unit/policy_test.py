@@ -10,13 +10,10 @@
 
 import pytest
 
-from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
-
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
 )
-
 import copy
 import shutil
 import tempfile
@@ -40,6 +37,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
@@ -222,9 +220,10 @@ class PolicyTest(unittest.TestCase):
         motor_system_args = motor_system_config["motor_system_args"]
         policy_class = motor_system_args["policy_class"]
         policy_args = motor_system_args["policy_args"]
-        policy = policy_class(rng=np.random.RandomState(123), **policy_args)
+        rng = np.random.RandomState(123)
+        policy = policy_class(rng=rng, **policy_args)
         motor_system = motor_system_class(policy=policy)
-        motor_system.pre_episode()
+        motor_system.pre_episode(rng)
 
         return motor_system, motor_system_args
 
@@ -243,6 +242,7 @@ class PolicyTest(unittest.TestCase):
         )
 
         graph_lm = EvidenceGraphLM(
+            rng=np.random.RandomState(),
             max_match_distance=0.005,
             tolerances={
                 "patch": {
@@ -1032,10 +1032,11 @@ class PolicyTest(unittest.TestCase):
         )
 
         lm.pre_episode(
+            rng=np.random.RandomState(),
             primary_target=dict(
                 object="dummy_object",
                 quat_rotation=[1.0, 0.0, 0.0, 0.0],  # Filler value
-            )
+            ),
         )
 
         lm.matching_step(observations=[State(**fake_sensation_config)])

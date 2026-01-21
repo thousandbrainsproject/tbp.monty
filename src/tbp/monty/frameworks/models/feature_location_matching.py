@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -30,6 +30,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     rotate_pose_dependent_features,
 )
 
+__all__ = ["FeatureGraphLM", "FeatureGraphMemory"]
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,6 +43,7 @@ class FeatureGraphLM(GraphLM):
 
     def __init__(
         self,
+        rng: np.random.RandomState,
         max_match_distance,
         tolerances,
         path_similarity_threshold=0.1,
@@ -53,6 +56,7 @@ class FeatureGraphLM(GraphLM):
         """Initialize Learning Module.
 
         Args:
+            rng: The random number generator.
             max_match_distance: Maximum distance of a tested and stored location to
                 be matched.
             tolerances: How much can each observed feature deviate from the stored
@@ -74,7 +78,7 @@ class FeatureGraphLM(GraphLM):
             umbilical_num_poses: Number of samples rotations in the direction
                 of the plane perpendicular to the surface normal.
         """
-        super().__init__()
+        super().__init__(rng=rng)
         self.graph_memory = FeatureGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
         )
@@ -643,7 +647,7 @@ class FeatureGraphLM(GraphLM):
                 for _ in range(n_samples):
                     # If we do this we need a better terminal condition for similar
                     # rotations or more robustness. n_sample currently set to 0.
-                    rand_rot = self.rng.vonmises(0, kappa, 3)
+                    rand_rot = self._rng.vonmises(0, kappa, 3)
                     rot = Rotation.from_euler(
                         "xyz", [rand_rot[0], rand_rot[1], rand_rot[2]]
                     )
