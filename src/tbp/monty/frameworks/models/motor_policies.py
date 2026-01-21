@@ -846,7 +846,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         # Observations after passing through sensor modules.
         # Are updated in Monty step method.
-        self.processed_observations = None
+        self._processed_observations = None
 
     @property
     def processed_observations(self) -> State | None:
@@ -1813,21 +1813,26 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
     def processed_observations(self, percept: State | None) -> None:
         self._processed_observations = percept
 
+        if percept is None:
+            return
+
         last_action = self.action
-        if last_action is not None:
-            if last_action.name == "orient_vertical":
-                # Only append locations associated with performing a tangential
-                # action, rather than some form of corrective movement; these
-                # movements are performed immediately after "orient_vertical"
-                self.tangent_locs.append(
-                    percept.location,
+        if last_action is None:
+            return
+
+        if last_action.name == "orient_vertical":
+            # Only append locations associated with performing a tangential
+            # action, rather than some form of corrective movement; these
+            # movements are performed immediately after "orient_vertical"
+            self.tangent_locs.append(
+                percept.location,
+            )
+            if "pose_vectors" in percept.morphological_features:
+                self.tangent_norms.append(
+                    percept.morphological_features["pose_vectors"][0]
                 )
-                if "pose_vectors" in percept.morphological_features:
-                    self.tangent_norms.append(
-                        percept.morphological_features["pose_vectors"][0]
-                    )
-                else:
-                    self.tangent_norms.append(None)
+            else:
+                self.tangent_norms.append(None)
 
     def update_action_details(self):
         """Store informaton for later logging.
