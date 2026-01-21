@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -28,10 +28,15 @@ from tbp.monty.frameworks.actions.actions import (
 )
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import TransformContext
-from tbp.monty.frameworks.environments.embodied_environment import (
-    EmbodiedEnvironment,
+from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     SemanticID,
+    SimulatedObjectEnvironment,
+)
+from tbp.monty.frameworks.environments.two_d_data import (
+    OmniglotEnvironment,
+    SaccadeOnImageEnvironment,
+    SaccadeOnImageFromStreamEnvironment,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
@@ -69,7 +74,7 @@ class EnvironmentInterface:
     returned by `motor_system` is applied.
 
     Attributes:
-        env: An instance of a class that implements :class:`EmbodiedEnvironment`.
+        env: An instance of a class that implements :class:`SimulatedObjectEnvironment`.
         motor_system: :class:`MotorSystem`
         rng: Random number generator to use.
         seed: The configured random seed.
@@ -90,7 +95,7 @@ class EnvironmentInterface:
 
     def __init__(
         self,
-        env: EmbodiedEnvironment,
+        env: SimulatedObjectEnvironment,
         motor_system: MotorSystem,
         rng,
         seed: int,
@@ -502,6 +507,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
     def pre_episode(self):
         super().pre_episode()
+        # TODO: self.env._agents is not part of SimulatedObjectEnvironment
         if self.env._agents[0].action_space_type != "surface_agent":
             on_target_object = self.get_good_view_with_patch_refinement()
             if self.num_distractors == 0:
@@ -803,7 +809,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         alphabets,
         characters,
         versions,
-        env: EmbodiedEnvironment,
+        env: OmniglotEnvironment,
         motor_system: MotorSystem,
         rng,
         transform=None,
@@ -817,7 +823,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
             alphabets: List of alphabets.
             characters: List of characters.
             versions: List of versions.
-            env: An instance of a class that implements :class:`EmbodiedEnvironment`.
+            env: An instance of a class that implements :class:`OmniglotEnvironment`.
             motor_system: The motor system.
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned
@@ -906,7 +912,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self,
         scenes,
         versions,
-        env: EmbodiedEnvironment,
+        env: SaccadeOnImageEnvironment,
         motor_system: MotorSystem,
         rng,
         transform=None,
@@ -919,7 +925,8 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         Args:
             scenes: List of scenes
             versions: List of versions
-            env: An instance of a class that implements :class:`EmbodiedEnvironment`.
+            env: An instance of a class that implements
+                :class:`SaccadeOnImageEnvironment`.
             motor_system: The motor system.
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
@@ -1008,7 +1015,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
 
     def __init__(
         self,
-        env: EmbodiedEnvironment,
+        env: SaccadeOnImageFromStreamEnvironment,
         motor_system: MotorSystem,
         rng,
         transform=None,
@@ -1018,7 +1025,8 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         """Initialize environment interface.
 
         Args:
-            env: An instance of a class that implements :class:`EmbodiedEnvironment`.
+            env: An instance of a class that implements
+                :class:`SaccadeOnImageFromStreamEnvironment`.
             motor_system: The motor system.
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
