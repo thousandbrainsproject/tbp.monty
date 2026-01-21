@@ -1820,10 +1820,10 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 # action, rather than some form of corrective movement; these
                 # movements are performed immediately after "orient_vertical"
                 self.motor_system._policy.tangent_locs.append(
-                    self.sensor_modules[0].visited_locs[-1]
+                    percept.location,
                 )
                 self.motor_system._policy.tangent_norms.append(
-                    self.sensor_modules[0].visited_normals[-1]
+                    percept.morphological_features["pose_vectors"][0]
                 )
 
     def update_action_details(self):
