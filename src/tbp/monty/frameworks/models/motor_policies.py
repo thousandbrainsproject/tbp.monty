@@ -857,6 +857,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self._processed_observations = percept
 
     def pre_episode(self, rng: np.random.RandomState) -> None:
+        self._processed_observations = None
         if self.use_goal_state_driven_actions:
             JumpToGoalStateMixin.pre_episode(self, rng)
 
@@ -1435,10 +1436,6 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             Next action in the cycle.
         """
-        # TODO: is this check necessary?
-        if not hasattr(self, "processed_observations"):
-            return None
-
         # TODO: Revert to last_action = self.action once TouchObject positioning
         #       procedure is implemented
         last_action = self.last_surface_policy_action
