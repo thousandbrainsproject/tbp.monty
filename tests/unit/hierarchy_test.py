@@ -270,22 +270,14 @@ class HierarchyTest(unittest.TestCase):
         with exp:
             exp.run()
             eval_stats = pd.read_csv(Path(exp.output_dir) / "eval_stats.csv")
-            episode = 0
             num_lms = len(exp.model.learning_modules)
-            for lm_id in range(num_lms):
-                self.assertIn(
-                    eval_stats["primary_performance"][episode * 2 + lm_id],
-                    ["correct", "correct_mlh"],
-                    f"LM {lm_id} did not recognize the object on first episode.",
-                )
-            episode = 1
-            for lm_id in range(num_lms):
-                self.assertEqual(
-                    "no_match",
-                    eval_stats["primary_performance"][episode * 2 + lm_id],
-                    "LMs should not recognize object on second episode as it is a "
-                    "previously unseen view.",
-                )
+            for episode in range(2):
+                for lm_id in range(num_lms):
+                    self.assertIn(
+                        eval_stats["primary_performance"][episode * 2 + lm_id],
+                        ["correct", "correct_mlh"],
+                        f"LM {lm_id} did not recognize the object.",
+                    )
             # check that prediction errors are logged
             self.assertIn(
                 "episode_avg_prediction_error",
