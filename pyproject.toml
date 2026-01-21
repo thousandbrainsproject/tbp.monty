@@ -273,7 +273,7 @@ ignore = [
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = [
     "tbp.monty.frameworks.agents.AgentID",
-    "tbp.monty.frameworks.environments.embodied_environment.SemanticID"
+    "tbp.monty.frameworks.environments.environment.SemanticID"
 ]
 
 [tool.ruff.lint.flake8-comprehensions]

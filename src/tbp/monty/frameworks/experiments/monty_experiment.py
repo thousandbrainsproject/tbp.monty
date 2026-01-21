@@ -27,7 +27,6 @@ from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
     SaccadeOnImageFromStreamEnvironmentInterface,
 )
-from tbp.monty.frameworks.environments.embodied_environment import EmbodiedEnvironment
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.loggers.exp_logger import (
@@ -235,7 +234,6 @@ class MontyExperiment:
 
     def init_env(self, env_init_func, env_init_args):
         self.env = env_init_func(**env_init_args)
-        assert isinstance(self.env, EmbodiedEnvironment)
 
     def load_environment_interfaces(self, config):
         # Initialize everything needed for environment interface

@@ -42,7 +42,7 @@ from tbp.monty.frameworks.actions.actions import (
     VectorXYZ,
 )
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environments.embodied_environment import SemanticID
+from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up

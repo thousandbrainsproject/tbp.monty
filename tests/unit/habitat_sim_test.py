@@ -12,7 +12,7 @@ from __future__ import annotations
 import pytest
 
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environments.embodied_environment import SemanticID
+from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.sensors import SensorID
 
 pytest.importorskip(
