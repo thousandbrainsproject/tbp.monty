@@ -82,6 +82,7 @@ class Monty(metaclass=abc.ABCMeta):
         """
         self.aggregate_sensory_inputs(observation)
         self._step_learning_modules()
+        self._pass_goal_states()
         self._pass_infos_to_motor_system()
         self._set_step_type_and_check_if_done()
         self._post_step()
