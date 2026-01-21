@@ -478,16 +478,23 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
 
         self.assertEqual(max_slope, float("-inf"))
 
-    def test_burst_triggers_on_first_step_with_no_trackers(self) -> None:
+    @given(
+        sampling_burst_duration=st.integers(min_value=1, max_value=10),
+    )
+    def test_burst_triggers_on_first_step_with_no_trackers(
+        self, sampling_burst_duration
+    ) -> None:
         """Test that burst triggers on first step when no trackers exist.
 
         At the start of an episode (no trackers), max_slope is -inf which is
-        below any threshold, so a burst should be triggered.
+        below any threshold, so a burst should be triggered. At the beginning
+        of a sampling burst, the burst steps should be set equal to the
+        `sampling_burst_duration`.
         """
         self.updater.burst_trigger_slope = 1.0
-        self.updater.sampling_burst_duration = 5
+        self.updater.sampling_burst_duration = sampling_burst_duration
         self.updater.sampling_burst_steps = 0
         self.updater.evidence_slope_trackers = {}
 
         with self.updater:
-            self.assertEqual(self.updater.sampling_burst_steps, 5)
+            self.assertEqual(self.updater.sampling_burst_steps, sampling_burst_duration)
