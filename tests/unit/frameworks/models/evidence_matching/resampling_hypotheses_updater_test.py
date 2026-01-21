@@ -42,17 +42,16 @@ from tbp.monty.frameworks.utils.evidence_matching import (
 class ResamplingHypothesesUpdaterTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        """Runs once for all tests in this class."""
         super().setUpClass()
 
-        cls.output_dir = tempfile.mkdtemp()
+        output_dir = tempfile.mkdtemp()
 
         with hydra.initialize(version_base=None, config_path="../../../../../conf"):
             cls.cfg = hydra.compose(
                 config_name="test",
                 overrides=[
                     "test=frameworks/models/evidence_matching/resampling_hypothese_updater",
-                    f"test.config.logging.output_dir={cls.output_dir}",
+                    f"test.config.logging.output_dir={output_dir}",
                 ],
             )
 
