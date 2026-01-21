@@ -112,6 +112,7 @@ class BasePolicyTest(unittest.TestCase):
         )
         self.assertFalse(self.policy.is_motor_only_step(state))
 
+
 class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
     def setUp(self) -> None:
         self.agent_id = AgentID("agent_id_0")

@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from enum import Enum
 from typing import Any, ClassVar, Protocol, TypedDict
 
@@ -40,7 +39,6 @@ __all__ = [
     "FeatureChangeFilter",
     "HabitatObservation",
     "HabitatObservationProcessor",
-    "HabitatObservationProcessorTelemetry",
     "HabitatSM",
     "MessageNoise",
     "NoMessageNoise",
