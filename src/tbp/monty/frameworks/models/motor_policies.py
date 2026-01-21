@@ -1734,6 +1734,9 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.min_general_steps = min_general_steps
         self.min_heading_steps = min_heading_steps
 
+        self.tangent_locs = []
+        self.tangent_norms = []
+
     def pre_episode(self, rng: np.random.RandomState) -> None:
         super().pre_episode(rng)
 
