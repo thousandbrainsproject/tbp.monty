@@ -223,7 +223,7 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
 
         # Add graph memory mock methods
         self.mock_graph_memory.get_input_channels_in_graph = Mock(
-            return_value=["patch1"]
+            return_value=["patch"]
         )
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.zeros((channel_size, 3))
@@ -239,11 +239,11 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
         )
         self.updater.evidence_slope_trackers = {"object1": tracker1}
 
-        mapper = ChannelMapper(channel_sizes={"patch1": channel_size})
+        mapper = ChannelMapper(channel_sizes={"patch": channel_size})
         channel_hyps, _ = self.updater.update_hypotheses(
             hypotheses=hypotheses,
-            features={"patch1": {"pose_fully_defined": True}},
-            displacements={"patch1": None},
+            features={"patch": {"pose_fully_defined": True}},
+            displacements={"patch": None},
             graph_id="object1",
             mapper=mapper,
             evidence_update_threshold=0,
