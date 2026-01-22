@@ -53,7 +53,7 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         # There are two separate issues this helps avoid:
         #
         # 1. Some internal variables in SMs and LMs (e.g., `stepwise_targets_list`,
-        #    `terminal_state`, `is_exploring`, `visited_locs`) are not initialized
+        #    `terminal_state`, `is_exploring`) are not initialized
         #    in `__init__`, but only inside `pre_episode`. Ideally, these should be
         #    initialized once in `__init__` and reset in `pre_episode`, but fixing
         #    this would require changes across multiple classes.

@@ -28,7 +28,7 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_state_generation import GraphGoalStateGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
-from tbp.monty.frameworks.models.states import GoalState
+from tbp.monty.frameworks.models.states import GoalState, State
 
 __all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
 
@@ -469,7 +469,7 @@ class MontyForGraphMatching(MontyBase):
                 # a void without any objects), ensuring that we eventually time-out
                 # according to max_total_steps
 
-    def _pass_input_obs_to_motor_system(self, infos):
+    def _pass_input_obs_to_motor_system(self, percept: State):
         """Pass processed observations to motor system.
 
         Give the motor system all information it needs for its policy to decide the
@@ -479,24 +479,7 @@ class MontyForGraphMatching(MontyBase):
         provides locations associated with tangential movements; this can help ensure we
         e.g. avoid revisiting old locations.
         """
-        self.motor_system._policy.processed_observations = infos
-
-        # TODO M clean up the below when refactoring the surface-agent policy
-        if hasattr(self.motor_system._policy, "tangent_locs"):
-            last_action = self.motor_system._policy.action
-
-            if last_action is not None:
-                if last_action.name == "orient_vertical":
-                    # Only append locations associated with performing a tangential
-                    # action, rather than some form of corrective movement; these
-                    # movements are performed immediately after "orient_vertical"
-                    # TODO generalize to multiple sensor modules
-                    self.motor_system._policy.tangent_locs.append(
-                        self.sensor_modules[0].visited_locs[-1]
-                    )
-                    self.motor_system._policy.tangent_norms.append(
-                        self.sensor_modules[0].visited_normals[-1]
-                    )
+        self.motor_system._policy.processed_observations = percept
 
     # ------------------------ Helper --------------------------
     def _set_stepwise_targets(self, lm, sensory_inputs):

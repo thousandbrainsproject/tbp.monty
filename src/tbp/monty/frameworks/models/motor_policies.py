@@ -44,6 +44,7 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
+from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
@@ -845,9 +846,18 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         # Observations after passing through sensor modules.
         # Are updated in Monty step method.
-        self.processed_observations = None
+        self._processed_observations = None
+
+    @property
+    def processed_observations(self) -> State | None:
+        return self._processed_observations
+
+    @processed_observations.setter
+    def processed_observations(self, percept: State | None) -> None:
+        self._processed_observations = percept
 
     def pre_episode(self, rng: np.random.RandomState) -> None:
+        self._processed_observations = None
         if self.use_goal_state_driven_actions:
             JumpToGoalStateMixin.pre_episode(self, rng)
 
@@ -1426,10 +1436,6 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             Next action in the cycle.
         """
-        # TODO: is this check necessary?
-        if not hasattr(self, "processed_observations"):
-            return None
-
         # TODO: Revert to last_action = self.action once TouchObject positioning
         #       procedure is implemented
         last_action = self.last_surface_policy_action
@@ -1725,6 +1731,9 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.min_general_steps = min_general_steps
         self.min_heading_steps = min_heading_steps
 
+        self.tangent_locs = []
+        self.tangent_norms = []
+
     def pre_episode(self, rng: np.random.RandomState) -> None:
         super().pre_episode(rng)
 
@@ -1795,6 +1804,35 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 avoidance_heading=[],
                 z_defined_pc=[],
             )
+
+    @property
+    def processed_observations(self) -> State | None:
+        return self._processed_observations
+
+    @processed_observations.setter
+    def processed_observations(self, percept: State | None) -> None:
+        self._processed_observations = percept
+
+        if percept is None:
+            return
+
+        last_action = self.action
+        if last_action is None:
+            return
+
+        if last_action.name == "orient_vertical":
+            # Only append locations associated with performing a tangential
+            # action, rather than some form of corrective movement; these
+            # movements are performed immediately after "orient_vertical"
+            self.tangent_locs.append(
+                percept.location,
+            )
+            if "pose_vectors" in percept.morphological_features:
+                self.tangent_norms.append(
+                    percept.morphological_features["pose_vectors"][0]
+                )
+            else:
+                self.tangent_norms.append(None)
 
     def update_action_details(self):
         """Store informaton for later logging.
