@@ -1,14 +1,15 @@
 # @package config
 # Disk objects for 2D sensor experiments
 
-env_interface_args:
+train_env_interface_args:
   parent_to_child_mapping: null
   object_names:
     # - 007_disk_tbp_horz
     # - 024_mug_tbp_horz
     # - 009_disk_numenta_horz
-    - 011_cylinder
+    # - 011_cylinder
     # - 012_cylinder_tbp_horz
     # - 017_sphere_tbp_horz
-    - 016_sphere
+    # - 016_sphere
+    - 040_grid_cylinder
   object_init_sampler: ???
