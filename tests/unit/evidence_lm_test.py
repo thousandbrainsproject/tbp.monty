@@ -87,7 +87,7 @@ class EvidenceLMTest(BaseGraphTest):
 
             return hydra.compose(config_name="test", overrides=overrides)
 
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(version_base=None, config_path="../../src/conf"):
             self.evidence_cfg = hydra_config("evidence")
             self.fixed_actions_evidence_cfg = hydra_config(
                 "fixed_actions_evidence", self.fixed_actions_path

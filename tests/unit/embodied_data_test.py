@@ -163,7 +163,7 @@ class FakeOmniglotEnvironment(FakeEnvironmentAbs):
 
 class EmbodiedDataTest(unittest.TestCase):
     def setUp(self) -> None:
-        with hydra.initialize(config_path="../../conf", version_base=None):
+        with hydra.initialize(config_path="../../src/conf", version_base=None):
             self.policy_cfg_fragment = hydra.compose(
                 config_name="experiment/config/monty/motor_system/defaults"
             ).experiment.config.monty.motor_system.motor_system_args.policy_args

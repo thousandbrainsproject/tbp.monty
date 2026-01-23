@@ -32,7 +32,7 @@ class BaseConfigTest(unittest.TestCase):
         """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
 
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(version_base=None, config_path="../../src/conf"):
             self.base_cfg = hydra.compose(
                 config_name="test",
                 overrides=[
@@ -204,7 +204,7 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
 
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(version_base=None, config_path="../../src/conf"):
             self.cfg = hydra.compose(
                 config_name="test",
                 overrides=[

@@ -73,7 +73,7 @@ class HabitatDataTest(unittest.TestCase):
             {0: {f"{SENSOR_ID}.depth": s}} for s in EXPECTED_STATES[1:]
         ]
 
-        with hydra.initialize(config_path="../../conf", version_base=None):
+        with hydra.initialize(config_path="../../src/conf", version_base=None):
             self.policy_cfg_fragment = hydra.compose(
                 config_name="experiment/config/monty/motor_system/defaults",
             ).experiment.config.monty.motor_system.motor_system_args.policy_args

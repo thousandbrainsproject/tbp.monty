@@ -119,7 +119,7 @@ def load_eval_stats(path: Path) -> pd.DataFrame:
 class EvalEpisodeTest(unittest.TestCase):
     def setUp(self):
         self.output_dir = Path(tempfile.mkdtemp())
-        with hydra.initialize(version_base=None, config_path="../../../conf"):
+        with hydra.initialize(version_base=None, config_path="../../../src/conf"):
             self.training_config = hydra_config(
                 "reproducibility_supervised_training",
                 self.output_dir,
@@ -136,7 +136,7 @@ class EvalEpisodeTest(unittest.TestCase):
         )
 
     def test_eval_episode_results_are_equal(self):
-        with hydra.initialize(version_base=None, config_path="../../../conf"):
+        with hydra.initialize(version_base=None, config_path="../../../src/conf"):
             config = hydra_config(
                 "reproducibility_eval_episodes",
                 self.output_dir,

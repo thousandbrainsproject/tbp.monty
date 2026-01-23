@@ -33,7 +33,7 @@ class HierarchyTest(unittest.TestCase):
         self.output_dir = Path(tempfile.mkdtemp())
         self.model_path = self.output_dir / "pretrained"
 
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(version_base=None, config_path="../../src/conf"):
             self.two_lms_heterarchy_cfg = hydra.compose(
                 config_name="test",
                 overrides=[

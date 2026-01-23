@@ -66,7 +66,7 @@ class ProfileExperimentMixinTest(TestCase):
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
 
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(version_base=None, config_path="../../src/conf"):
             self.base_cfg = hydra.compose(
                 config_name="test",
                 overrides=[
