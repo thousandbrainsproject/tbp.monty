@@ -102,9 +102,9 @@ class ResamplingHypothesesUpdater:
     To reproduce the behavior of `DefaultHypothesesUpdater` sampling a fixed number of
     hypotheses only at the beginning of the episode, you can set:
         - `resampling_multiplier=2` (or `umbilical_num_poses` if PC undefined)
-        - `deletion_trigger_slope=-1.0` (no deletion is allowed)
+        - `deletion_trigger_slope=-np.inf` (no deletion is allowed)
         - `sampling_burst_duration=1` (sample the full burst over a single step)
-        - `burst_trigger_slope=-1.0` (never trigger additional bursts)
+        - `burst_trigger_slope=-np.inf` (never trigger additional bursts)
 
     These parameters will trigger a single-step burst at the first step of the episode.
     Note that if the PC of the first observation is undetermined,
