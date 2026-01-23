@@ -38,7 +38,7 @@ from tbp.monty.frameworks.utils.evidence_matching import (
 )
 
 
-class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
+class ResamplingHypothesesUpdaterTest(TestCase):
     def setUp(self) -> None:
         # We'll add specific mocked functions for the graph memory in
         # individual tests, since they'll change from test to test.
@@ -417,7 +417,7 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
         self.updater.evidence_slope_trackers = {}
 
         # Create a pre-initialized tracker with the "patch" channel
-        # This will patch the call to `EvidenceSlopeTracker`
+        # This will be used in the mocked call to `EvidenceSlopeTracker`
         new_tracker = EvidenceSlopeTracker()
         new_tracker.add_hyp(channel_size, "patch")
         new_tracker.update(np.array([1.0, 2.0, 3.0]), "patch")
