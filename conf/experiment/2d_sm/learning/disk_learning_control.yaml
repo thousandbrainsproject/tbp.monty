@@ -20,11 +20,6 @@ config:
     output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor}
     python_log_level: INFO
     run_name: disk_learning_control
-  monty_config:
-    motor_system_config:
-      motor_system_args:
-        policy_args:
-          fixed_amount: 1
   env_interface_config:
     env_init_args:
       data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
@@ -34,7 +29,7 @@ config:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
       positions:
         - [0.0, 1.5, 0.0]
-        - [-0.03, 1.5, 0.0]
-        - [0.03, 1.5, 0.0]
+        # - [-0.03, 1.5, 0.0]
+        # - [0.03, 1.5, 0.0]
       rotations: [[0, 0, 0]]
 
