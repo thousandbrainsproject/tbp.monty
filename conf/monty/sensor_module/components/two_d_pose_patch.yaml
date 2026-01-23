@@ -16,6 +16,8 @@ sensor_module_args:
     - edge_strength
     - coherence
     - pose_from_edge
+    - mean_depth # needed for surface agent
+    - min_depth # needed for surface agent
   delta_thresholds: 
     on_object: 0
     n_steps: 20
