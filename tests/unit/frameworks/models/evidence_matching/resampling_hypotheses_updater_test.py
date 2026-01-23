@@ -538,7 +538,7 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
     def test_num_hyps_per_node_with_initial_possible_poses(
         self, pose_fully_defined, num_euler_angles
     ) -> None:
-        """Test _num_hyps_per_node returns len(initial_possible_poses) when set.
+        """Test _num_hyps_per_node returns length of initial_possible_poses.
 
         When initial_possible_poses is a list of euler angles, _num_hyps_per_node
         should return the length of that list regardless of pose_fully_defined.
