@@ -641,46 +641,55 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         num_nodes = 5
         informed_count = 4  # Request 4 hypotheses (2 nodes * 2 hyps/node)
 
-        # Mock feature evidence with different scores
-        mock_feature_evidence = np.array([0.1, 0.5, 0.3, 0.9, 0.2])
-
         # Set up graph memory mocks
-        self.mock_graph_memory.get_feature_array = Mock(
+        mock_graph_memory = Mock()
+        mock_graph_memory.get_feature_array = Mock(
             return_value={"patch": np.zeros((num_nodes, 3))}
         )
-        self.mock_graph_memory.get_feature_order = Mock(
+        mock_graph_memory.get_feature_order = Mock(
             return_value={"patch": ["feature1", "feature2", "feature3"]}
         )
-        self.mock_graph_memory.get_locations_in_graph = Mock(
+        mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
         )
 
-        # Set up updater with feature matching enabled
-        self.updater.use_features_for_matching = {"patch": True}
-        self.updater.feature_weights = {"patch": {"feature1": 1.0}}
-        self.updater.tolerances = {"patch": {"feature1": 0.1}}
-        self.updater.feature_evidence_increment = 1
+        updater = ResamplingHypothesesUpdater(
+            feature_weights={"patch": {"feature1": 1.0}},
+            graph_memory=mock_graph_memory,
+            max_match_distance=0,
+            tolerances={"patch": {"feature1": 0.1}},
+            evidence_threshold_config="all",
+            feature_evidence_increment=1,
+        )
+        updater.use_features_for_matching = {"patch": True}
+
+        # Mock the hypotheses displacer
+        hypotheses_displacer = Mock()
+        hypotheses_displacer.displace_hypotheses_and_compute_evidence = Mock(
+            side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
+        )
+        updater.hypotheses_displacer = hypotheses_displacer
 
         # Mock the feature evidence calculator
         mock_calculator = Mock()
-        mock_calculator.calculate = Mock(return_value=mock_feature_evidence)
-        self.updater.feature_evidence_calculator = mock_calculator
+        mock_calculator.calculate = Mock(
+            return_value=np.array([0.1, 0.5, 0.3, 0.9, 0.2])
+        )
+        updater.feature_evidence_calculator = mock_calculator
 
         # Use predefined poses (initial possible poses)
         euler_angles = [[0, 0, 0], [0, 0, 180]]
-        self.updater.initial_possible_poses = [
+        updater.initial_possible_poses = [
             Rotation.from_euler("xyz", pose, degrees=True).inv()
             for pose in euler_angles
         ]
 
-        tracker = EvidenceSlopeTracker()
-
-        result = self.updater._sample_informed(
+        result = updater._sample_informed(
             channel_features={"pose_fully_defined": True},
             informed_count=informed_count,
             graph_id="object1",
             input_channel="patch",
-            tracker=tracker,
+            tracker=EvidenceSlopeTracker(),
         )
 
         # Should have 4 hypotheses
