@@ -91,7 +91,7 @@ class ResamplingHypothesesUpdater:
     `deletion_trigger_slope`.
 
     The resampling process is governed by four main parameters:
-      - `resampling_multiplier`: Determines the number of the hypotheses to resample
+      - `resampling_multiplier`: Determines the number of hypotheses to resample
         as a multiplier of the object graph nodes.
       - `deletion_trigger_slope`: Hypotheses below this threshold are deleted.
       - `sampling_burst_duration`: The number of consecutive steps in each burst.
@@ -108,9 +108,9 @@ class ResamplingHypothesesUpdater:
 
     These parameters will trigger a single-step burst at the first step of the episode.
     Note that if the PC of the first observation is undetermined,
-    `resampling_multiplier` should be set to `umbilical_num_poses` to reproduce the
-    exact results of `DefaultHypothesesUpdater`. In practice, this is difficult to
-    predict because it relies on the first sampled observation.
+    `resampling_multiplier` should be set to the value of `umbilical_num_poses` to
+    reproduce the exact results of `DefaultHypothesesUpdater`. In practice, this is
+    difficult to predict because it relies on the first sampled observation.
     """
 
     def __init__(
@@ -164,7 +164,7 @@ class ResamplingHypothesesUpdater:
             features_for_matching_selector: Class to
                 select if features should be used for matching. Defaults to the default
                 selector.
-            resampling_multiplier: Determines the number of the hypotheses to resample
+            resampling_multiplier: Determines the number of hypotheses to resample
                 as a multiplier of the object graph nodes. Value of 0.0 results in no
                 resampling. Value can be greater than 1 but not to exceed the
                 `num_hyps_per_node` of the current step. Defaults to 0.4.
@@ -313,8 +313,7 @@ class ResamplingHypothesesUpdater:
             update telemetry is a dictionary containing:
                 - added_ids: IDs of hypotheses added during resampling at the current
                     timestep.
-                - ages: The ages of the hypotheses as tracked by the
-                    `EvidenceSlopeTracker`.
+                - ages: The ages of hypotheses as tracked by the `EvidenceSlopeTracker`.
                 - evidence_slopes: The slopes extracted from the `EvidenceSlopeTracker`.
                 - removed_ids: IDs of hypotheses removed during resampling. Note that
                     these IDs can only be used to index hypotheses from the previous
