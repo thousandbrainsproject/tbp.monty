@@ -30,8 +30,8 @@ runs:
         git diff --name-only origin/${{ inputs.git_base_ref }} > changed_files.txt
         ./.github/actions/should_run_monty/check_changed_files.sh
     - name: Filter by path for a push
-      if: ${{ inputs.github_event_name == 'push' }}
-      id: filter_by_path_push
+      if: ${{ inputs.github_event_name == 'push' || inputs.github_event_name == 'merge_group' }}
+      id: filter_by_path_push_or_merge_group
       working-directory: ${{ inputs.working_directory }}
       shell: bash
       run: |
@@ -39,6 +39,6 @@ runs:
         ./.github/actions/should_run_monty/check_changed_files.sh
     - name: Should run
       id: should_run
-      if: ${{ steps.filter_by_path_pr.outputs.should_run_monty == 'true' || steps.filter_by_path_push.outputs.should_run_monty == 'true'}}
+      if: ${{ steps.filter_by_path_pr.outputs.should_run_monty == 'true' || steps.filter_by_path_push_or_merge_group.outputs.should_run_monty == 'true'}}
       shell: bash
       run: echo "should_run_monty=true" >> $GITHUB_OUTPUT

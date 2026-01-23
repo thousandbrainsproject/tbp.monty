@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2021-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -13,7 +13,6 @@ import copy
 import datetime
 import logging
 import pprint
-from enum import Enum
 from pathlib import Path
 from typing import Any, Literal
 
@@ -28,7 +27,8 @@ from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
     SaccadeOnImageFromStreamEnvironmentInterface,
 )
-from tbp.monty.frameworks.environments.embodied_environment import EmbodiedEnvironment
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.loggers.exp_logger import (
     BaseMontyLogger,
     LoggingCallbackHandler,
@@ -38,14 +38,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
     SensorModule,
 )
-
-# Import TwoDPoseSM for type checking
-try:
-    from tbp.monty.frameworks.models.two_d_sensor_module import TwoDPoseSM
-
-    _2D_SENSOR_AVAILABLE = True
-except ImportError:
-    _2D_SENSOR_AVAILABLE = False
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import (
@@ -53,18 +45,9 @@ from tbp.monty.frameworks.utils.dataclass_utils import (
 )
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
 
-__all__ = ["ExperimentMode", "MontyExperiment"]
+__all__ = ["MontyExperiment"]
 
 logger = logging.getLogger("tbp.monty")
-
-
-class ExperimentMode(Enum):
-    """Experiment mode."""
-
-    EVAL = "eval"
-    """Evaluation mode."""
-    TRAIN = "train"
-    """Training mode."""
 
 
 class MontyExperiment:
@@ -83,6 +66,8 @@ class MontyExperiment:
         """
         self.config = config
 
+        self.rng = np.random.RandomState(config["seed"])
+
         self.do_train = config["do_train"]
         self.do_eval = config["do_eval"]
         self.experiment_mode = ExperimentMode.TRAIN
@@ -96,7 +81,6 @@ class MontyExperiment:
         else:
             self.model_path = None
         self.min_lms_match = config["min_lms_match"]
-        self.rng = np.random.RandomState(config["seed"])
         self.show_sensor_output = config["show_sensor_output"]
         self.supervised_lm_ids = config["supervised_lm_ids"]
         if self.supervised_lm_ids == "all":
@@ -106,6 +90,33 @@ class MontyExperiment:
 
         if self.show_sensor_output:
             self.live_plotter = LivePlotter()
+
+        self.train_episodes = config.get("episode", 0)
+        self.eval_episodes = config.get("episode", 0)
+
+        self._rng_seed_history: list[int] = []
+
+    def reset_episode_rng(self):
+        """Resets the random number generator using episode-specific seed."""
+        if self.model.experiment_mode == "train":
+            seed = episode_seed(
+                self.config["seed"],
+                ExperimentMode.TRAIN,
+                self.train_episodes,
+            )
+        else:
+            seed = episode_seed(
+                self.config["seed"],
+                ExperimentMode.EVAL,
+                self.eval_episodes,
+            )
+
+        if seed in self._rng_seed_history:
+            logger.warning(f"RNG seed {seed} was used in a previous episode")
+        self._rng_seed_history.append(seed)
+
+        logger.info(f"resetting RNG to seed {seed}")
+        self.rng = np.random.RandomState(seed)
 
     def setup_experiment(self, config: dict[str, Any]) -> None:
         """Set up the basic elements of a Monty experiment and initialize counters.
@@ -148,8 +159,7 @@ class MontyExperiment:
             lm_class = lm_cfg["learning_module_class"]
             lm_args = lm_cfg["learning_module_args"]
             assert issubclass(lm_class, LearningModule)
-            learning_modules[lm_id] = lm_class(**lm_args)
-            learning_modules[lm_id].rng = self.rng
+            learning_modules[lm_id] = lm_class(rng=self.rng, **lm_args)
             learning_modules[lm_id].learning_module_id = lm_id
 
         # Create sensor modules
@@ -224,7 +234,6 @@ class MontyExperiment:
 
     def init_env(self, env_init_func, env_init_args):
         self.env = env_init_func(**env_init_args)
-        assert isinstance(self.env, EmbodiedEnvironment)
 
     def load_environment_interfaces(self, config):
         # Initialize everything needed for environment interface
@@ -233,22 +242,36 @@ class MontyExperiment:
             env_interface_config["env_init_func"], env_interface_config["env_init_args"]
         )
 
-        env_interface_class = config["env_interface_class"]
-        env_interface_args = dict(
-            env=self.env,
-            transform=env_interface_config["transform"],
-            **config["env_interface_args"],
-        )
+        # Initialize train environment interface if needed
+        if config["do_train"]:
+            env_interface_class = config["train_env_interface_class"]
+            env_interface_args = dict(
+                env=self.env,
+                transform=env_interface_config["transform"],
+                experiment_mode=ExperimentMode.TRAIN,
+                **config["train_env_interface_args"],
+            )
 
-        env_interface = self.create_env_interface(
-            env_interface_class, env_interface_args
-        )
-
-        if config["do_eval"]:
-            self.train_env_interface = None
-            self.eval_env_interface = env_interface
+            self.train_env_interface = self.create_env_interface(
+                env_interface_class, env_interface_args
+            )
         else:
-            self.train_env_interface = env_interface
+            self.train_env_interface = None
+
+        # Initialize eval environment interfaces if needed
+        if config["do_eval"]:
+            env_interface_class = config["eval_env_interface_class"]
+            env_interface_args = dict(
+                env=self.env,
+                transform=env_interface_config["transform"],
+                experiment_mode=ExperimentMode.EVAL,
+                **config["eval_env_interface_args"],
+            )
+
+            self.eval_env_interface = self.create_env_interface(
+                env_interface_class, env_interface_args
+            )
+        else:
             self.eval_env_interface = None
 
     def create_env_interface(self, env_interface_class, env_interface_args):
@@ -284,12 +307,10 @@ class MontyExperiment:
     def init_counters(self):
         # Initialize time stamp variables for logging
         self.total_train_steps = 0
-        self.train_episodes = 0
-        self.train_epochs = 0
         self.total_eval_steps = 0
-        self.eval_episodes = 0
-        self.eval_epochs = 0
         self.env_interface = None
+        self.eval_epochs = 0
+        self.train_epochs = 0
 
     ####
     # Logging
@@ -302,6 +323,11 @@ class MontyExperiment:
         Returns:
             dict with current expirent state.
         """
+        current_rng_seed = (
+            self._rng_seed_history[-1]
+            if self._rng_seed_history
+            else self.config["seed"]
+        )
         args = dict(
             total_train_steps=self.total_train_steps,
             train_episodes=self.train_episodes,
@@ -309,6 +335,7 @@ class MontyExperiment:
             total_eval_steps=self.total_eval_steps,
             eval_episodes=self.eval_episodes,
             eval_epochs=self.eval_epochs,
+            episode_seed=current_rng_seed,
         )
         # FIXME: 'target' attribute is specific to `EnvironmentInterfacePerObject`
         if isinstance(self.env_interface, EnvironmentInterfacePerObject):
@@ -482,16 +509,21 @@ class MontyExperiment:
 
     def pre_episode(self):
         """Call pre_episode on elements in experiment and set mode."""
-        self.model.pre_episode()
-        self.env_interface.pre_episode()
+        if self.experiment_mode is ExperimentMode.TRAIN:
+            logger.info(
+                f"running train epoch {self.train_epochs} "
+                f"train episode {self.train_episodes}"
+            )
+        else:
+            logger.info(
+                f"running eval epoch {self.eval_epochs} "
+                f"eval episode {self.eval_episodes}"
+            )
 
-        # Increment episode counter for TwoDPoseSM sensor modules if available
-        if _2D_SENSOR_AVAILABLE:
-            for sm in self.model.sensor_modules:
-                if isinstance(sm, TwoDPoseSM):
-                    if sm.debug_visualize or sm.save_raw_rgb:
-                        sm.episode_counter += 1
-                        sm.step_counter = 0
+        self.reset_episode_rng()
+
+        self.model.pre_episode(self.rng)
+        self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps
         if self.experiment_mode is not ExperimentMode.TRAIN:
@@ -553,6 +585,10 @@ class MontyExperiment:
 
     def pre_epoch(self):
         """Set environment interface and call sub pre_epoch functions."""
+        if self.experiment_mode is ExperimentMode.TRAIN:
+            logger.info(f"running train epoch {self.train_epochs}")
+        else:
+            logger.info(f"running eval epoch {self.eval_epochs}")
         self.env_interface = self.train_env_interface
         if self.experiment_mode is not ExperimentMode.TRAIN:
             self.env_interface = self.eval_env_interface

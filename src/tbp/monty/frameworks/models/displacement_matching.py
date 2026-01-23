@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -20,6 +20,8 @@ from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import is_in_ranges
 from tbp.monty.frameworks.utils.sensor_processing import point_pair_features
 
+__all__ = ["DisplacementGraphLM", "DisplacementGraphMemory"]
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,6 +30,7 @@ class DisplacementGraphLM(GraphLM):
 
     def __init__(
         self,
+        rng: np.random.RandomState,
         k=None,
         match_attribute=None,
         tolerance=0.001,
@@ -38,6 +41,7 @@ class DisplacementGraphLM(GraphLM):
         """Initialize Learning Module.
 
         Args:
+            rng: The random number generator.
             k: How many nearest neighbors should nodes in graphs connect to.
             match_attribute: Which displacement to use for matching.
                 Should be in ['displacement', 'PPF'].
@@ -55,7 +59,7 @@ class DisplacementGraphLM(GraphLM):
                 [u, v, 0] instead of 3D world positions. This affects how reference
                 frame transforms are applied during model updates.
         """
-        super().__init__()
+        super().__init__(rng=rng)
         self.graph_memory = DisplacementGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
             k=k,

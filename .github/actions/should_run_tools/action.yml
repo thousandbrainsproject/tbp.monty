@@ -1,0 +1,44 @@
+name: "Should Run Tools"
+description: "Determines if the Tools workflow should run based on the changed files."
+
+inputs:
+  git_base_ref:
+    description: "The git base ref to compare against."
+  git_sha:
+    description: "The git sha to compare against."
+  github_event_name:
+    description: "The event name."
+    required: true
+  working_directory:
+    description: "The directory to run the command in."
+    required: true
+
+outputs:
+  should_run_tools:
+    description: "Whether the Tools workflow should run."
+    value: ${{ steps.should_run.outputs.should_run_tools }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Filter by path for a pull request
+      if: ${{ inputs.github_event_name == 'pull_request' }}
+      id: filter_by_path_pr
+      working-directory: ${{ inputs.working_directory }}
+      shell: bash
+      run: |
+        git diff --name-only origin/${{ inputs.git_base_ref }} > changed_files.txt
+        ./.github/actions/should_run_tools/check_changed_files.sh
+    - name: Filter by path for a push or merge group
+      if: ${{ inputs.github_event_name == 'push' || inputs.github_event_name == 'merge_group' }}
+      id: filter_by_path_push_or_merge_group
+      working-directory: ${{ inputs.working_directory }}
+      shell: bash
+      run: |
+        git diff --name-only ${{ inputs.git_sha }}^1 > changed_files.txt
+        ./.github/actions/should_run_tools/check_changed_files.sh
+    - name: Should run
+      id: should_run
+      if: ${{ steps.filter_by_path_pr.outputs.should_run_tools == 'true' || steps.filter_by_path_push_or_merge_group.outputs.should_run_tools == 'true'}}
+      shell: bash
+      run: echo "should_run_tools=true" >> $GITHUB_OUTPUT

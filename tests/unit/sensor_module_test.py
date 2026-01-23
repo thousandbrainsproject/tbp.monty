@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -10,8 +10,6 @@
 import hydra
 import pytest
 
-from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
-
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -20,6 +18,8 @@ pytest.importorskip(
 import shutil
 import tempfile
 import unittest
+
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 
 
 class SensorModuleTest(unittest.TestCase):

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -11,9 +11,13 @@ from __future__ import annotations
 
 from typing import Literal
 
+import numpy as np
+
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
+
+__all__ = ["MotorSystem"]
 
 
 class MotorSystem:
@@ -32,18 +36,13 @@ class MotorSystem:
         self._policy = policy
         self._state = state
 
-    @property
-    def last_action(self) -> Action:
-        """Returns the last action taken by the motor system."""
-        return self._policy.last_action
-
     def post_episode(self) -> None:
         """Post episode hook."""
         self._policy.post_episode()
 
-    def pre_episode(self) -> None:
+    def pre_episode(self, rng: np.random.RandomState) -> None:
         """Pre episode hook."""
-        self._policy.pre_episode()
+        self._policy.pre_episode(rng)
 
     def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
         """Sets the experiment mode.

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -62,13 +62,14 @@ __all__ = [
     "HabitatSim",
 ]
 
-from tbp.monty.frameworks.environments.embodied_environment import (
+from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
     QuaternionWXYZ,
     SemanticID,
     VectorXYZ,
 )
+from tbp.monty.simulators.simulator import Simulator
 
 DEFAULT_SCENE = "NONE"
 DEFAULT_PHYSICS_CONFIG = str(files(resources) / "default.physics_config.json")
@@ -84,7 +85,7 @@ PRIMITIVE_OBJECT_TYPES = {
 }
 
 
-class HabitatSim(HabitatActuator):
+class HabitatSim(HabitatActuator, Simulator):
     """Habitat-sim interface for tbp.monty.
 
     This class wraps `habitat-sim <https://aihabitat.org/docs/habitat-sim>`_
@@ -524,9 +525,6 @@ class HabitatSim(HabitatActuator):
             TypeError: If the action type is invalid
             ValueError: If the action name is invalid
         """
-        if not actions:
-            return self.observations
-
         for action in actions:
             action_name = self.action_name(action)
             if action_name not in self._action_space:

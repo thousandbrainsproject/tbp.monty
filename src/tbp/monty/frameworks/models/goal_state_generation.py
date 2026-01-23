@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -16,6 +16,8 @@ import numpy as np
 from tbp.monty.frameworks.models.abstract_monty_classes import GoalStateGenerator
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.utils.communication_utils import get_state_from_channel
+
+__all__ = ["EvidenceGoalStateGenerator", "GraphGoalStateGenerator"]
 
 logger = logging.getLogger(__name__)
 
@@ -931,7 +933,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         )
 
         if (
-            len(pm_smaller_thresh) == 1 and (self.parent_lm.rng.uniform() <= 0.5)
+            len(pm_smaller_thresh) == 1 and (self.parent_lm._rng.uniform() <= 0.5)
         ) or len(pm_base_thresh) == 1:
             # We always focus on pose if there is just 1 possible match - if we are part
             # of the way towards being certain about the ID
