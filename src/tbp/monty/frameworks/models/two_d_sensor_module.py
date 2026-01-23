@@ -377,20 +377,6 @@ class TwoDPoseSM(SensorModule):
             [self._cumulative_2d_position[0], self._cumulative_2d_position[1], 0.0]
         )
 
-        # Project 3D pose vectors into local UV basis
-        pose_vecs = observed_state.morphological_features.get("pose_vectors")
-        if pose_vecs is not None and self._basis_u is not None:
-            uv_pose_vecs = []
-            for v_3d in pose_vecs:
-                # Project the 3D vector onto local u, v and the normal basis
-                u_comp = np.dot(v_3d, self._basis_u)
-                v_comp = np.dot(v_3d, self._basis_v)
-                n_comp = np.dot(v_3d, self._previous_normal)
-                uv_pose_vecs.append([n_comp, u_comp, v_comp])
-            observed_state.morphological_features["pose_vectors"] = np.array(
-                uv_pose_vecs
-            )
-
         # Save current location for next step
         self._previous_location = current_location.copy()
 
