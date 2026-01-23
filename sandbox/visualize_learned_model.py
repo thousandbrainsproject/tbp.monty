@@ -429,14 +429,15 @@ def visualize_point_cloud_interactive(
     ).max()
     camera_distance = max_range * 1.5
 
+    # Position camera along +Z axis to look down at the XY-plane
     camera_pos = (
         center[0],
-        center[1] + camera_distance,
-        center[2] + camera_distance * 0.3,
+        center[1],
+        center[2] + camera_distance,
     )
     plotter.show(
         axes=dict(xtitle="X", ytitle="Y", ztitle="Z"),
-        viewup="x",
+        viewup="y",
         camera=dict(
             pos=camera_pos,
             focal_point=center,
