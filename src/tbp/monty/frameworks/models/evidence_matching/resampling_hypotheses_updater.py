@@ -717,9 +717,6 @@ class ResamplingHypothesesUpdater:
                     continue
 
                 slopes = tracker.calculate_slopes(channel)
-                if slopes.size == 0:
-                    continue
-
                 finite_slopes = slopes[np.isfinite(slopes)]
                 if finite_slopes.size:
                     max_slope = max(max_slope, np.max(finite_slopes))
