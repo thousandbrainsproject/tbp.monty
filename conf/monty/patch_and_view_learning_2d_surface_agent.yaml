@@ -1,0 +1,11 @@
+# @package config.monty_config
+# Patch and view finder agent for 2D sensor learning experiments.
+# Uses TwoDPoseSM with displacement graph learning module.
+
+defaults:
+  - monty_class: graph_matching
+  - monty_args: defaults
+  - motor_system: curvature_informed_surface
+  - learning_module/displacement_basic@learning_module_configs.learning_module_0
+  - sensor_module: sm0_twodpose_sm1_viewfinder
+  - connectivity: patch_view_single_lm

@@ -1,0 +1,60 @@
+# @package _global_
+# Disk learning 2D sensor experiment
+
+defaults:
+  - /experiment/2d_sm/learning/disk_learning_control
+  - override /monty: patch_and_view_learning_2d_surface_agent
+
+config:
+  # 2D sensor parameters
+  zoom: 10
+  blur_sigma: 0.1
+  logging:
+    run_name: surface_agent_debug
+  # Apply zoom, resolution, and blur to environment
+  env_interface_config:
+    env_init_args:
+      agents:
+        agent_args:
+          action_space_type: surface_agent
+          resolutions:
+            - [64, 64]
+            - [64, 64]
+          zooms:
+            - ${config.zoom}
+            - 1.0
+    transform:
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
+        agent_id: ${monty.agent_id:agent_id_0}
+        sigma: ${config.blur_sigma}
+        sensor_ids: [patch]
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+        agent_id: ${monty.agent_id:agent_id_0}
+        max_depth: 1
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_ids: [patch, view_finder]
+        resolutions:
+          - [64, 64]
+          - [64, 64]
+        world_coord: true
+        zooms:
+          - ${config.zoom}
+          - 1.0
+        get_all_points: true
+        use_semantic_sensor: false
+  # Debug visualization for learning
+  monty_config:
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          is_2d_surface: false
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_args:
+          is_surface_sm: true
+          delta_thresholds: null
+          save_raw_obs: true
+          debug_visualize: true
+          debug_save_dir: ${path.expanduser:${oc.env:HOME}/tbp/feat.2d_sensor/results/patches/disk/zoom${config.zoom}_blur${config.blur_sigma}}
+
