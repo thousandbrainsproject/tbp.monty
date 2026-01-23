@@ -112,7 +112,7 @@ class TwoDPoseSM(SensorModule):
         )
         if noise_params:
             self._message_noise: MessageNoise = DefaultMessageNoise(
-                noise_params=noise_params, rng=rng
+                noise_params=noise_params
             )
         else:
             self._message_noise = NoMessageNoise()
@@ -178,9 +178,9 @@ class TwoDPoseSM(SensorModule):
         self._reference_u: np.ndarray | None = None  # Global U axis (world-aligned)
         self._reference_v: np.ndarray | None = None  # Global V axis (world-aligned)
 
-    def pre_episode(self):
+    def pre_episode(self, rng: np.random.RandomState) -> None:
         """Reset buffer and is_exploring flag."""
-        super().pre_episode()
+        super().pre_episode(rng)
         self._snapshot_telemetry.reset()
         self._state_filter.reset()
         self.is_exploring = False
@@ -244,7 +244,7 @@ class TwoDPoseSM(SensorModule):
         # )
         # observed_state, telemetry = processor.process(data)
 
-        observed_state, telemetry = self._habitat_observation_processor.process(data)
+        observed_state = self._habitat_observation_processor.process(data)
 
         curvature_pose_vectors = observed_state.morphological_features.get(
             "pose_vectors"
@@ -289,10 +289,12 @@ class TwoDPoseSM(SensorModule):
         observed_state = self._state_filter(observed_state)
 
         if not self.is_exploring:
-            self.processed_obs.append(telemetry.processed_obs.__dict__)
+            self.processed_obs.append(observed_state.__dict__)
             self.states.append(self.state)
-            self.visited_locs.append(telemetry.visited_loc)
-            self.visited_normals.append(telemetry.visited_normal)
+            self.visited_locs.append(observed_state.location)
+            self.visited_normals.append(
+                observed_state.morphological_features.get("point_normal")
+            )
 
         return observed_state
 
