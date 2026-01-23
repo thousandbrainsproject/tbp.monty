@@ -1,4 +1,4 @@
-# Copyright 2025-2026 Thousand Brains Project
+# Copyright 2025 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -18,9 +18,10 @@ from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.hydra import register_resolvers
 
-register_resolvers()
-
 logger = logging.getLogger(__name__)
+
+# Register resolvers before Hydra processes config files
+register_resolvers()
 
 
 def print_config(config: DictConfig) -> None:
@@ -32,36 +33,18 @@ def print_config(config: DictConfig) -> None:
     print("-" * 100)
 
 
-def output_dir_from_run_name(config: DictConfig) -> Path:
-    """Configure the output directory unique to the run name.
-
-    The output directory is created if it does not exist.
-
-    Args:
-        config: Hydra config.
-
-    Returns:
-        output_dir: Path to run name-specific output directory.
-    """
-    output_dir = (
-        Path(config.experiment.config.logging.output_dir)
-        / config.experiment.config.logging.run_name
-    )
-    output_dir.mkdir(exist_ok=True, parents=True)
-    return output_dir
-
-
 @hydra.main(config_path="../../../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
-    if cfg.quiet_habitat_logs:
+    if cfg.config.quiet_habitat_logs:
         os.environ["MAGNUM_LOG"] = "quiet"
         os.environ["HABITAT_SIM_LOG"] = "quiet"
+    print(OmegaConf.to_yaml(cfg))
 
-    print_config(cfg)
+    output_dir = Path(cfg.config.logging.output_dir) / cfg.config.logging.run_name
+    cfg.config.logging.output_dir = str(output_dir)
 
-    cfg.experiment.config.logging.output_dir = str(output_dir_from_run_name(cfg))
-
-    experiment = hydra.utils.instantiate(cfg.experiment)
+    output_dir.mkdir(exist_ok=True, parents=True)
+    experiment = hydra.utils.instantiate(cfg)
     start_time = time.time()
     with experiment:
         experiment.run()
