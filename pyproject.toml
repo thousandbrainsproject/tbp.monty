@@ -301,6 +301,7 @@ version = { attr = "tbp.monty.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["conf", "hydra_plugins", "tbp.monty"]
 namespaces = true
 
 [tool.setuptools.package-data]
