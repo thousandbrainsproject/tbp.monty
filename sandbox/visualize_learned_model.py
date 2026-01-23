@@ -450,7 +450,7 @@ if __name__ == "__main__":
     # Set up paths
     pretrained_model_path = Path(
         "~/tbp/results/monty/pretrained_models/2d_sensor/"
-        "surface_agent_debug/pretrained/model.pt"
+        "cylinder_all_debug/pretrained/model.pt"
     ).expanduser()
 
     # Load the model to explore available objects
