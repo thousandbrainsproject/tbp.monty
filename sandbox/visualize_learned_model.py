@@ -22,7 +22,7 @@ def visualize_point_cloud_interactive(
     *,
     tangent_color="black",
     tangent_lw=3,
-    show_unscaled_edge_lines=False,
+    show_unscaled_edge_lines=True,
 ):
     """Create interactive 3D visualization with Vedo.
 
@@ -450,7 +450,7 @@ if __name__ == "__main__":
     # Set up paths
     pretrained_model_path = Path(
         "~/tbp/results/monty/pretrained_models/2d_sensor/"
-        "cylinder_all_debug/pretrained/model.pt"
+        "surface_agent_debug/pretrained/model.pt"
     ).expanduser()
 
     # Load the model to explore available objects
