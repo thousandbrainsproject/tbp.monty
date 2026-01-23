@@ -20,7 +20,14 @@ import hydra
 from omegaconf import OmegaConf
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
-EXPERIMENT_DIR = Path(__file__).parent.parent.parent / "src" / "conf" / "experiment"
+EXPERIMENT_DIR = (
+    Path(__file__).parent.parent.parent
+    / "src"
+    / "tbp"
+    / "monty"
+    / "conf"
+    / "experiment"
+)
 EXPERIMENTS = [x.stem for x in EXPERIMENT_DIR.glob("*.yaml")]
 EXPERIMENT_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots"
 
@@ -51,7 +58,9 @@ class ExperimentTest(ParametrizedTestCase):
     )
     def test_experiment(self, experiment: str):
         snapshot_path = EXPERIMENT_SNAPSHOTS_DIR / f"{experiment}.yaml"
-        with hydra.initialize(version_base=None, config_path="../../src/conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             config = hydra.compose(
                 config_name="experiment", overrides=[f"experiment={experiment}"]
             )
@@ -78,7 +87,9 @@ class TutorialTest(ParametrizedTestCase):
     )
     def test_tutorial(self, tutorial: str):
         snapshot_path = TUTORIAL_SNAPSHOTS_DIR / f"{tutorial}.yaml"
-        with hydra.initialize(version_base=None, config_path="../../src/conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             config = hydra.compose(
                 config_name="experiment", overrides=[f"experiment=tutorial/{tutorial}"]
             )

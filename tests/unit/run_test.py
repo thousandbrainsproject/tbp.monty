@@ -93,7 +93,7 @@ class MontyRunTest(unittest.TestCase):
             {0: {"agent_id_0.depth": obs}} for obs in FAKE_OBS
         ]
 
-        with hydra.initialize(version_base=None, config_path="../../src/conf"):
+        with hydra.initialize(version_base=None, config_path="../../src/tbp/monty/conf"):
             self.cfg = hydra.compose(
                 config_name="experiment",
                 overrides=[

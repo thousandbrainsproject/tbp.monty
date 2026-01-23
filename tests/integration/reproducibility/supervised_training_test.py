@@ -32,7 +32,9 @@ class SupervisedTrainingTest(unittest.TestCase):
         self.output_dir = Path(tempfile.mkdtemp())
 
     def test_training_results_are_equal(self):
-        with hydra.initialize(version_base=None, config_path="../../../src/conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../../src/tbp/monty/conf"
+        ):
             config = hydra_config(
                 "reproducibility_supervised_training",
                 self.output_dir,

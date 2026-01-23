@@ -50,7 +50,7 @@ class RunParallelTest(unittest.TestCase):
                 )
             return hydra.compose(config_name="experiment", overrides=overrides)
 
-        with hydra.initialize(version_base=None, config_path="../../src/conf"):
+        with hydra.initialize(version_base=None, config_path="../../src/tbp/monty/conf"):
             self.supervised_pre_training_cfg = hydra_config(
                 "supervised_pre_training", self.output_dir
             )
