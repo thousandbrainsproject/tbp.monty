@@ -523,6 +523,11 @@ class ResamplingHypothesesUpdater:
     ) -> ChannelHypotheses:
         """Samples the specified number of existing hypotheses to retain.
 
+        Note that we are not sampling the existing hypotheses in a probabilistic
+        sense (e.g., random or seed-generation). Instead, those are deterministically
+        determined using the slope tracker and the deletion threshold, then maintained
+        by filtering the list of existing hypotheses.
+
         Args:
             hypotheses_selection: The selection of hypotheses to maintain/remove.
             hypotheses: Hypotheses for all input channels in the graph_id.
