@@ -663,9 +663,13 @@ def get_graph_lm_episode_stats(lm):
         # objects is not easily specified/recovered
         "rotation_error": rotation_error,
         "num_possible_matches": len(possible_matches),
-        "detected_location": lm.detected_pose[:3],
-        "detected_rotation": lm.detected_pose[3:6],
-        "detected_scale": lm.detected_pose[6],
+        "detected_location": lm.detected_pose[:3]
+        if lm.detected_pose is not None
+        else None,
+        "detected_rotation": lm.detected_pose[3:6]
+        if lm.detected_pose is not None
+        else None,
+        "detected_scale": lm.detected_pose[6] if lm.detected_pose is not None else None,
         "location_rel_body": location,
         "detected_path": lm.buffer.stats["detected_path"],
         "symmetry_evidence": lm.symmetry_evidence,
