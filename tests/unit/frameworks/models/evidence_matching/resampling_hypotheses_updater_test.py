@@ -235,26 +235,26 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
         self.assertEqual(self.updater.sampling_burst_steps, 0)
 
     @given(
-        resampling_multiplier=st.floats(min_value=0.0, max_value=3.0),
+        sampling_multiplier=st.floats(min_value=0.0, max_value=3.0),
         graph_num_nodes=st.integers(min_value=1, max_value=100),
         pose_fully_defined=st.booleans(),
     )
     def test_sample_count_returns_informed_count_during_burst(
-        self, resampling_multiplier, graph_num_nodes, pose_fully_defined
+        self, sampling_multiplier, graph_num_nodes, pose_fully_defined
     ) -> None:
         """Test informed_count with various resampling parameters.
 
         When sampling_burst_steps > 0, _sample_count should calculate and
-        return a positive informed_count based on graph nodes and resampling_multiplier.
+        return a positive informed_count based on graph nodes and sampling_multiplier.
 
-        The resampling_multiplier is capped at num_hyps_per_node:
+        The sampling_multiplier is capped at num_hyps_per_node:
             - 2 for pose_fully_defined=True,
             - umbilical_num_poses for pose_fully_defined=False
 
         Informed_count cannot exceed graph_num_nodes * num_hyps_per_node.
         """
         self.updater.sampling_burst_steps = 3
-        self.updater.resampling_multiplier = resampling_multiplier
+        self.updater.sampling_multiplier = sampling_multiplier
         channel_features = {"pose_fully_defined": pose_fully_defined}
         num_hyps_per_node = self.updater._num_hyps_per_node(
             channel_features=channel_features
@@ -285,21 +285,21 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
         self.assertLessEqual(informed_count, graph_num_nodes * num_hyps_per_node)
 
     @given(
-        resampling_multiplier=st.floats(min_value=0.0, max_value=2.0),
+        sampling_multiplier=st.floats(min_value=0.0, max_value=2.0),
         pose_fully_defined=st.booleans(),
     )
     def test_sample_count_returns_zero_informed_count_when_not_in_burst(
         self,
-        resampling_multiplier: float,
+        sampling_multiplier: float,
         pose_fully_defined: bool,
     ) -> None:
         """Test that _sample_count returns informed_count == 0 when not in burst.
 
         When sampling_burst_steps == 0, _sample_count should return
-        informed_count == 0 regardless of other parameters (e.g, resampling_multiplier).
+        informed_count == 0 regardless of other parameters (e.g, sampling_multiplier).
         """
         self.updater.sampling_burst_steps = 0
-        self.updater.resampling_multiplier = resampling_multiplier
+        self.updater.sampling_multiplier = sampling_multiplier
 
         tracker = EvidenceSlopeTracker(min_age=0)
         mapper = ChannelMapper()
@@ -375,7 +375,7 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
         with self.updater:
             self.assertEqual(self.updater.sampling_burst_steps, sampling_burst_duration)
 
-    def test_init_fails_when_resampling_multiplier_is_negative(self) -> None:
+    def test_init_fails_when_sampling_multiplier_is_negative(self) -> None:
         with self.assertRaises(ValueError) as context:
             ResamplingHypothesesUpdater(
                 feature_weights={},
@@ -383,10 +383,10 @@ class ResamplingHypothesesUpdaterUnitTestCase(TestCase):
                 max_match_distance=0,
                 tolerances={},
                 evidence_threshold_config="all",
-                resampling_multiplier=-0.1,
+                sampling_multiplier=-0.1,
             )
 
-        self.assertIn("resampling_multiplier should be >= 0", str(context.exception))
+        self.assertIn("sampling_multiplier should be >= 0", str(context.exception))
 
     def test_update_hypotheses_creates_tracker_for_new_graph_id(self) -> None:
         """Test that a new EvidenceSlopeTracker is created for unseen graph_id.

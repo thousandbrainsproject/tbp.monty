@@ -91,7 +91,7 @@ class ResamplingHypothesesUpdater:
     `deletion_trigger_slope`.
 
     The resampling process is governed by four main parameters:
-      - `resampling_multiplier`: Determines the number of hypotheses to resample
+      - `sampling_multiplier`: Determines the number of hypotheses to resample
         as a multiplier of the object graph nodes.
       - `deletion_trigger_slope`: Hypotheses below this threshold are deleted.
       - `sampling_burst_duration`: The number of consecutive steps in each burst.
@@ -101,14 +101,14 @@ class ResamplingHypothesesUpdater:
 
     To reproduce the behavior of `DefaultHypothesesUpdater` sampling a fixed number of
     hypotheses only at the beginning of the episode, you can set:
-        - `resampling_multiplier=2` (or `umbilical_num_poses` if PC undefined)
+        - `sampling_multiplier=2` (or `umbilical_num_poses` if PC undefined)
         - `deletion_trigger_slope=-np.inf` (no deletion is allowed)
         - `sampling_burst_duration=1` (sample the full burst over a single step)
         - `burst_trigger_slope=-np.inf` (never trigger additional bursts)
 
     These parameters will trigger a single-step burst at the first step of the episode.
     Note that if the PC of the first observation is undetermined,
-    `resampling_multiplier` should be set to the value of `umbilical_num_poses` to
+    `sampling_multiplier` should be set to the value of `umbilical_num_poses` to
     reproduce the exact results of `DefaultHypothesesUpdater`. In practice, this is
     difficult to predict because it relies on the first sampled observation.
     """
@@ -127,7 +127,7 @@ class ResamplingHypothesesUpdater:
         features_for_matching_selector: type[FeaturesForMatchingSelector] = (
             DefaultFeaturesForMatchingSelector
         ),
-        resampling_multiplier: float = 0.4,
+        sampling_multiplier: float = 0.4,
         deletion_trigger_slope: float = 0.5,
         sampling_burst_duration: int = 5,
         burst_trigger_slope: float = 1.0,
@@ -164,7 +164,7 @@ class ResamplingHypothesesUpdater:
             features_for_matching_selector: Class to
                 select if features should be used for matching. Defaults to the default
                 selector.
-            resampling_multiplier: Determines the number of hypotheses to resample
+            sampling_multiplier: Determines the number of hypotheses to resample
                 as a multiplier of the object graph nodes. Value of 0.0 results in no
                 resampling. Value can be greater than 1 but not to exceed the
                 `num_hyps_per_node` of the current step. Defaults to 0.4.
@@ -199,7 +199,7 @@ class ResamplingHypothesesUpdater:
                 umbilical points (i.e., points where PC directions are undefined).
 
         Raises:
-            ValueError: If the resampling_multiplier is less than 0
+            ValueError: If the sampling_multiplier is less than 0
             InvalidEvidenceThresholdConfig: If `evidence_threshold_config` is not
                 set to "all".
 
@@ -214,7 +214,7 @@ class ResamplingHypothesesUpdater:
         self.feature_evidence_increment = feature_evidence_increment
         self.feature_weights = feature_weights
         self.features_for_matching_selector = features_for_matching_selector
-        self.resampling_multiplier = resampling_multiplier
+        self.sampling_multiplier = sampling_multiplier
         self.deletion_trigger_slope = deletion_trigger_slope
         self.sampling_burst_duration = sampling_burst_duration
         self.burst_trigger_slope = burst_trigger_slope
@@ -242,8 +242,8 @@ class ResamplingHypothesesUpdater:
         )
 
         # resampling multiplier should not be less than 0 (no resampling)
-        if self.resampling_multiplier < 0:
-            raise ValueError("resampling_multiplier should be >= 0")
+        if self.sampling_multiplier < 0:
+            raise ValueError("sampling_multiplier should be >= 0")
 
         self.reset()
 
@@ -475,7 +475,7 @@ class ResamplingHypothesesUpdater:
 
         Notes:
             This function takes into account the following parameters:
-              - `resampling_multiplier`: The number of hypotheses to resample. This
+              - `sampling_multiplier`: The number of hypotheses to resample. This
                 is defined as a multiplier of the number of nodes in the object graph.
               - `deletion_trigger_slope`: This dictates how many hypotheses to
                 delete. Hypotheses below this threshold are deleted.
@@ -491,10 +491,10 @@ class ResamplingHypothesesUpdater:
 
             # This makes sure that we do not request more than the available number of
             # informed hypotheses
-            resampling_multiplier = min(self.resampling_multiplier, num_hyps_per_node)
+            sampling_multiplier = min(self.sampling_multiplier, num_hyps_per_node)
 
             # Calculate the total number of informed hypotheses to be resampled
-            new_informed = round(graph_num_points * resampling_multiplier)
+            new_informed = round(graph_num_points * sampling_multiplier)
 
             # Ensure the `new_informed` is divisible by `num_hyps_per_node`
             new_informed -= new_informed % num_hyps_per_node
