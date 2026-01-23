@@ -922,8 +922,6 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
                 return False
 
             # If we only know (i.e. have learned) about one object, we can focus on pose
-            # In this case, get_top_two_mlh_ids returns the same IDs for top_id and
-            # second_id
             self.focus_on_pose = True
             return True
 
