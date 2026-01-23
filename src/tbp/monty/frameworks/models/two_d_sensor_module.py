@@ -335,9 +335,8 @@ class TwoDPoseSM(SensorModule):
         displacement_3d = current_location - self._previous_location
         chord_length = np.linalg.norm(displacement_3d)
 
-        # 2. Parallel Transport: Update basis vectors to the new tangent plane
-        # Find the rotation that maps the old normal to the new normal
-        self._update_basis(surface_normal)
+        # 2. Parallel transport basis vectors using Levi-Civita connection
+        self._parallel_transport_basis(surface_normal)
 
         du_raw = np.dot(displacement_3d, self._basis_u)
         dv_raw = np.dot(displacement_3d, self._basis_v)
@@ -414,18 +413,39 @@ class TwoDPoseSM(SensorModule):
 
         self._previous_normal = surface_normal
 
-    def _update_basis(self, new_normal: np.ndarray) -> None:
-        # Anchor to World Up (Y) to keep the V axis consistent across jumps
-        world_ref = np.array([0, 1, 0])
-        if abs(np.dot(world_ref, new_normal)) > 0.9:
-            world_ref = np.array([0, 0, 1])
-        
-        # Project World Up onto the local tangent plane
-        # This ensures U and V are always oriented the same way relative to the world
-        u = np.cross(world_ref, new_normal)
-        self._basis_u = u / np.linalg.norm(u)
-        self._basis_v = np.cross(new_normal, self._basis_u)
-        self._previous_normal = new_normal
+    def _parallel_transport_basis(self, new_normal: np.ndarray) -> None:
+        """Parallel transport tangent frame to new normal using Levi-Civita connection.
+
+        Rotates (u, v) basis by the minimal rotation that maps old normal to new
+        normal, preserving the frame's orientation relationship with the surface.
+        """
+        old_normal = self._previous_normal
+        dot = np.clip(np.dot(old_normal, new_normal), -1.0, 1.0)
+
+        # Nearly parallel normals - no rotation needed
+        if dot > 1.0 - 1e-10:
+            self._previous_normal = new_normal.copy()
+            return
+
+        # Nearly anti-parallel - 180 degree rotation
+        if dot < -1.0 + 1e-10:
+            self._basis_u = -self._basis_u
+            self._basis_v = -self._basis_v
+            self._previous_normal = new_normal.copy()
+            return
+
+        # General case: rotate around cross product axis using Rodrigues' formula
+        axis = np.cross(old_normal, new_normal)
+        axis = axis / np.linalg.norm(axis)
+        angle = np.arccos(dot)
+        c, s = np.cos(angle), np.sin(angle)
+
+        def rodrigues(v: np.ndarray) -> np.ndarray:
+            return v * c + np.cross(axis, v) * s + axis * np.dot(axis, v) * (1 - c)
+
+        self._basis_u = rodrigues(self._basis_u)
+        self._basis_v = rodrigues(self._basis_v)
+        self._previous_normal = new_normal.copy()
 
     def extract_2d_edge(
         self,

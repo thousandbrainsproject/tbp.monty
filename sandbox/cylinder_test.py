@@ -2,14 +2,11 @@ import numpy as np
 
 
 class SyntheticTwoDPose:
-    """
-    Minimal subset of TwoDPoseSM needed for a synthetic test.
+    """Minimal subset of TwoDPoseSM needed for a synthetic test.
 
-    - Uses the same world-anchored basis construction:
-        U ~ world_up x normal
-        V ~ normal x U
-    - Recomputes the basis at each point (like _update_basis)
-    - Integrates projected 3D displacements to get cumulative 2D positions.
+    Uses Levi-Civita parallel transport to maintain consistent tangent frame
+    orientation as the surface normal changes. Integrates projected 3D
+    displacements to get cumulative 2D positions.
     """
 
     def __init__(self):
@@ -34,20 +31,35 @@ class SyntheticTwoDPose:
         self._basis_v = np.cross(surface_normal, self._basis_u)
         self._previous_normal = surface_normal
 
-    def _update_basis(self, new_normal: np.ndarray) -> None:
-        world_ref = np.array([0.0, 1.0, 0.0])
-        if abs(np.dot(world_ref, new_normal)) > 0.9:
-            world_ref = np.array([0.0, 0.0, 1.0])
+    def _parallel_transport_basis(self, new_normal: np.ndarray) -> None:
+        """Parallel transport tangent frame using Levi-Civita connection."""
+        old_normal = self._previous_normal
+        dot = np.clip(np.dot(old_normal, new_normal), -1.0, 1.0)
 
-        u = np.cross(world_ref, new_normal)
-        u_norm = np.linalg.norm(u)
-        if u_norm < 1e-12:
-            u = np.array([1.0, 0.0, 0.0])
-            u_norm = 1.0
+        # Nearly parallel normals - no rotation needed
+        if dot > 1.0 - 1e-10:
+            self._previous_normal = new_normal.copy()
+            return
 
-        self._basis_u = u / u_norm
-        self._basis_v = np.cross(new_normal, self._basis_u)
-        self._previous_normal = new_normal
+        # Nearly anti-parallel - 180 degree rotation
+        if dot < -1.0 + 1e-10:
+            self._basis_u = -self._basis_u
+            self._basis_v = -self._basis_v
+            self._previous_normal = new_normal.copy()
+            return
+
+        # General case: rotate around cross product axis using Rodrigues' formula
+        axis = np.cross(old_normal, new_normal)
+        axis = axis / np.linalg.norm(axis)
+        angle = np.arccos(dot)
+        c, s = np.cos(angle), np.sin(angle)
+
+        def rodrigues(v: np.ndarray) -> np.ndarray:
+            return v * c + np.cross(axis, v) * s + axis * np.dot(axis, v) * (1 - c)
+
+        self._basis_u = rodrigues(self._basis_u)
+        self._basis_v = rodrigues(self._basis_v)
+        self._previous_normal = new_normal.copy()
 
     def integrate_sequence(self, locations: np.ndarray, normals: np.ndarray):
         """
@@ -65,7 +77,7 @@ class SyntheticTwoDPose:
                 uv.append(self._cumulative_2d_position.copy())
                 continue
 
-            self._update_basis(n)
+            self._parallel_transport_basis(n)
             disp = loc - self._previous_location
             chord_length = np.linalg.norm(disp)
             if chord_length < 1e-12:
