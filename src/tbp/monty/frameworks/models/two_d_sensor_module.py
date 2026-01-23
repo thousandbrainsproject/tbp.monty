@@ -61,6 +61,7 @@ class TwoDPoseSM(SensorModule):
         sensor_module_id: str,
         features: list[str],
         save_raw_obs: bool = False,
+        is_surface_sm: bool = False,
         edge_detection_params: dict[str, Any] | None = None,
         noise_params: dict[str, Any] | None = None,
         delta_thresholds: dict[str, Any] | None = None,
@@ -107,6 +108,7 @@ class TwoDPoseSM(SensorModule):
         self._habitat_observation_processor = HabitatObservationProcessor(
             features=features,
             sensor_module_id=sensor_module_id,
+            is_surface_sm=is_surface_sm,
         )
         if noise_params:
             self._message_noise: MessageNoise = DefaultMessageNoise(
@@ -383,7 +385,7 @@ class TwoDPoseSM(SensorModule):
                 u_comp = np.dot(v_3d, self._basis_u)
                 v_comp = np.dot(v_3d, self._basis_v)
                 n_comp = np.dot(v_3d, self._previous_normal)
-                uv_pose_vecs.append([u_comp, v_comp, n_comp])
+                uv_pose_vecs.append([n_comp, u_comp, v_comp])
             observed_state.morphological_features["pose_vectors"] = np.array(
                 uv_pose_vecs
             )
@@ -411,36 +413,17 @@ class TwoDPoseSM(SensorModule):
         self._previous_normal = surface_normal
 
     def _update_basis(self, new_normal: np.ndarray) -> None:
-        """Rotates the basis vectors to stay tangent to the new normal."""
-        # Standard Parallel Transport (The 'Levi-Civita' connection)
-        # We rotate the basis vectors around the axis perpendicular to both normals
-        old_n = self._previous_normal
-        new_n = new_normal
-
-        axis = np.cross(old_n, new_n)
-        axis_len = np.linalg.norm(axis)
-
-        if axis_len > 1e-9:
-            axis /= axis_len
-            angle = np.arccos(np.clip(np.dot(old_n, new_n), -1.0, 1.0))
-
-            # Rodrigues' rotation formula to tilt the basis
-            def rotate(v, a, theta):
-                return (
-                    v * np.cos(theta)
-                    + np.cross(a, v) * np.sin(theta)
-                    + a * np.dot(a, v) * (1 - np.cos(theta))
-                )
-
-            self._basis_u = rotate(self._basis_u, axis, angle)
-            self._basis_v = rotate(self._basis_v, axis, angle)
-
-        # Ensure basis stays perfectly orthogonal to new normal
-        self._basis_u -= np.dot(self._basis_u, new_n) * new_n
-        self._basis_u /= np.linalg.norm(self._basis_u)
-        self._basis_v = np.cross(new_n, self._basis_u)
-
-        self._previous_normal = new_n
+        # Anchor to World Up (Y) to keep the V axis consistent across jumps
+        world_ref = np.array([0, 1, 0])
+        if abs(np.dot(world_ref, new_normal)) > 0.9:
+            world_ref = np.array([0, 0, 1])
+        
+        # Project World Up onto the local tangent plane
+        # This ensures U and V are always oriented the same way relative to the world
+        u = np.cross(world_ref, new_normal)
+        self._basis_u = u / np.linalg.norm(u)
+        self._basis_v = np.cross(new_normal, self._basis_u)
+        self._previous_normal = new_normal
 
     def extract_2d_edge(
         self,
