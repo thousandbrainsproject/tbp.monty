@@ -27,7 +27,9 @@ class SensorModuleTest(unittest.TestCase):
         """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
 
-        with hydra.initialize(version_base=None, config_path="../../src/tbp/monty/conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             self.base_cfg = hydra.compose(
                 config_name="test",
                 overrides=[

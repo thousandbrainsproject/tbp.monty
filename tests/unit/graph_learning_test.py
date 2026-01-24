@@ -137,7 +137,9 @@ class GraphLearningTest(BaseGraphTest):
                 overrides += extra_overrides
             return hydra.compose(config_name="test", overrides=overrides)
 
-        with hydra.initialize(version_base=None, config_path="../../src/tbp/monty/conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             self.base_cfg = hydra_config("base")
             self.surface_agent_eval_cfg = hydra_config("surface_agent_eval")
             self.ppf_pred_cfg = hydra_config("ppf_pred")

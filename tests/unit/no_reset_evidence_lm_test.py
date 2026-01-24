@@ -34,7 +34,9 @@ class NoResetEvidenceLMTest(BaseGraphTest):
 
         self.output_dir = tempfile.mkdtemp()
 
-        with hydra.initialize(version_base=None, config_path="../../src/tbp/monty/conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             self.pretraining_cfg = hydra.compose(
                 config_name="test",
                 overrides=[

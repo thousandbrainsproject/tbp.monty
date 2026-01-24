@@ -70,7 +70,9 @@ class PolicyTest(unittest.TestCase):
                 ],
             )
 
-        with hydra.initialize(version_base=None, config_path="../../src/tbp/monty/conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             self.base_dist_cfg = hydra_config("base_dist")
             self.base_surf_cfg = hydra_config("base_surf")
             self.spiral_cfg = hydra_config("spiral")
