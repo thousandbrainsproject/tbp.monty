@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,20 +9,23 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import abc
 from dataclasses import dataclass
-from typing import NewType, Sequence, Tuple
+from typing import NewType, Protocol, Sequence, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 
 __all__ = [
-    "EmbodiedEnvironment",
+    "Environment",
+    "ObjectEnvironment",
     "ObjectID",
     "ObjectInfo",
     "QuaternionWXYZ",
+    "ResettableEnvironment",
     "SemanticID",
+    "SimulatedEnvironment",
+    "SimulatedObjectEnvironment",
     "VectorXYZ",
 ]
 
@@ -44,8 +47,36 @@ class ObjectInfo:
     semantic_id: SemanticID | None
 
 
-class EmbodiedEnvironment(abc.ABC):
-    @abc.abstractmethod
+class Environment(Protocol):
+    """Base protocol for all environments that support steppable actions."""
+
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
+        """Apply the given actions to the environment.
+
+        Args:
+            actions: The actions to apply to the environment.
+
+        Returns:
+            The current observations and proprioceptive state.
+
+        Note:
+            If the actions are an empty sequence, the current observations are returned.
+        """
+        ...
+
+    def close(self) -> None:
+        """Close the environment and release all resources.
+
+        Any call to any other environment method may raise an exception
+        """
+        ...
+
+
+class ObjectEnvironment(Protocol):
+    """Protocol for environments that support adding and removing objects."""
+
     def add_object(
         self,
         name: str,
@@ -72,26 +103,8 @@ class EmbodiedEnvironment(abc.ABC):
         Returns:
             The ID of the added object.
         """
-        pass
+        ...
 
-    @abc.abstractmethod
-    def step(
-        self, actions: Sequence[Action]
-    ) -> tuple[Observations, ProprioceptiveState]:
-        """Apply the given actions to the environment.
-
-        Args:
-            actions: The actions to apply to the environment.
-
-        Returns:
-            The current observations and proprioceptive state.
-
-        Note:
-            If the actions are an empty sequence, the current observations are returned.
-        """
-        pass
-
-    @abc.abstractmethod
     def remove_all_objects(self) -> None:
         """Remove all objects from the environment.
 
@@ -99,21 +112,26 @@ class EmbodiedEnvironment(abc.ABC):
               HabitatSim.remove_all_objects and is quite specific to HabitatSim
               implementation. We should consider refactoring this to be more generic.
         """
-        pass
+        ...
 
-    @abc.abstractmethod
+
+class ResettableEnvironment(Protocol):
+    """Protocol for environments that can be reset to their initial state."""
+
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
-        """Reset enviroment to its initial state.
+        """Reset the environment to its initial state.
 
         Returns:
             The environment's initial observations and proprioceptive state.
         """
-        pass
+        ...
 
-    @abc.abstractmethod
-    def close(self) -> None:
-        """Close the environmnt releasing all resources.
 
-        Any call to any other environment method may raise an exception
-        """
-        pass
+class SimulatedEnvironment(Environment, ResettableEnvironment, Protocol):
+    pass
+
+
+class SimulatedObjectEnvironment(
+    Environment, ObjectEnvironment, ResettableEnvironment, Protocol
+):
+    pass

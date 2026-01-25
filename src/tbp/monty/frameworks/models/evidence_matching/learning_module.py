@@ -43,6 +43,8 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_scaled_evidences,
 )
 
+__all__ = ["EvidenceGraphLM"]
+
 logger = logging.getLogger(__name__)
 
 
@@ -150,6 +152,7 @@ class EvidenceGraphLM(GraphLM):
 
     def __init__(
         self,
+        rng: np.random.RandomState,
         max_match_distance,
         tolerances: dict,
         feature_weights: dict,
@@ -177,7 +180,7 @@ class EvidenceGraphLM(GraphLM):
         **kwargs,
     ) -> None:
         kwargs["initialize_base_modules"] = False
-        super().__init__(*args, **kwargs)
+        super().__init__(rng, *args, **kwargs)
         # --- LM components ---
         self.graph_memory = EvidenceGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,

@@ -11,9 +11,13 @@ from __future__ import annotations
 
 from typing import Literal
 
+import numpy as np
+
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
+
+__all__ = ["MotorSystem"]
 
 
 class MotorSystem:
@@ -36,9 +40,9 @@ class MotorSystem:
         """Post episode hook."""
         self._policy.post_episode()
 
-    def pre_episode(self) -> None:
+    def pre_episode(self, rng: np.random.RandomState) -> None:
         """Pre episode hook."""
-        self._policy.pre_episode()
+        self._policy.pre_episode(rng)
 
     def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
         """Sets the experiment mode.

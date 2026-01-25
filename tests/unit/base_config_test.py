@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,8 +9,6 @@
 # https://opensource.org/licenses/MIT.
 
 import pytest
-
-from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
 
 pytest.importorskip(
     "habitat_sim",
@@ -25,6 +23,8 @@ from typing import Mapping
 
 import hydra
 from omegaconf import OmegaConf
+
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 
 
 class BaseConfigTest(unittest.TestCase):

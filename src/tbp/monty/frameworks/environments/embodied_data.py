@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -28,11 +28,17 @@ from tbp.monty.frameworks.actions.actions import (
 )
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import TransformContext
-from tbp.monty.frameworks.environments.embodied_environment import (
-    EmbodiedEnvironment,
+from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     SemanticID,
+    SimulatedObjectEnvironment,
 )
+from tbp.monty.frameworks.environments.two_d_data import (
+    OmniglotEnvironment,
+    SaccadeOnImageEnvironment,
+    SaccadeOnImageFromStreamEnvironment,
+)
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
@@ -69,10 +75,12 @@ class EnvironmentInterface:
     returned by `motor_system` is applied.
 
     Attributes:
-        env: An instance of a class that implements :class:`EmbodiedEnvironment`.
+        env: An instance of a class that implements :class:`SimulatedObjectEnvironment`.
         motor_system: :class:`MotorSystem`
         rng: Random number generator to use.
         seed: The configured random seed.
+        experiment_mode: The experiment mode that this environment interface is used
+            in.
         transform: Callable used to transform the observations returned by
             the environment.
 
@@ -90,10 +98,11 @@ class EnvironmentInterface:
 
     def __init__(
         self,
-        env: EmbodiedEnvironment,
+        env: SimulatedObjectEnvironment,
         motor_system: MotorSystem,
         rng,
         seed: int,
+        experiment_mode: ExperimentMode,
         transform=None,
     ):
         if not isinstance(motor_system, MotorSystem):
@@ -105,11 +114,12 @@ class EnvironmentInterface:
         self.rng = rng
         self.seed = seed
         self.transform = transform
-        self._observation, proprioceptive_state = self.reset()
+        self._observation, proprioceptive_state = self.reset(self.rng)
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
         self._counter = 0
+        self.experiment_mode = experiment_mode
 
     def __iter__(self) -> Self:
         """Implement the iterator protocol.
@@ -133,7 +143,8 @@ class EnvironmentInterface:
         self._counter += 1
         return self._observation
 
-    def reset(self):
+    def reset(self, rng: np.random.RandomState):
+        self.rng = rng
         observation, state = self.env.reset()
 
         if self.transform is not None:
@@ -157,11 +168,11 @@ class EnvironmentInterface:
             observation = self.apply_transform(self.transform, observation, state)
         return observation, state
 
-    def pre_episode(self):
-        self.motor_system.pre_episode()
+    def pre_episode(self, rng: np.random.RandomState):
+        self.motor_system.pre_episode(rng)
 
         # Reset the environment interface state.
-        self._observation, proprioceptive_state = self.reset()
+        self._observation, proprioceptive_state = self.reset(rng)
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -245,7 +256,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         self.epochs = 0
         self.object_init_sampler = object_init_sampler
         self.object_params = self.object_init_sampler(
-            self.seed, self.epochs, self.episodes
+            self.seed, self.experiment_mode, self.epochs, self.episodes
         )
         self.current_object = 0
         self.n_objects = len(self.object_names)
@@ -255,8 +266,8 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             parent_to_child_mapping if parent_to_child_mapping else {}
         )
 
-    def pre_episode(self):
-        super().pre_episode()
+    def pre_episode(self, rng: np.random.RandomState):
+        super().pre_episode(rng)
 
         self.motor_system._state[
             self.motor_system._policy.agent_id
@@ -266,7 +277,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         super().post_episode()
         self.episodes += 1
         self.object_params = self.object_init_sampler(
-            self.seed, self.epochs, self.episodes
+            self.seed, self.experiment_mode, self.epochs, self.episodes
         )
         self.cycle_object()
 
@@ -276,7 +287,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
     def post_epoch(self):
         self.epochs += 1
         self.object_params = self.object_init_sampler(
-            self.seed, self.epochs, self.episodes
+            self.seed, self.experiment_mode, self.epochs, self.episodes
         )
 
     def create_semantic_mapping(self):
@@ -500,8 +511,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
         return self._observation
 
-    def pre_episode(self):
-        super().pre_episode()
+    def pre_episode(self, rng: np.random.RandomState):
+        super().pre_episode(rng)
+        # TODO: self.env._agents is not part of SimulatedObjectEnvironment
         if self.env._agents[0].action_space_type != "surface_agent":
             on_target_object = self.get_good_view_with_patch_refinement()
             if self.num_distractors == 0:
@@ -803,7 +815,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         alphabets,
         characters,
         versions,
-        env: EmbodiedEnvironment,
+        env: OmniglotEnvironment,
         motor_system: MotorSystem,
         rng,
         transform=None,
@@ -817,7 +829,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
             alphabets: List of alphabets.
             characters: List of characters.
             versions: List of versions.
-            env: An instance of a class that implements :class:`EmbodiedEnvironment`.
+            env: An instance of a class that implements :class:`OmniglotEnvironment`.
             motor_system: The motor system.
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned
@@ -839,7 +851,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        self._observation, proprioceptive_state = self.reset()
+        self._observation, proprioceptive_state = self.reset(self.rng)
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -906,7 +918,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self,
         scenes,
         versions,
-        env: EmbodiedEnvironment,
+        env: SaccadeOnImageEnvironment,
         motor_system: MotorSystem,
         rng,
         transform=None,
@@ -919,7 +931,8 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         Args:
             scenes: List of scenes
             versions: List of versions
-            env: An instance of a class that implements :class:`EmbodiedEnvironment`.
+            env: An instance of a class that implements
+                :class:`SaccadeOnImageEnvironment`.
             motor_system: The motor system.
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
@@ -940,7 +953,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        self._observation, proprioceptive_state = self.reset()
+        self._observation, proprioceptive_state = self.reset(self.rng)
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -1008,7 +1021,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
 
     def __init__(
         self,
-        env: EmbodiedEnvironment,
+        env: SaccadeOnImageFromStreamEnvironment,
         motor_system: MotorSystem,
         rng,
         transform=None,
@@ -1018,7 +1031,8 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         """Initialize environment interface.
 
         Args:
-            env: An instance of a class that implements :class:`EmbodiedEnvironment`.
+            env: An instance of a class that implements
+                :class:`SaccadeOnImageFromStreamEnvironment`.
             motor_system: The motor system.
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
@@ -1037,7 +1051,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        self._observation, proprioceptive_state = self.reset()
+        self._observation, proprioceptive_state = self.reset(self.rng)
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
