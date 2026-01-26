@@ -83,7 +83,7 @@ class OmniglotEnvironment(SimulatedEnvironment):
         move in increments specified by amount through this list. Overall there are
         usually several hundred points (~200-400) but it varies between characters and
         versions.
-        If they reach the end of a move path and the episode is not finished, we start
+        If we reach the end of a move path and the episode is not finished, we start
         from the beginning again. If len(move_path) % amount != 0, we will sample
         different points on the second pass.
 
