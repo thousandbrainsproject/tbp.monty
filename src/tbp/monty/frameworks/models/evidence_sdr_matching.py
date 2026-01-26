@@ -534,13 +534,11 @@ class EvidenceSDRLMMixin:
     See the `monty_lab` repo for reference. Specifically,
     `experiments/configs/evidence_sdr_evaluation.py`
 
-    TODO: This mixin adds state to the instance it is being mixed with. As such, it
-    is attempting to reuse some common functionality of EvidenceGraphLM while being
-    a different thing. The likely refactor is to extract the reusable EvidenceGraphLM
-    functionality into a component (since it probably requires its own state), use
-    that component as the default in EvidenceGraphLM, and then reuse that component in
-    a new EvidenceSDRGraphLM class instead of inheriting from EvidenceGraphLM.
     """
+    # TODO: This mixin adds state to the instance it is being mixed with. As such, it
+    #       attempts to reuse some functionality of EvidenceGraphLM while representing
+    #       a different concept; consider extracting shared components and reusing them
+    #       via composition instead of inheritance with a new EvidenceSDRGraphLM class.
 
     def __init__(self, *args, **kwargs):
         """The mixin overrides the `__init__` function of the Learning Module.

@@ -31,10 +31,10 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
       arrangement
     - we only need the surface normal at the center of the patch
 
-    TODO: Calculate surface normal from multiple points at different distances (tan_len
-          values) and then take the average of them. Test if this improves robustness
-          to raw sensor noise.
-
+    """
+    # TODO: Calculate surface normal from multiple points at different distances (tan_len
+    #       values) and then take the average of them. Test if this improves robustness
+    #       to raw sensor noise.
     Args:
         point_cloud: List of 3D coordinates with flags indicating whether each
             point lies on the object. Shape = [n, 4].

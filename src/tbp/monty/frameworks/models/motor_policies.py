@@ -84,6 +84,7 @@ class MotorPolicy(abc.ABC):
         Returns:
             The action to take.
         """
+        # TODO: Not yet implemented; keep modelling logic in the learning modules.
         pass
 
     @abc.abstractmethod
@@ -92,15 +93,13 @@ class MotorPolicy(abc.ABC):
     ) -> None:
         """This post action hook will automatically be called at the end of __call__.
 
-        TODO: Remove state parameter as it is only used to serialize the state in
-              state.convert_motor_state() and should be done within the
-              motor system.
-
         Args:
             action: The action to process the hook for.
             state: The current state of the motor system.
                 Defaults to None.
         """
+        # TODO: Remove the `state` parameter; serializing the state via
+        #       `state.convert_motor_state()` should happen within the motor system.
         pass
 
     @abc.abstractmethod
@@ -288,16 +287,14 @@ class BasePolicy(MotorPolicy):
     def is_motor_only_step(self, state: MotorSystemState) -> bool:
         """Check if the current step is a motor-only step.
 
-        TODO: This information is currently stored in motor system state, but
-        should be stored in the policy state instead as it is tracking policy
-        state, not motor system state. This will remove MotorSystemState param.
-
         Args:
             state: The current state of the motor system.
 
         Returns:
             True if the current step is a motor-only step, False otherwise.
         """
+        # TODO: Store this information in the policy state instead of MotorSystemState,
+        #       so we can drop the MotorSystemState parameter.
         agent_state = self.get_agent_state(state)
         return agent_state.motor_only_step
 
@@ -389,12 +386,11 @@ class PositioningProcedureResult:
 class PositioningProcedure(BasePolicy):
     """Positioning procedure to position the agent in the scene.
 
-    TODO: Remove from MotorPolicy hierarchy and refactor to standalone
-          PositioningProcedure hierarchy when they get separated.
-
     The positioning_call method should be repeatedly called until the procedure result
     indicates that the procedure has terminated or truncated.
     """
+    # TODO: Remove from MotorPolicy hierarchy and refactor to a standalone
+    #       PositioningProcedure hierarchy when they get separated.
 
     @staticmethod
     def depth_at_center(agent_id: AgentID, observation: Any, sensor_id: str) -> float:
@@ -423,8 +419,6 @@ class PositioningProcedure(BasePolicy):
     ) -> PositioningProcedureResult:
         """Return a list of actions to position the agent in the scene.
 
-        TODO: When this becomes a PositioningProcedure it can be a __call__ method.
-
         Args:
             observation: The observation to use for positioning.
             state: The current state of the motor system.
@@ -433,6 +427,9 @@ class PositioningProcedure(BasePolicy):
             Any actions to take, whether the procedure succeeded, whether the procedure
             terminated, and whether the procedure truncated.
         """
+        # TODO: Not yet implemented; leave any modelling logic in the learning modules
+        #       rather than in motor systems.
+        # TODO: When this becomes a PositioningProcedure it can be a __call__ method.
         pass
 
 
@@ -510,12 +507,6 @@ class GetGoodView(PositioningProcedure):
         to the agent's current position and rotation. Looking up and right is done
         by returning negative amounts.
 
-        TODO: Test whether this function works when the agent is facing in the
-        positive z-direction. It may be fine, but there were some adjustments to
-        accommodate the z-axis positive direction pointing opposite the body's initial
-        orientation (e.g., using negative  `z` in
-        `left_amount = -np.degrees(np.arctan2(x_rot, -z_rot)))`.
-
         Args:
             relative_location: the x,y,z coordinates of the target with respect
                 to the sensor.
@@ -525,6 +516,11 @@ class GetGoodView(PositioningProcedure):
             down_amount: Amount to look down (degrees).
             left_amount: Amount to look left (degrees).
         """
+        # TODO: Test whether this function works when the agent is facing in the
+        #       positive z-direction. It may be fine, but there were some adjustments
+        #       to accommodate the z-axis positive direction pointing opposite the
+        #       body's initial orientation (e.g., using negative `z` in
+        #       `left_amount = -np.degrees(np.arctan2(x_rot, -z_rot)))`).
         sensor_rotation_rel_world = self.sensor_rotation_relative_to_world(state)
 
         # Invert the sensor rotation and apply it to the relative location
@@ -801,14 +797,15 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     Additionally, this policy discouraces taking the reverse of the previous action
     if we are still on the object.
 
-    Attributes:
-        guiding_sensors: List of sensors that are used to calculate the percentage
-            on object. When using multiple sensors or a visualization sensor we may
-            want to ignore some when determining whether we need to move back.
-        min_perc_on_obj: How much percent of the observation needs to be on the
-            object to sample a new action. Otherwise the previous action is reversed to
-            get back on the object. TODO: Not used anywhere?
-    """
+        Attributes:
+            guiding_sensors: List of sensors that are used to calculate the percentage
+                on object. When using multiple sensors or a visualization sensor we may
+                want to ignore some when determining whether we need to move back.
+            min_perc_on_obj: How much percent of the observation needs to be on the
+                object to sample a new action. Otherwise the previous action is reversed to
+                get back on the object.
+        """
+    # TODO: Determine whether `min_perc_on_obj` is used; remove or repurpose if not.
 
     def __init__(
         self,
@@ -917,11 +914,11 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         Raises:
             TypeError: If the last action is not supported
 
-        TODO These instance checks are undesirable and should be removed in the future.
-        I am using these for now to express the implicit assumptions in the code.
-        An Action.undo of some sort would be a better solution, however it is not
-        yet clear to me what to do for actions that do not support undo.
         """
+        # TODO: These instance checks are undesirable and should be removed in the future.
+        #       They are currently used to express the implicit assumptions in the code.
+        #       An Action.undo helper would be a better solution, although it is not yet
+        #       clear what to do for actions that do not support undo.
         last_action = self.action
 
         if isinstance(last_action, LookDown):
@@ -1088,12 +1085,12 @@ class SurfacePolicy(InformedPolicy):
                 to get the patch back on the object.
             good_view_percentage: How much percent of the view finder perception
                 should be filled with the object. (If less, move closer)
-                TODO M : since surface agent does not use get_good_view, can consider
-                removing this parameter
             alpha: to what degree should the move_tangentially direction be the
                 same as the last step or totally random? 0~same as before, 1~random walk
             **kwargs: ?
         """
+        # TODO: Since the surface agent does not use `get_good_view`, consider removing
+        #       the `good_view_percentage` parameter.
         super().__init__(min_perc_on_obj, good_view_percentage, **kwargs)
         self.action = None
         self.tangential_angle = 0
@@ -1127,9 +1124,6 @@ class SurfacePolicy(InformedPolicy):
 
         Currently uses the raw observations returned from the viewfinder via the
         environment interface, and not the extracted features from the sensor module.
-        TODO M refactor this so that all sensory processing is done in the sensor
-        module.
-
         If we aren't on the object, try first systematically orienting left around
         a point, then orienting down, and finally random orientations along the surface
         of a fixed sphere.
@@ -1142,6 +1136,7 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             Action to take.
         """
+        # TODO: Refactor this so that all sensory processing is done in the sensor module.
         # If the viewfinder sees the object within range, then move to it
         depth_at_center = PositioningProcedure.depth_at_center(
             agent_id=self.agent_id,
@@ -1326,8 +1321,8 @@ class SurfacePolicy(InformedPolicy):
             state: The current state of the motor system.
                 Defaults to None.
 
-        # TODO: Remove this once TouchObject positioning procedure is implemented
         """
+        # TODO: Remove this once TouchObject positioning procedure is implemented
         if self.attempting_to_find_object:
             # When the TouchObject positioning procedure is separated, there
             # will be no post_action calls when attempting to find the object.
@@ -1686,10 +1681,10 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
     are presumably due to issues with the agents re-orientation steps vs. noisiness
     of the PCs defined by the surface
 
-    TODO update this method to accept more general notions of directions-of-variance
-    (rather than strictly principal curvature), such that it can be applied in more
-    abstract spaces
     """
+    # TODO: Update this method to accept more general notions of directions-of-variance
+    #       (rather than strictly principal curvature), such that it can be applied in more
+    #       abstract spaces.
 
     def __init__(
         self,
@@ -1842,10 +1837,10 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         E.g. if model-free policy has been unable to find a path that avoids
         revisiting old locations, an LM might use this information to inform a
-        particular action (TODO not yet implemented, and NOTE that any modelling
-        should ultimately be located in the learning module(s), not in motor
-        systems)
+        particular action; any modelling should ultimately be located in the learning
+        module(s), not in motor systems.
         """
+        # TODO: Not yet implemented; keep modelling logic in the learning modules.
         if self.using_pc_guide:
             if self.min_dir_pref:
                 self.action_details["pc_heading"].append("min")
@@ -2151,10 +2146,10 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         than just persistently following e.g. the rim of a cup. By default, there is
         always an initial bias for the smallest principal curvature.
 
-        TODO can eventually combine with a hypothesis-testing policy that encourages
-        exploration of unvisited parts of the object, rather than relying on this
-        simple counter-heuristic
         """
+        # TODO: Consider combining with a hypothesis-testing policy that encourages
+        #       exploration of unvisited parts of the object instead of this
+        #       counter-heuristic.
         if self.following_pc_counter == self.max_pc_bias_steps:
             logger.debug("Changing preference for pc-type.")
             logger.debug(f"Previous pref. for min-directions: {self.min_dir_pref}")
@@ -2219,12 +2214,12 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         locations based on the first sensation
 
         Finally, note that in many situations, revisiting locations can be a good thing
-        (e.g. re-anchoring given noisy path-integration), so we may want to activate
-        /inactivate this as necessary (TODO)
-
-        TODO separate out avoid_revisiting_locations as its own mixin so that it can
-        be used more broadly
+        (e.g. re-anchoring given noisy path-integration).
         """
+        # TODO: Decide when to activate or inactivate this behavior, since revisiting
+        #       locations is sometimes desirable (e.g. re-anchoring).
+        # TODO: Consider separating avoid_revisiting_locations into its own mixin for
+        #       broader reuse.
         self.conflict_divisor = conflict_divisor
         self.max_steps = max_steps
 

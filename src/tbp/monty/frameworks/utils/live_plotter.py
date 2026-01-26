@@ -44,10 +44,10 @@ class LivePlotter:
     def hardcoded_assumptions(self, observation, model):
         """Extract some of the hardcoded assumptions from the observation.
 
-        TODO: Don't do this. It is here for now to highlight the fragility of the
-        live plotter implementation at the call site. We should make this less
-        fragile by passing the necessary information to the live plotter.
-
+        """
+        # TODO: Don't do this. It is here for now to highlight the fragility of the
+        #       live plotter implementation at the call site. We should make this less
+        #       fragile by passing the necessary information to the live plotter.
         Args:
             observation: The observation from the environment interface.
             model: The model.

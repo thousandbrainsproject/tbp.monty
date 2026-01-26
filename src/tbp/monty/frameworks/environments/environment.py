@@ -106,12 +106,10 @@ class ObjectEnvironment(Protocol):
         ...
 
     def remove_all_objects(self) -> None:
-        """Remove all objects from the environment.
-
-        TODO: This remove_all_objects interface is elevated from
-              HabitatSim.remove_all_objects and is quite specific to HabitatSim
-              implementation. We should consider refactoring this to be more generic.
-        """
+        """Remove all objects from the environment."""
+        # TODO: This remove_all_objects interface is elevated from
+        #       HabitatSim.remove_all_objects and is quite specific to HabitatSim
+        #       implementation. We should consider refactoring this to be more generic.
         ...
 
 

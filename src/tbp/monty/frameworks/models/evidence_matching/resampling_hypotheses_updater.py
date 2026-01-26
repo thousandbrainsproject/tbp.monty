@@ -62,9 +62,10 @@ class ChannelHypothesesResamplingTelemetry(ChannelHypothesesUpdateTelemetry):
     added at the current step.
 
     Note:
-        TODO: Additional description here regarding availability of hypotheses
+        Additional description here regarding availability of hypotheses
         identified by `removed_ids`.
     """
+    # TODO: Add additional description regarding availability of hypotheses identified by `removed_ids`.
 
     channel_hypothesis_displacer_telemetry: HypothesisDisplacerTelemetry
     added_ids: npt.NDArray[np.int_]

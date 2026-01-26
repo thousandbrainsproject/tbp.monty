@@ -422,8 +422,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
     extension of the BasePolicy). This policy can then make use of the observation
     to decide on the next action.
 
-    Also has the following, additional functionality; TODO refactor/separate these
-    out as appropriate
+    Also has the following, additional functionality that should be refactored or
+    separated as appropriate.
 
     i) this environment interface allows for early stopping by adding the set_done
     method which can for example be called when the object is recognized.
@@ -437,6 +437,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
     iv) Supports hypothesis-testing "jump" policy
     """
+    # TODO: Refactor or separate the additional functionality mentioned above as appropriate.
 
     def __next__(self):
         if self._counter == 0:
@@ -525,11 +526,10 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
     def first_step(self):
         """Carry out particular motor-system state updates required on the first step.
 
-        TODO: can get rid of this by appropriately initializing motor_only_step
-
         Returns:
             The observation from the first step.
         """
+        # TODO: Can get rid of this by appropriately initializing motor_only_step.
         # Return first observation after 'reset' before any action is applied
         self._counter += 1
 

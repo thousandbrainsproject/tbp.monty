@@ -358,8 +358,8 @@ class GraphLearningTest(BaseGraphTest):
     def test_time_out(self):
         """Test time_out and pose_time_out detection and logging.
 
+        """
         # TODO: This test is a little shaky and should be improved.
-
         Episodes 0 and 1: Should detect no_match and build models for 2 objects
         Episode 2: Lowered max_steps and raised mmd -> detect pose_time_out
         (Episode 3: object is too similar with tolerances, will also detect time_out)
@@ -916,9 +916,9 @@ class GraphLearningTest(BaseGraphTest):
     def test_moving_off_object_and_back(self):
         """Test that the object is still recognized after moving off the object.
 
-        TODO: since the monty class checks use_state in combine_inputs it doesn't make
-        much sense to test this here anymore with an isolated LM.
         """
+        # TODO: Since the Monty class checks `use_state` in `combine_inputs`, this
+        #       test may not make sense for an isolated LM anymore.
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
         fake_obs_test[1].location = [1, 2, 1]
         fake_obs_test[1].morphological_features["on_object"] = 0

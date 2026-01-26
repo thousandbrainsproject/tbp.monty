@@ -54,7 +54,7 @@ class MontyBase(Monty):
             sm_to_agent_dict: dictionary mapping each sensor module id to the
                 list of habitat agents it receives input from. This is to simulate
                 columns with wide receptive fields that receive input from multiple
-                sensors. TODO: Do we still need this?
+                sensors.
             sm_to_lm_matrix: nested array that governs which sensor modules a
                 learning module will receive input from, such that
                 learning_modules[sm_to_lm_matrix[i][j]] is the jth sensor module
@@ -79,6 +79,7 @@ class MontyBase(Monty):
             ValueError: If the keys of `sm_to_agent_dict` do not match the
                 `sensor_module_id`s of `sensor_modules`
         """
+        # TODO: Reevaluate whether `sm_to_agent_dict` is still necessary.
         # Basic instance attributes
         self.sensor_modules = sensor_modules
         self.learning_modules = learning_modules
@@ -230,11 +231,6 @@ class MontyBase(Monty):
         An LM only receives input from another LM if it also receives input from
         an SM. This makes sure that we keep a coarser resolution in the higher
         level LM.
-        TODO H: Is this how we want to solve this? May want to change this in the future
-        allowing high-level LMs that are not connected to SMs.
-
-        TODO H: Take into account distance from center of receiving LMs RF. To do that
-        in a good way, combine_input or LM selection may have to become part of LM class
 
         Args:
             inputs_from_sms: List of dicts of SM outputs.
@@ -245,6 +241,11 @@ class MontyBase(Monty):
             If there are no inputs or none of them are deemed interesting (i.e. off
             object or low confidence LM) this returns None.
         """
+        # TODO: Determine if high-level LMs should receive input even when not
+        #       connected to SMs, rather than relying on this coarser resolution.
+        # TODO: Consider taking the distance from the center of the receiving LM's
+        #       receptive field into account; this may require moving combine_inputs
+        #       logic or LM selection into the LM class.
         combined_inputs = [
             inputs_from_sms[i]
             for i in range(len(inputs_from_sms))
@@ -276,8 +277,8 @@ class MontyBase(Monty):
         Currently we just aggregate these for later passing to the (single) motor
         system.
 
-        TODO M implement more complex, hierarchical passing of goal-states.
         """
+        # TODO: Implement more complex, hierarchical passing of goal-states.
         self.gsg_outputs = []  # NB we reset these at each step to ensure the goal
         # states do not persist unless this is expected by the GSGs. NOTE we may need
         # to revisit this with heterarchy if we have some LMs that are being stepped

@@ -392,12 +392,10 @@ class DisplacementGraphLM(GraphLM):
 
         The observation consists of features at a location. To get the displacement we
         have to look at the previous observation stored in the buffer.
-
-        TODO: Should we move this and a (short-term) buffer to the sensor module?
-
         Returns:
             The observations with displacements added.
         """
+        # TODO: Should we move this and a (short-term) buffer to the sensor module?
         displacement = np.zeros(3)
         ppf = np.zeros(4)
         # TODO S: calculate displacements for each separately (mostly for rotation disp)

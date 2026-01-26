@@ -92,18 +92,14 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         goal-state of high confidence, with no other attributes of the state specified;
         in other words, it attempts to reduce uncertainty about the LM's output
         (object ID and pose, whatever these may be).
-
-        TODO M: Currently GSGs always use the default, however future
-        work will implement hierarchical action policies/GSGs, as well as the ability to
-        specify a top goal-state by the experimenter.
-
-        TODO M: we currently just use "None" as a placeholder for the default
-        goal state
-        > plan : set the default driving goal-state to a meaningful, non-None value
-        that is compatible with the current method for checking convergence of an LM,
-        such that achieving the driving goal-state can be used as a test for Monty
-        convergence. This might be something like the below.
         """
+        # TODO: Currently GSGs always use the default, however future work will
+        #       implement hierarchical action policies/GSGs and allow specifying a
+        #       top goal-state by the experimenter.
+        # TODO: We currently just use "None" as a placeholder for the default goal
+        #       state; plan to set the default driving goal-state to a meaningful,
+        #       non-None value that is compatible with convergence checks so that
+        #       achieving it signals Monty convergence.
         # if received_goal_state is None:
         #     # The current default goal-state, which is to reduce uncertainty; this is
         #     # defined by having a high-confidence in the goal-state, and an arbitrary
@@ -224,13 +220,12 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             of a feature) that is undefined (None or NaN), we do not return any
             difference along that dimension.
 
-        TODO M consider making this a utility function, as might be useful in e.g. the
-        LM itself as well. However, the significant presence of None/NaN values in
-        Goal States may mean we want to take a different approach.
-
         Returns:
             Whether the states are different.
         """
+        # TODO: Consider making this a utility function, as might be useful in the LM
+        #       itself. The significant presence of None/NaN values in goal states may
+        #       require a different approach.
         if state_a is None or state_b is None:
             return False
 
@@ -272,12 +267,12 @@ class GraphGoalStateGenerator(GoalStateGenerator):
     def _check_driving_goal_state_achieved(self) -> bool:
         """Check if parent LM's output state is close enough to driving goal-state.
 
-        TODO M Move some of the checks for convergence here
 
         Returns:
             Whether the parent LM's output state is close enough to the driving
             goal-state.
         """
+        # TODO: Move some of the checks for convergence here.
         if self.driving_goal_state.goal_tolerances is None:
             # When not specified by the incoming driving-goal-state, use the GSG's own
             # default matching tolerances
@@ -331,14 +326,13 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         it wanted to achieve happened to be very close to its original position. Thus
         this is an approximate method.
 
-        TODO M implement also using the target goal-state and internal model
-        to predict a specific input state, and then compare to that to determine
-        not just whether a movement took place, but whether the agent moved to a
-        particular point on a particular object.
-
         Returns:
             Whether the input matches the sensory prediction.
         """
+        # TODO: Implement also using the target goal-state and internal model to
+        #       predict a specific input state, then compare it to determine not just
+        #       whether a movement took place, but whether the agent moved to a
+        #       particular point on a particular object.
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
 
         current_sensory_input = get_state_from_channel(
@@ -399,8 +393,8 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             Euclidean distance between the two arrays, ignoring NaN values; if all
             values are NaN, return 0
 
-        TODO M consider making a general utility function
         """
+        # TODO: Consider making a general utility function.
         assert a.shape == b.shape, "Arrays must be of the same shape"
 
         mask = ~np.isnan(a) & ~np.isnan(b)
@@ -456,10 +450,10 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
     from long-term memory, to propose test-points that should efficiently disambiguate
     the ID or pose of the object the agent is currently observing.
 
-    TODO M separate out the hypothesis-testing policy (which is one example of a
-    model-based policy), from the GSG, which is the system that is capable of leveraging
-    a variety of model-based policies.
     """
+    # TODO: Separate the hypothesis-testing policy (one example of a model-based
+    #       policy) from the GSG, which should be the component capable of leveraging
+    #       a variety of model-based policies.
 
     def __init__(
         self,
@@ -592,31 +586,19 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         already constructed for the 2nd most-likely object, hence the importance of
         being in that reference frame
 
-        TODO M eventually can try looking at more objects, or flipping the MLH
-        object - e.g. if the two most likely are the mug and one of the handle-less
-        cups, then depending on the order in which we compare them, we may not
-        actually identify the handle as a good candidate to test (i.e. if one graph is
-        entirely a subset of the other graph). We could use the returned separation
-        distance to estimate which of these approaches would be better.
-        - i.e. imagine 2nd MLH is a mug with a handle, and MLH has no handle; when
-        checking all the points for the handleless mug, there will always be nearby
-        points
-        - Re. implementing this: could start with the MLH as the query points, looking
-        for points with minimal neighbors with the 2nd most likely graph; if found
-        too many neighbors in a given radius (threshold dependent), this suggests the 1st
-        MLH graph is a sub-graph of the 2nd MLH; therefore, check whether the 2nd graph
-        has any points with few neighbors with the first; if still many neighbors, this
-        could then serve as a learning signal to merge the graphs? (at least at some
-        levels of hierarchy) --> NB merging should use "picky" graph-building method to
-        ensure we don't just double the number of points in the graph unnecessarily
-
-        TODO M consider adding a factor so that we ensure our testing spot is also far
-        away from any previously visited locations (at least according to MLH path),
-        including our current location.
-
         Returns:
             The index of the point in the model to test.
         """
+        # TODO: Eventually can try looking at more objects, or flipping the MLH
+        #       object - e.g. if the two most likely are the mug and one of the
+        #       handle-less cups, then depending on the order in which we compare
+        #       them, we may not actually identify the handle as a good candidate to
+        #       test (i.e. if one graph is entirely a subset of the other graph). We
+        #       could use the returned separation distance to estimate which of these
+        #       approaches would be better.
+        # TODO: Consider adding a factor so that we ensure our testing spot is also
+        #       far away from any previously visited locations (at least according to
+        #       MLH path), including our current location.
         logger.debug("Proposing an evaluation location based on graph mismatch")
 
         top_id, second_id = self.parent_lm.get_top_two_mlh_ids()
@@ -885,19 +867,16 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         of discriminating between conflicting object IDs or poses.
 
         The schedule is designed to balance discriminating the pose and objects as
-        efficiently as possible; TODO M future work can use the schedule conditions as
-        primitives and use RL or evolutionary algorithms to optimize the relevant
-        parameters.
-
-        TODO M each of the below conditions could be their own method; could then pass
-        a set of keys which we iterate through, and thereby quickly test as a
-        hyper-parameter which of these are worth keeping, and which of these
-        we should get rid of.
+        efficiently as possible.
 
         Returns:
             Whether there's a good chance to discriminate between conflicting object IDs
             or poses.
         """
+        # TODO: Future work can treat the schedule conditions as primitives and use RL
+        #       or evolutionary algorithms to optimize the relevant parameters.
+        # TODO: Each of the below conditions could be their own method; consider passing
+        #       a set of keys to easily enable or disable conditions when tuning.
         num_elapsed_steps = self._get_num_steps_post_output_goal_generated()
 
         self.focus_on_pose = False  # Default

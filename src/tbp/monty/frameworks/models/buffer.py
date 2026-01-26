@@ -101,10 +101,10 @@ class FeatureAtLocationBuffer:
     def append(self, list_of_data):
         """Add an observation to the buffer. Must be features at locations.
 
-        TODO S: Store state objects instead of list of data?
         A provisional version of this is implemented below, as the GSG uses State
         objects for computations.
         """
+        # TODO: Store state objects instead of a list of data?
         any_obs_on_obj = False
         for state in list_of_data:
             input_channel = state.sender_id
@@ -606,10 +606,10 @@ class FeatureAtLocationBuffer:
             ValueError: If new_val_len cannot be determined (existing_vals is empty
                 and new_val_len not provided), or if new_val_len is provided but
                 conflicts with the existing array's column dimension.
-
-        TODO O investigate whether pre-allocating large arrays (rather than
-        repeatedly creating new ones) might be faster, despite a cost in memory.
         """
+        # TODO: Investigate whether pre-allocating large arrays (rather than
+        #       repeatedly creating new ones) might be faster, despite a cost in
+        #       memory.
         if target_length is None:
             target_length = len(self)
 

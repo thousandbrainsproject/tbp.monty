@@ -24,10 +24,9 @@ def agent_id_resolver(agent_id: str) -> AgentID:
 
 def monty_class_resolver(class_name: str) -> type:
     """Returns a class object by fully qualified path.
-
-    TODO: This is an interim solution to retrieve my_class in
-      the my_class(**my_args) pattern.
     """
+    # TODO: This is an interim solution to retrieve my_class in
+    #       the my_class(**my_args) pattern.
     parts = class_name.split(".")
     module = ".".join(parts[:-1])
     klass = parts[-1]

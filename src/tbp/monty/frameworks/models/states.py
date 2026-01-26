@@ -113,8 +113,8 @@ class State:
     def set_displacement(self, displacement, ppf=None):
         """Add displacement (represented as dict) to state.
 
-        TODO S: Add this to state or in another place?
         """
+        # TODO: Add this to state or in another place?
         self.displacement = {
             "displacement": displacement,
         }

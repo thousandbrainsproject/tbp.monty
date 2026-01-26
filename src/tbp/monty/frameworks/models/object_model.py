@@ -330,10 +330,9 @@ class GridObjectModel(GraphObjectModel):
         constrains the model size and resolution. Additionally, this model class implements
     a lot of functionality that was previously implemented in the graph_utils.py file.
 
-    TODO: General cleanups that require more changes in other code
-        - remove node_ids from input_channels and have as graph attribute
-        - remove .norm as attribute and store as feature instead?
     """
+    # TODO: General cleanups that require more changes in other code,
+    #       such as removing node_ids from input_channels and storing .norm as a feature.
 
     def __init__(self, object_id, max_nodes, max_size, num_voxels_per_dim):
         """Initialize a grid object model.
@@ -435,12 +434,13 @@ class GridObjectModel(GraphObjectModel):
             doing this directly by indexing the grids. However, an initial
             implementation of this does not seem to be faster than the kd tree search
             (~5-10x slower). However one must consider that search directly in the grid
-            would remove the cost of building the tree. TODO: Investigate this further.
+            would remove the cost of building the tree.
 
         Returns:
             If return_distance is True, return distances. Otherwise, return indices of
             nearest neighbors.
         """
+        # TODO: Investigate this further.
         # if self._location_tree is not None:
         # We are using the pretrained graphs and location trees for matching
         (distances, nearest_node_ids) = self._location_tree.query(

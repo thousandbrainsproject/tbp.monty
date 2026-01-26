@@ -107,8 +107,8 @@ class SetAgentPitch(SceneNodeControl):
 
     The :class:`ActuationSpec` amount contains the new absolute pitch rotation in degrees.
 
-    TODO: add a unit test to habitat_sim_test.py
     """
+    # TODO: Add a unit test to `habitat_sim_test.py`.
 
     def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         angle = mn.Deg(actuation_spec.amount)

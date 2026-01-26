@@ -1064,9 +1064,9 @@ class EvidenceLMTest(BaseGraphTest):
         Test that the object is still recognized after moving off the object
         and that evidence is not incremented in that step.
 
-        TODO: since the monty class checks use_state in combine_inputs it doesn't make
-        much sense to test this here anymore with an isolated LM.
         """
+        # TODO: Since the Monty class checks `use_state` in `combine_inputs`, this
+        #       test may not make sense for an isolated LM anymore.
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
         fake_obs_test[1].location = [1, 2, 1]
         fake_obs_test[1].morphological_features["on_object"] = 0
@@ -1181,11 +1181,10 @@ class EvidenceLMTest(BaseGraphTest):
     def test_moving_off_object_5lms(self):
         """Test logging when moving off the object for some steps during an episode.
 
-        TODO: This test doesn't check if the voting evidence is incremented correctly
-          with some LMs off the object. Actually, we still need to decide on some
-          protocols for that. Like does the LM still get to vote? Does it still receive
-          votes?
         """
+        # TODO: This test doesn't check if the voting evidence is incremented correctly
+        #       with some LMs off the object. We still need to decide on protocols for
+        #       whether those LMs keep voting or receiving votes.
         exp = hydra.utils.instantiate(self.five_lm_off_object_cfg.test)
         with exp:
             exp.run()
@@ -1362,8 +1361,8 @@ class EvidenceLMTest(BaseGraphTest):
         NOTE: Same as above, this test only checks that noise is being applied.
         It doesnt check the models noise robustness.
 
-        TODO: Make this test run faster
         """
+        # TODO: Make this test run faster.
         exp = hydra.utils.instantiate(self.noisy_sensor_cfg.test)
         with exp:
             exp.run()

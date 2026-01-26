@@ -103,7 +103,6 @@ class EvidenceGraphLM(GraphLM):
             2) Within one object, possible poses are considered possible if their
                 evidence is larger than the most likely pose of this object minus x
                 percent of that pose's evidence.
-            # TODO: should we use a separate threshold for within and between objects?
             If this value is larger, the model is usually more robust to noise and
             reaches a better performance but also requires a lot more steps to reach a
             terminal condition, especially if there are many similar objects in the
@@ -149,6 +148,8 @@ class EvidenceGraphLM(GraphLM):
             general it is recommended to use this but it can be useful to turn it off
             for debugging purposes.
     """
+
+    # TODO: Should we use a separate threshold for within and between objects?
 
     def __init__(
         self,
@@ -296,7 +297,6 @@ class EvidenceGraphLM(GraphLM):
         """Get evidence count votes and use to update own evidence counts.
 
         Weighted by distance to votes and their evidence.
-        TODO: also take into account rotation vote
 
         vote_data contains:
             pos_location_votes: shape=(N, 3)
@@ -304,6 +304,8 @@ class EvidenceGraphLM(GraphLM):
             pose_evidences: shape=(N,)
 
         """
+
+        # TODO: Also take into account rotation vote.
         if (vote_data is not None) and (
             self.buffer.get_num_observations_on_object() > 0
         ):

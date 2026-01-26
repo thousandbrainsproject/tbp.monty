@@ -368,11 +368,9 @@ def plot_feature_matching_animation(
     rotate=True,
     show_num_steps=None,
 ):
-    """Plot video of object detection using features at locations.
-
-    TODO: use SM_0 obs to know which raw obs were on the object and show the
-    correct corresponding images.
-    """
+    """Plot video of object detection using features at locations."""
+    # TODO: Use SM_0 obs to determine which raw observations were on the object
+    #       and display the corresponding images.
     epoch = stats[str(episode)][lm_id]["train_epochs"]
     model_id = get_model_id(epoch, stats[str(episode)][lm_id]["mode"])
     # num_steps = len(stats[str(episode)][lm_id]["possible_matches"])

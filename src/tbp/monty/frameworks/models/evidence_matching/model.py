@@ -39,8 +39,9 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
         """Pass processed observations and goal states to the motor system.
 
         Currently there is no complex connectivity or hierarchy, and all generated
-        goal states are considered bound for the motor system. TODO M change this.
+        goal states are considered bound for the motor system.
         """
+        # TODO: Change this once more complex connectivity or hierarchy exists.
         super()._pass_infos_to_motor_system()
 
         # Check that the motor system can receive goal states

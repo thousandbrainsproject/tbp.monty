@@ -256,15 +256,11 @@ class MontyForGraphMatching(MontyBase):
                     lm_processed=False
                 )
 
-                """
-                Target-object remains unchanged if we're not passing information
-                to the LM
-                NOTE we may want to change this if we eventually want it to e.g.
-                classify when it's off an object (i.e. "off-object" is the target); this
-                could be done at the same time as we add better handling of off-object
-                observations
-                TODO make use of a buffer method to handle the below logging
-                """
+                # Target-object remains unchanged if we're not passing information to the LM
+                # NOTE we may want to change this if we eventually want it to e.g. classify
+                # when it's off an object (i.e. "off-object" is the target); this could be
+                # done at the same time as we add better handling of off-object observations
+                # TODO: Make use of a buffer method to handle the below logging
                 self.learning_modules[i].stepwise_targets_list.append(
                     self.learning_modules[i].stepwise_target_object
                 )
@@ -272,15 +268,14 @@ class MontyForGraphMatching(MontyBase):
     def _combine_votes(self, votes_per_lm):
         """Combine outgoing votes using lm_to_lm_vote_matrix matrix.
 
-        TODO: make custom Monty classes for feature, disp, and evidence modeling
-        and separate out the vote functions.
-
         Args:
             votes_per_lm: outgoing votes from each LM
 
         Returns:
             Input votes for each LM.
         """
+        # TODO: Make custom Monty classes for feature, displacement, and evidence
+        #       modeling, and separate out the vote functions.
         combined_votes = []
         for i in range(len(self.learning_modules)):
             if isinstance(votes_per_lm[0], set):
@@ -489,11 +484,11 @@ class MontyForGraphMatching(MontyBase):
         learning module, i.e. the class label of the object it is actually receiving
         sensory input from
 
-        TODO separate this out with the new Observation class; also the LM should
-        have its own method to update this attribute, rather than the Monty class
-        changing this
-        TODO: Add unit tests for this
         """
+        # TODO: Separate this out with the new Observation class; also the LM should
+        #       have its own method to update this attribute, rather than the Monty
+        #       class changing it.
+        # TODO: Add unit tests for this
         try:
             lm.stepwise_target_object = self.semantic_id_to_label[
                 SemanticID(sensory_inputs[0]._semantic_id)
@@ -766,11 +761,10 @@ class GraphLM(LearningModule):
     def get_possible_matches(self):
         """Get list of current possible objects.
 
-        TODO: Maybe make this private -> check terminal condition
-
         Returns:
             List of current possible objects.
         """
+        # TODO: Maybe make this private -> check terminal condition
         return list(self.possible_matches.keys())
 
     def get_possible_paths(self):
@@ -829,11 +823,12 @@ class GraphLM(LearningModule):
         return all_poses
 
     def get_object_scale(self, _object_id):
-        """Get object scale. TODO: implement solution for detecting scale.
+        """Get object scale.
 
         Returns:
             1
         """
+        # TODO: Implement solution for detecting scale.
         return 1
 
     def get_all_known_object_ids(self):
@@ -1032,12 +1027,11 @@ class GraphLM(LearningModule):
     def _select_features_to_use(self, states):
         """Extract the features from observations that are specified in tolerances.
 
-        TODO: requires self.tolerances
-        TODO S: if keeping the dict format, move this function to State class
-
         Returns:
             Features to use.
         """
+        # TODO: Requires self.tolerances.
+        # TODO: If keeping the dict format, consider moving this function to the State class.
         features_to_use = {}
         for state in states:
             input_channel = state.sender_id
@@ -1276,9 +1270,8 @@ class GraphMemory(LMMemory):
 
         Returns:
             Dict of features at this node.
-
-        TODO: look into getting node_id > graph.x.shape[0] (by 1)
         """
+        # TODO: Look into getting node_id > graph.x.shape[0] (by 1)
         if feature_keys is None:
             feature_keys = self.features_to_use[input_channel]
         node_features = {}

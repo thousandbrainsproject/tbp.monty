@@ -48,8 +48,6 @@ def plot_graph(
 ) -> Figure:
     """Plot a 3D graph of an object model.
 
-    TODO: Add a `color_by` option.
-
     Args:
         graph: The graph object that should be visualized.
         show_nodes: Whether to plot the nodes of the graph.
@@ -65,6 +63,7 @@ def plot_graph(
         The figure on which the graph was plotted.
 
     """
+    # TODO: Add a `color_by` option.
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1, projection="3d")
@@ -995,11 +994,9 @@ class PolicyPlot:
         add_sensor_scatter; this was implemented so that if desired, one could
         separately visualize the pose of the agent, and the sensor
         relative to it, although currently this is not used
-
-        TODO fix this to always work with the surface agent - currently,
-        if a failed jump is not associated with a tangential step, then we won't
-        visualize it
         """
+        # TODO: Fix this to always work with the surface agent; currently, failed jumps
+        #       not associated with a tangential step are not visualized.
         idx_jump = np.where(
             np.array(
                 self.detailed_stats[str(self.episode)]["motor_system"][
@@ -1574,7 +1571,7 @@ def plot_evidence_transitions(
     any given time point.
 
     Currently this shares code with the detection of when the LM is on a new object;
-    this will be refactored in the next PR (TODO) alongside the goal-state-generator class.
+    this will be refactored in the next PR alongside the goal-state-generator class.
 
     Args:
         episode: Episode number.
@@ -1592,6 +1589,7 @@ def plot_evidence_transitions(
             recognize, not every change in the stepwise target. Defaults to True.
         save_fig_path: File path where the figure should be saved. Defaults to None.
     """
+    # TODO: Refactor this shared code alongside the goal-state-generator class.
     objects_list = lm_stats["evidences"][0].keys()
 
     stepwise_targets = np.array(lm_stats["stepwise_targets_list"])

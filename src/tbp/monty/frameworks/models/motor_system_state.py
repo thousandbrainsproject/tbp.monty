@@ -42,11 +42,9 @@ class AgentState:
     rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
     """The agent's rotation."""
     motor_only_step: bool = False
-    """Control flow parameter. Processing will bypass the learning module if True.
-
-    TODO: Remove once we refactor Monty main processing loop to no longer need
-    control flow parameters in motor system state.
-    """
+    """Control flow parameter. Processing will bypass the learning module if True."""
+    # TODO: Remove once we refactor Monty main processing loop to no longer need
+    #       control flow parameters in motor system state.
 
 
 class ProprioceptiveState(Dict[AgentID, AgentState]):
@@ -60,14 +58,13 @@ class ProprioceptiveState(Dict[AgentID, AgentState]):
 class MotorSystemState(Dict[AgentID, AgentState]):
     """The state of the motor system.
 
-    TODO: Currently, ProprioceptiveState can be cast to MotorSystemState since
-          MotorSystemState is a generic dictionary. In the future, make
-          ProprioceptiveState a param on MotorSystemState to more clearly distinguish
-          between the two. These are separate from each other because
-          ProprioceptiveState is the information returned from the environment, while
-          MotorSystemState is that, as well as any state that the motor system
-          needs for operation.
     """
+    # TODO: Currently, ProprioceptiveState can be cast to MotorSystemState since
+    #       MotorSystemState is a generic dictionary. In the future, make
+    #       ProprioceptiveState a parameter on MotorSystemState to more clearly distinguish
+    #       between the two. These are separate because ProprioceptiveState is the
+    #       information returned from the environment, while MotorSystemState includes that
+    #       plus any additional state the motor system needs for operation.
 
     def convert_motor_state(self) -> dict[AgentID, Any]:
         """Convert the motor state into something that can be pickled/saved to JSON.
