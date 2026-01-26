@@ -314,7 +314,8 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
     some computation time.
 
     Returns:
-        Tuple containing the representative pose vector mean and a bool indicating whether we used curvature directions to update it.
+        Tuple containing the representative pose vector mean and a bool
+        indicating whether we used curvature directions to update it.
     """
     # Check the angle between all surface normals relative to the first curvature
     # directions. Then look at how many are positive vs. negative and use the ones

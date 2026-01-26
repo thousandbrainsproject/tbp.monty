@@ -184,8 +184,10 @@ def align_orthonormal_vectors(m1, m2, as_scipy=True):
             Defaults to True.
 
     Returns:
-        If `as_scipy` is True, a tuple `(Rotation, float)` containing the alignment rotation and the corresponding alignment error.
-        Otherwise returns `(np.ndarray, None)`, where the array is the rotation matrix aligning the vectors.
+        If `as_scipy` is True, a tuple `(Rotation, float)` containing the
+        alignment rotation and the corresponding alignment error.
+        Otherwise returns `(np.ndarray, None)`, where the array is the rotation
+        matrix aligning the vectors.
     """
     # assert check_orthonormal(m1), "m1 is not orthonormal"
     # assert check_orthonormal(m2), "m2 is not orthonormal"

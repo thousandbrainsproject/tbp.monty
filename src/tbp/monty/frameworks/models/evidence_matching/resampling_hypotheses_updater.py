@@ -127,8 +127,8 @@ class ResamplingHypothesesUpdater:
 
         Args:
             feature_weights: How much each feature should be weighted when
-                calculating the evidence update for a hypothesis. Weights are stored in a
-                dictionary with keys corresponding to features (same as keys in
+                calculating the evidence update for a hypothesis. Weights are stored
+                in a dictionary with keys corresponding to features (same as keys in
                 tolerances).
             graph_memory: The graph memory to read graphs from.
             max_match_distance: Maximum distance between a tested location and a stored

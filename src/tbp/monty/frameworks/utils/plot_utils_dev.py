@@ -141,8 +141,9 @@ def get_action_name(
         obs_on_object: Whether the observations are on the object.
 
     Returns:
-        Action name or one of the following sentinel values: "updating possible matches",
-        "patch not on object", "not moved yet", "None".
+        Action name or one of the following sentinel values:
+        "updating possible matches", "patch not on object", "not moved yet",
+        "None".
     """
     if is_match_step:
         if obs_on_object:
@@ -565,7 +566,9 @@ def plot_evidence_at_step(
     save_fig=False,
     save_path="./",
 ):
-    """Plot evidence for all hypotheses at one step during matching with the evidence LM.
+    """Plot evidence for all hypotheses at one step.
+
+    During matching with the evidence LM.
 
     Args:
         detailed_stats: Run stats loaded from the JSON log file.
@@ -577,10 +580,12 @@ def plot_evidence_at_step(
         sm: Sensor module to visualize. Defaults to "SM_0".
         view_finder: View finder identifier. Defaults to "SM_1".
         input_feature_channel: Input feature channel. Defaults to "patch".
-        current_evidence_update_threshold: Threshold at which the alpha value should be
-            0.5 instead of 1. Defaults to -1.
-        is_surface_sensor: Whether the sensor module is a surface sensor. Defaults to False.
-        is_2d_image_movement: Whether the movement is in 2D image space. Defaults to False.
+        current_evidence_update_threshold: Threshold at which the alpha value
+            should be 0.5 instead of 1. Defaults to -1.
+        is_surface_sensor: Whether the sensor module is a surface sensor.
+            Defaults to False.
+        is_2d_image_movement: Whether the movement is in 2D image space.
+            Defaults to False.
         save_fig: Whether to save the plot at save_path. Defaults to False.
         save_path: Location to save the plot. Defaults to "./".
     """
@@ -1171,7 +1176,8 @@ class PolicyPlot:
     def plot_up_to_step(self, total_steps=None):
         """Plot the action policy with a static 3D graph up to the step of interest.
 
-        If total_steps is not specified, then plot the full policy (i.e., entire episode).
+        If total_steps is not specified, then plot the full policy (i.e.,
+        entire episode).
         """
         self.plot_core_object()
         self.derive_policy_details()
@@ -1486,17 +1492,20 @@ def plot_hotspots(
 ):
     """Plot the locations frequently visited by the hypothesis-testing jump policy.
 
-    Note that the location will not necessarily correspond to where the policy thought it would land;
-    if its estimate of the object pose was poor, it may land somewhere other than where it intended.
+    Note that the location will not necessarily correspond to where the policy
+    thought it would land; if its estimate of the object pose was poor, it may
+    land somewhere other than where it intended.
 
-    This function collects data from multiple episodes; use it when the experiment involves multiple
-    rotations or multiple episodes of the same object.
+    This function collects data from multiple episodes; use it when the
+    experiment involves multiple rotations or multiple episodes of the same
+    object.
 
     Args:
         detailed_stats: Run stats loaded from the JSON log file.
         lm_models: Learned models from the experiment.
         object_id: Object identifier to visualize.
-        episode_range: Total number of episodes for the object to include when visualizing hotspots. Defaults to 1.
+        episode_range: Total number of episodes for the object to include when
+            visualizing hotspots. Defaults to 1.
         view: Elevation and azimuth for the view. Defaults to None.
         lm_index: Index of the learning module to visualize. Defaults to 0.
         save_fig: Whether to save the figure. Defaults to False.
@@ -1573,23 +1582,26 @@ def plot_evidence_transitions(
     The plot also shows the stepwise target that the learning module is receiving at
     any given time point.
 
-    Currently this shares code with the detection of when the LM is on a new object;
-    this will be refactored in the next PR (TODO) alongside the goal-state-generator class.
+    Currently this shares code with the detection of when the LM is on a new
+    object; this will be refactored in the next PR (TODO) alongside the
+    goal-state-generator class.
 
     Args:
         episode: Episode number.
         lm_stats: Learning module statistics.
         detection_fun: Detection function used to determine whether on a new object.
-        detection_params_dict: Dictionary of hyperparameters required by the detection function.
+        detection_params_dict: Dictionary of hyperparameters required by the
+            detection function.
         primary_target: Primary object ID.
         color_mapping: Color association between object IDs and colors to make
             plot interpretation easier.
-        stop_at_detected_new_object: Given that we currently don't detect new objects and
-            initiate a corrective action, this is a hack to only look at the episode up
-            until we've been off the primary target for a few consecutive steps;
-            this makes the meaning of "false-positive", "true-positive", etc. much clearer,
-            since our aim is to detect when we've fallen off the object we are trying to
-            recognize, not every change in the stepwise target. Defaults to True.
+        stop_at_detected_new_object: Given that we currently don't detect new
+            objects and initiate a corrective action, this is a hack to only
+            look at the episode up until we've been off the primary target for
+            a few consecutive steps; this makes the meaning of "false-positive",
+            "true-positive", etc. much clearer, since our aim is to detect when
+            we've fallen off the object we are trying to recognize, not every
+            change in the stepwise target. Defaults to True.
         save_fig_path: File path where the figure should be saved. Defaults to None.
     """
     objects_list = lm_stats["evidences"][0].keys()

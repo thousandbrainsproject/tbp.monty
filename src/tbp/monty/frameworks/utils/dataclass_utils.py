@@ -25,8 +25,8 @@ class Dataclass(Protocol):
     """
 
     __dataclass_fields__: ClassVar[dict[str, Any]]
-    """Checking for the presence of __dataclass_fields__ is a hack to determine if a class is a
-    dataclass."""
+    """Checking for the presence of __dataclass_fields__ is a hack to determine
+    if a class is a dataclass."""
 
 
 __all__ = [

@@ -74,13 +74,15 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
         vecright_norm = vecright / np.linalg.norm(vecright)
         vecleft_norm = vecleft / np.linalg.norm(vecleft)
 
-        # Check if tan_len up and right land on the object and calculate the surface normal from those
+        # Check if tan_len up and right land on the object and calculate the
+        # surface normal from those
         norm1, norm2 = None, None
         if (point_cloud[center_id_up, 3] > 0) and (
             point_cloud[center_id + tan_len, 3] > 0
         ):
             norm1 = -np.cross(vecup_norm, vecright_norm)
-        # Check if tan_len down and left land on the object and calculate the surface normal from those
+        # Check if tan_len down and left land on the object and calculate the
+        # surface normal from those
         if (point_cloud[center_id_down, 3] > 0) and (
             point_cloud[center_id - tan_len, 3] > 0
         ):
@@ -98,7 +100,8 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
             ):
                 norm1 = np.cross(vecup_norm, vecleft_norm)
 
-            # Check if tan_len down and left land on the object and calculate the surface normal from those
+            # Check if tan_len down and left land on the object and calculate
+            # the surface normal from those
 
             if (point_cloud[center_id_down, 3] > 0) and (
                 point_cloud[center_id + tan_len, 3] > 0
@@ -318,8 +321,9 @@ def curvature_at_point(point_cloud, center_id, normal):
         a = np.dot(np.transpose(data), data)
 
         # Rarely, "a" can be singular, causing numpy to throw an error.
-        # It appears to be caused by surface-agent gathering observations that are largely off the
-        # object, but not entirely (e.g. <25% visible), resulting in a system
+        # It appears to be caused by surface-agent gathering observations that
+        # are largely off the object, but not entirely (e.g. <25% visible),
+        # resulting in a system
         # with insufficient data to be solvable.
         if non_singular_mat(a):
             params = np.linalg.solve(a, beta)
@@ -463,8 +467,9 @@ def principal_curvatures(
             b = np.matmul(x_mat.T, n[:, np.newaxis])
 
         # Rarely, "a" can be singular, causing numpy to throw an error.
-        # It appears to be caused by touch-sensor gathering observations that are largely off the
-        # object, but not entirely (e.g. <25% visible), resulting in a system
+        # It appears to be caused by touch-sensor gathering observations that
+        # are largely off the object, but not entirely (e.g. <25% visible),
+        # resulting in a system
         # with insufficient data to be solvable.
         if non_singular_mat(a_mat):
             # Step 2) do least-squares fit to get the parameters of the quadratic form

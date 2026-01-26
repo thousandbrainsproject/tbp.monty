@@ -108,8 +108,8 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
 
         Args:
             feature_weights: How much each feature should be weighted when
-                calculating the evidence update for a hypothesis. Weights are stored in a
-                dictionary with keys corresponding to features (same as keys in
+                calculating the evidence update for a hypothesis. Weights are stored
+                in a dictionary with keys corresponding to features (same as keys in
                 tolerances).
             graph_memory: The graph memory to read graphs from.
             max_match_distance: Maximum distance of a tested and stored location
@@ -281,7 +281,8 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
     ):
         """Initialize hypotheses on possible rotations for each location.
 
-        This is similar to _get_informed_possible_poses but doesn't require looping over nodes.
+        This is similar to _get_informed_possible_poses but doesn't require looping
+        over nodes.
 
         For this, we use the surface normal and curvature directions and check how
         they would have to be rotated to match between sensed and stored vectors

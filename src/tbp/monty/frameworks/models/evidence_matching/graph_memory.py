@@ -169,7 +169,8 @@ class EvidenceGraphMemory(GraphMemory):
             features: Features observed at those locations.
             graph_id: ID of the existing graph.
             input_channel: Identifier of the input channel.
-            object_location_rel_body: Location of the sensor in the body reference frame.
+            object_location_rel_body: Location of the sensor in the body reference
+                frame.
             location_rel_model: Location of the sensor in the model reference frame.
             object_rotation: Rotation of the sensed object relative to the model.
         """

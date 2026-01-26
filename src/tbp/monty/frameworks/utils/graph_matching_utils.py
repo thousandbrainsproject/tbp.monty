@@ -276,11 +276,14 @@ def get_custom_distances(nearest_node_locs, search_locs, search_sns, search_curv
     """Calculate custom distances modulated by surface normal and curvature.
 
     Args:
-        nearest_node_locs: Locations of nearest nodes to search_locs (shape=(num_hyp, max_nneighbors, 3)).
+        nearest_node_locs: Locations of nearest nodes to search_locs
+            (shape=(num_hyp, max_nneighbors, 3)).
         search_locs: Search locations for each hypothesis (shape=(num_hyp, 3)).
-        search_sns: Sensed surface normal rotated by the hypothesis pose (shape=(num_hyp, 3)).
-        search_curvature: Magnitude of sensed curvature (maximum if using two principal curvatures)
-            used to modulate the search sphere thickness in the direction of the surface normal (shape=1).
+        search_sns: Sensed surface normal rotated by the hypothesis pose
+            (shape=(num_hyp, 3)).
+        search_curvature: Magnitude of sensed curvature (maximum if using two
+            principal curvatures) used to modulate the search sphere thickness
+            in the direction of the surface normal (shape=1).
 
     Returns:
         custom_nearest_node_dists: custom distances of each nearest location
@@ -319,8 +322,8 @@ def get_custom_distances(nearest_node_locs, search_locs, search_sns, search_curv
 def create_exponential_kernel(size, decay_rate):
     """Create an exponentially decaying kernel.
 
-    Used to convolve, for example, evidence history when determining whether we are on a new
-    object.
+    Used to convolve, for example, evidence history when determining whether we
+    are on a new object.
 
     Args:
         size: Size of the kernel.

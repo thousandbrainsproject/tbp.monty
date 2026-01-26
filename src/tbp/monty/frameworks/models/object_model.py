@@ -357,7 +357,8 @@ class GridObjectModel(GraphObjectModel):
         # number of observations in each voxel
         self._observation_count = None
         # Average features in each voxel with observations
-        # The first three dims are the 3D voxel indices; the fourth dimension stores features
+        # The first three dims are the 3D voxel indices; the fourth dimension
+        # stores features
         self._feature_grid = None
         # Average location in each voxel with observations
         # The first 3 dims are the 3d voxel indices, xyz in the fourth dimension is

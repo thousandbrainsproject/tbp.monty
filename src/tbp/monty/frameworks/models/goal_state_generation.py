@@ -32,14 +32,15 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         i) other learning modules, which may model world objects (e.g., a mug) or
         internal systems (e.g., the agent's robotic limb)
         ii) motor actuators, in which case they represent simpler, primitive goal states
-        for the actuator to achieve (e.g., the location and orientation of an actuator-sensor
-        pair)
+        for the actuator to achieve (e.g., the location and orientation of an
+        actuator-sensor pair)
 
     Alongside the high-level "driving" goal state, generated goal states can also be
     conditioned on other information such as the LM's current most-likely hypothesis
     and the structure of known object models (i.e., information local to the LM).
 
-    Note that all goal states conform to the State-class cortical messaging protocol (CMP).
+    Note that all goal states conform to the State-class cortical messaging
+    protocol (CMP).
     """
 
     def __init__(self, parent_lm, goal_tolerances=None, **_kwargs) -> None:
@@ -483,8 +484,9 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
                 general, when we have taken number of non-goal-state driven steps
                 greater than elapsed_steps_factor, then this is an indication to
                 initiate a hypothesis-testing goal-state. In addition however, we can
-                multiply elapsed_steps_factor by an exponentially increasing wait-factor,
-                such that we use longer and longer intervals as the experiment
+                multiply elapsed_steps_factor by an exponentially increasing
+                wait-factor, such that we use longer and longer intervals as the
+                experiment
                 continues. Defaults to 10.
             min_post_goal_success_steps: Number of necessary steps for a hypothesis
                 goal-state to be considered. Unlike elapsed_steps_factor, this is a
@@ -603,8 +605,9 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         points
         - Re. implementing this: could start with the MLH as the query points, looking
         for points with minimal neighbors with the 2nd most likely graph; if found
-        too many neighbors in a given radius (threshold dependent), this suggests the 1st
-        MLH graph is a sub-graph of the 2nd MLH; therefore, check whether the 2nd graph
+        too many neighbors in a given radius (threshold dependent), this suggests
+        the 1st MLH graph is a sub-graph of the 2nd MLH; therefore, check whether
+        the 2nd graph
         has any points with few neighbors with the first; if still many neighbors, this
         could then serve as a learning signal to merge the graphs? (at least at some
         levels of hierarchy) --> NB merging should use "picky" graph-building method to
