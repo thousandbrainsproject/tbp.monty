@@ -325,9 +325,9 @@ class GridTooSmallError(Exception):
 class GridObjectModel(GraphObjectModel):
     """Model of an object and all its functions.
 
-        This model has the same basic functionality as the NumpyGraph models used in older
-        LM versions. On top of that we now have a grid representation of the object that
-        constrains the model size and resolution. Additionally, this model class implements
+    This model has the same basic functionality as the NumpyGraph models used in older
+    LM versions. On top of that we now have a grid representation of the object that
+    constrains the model size and resolution. Additionally, this model class implements
     a lot of functionality that was previously implemented in the graph_utils.py file.
 
     TODO: General cleanups that require more changes in other code
