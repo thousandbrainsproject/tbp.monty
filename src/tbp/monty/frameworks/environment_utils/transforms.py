@@ -235,7 +235,8 @@ class GaussianSmoothing(Transform):
         Args:
             img: 2D image to be filtered.
             kernel_renorm: flag that specifies whether kernel values should be
-                renormalized (based on the number of non-NaN values in the image window).
+                renormalized (based on the number of non-NaN values in the image
+                window).
 
         Returns:
             Filtered version of the input image.

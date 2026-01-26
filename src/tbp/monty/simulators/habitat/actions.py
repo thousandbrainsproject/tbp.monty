@@ -79,7 +79,8 @@ class SetSensorPitch(SceneNodeControl):
     Note that this does not update the pitch of the agent (imagine e.g. the "body"
     associated with the eye remaining in place, but the eye moving).
 
-    The :class:`ActuationSpec` amount contains the new absolute pitch rotation in degrees.
+    The :class:`ActuationSpec` amount contains the new absolute pitch rotation
+    in degrees.
     """
 
     def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
@@ -105,7 +106,8 @@ class SetAgentPitch(SceneNodeControl):
     This difference in behavior is controlled by the `body_action` boolean set in the
     decorator.
 
-    The :class:`ActuationSpec` amount contains the new absolute pitch rotation in degrees.
+    The :class:`ActuationSpec` amount contains the new absolute pitch rotation
+    in degrees.
 
     TODO: add a unit test to habitat_sim_test.py
     """

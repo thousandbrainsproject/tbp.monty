@@ -48,10 +48,11 @@ class HabitatAgent:
     Every Habitat agent will inherit from this class.
 
     Attributes:
-        agent_id: Unique ID of this agent in the environment. Observations returned by environment
-            will be mapped to this id. ``{"agent_id": {"sensor": [...]}}``. Actions
-            provided by this sensor module will be prefixed by this id. i.e.
-            "agent_id.move_forward"
+        agent_id: Unique ID of this agent in the environment.
+            Observations returned by the environment will be mapped to this id.
+            ``{"agent_id": {"sensor": [...]}}``.
+            Actions provided by this sensor module will be prefixed by
+            this id, i.e. "agent_id.move_forward"
         position: Module initial position in meters. Default (0, 1.5, 0)
         rotation: Module initial rotation quaternion. Default (1, 0, 0, 0)
         height: Module height in meters. Default 0.0
@@ -102,8 +103,9 @@ class HabitatAgent:
         simulator.initialize_agent(self.agent_id, agent_state)
 
     def process_observations(self, agent_obs) -> AgentObservations:
-        """Callback that processes raw Habitat agent observations into
-        Monty-compatible ones.
+        """Callback that processes raw Habitat agent observations.
+
+        Converts raw observations into Monty-compatible ones.
 
         Args:
             agent_obs: Raw Habitat-sim observations from the agent
@@ -196,7 +198,10 @@ def action_space(
     for action in action_spec:
         action_space[f"{agent_id}.{action[0]}"] = ActionSpec(
             f"{action[0]}",
-            ActuationSpec(amount=action[1], constraint=action[2]),  # type: ignore[arg-type]
+            ActuationSpec(
+                amount=action[1],
+                constraint=action[2],
+            ),  # type: ignore[arg-type]
         )
 
     return action_space

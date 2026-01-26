@@ -169,7 +169,8 @@ class HabitatSim(HabitatActuator, Simulator):
                 objects_path = absolute_data_path
             else:
                 # Objects downloaded with `habitat_sim.utils.environments_download` are
-                # stored in the sub-dir called "objects" for older versions of YCB (e.g. 1.0)
+                # stored in the sub-dir called "objects" for older versions of YCB
+                # (e.g. 1.0)
                 objects_path = absolute_data_path / "objects"
                 # The appended /objects is also key to triggering the below -else-
                 # "dataset downloaded some other way" path in unit tests

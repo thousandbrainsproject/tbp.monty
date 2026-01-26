@@ -34,7 +34,9 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
     """
 
     def run_episode(self):
-        """Run an episode that checks the terminal states of an object recognition run."""
+        """Run an episode that checks the terminal states of an object
+        recognition run.
+        """
         self.pre_episode()
         for step, observation in tqdm(enumerate(self.env_interface)):
             if step > self.max_steps:

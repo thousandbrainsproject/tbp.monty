@@ -744,7 +744,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
                 direction=(0, 0, 0),
             )
 
-            # TODO clean up where this is performed, and make variable names more general
+            # TODO clean up where this is performed, and make variable names more
+            # general
             # TODO also only log this when we are doing detailed logging
             # TODO M clean up these action details loggings; this may need to remain
             # local to a "motor-system buffer" given that these are model-free
