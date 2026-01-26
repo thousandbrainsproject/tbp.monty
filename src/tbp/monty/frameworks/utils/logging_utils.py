@@ -555,8 +555,8 @@ def get_graph_lm_episode_stats(lm):
     Returns:
         dict with stats of one episode.
     """
-        primary_performance = "patch_off_object"  # Performance on the primary target in
-        # the environment, typically the target object we begin the episode on
+    primary_performance = "patch_off_object"  # Performance on the primary target in
+    # the environment, typically the target object we begin the episode on
     stepwise_performance = "patch_off_object"  # Performance relative to the object
     # the learning module is actually receiving sensory input from when it converges
     location = np.array([0, 0, 0])
