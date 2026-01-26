@@ -68,7 +68,7 @@ def add_patch_outline_to_view_finder(view_finder_image, center_pixel_id, patch_s
     marked_image[x1:x2, y2 : y2 + 2] = [0, 0, 255, 0]
     return marked_image
 
-    # TODO when seperating detection and logging from this plotting code, re-use
+    # TODO when separating detection and logging from this plotting code, re-use
     # below
     # return (calculate_tpr(detection_results["true_positive"],
     #   detection_results["false_negative"]),

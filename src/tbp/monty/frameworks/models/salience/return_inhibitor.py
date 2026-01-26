@@ -16,7 +16,7 @@ import numpy as np
 class DecayKernel:
     """Decay kernel represents a previously visited location.
 
-    Returns the product of an time- and space- dependent exponentials.
+    Returns the product of time- and space-dependent exponentials.
     """
 
     def __init__(

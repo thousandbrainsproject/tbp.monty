@@ -74,7 +74,7 @@ from tbp.monty.simulators.simulator import Simulator
 DEFAULT_SCENE = "NONE"
 DEFAULT_PHYSICS_CONFIG = str(files(resources) / "default.physics_config.json")
 
-#: Maps habitat-sim pre-configure primitive object types to semantic IDs
+#: Maps Habitat-sim pre-configured primitive object types to semantic IDs
 PRIMITIVE_OBJECT_TYPES = {
     "capsule3DSolid": 101,
     "coneSolid": 102,
@@ -89,8 +89,8 @@ class HabitatSim(HabitatActuator, Simulator):
     """Habitat-sim interface for tbp.monty.
 
     This class wraps `habitat-sim <https://aihabitat.org/docs/habitat-sim>`_
-    simulator for tbp.monty. It aims to hide habitat-sim internals simplifying
-    experiments configuration within the tbp.monty framework.
+    simulator for tbp.monty. It aims to hide Habitat-sim internals, simplifying
+    experiment configuration within the tbp.monty framework.
 
     Example::
 
@@ -107,11 +107,11 @@ class HabitatSim(HabitatActuator, Simulator):
         plot_image(obs["camera"]["camera_id"]["depth"])
 
     Attributes:
-        agents: List of :class:`HabitatAgents` to place in the simulator
+        agents: List of :class:`HabitatAgent` to place in the simulator.
         data_path: Habitat data path location, usually the same path used by
-            :class:`habitat_sim.utils.environments_download`
+            :class:`habitat_sim.utils.environments_download`.
         scene_id: Scene to use or None for empty environment.
-        seed: Simulator seed to use
+        seed: Simulator seed to use.
     """
 
     def __init__(
@@ -123,7 +123,7 @@ class HabitatSim(HabitatActuator, Simulator):
     ):
         backend_config = habitat_sim.SimulatorConfiguration()
         backend_config.physics_config_file = DEFAULT_PHYSICS_CONFIG
-        # NOTE that currently we do not have gravity, although this can be adjusted in
+        # NOTE: Currently we do not have gravity, although this can be adjusted in
         # the above config by setting "gravity": [0, -9.8, 0]
 
         backend_config.enable_physics = True
@@ -169,16 +169,15 @@ class HabitatSim(HabitatActuator, Simulator):
                 objects_path = absolute_data_path
             else:
                 # Objects downloaded with `habitat_sim.utils.environments_download` are
-                # stored in the sub-dir called "objects" for older versions of YCB (eg.
-                # 1.0)
+                # stored in the sub-dir called "objects" for older versions of YCB (e.g. 1.0)
                 objects_path = absolute_data_path / "objects"
                 # The appended /objects is also key to triggering the below -else-
-                # "dataset downloaded some other way" in unit tests
+                # "dataset downloaded some other way" path in unit tests
 
             if objects_path.is_dir():
                 # Search "objects" dir for habitat objects.
                 # Habitat dataset objects are stored in a directory containing
-                # json files with the attribures of each object in the dataset.
+                # json files with the attributes of each object in the dataset.
                 # The json file name is in this format:
                 # "{object_name}.object_config.json".
                 # See https://aihabitat.org/docs/habitat-sim/attributesJSON.html#objectattributes # noqa: E501
@@ -205,19 +204,19 @@ class HabitatSim(HabitatActuator, Simulator):
             agent.initialize(self)
 
     def initialize_agent(self, agent_id: AgentID, agent_state) -> None:
-        """Update agent runtime state.
+        """Update the agent's runtime state.
 
-        Usually called first thing to update agent initial pose.
+        Usually called first thing to update the agent's initial pose.
 
         Args:
-            agent_id: Agent id of the agent to be updated
-            agent_state: Agent state to update to
+            agent_id: Agent ID of the agent to be updated.
+            agent_state: Agent state to update to.
         """
         agent_index = self._agent_id_to_index[agent_id]
         self._sim.initialize_agent(agent_index, agent_state)
 
     def remove_all_objects(self) -> None:
-        """Remove all objects from simulated environment."""
+        """Remove all objects from the simulated environment."""
         rigid_mgr = self._sim.get_rigid_object_manager()
         rigid_mgr.remove_all_objects()
         self._objects = {}
@@ -234,10 +233,10 @@ class HabitatSim(HabitatActuator, Simulator):
         """Add new object to simulated environment.
 
         Args:
-            name: Registered object name. It could be any of habitat-sim primitive
-                objects or any configured habitat object. For a list of primitive
-                objects see :const:`PRIMITIVE_OBJECT_TYPES`
-            position: Object initial absolute position
+            name: Registered object name. It can be any Habitat-sim primitive
+                object or any configured habitat object. See
+                :const:`PRIMITIVE_OBJECT_TYPES` for a list of primitive objects.
+            position: Object initial absolute position.
             rotation: Object rotation quaternion. Default (1, 0, 0, 0)
             scale: Object scale. Default (1, 1, 1)
             semantic_id: Optional override object semantic ID. Defaults to None.
@@ -312,7 +311,7 @@ class HabitatSim(HabitatActuator, Simulator):
             obj.semantic_id = PRIMITIVE_OBJECT_TYPES[obj_handle]
 
         # Compare the intended number of objects added (counter) vs the number
-        # instantiated in the Habitat environmnet
+        # instantiated in the Habitat environment
         num_objects_added = self.num_objects
         if isinstance(num_objects_added, int):
             # In some units tests (e.g. MontyRunTest.test_main_with_single_experiment),
@@ -333,8 +332,8 @@ class HabitatSim(HabitatActuator, Simulator):
         Determines and returns the bounding box (defined by a "max" and "min" corner) of
         a Habitat object (such as a mug), given in world coordinates.
 
-        Specifically uses the "axis-aligned bounding box" (aabb) available in Habitat;
-        this is a bounding box aligned with the axes of the co-oridante system, which
+        Specifically uses the "axis-aligned bounding box" (AABB) available in Habitat;
+        this bounding box is aligned with the axes of the coordinate system, which
         tends to be computationally efficient to retrieve.
 
         Args:
@@ -400,11 +399,11 @@ class HabitatSim(HabitatActuator, Simulator):
 
         Recall that +z is out of the page, where the agent starts facing in the -z
         direction at the beginning of the episode; +y is the up vector, and +x is the
-        right-ward direction
+        right-ward direction.
 
         Args:
             primary_obj_bb: the bounding box of the primary target in the scene
-            new_obj_bb: the bounding box fo the new object being added
+            new_obj_bb: the bounding box of the new object being added
             overlap_threshold: The threshold for overlap. Defaults to 0.75.
 
         Returns:
@@ -439,9 +438,9 @@ class HabitatSim(HabitatActuator, Simulator):
         """Find a position for the object being added.
 
         The criteria are such that the object does not:
-        i) have a physical collision with other objects (i.e. collision meshes
+        i) have a physical collision with other objects (i.e., collision meshes
         intersect)
-        ii) "collide" with the initial view of the primary target object, i.e. obscure
+        ii) "collide" with the initial view of the primary target object, i.e., obscure
         the ability of the agent to start on the primary target at the beginning of an
         experiment
 

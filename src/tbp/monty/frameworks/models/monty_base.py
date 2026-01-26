@@ -97,12 +97,12 @@ class MontyBase(Monty):
         self.is_seeking_match = True  # for consistency with custom monty experiments
         self.experiment_mode = None  # initialize to neither training nor testing
         self.total_steps = 0
-        # number of overall steps. Counts also steps where no LM update was perfomed.
+        # Number of overall steps. Counts also steps where no LM update was performed.
         self.episode_steps = 0
         # Number of steps in which at least 1 LM received information during exploration
         self.exploratory_steps = 0
-        # Number of steps in which at least 1 LM was updated. Is not the same as each
-        # individual LMs number of matching steps
+        # Number of steps in which at least 1 LM was updated. It is not the same as each
+        # individual LM's number of matching steps.
         self.matching_steps = 0
 
         if self.sm_to_lm_matrix is None:

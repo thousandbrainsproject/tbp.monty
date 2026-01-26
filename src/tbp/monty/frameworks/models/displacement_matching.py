@@ -45,7 +45,7 @@ class DisplacementGraphLM(GraphLM):
             match_attribute: Which displacement to use for matching.
                 Should be in ['displacement', 'PPF'].
             tolerance: How close does an observed displacement have to be to a
-                stored displacement to be considered a match,. defaults to 0.001
+                stored displacement to be considered a match. Defaults to 0.001
             use_relative_len: Whether to scale the displacements to achieve scale
                 invariance. Only possible when using PPF.
             graph_delta_thresholds: Thresholds used to compare nodes in the graphs
@@ -189,12 +189,12 @@ class DisplacementGraphLM(GraphLM):
 
     # ------------------- Main Algorithm -----------------------
     def _compute_possible_matches(self, observation, first_movement_detected=True):
-        """Use the current observation to narrown down the possible matches.
+        """Use the current observation to narrow down the possible matches.
 
         This is framed as a prediction problem. We take the current observation
         as a query and try to predict whether after the displacement we will still be
         on the object. In a next step we could also predict the feature that we sense
-        next. The prediction is then compared with he actual observation (currently
+        next. The prediction is then compared with the actual observation (currently
         just whether we sensed on_object or not). If there is a prediction error, then
         we remove the object from the possible matches.
 
@@ -299,10 +299,10 @@ class DisplacementGraphLM(GraphLM):
         Returns:
             Whether the displacement is on the object. 0 if not, 1 if it is.
         """
-        # TODO: Due to the use of node IDs as paths start IDs it a bit tricky to use
-        # multiple input channels & I am not sure if it is worth the time investment atm
-        # since we don't actively use this LM. So for now we just take the first input
-        # channel here.
+        # TODO: Due to the use of node IDs as path start IDs, it's a bit tricky to use
+        # multiple input channels, and I am not sure if it is worth the time investment
+        # at the moment since we don't actively use this LM. So for now we just take
+        # the first input channel here.
         first_input_channel = list(self.possible_matches[graph_id].keys())[0]
         displacement_plus_tolerance = np.stack(
             [displacement - self.tolerance, displacement + self.tolerance],
@@ -393,7 +393,7 @@ class DisplacementGraphLM(GraphLM):
         The observation consists of features at a location. To get the displacement we
         have to look at the previous observation stored in the buffer.
 
-        TODO: Should we move this and a (short term) buffer to the sensor module?
+        TODO: Should we move this and a (short-term) buffer to the sensor module?
 
         Returns:
             The observations with displacements added.

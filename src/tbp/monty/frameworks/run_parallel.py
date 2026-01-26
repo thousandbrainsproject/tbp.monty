@@ -329,8 +329,8 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
 
     Note:
         If we view the same object from multiple poses in separate experiments, we
-        need to replicate what post_episode does in supervised pre training. To avoid
-        this, we just run training episodes parallel across OBJECTS, but poses are
+        need to replicate what post_episode does in supervised pre-training. To avoid
+        this, we just run training episodes in parallel across objects, but poses are
         still in sequence. By contrast, eval episodes are parallel across objects
         AND poses.
 
@@ -467,7 +467,7 @@ def post_parallel_eval(experiments: list[Mapping], base_dir: Path) -> None:
     Logs are consolidated across parallel runs and saved to disk.
 
     Args:
-        experiments: List of experiments ran in parallel.
+        experiments: List of experiments run in parallel.
         base_dir: Directory where parallel logs are stored.
     """
     print("Executing post parallel evaluation cleanup")
@@ -522,7 +522,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
     Object models are consolidated across parallel runs and saved to disk.
 
     Args:
-        experiments: List of experiments ran in parallel.
+        experiments: List of experiments run in parallel.
         base_dir: Directory where parallel logs are stored.
     """
     print("Executing post parallel training cleanup")
@@ -576,8 +576,8 @@ def run_episodes_parallel(
         num_parallel: Maximum number of parallel processes to run. If there
             are fewer configs to run than `num_parallel`, then the actual number of
             processes will be equal to the number of configs.
-        experiment_name: name of experiment
-        train: Whether the episodes are training or evaluating episodes.
+        experiment_name: Name of the experiment.
+        train: Whether the episodes are training or evaluation episodes.
     """
     # Use fewer processes if there are fewer configs than `num_parallel`.
     num_parallel = min(len(experiments), num_parallel)

@@ -30,7 +30,7 @@ def get_state_from_channel(states, channel_name):
 
 
 def get_first_sensory_state(states):
-    """Given a list of states return the first one from a sensory channel.
+    """Given a list of states, return the first one from a sensory channel.
 
     Returns:
         First state from a sensory channel.

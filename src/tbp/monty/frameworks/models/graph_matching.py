@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 class MontyForGraphMatching(MontyBase):
-    """General Monty model for recognizing object using graphs."""
+    """General Monty model for recognizing objects using graphs."""
 
     LOGGING_REGISTRY: ClassVar[dict[str, type[BaseMontyLogger]]] = {
         # Don't do any formal logging, just save models. Used for pretraining.
@@ -179,10 +179,10 @@ class MontyForGraphMatching(MontyBase):
     # ------------------ Getters & Setters ---------------------
 
     def set_is_done(self):
-        """Set the model is_done flag.
+        """Set the model's `is_done` flag.
 
-        Method that e.g. experiment class can use to set model is_done flag if
-        e.g. total number of episode steps possible has been exceeded
+        Method that e.g. experiment classes can use to set the model's flag if
+        e.g. the total number of episode steps possible has been exceeded.
         """
         self._is_done = True
 
@@ -387,7 +387,7 @@ class MontyForGraphMatching(MontyBase):
         return combined_votes
 
     def _vote(self):
-        """Use lm_to_lm_vote_matrix to transmit votes between lms."""
+        """Use lm_to_lm_vote_matrix to transmit votes between LMs."""
         if self.lm_to_lm_vote_matrix is not None:
             # Send out votes
             votes_per_lm = []
@@ -489,7 +489,7 @@ class MontyForGraphMatching(MontyBase):
         learning module, i.e. the class label of the object it is actually receiving
         sensory input from
 
-        TODO seperate this out with the new Observation class; also the LM should
+        TODO separate this out with the new Observation class; also the LM should
         have its own method to update this attribute, rather than the Monty class
         changing this
         TODO: Add unit tests for this
@@ -647,9 +647,9 @@ class GraphLM(LearningModule):
             self._update_target_graph_mapping(self.detected_object, self.primary_target)
 
     def send_out_vote(self):
-        """Send out list ob objects that are not possible matches.
+        """Send out list of objects that are not possible matches.
 
-        By sending out the negavtive matches we avoid the problem that
+        By sending out the negative matches we avoid the problem that
         every LM needs to know about the same objects. We could think of
         this as more of an inhibitory signal (I know it can't be this
         object so you all don't need to check that anymore).
@@ -1084,7 +1084,7 @@ class GraphMemory(LMMemory):
     """General GraphMemory that stores & manipulates GraphObjectModel instances.
 
     You can think of the GraphMemory as a library of object models with a librarian
-    managing them. The books ate GraphObjectModel instances. The LearningModule classes
+    managing them. The books are GraphObjectModel instances. The LearningModule classes
     access the information stored in the books and can request books to be added to the
     library.
 

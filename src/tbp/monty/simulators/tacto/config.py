@@ -127,7 +127,7 @@ class Force:
 
     Attributes:
         enable: Whether or not to enable force feedback
-        range_force: Dynamic range of forces used to simulate the elastometer
+        range_force: Dynamic range of forces used to simulate the elastomer
             deformations [0-100]
         max_deformation: Max pose depth adjustment, in meters
     """
@@ -146,7 +146,7 @@ class TactoSensorSpec:
         camera: Camera specifications. One camera for DIGIT, five for OmniTact
         gel: Sensor elastomer gel configuration
         lights: Sensor LED light configuration
-        noise: Gausian noise calibration
+        noise: Gaussian noise calibration
         force: Elastomer force feedback specification
 
     .. _Tacto:

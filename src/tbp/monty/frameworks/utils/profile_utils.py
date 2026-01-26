@@ -11,7 +11,7 @@
 import matplotlib.pyplot as plt
 
 """
-Profiled experiments output .csv files which can be readin with pandas. This file
+Profiled experiments output .csv files which can be read in with pandas. This file
 contains some basic functions that help interpret profiling results.
 """
 

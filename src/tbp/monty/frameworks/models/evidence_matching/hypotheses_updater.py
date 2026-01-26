@@ -68,7 +68,7 @@ class HypothesesUpdater(Protocol):
         """Update hypotheses based on sensor displacement and sensed features.
 
         Args:
-            hypotheses: Hypotheses for all input channels for the graph_id
+            hypotheses: Hypotheses for all input channels in the graph
             features: Input features
             displacements: Given displacements
             graph_id: Identifier of the graph being updated
@@ -77,7 +77,7 @@ class HypothesesUpdater(Protocol):
             evidence_update_threshold: Evidence update threshold
 
         Returns:
-            The list of channel hypotheses updates to be applied.
+            The list of hypothesis updates to be applied.
         """
         ...
 
@@ -107,15 +107,15 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         """Initializes the DefaultHypothesesUpdater.
 
         Args:
-            feature_weights: How much should each feature be weighted when
-                calculating the evidence update for hypothesis. Weights are stored in a
+            feature_weights: How much each feature should be weighted when
+                calculating the evidence update for a hypothesis. Weights are stored in a
                 dictionary with keys corresponding to features (same as keys in
                 tolerances).
             graph_memory: The graph memory to read graphs from.
             max_match_distance: Maximum distance of a tested and stored location
-                to be matched.
+                for them to be matched.
             tolerances: How much can each observed feature deviate from the
-                stored features to still be considered a match.
+                stored features while still being considered a match.
             evidence_threshold_config: How to decide which hypotheses
                 should be updated. When this parameter is either '[int]%' or
                 'x_percent_threshold', then this parameter is applied to the evidence
@@ -133,12 +133,12 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             feature_evidence_increment: Feature evidence (between 0 and 1) is
                 multiplied by this value before being added to the overall evidence of
                 a hypothesis. This factor is only multiplied with the feature evidence
-                (not the pose evidence as opposed to the present_weight). Defaults to 1.
+                (not the pose evidence, unlike the present_weight). Defaults to 1.
             features_for_matching_selector: Class to
                 select if features should be used for matching. Defaults to the default
                 selector.
             initial_possible_poses: Initial
-                possible poses that should be tested for. Defaults to "informed".
+                possible poses to test. Defaults to "informed".
             max_nneighbors: Maximum number of nearest neighbors to consider in the
                 radius of a hypothesis for calculating the evidence. Defaults to 3.
             past_weight: How much should the evidence accumulated so far be
@@ -148,11 +148,11 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 when added to the previous evidence. If past_weight and present_weight
                 add up to 1, the evidence is bounded and can't grow infinitely. Defaults
                 to 1.
-                NOTE: right now this doesn't give as good performance as with unbounded
+                NOTE: Right now this doesn't give as good performance as with unbounded
                 evidence since we don't keep a full history of what we saw. With a more
-                efficient policy and better parameters that may be possible to use
-                though and could help when moving from one object to another and to
-                generally make setting thresholds etc. more intuitive.
+                efficient policy and better parameters, that may be possible to use and
+                could help when moving from one object to another and generally make
+                setting thresholds more intuitive.
             umbilical_num_poses: Number of sampled rotations in the direction of
                 the plane perpendicular to the surface normal. These are sampled at
                 umbilical points (i.e., points where PC directions are undefined).
@@ -194,14 +194,14 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
     ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
-        Updates existing hypothesis space or initializes a new hypothesis space
+        Updates the existing hypothesis space or initializes a new hypothesis space
         if one does not exist (i.e., at the beginning of the episode). Updating the
-        hypothesis space includes displacing the hypotheses possible locations, as well
+        hypothesis space includes displacing the hypotheses' possible locations, as well
         as updating their evidence scores. This process is repeated for each input
         channel in the graph.
 
         Args:
-            hypotheses: Hypotheses for all input channels in the graph_id
+            hypotheses: Hypotheses for all input channels in the graph
             features: Input features
             displacements: Given displacements
             graph_id: Identifier of the graph being updated
@@ -210,11 +210,11 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            The list of hypotheses updates to be applied to each input channel.
+            The list of hypothesis updates to be applied to each input channel.
         """
         # Get all usable input channels
         # NOTE: We might also want to check the confidence in the input channel
-        # features. This information is currently not available here.
+        # features, but this information is currently not available here.
         # TODO S: Once we pull the observation class into the LM we could add this.
         input_channels_to_use = all_usable_input_channels(
             features, self.graph_memory.get_input_channels_in_graph(graph_id)
@@ -281,9 +281,9 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
     ):
         """Initialize hypotheses on possible rotations for each location.
 
-        Similar to _get_informed_possible_poses but doesn't require looping over nodes
+        This is similar to _get_informed_possible_poses but doesn't require looping over nodes.
 
-        For this we use the surface normal and curvature directions and check how
+        For this, we use the surface normal and curvature directions and check how
         they would have to be rotated to match between sensed and stored vectors
         at each node. If principal curvature is similar in both directions, the
         direction vectors cannot inform this and we have to uniformly sample multiple
@@ -368,7 +368,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 initial_possible_channel_rotations
             )
         # There will always be two feature weights (surface normal and curvature
-        # direction). If there are no more weight we are not using features for
+        # direction). If there are no more weights we are not using features for
         # matching and skip this step. Doing matching with only morphology can
         # currently be achieved in two ways. Either we don't specify tolerances
         # and feature_weights or we set the global feature_evidence_increment to 0.
@@ -386,13 +386,13 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 channel_tolerances=self.tolerances[input_channel],
                 input_channel=input_channel,
             )
-            # stack node_feature_evidence to match possible poses
+            # Stack node_feature_evidence to match possible poses
             nwmf_stacked = []
             for _ in range(
                 len(initial_possible_channel_rotations) // len(node_feature_evidence)
             ):
                 nwmf_stacked.extend(node_feature_evidence)
-            # add evidence if features match
+            # Add evidence if features match
             evidence = np.array(nwmf_stacked) * self.feature_evidence_increment
         else:
             evidence = np.zeros(initial_possible_channel_rotations.shape[0])
@@ -422,7 +422,7 @@ def all_usable_input_channels(
         All input channels that are usable for matching.
     """
     # Get all usable input channels
-    # NOTE: We might also want to check the confidence in the input channel
-    # features. This information is currently not available here.
+    # NOTE: We might also want to check the confidence in the input-channel
+    # features, but this information is currently not available here.
     # TODO S: Once we pull the observation class into the LM we could add this.
     return [ic for ic in features.keys() if ic in all_input_channels]
