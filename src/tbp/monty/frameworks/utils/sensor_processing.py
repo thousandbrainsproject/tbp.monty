@@ -353,7 +353,7 @@ def curvature_at_point(point_cloud, center_id, normal):
             dir1 = eigvec_sorted[0, 0] * ev + eigvec_sorted[1, 0] * fv
             dir2 = eigvec_sorted[0, 1] * ev + eigvec_sorted[1, 1] * fv
             if get_right_hand_angle(dir1, dir2, nv) < 0:
-            # Always have dir2 point to the righthand side of dir1
+                # Always have dir2 point to the righthand side of dir1
                 dir2 = -dir2
 
             valid_pc = True
