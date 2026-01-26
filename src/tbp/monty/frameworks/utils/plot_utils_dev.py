@@ -1487,7 +1487,7 @@ def plot_hotspots(
     """Plot the locations frequently visited by the hypothesis-testing jump policy.
 
     Note that the location will not necessarily correspond to where the policy thought it would land;
-    if its estimate of the object pose was poor, it may land somewhere else.
+    if its estimate of the object pose was poor, it may land somewhere other than where it intended.
 
     This function collects data from multiple episodes; use it when the experiment involves multiple
     rotations or multiple episodes of the same object.
