@@ -94,7 +94,7 @@ class MuJoCoSimulator(Simulator):
         rotation: QuaternionWXYZ,
         scale: VectorXYZ,
     ) -> None:
-    """Adds a built-in MuJoCo primitive geom to the scene spec.
+        """Adds a built-in MuJoCo primitive geom to the scene spec.
 
         Arguments:
             obj_name: Identifier for the object in the scene, must be unique.
