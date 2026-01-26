@@ -477,15 +477,15 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         Args:
             parent_lm: ?
             goal_tolerances: ?
-                elapsed_steps_factor: Factor that considers the number of elapsed
-                    steps as a possible condition for initiating a hypothesis-testing goal
-                    state; should be set to an integer reflecting a number of steps. In
-                    general, when we have taken number of non-goal-state driven steps
-                    greater than elapsed_steps_factor, then this is an indication to
-                    initiate a hypothesis-testing goal-state. In addition however, we can
-                    multiply elapsed_steps_factor by an exponentially increasing wait-factor,
-                    such that we use longer and longer intervals as the experiment
-                    continues. Defaults to 10.
+            elapsed_steps_factor: Factor that considers the number of elapsed
+                steps as a possible condition for initiating a hypothesis-testing goal
+                state; should be set to an integer reflecting a number of steps. In
+                general, when we have taken number of non-goal-state driven steps
+                greater than elapsed_steps_factor, then this is an indication to
+                initiate a hypothesis-testing goal-state. In addition however, we can
+                multiply elapsed_steps_factor by an exponentially increasing wait-factor,
+                such that we use longer and longer intervals as the experiment
+                continues. Defaults to 10.
             min_post_goal_success_steps: Number of necessary steps for a hypothesis
                 goal-state to be considered. Unlike elapsed_steps_factor, this is a
                 *necessary* criteria for us to generate a new hypothesis-testing
