@@ -522,7 +522,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
     Object models are consolidated across parallel runs and saved to disk.
 
     Args:
-        experiments: List of experiments run in parallel.
+        experiments: List of experiments ran in parallel.
         base_dir: Directory where parallel logs are stored.
     """
     print("Executing post parallel training cleanup")
