@@ -49,7 +49,7 @@ def output_dir_from_run_name(config: DictConfig) -> Path:
     return output_dir
 
 
-@hydra.main(config_path="../../conf", config_name="experiment", version_base=None)
+@hydra.main(config_path="../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
     if cfg.quiet_habitat_logs:
         os.environ["MAGNUM_LOG"] = "quiet"

@@ -13,4 +13,4 @@ from hydra.plugins.search_path_plugin import SearchPathPlugin
 
 class MontySearchPathPlugin(SearchPathPlugin):
     def manipulate_search_path(self, search_path: ConfigSearchPath) -> None:
-        search_path.append(provider="tbp.monty", path="pkg://conf")
+        search_path.append(provider="tbp.monty", path="pkg://tbp.monty.conf")
