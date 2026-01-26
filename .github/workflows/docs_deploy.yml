@@ -10,6 +10,7 @@ on:
       - main
     paths:
       - 'docs/**'
+      - 'src/tbp/monty/__init__.py'
       - 'tools/github_readme_sync/**'
       - '.github/workflows/docs_deploy.yml'
       - '.github/actions/get_preview_info/**'
