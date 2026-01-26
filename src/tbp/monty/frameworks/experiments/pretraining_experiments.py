@@ -67,7 +67,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         In a supervised episode we only make exploratory steps (no object recognition
         is attempted) since the target label is provided. The target label and pose
         is then used to update the object model in memory.
-        This can, for instance, be used to warm up the training by starting with some
+        For instance, this can be used to warm up the training by starting with some
         models in memory instead of completely from scratch. It also makes testing
         easier as long as we don't have a good solution for dealing with incomplete
         objects.
