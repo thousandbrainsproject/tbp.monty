@@ -464,8 +464,8 @@ def principal_curvatures(
 
         # Rarely, "a" can be singular, causing numpy to throw an error.
         # It appears to be caused by touch-sensor gathering observations that are largely off the
-        # Object, but not entirely (e.g. <25% visible), resulting in a system
-        # With insufficient data to be solvable.
+        # object, but not entirely (e.g. <25% visible), resulting in a system
+        # with insufficient data to be solvable.
         if non_singular_mat(a_mat):
             # Step 2) do least-squares fit to get the parameters of the quadratic form
             params = np.linalg.solve(a_mat, b)
