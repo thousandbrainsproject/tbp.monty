@@ -37,7 +37,7 @@ class TactoSensor(SensorConfig):
     Attributes:
         sensor_id: Sensor ID unique within the sensor module.
             The observations made by this sensor will be prefixed by
-            this id, i.e., "`sensor_id`.cam0"
+            this id, i.e. "`sensor_id`.cam0"
         resolution: Camera resolution (width, height). Default (32, 48).
         position: Sensor position relative to :class:`HabitatAgent`.
             Default (0, 0, 0).
