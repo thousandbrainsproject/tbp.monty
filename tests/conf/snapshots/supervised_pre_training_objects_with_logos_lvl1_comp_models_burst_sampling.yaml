@@ -92,7 +92,7 @@ experiment:
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
-      run_name: supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling
+      run_name: supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
@@ -204,7 +204,7 @@ experiment:
               x_percent_scale_factor: 0.75
               desired_object_distance: 0.03
               wait_growth_multiplier: 1
-            hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater.ResamplingHypothesesUpdater}
+            hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling_hypotheses_updater.BurstSamplingHypothesesUpdater}
             evidence_threshold_config: all
             gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
         learning_module_1:

@@ -11,10 +11,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Literal, Optional, Protocol
+from typing import Any, ContextManager, Dict, Literal, Optional, Protocol
 
 import numpy as np
 from scipy.spatial.transform import Rotation
+from typing_extensions import Self
 
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
     DefaultFeatureEvidenceCalculator,
@@ -55,7 +56,10 @@ class ChannelHypothesesUpdateTelemetry:
     channel_hypothesis_displacer_telemetry: HypothesisDisplacerTelemetry
 
 
-class HypothesesUpdater(Protocol):
+class HypothesesUpdater(ContextManager[Self], Protocol):
+    def reset(self) -> None:
+        """Resets updater at the beginning of an episode."""
+
     def update_hypotheses(
         self,
         hypotheses: Hypotheses,
@@ -182,6 +186,20 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             tolerances=self.tolerances,
             use_features_for_matching=self.use_features_for_matching,
         )
+
+    def __enter__(self) -> Self:
+        """Enter context manager, runs before updating the hypotheses.
+
+        Returns:
+            Self: The context manager instance.
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit context manager, runs after updating the hypotheses."""
+
+    def reset(self) -> None:
+        """Resets updater at the beginning of an episode."""
 
     def update_hypotheses(
         self,

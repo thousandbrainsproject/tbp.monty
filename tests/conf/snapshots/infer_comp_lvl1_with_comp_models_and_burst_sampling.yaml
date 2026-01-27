@@ -79,7 +79,7 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: ${benchmarks.rotations_all_count}
-    model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling/pretrained/
+    model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling/pretrained/
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
@@ -95,7 +95,7 @@ experiment:
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/evidence_eval_runs/logs}
-      run_name: infer_comp_lvl1_with_comp_models_and_resampling
+      run_name: infer_comp_lvl1_with_comp_models_and_burst_sampling
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
@@ -206,7 +206,7 @@ experiment:
               min_post_goal_success_steps: 5
               x_percent_scale_factor: 0.75
               desired_object_distance: 0.03
-            hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater.ResamplingHypothesesUpdater}
+            hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling_hypotheses_updater.BurstSamplingHypothesesUpdater}
             evidence_threshold_config: all
             object_evidence_threshold: 1
         learning_module_1:
@@ -233,7 +233,7 @@ experiment:
               min_post_goal_success_steps: 5
               x_percent_scale_factor: 0.75
               desired_object_distance: 0.03
-            hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater.ResamplingHypothesesUpdater}
+            hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling_hypotheses_updater.BurstSamplingHypothesesUpdater}
             evidence_threshold_config: all
             object_evidence_threshold: 1
       sm_to_agent_dict:

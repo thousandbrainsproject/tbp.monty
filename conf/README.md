@@ -46,7 +46,7 @@ To generate models for the objects with logos experiments, run the following pre
 - `python run_parallel.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo`
 - `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl1_monolithic_models`
 - `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models`
-- `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling`
+- `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling`
 
 ##### Phase 4
 
