@@ -99,7 +99,7 @@ A Draft Pull Request is ignored and not triaged.
 
 ### Title
 
-The title should short, descriptive, and prefixed with a label based on the [Conventional Commits 1.0.0 Standard](https://www.conventionalcommits.org/en/v1.0.0/).
+The title should be short and descriptive. Because our commit messages use the pull request title, the title should be prefixed with a label based on the [Conventional Commits 1.0.0 Standard](https://www.conventionalcommits.org/en/v1.0.0/).
 
 `tbp.monty` code adopts the following label `<type>`s:
 
