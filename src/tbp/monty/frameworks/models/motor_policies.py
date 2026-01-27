@@ -448,7 +448,7 @@ class GetGoodView(PositioningProcedure):
     First, the agent is moved towards the target object until the object fills a minimum
     of percentage (given by `good_view_percentage`) of the sensor's field of view or the
     closest point of the object is less than `desired_object_distance` from the sensor.
-    This makes sure that big and small objects all fill similar amount of space in the
+    This makes sure that big and small objects all fill a similar amount of space in the
     sensor's field of view. Otherwise small objects may be too small to perform saccades
     or the sensor ends up inside of big objects. This step is performed by default but
     can be skipped by setting `allow_translation=False`.
@@ -481,7 +481,7 @@ class GetGoodView(PositioningProcedure):
             sensor_id: The ID of the sensor to use for positioning.
             target_semantic_id: The semantic ID of the target object.
             allow_translation: Whether to allow movement toward the object via
-                the motor systems's move_close_enough method. If False, only
+                the motor system's move_close_enough method. If False, only
                 orientienting movements are performed. Defaults to True.
             max_orientation_attempts: The maximum number of orientation attempts
                 allowed before giving up and truncating the procedure indicating that

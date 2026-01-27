@@ -317,7 +317,7 @@ class ObjectModel(metaclass=abc.ABCMeta):
 class GoalStateGenerator(metaclass=abc.ABCMeta):
     """Generate goal-states that other learning modules and motor-systems will attempt.
 
-    Generate goal-states potentially (in the case of LMs) by outputing their own
+    Generate goal-states potentially (in the case of LMs) by outputting their own
     sub-goal-states. Provides a mechanism for implementing hierarchical action policies
     that are informed by world models/hypotheses.
     """

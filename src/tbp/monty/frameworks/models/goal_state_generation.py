@@ -25,21 +25,22 @@ logger = logging.getLogger(__name__)
 class GraphGoalStateGenerator(GoalStateGenerator):
     """Generate sub-goal states until the received goal state is achieved.
 
-    A component associated with each learning module that receives a high level goal
-    state, and generates sub-goal states until the received goal state is achieved.
+    Each learning-module embeds a component that receives a high-level goal state
+    and generates sub-goal states until the received goal state is achieved.
 
-    Generated goal-states are received by either:
-        i) other learning modules, which may model world-objects (e.g. a mug), or may
-        model internal systems (e.g. the agent's robotic limb)
-        ii) motor actuators, in which case they represent simpler, primitive goal-states
-        for the actuator to achieve (e.g. location and orientation of an actuator-sensor
-        pair)
+    Generated goal states are received by:
+        i) other learning modules, which may model world objects (e.g., a mug) or
+        internal systems (e.g., the agent's robotic limb)
+        ii) motor actuators, in which case they represent simpler, primitive goal states
+        for the actuator to achieve (e.g., the location and orientation of an
+        actuator-sensor pair)
 
-    As well as the high-level, "driving" goal-state, generated goal-states can also be
-    conditioned on other information, such as the LMs current most-likely hypothesis,
-    and the structure of known object models (i.e. information local to the LM).
+    Alongside the high-level "driving" goal state, generated goal states can also be
+    conditioned on other information such as the LM's current most-likely hypothesis
+    and the structure of known object models (i.e., information local to the LM).
 
-    Note all goal-states conform to the State-class cortical messaging protocol (CMP).
+    Note that all goal states conform to the State-class cortical messaging
+    protocol (CMP).
     """
 
     def __init__(self, parent_lm, goal_tolerances=None, **_kwargs) -> None:
@@ -97,8 +98,8 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         work will implement hierarchical action policies/GSGs, as well as the ability to
         specify a top goal-state by the experimenter.
 
-        TODO M : we currently just use "None" as a placehodler for the default
-        goal-state
+        TODO M: we currently just use "None" as a placeholder for the default
+        goal state
         > plan : set the default driving goal-state to a meaningful, non-None value
         that is compatible with the current method for checking convergence of an LM,
         such that achieving the driving goal-state can be used as a test for Monty
@@ -226,7 +227,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
         TODO M consider making this a utility function, as might be useful in e.g. the
         LM itself as well. However, the significant presence of None/NaN values in
-        Goal States may mean we want to take a different appraoch.
+        Goal States may mean we want to take a different approach.
 
         Returns:
             Whether the states are different.
@@ -300,10 +301,10 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             Instead, such feedback could include the state of an LM that controls a
             motor system (such as a hand model LM), or the state of a motor-actuator
             (akin to proprioceptive feedback); in this case, we could directly compare
-            the output goal-state to the state recived by this feedback, to determine
+            the output goal-state to the state received by this feedback, to determine
             whether the goal-state was likely achieved. This input would likely come
             from a separate channel (similar to voting). Finally, note that this
-            information could be complimentary to feedback from the sensory input and
+            information could be complementary to feedback from the sensory input and
             our sensory predictions, as in some cases we might have no proprioceptive
             feedback, while in other cases we might have no sensory input (e.g.
             blindfolded); alignment or mismatch between these two could form useful
@@ -326,9 +327,9 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
         Note that there can still be some difference even when a goal-state
         failed, as the feature-change-SM and motor-only steps can result in the agent
-        moving after it has returned to its original position. Futhermore, there may
+        moving after it has returned to its original position. Furthermore, there may
         not always be a difference if the agent did "succeed", if the goal-state
-        it wanted to acheive happened to be very close to its original position. Thus
+        it wanted to achieve happened to be very close to its original position. Thus
         this is an approximate method.
 
         TODO M implement also using the target goal-state and internal model
@@ -355,7 +356,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             previous_sensory_input = None
         # NB if no history of inputs, get_previous_input_states returns None, in which
         # case _check_states_different will return False, and we return goal_achieved as
-        # False, as we cannot meaningfully evaluate whether this occured
+        # False, as we cannot meaningfully evaluate whether this occurred
 
         return self._check_states_different(
             current_sensory_input,
@@ -450,7 +451,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
     """Generator of goal states for an evidence-based graph LM.
 
-    GSG specifically setup for generating goal states for an evidence-based graph LM,
+    GSG specifically set up for generating goal states for an evidence-based graph LM,
     which can therefore leverage the hypothesis-testing action policy. This policy uses
     hypotheses about the most likely objects, as well as knowledge of their structure
     from long-term memory, to propose test-points that should efficiently disambiguate
@@ -481,10 +482,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
                 steps as a possible condition for initiating a hypothesis-testing goal
                 state; should be set to an integer reflecting a number of steps. In
                 general, when we have taken number of non-goal-state driven steps
-                greater than elapsed_steps_factor, then this is an indiciation to
+                greater than elapsed_steps_factor, then this is an indication to
                 initiate a hypothesis-testing goal-state. In addition however, we can
-                multiply elapsed_steps_factor by an exponentiall increasing wait-factor,
-                such that we use longer and longer intervals as the experiment
+                multiply elapsed_steps_factor by an exponentially increasing
+                wait-factor, such that we use longer and longer intervals as the
+                experiment
                 continues. Defaults to 10.
             min_post_goal_success_steps: Number of necessary steps for a hypothesis
                 goal-state to be considered. Unlike elapsed_steps_factor, this is a
@@ -577,7 +579,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         The aim is to propose a point for the model to test, with the aim of performing
         object pose and ID recognition, by looking at the graph of the most likely
         object, and comparing it to the graph of the second most likely object. If there
-        is a local mismatch in the graphs (e.g. the presense of a handle in one and not
+        is a local mismatch in the graphs (e.g. the presence of a handle in one and not
         the other), this should return the necessary coordinates to move there.
 
         Returns the index of the point in the graph of the most likely object that
@@ -601,14 +603,15 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         - i.e. imagine 2nd MLH is a mug with a handle, and MLH has no handle; when
         checking all the points for the handleless mug, there will always be nearby
         points
-        - Re. implementing this : could start with the MLH as the query points, looking
+        - Re. implementing this: could start with the MLH as the query points, looking
         for points with minimal neighbors with the 2nd most likely graph; if found
-        too many neighbors in a given radius (threshold dependent), this suggest the 1st
-        MLH graph is a sub-graph of the 2nd MLH; therefore, check whether the 2nd graph
+        too many neighbors in a given radius (threshold dependent), this suggests
+        the 1st MLH graph is a sub-graph of the 2nd MLH; therefore, check whether
+        the 2nd graph
         has any points with few neighbors with the first; if still many neighbors, this
         could then serve as a learning signal to merge the graphs? (at least at some
         levels of hierarchy) --> NB merging should use "picky" graph-building method to
-        ensure we don't just double the number of points in the graph unecessarily
+        ensure we don't just double the number of points in the graph unnecessarily
 
         TODO M consider adding a factor so that we ensure our testing spot is also far
         away from any previously visited locations (at least according to MLH path),
@@ -774,7 +777,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # The target location on the object's surface in global/body-centric coordinates
         proposed_surface_loc = sensory_input.location + rotated_disp
 
-        # Rotate the learned surface normal (which was commited to memory assuming a
+        # Rotate the learned surface normal (which was committed to memory assuming a
         # default 0,0,0 orientation of the object)
         target_surface_normal_rotated = object_rot.apply(
             target_info["target_surface_normal"]
@@ -791,7 +794,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         # Extra metadata for logging. 'achieved' and
         # 'matching_step_when_output_goal_set' should be updated at the next step.
-        # We initialize them as `None` to inidicate that no valid values have been set.
+        # We initialize them as `None` to indicate that no valid values have been set.
         info = {
             "proposed_surface_loc": proposed_surface_loc,
             "hypothesis_to_test": target_info["hypothesis_to_test"],
@@ -884,7 +887,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         pose and object ID determination, i.e. determines whether there is a good chance
         of discriminating between conflicting object IDs or poses.
 
-        The schedule is designed to balance descriminating the pose and objects as
+        The schedule is designed to balance discriminating the pose and objects as
         efficiently as possible; TODO M future work can use the schedule conditions as
         primitives and use RL or evolutionary algorithms to optimize the relevant
         parameters.
@@ -922,8 +925,8 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         top_mlh = self.parent_lm.get_current_mlh()
 
         # If the MLH evidence is significantly above the second MLH (where "significant"
-        # is determined by x_percent_scale_factor below), then focus on descriminating
-        # its pose on some (random) occasions; always focus on pose if we've convereged
+        # is determined by x_percent_scale_factor below), then focus on discriminating
+        # its pose on some (random) occasions; always focus on pose if we've converged
         # to one object
         # TODO M update so that not accessing private methods here; part of 2nd phase
         # of refactoring
