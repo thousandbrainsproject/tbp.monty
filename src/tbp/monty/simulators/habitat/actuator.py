@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -45,7 +45,7 @@ class HabitatActuatorRequirements(Protocol):
 
 
 class HabitatActuator(HabitatActuatorRequirements):
-    """Habitat implementation of an Actuator.
+    """Habitat-sim implementation of an Actuator.
 
     HabitatActuator is responsible for executing actions in the Habitat simulation.
 
@@ -54,9 +54,9 @@ class HabitatActuator(HabitatActuatorRequirements):
     HabitatActuatorRequirements to be met.
 
     Note:
-        Habitat does not expose an API for passing parameters to actions.
-        So each actuate method works around this limitation by artisanally setting
-        specific action parameters directly in Habitat sim.
+        Habitat-sim does not expose an API for passing parameters to actions.
+        Each actuate method works around this limitation by artisanally setting
+        specific action parameters directly in Habitat-sim.
     """
 
     def action_name(self, action: Action) -> str:
