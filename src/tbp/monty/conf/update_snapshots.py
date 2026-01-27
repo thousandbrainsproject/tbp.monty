@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -20,11 +20,13 @@ from omegaconf import OmegaConf
 from tbp.monty.frameworks.run_env import setup_env
 from tbp.monty.hydra import register_resolvers
 
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.parent
+
 
 def update_snapshots(
     experiment_dir: Path = Path(__file__).parent / "experiment",
     experiment_prefix: str = "",
-    snapshots_dir: Path = Path(__file__).parent.parent / "tests" / "conf" / "snapshots",
+    snapshots_dir: Path = PROJECT_ROOT / "tests" / "conf" / "snapshots",
 ):
     """Update snapshots for all experiments in the experiment directory.
 
@@ -54,7 +56,5 @@ if __name__ == "__main__":
     update_snapshots(
         experiment_dir=Path(__file__).parent / "experiment" / "tutorial",
         experiment_prefix="tutorial/",
-        snapshots_dir=(
-            Path(__file__).parent.parent / "tests" / "conf" / "snapshots" / "tutorial"
-        ),
+        snapshots_dir=PROJECT_ROOT / "tests" / "conf" / "snapshots" / "tutorial",
     )

@@ -16,8 +16,8 @@ Learning modules (LMs) can be loosely compared to cortical columns, and each lea
 There is a 3-step process for creating a custom learning module. All other classes can be customized along the same lines.
 
 - **Define a new subclass of LearningModule (LM)** either in a local projects folder, or in `/src/tbp/monty/frameworks/models`. See the abstract class definitions in `/src/tbp/monty/frameworks/models/abstract_monty_classes.py` for the functions that every LM should implement.
-- **Define a config for your learning module**. You are encouraged but not required to provide default arguments to your LM. It may also be helpful to specify some common configurations for your LM in `conf/experiment/config/monty/learning_modules/learning_module` directory for use in your experiment configurations. Additionally, you could specify common expected configurations of multiple learning modules in `conf/experiment/config/monty/learning_modules` by defining a dictionary of LM IDs and specifying `learning_module_class` and its `learning_module_args` for each learning module.
-- **Define an experiment config** in `conf/experiment/` (or in your own repository or in your `monty_lab` projects folder).
+- **Define a config for your learning module**. You are encouraged but not required to provide default arguments to your LM. It may also be helpful to specify some common configurations for your LM in `src/tbp/monty/conf/experiment/config/monty/learning_modules/learning_module` directory for use in your experiment configurations. Additionally, you could specify common expected configurations of multiple learning modules in `src/tbp/monty/conf/experiment/config/monty/learning_modules` by defining a dictionary of LM IDs and specifying `learning_module_class` and its `learning_module_args` for each learning module.
+- **Define an experiment config** in `src/tbp/monty/conf/experiment/` (or in your own repository or in your `monty_lab` projects folder).
 
 You custom experiment config could look like this:
 ```yaml
@@ -37,4 +37,4 @@ config:
           your_arg2: val2
 ```
 
-For simplicity we inherit all other default values from the `base_config_10distinctobj_dist_agent` config in `conf/experiment/base_config_10distinctobj_dist_agent.yaml` and use the `monty_config` specified in `conf/experiment/config/monty/patch_and_view_sota.yaml`.
+For simplicity we inherit all other default values from the `base_config_10distinctobj_dist_agent` config in `src/tbp/monty/conf/experiment/base_config_10distinctobj_dist_agent.yaml` and use the `monty_config` specified in `src/tbp/monty/conf/experiment/config/monty/patch_and_view_sota.yaml`.

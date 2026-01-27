@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -93,7 +93,9 @@ class MontyRunTest(unittest.TestCase):
             {0: {"agent_id_0.depth": obs}} for obs in FAKE_OBS
         ]
 
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             self.cfg = hydra.compose(
                 config_name="experiment",
                 overrides=[

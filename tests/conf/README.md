@@ -12,7 +12,7 @@ By failing a snapshot test every time a configuration is changed, we ensure that
 
 Once you observe failing tests and decide that the final configuration changes are as intended, follow this two-step checklist:
 
-1. Run `python conf/update_snapshots.py`. This automatically updates all of the snapshots to reflect the current configurations. After this, your tests will once again pass, since you are comparing generated configs to the ones you just generated.
+1. Run `python src/tbp/monty/conf/update_snapshots.py`. This automatically updates all of the snapshots to reflect the current configurations. After this, your tests will once again pass, since you are comparing generated configs to the ones you just generated.
 
 2. Commit the `tests/conf/snapshots` changes to source control to confirm that all changes are intended.
 

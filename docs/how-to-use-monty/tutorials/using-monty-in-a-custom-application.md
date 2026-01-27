@@ -239,7 +239,7 @@ config:
 > 📘 Follow Along
 > To run the above experiment, you first need to download the [Omniglot dataset](https://github.com/brendenlake/omniglot). You can do this by running `cd ~/tbp/data` and `git clone https://github.com/brendenlake/omniglot.git`. You will need to unzip the `omniglot/python/images_background.zip` and `omniglot/python/strokes_background.zip` files.
 
-The above configurations are already included in Monty at `conf/experiment/tutorial/omniglot_training.yaml` and `conf/experiment/tutorial/omniglot_inference.yaml`.
+The above configurations are already included in Monty at `src/tbp/monty/conf/experiment/tutorial/omniglot_training.yaml` and `src/tbp/monty/conf/experiment/tutorial/omniglot_inference.yaml`.
 
 You can run training by calling `python run.py experiment=tutorial/omniglot_training` and then run inference on these models by calling `python run.py experiment=tutorial/omniglot_inference`. You can check the `eval_stats.csv` file in `~/tbp/results/monty/projects/monty_runs/omniglot_inference/` to see how Monty did. If you copied the code above, it should have recognized all six characters correctly.
 
@@ -320,12 +320,12 @@ config:
 
 ```
 For more configs to test on different subsets of the Monty Meets World dataset (such as bright or dark images, hand intrusion, and multiple objects), you can find the RGBD image benchmark configs at:
-- [world_image_from_stream_on_scanned_model](../../../conf/experiment/world_image_from_stream_on_scanned_model.yaml)
-- [world_image_on_scanned_model](../../../conf/experiment/world_image_on_scanned_model.yaml)
-- [dark_world_image_on_scanned_model](../../../conf/experiment/dark_world_image_on_scanned_model.yaml)
-- [bright_world_image_on_scanned_model](../../../conf/experiment/bright_world_image_on_scanned_model.yaml)
-- [hand_intrusion_world_image_on_scanned_model](../../../conf/experiment/hand_intrusion_world_image_on_scanned_model.yaml)
-- [multi_object_world_image_on_scanned_model](../../../conf/experiment/multi_object_world_image_on_scanned_model.yaml)
+- [world_image_from_stream_on_scanned_model](../../../src/tbp/monty/conf/experiment/world_image_from_stream_on_scanned_model.yaml)
+- [world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/world_image_on_scanned_model.yaml)
+- [dark_world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/dark_world_image_on_scanned_model.yaml)
+- [bright_world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/bright_world_image_on_scanned_model.yaml)
+- [hand_intrusion_world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/hand_intrusion_world_image_on_scanned_model.yaml)
+- [multi_object_world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/multi_object_world_image_on_scanned_model.yaml)
 
 > 📘 Follow Along
 > To run this experiment, you first need to download our 2D image dataset called `worldimages`. You can find instructions for this [here](https://thousandbrainsproject.readme.io/docs/benchmark-experiments#monty-meets-world).
