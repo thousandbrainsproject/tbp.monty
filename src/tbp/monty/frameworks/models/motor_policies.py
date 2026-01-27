@@ -233,9 +233,7 @@ class BasePolicy(MotorPolicy):
         we don't necessarily want to randomly sample
         """
         while True:
-            # TODO: Remove this extraneous call to rand()
-            if self.rng.rand():
-                action = self.action_sampler.sample(self.agent_id, self.rng)
+            action = self.action_sampler.sample(self.agent_id, self.rng)
             if not isinstance(action, SetAgentPose) and not isinstance(
                 action, SetSensorRotation
             ):
