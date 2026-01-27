@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -18,7 +18,7 @@ from tbp.monty.frameworks.agents import AgentID
 
 
 def agent_id_resolver(agent_id: str) -> AgentID:
-    """Returns an AgentID new type from a string."""
+    """Returns a new AgentID instance from a string."""
     return AgentID(agent_id)
 
 
