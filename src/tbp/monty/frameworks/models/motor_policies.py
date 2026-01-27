@@ -156,7 +156,6 @@ class BasePolicy(MotorPolicy):
         action_sampler_args: dict,
         action_sampler_class: type[ActionSampler],
         agent_id: AgentID,
-        switch_frequency,
         file_name=None,
         file_names_per_episode=None,
     ):
@@ -167,8 +166,6 @@ class BasePolicy(MotorPolicy):
             action_sampler_args: arguments for the ActionSampler
             action_sampler_class: The ActionSampler to use
             agent_id: The agent ID
-            switch_frequency: float in [0,1], how frequently to change actions
-                when using sticky actions
             file_name: Path to file with predefined actions. Defaults to None.
             file_names_per_episode: ?. Defaults to None.
         """
@@ -185,7 +182,6 @@ class BasePolicy(MotorPolicy):
         self.timestep = 0
         self.episode_step = 0
         self.episode_count = 0
-        self.switch_frequency = float(switch_frequency)
         # Ensure our first action only samples from those that can be random
         self.action: Action | None = self.get_random_action(
             self.action_sampler.sample(self.agent_id, self.rng)
@@ -237,7 +233,8 @@ class BasePolicy(MotorPolicy):
         we don't necessarily want to randomly sample
         """
         while True:
-            if self.rng.rand() < self.switch_frequency:
+            # TODO: Remove this extraneous call to rand()
+            if self.rng.rand():
                 action = self.action_sampler.sample(self.agent_id, self.rng)
             if not isinstance(action, SetAgentPose) and not isinstance(
                 action, SetSensorRotation
