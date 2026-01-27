@@ -106,7 +106,7 @@ The title should short, descriptive, and prefixed with a label based on the [Con
 - `fix`: Fix to a bug in the **src/tbp/monty** codebase. This correlates with `PATCH` in [RFC 7 - Monty versioning][monty-versioning].
 - `feat`: Introduction of a new feature to the **scr/tbp/monty** codebase. This correlates with `MINOR` in [RFC 7 - Monty versioning][monty-versioning].
 - `build`: Change to the build system or external dependencies.
-- `ci`: Change to our GitHub Actions confguration files and scripts.
+- `ci`: Change to our GitHub Actions configuration files and scripts.
 - `docs`: Documentation only update.
 - `perf`: Performance improvement.
 - `refactor`: A **src/tbp/monty** code change that neither fixes a bug nor adds a feature.
