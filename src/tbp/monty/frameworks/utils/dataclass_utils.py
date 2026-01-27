@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -21,12 +21,12 @@ from typing_extensions import TypeIs
 class Dataclass(Protocol):
     """A protocol for dataclasses to be used in type hints.
 
-    The reason this exists is because dataclass.dataclass is not a valid type.
+    This exists because dataclass.dataclass is not a valid type.
     """
 
     __dataclass_fields__: ClassVar[dict[str, Any]]
-    """Checking for presence of __dataclass_fields__ is a hack to check if a class is a
-    dataclass."""
+    """Checking for the presence of __dataclass_fields__ is a hack to determine
+    if a class is a dataclass."""
 
 
 __all__ = [
@@ -44,13 +44,13 @@ def as_dataclass_dict(obj):
     """Convert a dataclass instance to a serializable dataclass dict.
 
     Args:
-        obj: The dataclass instance to convert
+        obj: The dataclass instance to convert.
 
     Returns:
-        A dictionary with the dataclass fields and values
+        A dictionary with the dataclass fields and values.
 
     Raises:
-        TypeError: If the object is not a dataclass instance
+        TypeError: If the object is not a dataclass instance.
     """
     if not dataclasses.is_dataclass(obj):
         raise TypeError(f"Expecting dataclass instance but got {type(obj)}")
@@ -68,16 +68,16 @@ def as_dataclass_dict(obj):
 def from_dataclass_dict(datadict):
     """Convert a serializable dataclass dict back into the original dataclass.
 
-    Expecting that the serializable dataclass dict was created via :func:`.asdict`.
+    Assumes that the serializable dataclass dict was created via :func:`.asdict`.
 
     Args:
-        datadict: The serializable dataclass dict to convert
+        datadict: The serializable dataclass dict to convert.
 
     Returns:
-        The original dataclass instance
+        The original dataclass instance.
 
     Raises:
-        TypeError: If the object is not a dict instance
+        TypeError: If the object is not a dict instance.
     """
     if not isinstance(datadict, dict):
         raise TypeError(f"Expecting dict instance but got {type(datadict)}")
@@ -131,31 +131,32 @@ def create_dataclass_args(
     function: Callable,
     base: type | None = None,
 ):
-    """Creates configuration dataclass args from a given function arguments.
+    """Create configuration dataclass args from given function arguments.
 
-    When the function arguments have type annotations these annotations will be
-    passed to the dataclass fields, otherwise the type will be inferred from the
-    argument default value, if any.
+    When the function arguments have type annotations, these annotations will be
+    passed to the dataclass fields. Otherwise, the type will be inferred from any
+    argument default value.
 
     For example::
 
         SingleSensorAgentArgs = create_dataclass_args(
-                "SingleSensorAgentArgs", SingleSensorAgent.__init__)
+            "SingleSensorAgentArgs", SingleSensorAgent.__init__
+        )
 
-        # Is equivalent to
+    This is equivalent to::
+
         @dataclass(frozen=True)
         class SingleSensorAgentArgs:
             agent_id: AgentID
             sensor_id: str
-            position: Tuple[float. float, float] = (0.0, 1.5, 0.0)
+            position: Tuple[float, float, float] = (0.0, 1.5, 0.0)
             rotation: Tuple[float, float, float, float] = (1.0, 0.0, 0.0, 0.0)
             height: float = 0.0
-            :
 
     Args:
-        dataclass_name: The name of the new dataclass
-        function: The function used to extract the parameters for the dataclass
-        base: Optional base class for newly created dataclass
+        dataclass_name: The name of the new dataclass.
+        function: The function used to extract the parameters for the dataclass.
+        base: Optional base class for the newly created dataclass.
 
     Returns:
         New dataclass with fields defined by the function arguments.
@@ -183,7 +184,7 @@ def config_to_dict(config: Dataclass | dict[str, Any]) -> dict[str, Any]:
         Pure dict version of config.
 
     Raises:
-        TypeError: If the object is not a dict or dataclass instance
+        TypeError: If the object is not a dict or dataclass instance.
     """
     if is_config_like(config):
         return _config_to_dict_inner(config)
@@ -259,8 +260,8 @@ def is_dataclass_instance(obj: Any) -> bool:
 
 
 def get_subset_of_args(arguments, function):
-    # Convering DictConfig to dict so config_to_dict works (only on dict or dataclass
-    # instances)
+    # Converting DictConfig to dict so config_to_dict works.
+    # This works only on dict or dataclass instances.
     dict_args = config_to_dict(dict(arguments))
     _fields = extract_fields(function)
     common_fields = {}

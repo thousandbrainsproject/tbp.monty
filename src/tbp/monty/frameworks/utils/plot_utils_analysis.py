@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -132,7 +132,7 @@ def make_detection_stat_animation(detailed_stats, n_steps):
 
 
 def plot_sample_animation(all_obs, patch_obs, viz_obs):
-    """Plot video of sampled oservations."""
+    """Plot video of sampled observations."""
     fig = plt.figure(figsize=(12, 7))
     ax1 = fig.add_subplot(1, 3, 1)
     marked_obs = viz_obs[0].copy()
@@ -207,7 +207,7 @@ def plot_sample_animation(all_obs, patch_obs, viz_obs):
 def plot_sample_animation_multiobj(
     patch_obs, viz_obs, semantic_obs, primary_target="", save_bool=False
 ):
-    """Simplified video of sampled oservations.
+    """Simplified video of sampled observations.
 
     This video supports labelling of targets when there are multiple objects in the
     environment.

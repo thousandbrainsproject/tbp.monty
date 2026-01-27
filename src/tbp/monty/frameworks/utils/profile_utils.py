@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -11,7 +11,7 @@
 import matplotlib.pyplot as plt
 
 """
-Profiled experiments output .csv files which can be readin with pandas. This file
+Profiled experiments output .csv files which can be read in with pandas. This file
 contains some basic functions that help interpret profiling results.
 """
 

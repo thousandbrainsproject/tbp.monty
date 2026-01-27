@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -22,7 +22,7 @@ class LivePlotter:
     Set the `show_sensor_output` flag in the experiment config to True to enable live
     plotting.
 
-    WARNING: This plotter makes a bunch of assumptions right now. For example, it
+    WARNING: This plotter makes a number of assumptions right now. For example, it
     assumes that
     - sensor with ID "view_finder" exists
     - sensor with ID "patch" exists
