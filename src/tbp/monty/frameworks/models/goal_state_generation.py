@@ -921,7 +921,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             if len(self.parent_lm.evidence[top_id]) == 1:
                 return False
 
-            # If we only know (i.e. have learned) about one object, we can focus on pose
+            # If the LM's hypothesis space only contains one object, focus on pose.
             self.focus_on_pose = True
             return True
 
