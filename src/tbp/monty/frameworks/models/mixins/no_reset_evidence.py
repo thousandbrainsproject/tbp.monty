@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -37,7 +37,7 @@ class HypothesesUpdaterChannelTelemetry:
     rotations: npt.NDArray[np.float64]
     """Rotations of the hypotheses.
 
-    Note that the buffer encoder will encode those as euler "xyz" rotations in degrees.
+    Note that the buffer encoder will encode those as Euler "xyz" rotations in degrees.
     """
     locations: npt.NDArray[np.float64]
     """Locations of the hypotheses."""
@@ -93,7 +93,7 @@ class TheoreticalLimitLMLoggingMixin:
 
         This includes metrics like the max evidence score per object, the theoretical
         limit of Monty (i.e., pose error of Monty's best potential hypothesis on the
-        target object) , and the pose error of the MLH hypothesis on the target object.
+        target object), and the pose error of the MLH hypothesis on the target object.
 
         Args:
             stats: The existing statistics dictionary to augment.
@@ -167,16 +167,16 @@ class TheoreticalLimitLMLoggingMixin:
     def _theoretical_limit_target_object_pose_error(self) -> float:
         """Compute the theoretical minimum rotation error on the target object.
 
-        This considers all possible hypotheses rotations on the target object
+        This considers all possible hypothesis rotations on the target object
         and compares them to the target's rotation. The theoretical limit conveys the
         best achievable performance if Monty selects the best hypothesis as its most
         likely hypothesis (MLH).
 
         Note that having a low pose error for the theoretical limit may not be
-        sufficient for deciding on the quality of the hypothesis. Despite good
-        hypotheses being generally correlated with good theoretical limit, it is
-        possible for rotation error to be small (i.e., low geodesic distance to
-        ground-truth rotation), while the hypothesis is on a different location
+        sufficient to decide on the quality of the hypothesis. Although good
+        hypotheses generally correlate with a good theoretical limit, the rotation
+        error can be small (i.e., low geodesic distance to the ground-truth
+        rotation) while the hypothesis corresponds to a different location
         of the object.
 
         Returns:
