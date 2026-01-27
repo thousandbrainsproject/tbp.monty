@@ -101,6 +101,21 @@ A Draft Pull Request is ignored and not triaged.
 
 The title should be short and descriptive. Because our commit messages use the pull request title, the title should be prefixed with a label based on the [Conventional Commits 1.0.0 Standard](https://www.conventionalcommits.org/en/v1.0.0/).
 
+A breaking change is communicated by appending `!` after the label. This correlates with `MAJOR` in [RFC 7 - Monty versioning][monty-versioning].
+
+Here are some examples of titles that meet these guidelines.
+
+```
+docs: remove obsolete MotorSystemConfig references
+refactor!: Use TypedDict for SensorObservations
+fix: OmniglotEnvironment includes view_finder ProprioceptiveState
+chore: version 0.18.0
+ci: tidy ci and prepare for turning on merge queue
+fix: run_parallel no longer hands on mac
+refactor: Address mypyp issues
+test: Make hierarchy test less brittle
+```
+
 `tbp.monty` code adopts the following label `<type>`s:
 
 - `fix`: Fix to a bug in the **src/tbp/monty** codebase. This correlates with `PATCH` in [RFC 7 - Monty versioning][monty-versioning].
@@ -117,8 +132,6 @@ The title should be short and descriptive. Because our commit messages use the p
 - `revert`: Commit that reverts a previous commit.
 
 Even with the above guidance, sometimes there might be doubt or disagreement on what type to use. If it seems like multiple types are appropriate, maybe there should be multiple pull requests. Otherwise, discuss in the pull request and select a best-fit type.
-
-A breaking change is communicated by appending `!` after the type/scope. This correlates with `MAJOR` in [RFC 7 - Monty versioning][monty-versioning].
 
 [monty-versioning]: https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0007_monty_versioning.md
 
