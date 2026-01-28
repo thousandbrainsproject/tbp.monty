@@ -27,7 +27,7 @@ runs:
       working-directory: ${{ inputs.working_directory }}
       shell: bash
       run: |
-        git diff --name-only origin/${{ inputs.git_base_ref }} > changed_files.txt
+        git diff --name-only origin/${{ inputs.git_base_ref }}... > changed_files.txt
         ./.github/actions/should_run_docs/check_changed_files.sh
     - name: Filter by path for a push or merge group
       if: ${{ inputs.github_event_name == 'push' || inputs.github_event_name == 'merge_group' }}
