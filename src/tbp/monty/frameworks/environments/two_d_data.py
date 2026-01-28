@@ -266,7 +266,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
 
         Args:
             patch_size: height and width of patch in pixels, defaults to 64
-            data_path: path to the image dataset. If None it's set to
+            data_path: path to the image dataset. If None, defaults to
                 ~/tbp/data/worldimages/labeled_scenes/
         """
         self.patch_size = patch_size
