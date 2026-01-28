@@ -690,7 +690,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
 
         Args:
             patch_size: height and width of patch in pixels, defaults to 64
-            data_path: path to the image dataset. If None it's set to
+            data_path: path to the image dataset. If None, defaults to
                 ~/tbp/data/worldimages/world_data_stream/
         """
         # TODO: use super() to avoid repeating lines of code
