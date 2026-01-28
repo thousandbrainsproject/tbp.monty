@@ -89,7 +89,7 @@ class HabitatEnvironment(SimulatedObjectEnvironment):
         agents: List of :class:`AgentConfig` to place in the scene.
         objects: Optional list of :class:`ObjectConfig` to place in the scene.
         scene_id: Scene to use or None for empty environment.
-        seed: Simulator seed to use
+        seed: Simulator seed to use.
         data_path: Path to the dataset.
     """
 
