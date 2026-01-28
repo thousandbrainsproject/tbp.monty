@@ -1592,7 +1592,7 @@ def plot_evidence_transitions(
         detection_fun: Detection function used to determine whether on a new object.
         detection_params_dict: Dictionary of hyperparameters required by the
             detection function.
-        primary_target: Primary object ID.
+        primary_target: Primary target object ID.
         color_mapping: Color association between object IDs and colors to make
             plot interpretation easier.
         stop_at_detected_new_object: Given that we currently don't detect new
