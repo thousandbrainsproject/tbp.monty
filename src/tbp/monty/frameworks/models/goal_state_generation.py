@@ -914,10 +914,17 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         top_id, second_id = self.parent_lm.get_top_two_mlh_ids()
 
-        if top_id == second_id:
-            # If we only know (i.e. have learned) about one object, we can focus on pose
-            # In this case, get_top_two_mlh_ids returns the same IDs for top_id and
-            # second_id
+        # This happens when all hypothesis spaces are empty
+        if top_id is None and second_id is None:
+            return False
+
+        if second_id is None:
+            # If we only have one object with a single hypothesis, we should not
+            # attempt to generate a goal state.
+            if len(self.parent_lm.evidence[top_id]) == 1:
+                return False
+
+            # If the LM's hypothesis space only contains one object, focus on pose.
             self.focus_on_pose = True
             return True
 
@@ -938,6 +945,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         if (
             len(pm_smaller_thresh) == 1 and (self.parent_lm._rng.uniform() <= 0.5)
         ) or len(pm_base_thresh) == 1:
+            # If we only have one object with a single hypothesis, we should not
+            # attempt to generate a goal state.
+            if len(self.parent_lm.evidence[top_id]) == 1:
+                return False
+
             # We always focus on pose if there is just 1 possible match - if we are part
             # of the way towards being certain about the ID
             # (len(pm_smaller_thresh) == 1), then we sometimes (hence the randomness)
