@@ -32,9 +32,9 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
     specific terminal states for object recognition. It also adds code for
     handling a matching and an exploration phase during each episode when training.
 
-    Note that this experiment assumes a particular model configuration, in order
-    for the show_observations method to work: a zoomed out "view_finder"
-    rgba sensor and an up-close "patch" depth sensor
+    Note that this experiment assumes a particular model configuration in order
+    for the show_observations method to work: a zoomed-out "view_finder"
+    RGBA sensor and an up-close "patch" depth sensor.
     """
 
     def run_episode(self):
@@ -46,8 +46,8 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
     def pre_episode(self):
         """Pre-episode hook.
 
-        Pre episode where we pass the primary target object, as well as the mapping
-        between semantic ID to labels, both for logging/evaluation purposes.
+        Pre-episode step that passes the primary target object and the mapping from
+        semantic IDs to labels for logging and evaluation purposes.
         """
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(
