@@ -90,7 +90,7 @@ class WandbHandler(MontyHandler):
         """Handle additional initialization for subclasses.
 
         Call this to handle any additional initialization for subclasses not
-        covered by `WandbHandler.__init__`.
+        covered by `WandbHandler`.
         """
         pass
 
