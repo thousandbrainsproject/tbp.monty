@@ -8,4 +8,6 @@ config:
     motor_system_config:
       motor_system_args:
         policy_args:
-          switch_frequency: 0  # Overwrite default of 1.0
+          action_sampler_args:
+            actions:
+              - ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}

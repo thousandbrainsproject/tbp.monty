@@ -53,7 +53,6 @@ class BasePolicyTest(unittest.TestCase):
             action_sampler_args=dict(actions=[LookUp]),
             action_sampler_class=UniformlyDistributedSampler,
             agent_id=self.agent_id,
-            switch_frequency=0.05,
         )
 
     def test_get_agent_state_selects_state_matching_agent_id(self):
@@ -126,7 +125,6 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
             action_sampler_args=dict(actions=[LookUp]),
             action_sampler_class=UniformlyDistributedSampler,
             agent_id=self.agent_id,
-            switch_frequency=0.05,
             desired_object_distance=0.025,
         )
         self.location = np.array([1.0, 2.0, 3.0])

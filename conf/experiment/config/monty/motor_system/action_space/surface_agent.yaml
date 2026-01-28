@@ -3,5 +3,3 @@ actions:
   - ${monty.class:tbp.monty.frameworks.actions.actions.MoveTangentially}
   - ${monty.class:tbp.monty.frameworks.actions.actions.OrientHorizontal}
   - ${monty.class:tbp.monty.frameworks.actions.actions.OrientVertical}
-  - ${monty.class:tbp.monty.frameworks.actions.actions.SetAgentPose}
-  - ${monty.class:tbp.monty.frameworks.actions.actions.SetSensorRotation}
