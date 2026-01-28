@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -45,21 +45,6 @@ class ChannelMapperTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.mapper.channel_size("D")
 
-    def test_resize_channel_by_positive(self) -> None:
-        """Test increasing channel sizes."""
-        self.mapper.resize_channel_by("B", 5)
-        self.assertEqual(self.mapper.channel_range("B"), (5, 20))
-        self.assertEqual(self.mapper.total_size, 35)
-
-    def test_resize_channel_by_negative(self) -> None:
-        """Test decreasing channel sizes."""
-        self.mapper.resize_channel_by("B", -5)
-        self.assertEqual(self.mapper.channel_range("B"), (5, 10))
-        self.assertEqual(self.mapper.total_size, 25)
-
-        with self.assertRaises(ValueError):
-            self.mapper.resize_channel_by("A", -10)
-
     def test_resize_channel_to_valid(self) -> None:
         """Test setting a new size for an existing channel."""
         self.mapper.resize_channel_to("A", 8)
@@ -68,17 +53,66 @@ class ChannelMapperTest(unittest.TestCase):
         self.assertEqual(self.mapper.channel_range("C"), (18, 33))
         self.assertEqual(self.mapper.total_size, 33)
 
+    def test_resize_channel_to_zero_deletes(self) -> None:
+        """Resizing a channel to zero removes it."""
+        self.mapper.resize_channel_to("B", 0)
+        self.assertEqual(self.mapper.channels, ["A", "C"])
+        self.assertEqual(self.mapper.total_size, 20)
+        self.assertEqual(self.mapper.channel_range("A"), (0, 5))
+        self.assertEqual(self.mapper.channel_range("C"), (5, 20))
+        # "B" is gone
+        with self.assertRaises(ValueError):
+            self.mapper.channel_range("B")
+
     def test_resize_channel_to_invalid_channel(self) -> None:
         """Test resizing a non-existent channel."""
         with self.assertRaises(ValueError):
             self.mapper.resize_channel_to("Z", 5)
 
     def test_resize_channel_to_invalid_size(self) -> None:
-        """Test resizing a channel to a non-positive size."""
-        with self.assertRaises(ValueError):
-            self.mapper.resize_channel_to("B", 0)
+        """Test resizing a channel to a negative size."""
         with self.assertRaises(ValueError):
             self.mapper.resize_channel_to("B", -3)
+
+    def test_delete_channel_middle(self) -> None:
+        """Deleting a middle channel updates order, ranges, and total size."""
+        self.mapper.delete_channel("B")
+        self.assertEqual(self.mapper.channels, ["A", "C"])
+        self.assertEqual(self.mapper.total_size, 20)
+        self.assertEqual(self.mapper.channel_range("A"), (0, 5))
+        self.assertEqual(self.mapper.channel_range("C"), (5, 20))
+
+    def test_delete_channel_first(self) -> None:
+        """Deleting the first channel shifts subsequent ranges correctly."""
+        self.mapper.delete_channel("A")
+        self.assertEqual(self.mapper.channels, ["B", "C"])
+        self.assertEqual(self.mapper.total_size, 25)
+        self.assertEqual(self.mapper.channel_range("B"), (0, 10))
+        self.assertEqual(self.mapper.channel_range("C"), (10, 25))
+
+    def test_delete_channel_last(self) -> None:
+        """Deleting the last channel leaves earlier ranges unchanged."""
+        self.mapper.delete_channel("C")
+        self.assertEqual(self.mapper.channels, ["A", "B"])
+        self.assertEqual(self.mapper.total_size, 15)
+        self.assertEqual(self.mapper.channel_range("A"), (0, 5))
+        self.assertEqual(self.mapper.channel_range("B"), (5, 15))
+
+    def test_delete_channel_nonexistent(self) -> None:
+        """Deleting an unknown channel raises."""
+        with self.assertRaises(ValueError):
+            self.mapper.delete_channel("Z")
+
+    def test_delete_all_channels(self) -> None:
+        """Deleting all channels yields an empty mapper."""
+        self.mapper.delete_channel("A")
+        self.mapper.delete_channel("B")
+        self.mapper.delete_channel("C")
+        self.assertEqual(self.mapper.channels, [])
+        self.assertEqual(self.mapper.total_size, 0)
+        # Follow-up operations should still error cleanly
+        with self.assertRaises(ValueError):
+            self.mapper.channel_range("A")
 
     def test_add_channel(self) -> None:
         """Test adding a new channel."""
@@ -125,6 +159,7 @@ class ChannelMapperTest(unittest.TestCase):
             evidence=np.arange(30).reshape(30, 1),
             locations=np.arange(30).reshape(30, 1),
             poses=np.arange(30).reshape(30, 1),
+            possible=np.arange(30).reshape(30, 1),
         )
 
         # Channel "B" occupies indices 5 to 15
@@ -278,27 +313,34 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         mask = self.tracker.removable_indices_mask(self.channel)
         np.testing.assert_array_equal(mask, [False, True, True])
 
-    def test_calculate_keep_and_remove_ids_returns_expected(self) -> None:
-        """Test that hypotheses with the lowest slopes are selected for removal."""
-        self.tracker.add_hyp(3, self.channel)
-        self.tracker.update(np.array([1.0, 3.0, 1.0]), self.channel)
-        self.tracker.update(np.array([2.0, 2.0, 1.0]), self.channel)
-        self.tracker.update(np.array([3.0, 1.0, 1.0]), self.channel)
+    def test_select_hypotheses_threshold_and_age(self) -> None:
+        """Test that select_hypotheses respects slope threshold and min_age."""
+        self.tracker.add_hyp(4, self.channel)
 
-        # Slopes = [1.0, -1.0, 0.0]
-        to_keep, to_remove = self.tracker.calculate_keep_and_remove_ids(
-            num_keep=2, channel=self.channel
+        # slopes are [1, 0, -1, -1]
+        self.tracker.update(np.array([1.0, 2.0, 3.0, 3.0]), self.channel)
+        self.tracker.update(np.array([2.0, 2.0, 2.0, 2.0]), self.channel)
+        self.tracker.update(np.array([3.0, 2.0, 1.0, 1.0]), self.channel)
+
+        # Force ages so only last hyp is too young to remove.
+        self.tracker.hyp_age[self.channel] = np.array([3, 3, 3, 1], dtype=int)
+
+        selection = self.tracker.select_hypotheses(
+            slope_threshold=-0.5, channel=self.channel
         )
 
-        np.testing.assert_array_equal(np.sort(to_keep), [0, 2])
-        np.testing.assert_array_equal(to_remove, [1])
+        # 0,1 have higher slopes, 3 is too young
+        expected_keep = np.array([0, 1, 3], dtype=int)
+        expected_keep_mask = np.array([True, True, False, True], dtype=bool)
 
-    def test_keep_more_than_total_raises(self) -> None:
-        """Test that asking to keep more hypotheses than exist raises an error."""
-        self.tracker.add_hyp(2, self.channel)
-        self.tracker.hyp_age[self.channel][:] = [2, 2]
-        with self.assertRaises(ValueError):
-            self.tracker.calculate_keep_and_remove_ids(3, self.channel)
+        # lower slope than threshold (-1 < -0.5)
+        expected_remove = np.array([2], dtype=int)
+        expected_remove_mask = np.array([False, False, True, False], dtype=bool)
+
+        np.testing.assert_array_equal(selection.maintain_ids, expected_keep)
+        np.testing.assert_array_equal(selection.remove_ids, expected_remove)
+        np.testing.assert_array_equal(selection.maintain_mask, expected_keep_mask)
+        np.testing.assert_array_equal(selection.remove_mask, expected_remove_mask)
 
 
 if __name__ == "__main__":

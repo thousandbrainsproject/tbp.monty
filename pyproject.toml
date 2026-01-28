@@ -76,6 +76,7 @@ dev = [
     'mypy==1.11.2',
 
     # Testing, code style, etc...
+    'hypothesis==6.113.0',
     'parameterized==0.9.0',  # Supports Python 3.8
     'pytest==7.1.1',
     'pytest-xdist==2.5.0',
@@ -137,7 +138,8 @@ ipython = 'IPython'
 minversion = '6.0'
 addopts = '-ra -n auto'
 testpaths = [
-    'tests',
+    'tests/conf',
+    'tests/unit',
 ]
 filterwarnings = [
     'ignore:.*:DeprecationWarning'
@@ -272,7 +274,7 @@ ignore = [
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = [
     "tbp.monty.frameworks.agents.AgentID",
-    "tbp.monty.frameworks.environments.embodied_environment.SemanticID"
+    "tbp.monty.frameworks.environments.environment.SemanticID"
 ]
 
 [tool.ruff.lint.flake8-comprehensions]

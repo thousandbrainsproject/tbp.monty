@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -30,6 +30,25 @@ def print_config(config: DictConfig) -> None:
     print("-" * 100)
 
 
+def output_dir_from_run_name(config: DictConfig) -> Path:
+    """Configure the output directory unique to the run name.
+
+    The output directory is created if it does not exist.
+
+    Args:
+        config: Hydra config.
+
+    Returns:
+        output_dir: Path to run name-specific output directory.
+    """
+    output_dir = (
+        Path(config.experiment.config.logging.output_dir)
+        / config.experiment.config.logging.run_name
+    )
+    output_dir.mkdir(exist_ok=True, parents=True)
+    return output_dir
+
+
 @hydra.main(config_path="../../../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
     if cfg.quiet_habitat_logs:
@@ -39,13 +58,8 @@ def main(cfg: DictConfig):
     print_config(cfg)
     register_resolvers()
 
-    output_dir = (
-        Path(cfg.experiment.config.logging.output_dir)
-        / cfg.experiment.config.logging.run_name
-    )
-    cfg.experiment.config.logging.output_dir = str(output_dir)
+    cfg.experiment.config.logging.output_dir = str(output_dir_from_run_name(cfg))
 
-    output_dir.mkdir(exist_ok=True, parents=True)
     experiment = hydra.utils.instantiate(cfg.experiment)
     start_time = time.time()
     with experiment:
