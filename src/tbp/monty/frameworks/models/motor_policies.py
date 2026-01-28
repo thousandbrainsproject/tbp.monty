@@ -28,7 +28,6 @@ from tbp.monty.frameworks.actions.action_samplers import ActionSampler
 from tbp.monty.frameworks.actions.actions import (
     Action,
     ActionJSONDecoder,
-    ActionJSONEncoder,
     LookDown,
     LookUp,
     MoveForward,
@@ -57,6 +56,7 @@ __all__ = [
     "ObjectNotVisible",
     "PositioningProcedure",
     "PositioningProcedureResult",
+    "PredefinedPolicy",
     "SurfacePolicy",
     "SurfacePolicyCurvatureInformed",
     "get_perc_on_obj_semantic",
@@ -67,9 +67,6 @@ logger = logging.getLogger(__name__)
 
 class MotorPolicy(abc.ABC):
     """The abstract scaffold for motor policies."""
-
-    def __init__(self) -> None:
-        self.is_predefined = False
 
     @abc.abstractmethod
     def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:
@@ -82,6 +79,35 @@ class MotorPolicy(abc.ABC):
         Returns:
             The action to take.
         """
+        pass
+
+    @abc.abstractmethod
+    def get_agent_state(self, state: MotorSystemState) -> AgentState:
+        """Get agent state.
+
+        Args:
+            state: The current state of the motor system.
+
+        Returns:
+            Agent state.
+        """
+        pass
+
+    @abc.abstractmethod
+    def is_motor_only_step(self, state: MotorSystemState) -> bool:
+        """Check if the current step is a motor-only step.
+
+        Args:
+            state: The current state of the motor system.
+
+        Returns:
+            True if the current step is a motor-only step, False otherwise.
+        """
+        pass
+
+    @abc.abstractmethod
+    def load_state_dict(self, state_dict: dict[str, Any]) -> None:
+        """Take a state dict as an argument and set state for policy."""
         pass
 
     @abc.abstractmethod
@@ -112,21 +138,17 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def predefined_call(self) -> Action:
-        """Use this method when actions are predefined.
-
-        Returns:
-            The action to take.
-        """
-        pass
-
-    @abc.abstractmethod
     def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
         """Sets the experiment mode.
 
         Args:
             mode: The experiment mode to set.
         """
+        pass
+
+    @abc.abstractmethod
+    def state_dict(self) -> dict[str, Any]:
+        """Return a serializable dict with everything needed to save/load policy."""
         pass
 
     def __call__(self, state: MotorSystemState | None = None) -> list[Action]:
@@ -139,10 +161,7 @@ class MotorPolicy(abc.ABC):
         Returns:
             The actions to take.
         """
-        if self.is_predefined:
-            action: Action | None = self.predefined_call()
-        else:
-            action = self.dynamic_call(state)
+        action = self.dynamic_call(state)
         self.post_action(action, state)
         return [action] if action else []
 
@@ -154,8 +173,6 @@ class BasePolicy(MotorPolicy):
         action_sampler_args: dict,
         action_sampler_class: type[ActionSampler],
         agent_id: AgentID,
-        file_name=None,
-        file_names_per_episode=None,
     ):
         """Initialize a base policy.
 
@@ -164,49 +181,16 @@ class BasePolicy(MotorPolicy):
             action_sampler_args: arguments for the ActionSampler
             action_sampler_class: The ActionSampler to use
             agent_id: The agent ID
-            file_name: Path to file with predefined actions. Defaults to None.
-            file_names_per_episode: ?. Defaults to None.
         """
         super().__init__()
-        ###
-        # Define instance attributes
-        ###
         self.rng = rng
         self.agent_id = agent_id
 
         self.action_sampler = action_sampler_class(**action_sampler_args)
 
-        self.action_sequence = []
-        self.timestep = 0
+        self.action_sequence: list[list[Action]] = []
         self.episode_step = 0
         self.episode_count = 0
-        # Ensure our first action only samples from those that can be random
-        self.action: Action | None = self.get_random_action()
-
-        ###
-        # Load data for predefined actions and amounts if specified
-        ###
-
-        self.is_predefined = False
-        self.file_names_per_episode = None
-        self.action_list = []
-
-        # Don't want to go around and change all uses of file_name, so this is argument
-        # is in addition to, rather than in replacement of, file_name
-        if file_names_per_episode is not None:
-            self.file_names_per_episode = file_names_per_episode
-            # Have to set this here bc file_names_per_episode is used for loading in
-            # post_episode so won't do anything for the first episode.
-            file_name = file_names_per_episode[0]
-            self.is_predefined = True
-
-        if file_name is not None:
-            self.action_list = read_action_file(file_name)
-            self.is_predefined = True
-
-    ###
-    # Methods that define behavior of __call__
-    ###
 
     def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:  # noqa: ARG002
         """Return a random action.
@@ -230,14 +214,9 @@ class BasePolicy(MotorPolicy):
         """
         return self.action_sampler.sample(self.agent_id, self.rng)
 
-    def predefined_call(self) -> Action:
-        return self.action_list[self.episode_step % len(self.action_list)]
-
     def post_action(
         self, action: Action | None, _: MotorSystemState | None = None
     ) -> None:
-        self.action = action
-        self.timestep += 1
         self.episode_step += 1
         self.action_sequence.append([action])
 
@@ -288,10 +267,79 @@ class BasePolicy(MotorPolicy):
         return agent_state.motor_only_step
 
     def state_dict(self):
-        return {"timestep": self.timestep, "episode_step": self.episode_step}
+        return {"episode_step": self.episode_step}
 
     def load_state_dict(self, state_dict):
-        self.timestep = state_dict["timestep"]
+        self.episode_step = state_dict["episode_step"]
+
+    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+        pass
+
+
+class PredefinedPolicy(MotorPolicy):
+    @staticmethod
+    def read_action_file(file: str) -> list[Action]:
+        """Load a file with one action per line.
+
+        Args:
+            file: name of file to load
+
+        Returns:
+            List of actions
+        """
+        file = Path(file).expanduser()
+        with file.open() as f:
+            file_read = f.read()
+
+        lines = [line.strip() for line in file_read.split("\n") if line.strip()]
+        return [
+            cast("Action", json.loads(line, cls=ActionJSONDecoder)) for line in lines
+        ]
+
+    def __init__(
+        self,
+        rng: np.random.RandomState,  # noqa: ARG002
+        agent_id: AgentID,
+        file_name=None,
+    ) -> None:
+        self.agent_id = agent_id
+
+        if file_name is not None:
+            self.action_list = PredefinedPolicy.read_action_file(file_name)
+
+        self.action_sequence: list[list[Action | None]] = []
+        self.episode_step = 0
+        self.episode_count = 0
+
+    def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:  # noqa: ARG002
+        return self.action_list[self.episode_step % len(self.action_list)]
+
+    def get_agent_state(self, state: MotorSystemState) -> AgentState:
+        return state[self.agent_id]
+
+    def is_motor_only_step(self, state: MotorSystemState) -> bool:
+        agent_state = self.get_agent_state(state)
+        return agent_state.motor_only_step
+
+    def post_action(
+        self,
+        action: Action | None,
+        state: MotorSystemState | None = None,  # noqa: ARG002
+    ) -> None:
+        self.episode_step += 1
+        self.action_sequence.append([action])
+
+    def pre_episode(self, rng: np.random.RandomState) -> None:  # noqa: ARG002
+        self.episode_step = 0
+        self.action_sequence = []
+
+    def post_episode(self):
+        self.episode_count += 1
+
+    def state_dict(self) -> dict[str, Any]:
+        return {"episode_step": self.episode_step}
+
+    def load_state_dict(self, state_dict):
         self.episode_step = state_dict["episode_step"]
 
     def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
@@ -823,6 +871,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
+        self.action: Action | None = None
         self.min_perc_on_obj = min_perc_on_obj
         self.good_view_percentage = good_view_percentage
         self.desired_object_distance = desired_object_distance
@@ -956,7 +1005,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self, action: Action | None, state: MotorSystemState | None = None
     ) -> None:
         self.action = action
-        self.timestep += 1
         self.episode_step += 1
         state_copy = state.convert_motor_state() if state else None
         self.action_sequence.append([action, state_copy])
@@ -1580,38 +1628,6 @@ class SurfacePolicy(InformedPolicy):
 ###
 # Helper functions that can be used by multiple classes
 ###
-
-
-def read_action_file(file: str) -> list[Action]:
-    """Load a file with one action per line.
-
-    Args:
-        file: name of file to load
-
-    Returns:
-        List of actions
-    """
-    file = Path(file).expanduser()
-    with file.open() as f:
-        file_read = f.read()
-
-    lines = [line.strip() for line in file_read.split("\n") if line.strip()]
-    return [cast("Action", json.loads(line, cls=ActionJSONDecoder)) for line in lines]
-
-
-def write_action_file(actions: list[Action], file: str) -> None:
-    """Write a list of actions to a file, one per line.
-
-    Should be readable by read_action_file.
-
-    Args:
-        actions: list of actions
-        file: path to file to save actions to
-    """
-    with Path(file).open("w") as f:
-        f.writelines(
-            f"{json.dumps(action, cls=ActionJSONEncoder)}\n" for action in actions
-        )
 
 
 def get_perc_on_obj_semantic(

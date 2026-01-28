@@ -564,6 +564,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         """
         positioning_procedure = GetGoodView(
             agent_id=self.motor_system._policy.agent_id,
+            # TODO: These params should be set on InformedEnvironmentInterface instead.
+            #       Only SurfacePolicy gets desired_object_distance
+            #       Rename to good_view_object_distance + good_view_percentage
             desired_object_distance=self.motor_system._policy.desired_object_distance,
             good_view_percentage=self.motor_system._policy.good_view_percentage,
             multiple_objects_present=self.num_distractors > 0,
