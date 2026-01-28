@@ -400,7 +400,7 @@ def detect_new_object_k_steps(
         True if the total evidence change is less than or equal to the detection
         threshold; False otherwise.
     """
-    ev_changes, postive_jump_loc = process_delta_evidence_values(
+    ev_changes, positive_jump_loc = process_delta_evidence_values(
         max_ev_per_step[-(k + 1) :]
         # NB: If looking at one evidence step change in the past, then need two
         # evidence values; hence k+1 is used.
@@ -408,8 +408,8 @@ def detect_new_object_k_steps(
 
     # Further truncate if there were any positive jumps in evidence
     # Note we do not reset if evidence remains static (delta 0)
-    if postive_jump_loc is not None and reset_at_positive_jump:
-        ev_changes = ev_changes[postive_jump_loc:]
+    if positive_jump_loc is not None and reset_at_positive_jump:
+        ev_changes = ev_changes[positive_jump_loc:]
 
     total_ev_changes = np.sum(ev_changes)
 
@@ -437,15 +437,15 @@ def process_delta_evidence_values(max_ev_per_step):
     # Find the most recent positive jump in evidence before clipping
     positive_jumps = ev_changes > 0
     if np.any(positive_jumps):
-        postive_jump_loc = np.where(positive_jumps)[0][-1]
+        positive_jump_loc = np.where(positive_jumps)[0][-1]
     else:
-        postive_jump_loc = None
+        positive_jump_loc = None
 
     # Clip values as we are looking for instances of evidence drops to suggest movement
     # onto a new object
     clipped_ev_changes = np.clip(ev_changes, -np.inf, 0)
 
-    return clipped_ev_changes, postive_jump_loc
+    return clipped_ev_changes, positive_jump_loc
 
 
 def find_step_on_new_object(
