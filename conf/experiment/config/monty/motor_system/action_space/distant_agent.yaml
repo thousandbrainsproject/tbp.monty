@@ -3,6 +3,3 @@ actions:
   - ${monty.class:tbp.monty.frameworks.actions.actions.LookDown}
   - ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
   - ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}
-  - ${monty.class:tbp.monty.frameworks.actions.actions.MoveForward}
-  - ${monty.class:tbp.monty.frameworks.actions.actions.SetAgentPose}
-  - ${monty.class:tbp.monty.frameworks.actions.actions.SetSensorRotation}
