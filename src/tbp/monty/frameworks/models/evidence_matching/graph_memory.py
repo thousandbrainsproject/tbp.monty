@@ -126,7 +126,7 @@ class EvidenceGraphMemory(GraphMemory):
         Args:
             locations: List of x, y, z locations.
             features: List of features.
-            graph_id: Name of the new graph.
+            graph_id: ID of the new graph.
             input_channel: Identifier of the input channel.
         """
         logger.info("Adding a new graph to memory.")
