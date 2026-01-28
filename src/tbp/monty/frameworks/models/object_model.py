@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -177,7 +177,7 @@ class GraphObjectModel(ObjectModel):
         """Combine new observations with those already stored in a graph.
 
         Combines datapoints from an existing graph and new points collected in the
-        buffer using the detected pose. This is a util function for extend_graph.
+        buffer using the detected pose. This is a utility function for extend_graph.
 
         Args:
             locations: new observed locations (x,y,z)
@@ -327,7 +327,7 @@ class GridObjectModel(GraphObjectModel):
 
     This model has the same basic functionality as the NumpyGraph models used in older
     LM versions. On top of that we now have a grid representation of the object that
-    constraints the model size and resultion. Additionally, this model class implements
+    constrains the model size and resolution. Additionally, this model class implements
     a lot of functionality that was previously implemented in the graph_utils.py file.
 
     TODO: General cleanups that require more changes in other code
@@ -342,9 +342,9 @@ class GridObjectModel(GraphObjectModel):
             object_id: id of the object
             max_nodes: maximum number of nodes in the graph. Will be k in k winner
                 voxels with highest observation count.
-            max_size: maximum size of the object in meters. Defines size of obejcts
+            max_size: maximum size of the object in meters. Defines size of objects
                 that can be represented and how locations are mapped into voxels.
-            num_voxels_per_dim: number of voxels per dimension in the models grids.
+            num_voxels_per_dim: number of voxels per dimension in the model's grids.
                 Defines the resolution of the model.
         """
         logger.info(f"init object model with id {object_id}")
@@ -357,7 +357,8 @@ class GridObjectModel(GraphObjectModel):
         # number of observations in each voxel
         self._observation_count = None
         # Average features in each voxel with observations
-        # The first 3 dims are the 3d voxel indices, the forth dimensions are features
+        # The first three dims are the 3D voxel indices; the fourth dimension
+        # stores features
         self._feature_grid = None
         # Average location in each voxel with observations
         # The first 3 dims are the 3d voxel indices, xyz in the fourth dimension is
