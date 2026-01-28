@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -69,12 +69,12 @@ class SDRFeatureEvidenceCalculator:
         tolerance value and the result is used for adjusting the evidence score.
 
         We use the tolerance (in overlap bits) for generalization. If two objects are
-        close enough, their overlap in bits should be higher that the set tolerance
+        close enough, their overlap in bits should be higher than the set tolerance
         value.
 
         The tolerance sets the lowest overlap for adding evidence, the range
         [tolerance, sdr_on_bits] is mapped to [0,1] evidence points. Any overlap less
-        then tolerance will not add any evidence. These evidence scores are then
+        than tolerance will not add any evidence. These evidence scores are then
         multiplied by the feature weight of object_ids which scales all of the
         evidence points to the range [0, channel_feature_weights["object_id"]].
 
