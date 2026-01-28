@@ -49,13 +49,13 @@ class HabitatAgent:
 
     Attributes:
         agent_id: Unique ID of this agent in the environment.
-            Observations returned by the environment will be mapped to this id.
+            Observations returned by the environment will be mapped to this ID.
             ``{"agent_id": {"sensor": [...]}}``.
             Actions provided by this sensor module will be prefixed by
-            this id, i.e. "agent_id.move_forward"
-        position: Module initial position in meters. Default (0, 1.5, 0)
-        rotation: Module initial rotation quaternion. Default (1, 0, 0, 0)
-        height: Module height in meters. Default 0.0
+            this ID, i.e. "agent_id.move_forward"
+        position: Module initial position in meters. Defaults to (0, 1.5, 0).
+        rotation: Module initial rotation quaternion. Defaults to (1, 0, 0, 0).
+        height: Module height in meters. Defaults to 0.0.
     """
 
     def __init__(
@@ -74,7 +74,7 @@ class HabitatAgent:
         self.sensors: list[SensorConfig] = []
 
     def get_spec(self) -> AgentConfiguration:
-        """Return a Habitat-sim agent configuration.
+        """Return a habitat-sim agent configuration.
 
         Returns:
             Spec created from this sensor module configuration.
@@ -86,7 +86,7 @@ class HabitatAgent:
         return spec
 
     def initialize(self, simulator):
-        """Initialize the Habitat-sim agent's runtime state.
+        """Initialize the habitat-sim agent's runtime state.
 
         This method must be called to update the agent and sensors runtime
         instance because some of the configuration attributes require access to
@@ -108,7 +108,7 @@ class HabitatAgent:
         Converts raw observations into Monty-compatible ones.
 
         Args:
-            agent_obs: Raw Habitat-sim observations from the agent
+            agent_obs: Raw habitat-sim observations from the agent
 
         Returns:
             The processed observations grouped by sensor_id
@@ -142,7 +142,7 @@ def action_space(
     Action space can be `absolute_only`, `distant_agent`, or `surface_agent`.
     This method is currently used only in a couple of unit tests; otherwise,
     use a default action space.
-    Action spaces are formatted as tuples of lists, with elements:
+    Action spaces are formatted as lists of tuples, with elements:
         0: action name
         1: (initial) action amount
         2: (initial) constraint
@@ -218,7 +218,7 @@ class MultiSensorAgent(HabitatAgent):
         - "`agent_id`.turn_right": Turn camera right `rotation_step`
         - "`agent_id`.look_up": Turn the camera up `rotation_step`
         - "`agent_id`.look_down": Turn the camera down `rotation_step`
-        - "`agent_id`.set_yaw": Set camera agent absolute yaw value
+        - "`agent_id`.set_yaw": Set the camera agent's absolute yaw value
         - "`agent_id`.set_sensor_pitch": Set the camera sensor's absolute pitch value
         - "`agent_id`.set_agent_pitch": Set the camera agent's absolute pitch value
 
@@ -244,24 +244,24 @@ class MultiSensorAgent(HabitatAgent):
         default. All action amounts should be specified by the MotorSystem.
 
     Attributes:
-        agent_id: Actions provided by this camera will be prefixed by this id.
-            Default "camera"
-        sensor_ids: List of IDs for each sensor. Actions are prefixed with agent id,
-            but observations are prefixed with sensor id.
-        resolutions: List of camera resolutions (width, height). Default = (16, 16)
+        agent_id: Actions provided by this camera will be prefixed by this ID.
+            Defaults to "camera".
+        sensor_ids: List of IDs for each sensor. Actions are prefixed with agent ID,
+            but observations are prefixed with sensor ID.
+        resolutions: List of camera resolutions (width, height). Defaults to (16, 16).
         positions: List of camera initial absolute positions in meters, relative
             to the agent.
-        rotations: List of camera rotations (quaternion). Default (1, 0, 0, 0)
+        rotations: List of camera rotations (quaternion). Defaults to (1, 0, 0, 0).
         zooms: List of camera zoom multipliers. Use >1 to increase and 0 < factor < 1
-            to decrease. Default: 1.0
+            to decrease. Defaults to 1.0.
         semantics: List of booleans determining if each RGBD sensor also gets a semantic
-            sensor with it. Default = False
-        height: Height of the mount itself in meters. Default 0.0 (but position of
-            the agent will be 1.5 meters in the "height" dimension)
+            sensor with it. Defaults to False.
+        height: Height of the mount itself in meters. Defaults to 0.0 (but position of
+            the agent will be 1.5 meters in the "height" dimension).
         rotation_step: Rotation step in degrees used by the `turn_*` and
-            `look_*` actions. Default 0 degrees
-        translation_step: Translation step in meters used by the `move_*` actions.
-            Default: 0m
+            `look_*` actions. Defaults to 0 degrees.
+        translation_step: Translation length in meters used by the `move_*` actions.
+            Defaults to 0 m.
         action_space_type: Decides between three action spaces:
             "distant_agent" actions saccade like a ball-in-socket joint, viewing an
             object from a distance.

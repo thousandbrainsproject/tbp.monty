@@ -74,7 +74,7 @@ from tbp.monty.simulators.simulator import Simulator
 DEFAULT_SCENE = "NONE"
 DEFAULT_PHYSICS_CONFIG = str(files(resources) / "default.physics_config.json")
 
-#: Maps Habitat-sim pre-configured primitive object types to semantic IDs
+#: Maps habitat-sim pre-configured primitive object types to semantic IDs
 PRIMITIVE_OBJECT_TYPES = {
     "capsule3DSolid": 101,
     "coneSolid": 102,
@@ -86,10 +86,10 @@ PRIMITIVE_OBJECT_TYPES = {
 
 
 class HabitatSim(HabitatActuator, Simulator):
-    """Habitat-sim interface for tbp.monty.
+    """habitat-sim interface for tbp.monty.
 
     This class wraps `habitat-sim <https://aihabitat.org/docs/habitat-sim>`_
-    simulator for tbp.monty. It aims to hide Habitat-sim internals, simplifying
+    simulator for tbp.monty. It aims to hide habitat-sim internals, simplifying
     experiment configuration within the tbp.monty framework.
 
     Example::
@@ -107,7 +107,7 @@ class HabitatSim(HabitatActuator, Simulator):
         plot_image(obs["camera"]["camera_id"]["depth"])
 
     Attributes:
-        agents: List of :class:`HabitatAgent` to place in the simulator.
+        agents: List of :class:`HabitatAgent` instances to place in the simulator.
         data_path: Habitat data path location, usually the same path used by
             :class:`habitat_sim.utils.environments_download`.
         scene_id: Scene to use or None for empty environment.
@@ -234,12 +234,12 @@ class HabitatSim(HabitatActuator, Simulator):
         """Add new object to simulated environment.
 
         Args:
-            name: Registered object name. It can be any Habitat-sim primitive
+            name: Registered object name. It can be any habitat-sim primitive
                 object or any configured habitat object. See
                 :const:`PRIMITIVE_OBJECT_TYPES` for a list of primitive objects.
             position: Object initial absolute position.
-            rotation: Object rotation quaternion. Default (1, 0, 0, 0)
-            scale: Object scale. Default (1, 1, 1)
+            rotation: Object rotation quaternion. Defaults to (1, 0, 0, 0).
+            scale: Object scale. Defaults to (1, 1, 1).
             semantic_id: Optional override object semantic ID. Defaults to None.
             primary_target_object: ID of the primary target object. If not None, the
                 added object will be positioned so that it does not obscure the initial

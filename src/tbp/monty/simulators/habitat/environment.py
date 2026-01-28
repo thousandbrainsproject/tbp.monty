@@ -83,7 +83,7 @@ class AgentConfig:
 
 
 class HabitatEnvironment(SimulatedObjectEnvironment):
-    """Habitat-sim environment compatible with Monty.
+    """habitat-sim environment compatible with Monty.
 
     Attributes:
         agents: List of :class:`AgentConfig` to place in the scene.

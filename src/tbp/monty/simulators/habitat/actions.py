@@ -56,7 +56,7 @@ def _move_along_diagonal(
 
 @registry.register_move_fn(body_action=True)
 class SetYaw(SceneNodeControl):
-    """Custom Habitat-sim action used to set the agent body's absolute yaw rotation.
+    """Custom habitat-sim action used to set the agent body's absolute yaw rotation.
 
     The :class:`ActuationSpec` amount contains the new absolute yaw rotation in degrees.
     """
@@ -74,7 +74,7 @@ class SetYaw(SceneNodeControl):
 
 @registry.register_move_fn(body_action=False)
 class SetSensorPitch(SceneNodeControl):
-    """Custom Habitat-sim action used to set the *sensor's* absolute pitch rotation.
+    """Custom habitat-sim action used to set the *sensor's* absolute pitch rotation.
 
     Note that this does not update the pitch of the agent (imagine e.g. the "body"
     associated with the eye remaining in place, but the eye moving).
@@ -97,7 +97,7 @@ class SetSensorPitch(SceneNodeControl):
 
 @registry.register_move_fn(body_action=True)
 class SetAgentPitch(SceneNodeControl):
-    """Custom Habitat-sim action used to set the *agent's* absolute pitch rotation.
+    """Custom habitat-sim action used to set the *agent's* absolute pitch rotation.
 
     Note that unless otherwise changed, the sensor maintains its identity orientation
     with respect to the agent, so this will also adjust the pitch of the sensor with

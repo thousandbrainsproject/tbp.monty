@@ -45,7 +45,7 @@ class HabitatActuatorRequirements(Protocol):
 
 
 class HabitatActuator(HabitatActuatorRequirements):
-    """Habitat-sim implementation of an Actuator.
+    """Habitat implementation of an Actuator.
 
     HabitatActuator is responsible for executing actions in the Habitat simulation.
 
@@ -54,20 +54,20 @@ class HabitatActuator(HabitatActuatorRequirements):
     HabitatActuatorRequirements to be met.
 
     Note:
-        Habitat-sim does not expose an API for passing parameters to actions.
+        Habitat does not expose an API for passing parameters to actions.
         Each actuate method works around this limitation by artisanally setting
-        specific action parameters directly in Habitat-sim.
+        specific action parameters directly in habitat-sim.
     """
 
     def action_name(self, action: Action) -> str:
-        """Returns Monty's Habitat action naming convention.
+        """Return Monty's Habitat action naming convention.
 
         The action name is prefixed by the agent ID.
         """
         return f"{action.agent_id}.{action.name}"
 
     def to_habitat(self, action: Action) -> tuple[Agent, ActuationSpec, str]:
-        """Transition from the Monty to the Habitat sim domain.
+        """Transition from the Monty to the habitat-sim domain.
 
         Args:
             action: Monty action to execute by the agent specified in the action.
