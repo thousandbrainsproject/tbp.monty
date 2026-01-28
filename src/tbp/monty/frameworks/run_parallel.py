@@ -535,6 +535,33 @@ def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
         parallel_dirs = [pdir / "pretrained" for pdir in parallel_dirs]
         pretraining = True
 
+    # Loop over types of loggers, figure out how to clean up each one
+    logging_config = experiments[0]["config"]["logging"]
+    save_per_episode = logging_config.get("detailed_save_per_episode")
+
+    for handler in logging_config["monty_handlers"]:
+        if issubclass(handler, DetailedJSONHandler):
+            if save_per_episode:
+                filenames = collect_detailed_episodes_names(parallel_dirs)
+                outdir = base_dir / "detailed_run_stats"
+                maybe_rename_existing_dir(outdir)
+                post_parallel_log_cleanup(filenames, outdir, cat_fn=mv_files)
+            else:
+                filename = "detailed_run_stats.json"
+                filenames = [pdir / filename for pdir in parallel_dirs]
+                outfile = base_dir / filename
+                maybe_rename_existing_file(outfile)
+                post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
+            continue
+
+        if issubclass(handler, BasicCSVStatsHandler):
+            filename = "train_stats.csv"
+            filenames = [pdir / filename for pdir in parallel_dirs]
+            outfile = base_dir / filename
+            maybe_rename_existing_file(outfile)
+            post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_csv)
+            continue
+
     if experiments[0]["config"]["logging"]["python_log_to_file"]:
         filename = "log.txt"
         filenames = [pdir / filename for pdir in parallel_dirs]
