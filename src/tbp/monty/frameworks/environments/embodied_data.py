@@ -226,8 +226,8 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
                 and scale of objects when re-initializing.
             parent_to_child_mapping: dictionary mapping parent objects to their child
                 objects. Used for logging.
-            *args: Unused?
-            **kwargs: Unused?
+            *args: passed to `super()` call
+            **kwargs: passed to `super()` call
 
         Raises:
             TypeError: If `object_names` is not a list or dictionary
