@@ -745,7 +745,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             )
 
             # TODO clean up where this is performed, and make variable names more
-            # general
+            #   general
             # TODO also only log this when we are doing detailed logging
             # TODO M clean up these action details loggings; this may need to remain
             # local to a "motor-system buffer" given that these are model-free
