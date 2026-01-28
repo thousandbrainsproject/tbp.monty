@@ -419,7 +419,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         """Reset environment and extract image patch.
 
         TODO: clean up. Do we need this? No reset is required in this environment
-        interface, so this should be indicated more clearly.
+          interface, so this should be indicated more clearly.
 
         Returns:
             The observation from the image patch.
