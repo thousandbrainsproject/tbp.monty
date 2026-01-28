@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -33,6 +33,10 @@ def update_snapshots(
         experiment_prefix: The prefix to add to the experiment name (e.g. "tutorial/")
         snapshots_dir: The directory to write the snapshots to.
     """
+    # Delete existing snapshots to remove renamed or deleted experiments
+    for existing_snapshot in snapshots_dir.glob("*.yaml"):
+        existing_snapshot.unlink()
+
     for file_path in experiment_dir.glob("*.yaml"):
         print(f"Updating snapshot: {file_path}")
         with hydra.initialize(version_base=None, config_path="."):

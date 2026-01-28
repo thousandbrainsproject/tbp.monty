@@ -35,8 +35,6 @@ from tbp.monty.frameworks.actions.actions import (
     MoveTangentially,
     OrientHorizontal,
     OrientVertical,
-    SetAgentPose,
-    SetSensorRotation,
     TurnLeft,
     TurnRight,
     VectorXYZ,
@@ -156,7 +154,6 @@ class BasePolicy(MotorPolicy):
         action_sampler_args: dict,
         action_sampler_class: type[ActionSampler],
         agent_id: AgentID,
-        switch_frequency,
         file_name=None,
         file_names_per_episode=None,
     ):
@@ -167,8 +164,6 @@ class BasePolicy(MotorPolicy):
             action_sampler_args: arguments for the ActionSampler
             action_sampler_class: The ActionSampler to use
             agent_id: The agent ID
-            switch_frequency: float in [0,1], how frequently to change actions
-                when using sticky actions
             file_name: Path to file with predefined actions. Defaults to None.
             file_names_per_episode: ?. Defaults to None.
         """
@@ -185,11 +180,8 @@ class BasePolicy(MotorPolicy):
         self.timestep = 0
         self.episode_step = 0
         self.episode_count = 0
-        self.switch_frequency = float(switch_frequency)
         # Ensure our first action only samples from those that can be random
-        self.action: Action | None = self.get_random_action(
-            self.action_sampler.sample(self.agent_id, self.rng)
-        )
+        self.action: Action | None = self.get_random_action()
 
         ###
         # Load data for predefined actions and amounts if specified
@@ -216,33 +208,27 @@ class BasePolicy(MotorPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, _state: MotorSystemState | None = None) -> Action | None:
+    def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:  # noqa: ARG002
         """Return a random action.
 
         The MotorSystemState is ignored.
 
         Args:
-            _state: The current state of the motor system.
+            state: The current state of the motor system.
                 Defaults to None. Unused.
 
         Returns:
             A random action.
         """
-        return self.get_random_action(self.action)
+        return self.get_random_action()
 
-    def get_random_action(self, action: Action) -> Action:
+    def get_random_action(self) -> Action:
         """Returns random action sampled from allowable actions.
 
         Enables expanding the action space of the base policy with actions that
         we don't necessarily want to randomly sample
         """
-        while True:
-            if self.rng.rand() < self.switch_frequency:
-                action = self.action_sampler.sample(self.agent_id, self.rng)
-            if not isinstance(action, SetAgentPose) and not isinstance(
-                action, SetSensorRotation
-            ):
-                return action
+        return self.action_sampler.sample(self.agent_id, self.rng)
 
     def predefined_call(self) -> Action:
         return self.action_list[self.episode_step % len(self.action_list)]
