@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -41,10 +41,10 @@ class DefaultFeatureEvidenceCalculator:
         Evidence for each feature depends on the difference between observed and stored
         features, feature weights, and distance weights.
 
-        Evidence is a float between 0 and 1. An evidence of 1 is a perfect match, the
-        larger the difference between observed and sensed features, the close to 0 goes
-        the evidence. Evidence is 0 if the difference is >= the tolerance for this
-        feature.
+        Evidence is a float between 0 and 1. An evidence of 1 is a perfect match; the
+        larger the difference between observed and sensed features, the closer to 0
+        the evidence becomes. Evidence is 0 if the difference is >= the tolerance for
+        this feature.
 
         If a node does not store a given feature, evidence will be nan.
 

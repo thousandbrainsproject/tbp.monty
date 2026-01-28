@@ -214,7 +214,7 @@ jobs:
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && github.event_name == 'pull_request' }}
         working-directory: tbp.monty
         run: |
-          git diff --name-only origin/${{ github.base_ref }} > changed_files.txt
+          git diff --name-only origin/${{ github.base_ref }}... > changed_files.txt
       - name: Changed files for a push
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && github.event_name == 'push' }}
         working-directory: tbp.monty
@@ -232,7 +232,12 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           cat changed_files.txt | grep -E '^src/|^tests/|^conf/|^run.py$|^run_parallel.py$' | grep '\.py$' > changed_files_filtered.txt || exit 0
-          cat changed_files_filtered.txt | xargs ruff check --select CPY001 --config lint.flake8-copyright.notice-rgx='"Copyright\\s+.*2026"' -v
+          if ! cat changed_files_filtered.txt | xargs ruff check --select CPY001 --config lint.flake8-copyright.notice-rgx='"Copyright\\s+.*2026"' -v
+          then
+            echo "One or more modified files did not update the copyright date range to include the current year."
+            echo "See https://thousandbrainsproject.readme.io/docs/code-style-guide#source-code-copyright-and-license-header for details."
+            exit 1
+          fi
 
   check_types_monty:
     name: check-types-monty
