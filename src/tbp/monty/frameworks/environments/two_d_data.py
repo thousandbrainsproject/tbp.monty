@@ -53,7 +53,7 @@ class OmniglotEnvironment(SimulatedEnvironment):
 
         Args:
             patch_size: height and width of patch in pixels, defaults to 10
-            data_path: path to the omniglot dataset. If None it's set to
+            data_path: path to the omniglot dataset. If None, defaults to
                 ~/tbp/data/omniglot/python/
         """
         self.patch_size = patch_size
