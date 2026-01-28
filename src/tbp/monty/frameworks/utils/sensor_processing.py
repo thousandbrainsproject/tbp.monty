@@ -321,10 +321,9 @@ def curvature_at_point(point_cloud, center_id, normal):
         a = np.dot(np.transpose(data), data)
 
         # Rarely, "a" can be singular, causing numpy to throw an error.
-        # It appears to be caused by surface-agent gathering observations that
-        # are largely off the object, but not entirely (e.g. <25% visible),
-        # resulting in a system
-        # with insufficient data to be solvable.
+        # This appears to be caused by the surface-agent gathering observations that
+        # are largely off the object, but not entirely (e.g. <25% visible), resulting 
+        # in a system with insufficient data to be solvable.
         if non_singular_mat(a):
             params = np.linalg.solve(a, beta)
 
