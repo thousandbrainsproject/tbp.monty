@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -11,15 +11,15 @@ from __future__ import annotations
 
 
 def get_edge_index(graph, previous_node, new_node) -> int | None:
-    """Get the edge index between two nodes in a graph.
+    """Return the edge index between two nodes in a graph.
 
     Args:
-        graph: torch_geometric.data graph
-        previous_node: node ID if the first node in the graph
-        new_node: node ID if the second node in the graph
+        graph: torch_geometric.data graph.
+        previous_node: Node ID of the first node in the graph.
+        new_node: Node ID of the second node in the graph.
 
     Returns:
-        edge ID between the two nodes
+        Edge ID between the two nodes, or None if no such edge exists.
     """
     mask = (graph.edge_index[0] == previous_node) & (graph.edge_index[1] == new_node)
     if mask.any():
