@@ -584,7 +584,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             rng=np.random.RandomState(),
             action_sampler_args=dict(actions=[LookUp]),
             action_sampler_class=UniformlyDistributedSampler,
-            switch_frequency=0.0,
         )
         result = positioning_procedure.positioning_call(
             self._observation, self.motor_system._state

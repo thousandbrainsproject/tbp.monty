@@ -1,13 +1,13 @@
 Experiment,Correct (%)|align right,Used MLH (%)|align right,Num Match Steps|align right,Rotation Error (degrees)|align right,Run Time (mins)|align right,Episode Run Time (s)|align right
-base_config_10distinctobj_dist_agent,99.29,0.71,36,15.19,2,8
-base_config_10distinctobj_surf_agent,100.00,0.00,27,15.57,2,11
-randrot_noise_10distinctobj_dist_agent,96.00,2.00,44,21.60,3,17
-randrot_noise_10distinctobj_dist_on_distm,99.00,0.00,33,14.05,3,18
-randrot_noise_10distinctobj_surf_agent,98.00,1.00,28,19.99,3,20
-randrot_10distinctobj_surf_agent,100.00,0.00,28,15.06,2,11
-randrot_noise_10distinctobj_5lms_dist_agent,100.00,0.00,51,58.54,5,40
-base_10simobj_surf_agent,93.57,10.71,82,13.93,6,30
-randrot_noise_10simobj_dist_agent,80.00,36.00,221,33.13,13,106
+base_config_10distinctobj_dist_agent,99.29,1.43,41,10.82,2,9
+base_config_10distinctobj_surf_agent,100.00,0.00,27,15.57,3,12
+randrot_noise_10distinctobj_dist_agent,100.00,1.00,38,19.95,3,16
+randrot_noise_10distinctobj_dist_on_distm,99.00,0.00,30,15.74,2,17
+randrot_noise_10distinctobj_surf_agent,98.00,1.00,28,19.99,4,25
+randrot_10distinctobj_surf_agent,100.00,0.00,28,15.06,2,12
+randrot_noise_10distinctobj_5lms_dist_agent,100.00,0.00,51,48.04,6,45
+base_10simobj_surf_agent,93.57,10.71,82,13.93,6,31
+randrot_noise_10simobj_dist_agent,81.00,34.00,204,28.86,9,76
 randrot_noise_10simobj_surf_agent,83.00,33.00,166,31.98,18,145
 randomrot_rawnoise_10distinctobj_surf_agent,71.00,74.00,14,96.27,4,6
-base_10multi_distinctobj_dist_agent,77.14,12.86,33,22.63,45,2
+base_10multi_distinctobj_dist_agent,81.43,17.86,32,18.06,45,2

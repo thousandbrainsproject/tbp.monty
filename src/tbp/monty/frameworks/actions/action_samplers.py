@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -81,7 +81,7 @@ class ConstantSampler(ActionSampler):
     that take a `rotation_degrees` parameter will have it set to `5.0`.
 
     When sampling an Action, only applicable parameters are used. For example,
-    when sampling a `MoveForward` action, only the ConstantCreator's
+    when sampling a `MoveForward` action, only the ConstantSampler's
     `translation_distance` parameter is used to determine the action's `distance`
     parameter.
     """
@@ -205,7 +205,7 @@ class UniformlyDistributedSampler(ActionSampler):
     at initialization time and remains the same for all actions created by this factory.
 
     When sampling an Action, only applicable parameters are used. For example,
-    when sampling a `MoveForward` action, only the UniformlyDistributedCreator's
+    when sampling a `MoveForward` action, only the UniformlyDistributedSampler's
     `translation_high` and `translation_low` parameters are used to determine the
     action's `distance` parameter.
     """
