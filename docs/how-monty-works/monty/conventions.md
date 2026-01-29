@@ -25,7 +25,7 @@ When converting between Cartesian and spherical coordinates, both the Cartesian 
 
 where atan2 is the [2-argument arctangent](https://en.wikipedia.org/wiki/Atan2).
 
-For more examples and descriptions, see the video [here](https://www.youtube.com/watch?v=lu1FS3au7kg).
+The above may be useful when, for example, writing motor policy code that steers a distant agent towards a target. [This video](https://www.youtube.com/watch?v=lu1FS3au7kg) has more details regarding this use case and other tips for handling actions and rotations.
 
 ## Example: Visualizing with Matplotlib
 
