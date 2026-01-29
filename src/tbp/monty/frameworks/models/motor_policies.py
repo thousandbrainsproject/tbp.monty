@@ -227,10 +227,6 @@ class BasePolicy(MotorPolicy):
 
     def post_episode(self):
         self.episode_count += 1
-        if self.file_names_per_episode is not None:
-            if self.episode_count in self.file_names_per_episode:
-                file_name = self.file_names_per_episode[self.episode_count]
-                self.action_list = read_action_file(file_name)
 
     ###
     # Other required abstract methods, methods called by Monty or Environment Interface
