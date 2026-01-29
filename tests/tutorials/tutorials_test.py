@@ -54,6 +54,8 @@ class TutorialsTest(TestCase):
                 config_name="experiment",
                 overrides=[
                     "experiment=tutorial/surf_agent_2obj_eval",
+                    # Non-interactive
+                    "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
                     "experiment.config.max_eval_steps=3",

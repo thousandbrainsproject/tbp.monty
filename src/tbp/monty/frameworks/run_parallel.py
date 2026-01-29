@@ -329,8 +329,8 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
 
     Note:
         If we view the same object from multiple poses in separate experiments, we
-        need to replicate what post_episode does in supervised pre training. To avoid
-        this, we just run training episodes parallel across OBJECTS, but poses are
+        need to replicate what post_episode does in supervised pre-training. To avoid
+        this, we just run training episodes in parallel across objects, but poses are
         still in sequence. By contrast, eval episodes are parallel across objects
         AND poses.
 
@@ -576,8 +576,8 @@ def run_episodes_parallel(
         num_parallel: Maximum number of parallel processes to run. If there
             are fewer configs to run than `num_parallel`, then the actual number of
             processes will be equal to the number of configs.
-        experiment_name: name of experiment
-        train: Whether the episodes are training or evaluating episodes.
+        experiment_name: Name of the experiment.
+        train: Whether the episodes are training or evaluation episodes.
     """
     # Use fewer processes if there are fewer configs than `num_parallel`.
     num_parallel = min(len(experiments), num_parallel)

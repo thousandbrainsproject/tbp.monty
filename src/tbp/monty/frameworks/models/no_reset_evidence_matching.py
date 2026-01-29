@@ -94,7 +94,7 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
 
     def _reset_terminal_states(self):
         for lm in self.learning_modules:
-            lm.set_individual_ts("no_match")
+            lm.set_individual_ts(None)
 
     def _reset_modules_buffers(self):
         """Resets buffers for LMs and SMs."""
