@@ -25,6 +25,8 @@ When converting between Cartesian and spherical coordinates, both the Cartesian 
 
 where atan2 is the [2-argument arctangent](https://en.wikipedia.org/wiki/Atan2).
 
+For more examples and descriptions, see the video [here](https://www.youtube.com/watch?v=lu1FS3au7kg).
+
 ## Example: Visualizing with Matplotlib
 
 ![Left: Monty's initial view of the mug during training. Center: The learned model without transforming into the right-forward-up axes convention used by matplotlib. Right: The learned model after performing the transformation.](../../figures/how-monty-works/matplotlib_example.png#width=400px)
