@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from enum import Enum
 from typing import Any, ClassVar, Protocol, TypedDict
 
@@ -34,6 +33,21 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     surface_normal_total_least_squares,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
+
+__all__ = [
+    "DefaultMessageNoise",
+    "FeatureChangeFilter",
+    "HabitatObservation",
+    "HabitatObservationProcessor",
+    "HabitatSM",
+    "MessageNoise",
+    "NoMessageNoise",
+    "PassthroughStateFilter",
+    "Probe",
+    "SnapshotTelemetry",
+    "StateFilter",
+    "SurfaceNormalMethod",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -96,13 +110,6 @@ class SurfaceNormalMethod(Enum):
     """Ordinary Least-Squares"""
     NAIVE = "naive"
     """Naive"""
-
-
-@dataclass
-class HabitatObservationProcessorTelemetry:
-    processed_obs: State
-    visited_loc: Any
-    visited_normal: Any | None
 
 
 class HabitatObservationProcessor:
@@ -173,9 +180,7 @@ class HabitatObservationProcessor:
         self._surface_normal_method = surface_normal_method
         self._weight_curvature = weight_curvature
 
-    def process(
-        self, observation: HabitatObservation
-    ) -> tuple[State, HabitatObservationProcessorTelemetry]:
+    def process(self, observation: HabitatObservation) -> State:
         """Processes observation.
 
         Args:
@@ -251,15 +256,7 @@ class HabitatObservationProcessor:
         # This is just for logging! Do not use _ attributes for matching
         observed_state._semantic_id = semantic_id
 
-        telemetry = HabitatObservationProcessorTelemetry(
-            processed_obs=observed_state,
-            visited_loc=observed_state.location,
-            visited_normal=morphological_features["pose_vectors"][0]
-            if "pose_vectors" in morphological_features.keys()
-            else None,
-        )
-
-        return observed_state, telemetry
+        return observed_state
 
     def _extract_and_add_features(
         self,
@@ -438,7 +435,7 @@ class Probe(SensorModule):
 
         return None
 
-    def pre_episode(self):
+    def pre_episode(self, rng: np.random.RandomState) -> None:  # noqa: ARG002
         """Reset buffer and is_exploring flag."""
         self._snapshot_telemetry.reset()
         self.is_exploring = False
@@ -551,7 +548,7 @@ class HabitatSM(SensorModule):
 
     def __init__(
         self,
-        rng,
+        rng: np.random.RandomState,
         sensor_module_id: str,
         features: list[str],
         save_raw_obs: bool = False,
@@ -619,23 +616,14 @@ class HabitatSM(SensorModule):
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
-        # Store visited locations in global environment coordinates to help inform
-        # more intelligent motor-policies
-        # TODO consider adding a flag or mixin to determine when these are actually
-        # saved
-        self.visited_locs = []
-        self.visited_normals = []
 
-    def pre_episode(self):
-        """Reset buffer and is_exploring flag."""
-        super().pre_episode()
+    def pre_episode(self, rng: np.random.RandomState) -> None:
+        self._rng = rng
         self._snapshot_telemetry.reset()
         self._state_filter.reset()
         self.is_exploring = False
         self.processed_obs = []
         self.states = []
-        self.visited_locs = []
-        self.visited_normals = []
 
     def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
@@ -667,7 +655,7 @@ class HabitatSM(SensorModule):
                 data, self.state.rotation, self.state.position
             )
 
-        observed_state, telemetry = self._habitat_observation_processor.process(data)
+        observed_state = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
             observed_state = self._message_noise(observed_state, rng=self._rng)
@@ -680,10 +668,8 @@ class HabitatSM(SensorModule):
         observed_state = self._state_filter(observed_state)
 
         if not self.is_exploring:
-            self.processed_obs.append(telemetry.processed_obs.__dict__)
+            self.processed_obs.append(observed_state.__dict__)
             self.states.append(self.state)
-            self.visited_locs.append(telemetry.visited_loc)
-            self.visited_normals.append(telemetry.visited_normal)
 
         return observed_state
 

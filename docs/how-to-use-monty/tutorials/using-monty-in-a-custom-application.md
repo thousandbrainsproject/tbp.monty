@@ -15,7 +15,7 @@ Monty aims to implement a **general-purpose algorithm for understanding and inte
 In the current implementation, movement should happen in 3D (or less) space and be tracked using Euclidean location coordinates. Although we are convinced that the basic principles of Monty will also apply to abstract spaces ([potentially embedded in 3D space](https://thousandbrains.discourse.group/t/abstract-concept-in-monty/533/4)) and we know that the [brain uses different mechanisms to encode space](https://youtu.be/zRRazfFstvY), the current implementation relies on 3D Euclidean space.
 
 # Customizing Monty for Your Application
-The diagram below shows the base abstract classes in Monty. For general information on how to customize those classes, see our guide on [Customizing Monty](../customizing-monty.md). The Experiment class coordinates the experiment (learning and evaluation). It initializes and controls Monty and the environment and coordinates the interaction between them. The `EmbodiedEnvironment` class is wrapped in an `EnvironmentInterface` subclass, which exposes methods to interact with the environment. An experiment can have two environment interfaces associated with it: one for training and one for evaluation.
+The diagram below shows the base abstract classes in Monty. For general information on how to customize those classes, see our guide on [Customizing Monty](../customizing-monty.md). The Experiment class coordinates the experiment (learning and evaluation). It initializes and controls Monty and the environment and coordinates the interaction between them. The environment that implements the `Environment` protocol is wrapped in an `EnvironmentInterface` subclass, which exposes methods to interact with the environment. An experiment can have two environment interfaces associated with it: one for training and one for evaluation.
 
 ![Class structure in tbp.monty. Each class can be customized independently, allowing for easy modification and testing of individual components.](../../figures/how-to-use-monty/monty_class_diagram.png#width=500px)
 
@@ -25,13 +25,13 @@ Information flow in Monty implements a sensorimotor loop. Observations from the 
 
 Additionally, the `EnvironmentInterface` and Environment can implement specific functions to be executed at different points in the experiment, such as resetting the agent position and showing a new object or scene at the beginning of a new episode.
 
-To use Monty in a custom environment, you usually need to customize the `EnvironmentInterface` and `EmbodiedEnvironment` classes. For example, if you look back at the previous tutorials, you will see that for those Habitat experiments, we've been using the `EnvironmentInterfacePerObject` and the `HabitatEnvironment`. The diagram below shows some key elements that need to be defined for these two classes. It's best to start thinking about the environment setup first, as this will force you to think through how to structure your application correctly for Monty to tackle.
+To use Monty in a custom environment, you usually need to customize the `EnvironmentInterface` class and write a custom implementation of the `SimulatedObjectEnvironment` protocol. For example, if you look back at the previous tutorials, you will see that for those Habitat experiments, we've been using the `EnvironmentInterfacePerObject` and the `HabitatEnvironment`. The diagram below shows some key elements that need to be defined for these two classes. It's best to start thinking about the environment setup first, as this will force you to think through how to structure your application correctly for Monty to tackle.
 ![Key elements to define for a custom environment interface](../../figures/how-to-use-monty/defining_env_and_env_interface.png)
 
-### EmbodiedEnvironment
+### Environment
 The first thing to figure out is how movement should be defined in your environment. What actions are possible, and how do these actions change the agent's state and observations?
 
-If you are working with an existing environment, such as one used for reinforcement learning (for example, the Habitat environment we are using), you might just need to wrap this into the `.step()` function of your custom `EmbodiedEnvironment` class such that when `env.step(actions)` is called, an observation is returned. If you work with an application that isn't already set up like that, defining how actions lead to the next observation may be more involved. You can look at the `OmniglotEnvironmentInterface` or `SaccadeOnImageEnvironmentInterface` as examples (more details below).
+If you are working with an existing environment, such as one used for reinforcement learning (for example, the Habitat environment we are using), you might just need to wrap this into the `.step()` function of your custom `Environment` class such that when `env.step(actions)` is called, observations and proprioceptive state are returned. If you work with an application that isn't already set up like that, defining how actions lead to the next observation may be more involved. You can look at the `OmniglotEnvironmentInterface` or `SaccadeOnImageEnvironmentInterface` as examples (more details below).
 
 The observations should be returned as `Observations` with one entry per agent in the environment. Each agent should have `SensorObservations` for each of its sensors. For example, if there is one agent with two sensors that each sense two types of modalities, it would look like this:
 
@@ -58,9 +58,9 @@ obs = Observations(
 )
 ```
 
-Related to defining how actions change observations, you will also need to define how actions change the state of the agent. This is what the `get_state()` method returns. The returned state needs to be a `ProprioceptiveState(Dict[str, AgentState])` with an entry per agent in the environment. The entry should contain the agent's position and orientation relative to some global reference point (`AgentState`). For each sensor associated with that agent, a `SensorState` should contain the sensor's position and orientation relative to the agent.
+Related to defining how actions change observations, you will also need to define how actions change the state of the agent. The returned proprioceptive state needs to be a `ProprioceptiveState(Dict[str, AgentState])` with an entry per agent in the environment. The entry should contain the agent's position and orientation relative to some global reference point (`AgentState`). For each sensor associated with that agent, a `SensorState` should contain the sensor's position and orientation relative to the agent.
 
-For example, if you have one agent with two sensors, the state dictionary could look like this:
+For example, if you have one agent with two sensors, the proprioceptive state could look like this:
 ```python
 state = ProprioceptiveState(
   {
@@ -89,10 +89,10 @@ state = ProprioceptiveState(
 )
 ```
 
-Lastly, you need to define what happens when the environment is initialized (`__init__()`), when it is reset (`reset()`, usually at the end of an episode), and when it is closed (`close()`, at the end of an experiment). Resetting could include loading a new scene, resetting the agent position, or changing the arrangement of objects in the environment. It might also reset some of the environment's internal variables, such as step counters. Note that, as customary for RL environments, the `reset()` method is also expected to return `Observations`.
+Lastly, you need to define what happens when the environment is initialized (`__init__()`), when it is reset (`reset()`, usually at the end of an episode), and when it is closed (`close()`, at the end of an experiment). Resetting could include loading a new scene, resetting the agent position, or changing the arrangement of objects in the environment. It might also reset some of the environment's internal variables, such as step counters. Note that, as customary for RL environments, the `reset()` method is also expected to return `Observations` and `ProprioceptiveState`.
 
 ### Environment Interface
-The `EnvironmentInterface` manages retrieving observations from the `EmbodiedEnvironment` given actions. The EmbodiedEnvironment, in turn, applies basic transforms to the raw observations from the environment.
+The `EnvironmentInterface` manages retrieving observations from the `Environment`-given actions. The `Environment`, in turn, applies basic transforms to the raw observations from the environment.
 
 The `EnvironmentInterface` should define all the key events at which the environment needs to be accessed or modified. This includes initializing the environment (`__init__()`), retrieving the next observation (`__next__()`), and things that happen at the beginning or end of episodes and epochs (`pre_episode()`, `post_episode()`, `pre_epoch()`, `post_epoch()`). Note that not all of those are relevant to every application.
 
@@ -265,7 +265,7 @@ For inference, we use the RGBD images taken with the iPad camera. Movement is de
 This can be implemented using two custom classes the [SaccadeOnImageEnvironment](https://github.com/thousandbrainsproject/tbp.monty/blob/4bc857580ae6ac015586af1a61b3e292a7827b6f/src/tbp/monty/frameworks/environments/two_d_data.py#L258) and [SaccadeOnImageEnvironmentInterface](https://github.com/thousandbrainsproject/tbp.monty/blob/db6b0404e3c3fa9c95688db5db33fa58053fcb8d/src/tbp/monty/frameworks/environments/embodied_data.py#L898):
 1. `SaccadeOnImageEnvironment`:
    - Defines initialization of all basic variables in the `__init__(patch_size, data_path)` method.
-   - Defines the `step(actions)` method, which uses the sensor's current location, the given actions, and their amounts to determine the new location on the image and extract a patch. It updates `self.current_loc` and returns the sensor patch observations as a dictionary.
+   - Defines the `step(actions)` method, which uses the sensor's current location, the given actions, and their amounts to determine the new location on the image and extract a patch. It updates `self.current_loc` and returns the sensor patch observations and proprioceptive state.
    - Defines `get_state()`, which returns the current state as a dictionary. The dictionary mostly contains `self.current_loc` and placeholders for the orientation, as the sensor and agent orientation never change.
    - Helper methods such as
      - `switch_to_object(scene_id, scene_version_id)` to load a new image
@@ -339,7 +339,7 @@ If your application uses sensors different from our commonly used cameras and de
 
 If your application requires a specific policy to move through the environment or you have a complex actuator to control, you might want to implement a custom `MotorSystem` or `MotorPolicy` class. For more details on our existing motor system and policies, see our [documentation on Monty's policies](https://thousandbrainsproject.readme.io/docs/policy).
 
-Writing those custom classes works the same way as it does for the `EnvironmentInterface` and `EmbodiedEnvironment` classes. For general information, see our documentation on [customizing Monty](https://thousandbrainsproject.readme.io/docs/customizing-monty).
+Writing those custom classes works the same way as it does for the `EnvironmentInterface` class. For general information, see our documentation on [customizing Monty](https://thousandbrainsproject.readme.io/docs/customizing-monty).
 
 # Conclusion
-This tutorial was a bit more text than practical code. This is because every application is different, and we try to convey the general principles here. The first step for any application is to think about if and how the task can be phrased as a sensorimotor environment. What is Monty's action space? How is movement defined? How does it change observations? How do movement and sensation determine the sensor's location and orientation in space? This will then help you figure out how to define a custom `EmbodiedEnvironment` and `EnvironmentInterface` and their associated `__init__`, `step`, `get_state`,`reset`, `pre_episode`, and `post_episode` methods. If you run into issues customizing Monty to your application, please come over to our [Discourse Forum](https://thousandbrains.discourse.group/) and ask for help!
+This tutorial was a bit more text than practical code. This is because every application is different, and we try to convey the general principles here. The first step for any application is to think about if and how the task can be phrased as a sensorimotor environment. What is Monty's action space? How is movement defined? How does it change observations? How do movement and sensation determine the sensor's location and orientation in space? This will then help you figure out how to define a custom `Environment` and `EnvironmentInterface`, and their associated `__init__`, `step`,`reset`, `pre_episode`, and `post_episode` methods. If you run into issues customizing Monty to your application, please come over to our [Discourse Forum](https://thousandbrains.discourse.group/) and ask for help!

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -9,6 +9,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import numpy.typing as npt
 
 
 @dataclass
@@ -19,9 +20,10 @@ class Hypotheses:
     hypothesis.
     """
 
-    evidence: np.ndarray
-    locations: np.ndarray
-    poses: np.ndarray
+    evidence: npt.NDArray[np.float64]
+    locations: npt.NDArray[np.float64]
+    poses: npt.NDArray[np.float64]
+    possible: npt.NDArray[np.bool_]
 
 
 @dataclass

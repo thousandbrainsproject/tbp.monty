@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -11,10 +11,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Literal, Optional, Protocol
+from typing import Any, ContextManager, Dict, Literal, Optional, Protocol
 
 import numpy as np
 from scipy.spatial.transform import Rotation
+from typing_extensions import Self
 
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
     DefaultFeatureEvidenceCalculator,
@@ -55,7 +56,10 @@ class ChannelHypothesesUpdateTelemetry:
     channel_hypothesis_displacer_telemetry: HypothesisDisplacerTelemetry
 
 
-class HypothesesUpdater(Protocol):
+class HypothesesUpdater(ContextManager[Self], Protocol):
+    def reset(self) -> None:
+        """Resets updater at the beginning of an episode."""
+
     def update_hypotheses(
         self,
         hypotheses: Hypotheses,
@@ -64,7 +68,7 @@ class HypothesesUpdater(Protocol):
         graph_id: str,
         mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry, float]:
+    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Args:
@@ -183,6 +187,20 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             use_features_for_matching=self.use_features_for_matching,
         )
 
+    def __enter__(self) -> Self:
+        """Enter context manager, runs before updating the hypotheses.
+
+        Returns:
+            Self: The context manager instance.
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit context manager, runs after updating the hypotheses."""
+
+    def reset(self) -> None:
+        """Resets updater at the beginning of an episode."""
+
     def update_hypotheses(
         self,
         hypotheses: Hypotheses,
@@ -191,7 +209,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         graph_id: str,
         mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry, float]:
+    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Updates existing hypothesis space or initializes a new hypothesis space
@@ -225,7 +243,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 f"No input channels observed for {graph_id} that are stored in the "
                 "model. Not updating evidence."
             )
-            return []
+            return [], {}
 
         hypotheses_updates = []
         telemetry: dict[str, Any] = {}
@@ -396,11 +414,16 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             evidence = np.array(nwmf_stacked) * self.feature_evidence_increment
         else:
             evidence = np.zeros(initial_possible_channel_rotations.shape[0])
+
+        # New hypotheses cannot be possible
+        initial_possible_hyps = np.zeros_like(evidence, dtype=np.bool_)
+
         return ChannelHypotheses(
             input_channel=input_channel,
             evidence=evidence,
             locations=initial_possible_channel_locations,
             poses=initial_possible_channel_rotations,
+            possible=initial_possible_hyps,
         )
 
 

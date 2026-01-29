@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -16,6 +16,7 @@ import time
 from typing import Any, Callable, ClassVar
 
 import numpy as np
+import numpy.typing as npt
 import quaternion as qt
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -239,7 +240,14 @@ class FeatureAtLocationBuffer:
             All observed locations that were on the object.
         """
         if input_channel is None:
-            return self.locations
+            # Pad each channel's locations to the full buffer length.
+            # Also filter locations by global on_object.
+            global_on_object_ids = self._global_on_object_ids()
+            result = {}
+            for channel in self.locations.keys():
+                channel_locs = self._pad_to_target_length(self.locations[channel])
+                result[channel] = channel_locs[global_on_object_ids]
+            return result
         if input_channel == "first":
             input_channel = self.get_first_sensory_input_channel()
         on_object_ids = np.where(self.features[input_channel]["on_object"])[0]
@@ -337,7 +345,7 @@ class FeatureAtLocationBuffer:
         """
         all_features_on_object = {}
         # Number of steps where at least one input was on the object
-        global_on_object_ids = np.where(self.on_object)[0]
+        global_on_object_ids = self._global_on_object_ids()
         logger.debug(
             f"Observed {np.array(self.locations).shape} locations, "
             f"{len(global_on_object_ids)} global on object"
@@ -355,26 +363,21 @@ class FeatureAtLocationBuffer:
 
             channel_features_on_object = {}
             for feature in self.features[input_channel].keys():
-                # Pad end of array with 0s if last steps of episode were off object
+                # Pad end of array with nans if last steps of episode were off object
                 # for this channel
-                if self.features[input_channel][feature].shape[0] < len(self):
-                    self.features[input_channel][feature].resize(
-                        (
-                            len(self),
-                            self.features[input_channel][feature].shape[1],
-                        ),
-                        refcheck=False,
-                    )
+                padded_feature = self._pad_to_target_length(
+                    self.features[input_channel][feature]
+                )
                 logger.debug(
                     f"{input_channel} observations for feature {feature} have "
-                    f"shape {np.array(self.features[input_channel][feature]).shape}"
+                    f"shape {padded_feature.shape}"
                 )
                 # Get feature at each time step where the global on_object flag was
-                # True (at least one input was on object, not nescessarily this
+                # True (at least one input was on object, not necessarily this
                 # features input channel).
-                channel_features_on_object[feature] = np.array(
-                    self.features[input_channel][feature]
-                )[global_on_object_ids]
+                channel_features_on_object[feature] = padded_feature[
+                    global_on_object_ids
+                ]
 
             all_features_on_object[input_channel] = channel_features_on_object
         return all_features_on_object
@@ -473,6 +476,14 @@ class FeatureAtLocationBuffer:
             # If no symmetry was detected, this will be None.
             self.stats["symmetric_rotations_ts"] = self.stats["symmetric_rotations"]
 
+    def _global_on_object_ids(self) -> npt.NDArray[np.bool_]:
+        """Get indices of steps where at least one input was on the object.
+
+        Returns:
+            Array of indices where self.on_object is True.
+        """
+        return np.where(self.on_object)[0]
+
     def _add_attr_to_feature_buffer(self, input_channel, attr_name, attr_value):
         """Add attribute to feature buffer.
 
@@ -501,8 +512,9 @@ class FeatureAtLocationBuffer:
                 (len(self) + 1, attr_shape), np.nan
             )
         else:
-            padded_feat = self._fill_old_values_with_nans(
+            padded_feat = self._pad_to_target_length(
                 existing_vals=self.features[input_channel][attr_name],
+                target_length=len(self) + 1,
                 new_val_len=attr_shape,
             )
             self.features[input_channel][attr_name] = padded_feat
@@ -518,8 +530,9 @@ class FeatureAtLocationBuffer:
         if input_channel not in self.locations.keys():
             self.locations[input_channel] = np.empty((0, 0))
 
-        padded_locs = self._fill_old_values_with_nans(
+        padded_locs = self._pad_to_target_length(
             existing_vals=self.locations[input_channel],
+            target_length=len(self) + 1,
             new_val_len=location.shape[0],
         )
         self.locations[input_channel] = padded_locs
@@ -540,42 +553,99 @@ class FeatureAtLocationBuffer:
                 (len(self.locations), len(disp_val)), np.nan
             )
 
-        padded_vals = self._fill_old_values_with_nans(
+        padded_vals = self._pad_to_target_length(
             existing_vals=self.displacements[input_channel][disp_name],
+            target_length=len(self) + 1,
             new_val_len=disp_val.shape[0],
         )
         self.displacements[input_channel][disp_name] = padded_vals
         self.displacements[input_channel][disp_name][-1] = disp_val
 
-    def _fill_old_values_with_nans(self, existing_vals, new_val_len):
-        """Pad existing values with nans to make sure indices align.
+    def _pad_to_target_length(
+        self,
+        existing_vals: np.ndarray,
+        target_length: int | None = None,
+        new_val_len: int | None = None,
+    ) -> np.ndarray:
+        """Pad array to target length with nans for consistent index alignment.
 
-        If len(existing_vals)== len(buffer) this operation has no effect (besides adding
-        a nan at the end which will be filled with the feature value in the next line
-        making it equivalent to calling append).
+        This function ensures that array data has consistent row counts across
+        channels, padding with nans for missing entries. This function is called in
+        two places:
 
-        TODO O investigate whether pre-allocating large arrays (rather than
-        repeatedly creating new ones) might be faster, despite a cost in memory
+        1. During append operations (adding new data): `target_length = len(self) + 1`
+           Pads the existing array and makes room for the new observation being added.
+           The caller will fill the last row with the new value after this function
+           returns.
+
+        2. During memory update (retrieving all locations and features):
+           `target_length = len(self)`. Ensures all channels have the same
+           number of rows as the buffer.
+
+        The function handles cases where existing_vals might be empty (0-row arrays)
+        by allowing explicit specification of the desired width by passing new_val_len.
 
         Args:
-            existing_vals: Values already stored in buffer.
-            new_val_len: Shape (along first dim) of new values to be added.
+            existing_vals: Array to pad, with shape (n_rows, n_cols) where n_cols can be
+                0 for newly initialized empty arrays.
+            target_length: Number of rows the output array should have. If None,
+                defaults to len(self).
+            new_val_len: Width (number of columns) for the output array. If None,
+                inferred from existing_vals.shape[1]. Must be provided if existing_vals
+                is empty (shape[1] == 0), which occurs during first append of a new
+                feature, locations, or displacement.
 
         Returns:
-            The padded values.
+            Array with shape (target_length, new_val_len) where:
+            - Existing data from existing_vals is preserved at the beginning
+            - New rows are filled with np.nan
+            - If existing_vals already has target_length (or more) rows, returns it
+                unchanged
+
+        Raises:
+            ValueError: If new_val_len cannot be determined (existing_vals is empty
+                and new_val_len not provided), or if new_val_len is provided but
+                conflicts with the existing array's column dimension.
+
+        TODO O investigate whether pre-allocating large arrays (rather than
+        repeatedly creating new ones) might be faster, despite a cost in memory.
         """
-        # create new np array filled with nans of size (current_step, new_val_len)
-        new_vals = np.full((len(self) + 1, new_val_len), np.nan)
-        # Replace nans with stored values for this feature.
-        # existing_feat has shape (last_stored_step, attr_shape)
-        new_vals[: existing_vals.shape[0], : existing_vals.shape[1]] = existing_vals
-        return new_vals
+        if target_length is None:
+            target_length = len(self)
+
+        # Check for column dimension mismatch
+        if (
+            new_val_len is not None
+            and existing_vals.size > 0
+            and new_val_len != existing_vals.shape[1]
+        ):
+            raise ValueError(
+                f"Column dimension mismatch: existing array has "
+                f"{existing_vals.shape[1]} columns but new_val_len={new_val_len} "
+                f"was provided. Padding along column dimension is not allowed."
+            )
+
+        # Infer width from existing array if not provided
+        if new_val_len is None:
+            if existing_vals.size == 0:
+                raise ValueError(
+                    "Cannot infer width from empty array; must provide new_val_len"
+                )
+            new_val_len = existing_vals.shape[1]
+
+        # Early return if array is already long enough
+        if existing_vals.shape[0] >= target_length:
+            return existing_vals
+
+        padded = np.full((target_length, new_val_len), np.nan)
+        padded[: existing_vals.shape[0], : existing_vals.shape[1]] = existing_vals
+        return padded
 
 
 class BufferEncoder(json.JSONEncoder):
     """Encoder to turn the buffer into a JSON compliant format."""
 
-    _encoders: ClassVar[dict[type, Callable | json.JSONEncoder]] = {}
+    _encoders: ClassVar[dict[type, Callable]] = {}
 
     @classmethod
     def register(
@@ -659,7 +729,7 @@ class BufferEncoder(json.JSONEncoder):
         encoder = self._find(obj)
         if encoder is not None:
             return encoder(obj)
-        return json.JSONEncoder.default(self, obj)
+        return super().default(obj)
 
 
 BufferEncoder.register(np.generic, lambda obj: obj.item())

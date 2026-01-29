@@ -1,6 +1,6 @@
 defaults:
   - policy/naive_scan@motor_system_args.policy_args
-  - action_space/distant_agent_no_translation@motor_system_args.policy_args.action_sampler_args
+  - action_space/distant_agent@motor_system_args.policy_args.action_sampler_args
 
 motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
 motor_system_args:

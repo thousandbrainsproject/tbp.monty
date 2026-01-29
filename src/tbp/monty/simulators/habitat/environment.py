@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -13,11 +13,11 @@ from dataclasses import asdict, dataclass, is_dataclass
 from typing import TYPE_CHECKING, Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.environments.embodied_environment import (
-    EmbodiedEnvironment,
+from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     QuaternionWXYZ,
     SemanticID,
+    SimulatedObjectEnvironment,
     VectorXYZ,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
@@ -43,7 +43,6 @@ __all__ = [
     "SingleSensorAgentArgs",
 ]
 
-from tbp.monty.simulators.simulator import Simulator
 
 # Create agent and object configuration helper dataclasses
 
@@ -83,7 +82,7 @@ class AgentConfig:
     agent_args: dict | type[HabitatAgentArgs]
 
 
-class HabitatEnvironment(EmbodiedEnvironment):
+class HabitatEnvironment(SimulatedObjectEnvironment):
     """habitat-sim environment compatible with Monty.
 
     Attributes:
@@ -115,7 +114,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
             agent = agent_type(**args)
             self._agents.append(agent)
 
-        self._env: Simulator = HabitatSim(
+        self._env = HabitatSim(
             agents=self._agents,
             scene_id=scene_id,
             seed=seed,
