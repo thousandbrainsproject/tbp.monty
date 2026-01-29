@@ -322,7 +322,7 @@ def curvature_at_point(point_cloud, center_id, normal):
 
         # Rarely, "a" can be singular, causing numpy to throw an error.
         # This appears to be caused by the surface-agent gathering observations that
-        # are largely off the object, but not entirely (e.g. <25% visible), resulting 
+        # are largely off the object, but not entirely (e.g. <25% visible), resulting
         # in a system with insufficient data to be solvable.
         if non_singular_mat(a):
             params = np.linalg.solve(a, beta)
@@ -467,7 +467,7 @@ def principal_curvatures(
 
         # Rarely, "a" can be singular, causing numpy to throw an error.
         # This appears to be caused by the touch-sensor gathering observations that
-        # are largely off the object, but not entirely (e.g. <25% visible), resulting 
+        # are largely off the object, but not entirely (e.g. <25% visible), resulting
         # in a system with insufficient data to be solvable.
         if non_singular_mat(a_mat):
             # Step 2) do least-squares fit to get the parameters of the quadratic form
