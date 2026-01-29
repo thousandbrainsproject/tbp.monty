@@ -21,12 +21,7 @@ from omegaconf import OmegaConf
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
 EXPERIMENT_DIR = (
-    Path(__file__).parent.parent.parent
-    / "src"
-    / "tbp"
-    / "monty"
-    / "conf"
-    / "experiment"
+    Path(__file__).parents[2] / "src" / "tbp" / "monty" / "conf" / "experiment"
 )
 EXPERIMENTS = [x.stem for x in EXPERIMENT_DIR.glob("*.yaml")]
 EXPERIMENT_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots"

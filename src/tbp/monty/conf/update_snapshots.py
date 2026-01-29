@@ -20,7 +20,7 @@ from omegaconf import OmegaConf
 from tbp.monty.frameworks.run_env import setup_env
 from tbp.monty.hydra import register_resolvers
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.parent
+PROJECT_ROOT = Path(__file__).parents[4]
 
 
 def update_snapshots(
