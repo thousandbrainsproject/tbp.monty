@@ -242,25 +242,26 @@ def get_scaled_evidences(evidences, per_object=False):
     """
     scaled_evidences = {}
     if per_object:
-        for graph_id in evidences.keys():
-            scaled_evidences[graph_id] = (
-                evidences[graph_id] - np.min(evidences[graph_id])
-            ) / (np.max(evidences[graph_id]) - np.min(evidences[graph_id]))
-            # Put in range(-1, 1)
-            scaled_evidences[graph_id] = (scaled_evidences[graph_id] - 0.5) * 2
+        for graph_id, graph_evidences in evidences.items():
+            if len(graph_evidences):
+                min_evidence = np.min(graph_evidences)
+                max_evidence = np.max(graph_evidences)
+                scaled_evidences[graph_id] = (graph_evidences - min_evidence) / (
+                    max_evidence - min_evidence
+                )
+                # put in range(-1, 1)
+                scaled_evidences[graph_id] = (scaled_evidences[graph_id] - 0.5) * 2
     else:
         min_evidence = np.inf
         max_evidence = -np.inf
-        for graph_id in evidences.keys():
-            minev = np.min(evidences[graph_id])
-            if minev < min_evidence:
-                min_evidence = minev
-            maxev = np.max(evidences[graph_id])
-            if maxev > max_evidence:
-                max_evidence = maxev
-        for graph_id in evidences.keys():
+        for graph_evidences in evidences.values():
+            if len(graph_evidences):
+                min_evidence = min(min_evidence, np.min(graph_evidences))
+                max_evidence = max(max_evidence, np.max(graph_evidences))
+
+        for graph_id, graph_evidences in evidences.items():
             if max_evidence >= 1:
-                scaled_evidences[graph_id] = (evidences[graph_id] - min_evidence) / (
+                scaled_evidences[graph_id] = (graph_evidences - min_evidence) / (
                     max_evidence - min_evidence
                 )
                 # Put in range(-1, 1)
@@ -268,7 +269,7 @@ def get_scaled_evidences(evidences, per_object=False):
             else:
                 # If largest value is <1, don't scale them -> don't increase any
                 # evidences. Instead just make sure they are in the right range.
-                scaled_evidences[graph_id] = np.clip(evidences[graph_id], -1, 1)
+                scaled_evidences[graph_id] = np.clip(graph_evidences, -1, 1)
     return scaled_evidences
 
 

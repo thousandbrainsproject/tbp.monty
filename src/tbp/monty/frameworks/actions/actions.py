@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -87,7 +87,7 @@ class Action(Protocol):
 
     @staticmethod
     def _camel_case_to_snake_case(name: str) -> str:
-        """Expecting a class name in CamelCase returns it in snake_case.
+        """Given a class name in CamelCase, return it in snake_case.
 
         Returns:
             The class name in snake_case.
@@ -98,7 +98,7 @@ class Action(Protocol):
 
     @classmethod
     def action_name(cls) -> str:
-        """Generate action name based on class.
+        """Generate the action name based on the class.
 
         Used in static configuration, e.g., `FakeAction.action_name()`.
 
@@ -268,7 +268,7 @@ class OrientHorizontalActuator(Protocol):
 class OrientHorizontal(Action):
     """Move the agent in the horizontal plane.
 
-    Moves the agent in the horizontal plane compensating for the horizontal
+    Moves the agent in the horizontal plane, compensating for the horizontal
     motion with a rotation in the horizontal plane.
     """
 
@@ -307,7 +307,7 @@ class OrientVerticalActuator(Protocol):
 class OrientVertical(Action):
     """Move the agent in the vertical plane.
 
-    Moves the agent in the vertical plane compensating for the vertical motion
+    Moves the agent in the vertical plane, compensating for the vertical motion
     with a rotation in the vertical plane.
     """
 
@@ -347,7 +347,7 @@ class SetAgentPitch(Action):
     """Set the agent pitch rotation in degrees.
 
     Note that unless otherwise changed, the sensors maintain identity orientation
-    with regard to the agent. So, this will also adjust the pitch of agent's sensors
+    with regard to the agent. So this will also adjust the pitch of the agent's sensors
     with regard to the environment.
     """
 
@@ -413,7 +413,7 @@ class SetSensorPitch(Action):
     """Set the sensor pitch rotation.
 
     Note that this does not update the pitch of the agent. Imagine the body associated
-    with the eye remaining in place, while the eye moves.
+    with the eye remaining in place while the eye moves.
     """
 
     @staticmethod
@@ -570,7 +570,7 @@ class ActionJSONEncoder(JSONEncoder):
     """Encodes an Action into a JSON object.
 
     Action name is encoded as the `"action"` parameter. All other Action
-    parameters are encoded as key-value pairs in the JSON object
+    parameters are encoded as key-value pairs in the JSON object.
     """
 
     def default(self, obj: Any) -> Any:
@@ -580,7 +580,7 @@ class ActionJSONEncoder(JSONEncoder):
 
 
 class ActionJSONDecoder(JSONDecoder):
-    """Decodes JSON object into Actions.
+    """Decodes a JSON object into Actions.
 
     Requires that the JSON object contains an "action" key with the name of the action.
     Additionally, the JSON object must contain all action parameters used by the action.
