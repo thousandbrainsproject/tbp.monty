@@ -5,6 +5,9 @@ defaults:
   - /experiment/config/logging/pretrain@config.logging
   - /experiment/config/monty/clear_monty_config@config
   - /experiment/config/monty/two_lm_stacked@config.monty_config
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - /experiment/config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
+  - /experiment/config/monty/motor_system/policy/naive_scan@config.monty_config.motor_system_config.motor_system_args.policy_args
   - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
   - /experiment/config/environment/two_lm_stacked_distant_mount_habitat@config.env_interface_config
 
@@ -53,6 +56,10 @@ config:
           max_graph_size: 0.4
           num_model_voxels_per_dim: 200
           max_nodes_per_graph: 2000
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          fixed_amount: 10
   env_interface_config:
     env_init_args:
       data_path: null

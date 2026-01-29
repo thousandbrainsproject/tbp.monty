@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -15,6 +15,7 @@ from typing import Any, Literal
 import numpy as np
 import numpy.typing as npt
 from scipy.spatial.transform import Rotation
+from typing_extensions import Self
 
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
     DefaultFeatureEvidenceCalculator,
@@ -43,6 +44,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
 from tbp.monty.frameworks.utils.evidence_matching import (
     ChannelMapper,
     EvidenceSlopeTracker,
+    HypothesesSelection,
     InvalidEvidenceThresholdConfig,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (
@@ -71,32 +73,44 @@ class ChannelHypothesesResamplingTelemetry(ChannelHypothesesUpdateTelemetry):
     ages: npt.NDArray[np.int_]
     evidence_slopes: npt.NDArray[np.float64]
     removed_ids: npt.NDArray[np.int_]
+    max_slope: float
 
 
 class ResamplingHypothesesUpdater:
-    """Hypotheses updater that resamples hypotheses at every step.
+    """Hypotheses updater that adds and deletes hypotheses based on evidence slope.
 
-    This updater enables updating of the hypothesis space by resampling and rebuilding
-    the hypothesis space at every step. We resample hypotheses from the existing
-    hypothesis space, as well as new hypotheses informed by the sensed pose.
+    This updater enables updating of the hypothesis space by intelligently resampling
+    and rebuilding the hypothesis space when the model's prediction error is high. The
+    prediction error is determined based on the highest evidence slope over all the
+    objects hypothesis spaces. If the hypothesis with the highest slope is unable to
+    accumulate evidence at a high enough slope, i.e., none of the current hypotheses
+    match the incoming observations well, a sampling burst is triggered. A sampling
+    burst adds new hypotheses over a specified `sampling_burst_duration` number of
+    consecutive steps to all hypothesis spaces. This burst duration reduces the effect
+    of sensor noise. Hypotheses are deleted when their smoothed evidence slope is below
+    `deletion_trigger_slope`.
 
-    The resampling process is governed by two main parameters:
-      - `hypotheses_count_multiplier`: scales the total number of hypotheses every step.
-      - `hypotheses_existing_to_new_ratio`: controls the proportion of existing vs.
-          informed hypotheses during resampling.
+    The resampling process is governed by four main parameters:
+      - `sampling_multiplier`: Determines the number of hypotheses to resample
+        as a multiplier of the object graph nodes.
+      - `deletion_trigger_slope`: Hypotheses below this threshold are deleted.
+      - `sampling_burst_duration`: The number of consecutive steps in each burst.
+      - `burst_trigger_slope`: The threshold for triggering a sampling burst. This
+        threshold is applied to the highest global slope over all the hypotheses (i.e.,
+        over all objects' hypothesis spaces). The range of this slope is [-1, 2].
 
     To reproduce the behavior of `DefaultHypothesesUpdater` sampling a fixed number of
-    hypotheses only at the beginning of the episode, you can set
-    `hypotheses_count_multiplier=1.0` and `hypotheses_existing_to_new_ratio=0.0`.
+    hypotheses only at the beginning of the episode, you can set:
+        - `sampling_multiplier=2` (or `umbilical_num_poses` if PC undefined)
+        - `deletion_trigger_slope=-np.inf` (no deletion is allowed)
+        - `sampling_burst_duration=1` (sample the full burst over a single step)
+        - `burst_trigger_slope=-np.inf` (never trigger additional bursts)
 
-    Note:
-        It would be better to decouple the amount of hypotheses added from the amount
-        deleted in each step. At the moment, this is decided by the
-        `hypotheses_count_multiplier`. For example, when the multiplier is set to 1.0,
-        the hypotheses sampled is equal to the hypotheses removed. We ideally can
-        decouple theses then use a slope threshold to decide on which hypotheses to
-        remove, and use prediction error or other heuristics to decide to how many
-        hypotheses to resample.
+    These parameters will trigger a single-step burst at the first step of the episode.
+    Note that if the PC of the first observation is undetermined,
+    `sampling_multiplier` should be set to the value of `umbilical_num_poses` to
+    reproduce the exact results of `DefaultHypothesesUpdater`. In practice, this is
+    difficult to predict because it relies on the first sampled observation.
     """
 
     def __init__(
@@ -113,8 +127,10 @@ class ResamplingHypothesesUpdater:
         features_for_matching_selector: type[FeaturesForMatchingSelector] = (
             DefaultFeaturesForMatchingSelector
         ),
-        hypotheses_count_multiplier: float = 1.0,
-        hypotheses_existing_to_new_ratio: float = 0.1,
+        sampling_multiplier: float = 0.4,
+        deletion_trigger_slope: float = 0.5,
+        sampling_burst_duration: int = 5,
+        burst_trigger_slope: float = 1.0,
         include_telemetry: bool = False,
         initial_possible_poses: Literal["uniform", "informed"]
         | list[Rotation] = "informed",
@@ -148,11 +164,17 @@ class ResamplingHypothesesUpdater:
             features_for_matching_selector: Class to
                 select if features should be used for matching. Defaults to the default
                 selector.
-            hypotheses_count_multiplier: Scales the total number of hypotheses
-                every step. Defaults to 1.0.
-            hypotheses_existing_to_new_ratio: Controls the proportion of the
-                existing vs. newly sampled hypotheses during resampling. Defaults to
-                0.0.
+            sampling_multiplier: Determines the number of hypotheses to resample
+                as a multiplier of the object graph nodes. Value of 0.0 results in no
+                resampling. Value can be greater than 1 but not to exceed the
+                `num_hyps_per_node` of the current step. Defaults to 0.4.
+            deletion_trigger_slope: Hypotheses below this threshold are deleted.
+                Expected range matches the range of step evidence change, i.e.,
+                [-1.0, 2.0]. Defaults to 0.5.
+            sampling_burst_duration: The number of steps in every sampling burst.
+                Defaults to 5.
+            burst_trigger_slope: A threshold below which a sampling burst is triggered.
+                Defaults to 1.0.
             include_telemetry: Flag to control if we want to calculate and return the
                 resampling telemetry in the `update_hypotheses` method. Defaults to
                 False.
@@ -177,6 +199,7 @@ class ResamplingHypothesesUpdater:
                 umbilical points (i.e., points where PC directions are undefined).
 
         Raises:
+            ValueError: If the sampling_multiplier is less than 0
             InvalidEvidenceThresholdConfig: If `evidence_threshold_config` is not
                 set to "all".
 
@@ -191,6 +214,10 @@ class ResamplingHypothesesUpdater:
         self.feature_evidence_increment = feature_evidence_increment
         self.feature_weights = feature_weights
         self.features_for_matching_selector = features_for_matching_selector
+        self.sampling_multiplier = sampling_multiplier
+        self.deletion_trigger_slope = deletion_trigger_slope
+        self.sampling_burst_duration = sampling_burst_duration
+        self.burst_trigger_slope = burst_trigger_slope
         self.graph_memory = graph_memory
         self.include_telemetry = include_telemetry
         self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
@@ -214,18 +241,45 @@ class ResamplingHypothesesUpdater:
             use_features_for_matching=self.use_features_for_matching,
         )
 
-        # Controls the shrinking or growth of hypothesis space size
-        # Cannot be less than 0
-        self.hypotheses_count_multiplier = max(0, hypotheses_count_multiplier)
+        # resampling multiplier should not be less than 0 (no resampling)
+        if self.sampling_multiplier < 0:
+            raise ValueError("sampling_multiplier should be >= 0")
 
-        # Controls the ratio of existing to newly sampled hypotheses
-        # Bounded between 0 and 1
-        self.hypotheses_existing_to_new_ratio = max(
-            0, min(hypotheses_existing_to_new_ratio, 1)
-        )
+        self.reset()
+
+    def reset(self) -> None:
+        self.sampling_burst_steps = 0
 
         # Dictionary of slope trackers, one for each graph_id
         self.evidence_slope_trackers: dict[str, EvidenceSlopeTracker] = {}
+
+    def __enter__(self) -> Self:
+        """Enter context manager, runs before updating the hypotheses.
+
+        We calculate the max slope and update resampling parameters before running the
+        hypotheses update loop/threads over all the graph_ids and channels.
+
+        Returns:
+            Self: The context manager instance.
+        """
+        self.max_slope = self._max_global_slope()
+
+        if (
+            self.max_slope <= self.burst_trigger_slope
+            and self.sampling_burst_steps == 0
+        ):
+            self.sampling_burst_steps = self.sampling_burst_duration
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit context manager, runs after updating the hypotheses.
+
+        We decrement the burst steps by 1 every step for the duration of the burst.
+        """
+        if not exc_type:
+            if self.sampling_burst_steps > 0:
+                self.sampling_burst_steps -= 1
 
     def update_hypotheses(
         self,
@@ -259,8 +313,7 @@ class ResamplingHypothesesUpdater:
             update telemetry is a dictionary containing:
                 - added_ids: IDs of hypotheses added during resampling at the current
                     timestep.
-                - ages: The ages of the hypotheses as tracked by the
-                    `EvidenceSlopeTracker`.
+                - ages: The ages of hypotheses as tracked by the `EvidenceSlopeTracker`.
                 - evidence_slopes: The slopes extracted from the `EvidenceSlopeTracker`.
                 - removed_ids: IDs of hypotheses removed during resampling. Note that
                     these IDs can only be used to index hypotheses from the previous
@@ -284,7 +337,7 @@ class ResamplingHypothesesUpdater:
 
         for input_channel in input_channels_to_use:
             # Calculate sample count for each type
-            existing_count, informed_count = self._sample_count(
+            hypotheses_selection, informed_count = self._sample_count(
                 input_channel=input_channel,
                 channel_features=features[input_channel],
                 graph_id=graph_id,
@@ -293,8 +346,8 @@ class ResamplingHypothesesUpdater:
             )
 
             # Sample hypotheses based on their type
-            existing_hypotheses, remove_ids = self._sample_existing(
-                existing_count=existing_count,
+            existing_hypotheses = self._sample_existing(
+                hypotheses_selection=hypotheses_selection,
                 hypotheses=hypotheses,
                 input_channel=input_channel,
                 mapper=mapper,
@@ -310,7 +363,7 @@ class ResamplingHypothesesUpdater:
 
             # We only displace existing hypotheses since the newly resampled hypotheses
             # should not be affected by the displacement from the last sensory input.
-            if existing_count > 0:
+            if len(hypotheses_selection.maintain_ids):
                 existing_hypotheses, channel_hypothesis_displacer_telemetry = (
                     self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
                         channel_displacement=displacements[input_channel],
@@ -332,38 +385,51 @@ class ResamplingHypothesesUpdater:
                 evidence=np.hstack(
                     [existing_hypotheses.evidence, informed_hypotheses.evidence]
                 ),
+                possible=np.hstack(
+                    [existing_hypotheses.possible, informed_hypotheses.possible]
+                ),
             )
             hypotheses_updates.append(channel_hypotheses)
 
             # Update tracker evidence
             tracker.update(channel_hypotheses.evidence, input_channel)
 
-            if self.include_telemetry:
-                resampling_telemetry[input_channel] = asdict(
-                    ChannelHypothesesResamplingTelemetry(
-                        channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry,
-                        added_ids=(
-                            np.arange(len(channel_hypotheses.evidence))[
-                                -len(informed_hypotheses.evidence) :
-                            ]
-                            if len(informed_hypotheses.evidence) > 0
-                            else np.array([], dtype=np.int_)
-                        ),
-                        ages=tracker.hyp_ages(input_channel),
-                        evidence_slopes=tracker.calculate_slopes(input_channel),
-                        removed_ids=remove_ids,
-                    )
+            # Telemetry update
+            resampling_telemetry[input_channel] = asdict(
+                ChannelHypothesesResamplingTelemetry(
+                    channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry,
+                    added_ids=(
+                        np.arange(len(channel_hypotheses.evidence))[
+                            -len(informed_hypotheses.evidence) :
+                        ]
+                        if len(informed_hypotheses.evidence) > 0
+                        else np.array([], dtype=np.int_)
+                    ),
+                    ages=tracker.hyp_ages(input_channel),
+                    evidence_slopes=tracker.calculate_slopes(input_channel),
+                    removed_ids=hypotheses_selection.remove_ids,
+                    max_slope=self.max_slope,
                 )
-            else:
-                # Still return prediction error.
-                # TODO: make this nicer like dependent on log_level.
-                resampling_telemetry[input_channel] = asdict(
-                    ChannelHypothesesUpdateTelemetry(
-                        channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry
-                    )
-                )
+            )
 
-        return hypotheses_updates, resampling_telemetry
+        # Still return prediction error.
+        # TODO: make this nicer like dependent on log_level.
+        if not self.include_telemetry:
+            updater_telemetry = {
+                k: asdict(
+                    ChannelHypothesesUpdateTelemetry(
+                        channel_hypothesis_displacer_telemetry=v[
+                            "channel_hypothesis_displacer_telemetry"
+                        ]
+                    )
+                )
+                for k, v in resampling_telemetry.items()
+            }
+
+        return (
+            hypotheses_updates,
+            resampling_telemetry if self.include_telemetry else updater_telemetry,
+        )
 
     def _num_hyps_per_node(self, channel_features: dict) -> int:
         """Calculate the number of hypotheses per node.
@@ -390,7 +456,7 @@ class ResamplingHypothesesUpdater:
         graph_id: str,
         mapper: ChannelMapper,
         tracker: EvidenceSlopeTracker,
-    ) -> tuple[int, int]:
+    ) -> tuple[HypothesesSelection, int]:
         """Calculates the number of existing and informed hypotheses needed.
 
         Args:
@@ -403,76 +469,67 @@ class ResamplingHypothesesUpdater:
                 graph_id
 
         Returns:
-            A tuple containing the number of existing and new hypotheses needed.
-            Existing hypotheses are maintained from existing ones while new hypotheses
-            will be initialized, informed by pose sensory information.
+            A tuple containing the hypotheses selection and count of new hypotheses
+            needed. Hypotheses selection are maintained from existing ones while new
+            hypotheses will be initialized, informed by pose sensory information.
 
         Notes:
-            This function takes into account the following ratios:
-              - `hypotheses_count_multiplier`: multiplier for total count calculation.
-              - `hypotheses_existing_to_new_ratio`: ratio between existing and new
-                hypotheses to be sampled.
+            This function takes into account the following parameters:
+              - `sampling_multiplier`: The number of hypotheses to resample. This
+                is defined as a multiplier of the number of nodes in the object graph.
+              - `deletion_trigger_slope`: This dictates how many hypotheses to
+                delete. Hypotheses below this threshold are deleted.
+              - `sampling_burst_steps`: The remaining number of burst steps. This value
+                is decremented in the `post_step` function.
         """
-        graph_num_points = self.graph_memory.get_locations_in_graph(
-            graph_id, input_channel
-        ).shape[0]
-        num_hyps_per_node = self._num_hyps_per_node(channel_features)
-        full_informed_count = graph_num_points * num_hyps_per_node
+        new_informed = 0
+        if self.sampling_burst_steps > 0:
+            graph_num_points = self.graph_memory.get_locations_in_graph(
+                graph_id, input_channel
+            ).shape[0]
+            num_hyps_per_node = self._num_hyps_per_node(channel_features)
 
-        # If hypothesis space does not exist, we initialize with informed hypotheses
-        if input_channel not in mapper.channels:
-            return 0, full_informed_count
+            # This makes sure that we do not request more than the available number of
+            # informed hypotheses
+            sampling_multiplier = min(self.sampling_multiplier, num_hyps_per_node)
 
-        # Calculate the total number of hypotheses needed
-        current = mapper.channel_size(input_channel)
-        needed = current * self.hypotheses_count_multiplier
+            # Calculate the total number of informed hypotheses to be resampled
+            new_informed = round(graph_num_points * sampling_multiplier)
 
-        # Calculate how many existing and new hypotheses needed
-        existing_maintained, new_informed = (
-            needed * (1 - self.hypotheses_existing_to_new_ratio),
-            needed * self.hypotheses_existing_to_new_ratio,
-        )
-
-        # Needed existing hypotheses should not exceed the existing hypotheses
-        # if trying to maintain more hypotheses, set the available count as ceiling
-
-        # We make sure that `new_informed` is divisible by the number of hypotheses
-        # per graph node. This allows for sampling the graph nodes first (according
-        # to evidence) then multiply by the `num_hyps_per_node`, as shown in
-        # `_sample_informed`.
-        if existing_maintained > current:
-            existing_maintained = current
-            new_informed = needed - current
+            # Ensure the `new_informed` is divisible by `num_hyps_per_node`
             new_informed -= new_informed % num_hyps_per_node
 
-        # Needed informed hypotheses should not exceed the available informed hypotheses
-        # If trying to sample more hypotheses, set the available count as ceiling
-        if new_informed > full_informed_count:
-            new_informed = full_informed_count
-
-        # Additional adjustment based on valid mask
-        must_keep = int(np.sum(~tracker.removable_indices_mask(input_channel)))
-        if must_keep > existing_maintained:
-            existing_maintained = must_keep
-            new_informed = needed - existing_maintained
+        # Returns a selection of hypotheses to maintain/delete
+        hypotheses_selection = (
+            tracker.select_hypotheses(
+                slope_threshold=self.deletion_trigger_slope, channel=input_channel
+            )
+            if input_channel in mapper.channels
+            else HypothesesSelection(maintain_mask=[])
+        )
 
         return (
-            int(existing_maintained),
-            int(new_informed),
+            hypotheses_selection,
+            new_informed,
         )
 
     def _sample_existing(
         self,
-        existing_count: int,
+        hypotheses_selection: HypothesesSelection,
         hypotheses: Hypotheses,
         input_channel: str,
         mapper: ChannelMapper,
         tracker: EvidenceSlopeTracker,
-    ) -> tuple[ChannelHypotheses, npt.NDArray[np.int_]]:
+    ) -> ChannelHypotheses:
         """Samples the specified number of existing hypotheses to retain.
 
+        Note that we are not sampling the existing hypotheses in a probabilistic
+        sense (e.g., random or seed-generation). Instead, those are deterministically
+        determined using the slope tracker and the deletion threshold, then maintained
+        by filtering the list of existing hypotheses.
+
         Args:
-            existing_count: Number of existing hypotheses to sample.
+            hypotheses_selection: The selection of hypotheses to maintain/remove.
             hypotheses: Hypotheses for all input channels in the graph_id.
             input_channel: The channel for which to sample existing hypotheses.
             mapper: Mapper for the graph_id to extract data from
@@ -481,39 +538,34 @@ class ResamplingHypothesesUpdater:
                 graph_id
 
         Returns:
-            A tuple of sampled existing hypotheses and the IDs of the hypotheses to
-            remove.
+            The sampled existing hypotheses.
         """
+        maintain_ids = hypotheses_selection.maintain_ids
+
         # Return empty arrays for no hypotheses to sample
-        if existing_count == 0:
+        if len(maintain_ids) == 0:
             # Clear all channel hypotheses from the tracker
-            remove_ids = np.arange(tracker.total_size(input_channel))
             tracker.clear_hyp(input_channel)
 
-            channel_hypotheses = ChannelHypotheses(
+            return ChannelHypotheses(
                 input_channel=input_channel,
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
                 evidence=np.zeros(0),
+                possible=np.zeros(0, dtype=np.bool_),
             )
-            return channel_hypotheses, remove_ids
-
-        keep_ids, remove_ids = tracker.calculate_keep_and_remove_ids(
-            num_keep=existing_count,
-            channel=input_channel,
-        )
 
         # Update tracker by removing the remove_ids
-        tracker.remove_hyp(remove_ids, input_channel)
+        tracker.remove_hyp(hypotheses_selection.remove_ids, input_channel)
 
         channel_hypotheses = mapper.extract_hypotheses(hypotheses, input_channel)
-        maintained_channel_hypotheses = ChannelHypotheses(
+        return ChannelHypotheses(
             input_channel=channel_hypotheses.input_channel,
-            locations=channel_hypotheses.locations[keep_ids],
-            poses=channel_hypotheses.poses[keep_ids],
-            evidence=channel_hypotheses.evidence[keep_ids],
+            locations=channel_hypotheses.locations[maintain_ids],
+            poses=channel_hypotheses.poses[maintain_ids],
+            evidence=channel_hypotheses.evidence[maintain_ids],
+            possible=channel_hypotheses.possible[maintain_ids],
         )
-        return maintained_channel_hypotheses, remove_ids
 
     def _sample_informed(
         self,
@@ -563,6 +615,7 @@ class ResamplingHypothesesUpdater:
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
                 evidence=np.zeros(0),
+                possible=np.zeros(0, dtype=np.bool_),
             )
 
         num_hyps_per_node = self._num_hyps_per_node(channel_features)
@@ -640,6 +693,9 @@ class ResamplingHypothesesUpdater:
                 ]
             )
 
+        # newly sampled hypotheses cannot be possible
+        possible_hyp = np.zeros_like(selected_feature_evidence, dtype=np.bool_)
+
         # Add hypotheses to slope trackers
         tracker.add_hyp(selected_feature_evidence.shape[0], input_channel)
 
@@ -648,4 +704,25 @@ class ResamplingHypothesesUpdater:
             locations=selected_locations,
             poses=selected_rotations,
             evidence=selected_feature_evidence,
+            possible=possible_hyp,
         )
+
+    def _max_global_slope(self) -> float:
+        """Compute the maximum slope over all objects and channels.
+
+        Returns:
+            The maximum global slope if finite, otherwise float("nan")
+        """
+        max_slope = float("-inf")
+
+        for tracker in self.evidence_slope_trackers.values():
+            for channel in tracker.evidence_buffer.keys():
+                if tracker.total_size(channel) == 0:
+                    continue
+
+                slopes = tracker.calculate_slopes(channel)
+                finite_slopes = slopes[np.isfinite(slopes)]
+                if finite_slopes.size:
+                    max_slope = max(max_slope, np.max(finite_slopes))
+
+        return max_slope

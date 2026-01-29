@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,10 +9,17 @@
 # https://opensource.org/licenses/MIT.
 
 
+import logging
+
 import torch
 from tqdm import tqdm
 
-from .object_recognition_experiments import MontyObjectRecognitionExperiment
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.experiments.object_recognition_experiments import (
+    MontyObjectRecognitionExperiment,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class DataCollectionExperiment(MontyObjectRecognitionExperiment):
@@ -66,8 +73,21 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
 
     def pre_episode(self):
         """Pre episode where we pass target object to the model for logging."""
-        self.model.pre_episode()
-        self.env_interface.pre_episode()
+        if self.experiment_mode is ExperimentMode.TRAIN:
+            logger.info(
+                f"running train epoch {self.train_epochs} "
+                f"train episode {self.train_episodes}"
+            )
+        else:
+            logger.info(
+                f"running eval epoch {self.eval_epochs} "
+                f"eval episode {self.eval_episodes}"
+            )
+
+        self.reset_episode_rng()
+
+        self.model.pre_episode(self.rng)
+        self.env_interface.pre_episode(self.rng)
         self.max_steps = self.max_train_steps
         self.logger_handler.pre_episode(self.logger_args)
         if self.show_sensor_output:
