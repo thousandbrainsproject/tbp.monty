@@ -8,9 +8,9 @@ NOTE: While this RFC process is document-based, you are encouraged to also inclu
 > A brief explanation of the feature.
 - Learn Policy using RL
 
-**Goal** - to make learning and task execution more brain-like using graphs and without focusing on deep neural networks. The software implementation is based on reinforcement learning (RL).
+**Idea** - to make learning and task execution more brain-like using graphs and without focusing on deep neural networks.
 
-The brain has a model of the world and almost always "models" and predicts something, so let's define the terms model-free and model-based in RL. In RL terms, "model-free" doesn't mean "no models at all," but "no explicit model of the world's transitions used for planning at the moment of choice." When the task is familiar, the choice is almost a direct "situation → action" without explicit planning.
+The brain has a model of the world and almost always "models" and predicts something, so let's clarify the terms model-free and model-based in RL. In RL terms, "model-free" doesn't mean "no models at all," but "no explicit model of the world's transitions used for planning at the moment of choice." When the task is familiar, the choice is almost a direct "situation → action" without explicit planning.
 
 Let's define terms:  
 ⦁ World model: an explicit representation of transitions and rewards (s, a→s2, r) that can be scrolled forward for "mental" planning.  
@@ -18,20 +18,21 @@ Let's define terms:
 
 **Models** are stored as graphs, where the vertices are states and the edges are transition actions.
 
-**State** (s) - this is a code/key as a concatenation of context
+**State** (s) - this is a code/key as a concatenation of context  
     What can be included in the state code:  
     ⦁ Sensory cues of scene objects.  
-    These can include images, sounds, smells, kinesthetics, symbols, etc.
+    These can include images, sounds, smells, kinesthetics, etc.
     The scene code is formed as a concatenation of the codes of the sensory components included in the scene.  
     ⦁ Spatial code (scenes / locations / coordinates / distances).  
     For testing, coordinates / distances can be taken from an external environment emulator, such as MuJoCo. Use a primitive scenegraph based on scene object relationships (left_of / right_of / above / below / inside / overlaps).  
     ⦁ Temporal/ordinal context (e.g., recent k steps).   
-    For testing, use a sequence of recent states and actions.
+    For testing, use a sequence of recent states and actions.  
     ⦁ Internal state: goal, motivation.  
     The goal is the desired state as an object of sensory input, a target image, a vocal description of what to do.
     Motivation is a personal, subjective factor that can be defined as a novelty factor.
     The weight of the components is flexibly modulated.  
-    Each context component has its own encoding implementation. For testing, existing neural network implementations can be used. For the project, a transition to Monty Cortical Messaging Protocol, State class, SDR or similar will be necessary. 
+    Each context component has its own encoding implementation. For testing, existing neural network implementations can be used.  
+    For the project, a transition to Monty Cortical Messaging Protocol, State class, SDR or similar will be necessary. 
 
 **Action** (a) - An action from a given state that transitions the agent to another state. For example, an action in an external environment emulator format (MuJoCo and similar).
 
@@ -52,18 +53,18 @@ The policy model is the same graph as the world model, only with different attri
 
 **Search and update (s,a)**  
 To search and update the model, previously saved states and actions (s,a) are taken into account.
-An absolute match is not sought, but rather a search for the most similar states based on their state codes.
-For fast approximate nearest neighbor search (ANN), an index can be built using the HNSW (Hierarchical Navigable Small World Graph) algorithm.
-Search algorithm for (s,a):
-Find the most similar past states above a certain threshold using the index.
-If none are found, add the state to the graph and index the state code for fast proximity searching.
-If there are any, iterate over the actions performed in this state and select the most similar one. Save/update the average state code in the graph and in the index.
-The required parameters are added as attributes to the graph vertices and edges..
+An absolute match is not a good approach, but rather a search for the most similar states based on their state codes.
+For fast approximate nearest neighbor search (ANN), an index can be built using the HNSW (Hierarchical Navigable Small World Graph) algorithm.  
+Search algorithm for (s,a):  
+Find the most similar past states above a certain threshold using the index.  
+If none are found, add the state to the graph and index the state code for fast proximity searching.  
+If there are any, iterate over the actions performed in this state and select the most similar one. Save/update the average state code in the graph and in the index.  
+The required parameters are added as attributes to the graph vertices and edges.
 
 
 **Planning**  
-⦁ For new/complex goals, planning is used using a world model: "what will happen if..." and selecting a step with the best expected outcome.
-If a state has ready-made actions with a high Q (higher than the threshold), then there is high confidence, and no planning is needed.
+For new/complex goals, planning is used using a world model: "what will happen if..." and selecting a step with the best expected outcome. It's a "model-based" approach.  
+If a state has ready-made actions with a high Q (higher than the threshold), then there is high confidence, and no planning is needed. It's a "model-free" approach.
 
 Below are the steps and pseudocode where we combine planning and interaction with the real environment:  
 ```
@@ -75,7 +76,7 @@ for step in range(steps): # steps - number of interaction steps
             # In a loop, we move depth-first and breadth-first.
             To select actions during planning, we determine the possible actions in the current state. We use all actions that have ever been encountered from this state s in the world model. If the model doesn't yet know any actions, we can't plan yet.
             We use the metrics N(s), N(s,a) — the number of visits and executions of an action from a state.
-            For the planning iteration, we take unused actions and select the top_k most promising ones according to the heuristic metric adv(s). For example, adv could be the modulus of the inverse distance from the grabber to the target. 
+            For the planning iteration, we take unused actions and select the top_k most promising ones according to the heuristic metric adv(s). For example, adv(s) could be the absolute value of the inverse distance from the grabber to the target. 
             2) For each child, there is a separate rollout and backup.
             for _, a_child, s2_child in top_k:
                 r_child = reward_model(s, a_child, s2_child)
@@ -88,9 +89,9 @@ for step in range(steps): # steps - number of interaction steps
                 Nsa[(s, a_child)] += 1
                 # Add to offline replay
                 push_replay(abs(delta), s, a_child)
-                Prioritized offline replay: a queue with priority |δ| is maintained;
+                Prioritized offline replay: a queue with priority |delta| is maintained;
                 After each online step and plan backups, candidates are added;
-                offline_replay runs the K with the largest prediction errors |δ|,
+                offline_replay runs the K with the largest prediction errors |delta|,
                 propagating changes to ancestors along the known graph or through learned predecessors.
                 This is analogous to backpropagation in neural networks.
                 
@@ -99,7 +100,7 @@ for step in range(steps): # steps - number of interaction steps
                     s2 = transition_model_step(s, a)
                     Selection criteria:
                     3.1) q = Q[(s, a)]
-                    3.2) ucb = self.beta * math.sqrt(math.log(1 + self.Ns[s]) / (1 + self.Nsa[(s, a)]))
+                    3.2) ucb = self.beta * math.sqrt(math.log(1 + Ns[s]) / (1 + Nsa[(s, a)]))
                     # UCB (Upper Confidence Bound) bonus is an addition to the action score that implements “optimism under uncertainty” and balances exploration/exploitation.
                     3.3) adv = alpha * adv(s2)
                     score = q + ucb + adv
@@ -107,7 +108,7 @@ for step in range(steps): # steps - number of interaction steps
             4) Perform the best action, make a transition based on the world model, and calculate the reward.
             s2 = transition_model_step(s, a)
             r = reward_model(s, a, s2)
-            Adding an action and a reward to the path (s, a, r)
+            Adding action and reward to the path (s, a, r)
             
             5) Move on to the next step in depth
             s_plan = s2_plan 
@@ -125,7 +126,7 @@ for step in range(steps): # steps - number of interaction steps
             push_replay(abs(delta), ss, aa)
             
 
-    7) After preliminary planning, selecting the policy action with the maximum value Q(s, a)
+    7) After preliminary planning, selecting the action based on the Policy model with the maximum value Q(s, a)
     
     8) Performing an action in a real environment, an example from MuJoCo
     obs, r, terminated, truncated, info = env.step(a)
@@ -141,7 +142,7 @@ for step in range(steps): # steps - number of interaction steps
     Nsa[(s, a)] += 1
     push_replay(abs(delta), s, a)
 
-    # Prioritized backups of predecessors according to the current model
+    # Prioritized backups of predecessors according to the current World model
     cnt = 0
     while replay_pq and cnt < limit:
         negp, (s, a) = heapq.heappop(replay_pq)
@@ -164,6 +165,8 @@ for step in range(steps): # steps - number of interaction steps
 
     11) Continue until reach the goal or reach the maximum number of steps.
 ```
+
+This proposal is not completed approach / implementation and there are many open questions. I've made some toy testing but of course It needs more research and testing iterations.  
 
 
 # Motivation
@@ -191,14 +194,14 @@ https://thousandbrainsproject.readme.io/docs/learn-policy-using-rl
 >
 > For implementation-oriented RFCs, this section should focus on how developer contributors should think about the change and give examples of its concrete impact. For administrative RFCs, this section should provide an example-driven introduction to the policy and explain its impact in concrete terms.
 
-The reinforcement learning (RL) module can work alongside existing Monty functionality.  
+It seems that the reinforcement learning (RL) module can work alongside existing Monty functionality.  
 Integration can be done at the level of Monty Cortical Messaging Protocol.  
 RL input will be context/state in the form of Monty State class.  
 RL outputs actions, which are passed to and executed in Monty Motor System.  
 Unique RL entities not present in the current Monty include World and Policy models.  
 
-For testing toy examples, I used the external MuJoCo environment.
-Simulator_habitat is resource-intensive and did not install on my local Ubuntu.
+For testing toy examples, I used the external MuJoCo environment without Monty integration.
+Simulator_habitat looks resource-intensive and could not be installed on my local Ubuntu.
 
 
 # Reference-level explanation
