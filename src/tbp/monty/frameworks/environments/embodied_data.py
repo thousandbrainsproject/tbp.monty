@@ -189,11 +189,11 @@ class EnvironmentInterface:
 
 
 class EnvironmentInterfacePerObject(EnvironmentInterface):
-    """Interface for testing on environment with one "primary target" object.
+    """Interface for testing in an environment with one "primary target" object.
 
-    Interface for testing on environment where we load one "primary target" object
-    at a time; in addition, one can optionally load other "distractor" objects to the
-    environment
+    Interface for testing in an environment where we load one "primary target" object
+    at a time; in addition, we can optionally add other "distractor" objects to the
+    environment.
 
     Has a list of primary target objects, swapping these objects in and out for episodes
     without resetting the environment. The objects are initialized with parameters such
@@ -226,8 +226,8 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
                 and scale of objects when re-initializing.
             parent_to_child_mapping: dictionary mapping parent objects to their child
                 objects. Used for logging.
-            *args: ?
-            **kwargs: ?
+            *args: passed to `super()` call
+            **kwargs: passed to `super()` call
 
         Raises:
             TypeError: If `object_names` is not a list or dictionary
@@ -334,7 +334,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         Also add any distractor objects if required.
 
         Args:
-            idx: Index of the new object and ints parameters in object_params
+            idx: Index of the new object and its parameters in object_params
         """
         assert idx <= self.n_objects, "idx must be <= self.n_objects"
         self.env.remove_all_objects()
@@ -369,7 +369,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
                 self.primary_target["object"]
             ]
         elif self.parent_to_child_mapping:
-            # if mapping contains keys (i.e. not an empty dict) is should contain the
+            # if mapping contains keys (i.e. not an empty dict) it should contain the
             # target object
             logger.warning(
                 f"target object {self.primary_target['object']} not in",
@@ -388,9 +388,9 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         Args:
             primary_target_obj : The ID of the object which is the primary target in
                 the scene.
-            init_params: parameters used to initialize the object, e.g.
+            init_params: Parameters used to initialize the object, e.g.
                 orientation; for now, these are identical to the primary target
-                except for the object ID
+                except for the object ID.
             primary_target_name: name of the primary target object
         """
         # Sample distractor objects from those that are not the primary target; this
@@ -406,7 +406,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
             new_obj_label = self.rng.choice(sampling_list)
             new_init_params["semantic_id"] = self.semantic_label_to_id[new_obj_label]
-            # TODO clean up the **unpacking used
+            # TODO clean up the `**` unpacking used
             self.env.add_object(
                 name=new_obj_label,
                 **new_init_params,
@@ -525,7 +525,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
     def first_step(self):
         """Carry out particular motor-system state updates required on the first step.
 
-        TODO ?can get rid of this by appropriately initializing motor_only_step
+        TODO: can get rid of this by appropriately initializing motor_only_step
 
         Returns:
             The observation from the first step.
@@ -553,8 +553,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         Args:
             sensor_id: The ID of the sensor to use for positioning.
             allow_translation: Whether to allow movement toward the object via
-                the motor systems's move_close_enough method. If False, only
-                orientienting movements are performed. Defaults to True.
+                the motor system's move_close_enough method. If False, only
+                orienting movements are performed. Defaults to True.
             max_orientation_attempts: The maximum number of orientation attempts
                 allowed before giving up and truncating the procedure indicating that
                 the sensor is not on the target object.
@@ -640,9 +640,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             "Attempting a 'jump' like movement to evaluate an object hypothesis"
         )
 
-        # Store the current location and orientation of the agent
-        # If the hypothesis-guided jump is unsuccesful (e.g. to empty space,
-        # or inside an object, we return here)
+        # Store the current location and orientation of the agent.
+        # If the hypothesis-guided jump is unsuccessful (e.g. to empty space
+        # or inside an object), we return here.
         pre_jump_state = self.motor_system._state[self.motor_system._policy.agent_id]
 
         # Check that all sensors have identical rotations - this is because actions
@@ -667,10 +667,10 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         )
 
         # Update observations and motor system-state based on new pose, accounting
-        # for resetting both the agent, as well as the poses of its coupled sensors;
-        # this is necessary for the distant agent, which pivots the camera around
+        # for resetting both the agent, as well as the poses of its coupled sensors.
+        # This is necessary for the distant agent, which pivots the camera around
         # like a ball-and-socket joint; note the surface agent does not
-        # modify this from the the unit quaternion and [0, 0, 0] position
+        # modify this from the unit quaternion and [0, 0, 0] position
         # anyways; further note this is globally applied to all sensors.
         set_agent_pose = SetAgentPose(
             agent_id=self.motor_system._policy.agent_id,
@@ -697,7 +697,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         )
 
         # If depth_at_center < 1.0, there is a visible element within 1 meter of the
-        # view-finder's central pixel)
+        # view-finder's central pixel.
         if depth_at_center < 1.0:
             self.handle_successful_jump()
 
@@ -734,7 +734,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         if isinstance(self.motor_system._policy, SurfacePolicy):
             # For the surface-agent policy, update last action as if we have
             # just moved tangentially
-            # Results in us seemlessly transitioning into the typical
+            # Results in us seamlessly transitioning into the typical
             # corrective movements (forward or orientation) of the surface-agent
             # policy
             self.motor_system._policy.action = MoveTangentially(
@@ -743,7 +743,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
                 direction=(0, 0, 0),
             )
 
-            # TODO cleanup where this is performed, and make variable names more general
+            # TODO clean up where this is performed, and make variable names more
+            #   general
             # TODO also only log this when we are doing detailed logging
             # TODO M clean up these action details loggings; this may need to remain
             # local to a "motor-system buffer" given that these are model-free

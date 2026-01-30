@@ -24,7 +24,9 @@ from tbp.monty.frameworks.run import output_dir_from_run_name
 
 class TutorialsTest(TestCase):
     def test_first_experiment(self):
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=["experiment=tutorial/first_experiment"],
@@ -34,7 +36,9 @@ class TutorialsTest(TestCase):
                 experiment.run()
 
     def test_training_and_inference(self):
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=["experiment=tutorial/surf_agent_2obj_train"],
@@ -63,7 +67,9 @@ class TutorialsTest(TestCase):
                 experiment.run()
 
     def test_unsupervised_continual_learning(self):
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=[
@@ -79,7 +85,9 @@ class TutorialsTest(TestCase):
                 experiment.run()
 
     def test_multiple_learning_modules(self):
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=["experiment=tutorial/dist_agent_5lm_2obj_train"],
@@ -106,7 +114,9 @@ class TutorialsTest(TestCase):
                 experiment.run()
 
     def test_omniglot_training_and_inference(self):
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=["experiment=tutorial/omniglot_training"],
@@ -133,7 +143,9 @@ class TutorialsTest(TestCase):
                 experiment.run()
 
     def test_monty_meets_world_2dimage_inference(self):
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=[

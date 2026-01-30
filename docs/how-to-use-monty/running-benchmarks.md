@@ -18,7 +18,7 @@ To run a benchmark experiment, simply call
 python run.py experiment=run_name
 ```
 
-and replace `run_name` with the name of the benchmark experiment. All benchmark experiment configs are in the `conf/experiment/` folder. So for example, for running the quickest benchmark experiment you would call
+and replace `run_name` with the name of the benchmark experiment. All benchmark experiment configs are in the `src/tbp/monty/conf/experiment/` folder. So for example, for running the quickest benchmark experiment you would call
 
 ```shell
 python run.py experiment=randrot_10distinctobj_surf_agent
