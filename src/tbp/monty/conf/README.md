@@ -63,4 +63,4 @@ The `test` folder contains Monty test configurations.
 
 ## Validation
 
-The `validate.py` script is a quick way to verify that a configuration is properly formatted. It loads the configuration without running the experiment. You can use it by running `python conf/validate.py experiment=experiment_name`.
+The `validate.py` script is a quick way to verify that a configuration is properly formatted. It loads the configuration without running the experiment. You can use it by running `python src/tbp/monty/conf/validate.py experiment=experiment_name`.
