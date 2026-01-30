@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -16,7 +16,7 @@ import numpy as np
 class DecayKernel:
     """Decay kernel represents a previously visited location.
 
-    Returns the product of an time- and space- dependent exponentials.
+    Returns the product of time- and space-dependent exponentials.
     """
 
     def __init__(

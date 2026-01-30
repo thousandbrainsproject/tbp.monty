@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -38,9 +38,9 @@ class ActuationVecSpec(ActuationSpec):
 
     Expects a list of lists.
 
-    Enables passing in two lists to set_pose --> the first is the xyz absolute positions
-    for the agent, and the second list contains the coefficients of a quaternion
-    specifying absolute rotation
+    Enables passing two lists to `set_pose`: the first contains the agent's absolute
+    XYZ positions, and the second contains the coefficients of a quaternion specifying
+    the absolute rotation.
     """
 
     amount: list[list[float]]
@@ -56,9 +56,9 @@ def _move_along_diagonal(
 
 @registry.register_move_fn(body_action=True)
 class SetYaw(SceneNodeControl):
-    """Custom habitat-sim action used to set the agent body absolute yaw rotation.
+    """Custom habitat-sim action used to set the agent body's absolute yaw rotation.
 
-    :class:`ActuationSpec` amount contains the new absolute yaw rotation in degrees.
+    The :class:`ActuationSpec` amount contains the new absolute yaw rotation in degrees.
     """
 
     def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
@@ -74,12 +74,13 @@ class SetYaw(SceneNodeControl):
 
 @registry.register_move_fn(body_action=False)
 class SetSensorPitch(SceneNodeControl):
-    """Custom habitat-sim action used to set the *sensor* absolute pitch rotation.
+    """Custom habitat-sim action used to set the *sensor's* absolute pitch rotation.
 
-    Note this does not update the pitch of the agent (imagine e.g. the "body"
+    Note that this does not update the pitch of the agent (imagine e.g. the "body"
     associated with the eye remaining in place, but the eye moving).
 
-    :class:`ActuationSpec` amount contains the new absolute pitch rotation in degrees.
+    The :class:`ActuationSpec` amount contains the new absolute pitch rotation
+    in degrees.
     """
 
     def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
@@ -96,24 +97,25 @@ class SetSensorPitch(SceneNodeControl):
 
 @registry.register_move_fn(body_action=True)
 class SetAgentPitch(SceneNodeControl):
-    """Custom habitat-sim action used to set the *agent* absolute pitch rotation.
+    """Custom habitat-sim action used to set the *agent's* absolute pitch rotation.
 
-    Note that unless otherwise changed, the sensor maintains identity orientation w.r.t
-    the agent, so in effect, this will also adjust the pitch of the sensor w.r.t the
-    environment.
+    Note that unless otherwise changed, the sensor maintains its identity orientation
+    with respect to the agent, so this will also adjust the pitch of the sensor with
+    respect to the environment.
 
-    This difference in behavior is controlled by the body_action boolean set in the
+    This difference in behavior is controlled by the `body_action` boolean set in the
     decorator.
 
-    :class:`ActuationSpec` amount contains the new absolute pitch rotation in degrees.
+    The :class:`ActuationSpec` amount contains the new absolute pitch rotation
+    in degrees.
 
-    TODO add unit test to habitat_sim_test.py
+    TODO: add a unit test to habitat_sim_test.py
     """
 
     def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         angle = mn.Deg(actuation_spec.amount)
 
-        # As for SetPitchSenosr, likely need to change the axis about which to rotate;
+        # As for SetSensorPitch, likely need to change the axis about which to rotate;
         # TODO it would also be worth investigating the significance of rotating the
         # sensor vs. agent, and establish more clearly which of these we would prefer;
         # in the original set-pitch and set-yaw implementations, pitch affects the
@@ -130,10 +132,10 @@ class SetSensorPose(SceneNodeControl):
     This action sets the sensor's absolute location (xyz coordinate), and rotation
     relative to the agent.
 
-    Note that body_action=False, resulting in a sensor (rather than agent) update.
+    Note that `body_action=False`, which results in a sensor (rather than agent) update.
 
-    :class:`ActuationSpec` amount contains location and rotation (latter as a numpy
-        quaternion)
+    The :class:`ActuationSpec` amount contains location and rotation (latter as a numpy
+    quaternion)
     """
 
     def __call__(self, scene_node: SceneNode, actuation_spec: ActuationVecSpec) -> None:
@@ -157,9 +159,9 @@ class SetSensorRotation(SceneNodeControl):
 
     This action sets the sensor's absolute rotation relative to the agent.
 
-    Note body_action=False, resulting in a sensor (rather than agent) update
+    Note that `body_action=False`, which results in a sensor (rather than agent) update.
 
-    :class:`ActuationSpec` amount contains rotation (as a numpy quaternion)
+    The :class:`ActuationSpec` amount contains rotation (as a numpy quaternion)
     """
 
     def __call__(self, scene_node: SceneNode, actuation_spec: ActuationVecSpec) -> None:
@@ -171,12 +173,12 @@ class SetSensorRotation(SceneNodeControl):
 class SetAgentPose(SceneNodeControl):
     """Custom habitat-sim action used to set the agent pose.
 
-    This action sets the agent body absolute location (xyz coordinate), and absolute
+    This action sets the agent body's absolute location (xyz coordinate) and absolute
     rotation (i.e. relative to the identity rotation, which is defined by the axes of
-    xyz in Habitat) in the environment.
+    xyz in Habitat) within the environment.
 
-    :class:`ActuationSpec` amount contains location and rotation (latter as a numpy
-        quaternion)
+    The :class:`ActuationSpec` amount contains location and rotation (latter as a numpy
+    quaternion)
     """
 
     def __call__(self, scene_node: SceneNode, actuation_spec: ActuationVecSpec) -> None:
