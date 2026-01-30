@@ -602,16 +602,16 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         distance to estimate which of these approaches would be better.
         - i.e. imagine 2nd MLH is a mug with a handle, and MLH has no handle; when
         checking all the points for the handleless mug, there will always be nearby
-        points
+        points.
         - Re. implementing this: could start with the MLH as the query points, looking
         for points with minimal neighbors with the 2nd most likely graph; if found
         too many neighbors in a given radius (threshold dependent), this suggests
         the 1st MLH graph is a sub-graph of the 2nd MLH; therefore, check whether
-        the 2nd graph
-        has any points with few neighbors with the first; if still many neighbors, this
-        could then serve as a learning signal to merge the graphs? (at least at some
-        levels of hierarchy) --> NB merging should use "picky" graph-building method to
-        ensure we don't just double the number of points in the graph unnecessarily
+        the 2nd graph has any points with few neighbors with the first; if still many
+        neighbors, this could then serve as a learning signal to merge the graphs?
+        (at least at some levels of hierarchy) --> NB merging should use "picky" graph-
+        building method to ensure we don't just double the number of points in the graph
+        unnecessarily.
 
         TODO M consider adding a factor so that we ensure our testing spot is also far
         away from any previously visited locations (at least according to MLH path),
