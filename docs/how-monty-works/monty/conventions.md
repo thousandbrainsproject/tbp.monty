@@ -6,7 +6,7 @@ title: Conventions
 
 ![Cartesian and spherical axes conventions. Left: Monty uses the right-up-backward axes convention. The forward direction is indicated by the dotted line. Right: Azimuth (theta) and elevation (phi) are centered down the forward axis.](../../figures/how-monty-works/coordinate_conventions.png)
 
-Monty uses the _right-up-backward_ [axes convention](https://en.wikipedia.org/wiki/Axes_conventions). Concretely, this means that
+Monty uses the _right-up-backward_ [axes convention](https://en.wikipedia.org/wiki/Axes_conventions), which is a [right-handed coordinate system](https://en.wikipedia.org/wiki/Right-hand_rule#Coordinates). Concretely, this means that
  - the x-axis points to the right,
  - the y-axis points up,
  - the z-axis points backwards.
