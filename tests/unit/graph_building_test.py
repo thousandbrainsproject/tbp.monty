@@ -59,7 +59,9 @@ class GraphBuildingTest(unittest.TestCase):
                 ],
             )
 
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize(
+            version_base=None, config_path="../../src/tbp/monty/conf"
+        ):
             self.supervised_pre_training_cfg = training_config(
                 "supervised_pre_training"
             )
