@@ -32,6 +32,7 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class PositioningProcedureResult:
     """Result of a positioning procedure.
@@ -271,9 +272,7 @@ class GetGoodView(PositioningProcedure):
             idx_loc_to_look_at[0], idx_loc_to_look_at[1], :3
         ]
         camera_location = (
-            state[self._agent_id]
-            .sensors[SensorID(f"{self._sensor_id}.depth")]
-            .position
+            state[self._agent_id].sensors[SensorID(f"{self._sensor_id}.depth")].position
         )
         agent_location = state[self._agent_id].position
         # Get the location of the object relative to sensor.

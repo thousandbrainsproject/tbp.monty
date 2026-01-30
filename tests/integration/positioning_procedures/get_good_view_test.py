@@ -73,7 +73,6 @@ class GetGoodViewTest(unittest.TestCase):
                     semantic, semantic_id=SemanticID(1)
                 )
 
-
                 assert perc_on_target_obj >= target_perc_on_target_obj, (
                     f"Initial view is not good enough, {perc_on_target_obj} "
                     f"vs target of {target_perc_on_target_obj}"
