@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -48,7 +48,7 @@ def plot_graph(
 ) -> Figure:
     """Plot a 3D graph of an object model.
 
-    TODO: add color_by option
+    TODO: Add a `color_by` option.
 
     Args:
         graph: The graph object that should be visualized.
@@ -57,7 +57,7 @@ def plot_graph(
         show_trisurf: Whether to plot the trisurface plot along the graphs nodes.
         show_axticks: Whether to show axis ticks.
         rotation: Rotation of the 3D plot (moving camera up or down).
-        ax_lim: axis limit for x and y axis (i.e. resolution).
+        ax_lim: Axis limit for the x and y axes (i.e., resolution).
         ax: Axes3D instance to plot on. If not supplied, a figure and Axes3D
             instance will be created.
 
@@ -140,10 +140,10 @@ def get_action_name(
         is_match_step: Whether the step is a match step.
         obs_on_object: Whether the observations are on the object.
 
-
     Returns:
-        Action name or one of the following sentinel values: "updating possible
-        matches", "patch not on object", "not moved yet", "None"
+        Action name or one of the following sentinel values:
+        "updating possible matches", "patch not on object", "not moved yet",
+        "None".
     """
     if is_match_step:
         if obs_on_object:
@@ -341,9 +341,9 @@ def show_one_step(
     norm_len=0.01,
     ax_range=0.05,
 ):
-    """Shows matching procedure for one specific time step.
+    """Show the matching procedure for one specific time step.
 
-    Best used in a notebook with `%matplotlib notebook` to rotate and zoom on the 3d
+    Best used in a notebook with `%matplotlib notebook` to rotate and zoom on the 3D
     plot.
     """
     epoch = stats[str(episode)][lm_id]["train_epochs"]
@@ -504,14 +504,14 @@ def show_initial_hypotheses(
     """Plot the initial rotation hypotheses for an object.
 
     Args:
-        detailed_stats: run stats loaded from json log file.
-        episode: episode from which the initial hypotheses shouls be shown.
-        obj: ovject model to visualize.
-        axis: rotation along which axis should be visualized. Defaults to 0.
-        lm: lm ID from which to show the model and hypotheses. Defaults to "LM_0".
-        rotation: initial rotation of the 3D plot. Defaults to (80, 0).
-        save_fig: whether to save the plot at save_path. Defaults to False.
-        save_path: where to save the plot. Defaults to "./".
+        detailed_stats: Run stats loaded from the JSON log file.
+        episode: Episode from which the initial hypotheses should be shown.
+        obj: Object model to visualize.
+        axis: Rotation axis to visualize. Defaults to 0.
+        lm: LM ID from which to show the model and hypotheses. Defaults to "LM_0".
+        rotation: Initial rotation of the 3D plot. Defaults to (80, 0).
+        save_fig: Whether to save the plot at save_path. Defaults to False.
+        save_path: Where to save the plot. Defaults to "./".
     """
     fig = plt.figure()
     lm_stats = detailed_stats[str(episode)][lm]
@@ -566,24 +566,28 @@ def plot_evidence_at_step(
     save_fig=False,
     save_path="./",
 ):
-    """Plot evidence for all hypotheses at one step during matching with evidence LM.
+    """Plot evidence for all hypotheses at one step.
+
+    During matching with the evidence LM.
 
     Args:
-        detailed_stats: run stats loaded from json log file.
-        lm_models: object models (graphs) from this experiment.
-        episode: episode to visualize.
-        step: step to visualize.
-        objects: objects to visualize (has to be len=4).
-        lm: learning module to visualize. Defaults to "LM_0".
-        sm: sensor module to visualize. Defaults to "SM_0".
-        view_finder: view finder. Defaults to "SM_1".
-        input_feature_channel: input feature channel. Defaults to "patch".
-        current_evidence_update_threshold: threshold at which alpha value should be
-            0.5 instead of 1. Defaults to -1.
-        is_surface_sensor: ?. Defaults to False.
-        is_2d_image_movement: ?. Defaults to False.
+        detailed_stats: Run stats loaded from the JSON log file.
+        lm_models: Object models (graphs) from this experiment.
+        episode: Episode to visualize.
+        step: Step to visualize.
+        objects: Objects to visualize (expected length 4).
+        lm: Learning module to visualize. Defaults to "LM_0".
+        sm: Sensor module to visualize. Defaults to "SM_0".
+        view_finder: View finder identifier. Defaults to "SM_1".
+        input_feature_channel: Input feature channel. Defaults to "patch".
+        current_evidence_update_threshold: Threshold at which the alpha value
+            should be 0.5 instead of 1. Defaults to -1.
+        is_surface_sensor: Whether the sensor module is a surface sensor.
+            Defaults to False.
+        is_2d_image_movement: Whether the movement is in 2D image space.
+            Defaults to False.
         save_fig: Whether to save the plot at save_path. Defaults to False.
-        save_path: location to save the plot at. Defaults to "./".
+        save_path: Location to save the plot. Defaults to "./".
     """
     lm_stats = detailed_stats[str(episode)][lm]
     sm_stats = detailed_stats[str(episode)][sm]
@@ -785,11 +789,10 @@ class PolicyPlot:
         """Plot the core object model.
 
         Note that all coordinates used for plotting are relative to the world
-        coordinates, hence e.g. surface normals do not need to be rotated by the
-        object's orientation in the environment; the only rotation that needs to be done
-        therefore is to get the learned object points (in their arbitrary, internal
-        reference frame) to align with the actual rotation of the object in the
-        environment
+        coordinates. Therefore, surface normals do not need to be rotated by the
+        object's orientation in the environment; the only rotation required is to
+        align the learned object points (in their arbitrary internal reference frame)
+        with the actual rotation of the object in the environment.
         """
         self.fig = plt.figure(figsize=(5, 5))
         self.ax = plt.subplot(1, 1, 1, projection="3d")
@@ -836,9 +839,9 @@ class PolicyPlot:
         data-structure of interest.
 
         In general, we focus on visualizing steps associated with exploring the object
-        (e.g. tangential steps for the surface-agent), ignoring "corrective" steps, such
-        as moving back onto the object, or re-orienting the surface agent to be
-        normal to the surface
+        (e.g., tangential steps for the surface agent), ignoring "corrective" steps such
+        as moving back onto the object or reorienting the surface agent to be normal to
+        the surface.
         """
         # Get the list of all observation locations, i.e. all observations experienced
         # by the sensory module; this will be a superset of locations experienced
@@ -1173,7 +1176,8 @@ class PolicyPlot:
     def plot_up_to_step(self, total_steps=None):
         """Plot the action policy with a static 3D graph up to the step of interest.
 
-        If total_steps is not specified, then plot the full policy (i.e. entire episode)
+        If total_steps is not specified, then plot the full policy (i.e.,
+        entire episode).
         """
         self.plot_core_object()
         self.derive_policy_details()
@@ -1236,25 +1240,25 @@ def plot_learned_graph(
 ):
     """Plot the graph learned for a particular object.
 
-    This plot does not include additional visualizations of policy movements etc.
+    This plot does not include additional visualizations of policy movements.
 
     It differs from plot_graph in that the focus is on plotting a graph stored in an
-    LMs memory, where this is corrected to have the rotation and position in the
-    environment as was experienced during an episode.
+    LM's memory, where this is corrected to have the rotation and position in the
+    environment as experienced during an episode.
 
-    Futhermore, there is the option to add noise, such that it is easy to visualize e.g.
-    the effect of noise in the location feature.
+    Furthermore, there is the option to add noise, making it easy to visualize,
+    for example, the effect of noise in the location feature.
 
     Args:
-        detailed_stats: ?
-        lm_models: ?
-        episode: ?
-        object_id: ?
-        view: the elevation and azimuth to initialize the view at. Defaults to None.
-        noise_amount: ?. Defaults to 0.0.
-        lm_index: ?. Defaults to 0.
-        save_fig: ?. Defaults to False.
-        save_path: ?. Defaults to "./".
+        detailed_stats: Run stats loaded from the JSON log file.
+        lm_models: Learned models from the experiment.
+        episode: Episode to visualize.
+        object_id: Object identifier to plot.
+        view: Elevation and azimuth to initialize the view at. Defaults to None.
+        noise_amount: Amount of noise to add to the learned graph. Defaults to 0.0.
+        lm_index: Index of the learning module to visualize. Defaults to 0.
+        save_fig: Whether to save the figure. Defaults to False.
+        save_path: Directory where the figure should be saved. Defaults to "./".
     """
     # Use point-cloud model of ground-truth object that is in the evironment
     # This is based on the *LM's model*, but always getting the ground-truth object,
@@ -1321,8 +1325,8 @@ def plot_graph_mismatch(
 
     The hypotheses are expected to come from an evidence LM.
 
-    The LM makes use of this mismatch to propose locations to move to and thereby
-    test
+    The LM uses this mismatch to propose locations to move to and thereby test
+    alternative poses.
     """
     # TODO M integrate the below code (moved from evidence-based LM) into this function
     # if plot_graph_bool:
@@ -1488,25 +1492,24 @@ def plot_hotspots(
 ):
     """Plot the locations frequently visited by the hypothesis-testing jump policy.
 
-    Note the location will not necessarily correspond to where
-    the hypothesis-testing policy *thought* it would land; in particular if its
-    estimate of the object pose was poor, then it may land somewhere other
-    than where it intended
+    Note that the location will not necessarily correspond to where the policy
+    thought it would land; if its estimate of the object pose was poor, it may
+    land somewhere other than where it intended.
 
-    This function collects and includes data from across multiple episodes; as such
-    this visualization should be used when the experiment has involved multiple
-    rotations or episodes of only a single object
+    This function collects data from multiple episodes; use it when the
+    experiment involves multiple rotations or multiple episodes of the same
+    object.
 
     Args:
-        detailed_stats: ?
-        lm_models: ?
-        object_id: ?
-        episode_range: total number of episodes for a particular object ID that
-            should be considered when visualizing hotspots. Defaults to 1.
-        view: ?. Defaults to None.
-        lm_index: ?. Defaults to 0.
-        save_fig: ?. Defaults to False.
-        save_path: ?. Defaults to "./".
+        detailed_stats: Run stats loaded from the JSON log file.
+        lm_models: Learned models from the experiment.
+        object_id: Object identifier to visualize.
+        episode_range: Total number of episodes for the object to include when
+            visualizing hotspots. Defaults to 1.
+        view: Elevation and azimuth for the view. Defaults to None.
+        lm_index: Index of the learning module to visualize. Defaults to 0.
+        save_fig: Whether to save the figure. Defaults to False.
+        save_path: Path where to save the figure. Defaults to "./".
     """
     # Visualize the object itself
     learned_model_cloud = lm_models["pretrained"][lm_index][object_id].pos
@@ -1579,30 +1582,27 @@ def plot_evidence_transitions(
     The plot also shows the stepwise target that the learning module is receiving at
     any given time point.
 
-    Currently this is mixed in with code for the detection of when the LM is on a
-    new object, but this will be pulled out / refactored in the next PR (TODO) when
-    adding the goal-state-generator class
+    Currently this shares code with the detection of when the LM is on a new
+    object; this will be refactored in the next PR (TODO) alongside the
+    goal-state-generator class.
 
     Args:
-        episode: ?
-        lm_stats: ?
-        detection_fun: the detection function used to determine whether on a new
-            object or not
+        episode: Episode number.
+        lm_stats: Learning module statistics.
+        detection_fun: Detection function used to determine whether on a new object.
         detection_params_dict: Dictionary of hyperparameters required by the
-            detection function used.
-        primary_target: ?
-        color_mapping: Color association between object ID and color to make
-            plot-interpetation easier; temporary
-        detection_mapping: Color mapping associating types of detection (e.g. false
-            positive, true positive, etc.) with particular colors.
-        stop_at_detected_new_object: Given we currently don't detect new objects and
-            initiate a corrective action, this is a hack to basically only look at the
-            episode up until we've been off the primary target for a few consecutive
-            steps; this makes the meaning of "false-positive", "true-positive", etc.
-            much clearer, as ultimately our aim is to detect when we've fallen off the
-            object we're trying to recognize, not detect every single time the
-            stepwise target changes. Defaults to True.
-        save_fig_path: ?. Defaults to None.
+            detection function.
+        primary_target: Primary target object ID.
+        color_mapping: Color association between object IDs and colors to make
+            plot interpretation easier.
+        stop_at_detected_new_object: Given that we currently don't detect new
+            objects and initiate a corrective action, this is a hack to only
+            look at the episode up until we've been off the primary target for
+            a few consecutive steps; this makes the meaning of "false-positive",
+            "true-positive", etc. much clearer, since our aim is to detect when
+            we've fallen off the object we are trying to recognize, not every
+            change in the stepwise target. Defaults to True.
+        save_fig_path: File path where the figure should be saved. Defaults to None.
     """
     objects_list = lm_stats["evidences"][0].keys()
 

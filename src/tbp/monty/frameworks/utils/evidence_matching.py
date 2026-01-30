@@ -204,7 +204,7 @@ class ChannelMapper:
         This function inserts new data at the index range previously associated with
         the provided channel. If the new data is of the same shape as the existing
         channel data shape, we simply replace the data at the channel range indices.
-        Otherwise, We split the original array around the input channel range, then
+        Otherwise, we split the original array around the input channel range, then
         concatenate the before and after splits with the data to be inserted. This
         accommodates 'data' being of a different size than the current channel size.
 

@@ -302,9 +302,9 @@ version = { attr = "tbp.monty.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
-namespaces = true
 
 [tool.setuptools.package-data]
+'tbp.monty.conf' = ['**/*.yaml']
 # habitat-sim resources
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
 
