@@ -17,10 +17,8 @@ import numpy as np
 import quaternion as qt
 from typing_extensions import Self
 
-from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
 from tbp.monty.frameworks.actions.actions import (
     Action,
-    LookUp,
     MoveTangentially,
     OrientVertical,
     SetAgentPose,
@@ -33,6 +31,10 @@ from tbp.monty.frameworks.environments.environment import (
     SemanticID,
     SimulatedObjectEnvironment,
 )
+from tbp.monty.frameworks.environments.positioning_procedures import (
+    GetGoodView,
+    PositioningProcedure,
+)
 from tbp.monty.frameworks.environments.two_d_data import (
     OmniglotEnvironment,
     SaccadeOnImageEnvironment,
@@ -41,10 +43,8 @@ from tbp.monty.frameworks.environments.two_d_data import (
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
-    GetGoodView,
     InformedPolicy,
     ObjectNotVisible,
-    PositioningProcedure,
     SurfacePolicy,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -52,6 +52,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
+from tbp.monty.frameworks.sensors import SensorID
 
 __all__ = [
     "EnvironmentInterface",
@@ -544,7 +545,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
     def get_good_view(
         self,
-        sensor_id: str,
+        sensor_id: SensorID,
         allow_translation: bool = True,
         max_orientation_attempts: int = 1,
     ) -> bool:
@@ -571,32 +572,15 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             target_semantic_id=self.primary_target["semantic_id"],
             allow_translation=allow_translation,
             max_orientation_attempts=max_orientation_attempts,
-            # TODO: Remaining arguments are unused but required by BasePolicy.
-            #       These will be removed when PositioningProcedure is split from
-            #       BasePolicy
-            #
-            # Note that if we use rng=self.rng below, then the following test will
-            # fail:
-            #   tests/unit/evidence_lm_test.py::EvidenceLMTest::test_two_lm_heterarchy_experiment  # noqa: E501
-            # The test result seems to be coupled to the random seed and the
-            # specific sequence of rng calls (rng is called once on GetGoodView
-            # initialization).
-            rng=np.random.RandomState(),
-            action_sampler_args=dict(actions=[LookUp]),
-            action_sampler_class=UniformlyDistributedSampler,
         )
-        result = positioning_procedure.positioning_call(
-            self._observation, self.motor_system._state
-        )
+        result = positioning_procedure(self._observation, self.motor_system._state)
         while not result.terminated and not result.truncated:
             self._observation, proprio_state = self.step(result.actions)
             self.motor_system._state = (
                 MotorSystemState(proprio_state) if proprio_state else None
             )
 
-            result = positioning_procedure.positioning_call(
-                self._observation, self.motor_system._state
-            )
+            result = positioning_procedure(self._observation, self.motor_system._state)
 
         return result.success
 
@@ -614,8 +598,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             Whether the sensor is on the object.
 
         """
-        self.get_good_view("view_finder")
-        for patch_id in ("patch", "patch_0"):
+        self.get_good_view(SensorID("view_finder"))
+        for patch_id in (SensorID("patch"), SensorID("patch_0")):
             if patch_id in self._observation[AgentID("agent_id_0")]:
                 on_target_object = self.get_good_view(
                     patch_id,
