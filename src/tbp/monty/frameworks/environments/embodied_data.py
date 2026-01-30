@@ -610,9 +610,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         "patch" or "patch_0") to ensure that the patch's central pixel is on-object.
         Up to 3 reorientation attempts are performed using the central patch.
 
-        Also currently used by the distant agent after a "jump" has been initialized
-        by a model-based policy.
-
         Returns:
             Whether the sensor is on the object.
 
