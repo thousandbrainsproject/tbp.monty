@@ -23,10 +23,10 @@ logger = logging.getLogger(__name__)
 
 
 class GraphGoalStateGenerator(GoalStateGenerator):
-    """Generate partial Goals until the received Goal is achieved.
+    """Generate sub-Goals until the received Goal is achieved.
 
-    Each learning module embeds a component that receives a high-level Goal and
-    generates partial Goals until that Goal is achieved.
+    A component (embedded in a learning module) that receives a high-level Goal and
+    generates sub-Goals until that Goal is achieved.
 
     Generated Goals are received by:
         i) other learning modules, which may model world objects (e.g., a mug) or
@@ -35,7 +35,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         for the actuator to achieve (e.g., the location and orientation of an
         actuator-sensor pair)
 
-    Alongside the high-level driving Goal, generated partial Goals can also be
+    Alongside the high-level driving Goal, generated sub-Goals can also be
     conditioned on other information such as the LM's current most-likely hypothesis
     and the structure of known object models (i.e., information local to the LM).
 
@@ -87,8 +87,8 @@ class GraphGoalStateGenerator(GoalStateGenerator):
     def set_driving_goal_state(self, received_goal_state):
         """Receive a new high-level Goal to drive this Goal State Generator (GSG).
 
-        If none is provided, the GSG should default to pursuing a Goal with
-        high confidence, with no other attributes of the state specified; in
+        If none is provided, the GSG should default to pursuing a high confidence
+        Goal, with no other attributes of the state specified; in
         other words, it attempts to reduce uncertainty about the LM's output
         (object ID and pose, whatever these may be).
 
@@ -191,11 +191,11 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         Note the output Goal is in a common, body-centered frame of reference, as
         for voting, such that different modules can mutually communicate.
 
-        This version is a base placeholder method that just returns a None-type Goal,
+        This version is a base placeholder method that just returns a None Goal,
         and does not actually make use of observations or the driving Goal.
 
         Returns:
-            A None-type Goal.
+            A None Goal.
         """
         return self._generate_none_goal_state()
 
