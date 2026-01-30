@@ -27,11 +27,11 @@ where atan2 is the [2-argument arctangent](https://en.wikipedia.org/wiki/Atan2).
 
 The above may be useful when, for example, writing motor policy code that steers a distant agent towards a target. [This video](https://www.youtube.com/watch?v=lu1FS3au7kg) has more details regarding this use case and other tips for handling actions and rotations.
 
-## Example: Visualizing with Matplotlib
+## Example: Visualizing with matplotlib
 
 ![Left: Monty's initial view of the mug during training. Center: The learned model without transforming into the right-forward-up axes convention used by matplotlib. Right: The learned model after performing the transformation.](../../figures/how-monty-works/matplotlib_example.png#width=400px)
 
-Anytime we want to interface with external libraries, we need to account for any differences in axes conventions. For example, Matplotlib uses the right-forward-up axes convention. Since Monty's data is in the right-up-backward convention, we must transform our data such that
+Anytime we want to interface with external libraries, we need to account for any differences in axes conventions. For example, matplotlib uses the right-forward-up axes convention. Since Monty's data is in the right-up-backward convention, we must transform our data such that
  - x-coordinates become x-coordinates (no change),
  - y-coordinates become z-coordinates, and
  - z-coordinates become negative y-coordinates.
