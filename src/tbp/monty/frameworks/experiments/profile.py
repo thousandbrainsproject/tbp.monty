@@ -54,8 +54,8 @@ class ProfileExperimentMixin:
         We want to ensure that the mixin is always the leftmost class listed in
         the base classes when used so that the methods defined here override the ones
         defined in MontyExperiment or its subclasses. We also want to ensure that
-        any subclasses are actually extending MontyExperiment. This ensures that by
-        raising an error if it is not.
+        any subclasses actually extend MontyExperiment. This is enforced by raising
+        an error if that is not the case.
 
         Raises:
             TypeError: when the mixin isn't the leftmost base class of the subclass
