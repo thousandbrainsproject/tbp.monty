@@ -241,27 +241,30 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             # TODO M consider using the LM's lm.tolerances for the default values of
             # diff_tolerances
 
-            if tolerance_key == "location":
-                if state_a.location is not None and state_b.location is not None:
-                    distance = np.linalg.norm(state_a.location - state_b.location)
+            if (
+                tolerance_key == "location"
+                and state_a.location is not None
+                and state_b.location is not None
+            ):
+                distance = np.linalg.norm(state_a.location - state_b.location)
 
-            elif tolerance_key == "pose_vectors":
-                if (
-                    state_a.morphological_features is not None
-                    and state_b.morphological_features is not None
-                ):
-                    raise NotImplementedError(
-                        "TODO M implement pose-vector comparisons that handle "
-                        "symmetry of objects"
-                    )
-                    # TODO M consider using an angular distance instead of Euclidean
-                    # when we actually begin making use of this feature; try to ensure
-                    # this handles symmetry conditions e.g. flipped principal curvature
-                    # directions.
-                    distance = self._euc_dist_ignoring_nan(
-                        state_a.morphological_features["pose_vectors"],
-                        state_b.morphological_features["pose_vectors"],
-                    )
+            elif (
+                tolerance_key == "pose_vectors"
+                and state_a.morphological_features is not None
+                and state_b.morphological_features is not None
+            ):
+                raise NotImplementedError(
+                    "TODO M implement pose-vector comparisons that handle "
+                    "symmetry of objects"
+                )
+                # TODO M consider using an angular distance instead of Euclidean
+                # when we actually begin making use of this feature; try to ensure
+                # this handles symmetry conditions e.g. flipped principal curvature
+                # directions.
+                distance = self._euc_dist_ignoring_nan(
+                    state_a.morphological_features["pose_vectors"],
+                    state_b.morphological_features["pose_vectors"],
+                )
 
             states_different = distance > tolerance_val
             if states_different:

@@ -262,10 +262,12 @@ class BasePolicy(MotorPolicy):
 
     def post_episode(self):
         self.episode_count += 1
-        if self.file_names_per_episode is not None:
-            if self.episode_count in self.file_names_per_episode:
-                file_name = self.file_names_per_episode[self.episode_count]
-                self.action_list = read_action_file(file_name)
+        if (
+            self.file_names_per_episode is not None
+            and self.episode_count in self.file_names_per_episode
+        ):
+            file_name = self.file_names_per_episode[self.episode_count]
+            self.action_list = read_action_file(file_name)
 
     ###
     # Other required abstract methods, methods called by Monty or Environment Interface
@@ -2394,15 +2396,15 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         automatically pass avoid_revisiting_locations and thereby continue using PCs
         where relevant.
         """
-        if self.prev_angle is not None:
-            if (
-                abs(theta_change(self.prev_angle, self.tangential_angle + np.pi))
-                <= np.pi / 4
-            ):
-                logger.debug(
-                    "Evidence that PC direction arbitrarily flipped, flipping back"
-                )
-                self.update_tangential_reps(vec_form=np.array(self.tangential_vec) * -1)
+        if (
+            self.prev_angle is not None
+            and abs(theta_change(self.prev_angle, self.tangential_angle + np.pi))
+            <= np.pi / 4
+        ):
+            logger.debug(
+                "Evidence that PC direction arbitrarily flipped, flipping back"
+            )
+            self.update_tangential_reps(vec_form=np.array(self.tangential_vec) * -1)
 
     def pc_moving_average(self):
         """Calculate a moving average of the principal curvature direction.
