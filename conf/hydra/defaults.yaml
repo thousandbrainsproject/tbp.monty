@@ -1,0 +1,5 @@
+# Hydra configuration overrides
+run:
+  dir: ${config.logging.output_dir}
+sweep:
+  dir: ${config.logging.output_dir}

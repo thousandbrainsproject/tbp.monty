@@ -1,0 +1,12 @@
+# @package config.monty_config
+
+defaults:
+  - monty_class: evidence_matching
+  - monty_args: defaults
+  - motor_system: informed_goal_state_driven
+  - connectivity: patch_view_single_lm
+  # Sensor Modules (not as clean because of the syntax of "sensor_module_N")
+  - /monty/sensor_module/components/patch_distant@sensor_module_configs.sensor_module_0
+  - /monty/sensor_module/components/probe_view_finder@sensor_module_configs.sensor_module_1
+  # Learning Module
+  - learning_module/evidence_distant_fast@learning_module_configs.learning_module_0
