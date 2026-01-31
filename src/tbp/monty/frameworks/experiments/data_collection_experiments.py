@@ -34,10 +34,6 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
     """
 
     def run_episode(self):
-        """Run an episode.
-
-        That checks the terminal states of an object recognition run.
-        """
         self.pre_episode()
         for step, observation in tqdm(enumerate(self.env_interface)):
             if step > self.max_steps:
@@ -75,7 +71,6 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
             del self.model.sensor_modules[0].processed_obs[-2]
 
     def pre_episode(self):
-        """Pre-episode where we pass the target object to the model for logging."""
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(
                 f"running train epoch {self.train_epochs} "
@@ -105,5 +100,5 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         self.train_episodes += 1
 
     def post_epoch(self):
-        # This stripped-down experiment only allows for one pass
+        # This stripped-down experiment only allows for one epoch.
         pass

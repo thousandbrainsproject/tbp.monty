@@ -321,7 +321,7 @@ class MontyExperiment:
         """Get current status of counters for the logger.
 
         Returns:
-            dict with current experiment state.
+            The current experiment state.
         """
         current_rng_seed = (
             self._rng_seed_history[-1]

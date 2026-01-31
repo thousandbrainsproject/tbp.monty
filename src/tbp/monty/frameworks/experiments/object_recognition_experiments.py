@@ -46,8 +46,8 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
     def pre_episode(self):
         """Pre-episode hook.
 
-        Pre-episode step that passes the primary target object and the mapping from
-        semantic IDs to labels for logging and evaluation purposes.
+        Passes the primary target object and the mapping from semantic IDs to labels
+        to the Monty model for logging and reporting evaluation results.
         """
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(
