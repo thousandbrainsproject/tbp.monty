@@ -85,10 +85,10 @@ class EvidenceGraphLM(GraphLM):
             parameters that may be possible to use though and could help when moving
             from one object to another and to generally make setting thresholds etc.
             more intuitive.
-        vote_weight: Vote evidence (between -1 and 1) in multiplied by this  value
-            when being added to the overall evidence of a hypothesis. If past and
-            current_weight add up to 1, it is use as weight in np.average to keep
-            the evidence in a fixed range.
+        vote_weight: Vote evidence (between -1 and 1) is multiplied by this value
+            when being added to the overall evidence of a hypothesis. If past_weight
+            and present_weight add up to 1, it is used as a weight in np.average to
+            keep the evidence in a fixed range.
 
     Terminal Condition Attributes:
         object_evidence_threshold: Minimum required evidence for an object to be
@@ -96,18 +96,18 @@ class EvidenceGraphLM(GraphLM):
             significantly higher than for all other objects.
         x_percent_threshold: Used in two places:
             1) All objects whose highest evidence is greater than the most likely
-                objects evidence - x_percent of the most like objects evidence are
-                considered possible matches. That means to only have one possible match,
-                no other object can have more evidence than the candidate match's
-                evidence - x percent of it.
+                object's evidence minus x_percent of that evidence are
+                considered possible matches. That means to only have one possible
+                match, no other object can have more evidence than the candidate
+                match's evidence minus x percent of it.
             2) Within one object, possible poses are considered possible if their
-                evidence is larger than the most likely pose of this object - x percent
-                of this poses evidence.
+                evidence is larger than the most likely pose of this object minus x
+                percent of that pose's evidence.
             # TODO: should we use a separate threshold for within and between objects?
             If this value is larger, the model is usually more robust to noise and
             reaches a better performance but also requires a lot more steps to reach a
-            terminal condition, especially if there are many similar object in the data
-            set.
+            terminal condition, especially if there are many similar objects in the
+            dataset.
         path_similarity_threshold: How similar do paths have to be to be
             considered the same in the terminal condition check.
         pose_similarity_threshold: difference between two poses to be considered
@@ -124,13 +124,13 @@ class EvidenceGraphLM(GraphLM):
             curvature magnitude difference.
         max_graph_size: Maximum size of a graph in meters. Any observations that fall
             out of this range will be discarded/used for building a new model. This
-            constraints the size of models that an LM can learn and enforces learning
+            constrains the size of models that an LM can learn and enforces learning
             models of sub-components of objects.
         max_nodes_per_graph: Maximum number of nodes in a graph. This will be k when
             picking the k-winner voxels to add their content into the graph used for
             matching.
         num_model_voxels_per_dim: Number of voxels per dimension in the model grid.
-            This constraints the spatial resolution that the model can represent.
+            This constrains the spatial resolution that the model can represent.
             max_graph_size/num_model_voxels_per_dim = how much space is lumped into one
             voxel. All locations that fall into the same voxel will be averaged and
             represented as one value. num_model_voxels_per_dim should not be too large
@@ -415,7 +415,7 @@ class EvidenceGraphLM(GraphLM):
         """Return the most likely hypothesis in same format as LM input.
 
         The input to an LM at the moment is a dict of features at a location. The
-        output therefor has the same format to keep the messaging protocol
+        output therefore has the same format to keep the messaging protocol
         consistent and make it easy to stack multiple LMs on top of each other.
 
         If the evidence for mlh is < object_evidence_threshold,
@@ -443,7 +443,7 @@ class EvidenceGraphLM(GraphLM):
         # TODO H1: update this to send detected object location
         # Use something like this + incorporate mlh location. -> while on same object,
         # this should not change, even when moving over the object. Would also have to
-        # update mlh during exploration (just add displacenents).
+        # update mlh during exploration (just add displacements).
         # Discuss this first before implementing. This would make higher level models
         # much simpler but also require some arbitrary object center and give less
         # resolution of where on a compositional object we are (in this lm). Would
