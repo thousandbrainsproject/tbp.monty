@@ -27,7 +27,7 @@ def hydra_config(
 
     Args:
         test_name: The name of the test to run. Must be a present in the
-            conf/experiment/test directory.
+            src/tbp/monty/conf/experiment/test directory.
         output_dir: The directory to store the output.
         fixed_actions_path: The path to the fixed actions file.
         model_name_or_path: The path to the model to load.

@@ -67,7 +67,7 @@ class HabitatSalienceSM(SensorModule):
         return self._snapshot_telemetry.state_dict()
 
     def update_state(self, agent: AgentState):
-        """Update information about the sensors location and rotation."""
+        """Update information about the sensor's location and rotation."""
         sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
         self.state = SensorState(
             position=agent.position

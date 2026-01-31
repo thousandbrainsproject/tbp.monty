@@ -109,7 +109,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
     Args:
         json_file: full path to the json file to load
         start: int, get data starting at this episode
-        stop: int, get data ending at this episode, not inclussive as usual in python
+        stop: int, get data ending at this episode, not inclusive as usual in Python
         episodes: iterable of ints with episodes to pull
 
     Returns:
@@ -547,7 +547,7 @@ def calculate_fpr(fp, tn):
 
 
 def get_graph_lm_episode_stats(lm):
-    """Populate stats dictionary for one episode for a lm.
+    """Populate stats dictionary for one episode for an LM.
 
     Args:
         lm: Learning module for which to generate stats.
@@ -556,7 +556,7 @@ def get_graph_lm_episode_stats(lm):
         dict with stats of one episode.
     """
     primary_performance = "patch_off_object"  # Performance on the primary target in
-    # the environmnet, typically the target object we begin the episode on
+    # the environment, typically the target object we begin the episode on
     stepwise_performance = "patch_off_object"  # Performance relative to the object
     # the learning module is actually receiving sensory input from when it converges
     location = np.array([0, 0, 0])
@@ -686,10 +686,10 @@ def get_graph_lm_episode_stats(lm):
 
 
 def add_pose_lm_episode_stats(lm, stats):
-    """Add possible poses of lm to episode stats.
+    """Add possible poses of an LM to episode stats.
 
     Args:
-        lm: LM istance from which to add the statistics.
+        lm: LM instance from which to add the statistics.
         stats: Statistics dictionary to update.
 
     Returns:
@@ -972,7 +972,7 @@ def lm_stats_to_dataframe(stats, format_for_wandb=False):
         {0: {LM_0: stats, LM_1: stats...}, 1:...} --> dataframe
 
     Currently we are reporting once per episode, so the loop over episodes is only over
-    a singel key, value pair, but leaving it here because it is backward compatible.
+    a single key, value pair, but leaving it here because it is backward compatible.
 
     Returns:
         dataframe
@@ -1088,7 +1088,7 @@ def total_size(o):
 
 
     The recursive recipe universally cited on stack exchange and blogs for gauging the
-    size of python objets in memory.
+    size of Python objects in memory.
 
     See Also:
         https://code.activestate.com/recipes/577504/

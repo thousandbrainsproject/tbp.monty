@@ -86,35 +86,19 @@ class ChannelMapper:
         Raises:
             ValueError: If the channel is not found.
         """
+        if channel_name not in self.channel_sizes:
+            raise ValueError(f"Channel '{channel_name}' not found.")
+
         start = 0
         for name, size in self.channel_sizes.items():
             if name == channel_name:
                 return (start, start + size)
             start += size
 
-        raise ValueError(f"Channel '{channel_name}' not found.")
-
-    def resize_channel_by(self, channel_name: str, value: int) -> None:
-        """Increases or decreases the channel by a specific amount.
-
-        Args:
-            channel_name: The name of the channel.
-            value: The value used to modify the channel size.
-                Use a negative value to decrease the size.
-
-        Raises:
-            ValueError: If the channel is not found or the requested size is negative.
-        """
-        if channel_name not in self.channel_sizes:
-            raise ValueError(f"Channel '{channel_name}' not found.")
-        if self.channel_sizes[channel_name] + value <= 0:
-            raise ValueError(
-                f"Channel '{channel_name}' size cannot be negative or zero."
-            )
-        self.channel_sizes[channel_name] += value
-
     def resize_channel_to(self, channel_name: str, new_size: int) -> None:
         """Sets the size of the given channel to a specific value.
+
+        This function will also delete the channel if the `new_size` is 0.
 
         Args:
             channel_name: The name of the channel.
@@ -125,9 +109,26 @@ class ChannelMapper:
         """
         if channel_name not in self.channel_sizes:
             raise ValueError(f"Channel '{channel_name}' not found.")
-        if new_size <= 0:
+        if new_size < 0:
             raise ValueError(f"Channel '{channel_name}' size must be positive.")
+        if new_size == 0:
+            self.delete_channel(channel_name)
+            return
+
         self.channel_sizes[channel_name] = new_size
+
+    def delete_channel(self, channel_name: str) -> None:
+        """Delete a channel from the mapping.
+
+        Args:
+            channel_name: The name of the channel to delete.
+
+        Raises:
+            ValueError: If the channel is not found.
+        """
+        if channel_name not in self.channel_sizes:
+            raise ValueError(f"Channel '{channel_name}' not found.")
+        del self.channel_sizes[channel_name]
 
     def add_channel(
         self, channel_name: str, size: int, position: int | None = None
@@ -203,7 +204,7 @@ class ChannelMapper:
         This function inserts new data at the index range previously associated with
         the provided channel. If the new data is of the same shape as the existing
         channel data shape, we simply replace the data at the channel range indices.
-        Otherwise, We split the original array around the input channel range, then
+        Otherwise, we split the original array around the input channel range, then
         concatenate the before and after splits with the data to be inserted. This
         accommodates 'data' being of a different size than the current channel size.
 
@@ -230,7 +231,7 @@ class ChannelMapper:
 
         start, end = self.channel_range(channel)
 
-        if (self.channel_sizes[channel] == data.shape[0]) and original.shape[0] > end:
+        if self.channel_sizes[channel] == data.shape[0]:
             # returns a view not a copy
             original[start:end] = data
         else:
@@ -276,7 +277,7 @@ class EvidenceSlopeTracker:
         hyp_age: Maps channel names to hypothesis age counters.
     """
 
-    def __init__(self, window_size: int = 3, min_age: int = 5) -> None:
+    def __init__(self, window_size: int = 10, min_age: int = 5) -> None:
         """Initializes the EvidenceSlopeTracker.
 
         Args:
@@ -415,50 +416,160 @@ class EvidenceSlopeTracker:
         if channel in self.evidence_buffer:
             self.remove_hyp(np.arange(self.total_size(channel)), channel)
 
-    def calculate_keep_and_remove_ids(
-        self, num_keep: int, channel: str
-    ) -> tuple[npt.NDArray[np.int_], npt.NDArray[np.int_]]:
-        """Determines which hypotheses to keep and which to remove in a channel.
+    def select_hypotheses(
+        self, slope_threshold: float, channel: str
+    ) -> HypothesesSelection:
+        """Returns a hypotheses selection given a slope threshold.
 
-        Hypotheses with the lowest average slope are selected for removal.
+        A hypothesis is maintained if:
+          - Its slope is >= the threshold, OR
+          - It is not yet removable due to age.
 
         Args:
-            num_keep: Requested number of hypotheses to retain.
+            slope_threshold: Minimum slope value to keep a removable (sufficiently old)
+                hypothesis.
             channel: Name of the input channel.
 
         Returns:
-            - to_keep: Indices of hypotheses to retain.
-            - to_remove: Indices of hypotheses to remove.
+            A selection of hypotheses to maintain.
 
         Raises:
             ValueError: If the channel does not exist.
-            ValueError: If the requested hypotheses to retain are more than available
-                hypotheses.
         """
         if channel not in self.evidence_buffer:
             raise ValueError(f"Channel '{channel}' does not exist.")
 
-        total_size = self.total_size(channel)
-        if num_keep > total_size:
-            raise ValueError(
-                f"Cannot keep {num_keep} hypotheses; only {total_size} exist."
-            )
-        total_ids = np.arange(total_size)
-        num_remove = total_size - num_keep
-
-        # Retrieve valid slopes and sort them
-        removable_mask = self.removable_indices_mask(channel)
         slopes = self.calculate_slopes(channel)
-        removable_slopes = slopes[removable_mask]
-        removable_ids = total_ids[removable_mask]
-        sorted_indices = np.argsort(removable_slopes)
+        removable_mask = self.removable_indices_mask(channel)
 
-        # Calculate which ids to keep and which to remove
-        to_remove = removable_ids[sorted_indices[:num_remove]]
-        to_remove_mask = np.zeros(total_size, dtype=bool)
-        to_remove_mask[to_remove] = True
-        to_keep = total_ids[~to_remove_mask]
-        return to_keep, to_remove
+        maintain_mask = (slopes >= slope_threshold) | (~removable_mask)
+
+        return HypothesesSelection(maintain_mask)
+
+
+class HypothesesSelection:
+    """Encapsulates the selection of hypotheses to maintain or remove.
+
+    This class stores a boolean mask indicating which hypotheses should be maintained.
+    From this mask, it can return the indices and masks for both the maintained and
+    removed hypotheses. It also provides convenience constructors for creating a
+    selection from maintain/remove masks or from maintain/remove index lists.
+
+    Attributes:
+        _maintain_mask: Boolean mask of shape (N,) where True indicates a maintain
+            hypothesis and False indicates a remove hypothesis.
+    """
+
+    def __init__(self, maintain_mask: npt.NDArray[np.bool_]) -> None:
+        """Initializes a HypothesesSelection from a maintain mask.
+
+        Args:
+            maintain_mask: Boolean array-like of shape (N,) where True indicates a
+                maintained hypothesis and False indicates a removed hypothesis.
+        """
+        self._maintain_mask = np.asarray(maintain_mask, dtype=bool)
+
+    @classmethod
+    def from_maintain_mask(cls, mask: npt.NDArray[np.bool_]) -> HypothesesSelection:
+        """Creates a selection from a maintain mask.
+
+        Args:
+            mask: Boolean array-like where True indicates a maintained hypothesis.
+
+        Returns:
+            A HypothesesSelection instance.
+
+        Note:
+            This method is added from completeness, but it is redundant as it calls the
+            default class `__init__` function.
+        """
+        return cls(mask)
+
+    @classmethod
+    def from_remove_mask(cls, mask: npt.NDArray[np.bool_]) -> HypothesesSelection:
+        """Creates a hypotheses selection from a remove mask.
+
+        Args:
+            mask: Boolean array-like where True indicates a hypothesis to remove.
+
+        Returns:
+            A HypothesesSelection instance.
+        """
+        return cls(~mask)
+
+    @classmethod
+    def from_maintain_ids(
+        cls, total_size: int, ids: npt.NDArray[np.int_]
+    ) -> HypothesesSelection:
+        """Creates a hypotheses selection from maintain indices.
+
+        Args:
+            total_size: Total number of hypotheses.
+            ids: Indices of hypotheses to maintain.
+
+        Returns:
+            A HypothesesSelection instance.
+
+        Raises:
+            IndexError: If any index is out of range [0, total_size).
+        """
+        mask = np.zeros(int(total_size), dtype=bool)
+
+        if ids.size:
+            if ids.min() < 0 or ids.max() >= total_size:
+                raise IndexError(f"maintain_ids outside [0, {total_size})")
+            mask[np.unique(ids)] = True
+
+        return cls(mask)
+
+    @classmethod
+    def from_remove_ids(
+        cls, total_size: int, ids: npt.NDArray[np.int_]
+    ) -> HypothesesSelection:
+        """Creates a selection from remove indices.
+
+        Args:
+            total_size: Total number of hypotheses.
+            ids: Indices of hypotheses to remove.
+
+        Returns:
+            A HypothesesSelection instance.
+
+        Raises:
+            IndexError: If any index is out of range [0, total_size).
+        """
+        mask = np.ones(int(total_size), dtype=bool)
+
+        if ids.size:
+            if ids.min() < 0 or ids.max() >= total_size:
+                raise IndexError(f"remove_ids outside [0, {total_size})")
+            mask[np.unique(ids)] = False
+
+        return cls(mask)
+
+    @property
+    def maintain_mask(self) -> npt.NDArray[np.bool_]:
+        """Returns the maintain mask."""
+        return self._maintain_mask
+
+    @property
+    def remove_mask(self) -> npt.NDArray[np.bool_]:
+        """Returns the remove mask."""
+        return ~self._maintain_mask
+
+    @property
+    def maintain_ids(self) -> npt.NDArray[np.int_]:
+        """Returns the indices of maintained hypotheses."""
+        return np.flatnonzero(self._maintain_mask).astype(int)
+
+    @property
+    def remove_ids(self) -> npt.NDArray[np.int_]:
+        """Returns the indices of removed hypotheses."""
+        return np.flatnonzero(~self._maintain_mask).astype(int)
+
+    def __len__(self) -> int:
+        """Returns the total number of hypotheses in the selection."""
+        return self._maintain_mask.size
 
 
 def evidence_update_threshold(
