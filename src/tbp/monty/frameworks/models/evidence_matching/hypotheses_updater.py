@@ -75,13 +75,13 @@ class HypothesesUpdater(ContextManager[Self], Protocol):
             hypotheses: Hypotheses for all input channels in the graph
             features: Input features
             displacements: Given displacements
-            graph_id: Identifier of the graph being updated
+            graph_id: ID of the graph being updated
             mapper: Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
             evidence_update_threshold: Evidence update threshold
 
         Returns:
-            The list of hypothesis updates to be applied.
+            The list of `ChannelHypotheses` updates to be applied.
         """
         ...
 

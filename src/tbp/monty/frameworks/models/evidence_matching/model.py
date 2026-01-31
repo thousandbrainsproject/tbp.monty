@@ -101,7 +101,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                             for s in lm_states_for_object:
                                 # need to make a copy because the same vote state may be
                                 # transformed in different ways depending on the
-                                # receiving LM's pose
+                                # receiving LMs' poses
                                 new_s = copy.deepcopy(s)
                                 rotated_displacement = new_s.get_pose_vectors().dot(
                                     sensor_disp

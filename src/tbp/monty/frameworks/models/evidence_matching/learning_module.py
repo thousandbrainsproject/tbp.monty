@@ -87,7 +87,7 @@ class EvidenceGraphLM(GraphLM):
             more intuitive.
         vote_weight: Vote evidence (between -1 and 1) is multiplied by this value
             when being added to the overall evidence of a hypothesis. If past_weight
-            and vote_weight add up to 1, it is used as a weight in np.average to
+            and present_weight add up to 1, it is used as a weight in np.average to
             keep the evidence in a fixed range.
 
     Terminal Condition Attributes:
