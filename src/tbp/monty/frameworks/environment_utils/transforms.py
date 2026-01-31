@@ -401,7 +401,7 @@ class DepthTo3DLocations(Transform):
            depth clipping to the surface agent.
          - Surface agents also have their depth and semantic data clipped to
            a very short range from the sensor. This is done to better match the
-           reach of a finger.
+           short reach of a finger.
          - `use_semantic_sensor` is currently only used with multi-object
            experiments, and when this is `True`, the observation dict will have
            an item called "semantic". In the future, we would like to include
