@@ -166,7 +166,7 @@ class EvidenceGraphMemory(GraphMemory):
 
         Args:
             locations: List of x, y, z locations.
-            features: Features observed at those locations.
+            features: Features observed at the provided locations.
             graph_id: ID of the existing graph.
             input_channel: Identifier of the input channel.
             object_location_rel_body: Location of the sensor in the body reference
