@@ -133,12 +133,12 @@ class GraphObjectModel(ObjectModel):
 
     @property
     def edge_index(self):
-        if (self._graph is not None) and ("edge_index" in self._graph.keys):
+        if self._graph is not None and "edge_index" in self._graph.keys:
             return self._graph.edge_index
 
     @property
     def edge_attr(self):
-        if (self._graph is not None) and ("edge_attr" in self._graph.keys):
+        if self._graph is not None and "edge_attr" in self._graph.keys:
             return self._graph.edge_attr
 
     @property
@@ -773,7 +773,7 @@ class GridObjectModel(GraphObjectModel):
             New average features for a voxel.
         """
         new_feature_avg = np.zeros(target_feat_dim)
-        if ("pose_vectors" in obs_fm) and ("pose_fully_defined" in obs_fm):
+        if "pose_vectors" in obs_fm and "pose_fully_defined" in obs_fm:
             # TODO: deal with case where not all of those keys are present
             pv_ids = obs_fm["pose_vectors"]
             pdefined_ids = obs_fm["pose_fully_defined"]
