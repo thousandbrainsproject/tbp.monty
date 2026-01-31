@@ -1,0 +1,10 @@
+# @package _global_
+# Pretraining mode - train models from scratch
+
+defaults:
+  - _defaults
+
+config:
+  do_train: true
+  do_eval: false
+  supervised_lm_ids: all

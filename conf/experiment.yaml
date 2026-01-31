@@ -1,0 +1,19 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - vars: defaults 
+  - logging: defaults
+  - monty: patch_and_view_inference
+  - agent: patch_view_habitat
+  - environment: ycb_distinct
+  - mode: inference
+  # Experiment config (required) - use override to change defaults above
+  - experiment: MISSING
+
+# Global settings
+config:
+  episodes: all
+  num_parallel: 16
+  print_cfg: false
+  quiet_habitat_logs: true

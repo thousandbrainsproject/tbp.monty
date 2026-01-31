@@ -1,0 +1,10 @@
+# @package _global_
+# Inference mode - evaluate pretrained models
+
+defaults:
+  - _defaults
+
+config:
+  do_train: false
+  do_eval: true
+  python_log_level: DEBUG
