@@ -800,9 +800,9 @@ def add_evidence_lm_episode_stats(lm, stats, consistent_child_objects):
     if (
         stats["primary_performance"] in ["confused", "confused_mlh"]
         and consistent_child_objects
+        and last_mlh["graph_id"] in consistent_child_objects
     ):
-        if last_mlh["graph_id"] in consistent_child_objects:
-            stats["primary_performance"] = "consistent_child_obj"
+        stats["primary_performance"] = "consistent_child_obj"
     return stats
 
 
@@ -957,10 +957,9 @@ def format_columns_for_wandb(lm_dict):
         formatted lm_dict
     """
     formatted_dict = copy.deepcopy(lm_dict)
-    if "result" in formatted_dict:
-        if isinstance(formatted_dict["result"], list):
-            new_result = "^".join(formatted_dict["result"])
-            formatted_dict["result"] = new_result
+    if "result" in formatted_dict and isinstance(formatted_dict["result"], list):
+        new_result = "^".join(formatted_dict["result"])
+        formatted_dict["result"] = new_result
 
     return formatted_dict
 
@@ -983,14 +982,11 @@ def lm_stats_to_dataframe(stats, format_for_wandb=False):
         lm_dict = {}
         # Loop over things like LM_*, SM_*, motor_system and get only LM_*
         for key in episode.keys():
-            if isinstance(key, str):
-                if key.startswith("LM_"):
-                    if format_for_wandb:
-                        lm_dict[key] = format_columns_for_wandb(
-                            copy.deepcopy(episode[key])
-                        )
-                    else:
-                        lm_dict[key] = episode[key]
+            if isinstance(key, str) and key.startswith("LM_"):
+                if format_for_wandb:
+                    lm_dict[key] = format_columns_for_wandb(copy.deepcopy(episode[key]))
+                else:
+                    lm_dict[key] = episode[key]
 
         if len(lm_dict) > 0:
             df_list.append(pd.DataFrame.from_dict(lm_dict, orient="index"))
