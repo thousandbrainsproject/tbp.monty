@@ -342,7 +342,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         # Specify config for the primary target object and then add it
         init_params = self.object_params.copy()
         init_params.pop("euler_rotation")
-        if "quat_rotation" in init_params.keys():
+        if "quat_rotation" in init_params:
             init_params.pop("quat_rotation")
         init_params["semantic_id"] = self.semantic_label_to_id[self.object_names[idx]]
 

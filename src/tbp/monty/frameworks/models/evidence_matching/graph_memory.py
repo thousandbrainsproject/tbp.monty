@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -74,7 +74,7 @@ class EvidenceGraphMemory(GraphMemory):
 
         """
         self.models_in_memory[graph_id] = {}
-        for input_channel in model.keys():
+        for input_channel in model:
             channel_model = model[input_channel]
             try:
                 if not isinstance(channel_model, GridObjectModel):

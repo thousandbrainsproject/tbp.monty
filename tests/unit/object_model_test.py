@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -72,7 +72,7 @@ class ObjectModelTest(unittest.TestCase):
             graph_delta_thresholds=self.dummy_delta_thresholds,
         )
         self.assertEqual(model.num_nodes, 4, "graph model should have 4 nodes.")
-        for feature in self.dummy_features.keys():
+        for feature in self.dummy_features:
             self.assertIn(
                 feature, model.feature_mapping.keys(), f"{feature} not stored in model."
             )
@@ -85,7 +85,7 @@ class ObjectModelTest(unittest.TestCase):
             self.dummy_features,
         )
         self.assertEqual(model.num_nodes, 4, "graph model should have 4 nodes.")
-        for feature in self.dummy_features.keys():
+        for feature in self.dummy_features:
             self.assertIn(
                 feature, model.feature_mapping.keys(), f"{feature} not stored in model."
             )

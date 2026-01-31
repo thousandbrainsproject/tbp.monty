@@ -77,7 +77,7 @@ def already_in_list(
         < graph_delta_thresholds["distance"]
     )
 
-    assert "on_object" not in graph_delta_thresholds.keys(), (
+    assert "on_object" not in graph_delta_thresholds, (
         "Don't pass feature-change SM delta_thresholds for graph_delta_thresholds"
     )
 
@@ -96,8 +96,8 @@ def already_in_list(
         # TODO: What to do when a feature is received that is not in
         # graph_delta_thresholds? Currently it will not be considered when looking at
         # redundancy of the point.
-        for feature in graph_delta_thresholds.keys():
-            if feature in features.keys():
+        for feature in graph_delta_thresholds:
+            if feature in features:
                 if feature == "hsv":
                     # Only consider hue, not saturation and lightness at this point
                     match_hue = features[feature][feature_idx][0]
@@ -196,7 +196,7 @@ def remove_close_points(point_cloud, features, graph_delta_thresholds, old_graph
         graph_delta_thresholds = dict(
             distance=0.001,
         )
-    if "pose_vectors" not in graph_delta_thresholds.keys():
+    if "pose_vectors" not in graph_delta_thresholds:
         # By default, we will still consider a nearby point as new if the difference
         # in surface normals suggests it is on the other side of an object
         # NOTE: currently not looking at curvature directions/second pose vector
