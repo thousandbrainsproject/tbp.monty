@@ -14,7 +14,7 @@ Our model will have one surface agent connected to one sensor module connected t
 
 # Setting up the Experiment Config for Continual Learning
 
-To follow along, open the `conf/experiment/tutorial/surf_agent_2obj_unsupervised.yaml` file.
+To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_unsupervised.yaml` file.
 
 ```yaml
 defaults:

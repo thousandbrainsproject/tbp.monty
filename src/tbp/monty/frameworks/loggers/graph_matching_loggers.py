@@ -28,18 +28,19 @@ create and manage this pool of data, including flushing it periodically. The job
 handlers is to grab subsets of the data pool, format it, and send it to a location
 (wandb, or a certain file). The data pool can be updated at any of the callback points
 in the experiment, for example, `post_episode`. The loggers receive a standard set of
-arguments used for building the data pool, most notably a reference to the model. During
-reporting, all handlers are called upon to send data to a destination. Handlers also all
-receive a standard set of arguments, including most importantly the self.data pool.
+arguments used for building the data pool, most notably a reference to the model.
+During reporting, all handlers are called upon to send data to a destination.
+Handlers also receive a standard set of arguments, most importantly the `self.data`
+pool.
 
 The Basic logger is associated with the BASIC monty_log_level specified in
 config_args.logging. The Detailed logger is associated with the DETAILED logging
-level. The Detailed logger data pool contains a superset of the data in the basic logger
-self.data attribute.
+level. The Detailed logger's data pool contains a superset of the data in the
+BASIC logger's `self.data` attribute.
 
 The term logger is used unconventionally here. Normally, the thing being logged is a
-string of text and the destination is a file or the terminal screen. Here, the stuff
-being logged is structured data. Perhaps the term DataReporter is more apt.
+string of text and the destination is a file or the terminal screen. Here, the logged
+content is structured data. Perhaps the term DataReporter is more apt.
 
 NOTE: previously, we updated the data pool every episode, and logged at most once per
 episode. Reporting and flushing frequency were based on the size of self.data. To make
