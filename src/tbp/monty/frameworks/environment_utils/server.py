@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -7,10 +7,9 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-"""This script is used for the Monty Meets World demo.
+"""This script supports the Monty Meets World demo.
 
-It is used to live stream data from the iPad camera to a server that Monty can then read
-from.
+It streams data from the iPad camera to a server that Monty can then read from.
 
 For more on the demo, see https://github.com/thousandbrainsproject/monty_lab/tree/main/monty_meets_world.
 """
@@ -28,12 +27,12 @@ setup_env()
 
 class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_PUT(self):
-        # Check type of incoming data: depth or rgb
+        # Check type of incoming data: depth or RGB
         parsed_url = urlparse(self.path)
         inc_filename = Path(parsed_url.path).name
         data_type = "depth" if inc_filename == "depth.data" else "rgb"
 
-        # check existing filenames in the directory
+        # Check existing filenames in the directory
         data_path = Path(os.environ["MONTY_DATA"]) / "worldimages" / "world_data_stream"
         file_list = [f.name for f in data_path.glob("[!.]*")]
         if data_type == "depth":
@@ -58,13 +57,13 @@ class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(201, "Created")
         self.end_headers()
 
-        # Return object id
+        # Return object ID
         reply_body = f'Saved "{new_filename}"\n'
         self.wfile.write(reply_body.encode("utf-8"))
 
 
 if __name__ == "__main__":
-    # throw an error if the ip address is not set
+    # Throw an error if the IP address is not set
     ip_address = os.environ.get("MONTY_SERVER_IP_ADDRESS")
     assert ip_address is not None, (
         "MONTY_SERVER_IP_ADDRESS must be set. Set it to your WiFi's IP address by "
