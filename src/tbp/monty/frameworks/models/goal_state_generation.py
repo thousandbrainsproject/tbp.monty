@@ -28,7 +28,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
     A component (embedded in a learning module) that receives a high-level Goal and
     generates sub-Goals until that Goal is achieved.
 
-    Generated Goals are received by:
+    Generated Goals are received by either:
         i) other learning modules, which may model world objects (e.g., a mug) or
         internal systems (e.g., the agent's robotic limb)
         ii) motor actuators, in which case they represent simpler, primitive Goals
