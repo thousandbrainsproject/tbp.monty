@@ -626,7 +626,7 @@ class EvidenceSDRLMMixin:
         mlh_evidence = np.max(self.evidence[mlh_object])
 
         relative_evidences = np.full_like(self.target_overlaps.overlaps, np.nan)
-        for obj in self.evidence.keys():
+        for obj in self.evidence:
             ids = sorted([mlh_object_id, self.obj2id[obj]])
             ev = np.max(self.evidence[obj]) - mlh_evidence
             relative_evidences[ids[0], ids[1]] = ev

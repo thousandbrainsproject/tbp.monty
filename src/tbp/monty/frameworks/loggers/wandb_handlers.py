@@ -245,7 +245,7 @@ class DetailedWandbHandler(WandbHandler):
 
     def get_episode_frames(self, episode_stats):
         frames_per_sm = {}
-        sm_ids = [sm for sm in episode_stats.keys() if sm.startswith("SM_")]
+        sm_ids = [sm for sm in episode_stats if sm.startswith("SM_")]
         for sm in sm_ids:
             observations = episode_stats[sm]["raw_observations"]
             frames_per_sm[sm] = get_rgba_frames_single_sm(observations)

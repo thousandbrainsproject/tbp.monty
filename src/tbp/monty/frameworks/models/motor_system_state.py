@@ -79,10 +79,10 @@ class MotorSystemState(Dict[AgentID, AgentState]):
             Copy of the motor state.
         """
         state_copy: dict[AgentID, Any] = {}
-        for agent_id in self.keys():
+        for agent_id in self:
             agent_state = self[agent_id]
             sensors = {}
-            for sensor_id in agent_state.sensors.keys():
+            for sensor_id in agent_state.sensors:
                 sensor_state = agent_state.sensors[sensor_id]
                 sensors[sensor_id] = {
                     "position": np.array(list(sensor_state.position)),

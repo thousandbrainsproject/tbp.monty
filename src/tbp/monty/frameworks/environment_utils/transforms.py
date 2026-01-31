@@ -91,7 +91,7 @@ class MissingToMaxDepth(Transform):
             Observations, same as input, with missing data modified in place
         """
         # loop over sensor modules
-        for sm in observations[self.agent_id].keys():
+        for sm in observations[self.agent_id]:
             m = np.where(observations[self.agent_id][sm]["depth"] <= self.threshold)
             observations[self.agent_id][sm]["depth"][m] = self.max_depth
         return observations
@@ -188,8 +188,8 @@ class GaussianSmoothing(Transform):
             NoDepthSensorPresent: if no depth sensor is present.
         """
         # loop over sensor modules
-        for sm in observations[self.agent_id].keys():
-            if "depth" in observations[self.agent_id][sm].keys():
+        for sm in observations[self.agent_id]:
+            if "depth" in observations[self.agent_id][sm]:
                 depth_img = observations[self.agent_id][sm]["depth"].copy()
                 padded_img = self.get_padded_img(depth_img, pad_type="edge")
                 filtered_img = scipy.signal.convolve(

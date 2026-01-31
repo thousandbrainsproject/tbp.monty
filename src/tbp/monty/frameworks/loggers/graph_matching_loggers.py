@@ -213,7 +213,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         )
         target_dict = target_data_to_dict(logger_args["target"])
         if len(self.lms) == 0:  # first time function is called
-            for lm in performance_dict.keys():
+            for lm in performance_dict:
                 if lm.startswith("LM_"):
                     self.lms.append(lm)
 

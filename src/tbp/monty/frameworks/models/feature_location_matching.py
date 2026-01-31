@@ -569,7 +569,7 @@ class FeatureGraphLM(GraphLM):
         Args:
             consistent_objects: For each object whether it is still consistent.
         """
-        for graph_id in consistent_objects.keys():
+        for graph_id in consistent_objects:
             if consistent_objects[graph_id] is False:
                 self._remove_object_from_matches(graph_id)
 

@@ -356,7 +356,7 @@ class MontyBase(Monty):
         assert len(state_dict["lm_dict"]) == len(self.learning_modules)
         lm_counter = 0
         lm_dict = state_dict["lm_dict"]
-        for lm_key in lm_dict.keys():
+        for lm_key in lm_dict:
             self.learning_modules[lm_counter].load_state_dict(lm_dict[lm_key])
             lm_counter = lm_counter + 1
 

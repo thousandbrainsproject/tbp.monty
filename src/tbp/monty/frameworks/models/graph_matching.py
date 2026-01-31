@@ -191,7 +191,7 @@ class MontyForGraphMatching(MontyBase):
         lm_dict = {}
         for pdir in parallel_dirs:
             state_dict = torch.load(pdir / "model.pt")
-            for lm in state_dict["lm_dict"].keys():
+            for lm in state_dict["lm_dict"]:
                 if lm not in lm_dict:
                     lm_dict[lm] = dict(
                         graph_memory={},
@@ -300,8 +300,8 @@ class MontyForGraphMatching(MontyBase):
                 receiving_lm_pose = votes_per_lm[i]["sensed_pose_rel_body"]
                 for j in self.lm_to_lm_vote_matrix[i]:
                     lm_object_id_vote = votes_per_lm[j]["object_id_vote"]
-                    for obj in lm_object_id_vote.keys():
-                        if obj in pos_object_id_votes.keys():
+                    for obj in lm_object_id_vote:
+                        if obj in pos_object_id_votes:
                             pos_object_id_votes[obj] += int(lm_object_id_vote[obj])
                             neg_object_id_votes[obj] += int(not lm_object_id_vote[obj])
                         else:
@@ -358,7 +358,7 @@ class MontyForGraphMatching(MontyBase):
                                 lm_rot_vote_transformed.append(search_rot)
 
                         if len(lm_loc_vote_transformed) > 0:
-                            if obj in lm_object_location_votes.keys():
+                            if obj in lm_object_location_votes:
                                 lm_object_location_votes[obj] = np.vstack(
                                     [
                                         lm_object_location_votes[obj],
@@ -787,7 +787,7 @@ class GraphLM(LearningModule):
     def get_possible_locations(self):
         possible_paths = self.get_possible_paths()
         possible_locations = {}
-        for obj in possible_paths.keys():
+        for obj in possible_paths:
             possible_paths_obj = np.array(possible_paths[obj])
             if len(possible_paths_obj.shape) > 1:
                 possible_locations[obj] = possible_paths_obj[:, -1]
@@ -813,7 +813,7 @@ class GraphLM(LearningModule):
         poses = self.possible_poses.copy()
         if as_euler:
             all_poses = {}
-            for obj in poses.keys():
+            for obj in poses:
                 euler_poses = []
                 for path in poses[obj]:
                     path_poses = []
@@ -992,12 +992,12 @@ class GraphLM(LearningModule):
     def _update_target_graph_mapping(self, detected_object, target_object):
         """Update dicts that keep track which graphs were built from which objects."""
         if detected_object is not None:
-            if detected_object not in self.graph_id_to_target.keys():
+            if detected_object not in self.graph_id_to_target:
                 self.graph_id_to_target[detected_object] = {target_object}
             else:
                 self.graph_id_to_target[detected_object].add(target_object)
 
-            if target_object not in self.target_to_graph_id.keys():
+            if target_object not in self.target_to_graph_id:
                 self.target_to_graph_id[target_object] = {detected_object}
             else:
                 self.target_to_graph_id[target_object].add(detected_object)
@@ -1042,18 +1042,18 @@ class GraphLM(LearningModule):
         for state in states:
             input_channel = state.sender_id
             features_to_use[input_channel] = {}
-            for feature in state.morphological_features.keys():
+            for feature in state.morphological_features:
                 # in evidence matching pose_vectors are always added to tolerances
                 # since they are requires for matching.
                 if (
-                    feature in self.tolerances[input_channel].keys()
+                    feature in self.tolerances[input_channel]
                     or feature == "pose_fully_defined"
                 ):
                     features_to_use[input_channel][feature] = (
                         state.morphological_features[feature]
                     )
-            for feature in state.non_morphological_features.keys():
-                if feature in self.tolerances[input_channel].keys():
+            for feature in state.non_morphological_features:
+                if feature in self.tolerances[input_channel]:
                     features_to_use[input_channel][feature] = (
                         state.non_morphological_features[feature]
                     )
@@ -1130,7 +1130,7 @@ class GraphMemory(LMMemory):
         if graph_id is None:
             logger.info("no match found in time, not updating memory")
         else:
-            for input_channel in features.keys():
+            for input_channel in features:
                 (
                     input_channel_features,
                     input_channel_locations,
@@ -1178,7 +1178,7 @@ class GraphMemory(LMMemory):
 
     def initialize_feature_arrays(self):
         for graph_id in self.get_memory_ids():
-            if graph_id not in self.feature_array.keys():
+            if graph_id not in self.feature_array:
                 self.feature_array[graph_id] = {}
                 self.feature_order[graph_id] = {}
             for input_channel in self.get_input_channels_in_graph(graph_id):
@@ -1423,7 +1423,7 @@ class GraphMemory(LMMemory):
         for i, node_id in enumerate(all_node_ids):
             node_features = self.get_features_at_node(graph_id, input_channel, node_id)
             start_idx = 0
-            for feature in node_features.keys():
+            for feature in node_features:
                 if feature in [
                     "pose_vectors",
                     "pose_fully_defined",
@@ -1460,7 +1460,7 @@ class GraphMemory(LMMemory):
         """
         node_features = self.get_features_at_node(graph_id, input_channel, node_id=0)
         feature_array_len = 0
-        for feature in node_features.keys():
+        for feature in node_features:
             if feature in [
                 "pose_vectors",
                 "pose_fully_defined",
@@ -1483,7 +1483,7 @@ class GraphMemory(LMMemory):
         missing_features = np.isnan(features["pose_fully_defined"]).flatten()
         # Remove missing features (contain nan values)
         locations = locations[~missing_features]
-        for feature in features.keys():
+        for feature in features:
             features[feature] = features[feature][~missing_features]
         return features, locations
 
