@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -36,7 +36,7 @@ class ObjectModelTest(unittest.TestCase):
                     [0.0, 1, 1],
                     [0.9, 1, 1],
                     [0.8, 1, 1],
-                ]
+                ],
             ),
             "curvature": np.array([0, 1, 2, 1]),
         }
@@ -56,7 +56,10 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_create_grid_object_model(self):
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=10
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=10,
         )
         self.assertIsNotNone(model)
         self.assertIsNone(model._graph)
@@ -74,7 +77,9 @@ class ObjectModelTest(unittest.TestCase):
         self.assertEqual(model.num_nodes, 4, "graph model should have 4 nodes.")
         for feature in self.dummy_features.keys():
             self.assertIn(
-                feature, model.feature_mapping.keys(), f"{feature} not stored in model."
+                feature,
+                model.feature_mapping.keys(),
+                f"{feature} not stored in model.",
             )
 
     def test_can_build_grid_object_model(self):
@@ -87,7 +92,9 @@ class ObjectModelTest(unittest.TestCase):
         self.assertEqual(model.num_nodes, 4, "graph model should have 4 nodes.")
         for feature in self.dummy_features.keys():
             self.assertIn(
-                feature, model.feature_mapping.keys(), f"{feature} not stored in model."
+                feature,
+                model.feature_mapping.keys(),
+                f"{feature} not stored in model.",
             )
 
     def test_apply_delta_thresholds_correctly(self):
@@ -170,7 +177,10 @@ class ObjectModelTest(unittest.TestCase):
         # that all locations should be binned into the same voxel and the location value
         # should be averaged.
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
         )
         model.build_model(
             self.dummy_locs,
@@ -190,7 +200,10 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_grid_features_are_averaged_correctly(self):
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
         )
         model.build_model(
             self.dummy_locs,
@@ -223,7 +236,10 @@ class ObjectModelTest(unittest.TestCase):
         features = copy.deepcopy(self.dummy_features)
         features["pose_fully_defined"] = np.array([False, False, False, True])
         model2 = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
         )
         model2.build_model(
             self.dummy_locs,
@@ -252,7 +268,10 @@ class ObjectModelTest(unittest.TestCase):
         opposite_pv = rot.apply(np.eye(3))
         features["pose_vectors"][0] = opposite_pv.flatten()
         model3 = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
         )
         model3.build_model(
             self.dummy_locs,
@@ -282,7 +301,10 @@ class ObjectModelTest(unittest.TestCase):
         rotated_pv = rot.apply(np.eye(3))
         features["pose_vectors"][0] = rotated_pv.flatten()
         model4 = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
         )
         model4.build_model(
             self.dummy_locs,
@@ -291,13 +313,19 @@ class ObjectModelTest(unittest.TestCase):
         avg_pvs = model4.get_values_for_feature("pose_vectors")[0].reshape((3, 3))
         for pv in avg_pvs:
             self.assertAlmostEqual(
-                np.linalg.norm(pv), 1.0, 3, "Average PVs are not unit vectors anymore"
+                np.linalg.norm(pv),
+                1.0,
+                3,
+                "Average PVs are not unit vectors anymore",
             )
         self.assertTrue(check_orthonormal(avg_pvs), "Average PVs are not orthonormal")
 
     def test_max_nodes_applied_correctly(self):
         model = GridObjectModel(
-            "test_model", max_nodes=3, max_size=10, num_voxels_per_dim=10
+            "test_model",
+            max_nodes=3,
+            max_size=10,
+            num_voxels_per_dim=10,
         )
         model.build_model(
             self.dummy_locs,
@@ -308,7 +336,10 @@ class ObjectModelTest(unittest.TestCase):
     def test_max_size_applied_correctly(self):
         """Test that GridTooSmallError is raised if locations are outside of grid."""
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=1, num_voxels_per_dim=10
+            "test_model",
+            max_nodes=10,
+            max_size=1,
+            num_voxels_per_dim=10,
         )
         with self.assertRaises(GridTooSmallError):
             model.build_model(

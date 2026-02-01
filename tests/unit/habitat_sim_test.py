@@ -178,18 +178,22 @@ class HabitatSimTest(unittest.TestCase):
         # Create camera agent returning semantic id
         rotation_degrees = 10.0
         agents = create_agents(
-            num_agents=1, semantic=True, rotation_step=rotation_degrees
+            num_agents=1,
+            semantic=True,
+            rotation_step=rotation_degrees,
         )
         agent_id = agents[0].agent_id
         sensor_id = agents[0].sensor_id
         with HabitatSim(agents=agents) as sim:
             # Add a couple of objects
             cylinder = sim.add_object(
-                name="cylinderSolid", position=(-0.2, 1.5, -0.2)
+                name="cylinderSolid",
+                position=(-0.2, 1.5, -0.2),
             ).semantic_id
 
             cube = sim.add_object(
-                name="cubeSolid", position=(0.6, 1.5, -0.6)
+                name="cubeSolid",
+                position=(0.6, 1.5, -0.6),
             ).semantic_id
 
             # Check if observations include both objects
@@ -393,7 +397,8 @@ class HabitatSimTest(unittest.TestCase):
             object_config_path = Path(data_path) / "test_obj.object_config.json"
             with object_config_path.open("w") as json_file:
                 json.dump(
-                    {"render_asset": "icosphereSolid_subdivs_1", "mass": 1}, json_file
+                    {"render_asset": "icosphereSolid_subdivs_1", "mass": 1},
+                    json_file,
                 )
             with HabitatSim(agents=agents, data_path=data_path) as sim:
                 env_obj = sim.add_object("test_obj")
@@ -408,7 +413,8 @@ class HabitatSimTest(unittest.TestCase):
             # Create valid habitat object inside the dataset
             with (dataset_path / "test_obj.object_config.json").open("w") as json_file:
                 json.dump(
-                    {"render_asset": "icosphereSolid_subdivs_1", "mass": 1}, json_file
+                    {"render_asset": "icosphereSolid_subdivs_1", "mass": 1},
+                    json_file,
                 )
             with HabitatSim(agents=agents, data_path=data_path) as sim:
                 env_obj = sim.add_object("test_obj")
@@ -452,7 +458,7 @@ class HabitatSimTest(unittest.TestCase):
                 self.assertEqual(agent_state.position, agent_pos)
                 self.assertEqual(sensor_state.position, sensor_pos)
                 self.assertTrue(
-                    qt.isclose(sensor_state.rotation, sensor_rot, rtol=1e-4)
+                    qt.isclose(sensor_state.rotation, sensor_rot, rtol=1e-4),
                 )
                 self.assertTrue(qt.isclose(agent_state.rotation, expected, rtol=1e-4))
 
@@ -521,7 +527,7 @@ class HabitatSimTest(unittest.TestCase):
                 self.assertEqual(sensor_state.position, sensor_pos)
                 self.assertTrue(qt.isclose(agent_state.rotation, expected, rtol=1e-4))
                 self.assertTrue(
-                    qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4)
+                    qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4),
                 )
 
     def test_set_sensor_rotation(self):
@@ -542,11 +548,12 @@ class HabitatSimTest(unittest.TestCase):
             # should remain unchanged
             for _ in range(5):
                 expected_rot = qt.from_rotation_vector(
-                    [np.deg2rad(-45), np.deg2rad(45), np.deg2rad(355)]
+                    [np.deg2rad(-45), np.deg2rad(45), np.deg2rad(355)],
                 )
 
                 set_sensor_rotation = SetSensorRotation(
-                    agent_id=agent_id, rotation_quat=expected_rot
+                    agent_id=agent_id,
+                    rotation_quat=expected_rot,
                 )
                 sim.step([set_sensor_rotation])
                 states = sim.states
@@ -556,7 +563,7 @@ class HabitatSimTest(unittest.TestCase):
                 self.assertEqual(sensor_state.position, sensor_pos)
                 self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
                 self.assertTrue(
-                    qt.isclose(sensor_state.rotation, expected_rot, rtol=1e-4)
+                    qt.isclose(sensor_state.rotation, expected_rot, rtol=1e-4),
                 )
 
     def test_set_sensor_pose(self):
@@ -579,11 +586,13 @@ class HabitatSimTest(unittest.TestCase):
             # should remain unchanged
             for _ in range(5):
                 expected_rot = qt.from_rotation_vector(
-                    [np.deg2rad(-45), np.deg2rad(45), np.deg2rad(355)]
+                    [np.deg2rad(-45), np.deg2rad(45), np.deg2rad(355)],
                 )
 
                 set_sensor_pose = SetSensorPose(
-                    agent_id=agent_id, location=np.zeros(3), rotation_quat=expected_rot
+                    agent_id=agent_id,
+                    location=np.zeros(3),
+                    rotation_quat=expected_rot,
                 )
                 sim.step([set_sensor_pose])
                 states = sim.states
@@ -593,7 +602,7 @@ class HabitatSimTest(unittest.TestCase):
                 self.assertEqual(sensor_state.position, sensor_pos)
                 self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
                 self.assertTrue(
-                    qt.isclose(sensor_state.rotation, expected_rot, rtol=1e-4)
+                    qt.isclose(sensor_state.rotation, expected_rot, rtol=1e-4),
                 )
 
             # Make sure absolute position does not change over multiple calls; rotation
@@ -614,14 +623,14 @@ class HabitatSimTest(unittest.TestCase):
                 self.assertEqual(sensor_state.position, expected_pos)
                 self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
                 self.assertTrue(
-                    qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4)
+                    qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4),
                 )
 
             # Make sure absolute position and rotation do not change over multiple calls
             for _ in range(5):
                 expected_pos = np.array([2.5, -2.5, 2.5])
                 expected_rot = qt.from_rotation_vector(
-                    [np.deg2rad(180), np.deg2rad(-180), np.deg2rad(360)]
+                    [np.deg2rad(180), np.deg2rad(-180), np.deg2rad(360)],
                 )
 
                 set_sensor_pose = SetSensorPose(
@@ -637,7 +646,7 @@ class HabitatSimTest(unittest.TestCase):
                 self.assertEqual(sensor_state.position, expected_pos)
                 self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
                 self.assertTrue(
-                    qt.isclose(sensor_state.rotation, expected_rot, rtol=1e-4)
+                    qt.isclose(sensor_state.rotation, expected_rot, rtol=1e-4),
                 )
 
     def test_set_agent_pose(self):
@@ -659,11 +668,13 @@ class HabitatSimTest(unittest.TestCase):
             # should remain unchanged
             for _ in range(5):
                 expected_rot = qt.from_rotation_vector(
-                    [np.deg2rad(-45), np.deg2rad(45), np.deg2rad(355)]
+                    [np.deg2rad(-45), np.deg2rad(45), np.deg2rad(355)],
                 )
 
                 set_agent_pose = SetAgentPose(
-                    agent_id=agent_id, location=np.zeros(3), rotation_quat=expected_rot
+                    agent_id=agent_id,
+                    location=np.zeros(3),
+                    rotation_quat=expected_rot,
                 )
                 sim.step([set_agent_pose])
                 states = sim.states
@@ -672,10 +683,10 @@ class HabitatSimTest(unittest.TestCase):
                 self.assertEqual(agent_state.position, agent_pos)
                 self.assertEqual(sensor_state.position, sensor_pos)
                 self.assertTrue(
-                    qt.isclose(agent_state.rotation, expected_rot, rtol=1e-4)
+                    qt.isclose(agent_state.rotation, expected_rot, rtol=1e-4),
                 )
                 self.assertTrue(
-                    qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4)
+                    qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4),
                 )
 
             # Make sure absolute position does not change over multiple calls; rotation
@@ -696,14 +707,14 @@ class HabitatSimTest(unittest.TestCase):
                 self.assertEqual(sensor_state.position, sensor_pos)
                 self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
                 self.assertTrue(
-                    qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4)
+                    qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4),
                 )
 
             # Make sure absolute position and rotation do not change over multiple calls
             for _ in range(5):
                 expected_pos = np.array([2.5, -2.5, 2.5])
                 expected_rot = qt.from_rotation_vector(
-                    [np.deg2rad(180), np.deg2rad(-180), np.deg2rad(360)]
+                    [np.deg2rad(180), np.deg2rad(-180), np.deg2rad(360)],
                 )
 
                 set_agent_pose = SetAgentPose(
@@ -718,10 +729,10 @@ class HabitatSimTest(unittest.TestCase):
                 self.assertEqual(agent_state.position, expected_pos)
                 self.assertEqual(sensor_state.position, sensor_pos)
                 self.assertTrue(
-                    qt.isclose(agent_state.rotation, expected_rot, rtol=1e-4)
+                    qt.isclose(agent_state.rotation, expected_rot, rtol=1e-4),
                 )
                 self.assertTrue(
-                    qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4)
+                    qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4),
                 )
 
     def test_agent_height(self):

@@ -34,7 +34,8 @@ class HierarchyTest(unittest.TestCase):
         self.model_path = self.output_dir / "pretrained"
 
         with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
+            version_base=None,
+            config_path="../../src/tbp/monty/conf",
         ):
             self.two_lms_heterarchy_cfg = hydra.compose(
                 config_name="test",
@@ -243,7 +244,8 @@ class HierarchyTest(unittest.TestCase):
                     self.assertIn(f"patch_{lm_idx}", loaded_graph.keys())
                     # check that it is of type GridObjectModel.
                     self.assertIsInstance(
-                        loaded_graph[f"patch_{lm_idx}"], GridObjectModel
+                        loaded_graph[f"patch_{lm_idx}"],
+                        GridObjectModel,
                     )
             lm_0_memory_before_learning = exp.model.learning_modules[
                 0
@@ -252,14 +254,14 @@ class HierarchyTest(unittest.TestCase):
             # check that LM_0 models were not updated
             for object_id in ["capsule3DSolid", "cubeSolid"]:
                 updated_graph = exp.model.learning_modules[0].graph_memory.get_graph(
-                    graph_id=object_id
+                    graph_id=object_id,
                 )
                 self.assertEqual(updated_graph, lm_0_memory_before_learning[object_id])
             # check that LM_1 models now contain learning_module_0 input channel.
             # TODO: also get it to recognize cubeSolid
             for object_id in ["capsule3DSolid"]:
                 updated_graph = exp.model.learning_modules[1].graph_memory.get_graph(
-                    graph_id=object_id
+                    graph_id=object_id,
                 )
                 self.assertIn(
                     "learning_module_0",

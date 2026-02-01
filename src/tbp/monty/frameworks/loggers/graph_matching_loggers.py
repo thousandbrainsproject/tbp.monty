@@ -210,7 +210,9 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                     stats
         """
         performance_dict = get_stats_per_lm(
-            model, logger_args["target"], logger_args["episode_seed"]
+            model,
+            logger_args["target"],
+            logger_args["episode_seed"],
         )
         target_dict = target_data_to_dict(logger_args["target"])
         if len(self.lms) == 0:  # first time function is called
@@ -225,7 +227,10 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         self.data["BASIC"][f"{mode}_stats"][episode] = performance_dict
 
         self.update_overall_stats(
-            mode, episode, model.episode_steps, model.matching_steps
+            mode,
+            episode,
+            model.episode_steps,
+            model.matching_steps,
         )
         overall_stats = self.get_formatted_overall_stats(mode, episode)
 
@@ -256,17 +261,17 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             stats["run_times"].append(episode_stats["time"])
             stats["episode_lm_steps"].append(episode_stats["num_steps"])
             stats["episode_lm_steps_indv_ts"].append(
-                episode_stats["individual_ts_reached_at_step"]
+                episode_stats["individual_ts_reached_at_step"],
             )
             stats["episode_symmetry_evidence"].append(
-                episode_stats["symmetry_evidence"]
+                episode_stats["symmetry_evidence"],
             )
             stats["monty_steps"].append(episode_steps)
             stats["monty_matching_steps"].append(monty_matching_steps)
             # older LMs don't have prediction error stats
             if "episode_avg_prediction_error" in episode_stats:
                 stats["episode_avg_prediction_error"].append(
-                    episode_stats["episode_avg_prediction_error"]
+                    episode_stats["episode_avg_prediction_error"],
                 )
 
             if performance in {"consistent_child_obj", "correct", "correct_mlh"}:
@@ -317,7 +322,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             if steps is not None
         ]
         episode_lm_performances = self.performance_encoder.transform(
-            stats["episode_lm_performances"][-1]
+            stats["episode_lm_performances"][-1],
         )
 
         if len(episode_re) == 0:  # object was not recognized
@@ -489,26 +494,26 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         if len(self.lms) > 1:  # add histograms when running multiple LMs
             overall_stats["episode/rotation_error_per_lm"] = wandb.Histogram(episode_re)
             overall_stats["episode/steps_per_lm"] = wandb.Histogram(
-                stats["episode_lm_steps"][-len(self.lms) :]
+                stats["episode_lm_steps"][-len(self.lms) :],
             )
             overall_stats["episode/steps_per_lm_indv_ts"] = wandb.Histogram(
-                episode_individual_ts_steps
+                episode_individual_ts_steps,
             )
             overall_stats["episode/symmetry_evidence_per_lm"] = wandb.Histogram(
-                stats["episode_symmetry_evidence"][-len(self.lms) :]
+                stats["episode_symmetry_evidence"][-len(self.lms) :],
             )
             overall_stats["episode/lm_performances"] = wandb.Histogram(
-                episode_lm_performances
+                episode_lm_performances,
             )
             # filter out prediction errors that are nan
             prediction_errors = stats["episode_avg_prediction_error"][-len(self.lms) :]
             valid_prediction_errors = [e for e in prediction_errors if not np.isnan(e)]
             if valid_prediction_errors:
                 overall_stats["episode/avg_prediction_error_dist"] = wandb.Histogram(
-                    valid_prediction_errors
+                    valid_prediction_errors,
                 )
                 overall_stats["episode/avg_prediction_error"] = np.mean(
-                    valid_prediction_errors
+                    valid_prediction_errors,
                 )
 
         return overall_stats
@@ -644,7 +649,7 @@ class SelectiveEvidenceLogger(BasicGraphMatchingLogger):
                     "possible_matches": lm.buffer.stats["possible_matches"],
                     "current_mlh": lm.buffer.stats["current_mlh"],
                     "symmetry_evidence": lm.buffer.stats["symmetry_evidence"],
-                }
+                },
             )
             buffer_data[f"LM_{i}"] = lm_dict
 

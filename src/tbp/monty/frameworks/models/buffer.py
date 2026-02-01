@@ -204,13 +204,13 @@ class FeatureAtLocationBuffer:
         sensed_pose_features = self.get_current_features(["pose_vectors"])
         sensed_location = self.get_current_location(input_channel)
         channel_pose = sensed_pose_features[input_channel]["pose_vectors"].reshape(
-            (3, 3)
+            (3, 3),
         )
         return np.vstack(
             [
                 sensed_location,
                 channel_pose,
-            ]
+            ],
         )
 
     def get_last_obs_processed(self):
@@ -348,17 +348,17 @@ class FeatureAtLocationBuffer:
         global_on_object_ids = self._global_on_object_ids()
         logger.debug(
             f"Observed {np.array(self.locations).shape} locations, "
-            f"{len(global_on_object_ids)} global on object"
+            f"{len(global_on_object_ids)} global on object",
         )
         for input_channel in self.features.keys():
             # Here we want to make sure the input specific obs was on the object
             channel_off_object_ids = np.where(
-                self.features[input_channel]["on_object"] is False
+                self.features[input_channel]["on_object"] is False,
             )[0]
             logger.debug(
                 f"{input_channel} has "
                 f"{len(self.locations) - len(channel_off_object_ids)} "
-                "on object observations"
+                "on object observations",
             )
 
             channel_features_on_object = {}
@@ -366,11 +366,11 @@ class FeatureAtLocationBuffer:
                 # Pad end of array with nans if last steps of episode were off object
                 # for this channel
                 padded_feature = self._pad_to_target_length(
-                    self.features[input_channel][feature]
+                    self.features[input_channel][feature],
                 )
                 logger.debug(
                     f"{input_channel} observations for feature {feature} have "
-                    f"shape {padded_feature.shape}"
+                    f"shape {padded_feature.shape}",
                 )
                 # Get feature at each time step where the global on_object flag was
                 # True (at least one input was on object, not necessarily this
@@ -462,7 +462,7 @@ class FeatureAtLocationBuffer:
         raise ValueError(
             f"No sensory input channels found in buffer. "
             f"Available channels: {all_channels}. "
-            f"Channel sender types: {self.channel_sender_types}"
+            f"Channel sender types: {self.channel_sender_types}",
         )
 
     def set_individual_ts(self, object_id, pose):
@@ -509,7 +509,8 @@ class FeatureAtLocationBuffer:
             # sure the same index in different feature array corresponds to
             # the same time step and location.
             self.features[input_channel][attr_name] = np.full(
-                (len(self) + 1, attr_shape), np.nan
+                (len(self) + 1, attr_shape),
+                np.nan,
             )
         else:
             padded_feat = self._pad_to_target_length(
@@ -550,7 +551,8 @@ class FeatureAtLocationBuffer:
             self.displacements[input_channel] = {}
         if disp_name not in self.displacements[input_channel].keys():
             self.displacements[input_channel][disp_name] = np.full(
-                (len(self.locations), len(disp_val)), np.nan
+                (len(self.locations), len(disp_val)),
+                np.nan,
             )
 
         padded_vals = self._pad_to_target_length(
@@ -622,14 +624,14 @@ class FeatureAtLocationBuffer:
             raise ValueError(
                 f"Column dimension mismatch: existing array has "
                 f"{existing_vals.shape[1]} columns but new_val_len={new_val_len} "
-                f"was provided. Padding along column dimension is not allowed."
+                f"was provided. Padding along column dimension is not allowed.",
             )
 
         # Infer width from existing array if not provided
         if new_val_len is None:
             if existing_vals.size == 0:
                 raise ValueError(
-                    "Cannot infer width from empty array; must provide new_val_len"
+                    "Cannot infer width from empty array; must provide new_val_len",
                 )
             new_val_len = existing_vals.shape[1]
 

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -24,7 +24,9 @@ class TestGenerateIndex(unittest.TestCase):
         shutil.rmtree(self.temp_dir)
 
     def _create_file_and_generate_index(
-        self, subdir: str, frontmatter_fields: str
+        self,
+        subdir: str,
+        frontmatter_fields: str,
     ) -> list:
         subdir_path = Path(self.temp_dir) / subdir
         subdir_path.mkdir(parents=True, exist_ok=True)
@@ -62,7 +64,8 @@ class TestGenerateIndex(unittest.TestCase):
         frontmatter = 'status: "completed"\n'
 
         index_data = self._create_file_and_generate_index(
-            "category/subcategory/subsubcategory", frontmatter
+            "category/subcategory/subsubcategory",
+            frontmatter,
         )
 
         self.assertEqual(len(index_data), 1)
@@ -71,7 +74,7 @@ class TestGenerateIndex(unittest.TestCase):
 
         self.assertEqual(entry["status"], "completed")
         self.assertTrue(
-            entry["path"].endswith("/category/subcategory/subsubcategory/test-doc.md")
+            entry["path"].endswith("/category/subcategory/subsubcategory/test-doc.md"),
         )
         self.assertEqual(entry["path1"], "category")
         self.assertEqual(entry["path2"], "subcategory")

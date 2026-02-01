@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -53,11 +53,11 @@ class TestHierarchyFile(unittest.TestCase):
                     {
                         "slug": "doc-1",
                         "children": [
-                            {"slug": "child-1", "children": [{"slug": "grandchild-1"}]}
+                            {"slug": "child-1", "children": [{"slug": "grandchild-1"}]},
                         ],
-                    }
+                    },
                 ],
-            }
+            },
         ]
         create_hierarchy_file(self.test_dir, hierarchy_structure)
 
@@ -84,7 +84,7 @@ class TestHierarchyFile(unittest.TestCase):
         with hierarchy_file.open("w") as f:
             f.write(
                 f"{CATEGORY_PREFIX}category-1: Category 1\n"
-                f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n"
+                f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n",
             )
 
         (self.test_dir / "category-1").mkdir(parents=True)
@@ -100,7 +100,7 @@ class TestHierarchyFile(unittest.TestCase):
             f.write(
                 f"{CATEGORY_PREFIX}category-1: Category 1\n"
                 f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n"
-                f"{DOCUMENT_PREFIX}[doc-1](doc-1.md)\n"
+                f"{DOCUMENT_PREFIX}[doc-1](doc-1.md)\n",
             )
 
         (self.test_dir / "category-1").mkdir(parents=True)
@@ -123,7 +123,7 @@ class TestHierarchyFile(unittest.TestCase):
         with hierarchy_file.open("w") as f:
             f.write(
                 f"{CATEGORY_PREFIX}category-1: Category 1\n"
-                f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n"
+                f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n",
             )
 
         (self.test_dir / "category-1").mkdir(parents=True)
@@ -132,7 +132,7 @@ class TestHierarchyFile(unittest.TestCase):
             f.write(
                 "---\ntitle: Doc 1\n---\nContent\n"
                 "[missing](category-1/missing.md)\n"
-                "[fragment](category-1/missing.md#fragment)"
+                "[fragment](category-1/missing.md#fragment)",
             )
 
         existing_file = self.test_dir / "category-1" / "existing.md"
@@ -185,10 +185,10 @@ class TestHierarchyFile(unittest.TestCase):
             any(
                 f"broken link: {self.server_url}/missing" in message
                 for message in log.output
-            )
+            ),
         )
         self.assertFalse(
-            any(f"{self.server_url}/valid" in message for message in log.output)
+            any(f"{self.server_url}/valid" in message for message in log.output),
         )
 
     def test_extract_links_happy_path(self):

@@ -107,7 +107,7 @@ class EnvironmentInterface:
     ):
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
-                f"motor_system must be an instance of MotorSystem, got {motor_system}"
+                f"motor_system must be an instance of MotorSystem, got {motor_system}",
             )
         self.env = env
         self.motor_system = motor_system
@@ -152,7 +152,10 @@ class EnvironmentInterface:
         return observation, state
 
     def apply_transform(
-        self, transform, observation: Observations, state: ProprioceptiveState
+        self,
+        transform,
+        observation: Observations,
+        state: ProprioceptiveState,
     ) -> Observations:
         ctx = TransformContext(rng=self.rng, state=state)
         if isinstance(transform, Iterable):
@@ -245,7 +248,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             # of the distractor objects shouldn't happen here
             self.object_names = object_names["targets_list"]
             self.source_object_list = list(
-                dict.fromkeys(object_names["source_object_list"])
+                dict.fromkeys(object_names["source_object_list"]),
             )
             self.num_distractors = object_names["num_distractors"]
         else:
@@ -256,7 +259,10 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         self.epochs = 0
         self.object_init_sampler = object_init_sampler
         self.object_params = self.object_init_sampler(
-            self.seed, self.experiment_mode, self.epochs, self.episodes
+            self.seed,
+            self.experiment_mode,
+            self.epochs,
+            self.episodes,
         )
         self.current_object = 0
         self.n_objects = len(self.object_names)
@@ -277,7 +283,10 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         super().post_episode()
         self.episodes += 1
         self.object_params = self.object_init_sampler(
-            self.seed, self.experiment_mode, self.epochs, self.episodes
+            self.seed,
+            self.experiment_mode,
+            self.epochs,
+            self.episodes,
         )
         self.cycle_object()
 
@@ -287,7 +296,10 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
     def post_epoch(self):
         self.epochs += 1
         self.object_params = self.object_init_sampler(
-            self.seed, self.experiment_mode, self.epochs, self.episodes
+            self.seed,
+            self.experiment_mode,
+            self.epochs,
+            self.episodes,
         )
 
     def create_semantic_mapping(self):
@@ -320,7 +332,8 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         """
         next_object = (self.current_object + 1) % self.n_objects
         logger.info(
-            f"\n\nGoing from {self.current_object} to {next_object} of {self.n_objects}"
+            f"\n\nGoing from {self.current_object} to {next_object} "
+            f"of {self.n_objects}",
         )
         self.change_object_by_idx(next_object)
 
@@ -348,7 +361,8 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
         # TODO clean this up with its own specific call i.e. Law of Demeter
         primary_target_obj = self.env.add_object(
-            name=self.object_names[idx], **init_params
+            name=self.object_names[idx],
+            **init_params,
         )
 
         if self.num_distractors > 0:
@@ -464,7 +478,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
                     self._observation,
                     view_sensor_id="view_finder",
                     state=self.motor_system._state,
-                )
+                ),
             ]
         else:
             # TODO: Encapsulate this reset inside TouchObject positioning
@@ -586,7 +600,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             action_sampler_class=UniformlyDistributedSampler,
         )
         result = positioning_procedure.positioning_call(
-            self._observation, self.motor_system._state
+            self._observation,
+            self.motor_system._state,
         )
         while not result.terminated and not result.truncated:
             self._observation, proprio_state = self.step(result.actions)
@@ -595,7 +610,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             )
 
             result = positioning_procedure.positioning_call(
-                self._observation, self.motor_system._state
+                self._observation,
+                self.motor_system._state,
             )
 
         return result.success
@@ -634,7 +650,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             The observation from the jump attempt.
         """
         logger.debug(
-            "Attempting a 'jump' like movement to evaluate an object hypothesis"
+            "Attempting a 'jump' like movement to evaluate an object hypothesis",
         )
 
         # Store the current location and orientation of the agent.
@@ -650,7 +666,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
                 first_sensor = current_sensor
             assert np.all(
                 pre_jump_state.sensors[current_sensor].rotation
-                == pre_jump_state.sensors[first_sensor].rotation
+                == pre_jump_state.sensors[first_sensor].rotation,
             ), "Sensors are not identical in pose"
 
         # TODO In general what would be best/cleanest way of routing information,
@@ -679,7 +695,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             rotation_quat=qt.one,
         )
         self._observation, proprioceptive_state = self.step(
-            [set_agent_pose, set_sensor_rotation]
+            [set_agent_pose, set_sensor_rotation],
         )
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -714,7 +730,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # Call post_action (normally taken care of __call__ within
         # self.motor_system._policy())
         self.motor_system._policy.post_action(
-            self.motor_system._policy.action, self.motor_system._state
+            self.motor_system._policy.action,
+            self.motor_system._state,
         )
 
         return self._observation
@@ -725,7 +742,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         A successful jump is "on-object", i.e. the object is perceived by the sensor.
         """
         logger.debug(
-            "Object visible, maintaining new pose for hypothesis-testing action"
+            "Object visible, maintaining new pose for hypothesis-testing action",
         )
 
         if isinstance(self.motor_system._policy, SurfacePolicy):
@@ -771,16 +788,16 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             rotation_quat=pre_jump_state.sensors[first_sensor].rotation,
         )
         self._observation, proprioceptive_state = self.step(
-            [set_agent_pose, set_sensor_rotation]
+            [set_agent_pose, set_sensor_rotation],
         )
 
         assert np.all(
             proprioceptive_state[self.motor_system._policy.agent_id].position
-            == pre_jump_state.position
+            == pre_jump_state.position,
         ), "Failed to return agent to location"
         assert np.all(
             proprioceptive_state[self.motor_system._policy.agent_id].rotation
-            == pre_jump_state.rotation
+            == pre_jump_state.rotation,
         ), "Failed to return agent to orientation"
 
         for current_sensor in proprioceptive_state[
@@ -790,7 +807,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
                 proprioceptive_state[self.motor_system._policy.agent_id]
                 .sensors[current_sensor]
                 .rotation
-                == pre_jump_state.sensors[current_sensor].rotation
+                == pre_jump_state.sensors[current_sensor].rotation,
             ), "Failed to return sensor to orientation"
 
         self.motor_system._state = MotorSystemState(proprioceptive_state)
@@ -839,7 +856,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         """
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
-                f"motor_system must be an instance of MotorSystem, got {motor_system}"
+                f"motor_system must be an instance of MotorSystem, got {motor_system}",
             )
         self.env = env
         self.rng = rng
@@ -880,7 +897,8 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         """Switch to the next character image."""
         next_object = (self.current_object + 1) % self.n_objects
         logger.info(
-            f"\n\nGoing from {self.current_object} to {next_object} of {self.n_objects}"
+            f"\n\nGoing from {self.current_object} to {next_object} "
+            f"of {self.n_objects}",
         )
         self.change_object_by_idx(next_object)
 
@@ -892,7 +910,9 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         """
         assert idx <= self.n_objects, "idx must be <= self.n_objects"
         self.env.switch_to_object(
-            self.alphabets[idx], self.characters[idx], self.versions[idx]
+            self.alphabets[idx],
+            self.characters[idx],
+            self.versions[idx],
         )
         self.current_object = idx
         self.primary_target = {
@@ -941,7 +961,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         """
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
-                f"motor_system must be an instance of MotorSystem, got {motor_system}"
+                f"motor_system must be an instance of MotorSystem, got {motor_system}",
             )
         self.env = env
         self.rng = rng
@@ -979,7 +999,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         next_scene = (self.current_scene_version + 1) % self.n_versions
         logger.info(
             f"\n\nGoing from {self.current_scene_version} to {next_scene} of "
-            f"{self.n_versions}"
+            f"{self.n_versions}",
         )
         self.change_object_by_idx(next_scene)
 
@@ -992,7 +1012,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         assert idx <= self.n_versions, "idx must be <= self.n_versions"
         logger.info(
             f"changing to obj {idx} -> scene {self.scenes[idx]}, version "
-            f"{self.versions[idx]}"
+            f"{self.versions[idx]}",
         )
         self.env.switch_to_object(self.scenes[idx], self.versions[idx])
         self.current_scene_version = idx
@@ -1039,7 +1059,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         """
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
-                f"motor_system must be an instance of MotorSystem, got {motor_system}"
+                f"motor_system must be an instance of MotorSystem, got {motor_system}",
             )
         self.env = env
         self.rng = rng

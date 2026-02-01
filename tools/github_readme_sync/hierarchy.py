@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -96,14 +96,14 @@ def check_hierarchy_file(folder: str):
 
         elif DOCUMENT_PREFIX in line:
             indent_level = (len(line) - len(line.lstrip(INDENTATION_UNIT))) // len(
-                INDENTATION_UNIT
+                INDENTATION_UNIT,
             )
             slug = extract_slug(line.strip())
 
             if slug in unique_slugs:
                 logging.error(
                     f"Duplicate slug found: {slug}"
-                    f"\n{unique_slugs[slug].strip()}\n{line.strip()}"
+                    f"\n{unique_slugs[slug].strip()}\n{line.strip()}",
                 )
                 sys.exit(1)
             unique_slugs[slug] = line
@@ -159,7 +159,7 @@ def check_links(path):
         f"{WHITE}{file_name}"
         f"{GREEN} {len(md_link_matches)} links"
         f"{CYAN} {len(image_link_matches)} images"
-        f"{YELLOW} {len(table_matches)} tables{RESET}"
+        f"{YELLOW} {len(table_matches)} tables{RESET}",
     )
 
     current_dir = path.resolve().parent
@@ -379,5 +379,5 @@ def report_errors(errors, total_links_checked):
     else:
         logging.info(
             f"{GREEN}No external link errors found. "
-            f"Total links checked: {total_links_checked}{RESET}"
+            f"Total links checked: {total_links_checked}{RESET}",
         )

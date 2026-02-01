@@ -24,7 +24,9 @@ class MotorSystem:
     """The basic motor system implementation."""
 
     def __init__(
-        self, policy: MotorPolicy, state: MotorSystemState | None = None
+        self,
+        policy: MotorPolicy,
+        state: MotorSystemState | None = None,
     ) -> None:
         """Initialize the motor system with a motor policy.
 

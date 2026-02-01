@@ -112,14 +112,14 @@ class MontyBase(Monty):
         lm_len = len(self.learning_modules)
         if lm_len != len(self.sm_to_lm_matrix):
             raise ValueError(
-                "The lengths of learning_modules and sm_to_lm_matrix must match"
+                "The lengths of learning_modules and sm_to_lm_matrix must match",
             )
 
         if self.lm_to_lm_vote_matrix is not None and lm_len != len(
-            self.lm_to_lm_vote_matrix
+            self.lm_to_lm_vote_matrix,
         ):
             raise ValueError(
-                "The lengths of learning_modules and lm_to_lm_vote_matrix must match"
+                "The lengths of learning_modules and lm_to_lm_vote_matrix must match",
             )
 
         # Check that every sensor module is assigned to an agent.
@@ -127,7 +127,7 @@ class MontyBase(Monty):
         if set(sm_ids) != set(self.sm_to_agent_dict.keys()):
             raise ValueError(
                 "sm_to_agent_dict must contain exactly one key for each "
-                "sensor_module id; no more, no less!"
+                "sensor_module id; no more, no less!",
             )
 
     ###
@@ -164,7 +164,7 @@ class MontyBase(Monty):
         """Pass features directly to motor system without stepping LMs."""
         self.aggregate_sensory_inputs(observation)
         self._pass_input_obs_to_motor_system(
-            get_first_sensory_state(self.sensor_module_outputs)
+            get_first_sensory_state(self.sensor_module_outputs),
         )
         self.total_steps += 1
         self.episode_steps += 1
@@ -172,10 +172,10 @@ class MontyBase(Monty):
         # steps, and the stepwise target object
         for ii in range(len(self.learning_modules)):
             self.learning_modules[ii].add_lm_processing_to_buffer_stats(
-                lm_processed=False
+                lm_processed=False,
             )
             self.learning_modules[ii].stepwise_targets_list.append(
-                self.learning_modules[ii].stepwise_target_object
+                self.learning_modules[ii].stepwise_target_object,
             )
 
     def check_reached_max_matching_steps(self, max_steps):
@@ -314,7 +314,7 @@ class MontyBase(Monty):
                 else:
                     self._is_done = True
                     logger.info(
-                        f"finished evaluating after {self.matching_steps} steps"
+                        f"finished evaluating after {self.matching_steps} steps",
                     )
 
     def _post_step(self):

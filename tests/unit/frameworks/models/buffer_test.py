@@ -249,7 +249,7 @@ class PadToTargetLengthTest(unittest.TestCase):
                 [7.0, 8.0, 9.0],
                 [10.0, 11.0, 12.0],
                 [13.0, 14.0, 15.0],
-            ]
+            ],
         )
 
         padded = self.buffer._pad_to_target_length(existing)
@@ -280,7 +280,9 @@ class PadToTargetLengthTest(unittest.TestCase):
 
         # Pad with explicit new_val_len
         padded = self.buffer._pad_to_target_length(
-            existing, target_length=3, new_val_len=5
+            existing,
+            target_length=3,
+            new_val_len=5,
         )
 
         # Rows padded to 3

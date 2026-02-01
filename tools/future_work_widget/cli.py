@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -27,11 +27,12 @@ logger = logging.getLogger(__name__)
 def main():
     logging.basicConfig(format="%(message)s", level=logging.INFO, stream=sys.stdout)
     parser = argparse.ArgumentParser(
-        description="Build the data and package the future work widget."
+        description="Build the data and package the future work widget.",
     )
     parser.add_argument("index_file", help="The JSON file to validate and transform")
     parser.add_argument(
-        "output_dir", help="The output directory to create and save data.json"
+        "output_dir",
+        help="The output directory to create and save data.json",
     )
     parser.add_argument(
         "--docs-snippets-dir",

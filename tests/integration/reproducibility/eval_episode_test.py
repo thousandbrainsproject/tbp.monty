@@ -120,7 +120,8 @@ class EvalEpisodeTest(unittest.TestCase):
     def setUp(self):
         self.output_dir = Path(tempfile.mkdtemp())
         with hydra.initialize(
-            version_base=None, config_path="../../../src/tbp/monty/conf"
+            version_base=None,
+            config_path="../../../src/tbp/monty/conf",
         ):
             self.training_config = hydra_config(
                 "reproducibility_supervised_training",
@@ -139,7 +140,8 @@ class EvalEpisodeTest(unittest.TestCase):
 
     def test_eval_episode_results_are_equal(self):
         with hydra.initialize(
-            version_base=None, config_path="../../../src/tbp/monty/conf"
+            version_base=None,
+            config_path="../../../src/tbp/monty/conf",
         ):
             config = hydra_config(
                 "reproducibility_eval_episodes",

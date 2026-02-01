@@ -105,7 +105,11 @@ class DecayKernelFactory:
 
     def __call__(self, location: np.ndarray) -> DecayKernel:
         return DecayKernel(
-            location, self._tau_t, self._tau_s, self._spatial_cutoff, self._w_t_min
+            location,
+            self._tau_t,
+            self._tau_s,
+            self._spatial_cutoff,
+            self._w_t_min,
         )
 
 

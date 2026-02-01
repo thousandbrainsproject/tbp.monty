@@ -28,7 +28,8 @@ class SensorModuleTest(unittest.TestCase):
         self.output_dir = tempfile.mkdtemp()
 
         with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
+            version_base=None,
+            config_path="../../src/tbp/monty/conf",
         ):
             self.base_cfg = hydra.compose(
                 config_name="test",

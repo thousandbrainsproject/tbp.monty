@@ -235,20 +235,22 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         # features. This information is currently not available here.
         # TODO S: Once we pull the observation class into the LM we could add this.
         input_channels_to_use = all_usable_input_channels(
-            features, self.graph_memory.get_input_channels_in_graph(graph_id)
+            features,
+            self.graph_memory.get_input_channels_in_graph(graph_id),
         )
 
         if len(input_channels_to_use) == 0:
             logger.info(
                 f"No input channels observed for {graph_id} that are stored in the "
-                "model. Not updating evidence."
+                "model. Not updating evidence.",
             )
             return [], {}
 
         hypotheses_updates = []
         telemetry: dict[str, Any] = {}
         channel_hypothesis_displacer_telemetry: dict[
-            str, HypothesisDisplacerTelemetry
+            str,
+            HypothesisDisplacerTelemetry,
         ] = {}
 
         for input_channel in input_channels_to_use:
@@ -268,7 +270,8 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             # Retrieve existing hypothesis space for a specific input channel
             else:
                 channel_hypotheses = mapper.extract_hypotheses(
-                    hypotheses, input_channel
+                    hypotheses,
+                    input_channel,
                 )
 
                 # We only displace existing hypotheses since the newly sampled
@@ -288,14 +291,17 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             hypotheses_updates.append(channel_possible_hypotheses)
             telemetry[input_channel] = asdict(
                 ChannelHypothesesUpdateTelemetry(
-                    channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry
-                )
+                    channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry,
+                ),
             )
 
         return hypotheses_updates, telemetry
 
     def _get_all_informed_possible_poses(
-        self, graph_id: str, sensed_channel_features: dict, input_channel: str
+        self,
+        graph_id: str,
+        sensed_channel_features: dict,
+        input_channel: str,
     ):
         """Initialize hypotheses on possible rotations for each location.
 
@@ -321,7 +327,8 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
 
         logger.debug(f"Determining possible poses using input from {input_channel}")
         node_directions = self.graph_memory.get_rotation_features_at_all_nodes(
-            graph_id, input_channel
+            graph_id,
+            input_channel,
         )
         sensed_directions = sensed_channel_features["pose_vectors"]
         # Check if PCs in patch are similar -> need to sample more directions
@@ -330,7 +337,8 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             and not sensed_channel_features["pose_fully_defined"]
         ):
             possible_s_d = possible_sensed_directions(
-                sensed_directions, self.umbilical_num_poses
+                sensed_directions,
+                self.umbilical_num_poses,
             )
         else:
             possible_s_d = possible_sensed_directions(sensed_directions, 2)
@@ -345,17 +353,21 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                     all_possible_locations,
                     np.array(
                         self.graph_memory.get_locations_in_graph(
-                            graph_id, input_channel
-                        )
+                            graph_id,
+                            input_channel,
+                        ),
                     ),
-                ]
+                ],
             )
             all_possible_rotations = np.vstack([all_possible_rotations, r])
 
         return all_possible_locations[1:], all_possible_rotations[1:]
 
     def _get_initial_hypothesis_space(
-        self, channel_features: dict, graph_id: str, input_channel: str
+        self,
+        channel_features: dict,
+        graph_id: str,
+        input_channel: str,
     ) -> ChannelHypotheses:
         if self.initial_possible_poses is None:
             # Get initial poses for all locations informed by pose features
@@ -363,27 +375,30 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 initial_possible_channel_locations,
                 initial_possible_channel_rotations,
             ) = self._get_all_informed_possible_poses(
-                graph_id, channel_features, input_channel
+                graph_id,
+                channel_features,
+                input_channel,
             )
         else:
             initial_possible_channel_locations = []
             initial_possible_channel_rotations = []
             all_channel_locations = self.graph_memory.get_locations_in_graph(
-                graph_id, input_channel
+                graph_id,
+                input_channel,
             )
             # Initialize fixed possible poses (without using pose features)
             for rotation in self.initial_possible_poses:
                 for node_id in range(len(all_channel_locations)):
                     initial_possible_channel_locations.append(
-                        all_channel_locations[node_id]
+                        all_channel_locations[node_id],
                     )
                     initial_possible_channel_rotations.append(rotation.as_matrix())
 
             initial_possible_channel_locations = np.array(
-                initial_possible_channel_locations
+                initial_possible_channel_locations,
             )
             initial_possible_channel_rotations = np.array(
-                initial_possible_channel_rotations
+                initial_possible_channel_rotations,
             )
         # There will always be two feature weights (surface normal and curvature
         # direction). If there are no more weight we are not using features for
@@ -407,7 +422,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             # stack node_feature_evidence to match possible poses
             nwmf_stacked = []
             for _ in range(
-                len(initial_possible_channel_rotations) // len(node_feature_evidence)
+                len(initial_possible_channel_rotations) // len(node_feature_evidence),
             ):
                 nwmf_stacked.extend(node_feature_evidence)
             # add evidence if features match
@@ -428,7 +443,8 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
 
 
 def all_usable_input_channels(
-    features: dict, all_input_channels: list[str]
+    features: dict,
+    all_input_channels: list[str],
 ) -> list[str]:
     """Determine all usable input channels.
 

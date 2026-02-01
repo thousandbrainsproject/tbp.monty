@@ -91,10 +91,10 @@ class ResamplingHypothesesUpdaterTest(TestCase):
 
         # Add graph memory mock methods
         self.mock_graph_memory.get_input_channels_in_graph = Mock(
-            return_value=["patch"]
+            return_value=["patch"],
         )
         self.mock_graph_memory.get_locations_in_graph = Mock(
-            return_value=np.zeros((channel_size, 3))
+            return_value=np.zeros((channel_size, 3)),
         )
 
         # Mock out the evidence_slope_trackers so we can control which values
@@ -102,8 +102,8 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         tracker1 = Mock()
         tracker1.select_hypotheses = Mock(
             return_value=HypothesesSelection(
-                maintain_mask=np.array([False, True, True, False, False])
-            )
+                maintain_mask=np.array([False, True, True, False, False]),
+            ),
         )
         self.updater.evidence_slope_trackers = {"object1": tracker1}
 
@@ -240,7 +240,10 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         pose_fully_defined=st.booleans(),
     )
     def test_sample_count_returns_informed_count_during_burst(
-        self, sampling_multiplier, graph_num_nodes, pose_fully_defined
+        self,
+        sampling_multiplier,
+        graph_num_nodes,
+        pose_fully_defined,
     ) -> None:
         """Test informed_count with various resampling parameters.
 
@@ -257,11 +260,11 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         self.updater.sampling_multiplier = sampling_multiplier
         channel_features = {"pose_fully_defined": pose_fully_defined}
         num_hyps_per_node = self.updater._num_hyps_per_node(
-            channel_features=channel_features
+            channel_features=channel_features,
         )
 
         self.mock_graph_memory.get_locations_in_graph = Mock(
-            return_value=np.zeros((graph_num_nodes, 3))
+            return_value=np.zeros((graph_num_nodes, 3)),
         )
 
         tracker = EvidenceSlopeTracker(min_age=0)
@@ -358,7 +361,8 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         sampling_burst_duration=st.integers(min_value=1, max_value=10),
     )
     def test_burst_triggers_on_first_step_with_no_trackers(
-        self, sampling_burst_duration
+        self,
+        sampling_burst_duration,
     ) -> None:
         """Test that burst triggers on first step when no trackers exist.
 
@@ -407,10 +411,10 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         )
 
         self.mock_graph_memory.get_input_channels_in_graph = Mock(
-            return_value=["patch"]
+            return_value=["patch"],
         )
         self.mock_graph_memory.get_locations_in_graph = Mock(
-            return_value=np.zeros((channel_size, 3))
+            return_value=np.zeros((channel_size, 3)),
         )
 
         mapper = ChannelMapper(channel_sizes={"patch": channel_size})
@@ -461,7 +465,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
 
         # All hypotheses should be removed (empty maintain_mask)
         hypotheses_selection = HypothesesSelection(
-            maintain_mask=np.array([False, False, False])
+            maintain_mask=np.array([False, False, False]),
         )
 
         mapper = ChannelMapper(channel_sizes={"patch": 3})
@@ -536,7 +540,9 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         num_euler_angles=st.integers(min_value=1, max_value=10),
     )
     def test_num_hyps_per_node_with_initial_possible_poses(
-        self, pose_fully_defined, num_euler_angles
+        self,
+        pose_fully_defined,
+        num_euler_angles,
     ) -> None:
         """Test _num_hyps_per_node returns length of initial_possible_poses.
 
@@ -561,7 +567,8 @@ class ResamplingHypothesesUpdaterTest(TestCase):
 
     @given(pose_fully_defined=st.booleans())
     def test_sample_informed_returns_empty_when_informed_count_zero(
-        self, pose_fully_defined
+        self,
+        pose_fully_defined,
     ) -> None:
         tracker = EvidenceSlopeTracker()
 
@@ -584,7 +591,9 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         num_hyps_per_node=st.integers(min_value=1, max_value=10),
     )
     def test_sample_informed_without_feature_matching(
-        self, num_nodes, num_hyps_per_node
+        self,
+        num_nodes,
+        num_hyps_per_node,
     ) -> None:
         """Test _sample_informed when use_features_for_matching is False.
 
@@ -596,7 +605,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         # Set up graph memory mocks
         self.mock_graph_memory.get_num_nodes_in_graph = Mock(return_value=num_nodes)
         self.mock_graph_memory.get_locations_in_graph = Mock(
-            return_value=np.random.rand(num_nodes, 3)
+            return_value=np.random.rand(num_nodes, 3),
         )
 
         # Set up updater with feature matching disabled
@@ -644,13 +653,13 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         # Set up graph memory mocks
         mock_graph_memory = Mock()
         mock_graph_memory.get_feature_array = Mock(
-            return_value={"patch": np.zeros((num_nodes, 3))}
+            return_value={"patch": np.zeros((num_nodes, 3))},
         )
         mock_graph_memory.get_feature_order = Mock(
-            return_value={"patch": ["feature1", "feature2", "feature3"]}
+            return_value={"patch": ["feature1", "feature2", "feature3"]},
         )
         mock_graph_memory.get_locations_in_graph = Mock(
-            return_value=np.random.rand(num_nodes, 3)
+            return_value=np.random.rand(num_nodes, 3),
         )
 
         updater = ResamplingHypothesesUpdater(
@@ -673,7 +682,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         # Mock the feature evidence calculator
         mock_calculator = Mock()
         mock_calculator.calculate = Mock(
-            return_value=np.array([0.1, 0.5, 0.3, 0.9, 0.2])
+            return_value=np.array([0.1, 0.5, 0.3, 0.9, 0.2]),
         )
         updater.feature_evidence_calculator = mock_calculator
 
@@ -717,13 +726,13 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         # Set up graph memory mocks
         self.mock_graph_memory.get_num_nodes_in_graph = Mock(return_value=num_nodes)
         self.mock_graph_memory.get_locations_in_graph = Mock(
-            return_value=np.random.rand(num_nodes, 3)
+            return_value=np.random.rand(num_nodes, 3),
         )
 
         # Each node has 3 orthonormal rotation vectors (3x3 matrix)
         # We use identity matrices here for simplicity
         self.mock_graph_memory.get_rotation_features_at_all_nodes = Mock(
-            return_value=np.tile(np.eye(3), (3, 1, 1)).astype(np.float64)
+            return_value=np.tile(np.eye(3), (3, 1, 1)).astype(np.float64),
         )
 
         result = self.updater._sample_informed(
@@ -749,7 +758,9 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         num_rotations=st.integers(min_value=1, max_value=10),
     )
     def test_sample_informed_with_initial_poses_set(
-        self, num_nodes, num_rotations
+        self,
+        num_nodes,
+        num_rotations,
     ) -> None:
         """Test _sample_informed when initial_possible_poses is set.
 
@@ -762,7 +773,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         # Set up graph memory mocks
         self.mock_graph_memory.get_num_nodes_in_graph = Mock(return_value=num_nodes)
         self.mock_graph_memory.get_locations_in_graph = Mock(
-            return_value=np.random.rand(num_nodes, 3)
+            return_value=np.random.rand(num_nodes, 3),
         )
 
         # Set up updater with predefined rotations
@@ -785,7 +796,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
 
         # Verify poses are correctly tiled from initial_possible_poses
         expected_rot_mats = np.array(
-            [r.as_matrix() for r in self.updater.initial_possible_poses]
+            [r.as_matrix() for r in self.updater.initial_possible_poses],
         )
         expected_tiled = np.repeat(expected_rot_mats, num_selected_nodes, axis=0)
         np.testing.assert_array_almost_equal(result.poses, expected_tiled, decimal=5)

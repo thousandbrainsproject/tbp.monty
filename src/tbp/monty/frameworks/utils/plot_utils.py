@@ -41,7 +41,7 @@ def mark_obs(vis_obs, patch_obs):
                 d_scaled * 255,
                 d_scaled * 255,
                 np.ones(d_scaled.shape) * 255,
-            ]
+            ],
         ),
         0,
         3,

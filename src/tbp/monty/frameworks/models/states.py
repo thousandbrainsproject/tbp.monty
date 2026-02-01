@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -107,7 +107,8 @@ class State:
             self.location += translation
         if rotation is not None:
             self.morphological_features["pose_vectors"] = np.dot(
-                rotation, self.morphological_features["pose_vectors"]
+                rotation,
+                self.morphological_features["pose_vectors"],
             )
 
     def set_displacement(self, displacement, ppf=None):
@@ -293,7 +294,7 @@ class GoalState(State):
             )
             f"{self.morphological_features.keys()}"
             assert np.any(
-                np.isnan(self.morphological_features["pose_vectors"])
+                np.isnan(self.morphological_features["pose_vectors"]),
             ) or self.morphological_features["pose_vectors"].shape == (
                 3,
                 3,

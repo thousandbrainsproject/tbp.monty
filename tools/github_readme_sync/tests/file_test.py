@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -63,7 +63,7 @@ class TestFindMarkdownFiles(unittest.TestCase):
     def test_find_markdown_files_ignores_dot_directories(self):
         """Test that find_markdown_files ignores directories that start with a dot."""
         dirs = self._create_directories(
-            ["regular_docs", ".git", ".vscode", "regular_docs/.hidden"]
+            ["regular_docs", ".git", ".vscode", "regular_docs/.hidden"],
         )
         regular_dir = dirs["regular_docs"]
         dot_git_dir = dirs[".git"]

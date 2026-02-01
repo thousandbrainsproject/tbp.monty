@@ -53,7 +53,8 @@ class SensorConfig:
         return []
 
     def process_observations(
-        self, sensor_obs: SensorObservations
+        self,
+        sensor_obs: SensorObservations,
     ) -> SensorObservations:
         """Callback used to process Habitat raw sensor observations.
 

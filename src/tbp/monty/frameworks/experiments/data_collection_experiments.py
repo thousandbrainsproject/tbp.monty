@@ -76,12 +76,12 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(
                 f"running train epoch {self.train_epochs} "
-                f"train episode {self.train_episodes}"
+                f"train episode {self.train_episodes}",
             )
         else:
             logger.info(
                 f"running eval epoch {self.eval_epochs} "
-                f"eval episode {self.eval_episodes}"
+                f"eval episode {self.eval_episodes}",
             )
 
         self.reset_episode_rng()

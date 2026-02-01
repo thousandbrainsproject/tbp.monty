@@ -86,7 +86,9 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def post_action(
-        self, action: Action | None, state: MotorSystemState | None = None
+        self,
+        action: Action | None,
+        state: MotorSystemState | None = None,
     ) -> None:
         """This post action hook will automatically be called at the end of __call__.
 
@@ -234,7 +236,9 @@ class BasePolicy(MotorPolicy):
         return self.action_list[self.episode_step % len(self.action_list)]
 
     def post_action(
-        self, action: Action | None, _: MotorSystemState | None = None
+        self,
+        action: Action | None,
+        _: MotorSystemState | None = None,
     ) -> None:
         self.action = action
         self.timestep += 1
@@ -398,7 +402,8 @@ class PositioningProcedure(BasePolicy):
         #       This should be made robust.
         observation_shape = observation[agent_id][sensor_id]["depth"].shape
         return observation[agent_id][sensor_id]["depth"][
-            observation_shape[0] // 2, observation_shape[1] // 2
+            observation_shape[0] // 2,
+            observation_shape[1] // 2,
         ]
 
     @abc.abstractmethod
@@ -487,7 +492,9 @@ class GetGoodView(PositioningProcedure):
         self._executed_multiple_objects_orientation = False
 
     def compute_look_amounts(
-        self, relative_location: np.ndarray, state: MotorSystemState | None = None
+        self,
+        relative_location: np.ndarray,
+        state: MotorSystemState | None = None,
     ) -> tuple[float, float]:
         """Compute the amount to look down and left given a relative location.
 
@@ -564,12 +571,16 @@ class GetGoodView(PositioningProcedure):
         # as an int or boolean rather than float
         kernel_size = on_object_image.shape[0] // 16
         smoothed_on_object_image = scipy.ndimage.gaussian_filter(
-            on_object_image, kernel_size, mode="constant"
+            on_object_image,
+            kernel_size,
+            mode="constant",
         )
         idx_loc_to_look_at = np.argmax(smoothed_on_object_image * on_object_image)
         idx_loc_to_look_at = np.unravel_index(idx_loc_to_look_at, on_object_image.shape)
         location_to_look_at = sem3d_obs_image[
-            idx_loc_to_look_at[0], idx_loc_to_look_at[1], :3
+            idx_loc_to_look_at[0],
+            idx_loc_to_look_at[1],
+            :3,
         ]
         camera_location = (
             self.get_agent_state(state)
@@ -633,15 +644,16 @@ class GetGoodView(PositioningProcedure):
         if n_points_on_target_obj > 0:
             closest_point_on_target_obj = np.min(depth_image[points_on_target_obj])
             logger.debug(
-                "closest target object point: " + str(closest_point_on_target_obj)
+                "closest target object point: " + str(closest_point_on_target_obj),
             )
         else:
             raise ValueError(
-                "May be initializing experiment with no visible target object"
+                "May be initializing experiment with no visible target object",
             )
 
         perc_on_target_obj = get_perc_on_obj_semantic(
-            semantic_image, semantic_id=self._target_semantic_id
+            semantic_image,
+            semantic_id=self._target_semantic_id,
         )
         logger.debug("% on target object: " + str(perc_on_target_obj))
 
@@ -657,7 +669,7 @@ class GetGoodView(PositioningProcedure):
                     closest_point_on_any_obj < self._desired_object_distance / 4
                 ):
                     logger.debug(
-                        "Getting too close to other objects, not moving forward."
+                        "Getting too close to other objects, not moving forward.",
                     )
                     return None
 
@@ -671,7 +683,9 @@ class GetGoodView(PositioningProcedure):
         return None
 
     def orient_to_object(
-        self, observation: Mapping, state: MotorSystemState | None = None
+        self,
+        observation: Mapping,
+        state: MotorSystemState | None = None,
     ) -> list[Action]:
         """Rotate sensors so that they are centered on the object using the view finder.
 
@@ -703,7 +717,8 @@ class GetGoodView(PositioningProcedure):
             state=state,
         )
         down_amount, left_amount = self.compute_look_amounts(
-            relative_location, state=state
+            relative_location,
+            state=state,
         )
         return [
             LookDown(agent_id=self.agent_id, rotation_degrees=down_amount),
@@ -725,7 +740,7 @@ class GetGoodView(PositioningProcedure):
             on_target_object = self.is_on_target_object(observation)
             if not on_target_object:
                 return PositioningProcedureResult(
-                    actions=self.orient_to_object(observation, state)
+                    actions=self.orient_to_object(observation, state),
                 )
 
         if self._allow_translation:
@@ -745,7 +760,7 @@ class GetGoodView(PositioningProcedure):
         ):
             self._num_orientation_attempts += 1
             return PositioningProcedureResult(
-                actions=self.orient_to_object(observation, state)
+                actions=self.orient_to_object(observation, state),
             )
 
         if on_target_object:
@@ -953,7 +968,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         raise TypeError(f"Invalid action: {last_action}")
 
     def post_action(
-        self, action: Action | None, state: MotorSystemState | None = None
+        self,
+        action: Action | None,
+        state: MotorSystemState | None = None,
     ) -> None:
         self.action = action
         self.timestep += 1
@@ -1102,7 +1119,10 @@ class SurfacePolicy(InformedPolicy):
         return super().pre_episode(rng)
 
     def touch_object(
-        self, raw_observation, view_sensor_id: str, state: MotorSystemState
+        self,
+        raw_observation,
+        view_sensor_id: str,
+        state: MotorSystemState,
     ) -> MoveForward | OrientHorizontal | OrientVertical:
         """The surface agent's policy for moving onto an object for sensing it.
 
@@ -1230,7 +1250,8 @@ class SurfacePolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
     def dynamic_call(
-        self, state: MotorSystemState | None = None
+        self,
+        state: MotorSystemState | None = None,
     ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Return the next action to take.
 
@@ -1256,8 +1277,8 @@ class SurfacePolicy(InformedPolicy):
             logger.debug(
                 "Object coverage of only "
                 + str(
-                    self.processed_observations.get_feature_by_name("object_coverage")
-                )
+                    self.processed_observations.get_feature_by_name("object_coverage"),
+                ),
             )
             logger.debug(f"Attempting to find object: {self.attempting_to_find_object}")
             logger.debug("Initiating attempts to touch object")
@@ -1273,22 +1294,25 @@ class SurfacePolicy(InformedPolicy):
             logger.debug(
                 "Object coverage good at initialization: "
                 + str(
-                    self.processed_observations.get_feature_by_name("object_coverage")
-                )
+                    self.processed_observations.get_feature_by_name("object_coverage"),
+                ),
             )
 
             # In this case, we are on the first action, but the object view is already
             # good; therefore initialize the cycle of actions as if we had just
             # moved forward (e.g. to get a good view)
             self.action = self.action_sampler.sample_move_forward(
-                self.agent_id, self.rng
+                self.agent_id,
+                self.rng,
             )
             self.last_surface_policy_action = self.action
 
         return self.get_next_action(state)
 
     def post_action(
-        self, action: Action, state: MotorSystemState | None = None
+        self,
+        action: Action,
+        state: MotorSystemState | None = None,
     ) -> None:
         """Temporary SurfacePolicy post_action to distinguish types of last action.
 
@@ -1332,7 +1356,8 @@ class SurfacePolicy(InformedPolicy):
             OrientHorizontal action.
         """
         rotation_degrees = self.orienting_angle_from_normal(
-            orienting="horizontal", state=state
+            orienting="horizontal",
+            state=state,
         )
         left_distance, forward_distance = self.horizontal_distances(rotation_degrees)
         return OrientHorizontal(
@@ -1352,7 +1377,8 @@ class SurfacePolicy(InformedPolicy):
             OrientVertical action.
         """
         rotation_degrees = self.orienting_angle_from_normal(
-            orienting="vertical", state=state
+            orienting="vertical",
+            state=state,
         )
         down_distance, forward_distance = self.vertical_distances(rotation_degrees)
         return OrientVertical(
@@ -1406,7 +1432,8 @@ class SurfacePolicy(InformedPolicy):
         )
 
     def get_next_action(
-        self, state: MotorSystemState
+        self,
+        state: MotorSystemState,
     ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Retrieve next action from a cycle of four actions.
 
@@ -1548,7 +1575,9 @@ class SurfacePolicy(InformedPolicy):
         return qt.quaternion(w, x, y, z)
 
     def orienting_angle_from_normal(
-        self, orienting: str, state: MotorSystemState
+        self,
+        orienting: str,
+        state: MotorSystemState,
     ) -> float:
         """Compute turn angle to face the object.
 
@@ -1567,7 +1596,8 @@ class SurfacePolicy(InformedPolicy):
         inverse_quaternion_rotation = self.get_inverse_agent_rot(state)
 
         rotated_surface_normal = qt.rotate_vectors(
-            inverse_quaternion_rotation, original_surface_normal
+            inverse_quaternion_rotation,
+            original_surface_normal,
         )
         x, y, z = rotated_surface_normal
 
@@ -1615,7 +1645,8 @@ def write_action_file(actions: list[Action], file: str) -> None:
 
 
 def get_perc_on_obj_semantic(
-    semantic_obs, semantic_id: SemanticID | Literal["any"] = "any"
+    semantic_obs,
+    semantic_id: SemanticID | Literal["any"] = "any",
 ):
     """Get the percentage of pixels in the observation that land on the target object.
 
@@ -1815,7 +1846,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             )
             if "pose_vectors" in percept.morphological_features:
                 self.tangent_norms.append(
-                    percept.morphological_features["pose_vectors"][0]
+                    percept.morphological_features["pose_vectors"][0],
                 )
             else:
                 self.tangent_norms.append(None)
@@ -1851,7 +1882,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 [
                     self.processed_observations.get_surface_normal(),
                     self.processed_observations.get_curvature_directions(),
-                ]
+                ],
             )
         else:
             self.action_details["z_defined_pc"].append(None)
@@ -1988,7 +2019,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             self.following_heading_counter = 0
 
             return tuple(
-                qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec)
+                qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec),
             )
 
         # Otherwise our heading is good; we continue and use our original heading (or
@@ -2008,7 +2039,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.continuous_pc_steps += 1
 
         return tuple(
-            qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec)
+            qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec),
         )
 
     def perform_standard_tang_step(self, state: MotorSystemState) -> VectorXYZ:
@@ -2077,7 +2108,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             qt.rotate_vectors(
                 state[self.agent_id].rotation,
                 self.tangential_vec,
-            )
+            ),
         )
 
     def update_tangential_reps(self, vec_form=None, angle_form=None):
@@ -2169,7 +2200,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             Principal curvature to use.
         """
         absolute_pcs = np.abs(
-            self.processed_observations.get_feature_by_name("principal_curvatures")
+            self.processed_observations.get_feature_by_name("principal_curvatures"),
         )
 
         if self.min_dir_pref:  # Follow minimal curvature direction
@@ -2233,7 +2264,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # we might take
             # TODO could vectorize this
             rotated_locs = qt.rotate_vectors(
-                inverse_quaternion_rotation, adjusted_prev_locs
+                inverse_quaternion_rotation,
+                adjusted_prev_locs,
             )
 
             # Until we have not found a direction that we can guarentee is
@@ -2261,7 +2293,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
                 # Check all prev. locations for conflict; TODO could vectorize this
                 for ii in range(
-                    max(0, len(rotated_locs) - 50), len(rotated_locs) - 1
+                    max(0, len(rotated_locs) - 50),
+                    len(rotated_locs) - 1,
                 ):  # Ignore current point, and points before the last 50 sensations
                     # Check if there is actually a conflict
                     on_conflict = self.conflict_check(rotated_locs, ii)
@@ -2299,7 +2332,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                         self.conflict_divisor += 1
 
                         logger.debug(
-                            f"Updating conflict divisor: {self.conflict_divisor}"
+                            f"Updating conflict divisor: {self.conflict_divisor}",
                         )
 
     def conflict_check(self, rotated_locs, ii):
@@ -2386,7 +2419,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 <= np.pi / 4
             ):
                 logger.debug(
-                    "Evidence that PC direction arbitrarily flipped, flipping back"
+                    "Evidence that PC direction arbitrarily flipped, flipping back",
                 )
                 self.update_tangential_reps(vec_form=np.array(self.tangential_vec) * -1)
 

@@ -93,7 +93,7 @@ class Action(Protocol):
             The class name in snake_case.
         """
         return "".join(
-            ["_" + char.lower() if char.isupper() else char for char in name]
+            ["_" + char.lower() if char.isupper() else char for char in name],
         ).lstrip("_")
 
     @classmethod
@@ -145,7 +145,9 @@ class LookDown(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: LookDownActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: LookDownActionSampler,
+        rng: RandomState,
     ) -> LookDown:
         return sampler.sample_look_down(agent_id, rng)
 
@@ -176,7 +178,9 @@ class LookUp(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: LookUpActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: LookUpActionSampler,
+        rng: RandomState,
     ) -> LookUp:
         return sampler.sample_look_up(agent_id, rng)
 
@@ -196,7 +200,9 @@ class LookUp(Action):
 
 class MoveForwardActionSampler(Protocol):
     def sample_move_forward(
-        self, agent_id: AgentID, rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,
     ) -> MoveForward: ...
 
 
@@ -209,7 +215,9 @@ class MoveForward(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: MoveForwardActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: MoveForwardActionSampler,
+        rng: RandomState,
     ) -> MoveForward:
         return sampler.sample_move_forward(agent_id, rng)
 
@@ -223,7 +231,9 @@ class MoveForward(Action):
 
 class MoveTangentiallyActionSampler(Protocol):
     def sample_move_tangentially(
-        self, agent_id: AgentID, rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,
     ) -> MoveTangentially: ...
 
 
@@ -240,12 +250,17 @@ class MoveTangentially(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: MoveTangentiallyActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: MoveTangentiallyActionSampler,
+        rng: RandomState,
     ) -> MoveTangentially:
         return sampler.sample_move_tangentially(agent_id, rng)
 
     def __init__(
-        self, agent_id: AgentID, distance: float, direction: VectorXYZ
+        self,
+        agent_id: AgentID,
+        distance: float,
+        direction: VectorXYZ,
     ) -> None:
         super().__init__(agent_id=agent_id)
         self.distance = distance
@@ -257,7 +272,9 @@ class MoveTangentially(Action):
 
 class OrientHorizontalActionSampler(Protocol):
     def sample_orient_horizontal(
-        self, agent_id: AgentID, rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,
     ) -> OrientHorizontal: ...
 
 
@@ -274,7 +291,9 @@ class OrientHorizontal(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: OrientHorizontalActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: OrientHorizontalActionSampler,
+        rng: RandomState,
     ) -> OrientHorizontal:
         return sampler.sample_orient_horizontal(agent_id, rng)
 
@@ -296,7 +315,9 @@ class OrientHorizontal(Action):
 
 class OrientVerticalActionSampler(Protocol):
     def sample_orient_vertical(
-        self, agent_id: AgentID, rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,
     ) -> OrientVertical: ...
 
 
@@ -313,7 +334,9 @@ class OrientVertical(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: OrientVerticalActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: OrientVerticalActionSampler,
+        rng: RandomState,
     ) -> OrientVertical:
         return sampler.sample_orient_vertical(agent_id, rng)
 
@@ -335,7 +358,9 @@ class OrientVertical(Action):
 
 class SetAgentPitchActionSampler(Protocol):
     def sample_set_agent_pitch(
-        self, agent_id: AgentID, rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,
     ) -> SetAgentPitch: ...
 
 
@@ -353,7 +378,9 @@ class SetAgentPitch(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: SetAgentPitchActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: SetAgentPitchActionSampler,
+        rng: RandomState,
     ) -> SetAgentPitch:
         return sampler.sample_set_agent_pitch(agent_id, rng)
 
@@ -367,7 +394,9 @@ class SetAgentPitch(Action):
 
 class SetAgentPoseActionSampler(Protocol):
     def sample_set_agent_pose(
-        self, agent_id: AgentID, rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,
     ) -> SetAgentPose: ...
 
 
@@ -384,12 +413,17 @@ class SetAgentPose(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: SetAgentPoseActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: SetAgentPoseActionSampler,
+        rng: RandomState,
     ) -> SetAgentPose:
         return sampler.sample_set_agent_pose(agent_id, rng)
 
     def __init__(
-        self, agent_id: AgentID, location: VectorXYZ, rotation_quat: QuaternionWXYZ
+        self,
+        agent_id: AgentID,
+        location: VectorXYZ,
+        rotation_quat: QuaternionWXYZ,
     ) -> None:
         super().__init__(agent_id=agent_id)
         self.location = location
@@ -401,7 +435,9 @@ class SetAgentPose(Action):
 
 class SetSensorPitchActionSampler(Protocol):
     def sample_set_sensor_pitch(
-        self, agent_id: AgentID, rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,
     ) -> SetSensorPitch: ...
 
 
@@ -418,7 +454,9 @@ class SetSensorPitch(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: SetSensorPitchActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: SetSensorPitchActionSampler,
+        rng: RandomState,
     ) -> SetSensorPitch:
         return sampler.sample_set_sensor_pitch(agent_id, rng)
 
@@ -432,7 +470,9 @@ class SetSensorPitch(Action):
 
 class SetSensorPoseActionSampler(Protocol):
     def sample_set_sensor_pose(
-        self, agent_id: AgentID, rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,
     ) -> SetSensorPose: ...
 
 
@@ -449,12 +489,17 @@ class SetSensorPose(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: SetSensorPoseActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: SetSensorPoseActionSampler,
+        rng: RandomState,
     ) -> SetSensorPose:
         return sampler.sample_set_sensor_pose(agent_id, rng)
 
     def __init__(
-        self, agent_id: AgentID, location: VectorXYZ, rotation_quat: QuaternionWXYZ
+        self,
+        agent_id: AgentID,
+        location: VectorXYZ,
+        rotation_quat: QuaternionWXYZ,
     ) -> None:
         super().__init__(agent_id=agent_id)
         self.location = location
@@ -466,7 +511,9 @@ class SetSensorPose(Action):
 
 class SetSensorRotationActionSampler(Protocol):
     def sample_set_sensor_rotation(
-        self, agent_id: AgentID, rng: RandomState
+        self,
+        agent_id: AgentID,
+        rng: RandomState,
     ) -> SetSensorRotation: ...
 
 
@@ -479,7 +526,9 @@ class SetSensorRotation(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: SetSensorRotationActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: SetSensorRotationActionSampler,
+        rng: RandomState,
     ) -> SetSensorRotation:
         return sampler.sample_set_sensor_rotation(agent_id, rng)
 
@@ -504,7 +553,9 @@ class SetYaw(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: SetYawActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: SetYawActionSampler,
+        rng: RandomState,
     ) -> SetYaw:
         return sampler.sample_set_yaw(agent_id, rng)
 
@@ -529,7 +580,9 @@ class TurnLeft(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: TurnLeftActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: TurnLeftActionSampler,
+        rng: RandomState,
     ) -> TurnLeft:
         return sampler.sample_turn_left(agent_id, rng)
 
@@ -554,7 +607,9 @@ class TurnRight(Action):
 
     @staticmethod
     def sample(
-        agent_id: AgentID, sampler: TurnRightActionSampler, rng: RandomState
+        agent_id: AgentID,
+        sampler: TurnRightActionSampler,
+        rng: RandomState,
     ) -> TurnRight:
         return sampler.sample_turn_right(agent_id, rng)
 

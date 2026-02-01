@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -34,7 +34,8 @@ class TwoDMovementTest(unittest.TestCase):
 
     def setUp(self):
         self.env = SaccadeOnImageEnvironment(
-            patch_size=48, data_path=str(self.DATA_PATH) + "/"
+            patch_size=48,
+            data_path=str(self.DATA_PATH) + "/",
         )
         self.env.reset()
         self.current_state = self.env.get_state()

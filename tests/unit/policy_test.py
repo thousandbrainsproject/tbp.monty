@@ -70,7 +70,8 @@ class PolicyTest(unittest.TestCase):
             )
 
         with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
+            version_base=None,
+            config_path="../../src/tbp/monty/conf",
         ):
             self.base_dist_cfg = hydra_config("base_dist")
             self.base_surf_cfg = hydra_config("base_surf")
@@ -79,19 +80,19 @@ class PolicyTest(unittest.TestCase):
             self.surf_hypo_driven_cfg = hydra_config("surf_hypo_driven")
             self.dist_hypo_driven_cfg = hydra_config("dist_hypo_driven")
             self.dist_hypo_driven_multi_lm_cfg = hydra_config(
-                "dist_hypo_driven_multi_lm"
+                "dist_hypo_driven_multi_lm",
             )
             self.dist_poor_initial_view_cfg = hydra_config("dist_poor_initial_view")
             self.surf_poor_initial_view_cfg = hydra_config("surf_poor_initial_view")
             self.poor_initial_view_multi_object_cfg = hydra_config(
-                "poor_initial_view_multi_object"
+                "poor_initial_view_multi_object",
             )
             self.dist_fixed_action_cfg = hydra_config("dist_fixed_action")
             self.surf_fixed_action_cfg = hydra_config("surf_fixed_action")
             self.rotated_cube_view_cfg = hydra_config("rotated_cube_view")
 
             self.motor_system_cfg_fragment = hydra.compose(
-                config_name="experiment/config/monty/motor_system/curvature_informed_surface"
+                config_name="experiment/config/monty/motor_system/curvature_informed_surface",
             ).experiment.config.monty.motor_system
 
         # ==== Setup fake observations for testing principal-curvature policies ====
@@ -139,7 +140,7 @@ class PolicyTest(unittest.TestCase):
         # PC direction "flipped", pointing back to a location we've already been at
         fo_1_backtrack_pc = copy.deepcopy(fo_1)
         fo_1_backtrack_pc["morphological_features"]["pose_vectors"] = np.array(
-            [[0, 0, -1], [-1, 0, 0], [0, 1, 0]]
+            [[0, 0, -1], [-1, 0, 0], [0, 1, 0]],
         )
 
         # PC direction is defined in z direction; here, as the sensor/agent is not
@@ -149,7 +150,7 @@ class PolicyTest(unittest.TestCase):
         # to orient such that it is looking down at the surface normal
         fo_2_corrupt_z = copy.deepcopy(fo_2)
         fo_2_corrupt_z["morphological_features"]["pose_vectors"] = np.array(
-            [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
+            [[0, 1, 0], [0, 0, 1], [1, 0, 0]],
         )
 
         self.fake_obs_advanced_pc = [
@@ -230,12 +231,12 @@ class PolicyTest(unittest.TestCase):
                 "patch": {
                     "hsv": [0.1, 1, 1],
                     "principal_curvatures_log": [1, 1],
-                }
+                },
             },
             feature_weights={
                 "patch": {
                     "hsv": np.array([1, 0, 0]),
-                }
+                },
             },
             gsg_class=EvidenceGoalStateGenerator,
             gsg_args=gsg_args,
@@ -439,7 +440,9 @@ class PolicyTest(unittest.TestCase):
                         "Should have moved back by reversing last movement"
                     )
                     self.assertIsInstance(
-                        last_action, type(stored_action), should_have_moved_back
+                        last_action,
+                        type(stored_action),
+                        should_have_moved_back,
                     )
                     if isinstance(stored_action, (LookDown, LookUp)):
                         self.assertEqual(
@@ -676,7 +679,7 @@ class PolicyTest(unittest.TestCase):
 
             # Most recently observed surface normal sent to the learning module
             current_pose = exp.model.learning_modules[0].buffer.get_current_pose(
-                input_channel="first"
+                input_channel="first",
             )
 
             # Rotate vector representing agent's pointing direction by the agent's
@@ -690,13 +693,16 @@ class PolicyTest(unittest.TestCase):
                         -1,
                     ],  # The initial direction vector corresponding to the agent's
                     # orientation
-                )
+                ),
             )
 
             assert np.all(
                 np.isclose(
-                    current_pose[1], agent_direction * (-1), rtol=1.0e-3, atol=1.0e-2
-                )
+                    current_pose[1],
+                    agent_direction * (-1),
+                    rtol=1.0e-3,
+                    atol=1.0e-2,
+                ),
             ), "Agent should be (approximately) looking down on the surface normal"
 
     def test_core_following_principal_curvature(self):
@@ -727,8 +733,8 @@ class PolicyTest(unittest.TestCase):
                     position=np.array([0, 0, 0]),  # unused
                     rotation=qt.quaternion(1, 0, 0, 0),
                     sensors={},  # unused
-                )
-            }
+                ),
+            },
         )
 
         # Step 1
@@ -794,7 +800,8 @@ class PolicyTest(unittest.TestCase):
         policy.processed_observations = self.fake_obs_pc[4]
         direction = policy.tangential_direction(proprioceptive_state)
         assert np.isclose(
-            np.dot(self.fake_obs_pc[4].get_surface_normal(), direction), 0
+            np.dot(self.fake_obs_pc[4].get_surface_normal(), direction),
+            0,
         ), "Direction should be orthogonal to tangent (surface) plane"
         assert policy.ignoring_pc_counter == 1, (
             "Should have reset ignoring_pc_counter, and then incremented"
@@ -846,8 +853,8 @@ class PolicyTest(unittest.TestCase):
                     position=np.array([0, 0, 0]),  # unused
                     rotation=qt.quaternion(1, 0, 0, 0),
                     sensors={},  # unused
-                )
-            }
+                ),
+            },
         )
 
         # Step 1 : PC-guided information, but we haven't taken the minimum number of
@@ -860,7 +867,8 @@ class PolicyTest(unittest.TestCase):
         policy.tangent_norms.append([0, 0, 1])
         direction = policy.tangential_direction(proprioceptive_state)
         assert np.isclose(
-            np.dot(self.fake_obs_advanced_pc[0].get_surface_normal(), direction), 0
+            np.dot(self.fake_obs_advanced_pc[0].get_surface_normal(), direction),
+            0,
         ), "Direction should be orthogonal to tangent (surface) plane"
         assert policy.following_pc_counter == 0, (
             "Should not have followed PC and incremented counter"
@@ -926,7 +934,7 @@ class PolicyTest(unittest.TestCase):
         # has not been arbitrarily flipped, so policy selects a new heading
         policy.processed_observations = self.fake_obs_advanced_pc[0]
         policy.tangent_locs.append(
-            self.fake_obs_advanced_pc[0].location
+            self.fake_obs_advanced_pc[0].location,
         )  # Synthetically
         # "teleport" the agent back to the first observation and location, such that
         # following PC would cause it to visit the observation 1 again (which it is
@@ -936,7 +944,8 @@ class PolicyTest(unittest.TestCase):
         # Note the following movement is a random direction deterministically set by the
         # random seed
         assert np.isclose(
-            np.dot(self.fake_obs_advanced_pc[0].get_surface_normal(), direction), 0
+            np.dot(self.fake_obs_advanced_pc[0].get_surface_normal(), direction),
+            0,
         ), "Direction should be orthogonal to tangent (surface) plane"
         assert policy.ignoring_pc_counter == 0, (
             "Should have reset ignoring_pc_counter, and not incremented"
@@ -950,7 +959,11 @@ class PolicyTest(unittest.TestCase):
         assert policy.pc_is_z_defined is False, "Should have reset z-defind flag"
 
     def core_evaluate_compute_goal_state_for_target_loc(
-        self, lm, motor_system, object_orientation, target_location_on_object
+        self,
+        lm,
+        motor_system,
+        object_orientation,
+        target_location_on_object,
     ):
         """Test GSGs ability to propose a motor-system goal-state.
 
@@ -980,7 +993,9 @@ class PolicyTest(unittest.TestCase):
                 "graph_id": "dummy_object",
                 "location": np.array([0.1, 0.1, 0.1]),
                 "rotation": Rotation.from_euler(
-                    "xyz", object_orientation, degrees=True
+                    "xyz",
+                    object_orientation,
+                    degrees=True,
                 ).inv(),  # Rotation to transform the feature
                 "scale": 1,
                 "evidence": 100,
@@ -1027,7 +1042,7 @@ class PolicyTest(unittest.TestCase):
         target_loc_hab, target_quat = motor_system._policy.derive_habitat_goal_state()
 
         resulting_rot = Rotation.from_quat(
-            numpy_to_scipy_quat(np.array([target_quat.real] + list(target_quat.imag)))
+            numpy_to_scipy_quat(np.array([target_quat.real] + list(target_quat.imag))),
         )
 
         # As the agent faces "forward" along the negative z-axis, we use this vector
@@ -1076,7 +1091,7 @@ class PolicyTest(unittest.TestCase):
         )
 
         assert np.all(
-            np.isclose(motor_goal_location, [0.1, 1.6 + surface_displacement, 0.2])
+            np.isclose(motor_goal_location, [0.1, 1.6 + surface_displacement, 0.2]),
         ), "Goal-state location is not as expected"
 
         # Pointing down
@@ -1085,7 +1100,7 @@ class PolicyTest(unittest.TestCase):
         )
 
         assert np.all(
-            np.isclose(target_loc_hab, [0.1, 1.6 + surface_displacement, 0.2])
+            np.isclose(target_loc_hab, [0.1, 1.6 + surface_displacement, 0.2]),
         ), "Habitat target location is not as expected"
 
         # Pointing down
@@ -1110,7 +1125,7 @@ class PolicyTest(unittest.TestCase):
 
         # Surface displacement is negative, because object is flipped in x-axis
         assert np.all(
-            np.isclose(motor_goal_location_2, [0, 1.4 - surface_displacement, 0.1])
+            np.isclose(motor_goal_location_2, [0, 1.4 - surface_displacement, 0.1]),
         ), "Goal-state location is not as expected"
 
         # Pointing up, because object is flipped in y-axis
@@ -1120,7 +1135,7 @@ class PolicyTest(unittest.TestCase):
 
         # Surface displacement is negative, because object is flipped in x-axis
         assert np.all(
-            np.isclose(target_loc_hab_2, [0, 1.4 - surface_displacement, 0.1])
+            np.isclose(target_loc_hab_2, [0, 1.4 - surface_displacement, 0.1]),
         ), "Habitat target location is not as expected"
 
         # Pointing up, because object is flipped in y-axis
@@ -1144,19 +1159,19 @@ class PolicyTest(unittest.TestCase):
 
         # Below results manually verified
         assert np.all(
-            np.isclose(motor_goal_location_3, [0.18586463, 1.58288073, -0.04139085])
+            np.isclose(motor_goal_location_3, [0.18586463, 1.58288073, -0.04139085]),
         ), "Goal-state location is not as expected"
 
         assert np.all(
-            np.isclose(motor_goal_direction_3, [-0.965738, 0.09413407, -0.24184476])
+            np.isclose(motor_goal_direction_3, [-0.965738, 0.09413407, -0.24184476]),
         ), "Goal-state pose is not as expected"
 
         assert np.all(
-            np.isclose(target_loc_hab_3, [0.18586463, 1.58288073, -0.04139085])
+            np.isclose(target_loc_hab_3, [0.18586463, 1.58288073, -0.04139085]),
         ), "Habitat target location is not as expected"
 
         assert np.all(
-            np.isclose(agent_direction_hab_3, [-0.965738, 0.09413407, -0.24184476])
+            np.isclose(agent_direction_hab_3, [-0.965738, 0.09413407, -0.24184476]),
         ), "Habitat pose is not as expected"
 
 

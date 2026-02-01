@@ -66,11 +66,12 @@ class EvidenceLMTest(BaseGraphTest):
                 "motor_system_args",
                 "policy_args",
                 "file_name",
-            ]
+            ],
         )
 
         def hydra_config(
-            test_name: str, action_file_name: Path | None = None
+            test_name: str,
+            action_file_name: Path | None = None,
         ) -> DictConfig:
             """Return a Hydra configuration from the specified test name.
 
@@ -88,47 +89,60 @@ class EvidenceLMTest(BaseGraphTest):
             return hydra.compose(config_name="test", overrides=overrides)
 
         with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
+            version_base=None,
+            config_path="../../src/tbp/monty/conf",
         ):
             self.evidence_cfg = hydra_config("evidence")
             self.fixed_actions_evidence_cfg = hydra_config(
-                "fixed_actions_evidence", self.fixed_actions_path
+                "fixed_actions_evidence",
+                self.fixed_actions_path,
             )
             self.evidence_off_object_cfg = hydra_config(
-                "evidence_off_object", self.fixed_actions_off_object_path
+                "evidence_off_object",
+                self.fixed_actions_off_object_path,
             )
             self.evidence_times_out_cfg = hydra_config(
-                "evidence_times_out", self.fixed_actions_path
+                "evidence_times_out",
+                self.fixed_actions_path,
             )
             self.uniform_initial_poses_cfg = hydra_config(
-                "uniform_initial_poses", self.fixed_actions_path
+                "uniform_initial_poses",
+                self.fixed_actions_path,
             )
             self.no_features_cfg = hydra_config("no_features", self.fixed_actions_path)
             self.fixed_possible_poses_cfg = hydra_config(
-                "no_features", self.fixed_actions_path
+                "no_features",
+                self.fixed_actions_path,
             )
             self.five_lm_cfg = hydra_config("five_lm", self.fixed_actions_path)
             self.five_lm_basic_logging_cfg = hydra_config(
-                "five_lm_basic_logging", self.fixed_actions_path
+                "five_lm_basic_logging",
+                self.fixed_actions_path,
             )
             self.five_lm_three_done_cfg = hydra_config(
-                "five_lm_three_done", self.fixed_actions_path
+                "five_lm_three_done",
+                self.fixed_actions_path,
             )
             self.five_lm_off_object_cfg = hydra_config(
-                "five_lm_off_object", self.fixed_actions_off_object_path
+                "five_lm_off_object",
+                self.fixed_actions_off_object_path,
             )
             self.five_lm_no_threading_cfg = hydra_config(
-                "five_lm_no_threading", self.fixed_actions_path
+                "five_lm_no_threading",
+                self.fixed_actions_path,
             )
             self.five_lm_maxnn1 = hydra_config(
-                "five_lm_maxnn1", self.fixed_actions_path
+                "five_lm_maxnn1",
+                self.fixed_actions_path,
             )
             self.five_lm_bounded = hydra_config(
-                "five_lm_bounded", self.fixed_actions_path
+                "five_lm_bounded",
+                self.fixed_actions_path,
             )
             self.noise_mixin_cfg = hydra_config("noise_mixin", self.fixed_actions_path)
             self.noisy_sensor_cfg = hydra_config(
-                "noisy_sensor", self.fixed_actions_path
+                "noisy_sensor",
+                self.fixed_actions_path,
             )
 
         """
@@ -184,12 +198,12 @@ class EvidenceLMTest(BaseGraphTest):
                 "patch": {
                     "hsv": [0.1, 1, 1],
                     "principal_curvatures_log": [1, 1],
-                }
+                },
             },
             feature_weights={
                 "patch": {
                     "hsv": np.array([1, 0, 0]),
-                }
+                },
             },
             # set graph size larger since fake obs displacements are meters
             max_graph_size=10,
@@ -227,7 +241,12 @@ class EvidenceLMTest(BaseGraphTest):
         return graph_lm
 
     def get_elm_with_two_fake_objects(
-        self, fake_obs, fake_obs_two, initial_possible_poses, gsg_class, gsg_args
+        self,
+        fake_obs,
+        fake_obs_two,
+        initial_possible_poses,
+        gsg_class,
+        gsg_args,
     ) -> EvidenceGraphLM:
         """Train on two fake observation objects.
 
@@ -345,13 +364,13 @@ class EvidenceLMTest(BaseGraphTest):
         self.assertEqual(
             len(
                 exp.model.learning_modules[0].buffer.get_all_locations_on_object(
-                    input_channel="patch"
-                )
+                    input_channel="patch",
+                ),
             ),
             len(
                 exp.model.learning_modules[0].buffer.get_all_features_on_object()[
                     "patch"
-                ]["pose_vectors"]
+                ]["pose_vectors"],
             ),
             "Did not retrieve same amount of feature and locations on object.",
         )
@@ -359,12 +378,12 @@ class EvidenceLMTest(BaseGraphTest):
             sum(
                 exp.model.learning_modules[0].buffer.get_all_features_on_object()[
                     "patch"
-                ]["on_object"]
+                ]["on_object"],
             ),
             len(
                 exp.model.learning_modules[0].buffer.get_all_features_on_object()[
                     "patch"
-                ]["on_object"]
+                ]["on_object"],
             ),
             "not all retrieved features were collected on the object.",
         )
@@ -372,14 +391,14 @@ class EvidenceLMTest(BaseGraphTest):
         # there should only be 8 observations stored for the 12 matching steps
         # and all of them should be on the object.
         num_matching_steps = len(
-            exp.model.learning_modules[0].buffer.stats["possible_matches"]
+            exp.model.learning_modules[0].buffer.stats["possible_matches"],
         )
         self.assertEqual(
             num_matching_steps,
             sum(
                 exp.model.learning_modules[0].buffer.features["patch"]["on_object"][
                     :num_matching_steps
-                ]
+                ],
             ),
             "Number of match steps does not match with stored observations on object",
         )
@@ -547,7 +566,8 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm.mode = "eval"
         # Don't need to give target object since we are not logging performance
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         num_steps_checked_symmetry = 0
         for i in range(12):
@@ -601,7 +621,8 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm.mode = "eval"
         # Don't need to give target object since we are not logging performance
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         target_evidence = 1
         for observation in fake_obs_test:
@@ -645,7 +666,8 @@ class EvidenceLMTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         target_evidence = 1
         for observation in fake_obs_test:
@@ -688,7 +710,8 @@ class EvidenceLMTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         target_evidence = 1
         for observation in fake_obs_test:
@@ -738,7 +761,8 @@ class EvidenceLMTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         for observation in fake_obs_test:
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
@@ -774,7 +798,8 @@ class EvidenceLMTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         for i, observation in enumerate(fake_obs_test):
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
@@ -800,7 +825,8 @@ class EvidenceLMTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
         graph_lm.matching_step([fake_obs_test[0]])
@@ -818,12 +844,17 @@ class EvidenceLMTest(BaseGraphTest):
         )
 
     def _evaluate_target_location(
-        self, graph_lm, fake_obs_test, target_object, focus_on_pose=False
+        self,
+        graph_lm,
+        fake_obs_test,
+        target_object,
+        focus_on_pose=False,
     ):
         """Helper function for hypothesis testing that retreives a target location."""
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
 
         # Observe 4 / 5 of the available features
@@ -874,7 +905,9 @@ class EvidenceLMTest(BaseGraphTest):
         )
 
         self._evaluate_target_location(
-            graph_lm, fake_obs_test, target_object="new_object1"
+            graph_lm,
+            fake_obs_test,
+            target_object="new_object1",
         )
 
     def test_hypothesis_testing_proposal_for_id_with_transformation(self):
@@ -900,7 +933,9 @@ class EvidenceLMTest(BaseGraphTest):
         )
 
         self._evaluate_target_location(
-            graph_lm, fake_obs_test, target_object="new_object1"
+            graph_lm,
+            fake_obs_test,
+            target_object="new_object1",
         )
 
     def test_hypothesis_testing_proposal_for_pose(self):
@@ -926,7 +961,10 @@ class EvidenceLMTest(BaseGraphTest):
         )
 
         self._evaluate_target_location(
-            graph_lm, fake_obs_test, target_object="new_object0", focus_on_pose=True
+            graph_lm,
+            fake_obs_test,
+            target_object="new_object0",
+            focus_on_pose=True,
         )
 
     def test_hypothesis_testing_proposal_for_pose_with_transformation(self):
@@ -955,7 +993,10 @@ class EvidenceLMTest(BaseGraphTest):
         )
 
         self._evaluate_target_location(
-            graph_lm, fake_obs_test, target_object="new_object0", focus_on_pose=True
+            graph_lm,
+            fake_obs_test,
+            target_object="new_object0",
+            focus_on_pose=True,
         )
 
     def test_different_features_still_recognized(self):
@@ -981,7 +1022,8 @@ class EvidenceLMTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         # We start at evidence 0 since we don't get feature evidence at initialization
         for target_evidence, observation in enumerate(fake_obs_test):
@@ -1009,14 +1051,15 @@ class EvidenceLMTest(BaseGraphTest):
         """Test that the object is not recognized if pose features don't match."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
         fake_obs_test[0].morphological_features["pose_vectors"] = np.array(
-            [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+            [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
         )
 
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         for step, observation in enumerate(fake_obs_test):
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
@@ -1078,7 +1121,8 @@ class EvidenceLMTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         target_evidence = 1
         for step, observation in enumerate(fake_obs_test):

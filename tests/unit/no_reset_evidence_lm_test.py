@@ -35,7 +35,8 @@ class NoResetEvidenceLMTest(BaseGraphTest):
         self.output_dir = tempfile.mkdtemp()
 
         with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
+            version_base=None,
+            config_path="../../src/tbp/monty/conf",
         ):
             self.pretraining_cfg = hydra.compose(
                 config_name="test",
@@ -53,7 +54,10 @@ class NoResetEvidenceLMTest(BaseGraphTest):
             )
 
     def assert_dicts_equal(
-        self, d1: dict[Any, np.ndarray], d2: dict[Any, np.ndarray], msg: str
+        self,
+        d1: dict[Any, np.ndarray],
+        d2: dict[Any, np.ndarray],
+        msg: str,
     ) -> None:
         """Asserts that two dictionaries containing NumPy arrays are equal.
 
@@ -106,7 +110,7 @@ class NoResetEvidenceLMTest(BaseGraphTest):
             episode_1_steps = eval_exp.run_episode_steps()
             eval_exp.post_episode(episode_1_steps)
             post_episode1_evidence = copy.deepcopy(
-                eval_exp.model.learning_modules[0].evidence
+                eval_exp.model.learning_modules[0].evidence,
             )
             self.assertGreater(
                 len(post_episode1_evidence),

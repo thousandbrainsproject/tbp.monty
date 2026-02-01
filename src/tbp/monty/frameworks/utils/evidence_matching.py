@@ -131,7 +131,10 @@ class ChannelMapper:
         del self.channel_sizes[channel_name]
 
     def add_channel(
-        self, channel_name: str, size: int, position: int | None = None
+        self,
+        channel_name: str,
+        size: int,
+        position: int | None = None,
     ) -> None:
         """Adds a new channel at a specified position (default is at the end).
 
@@ -177,7 +180,9 @@ class ChannelMapper:
         return original[start:end]
 
     def extract_hypotheses(
-        self, hypotheses: Hypotheses, channel: str
+        self,
+        hypotheses: Hypotheses,
+        channel: str,
     ) -> ChannelHypotheses:
         """Extracts the hypotheses corresponding to a given channel.
 
@@ -197,7 +202,10 @@ class ChannelMapper:
         )
 
     def update(
-        self, original: np.ndarray, channel: str, data: np.ndarray
+        self,
+        original: np.ndarray,
+        channel: str,
+        data: np.ndarray,
     ) -> np.ndarray:
         """Inserts data into the original array at the position of the given channel.
 
@@ -328,7 +336,7 @@ class EvidenceSlopeTracker:
             self.hyp_age[channel] = new_age
         else:
             self.evidence_buffer[channel] = np.vstack(
-                (self.evidence_buffer[channel], new_data)
+                (self.evidence_buffer[channel], new_data),
             )
             self.hyp_age[channel] = np.concatenate((self.hyp_age[channel], new_age))
 
@@ -356,7 +364,7 @@ class EvidenceSlopeTracker:
 
         if values.shape[0] != self.total_size(channel):
             raise ValueError(
-                f"Expected {self.total_size(channel)} values, but got {len(values)}"
+                f"Expected {self.total_size(channel)} values, but got {len(values)}",
             )
 
         # Shift evidence buffer by one step
@@ -417,7 +425,9 @@ class EvidenceSlopeTracker:
             self.remove_hyp(np.arange(self.total_size(channel)), channel)
 
     def select_hypotheses(
-        self, slope_threshold: float, channel: str
+        self,
+        slope_threshold: float,
+        channel: str,
     ) -> HypothesesSelection:
         """Returns a hypotheses selection given a slope threshold.
 
@@ -499,7 +509,9 @@ class HypothesesSelection:
 
     @classmethod
     def from_maintain_ids(
-        cls, total_size: int, ids: npt.NDArray[np.int_]
+        cls,
+        total_size: int,
+        ids: npt.NDArray[np.int_],
     ) -> HypothesesSelection:
         """Creates a hypotheses selection from maintain indices.
 
@@ -524,7 +536,9 @@ class HypothesesSelection:
 
     @classmethod
     def from_remove_ids(
-        cls, total_size: int, ids: npt.NDArray[np.int_]
+        cls,
+        total_size: int,
+        ids: npt.NDArray[np.int_],
     ) -> HypothesesSelection:
         """Creates a selection from remove indices.
 
@@ -618,7 +632,8 @@ def evidence_update_threshold(
         return np.median(evidence_all_channels)
 
     if isinstance(
-        evidence_threshold_config, str
+        evidence_threshold_config,
+        str,
     ) and evidence_threshold_config.endswith("%"):
         percentage_str = evidence_threshold_config.strip("%")
         percentage = float(percentage_str)
@@ -638,7 +653,7 @@ def evidence_update_threshold(
     raise InvalidEvidenceThresholdConfig(
         "evidence_threshold_config not in "
         "[int, float, '[int]%', 'mean', "
-        "'median', 'all', 'x_percent_threshold']"
+        "'median', 'all', 'x_percent_threshold']",
     )
 
 

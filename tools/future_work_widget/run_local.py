@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -53,7 +53,8 @@ def main():
     logger.info("Press Ctrl+C to stop the server\n")
 
     with socketserver.TCPServer(
-        ("", port), http.server.SimpleHTTPRequestHandler
+        ("", port),
+        http.server.SimpleHTTPRequestHandler,
     ) as httpd:
         httpd.serve_forever()
 

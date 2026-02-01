@@ -43,7 +43,8 @@ EXPECTED_STATES = np.random.rand(NUM_STEPS, 64, 64, 1)
 class HabitatDataTest(unittest.TestCase):
     def setUp(self):
         self.camera_dist_config = AgentConfig(
-            SingleSensorAgent, dict(agent_id=AGENT_ID, sensor_id=SENSOR_ID)
+            SingleSensorAgent,
+            dict(agent_id=AGENT_ID, sensor_id=SENSOR_ID),
         )
         self.camera_dist = SingleSensorAgent(agent_id=AGENT_ID, sensor_id=SENSOR_ID)
         self.camera_abs_config = AgentConfig(
@@ -55,7 +56,9 @@ class HabitatDataTest(unittest.TestCase):
             ),
         )
         self.camera_abs = SingleSensorAgent(
-            agent_id=AGENT_ID, sensor_id=SENSOR_ID, action_space_type="absolute_only"
+            agent_id=AGENT_ID,
+            sensor_id=SENSOR_ID,
+            action_space_type="absolute_only",
         )
         self.camera_surf_config = AgentConfig(
             SingleSensorAgent,
@@ -66,7 +69,9 @@ class HabitatDataTest(unittest.TestCase):
             ),
         )
         self.camera_surf = SingleSensorAgent(
-            agent_id=AGENT_ID, sensor_id=SENSOR_ID, action_space_type="surface_agent"
+            agent_id=AGENT_ID,
+            sensor_id=SENSOR_ID,
+            action_space_type="surface_agent",
         )
         self.mock_reset = {0: {f"{SENSOR_ID}.depth": EXPECTED_STATES[0]}}
         self.mock_observations = [
@@ -74,7 +79,8 @@ class HabitatDataTest(unittest.TestCase):
         ]
 
         with hydra.initialize(
-            config_path="../../src/tbp/monty/conf", version_base=None
+            config_path="../../src/tbp/monty/conf",
+            version_base=None,
         ):
             self.policy_cfg_fragment = hydra.compose(
                 config_name="experiment/config/monty/motor_system/defaults",
@@ -93,7 +99,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_dist = mock_agent_class.return_value
         mock_agent_dist.agent_config = self.camera_dist.get_spec()
         mock_agent_dist.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_dist = mock_simulator_class.return_value
         mock_sim_dist.agents = [mock_agent_dist]
@@ -110,7 +117,7 @@ class HabitatDataTest(unittest.TestCase):
         base_policy_cfg_dist["agent_id"] = AGENT_ID
 
         motor_system_dist = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_dist)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_dist),
         )
 
         # Create habitat env datasets with distant-agent action space
@@ -141,7 +148,7 @@ class HabitatDataTest(unittest.TestCase):
         obs_dist, _ = env_interface_dist.step(motor_system_dist())
         camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
         self.assertFalse(
-            np.all(camera_obs_dist[MODALITY] == initial_camera_obs_dist[MODALITY])
+            np.all(camera_obs_dist[MODALITY] == initial_camera_obs_dist[MODALITY]),
         )
 
     @mock.patch("habitat_sim.Agent", autospec=True)
@@ -151,7 +158,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_abs = mock_agent_class.return_value
         mock_agent_abs.agent_config = self.camera_abs.get_spec()
         mock_agent_abs.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_abs = mock_simulator_class.return_value
         mock_sim_abs.agents = [mock_agent_abs]
@@ -167,7 +175,7 @@ class HabitatDataTest(unittest.TestCase):
         base_policy_cfg_abs["agent_id"] = AGENT_ID
 
         motor_system_abs = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_abs),
         )
 
         # Create habitat env with absolute action space
@@ -198,7 +206,7 @@ class HabitatDataTest(unittest.TestCase):
         obs_abs, _ = env_interface_abs.step(motor_system_abs())
         camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
         self.assertFalse(
-            np.all(camera_obs_abs[MODALITY] == initial_camera_obs_abs[MODALITY])
+            np.all(camera_obs_abs[MODALITY] == initial_camera_obs_abs[MODALITY]),
         )
 
     @mock.patch("habitat_sim.Agent", autospec=True)
@@ -208,7 +216,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_surf = mock_agent_class.return_value
         mock_agent_surf.agent_config = self.camera_surf.get_spec()
         mock_agent_surf.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_surf = mock_simulator_class.return_value
         mock_sim_surf.agents = [mock_agent_surf]
@@ -225,7 +234,7 @@ class HabitatDataTest(unittest.TestCase):
         base_policy_cfg_surf["agent_id"] = AGENT_ID
 
         motor_system_surf = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_surf)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_surf),
         )
 
         # Create habitat env interface with distant-agent action space
@@ -256,7 +265,7 @@ class HabitatDataTest(unittest.TestCase):
         obs_surf, _ = env_interface_surf.step(motor_system_surf())
         camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
         self.assertFalse(
-            np.all(camera_obs_surf[MODALITY] == initial_camera_obs_surf[MODALITY])
+            np.all(camera_obs_surf[MODALITY] == initial_camera_obs_surf[MODALITY]),
         )
 
     @mock.patch("habitat_sim.Agent", autospec=True)
@@ -266,7 +275,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_dist = mock_agent_class.return_value
         mock_agent_dist.agent_config = self.camera_dist.get_spec()
         mock_agent_dist.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_dist = mock_simulator_class.return_value
         mock_sim_dist.agents = [mock_agent_dist]
@@ -282,7 +292,7 @@ class HabitatDataTest(unittest.TestCase):
         base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
         base_policy_cfg_dist["agent_id"] = AGENT_ID
         motor_system_dist = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_dist)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_dist),
         )
 
         env_init_args = {"agents": self.camera_dist_config}
@@ -308,7 +318,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_abs = mock_agent_class.return_value
         mock_agent_abs.agent_config = self.camera_abs.get_spec()
         mock_agent_abs.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_abs = mock_simulator_class.return_value
         mock_sim_abs.agents = [mock_agent_abs]
@@ -324,7 +335,7 @@ class HabitatDataTest(unittest.TestCase):
         base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
         motor_system_abs = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_abs),
         )
         env_init_args = {"agents": self.camera_abs_config}
         env = HabitatEnvironment(**env_init_args)
@@ -348,7 +359,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_surf = mock_agent_class.return_value
         mock_agent_surf.agent_config = self.camera_surf.get_spec()
         mock_agent_surf.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_surf = mock_simulator_class.return_value
         mock_sim_surf.agents = [mock_agent_surf]
@@ -366,7 +378,7 @@ class HabitatDataTest(unittest.TestCase):
         base_policy_cfg_surf = OmegaConf.to_object(self.policy_cfg_surf_fragment)
         base_policy_cfg_surf["agent_id"] = AGENT_ID
         motor_system_surf = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_surf)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_surf),
         )
 
         env_init_args = {"agents": self.camera_surf_config}

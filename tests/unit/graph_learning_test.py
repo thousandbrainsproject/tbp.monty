@@ -112,7 +112,7 @@ class GraphLearningTest(BaseGraphTest):
                 "motor_system_args",
                 "policy_args",
                 "file_name",
-            ]
+            ],
         )
 
         def hydra_config(
@@ -138,7 +138,8 @@ class GraphLearningTest(BaseGraphTest):
             return hydra.compose(config_name="test", overrides=overrides)
 
         with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
+            version_base=None,
+            config_path="../../src/tbp/monty/conf",
         ):
             self.base_cfg = hydra_config("base")
             self.surface_agent_eval_cfg = hydra_config("surface_agent_eval")
@@ -146,31 +147,40 @@ class GraphLearningTest(BaseGraphTest):
             self.disp_pred_cfg = hydra_config("disp_pred")
             self.feature_pred_cfg = hydra_config("feature_pred")
             self.fixed_actions_disp_cfg = hydra_config(
-                "fixed_actions_disp", self.fixed_actions_path
+                "fixed_actions_disp",
+                self.fixed_actions_path,
             )
             self.fixed_actions_ppf_cfg = hydra_config(
-                "fixed_actions_ppf", self.fixed_actions_path
+                "fixed_actions_ppf",
+                self.fixed_actions_path,
             )
             self.fixed_actions_feat_cfg = hydra_config(
-                "fixed_actions_feat", self.fixed_actions_path
+                "fixed_actions_feat",
+                self.fixed_actions_path,
             )
             self.feature_pred_time_out_cfg = hydra_config(
-                "feature_pred_time_out", self.fixed_actions_path
+                "feature_pred_time_out",
+                self.fixed_actions_path,
             )
             self.feature_pred_off_object_cfg = hydra_config(
-                "feature_pred_off_object", self.fixed_actions_path_off_object
+                "feature_pred_off_object",
+                self.fixed_actions_path_off_object,
             )
             self.feature_pred_off_object_train_cfg = hydra_config(
-                "feature_pred_off_object_train", self.fixed_actions_path_off_object
+                "feature_pred_off_object_train",
+                self.fixed_actions_path_off_object,
             )
             self.feature_uniform_initial_poses_cfg = hydra_config(
-                "feature_uniform_initial_poses", self.fixed_actions_path
+                "feature_uniform_initial_poses",
+                self.fixed_actions_path,
             )
             self.five_lm_ppf_displacement_cfg = hydra_config(
-                "five_lm_ppf_displacement", self.fixed_actions_path
+                "five_lm_ppf_displacement",
+                self.fixed_actions_path,
             )
             self.five_lm_feature_cfg = hydra_config(
-                "five_lm_feature", self.fixed_actions_path
+                "five_lm_feature",
+                self.fixed_actions_path,
             )
 
     def tearDown(self):
@@ -214,7 +224,7 @@ class GraphLearningTest(BaseGraphTest):
                     len(
                         exp.model.learning_modules[
                             0
-                        ].buffer.get_all_locations_on_object(input_channel="first")
+                        ].buffer.get_all_locations_on_object(input_channel="first"),
                     ),
                     "buffer does not contain the right amount of locations.",
                 )
@@ -222,8 +232,9 @@ class GraphLearningTest(BaseGraphTest):
                     self.assertListEqual(
                         list(
                             exp.model.learning_modules[0].buffer.get_nth_displacement(
-                                0, input_channel="first"
-                            )
+                                0,
+                                input_channel="first",
+                            ),
                         ),
                         [0, 0, 0],
                         "displacement at step 0 should be 0.",
@@ -233,7 +244,7 @@ class GraphLearningTest(BaseGraphTest):
                     len(
                         exp.model.learning_modules[0].buffer.displacements["patch"][
                             "displacement"
-                        ]
+                        ],
                     ),
                     "buffer does not contain the right amount of displacements.",
                 )
@@ -495,13 +506,13 @@ class GraphLearningTest(BaseGraphTest):
             self.assertEqual(
                 len(
                     exp.model.learning_modules[0].buffer.get_all_locations_on_object(
-                        input_channel="patch"
-                    )
+                        input_channel="patch",
+                    ),
                 ),
                 len(
                     exp.model.learning_modules[0].buffer.get_all_features_on_object()[
                         "patch"
-                    ]["pose_vectors"]
+                    ]["pose_vectors"],
                 ),
                 "Did not retrieve same amount of feature and locations on object.",
             )
@@ -509,12 +520,12 @@ class GraphLearningTest(BaseGraphTest):
                 sum(
                     exp.model.learning_modules[0].buffer.get_all_features_on_object()[
                         "patch"
-                    ]["on_object"]
+                    ]["on_object"],
                 ),
                 len(
                     exp.model.learning_modules[0].buffer.get_all_features_on_object()[
                         "patch"
-                    ]["on_object"]
+                    ]["on_object"],
                 ),
                 "not all retrieved features were collected on the object.",
             )
@@ -522,14 +533,14 @@ class GraphLearningTest(BaseGraphTest):
             # there should only be 8 observations stored for the 12 matching steps
             # and all of them should be on the object.
             num_matching_steps = len(
-                exp.model.learning_modules[0].buffer.stats["possible_matches"]
+                exp.model.learning_modules[0].buffer.stats["possible_matches"],
             )
             self.assertEqual(
                 num_matching_steps,
                 sum(
                     exp.model.learning_modules[0].buffer.features["patch"]["on_object"][
                         :num_matching_steps
-                    ]
+                    ],
                 ),
                 "Number of match steps does not match with stored observations "
                 "on object",
@@ -599,14 +610,19 @@ class GraphLearningTest(BaseGraphTest):
         self.check_eval_results(eval_stats)
 
     def gm_learn_object(
-        self, graph_lm: FeatureGraphLM, obj_name, observations, offset=None
+        self,
+        graph_lm: FeatureGraphLM,
+        obj_name,
+        observations,
+        offset=None,
     ):
         if offset is None:
             offset = np.zeros(3)
 
         graph_lm.mode = "train"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
 
         offset_obs = []
@@ -633,12 +649,14 @@ class GraphLearningTest(BaseGraphTest):
                 "patch": {
                     "hsv": [0.1, 1, 1],
                     "principal_curvatures_log": [1, 1],
-                }
+                },
             },
         )
 
         self.gm_learn_object(
-            graph_lm, obj_name="new_object0", observations=self.fake_obs_learn
+            graph_lm,
+            obj_name="new_object0",
+            observations=self.fake_obs_learn,
         )
 
         self.assertEqual(
@@ -663,7 +681,7 @@ class GraphLearningTest(BaseGraphTest):
                     "patch": {
                         "hsv": [0.1, 1, 1],
                         "principal_curvatures_log": [1, 1],
-                    }
+                    },
                 },
             )
             object_obs = []
@@ -689,7 +707,8 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm.mode = "eval"
         # Don't need to give target object since we are not logging performance
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         for observation in fake_obs_test:
             graph_lm.matching_step([observation])
@@ -728,7 +747,8 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         for observation in fake_obs_test:
             graph_lm.matching_step([observation])
@@ -767,7 +787,8 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         for observation in fake_obs_test:
             observation.location = observation.location + np.ones(3)
@@ -812,7 +833,8 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         for observation in fake_obs_test:
             graph_lm.matching_step([observation])
@@ -851,7 +873,8 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         for i, observation in enumerate(fake_obs_test):
             graph_lm.matching_step([observation])
@@ -877,7 +900,8 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         for observation in fake_obs_test:
             graph_lm.matching_step([observation])
@@ -891,14 +915,15 @@ class GraphLearningTest(BaseGraphTest):
         """Test that the object is not recognized if pose features don't match."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
         fake_obs_test[0].morphological_features["pose_vectors"] = np.array(
-            [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+            [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
         )
 
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         for step, observation in enumerate(fake_obs_test):
             graph_lm.matching_step([observation])
@@ -930,7 +955,8 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
+            rng=np.random.RandomState(),
+            primary_target=self.placeholder_target,
         )
         for observation in fake_obs_test:
             if not observation.use_state:
@@ -975,7 +1001,10 @@ class GraphLearningTest(BaseGraphTest):
 
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_multilm_eval_results(
-            eval_stats, num_lms=5, min_done=3, num_episodes=1
+            eval_stats,
+            num_lms=5,
+            min_done=3,
+            num_episodes=1,
         )
 
     def test_5lm_feature_experiment(self):
@@ -1022,7 +1051,10 @@ class GraphLearningTest(BaseGraphTest):
         # recognized. Probably just some parameter setting due to flaws in old
         # LM but didn't want to dig too deep into that for now.
         self.check_multilm_eval_results(
-            eval_stats, num_lms=5, min_done=3, num_episodes=1
+            eval_stats,
+            num_lms=5,
+            min_done=3,
+            num_episodes=1,
         )
 
 
