@@ -9,13 +9,13 @@ The basic repository structure looks as follows:
 ```
 .
 |-- benchmarks/                 # CSVs with latest benchmark results
-|-- conf/                       # Monty configurations
-|   |-- benchmarks/             # Some shared benchmark constants
-|   |-- experiment/             # Configurations used for experiment
-|   `-- test/                   # Configurations used in tests
 |-- docs/                       # Source files for documentation
 |-- rfcs/                       # Merged RFCs
 |-- src/tbp/monty/
+|   |-- conf/                       # Monty configurations
+|   |   |-- benchmarks/             # Some shared benchmark constants
+|   |   |-- experiment/             # Configurations used for experiment
+|   |   `-- test/                   # Configurations used in tests
 |   |-- frameworks/
 |   |   |-- actions
 |   |   |-- config_utils
@@ -39,4 +39,4 @@ The basic repository structure looks as follows:
 ```
 
 This is a slightly handpicked selection of folders and subfolders which tries to highlight to most important folders to get started.
-The frameworks, simulators, and tests folders contain many files that are not listed here. The main code used for modeling can be found in `src/tbp/monty/frameworks/models/`. 
+The frameworks, simulators, and tests folders contain many files that are not listed here. The main code used for modeling can be found in `src/tbp/monty/frameworks/models/`.
