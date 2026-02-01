@@ -135,7 +135,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
                 # episodes because order of execution is arbitrary, all that matters is
                 # we know the parameters for that episode.
                 tmp_json = json.loads(line)
-                json_key = list(tmp_json.keys())[0]  # has only one key
+                json_key = next(iter(tmp_json.keys()))  # has only one key
                 detailed_json[str(line_counter)] = tmp_json[json_key]
                 del tmp_json
 
