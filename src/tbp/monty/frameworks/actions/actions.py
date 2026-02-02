@@ -92,9 +92,9 @@ class Action(Protocol):
         Returns:
             The class name in snake_case.
         """
-        return "".join(
-            ["_" + char.lower() if char.isupper() else char for char in name],
-        ).lstrip("_")
+        return (
+            "".join("_" + ch if ch.isupper() else ch for ch in name).lower().lstrip("_")
+        )
 
     @classmethod
     def action_name(cls) -> str:
