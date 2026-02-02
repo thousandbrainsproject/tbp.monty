@@ -818,7 +818,7 @@ class GridObjectModel(GraphObjectModel):
                     # TODO: Figure out a more nuanced way to take into account past obs
                     if avg_feat != previous_average and num_old_obs > num_new_obs:
                         avg_feat = previous_average
-                    else:
+                    elif avg_feat != previous_average:
                         previous_average = avg_feat
                 # NOTE: could weight these
                 avg_feat = (avg_feat + previous_average) / 2
