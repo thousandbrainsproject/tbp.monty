@@ -64,7 +64,7 @@ As the positioning procedures were implemented in the early development of Monty
 1) Positioning procedures should only be called in `pre_episode`, i.e. before the episode begins.
 2) Positioning procedures may make use of privileged information such as the view-finder and semantic-sensor, which are not available to the learning module. However, consistent with point (1), these should not be leveraged during learning or inference by the Monty agent.
 
-These requirements are currently not enforced in the use of `GetGoodView` and `touch_object` when an agent jumps to a location using a model-based policy. Similarly, `touch_object` is used by the surface agent if it loses contact with the object and cannot find it. Appropriately separating out the role of positioning procedures via the above requirements will clarify their role, and enable policies that do not make use of privileged information, but which serve similar purposes during an experiment.
+These requirements are currently not enforced in the use of `touch_object` when an agent jumps to a location using a model-based policy. Similarly, `touch_object` is used by the surface agent if it loses contact with the object and cannot find it. Appropriately separating out the role of positioning procedures via the above requirements will clarify their role, and enable policies that do not make use of privileged information, but which serve similar purposes during an experiment.
 
 
 # Input-Driven and Hypothesis-Driven Policies
