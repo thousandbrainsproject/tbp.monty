@@ -64,9 +64,9 @@ class HabitatSalienceSMTest(unittest.TestCase):
         self.sensor_module = HabitatSalienceSM(
             rng=np.random.RandomState(42),
             sensor_module_id="test",
-            salience_strategy_class=MagicMock,
-            return_inhibitor_class=MagicMock,
-            snapshot_telemetry_class=MagicMock,
+            salience_strategy=MagicMock(),
+            return_inhibitor=MagicMock(),
+            snapshot_telemetry=MagicMock(),
         )
         self.default_sensor_state = SensorState(
             position=np.array([0, 0, 0]),
@@ -165,9 +165,9 @@ class HabitatSalienceSMPrivateTest(unittest.TestCase):
         self.sensor_module = HabitatSalienceSM(
             rng=np.random.RandomState(42),
             sensor_module_id="test",
-            salience_strategy_class=MagicMock,
-            return_inhibitor_class=MagicMock,
-            snapshot_telemetry_class=MagicMock,
+            salience_strategy=MagicMock(),
+            return_inhibitor=MagicMock(),
+            snapshot_telemetry=MagicMock(),
         )
 
     def test_normalize_salience_does_clips_uniform_salience_between_0_and_1(
