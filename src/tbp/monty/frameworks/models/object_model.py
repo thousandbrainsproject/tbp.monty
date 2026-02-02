@@ -814,11 +814,11 @@ class GridObjectModel(GraphObjectModel):
                         avg_feat = previous_average
                     elif use_cds_to_update is False:
                         avg_feat[3:] = previous_average[3:]
-                elif feature == "object_id":
+                elif feature == "object_id" and avg_feat != previous_average:
                     # TODO: Figure out a more nuanced way to take into account past obs
-                    if avg_feat != previous_average and num_old_obs > num_new_obs:
+                    if num_old_obs > num_new_obs:
                         avg_feat = previous_average
-                    elif avg_feat != previous_average:
+                    else:
                         previous_average = avg_feat
                 # NOTE: could weight these
                 avg_feat = (avg_feat + previous_average) / 2
