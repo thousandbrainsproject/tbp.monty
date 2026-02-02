@@ -69,7 +69,7 @@ class Environment(Protocol):
     def close(self) -> None:
         """Close the environment and release all resources.
 
-        Any call to any other environment method may raise an exception
+        Any call to any other environment method may raise an exception.
         """
         ...
 

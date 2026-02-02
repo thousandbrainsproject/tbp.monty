@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -36,22 +36,22 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
           to raw sensor noise.
 
     Args:
-        point_cloud: list of 3d coordinates and whether the points are on the
-            object or not. shape = [n, 4]
+        point_cloud: List of 3D coordinates with flags indicating whether each
+            point lies on the object. Shape = [n, 4].
         patch_radius_frac: Fraction of observation size to use for SN calculation.
             Default of 2.5 means that we look half_obs_dim//2.5 to the left, right, up
             and down. With a resolution of 64x64 that would be 12 pixels. The
             calculated tan_len (in this example 12) describes the distance of pixels
             used to span up the two tangent vectors to calculate the surface normals.
             These two vectors are then used to calculate the surface normal by taking
-            the cross product. If we set tan_len to a larger value the surface normal
+            the cross product. If we set tan_len to a larger value, the surface normal
             is more influenced by the global shape of the patch.
 
     Returns:
-        norm: Estimated surface normal at center of patch
-        valid_sn: Boolean for whether the surface normal was valid or not (True by
+        norm: Estimated surface normal at the center of the patch.
+        valid_sn: Boolean indicating whether the surface normal was valid (True by
             default); an invalid surface normal means there were not enough points in
-            the patch to make any estimate of the surface normal
+            the patch to make any estimate of the surface normal.
     """
     obs_dim = int(np.sqrt(point_cloud.shape[0]))
     half_obs_dim = obs_dim // 2
@@ -74,14 +74,15 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
         vecright_norm = vecright / np.linalg.norm(vecright)
         vecleft_norm = vecleft / np.linalg.norm(vecleft)
 
-        # check if tan_len up and right end up on the object and calculate sn from those
+        # Check if tan_len up and right land on the object and calculate the
+        # surface normal from those
         norm1, norm2 = None, None
         if (point_cloud[center_id_up, 3] > 0) and (
             point_cloud[center_id + tan_len, 3] > 0
         ):
             norm1 = -np.cross(vecup_norm, vecright_norm)
-        # check if tan_len down and left end up on the object and calculate
-        # sn from those
+        # Check if tan_len down and left land on the object and calculate the
+        # surface normal from those
         if (point_cloud[center_id_down, 3] > 0) and (
             point_cloud[center_id - tan_len, 3] > 0
         ):
@@ -99,8 +100,8 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
             ):
                 norm1 = np.cross(vecup_norm, vecleft_norm)
 
-            # check if tan_len down and left end up on the object and calculate
-            # sn from those
+            # Check if tan_len down and left land on the object and calculate
+            # the surface normal from those
 
             if (point_cloud[center_id_down, 3] > 0) and (
                 point_cloud[center_id + tan_len, 3] > 0
@@ -113,15 +114,15 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
         if norm1 is not None:
             found_surface_normal = True
         else:
-            # if none of the combinations worked then 3/4 points are off the object
-            # -> try a smaller tan_len
+            # If none of the combinations worked, 3/4 of the points are off the object,
+            # So try a smaller tan_len
             tan_len = tan_len // 2
             if tan_len < 1:
                 norm1 = norm2 = [0, 0, 1]
                 valid_sn = False
                 found_surface_normal = True
     norm = np.mean([norm1, norm2], axis=0)
-    # norm = np.cross(vec1_norm, vec2_norm)
+    # Norm = np.cross(vec1_norm, vec2_norm)
     norm = norm / np.linalg.norm(norm)
 
     return norm, valid_sn
@@ -130,24 +131,24 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
 def surface_normal_ordinary_least_squares(
     sensor_frame_data, world_camera, center_id, neighbor_patch_frac=3.2
 ):
-    """Extracts the surface normal direction from a noisy point-cloud.
+    """Extracts the surface normal direction from a noisy point cloud.
 
-    Uses ordinary least-square fitting with error minimization along the view
+    Uses ordinary least-squares fitting with error minimization along the view
     direction.
 
     Args:
-        sensor_frame_data: point-cloud in sensor coordinates (assumes full
-            patch is provided i.e. no preliminary filtering of off-object points).
-        world_camera: matrix defining sensor-to-world frame transformation.
-        center_id: id of the center point in point_cloud.
-        neighbor_patch_frac: fraction of the patch width that defines the
+        sensor_frame_data: Point cloud in sensor coordinates (assumes the full
+            patch is provided, i.e., no preliminary filtering of off-object points).
+        world_camera: Matrix defining the sensor-to-world frame transformation.
+        center_id: ID of the center point in the point cloud.
+        neighbor_patch_frac: Fraction of the patch width that defines the
             local neighborhood within which to perform the least-squares fitting.
 
     Returns:
-        surface_normal: Estimated surface normal at center of patch
-        valid_sn: Boolean for whether the surface normal was valid or not. Defaults
+        surface_normal: Estimated surface normal at the center of the patch.
+        valid_sn: Boolean indicating whether the surface normal was valid; defaults
             to True. An invalid surface normal means there were not enough points in
-            the patch to make any estimate of the surface normal
+            the patch to make any estimate of the surface normal.
     """
     point_cloud = sensor_frame_data.copy()
     # Make sure that patch center is on the object
@@ -198,23 +199,23 @@ def surface_normal_total_least_squares(
 ):
     """Extracts the surface normal direction from a noisy point-cloud.
 
-    Uses total least-square fitting. Error minimization is independent of view
+    Uses total least-squares fitting. Error minimization is independent of the view
     direction.
 
     Args:
-        point_cloud_base: point-cloud in world coordinates (assumes full
-            patch is provided i.e. no preliminary filtering of off-object points).
-        center_id: id of the center point in point_cloud.
-        view_dir: viewing direction used to adjust the sign of the estimated
+        point_cloud_base: Point cloud in world coordinates (assumes the full
+            patch is provided, i.e., no preliminary filtering of off-object points).
+        center_id: ID of the center point in the point cloud.
+        view_dir: Viewing direction used to adjust the sign of the estimated
             surface normal.
-        neighbor_patch_frac: fraction of the patch width that defines the
+        neighbor_patch_frac: Fraction of the patch width that defines the
             local neighborhood within which to perform the least-squares fitting.
 
     Returns:
-        norm: Estimate surface normal at center of patch
-        valid_sn: Boolean for whether the surface normal was valid or not. Defaults
+        norm: Estimated surface normal at the center of the patch.
+        valid_sn: Boolean indicating whether the surface normal was valid; defaults
             to True. An invalid surface normal means there were not enough points in
-            the patch to make any estimate of the surface normal
+            the patch to make any estimate of the surface normal.
     """
     point_cloud = point_cloud_base.copy()
     # Make sure that patch center is on the object
@@ -230,7 +231,7 @@ def surface_normal_total_least_squares(
         m_mat = 1 / n_points * np.matmul(x_mat.T, x_mat) - np.matmul(p_mean, p_mean.T)
 
         try:
-            # find eigenvector of M with min eigenvalue
+            # Find eigenvector of M with the minimum eigenvalue
             eig_val, eig_vec = np.linalg.eig(m_mat)
             n_dir = eig_vec[:, np.argmin(eig_val)]
             valid_sn = True
@@ -254,38 +255,37 @@ def surface_normal_total_least_squares(
     return n_dir, valid_sn
 
 
-# Old implementation for principal curvature extraction. Refer to
-# get_principal_curvatures() function for new implementation.
+# Old implementation for principal curvature extraction; refer to the
+# Review the get_principal_curvatures() function for the new implementation.
 def curvature_at_point(point_cloud, center_id, normal):
-    """Compute principal curvatures from point cloud.
+    """Compute principal curvatures from a point cloud.
 
-    Computes the two principal curvatures of a 2D surface and corresponding
-    principal directions
+    Computes the two principal curvatures of a 2D surface and the corresponding
+    principal directions.
 
     Args:
-        point_cloud: point cloud (2d numpy array) based on which the 2D
-            surface is approximated
-        center_id: center point around which the local curvature is
-            estimated
-        normal: surface normal at the center point
+        point_cloud: Point cloud (2D numpy array) on which the local surface is
+            approximated.
+        center_id: Center point around which the local curvature is estimated.
+        normal: Surface normal at the center point.
 
     Returns:
-        k1:     first principal curvature
-        k2:     second principal curvature
-        dir1:   first principal direction
-        dir2:   second principal direction
+        k1: First principal curvature.
+        k2: Second principal curvature.
+        dir1: First principal direction.
+        dir2: Second principal direction.
     """
     if point_cloud[center_id, 3] > 0:
         on_obj = point_cloud[:, 3] > 0
         adjusted_center_id = sum(on_obj[:center_id])
         point_cloud = point_cloud[on_obj, :3]
         # Step 1) project point coordinates onto local reference frame computed based
-        # on the normal:
+        # On the normal:
 
-        # get local reference frame (ev,fv,nv) at x:
-        nv = normal / np.linalg.norm(normal)  # in case normal is not normalized
+        # Get local reference frame (ev,fv,nv) at x:
+        nv = normal / np.linalg.norm(normal)  # In case normal is not normalized
 
-        # find two directions ev and fv orthogonal to nv:
+        # Find two directions ev and fv orthogonal to nv:
         e = np.zeros(3)
 
         if abs(nv[0]) < 0.5:
@@ -300,15 +300,15 @@ def curvature_at_point(point_cloud, center_id, normal):
         ev = np.cross(fv, nv)
 
         x = point_cloud[adjusted_center_id]
-        dx = point_cloud - x  # our point x is the origin of the local reference frame
+        dx = point_cloud - x  # Our point x is the origin of the local reference frame
 
-        # compute projections:
+        # Compute projections:
         u = np.dot(dx, ev)
         v = np.dot(dx, fv)
         w = np.dot(dx, nv)
 
         # Step 2) do least-squares fit to get the parameters of the quadratic form
-        # w=a*u*u+b*v*v+c*u*v+d*u+e*v:
+        # Quadratic form: w=a*u*u+b*v*v+c*u*v+d*u+e*v:
         data = np.zeros((len(point_cloud), 5))
 
         data[:, 0] = np.multiply(u, u)
@@ -320,10 +320,10 @@ def curvature_at_point(point_cloud, center_id, normal):
         beta = np.dot(np.transpose(data), w)
         a = np.dot(np.transpose(data), data)
 
-        # Rarely, "a" can be singular, causing numpy to throw an error; appears
-        # to be caused by surface-agent gathering observations that are largely off the
-        # object, but not entirely (e.g. <25% visible), resulting in a system
-        # with insufficient data to be solvable
+        # Rarely, "a" can be singular, causing numpy to throw an error.
+        # This appears to be caused by the surface-agent gathering observations that
+        # are largely off the object, but not entirely (e.g. <25% visible), resulting
+        # in a system with insufficient data to be solvable.
         if non_singular_mat(a):
             params = np.linalg.solve(a, beta)
 
@@ -352,11 +352,11 @@ def curvature_at_point(point_cloud, center_id, normal):
             k2 = eigval_sorted[1]
 
             # TODO: sometimes dir1 and dir2 are not orthogonal, why?
-            # principal directions in the same coordinate frame as points:
+            # Principal directions in the same coordinate frame as points:
             dir1 = eigvec_sorted[0, 0] * ev + eigvec_sorted[1, 0] * fv
             dir2 = eigvec_sorted[0, 1] * ev + eigvec_sorted[1, 1] * fv
             if get_right_hand_angle(dir1, dir2, nv) < 0:
-                # always have dir2 point to the righthand side of dir1
+                # Always have dir2 point to the righthand side of dir1
                 dir2 = -dir2
 
             valid_pc = True
@@ -383,30 +383,29 @@ def principal_curvatures(
     weighted=True,
     fit_intercept=True,
 ):
-    """Compute principal curvatures from point cloud.
+    """Compute principal curvatures from a point cloud.
 
-    Computes the two principal curvatures of a 2D surface and corresponding
-    principal directions
+    Computes the two principal curvatures of a 2D surface and the corresponding
+    principal directions.
 
     Args:
-        point_cloud_base: point cloud (2d numpy array) based on which the 2D
-            surface is approximated
-        center_id: center point around which the local curvature is
-            estimated
-        n_dir: surface normal at the center point
-        neighbor_patch_frac: fraction of the patch width that defines the std
-            of the gaussian distribution used to sample the weights. Defines a
-            local neighborhood for principal curvature computation.
-        weighted: boolean flag that determines if regression is weighted or not.
-            Weighting scheme is defined in get_weight_matrix.
-        fit_intercept: boolean flag that determines whether to fit an intercept
-                term for the regression.
+        point_cloud_base: Point cloud (2D numpy array) based on which the 2D
+            surface is approximated.
+        center_id: Center point around which the local curvature is estimated.
+        n_dir: Surface normal at the center point.
+        neighbor_patch_frac: Fraction of the patch width that defines the standard
+            deviation of the Gaussian distribution used to sample the weights;
+            this defines a local neighborhood for principal curvature computation.
+        weighted: Boolean flag that determines if regression is weighted.
+            The weighting scheme is defined in :func:`weight_matrix`.
+        fit_intercept: Boolean flag that determines whether to fit an intercept
+            term for the regression.
 
     Returns:
-        k1:     first principal curvature
-        k2:     second principal curvature
-        dir1:   first principal direction
-        dir2:   second principal direction
+        k1: First principal curvature.
+        k2: Second principal curvature.
+        dir1: First principal direction.
+        dir2: Second principal direction.
     """
     point_cloud = point_cloud_base.copy()
     if point_cloud[center_id, 3] > 0:
@@ -417,7 +416,7 @@ def principal_curvatures(
         on_obj = point_cloud[:, 3] > 0
         point_cloud = point_cloud[on_obj, :3]
 
-        # find two directions u_dir and v_dir orthogonal to surface normal (n_dir):
+        # Find two directions u_dir and v_dir orthogonal to surface normal (n_dir):
         # If n_dir's z coef is 0 then normal is pointing in (x,y) plane
         u_dir = (
             np.array([1.0, 0.0, -n_dir[0] / n_dir[2]])
@@ -434,8 +433,8 @@ def principal_curvatures(
         n = np.matmul(point_cloud, n_dir)
 
         # Compute the basis functions (features) for quadratic regression (only
-        # fit the intercept if fit_intercept = True)
-        # n = a * u^2 + b * v^2 + c * u * v + d * u + e * v (+ d)
+        # Fit the intercept if fit_intercept = True)
+        # Quadratic equation: n = a * u^2 + b * v^2 + c * u * v + d * u + e * v (+ d)
         n_features = 6 if fit_intercept else 5
         x_mat = np.zeros((len(point_cloud), n_features))
         x_mat[:, 0] = np.multiply(u, u)
@@ -466,10 +465,10 @@ def principal_curvatures(
             a_mat = np.matmul(x_mat.T, x_mat)
             b = np.matmul(x_mat.T, n[:, np.newaxis])
 
-        # Rarely, "a" can be singular, causing numpy to throw an error; appears
-        # to be caused by touch-sensor gathering observations that are largely off the
-        # object, but not entirely (e.g. <25% visible), resulting in a system
-        # with insufficient data to be solvable
+        # Rarely, "a" can be singular, causing numpy to throw an error.
+        # This appears to be caused by the touch-sensor gathering observations that
+        # are largely off the object, but not entirely (e.g. <25% visible), resulting
+        # in a system with insufficient data to be solvable.
         if non_singular_mat(a_mat):
             # Step 2) do least-squares fit to get the parameters of the quadratic form
             params = np.linalg.solve(a_mat, b)
@@ -500,11 +499,11 @@ def principal_curvatures(
             k2 = eigval_sorted[1]
 
             # TODO: sometimes dir1 and dir2 are not orthogonal, why?
-            # principal directions in the same coordinate frame as points:
+            # Principal directions in the same coordinate frame as points:
             pc1_dir = eigvec_sorted[0, 0] * u_dir + eigvec_sorted[1, 0] * v_dir
             pc2_dir = eigvec_sorted[0, 1] * u_dir + eigvec_sorted[1, 1] * v_dir
             if get_right_hand_angle(pc1_dir, pc2_dir, n_dir) < 0:
-                # always have dir2 point to the righthand side of dir1
+                # Always have dir2 point to the righthand side of dir1
                 pc2_dir = -pc2_dir
             valid_pc = True
 
@@ -526,8 +525,8 @@ def center_neighbors(point_cloud, center_id, neighbor_patch_frac):
     """Get neighbors within a given neighborhood of the patch center.
 
     Returns:
-        Locations and semantic id of all points within a given neighborhood of the
-        patch center which lie on an object.
+        Locations and semantic IDs of all points within a given neighborhood of the
+        patch center that lie on an object.
     """
     # Set patch center as origin of coordinate frame
     point_cloud[:, :3] -= point_cloud[center_id, :3]
@@ -550,19 +549,19 @@ def center_neighbors(point_cloud, center_id, neighbor_patch_frac):
 
 
 def weight_matrix(n_points, center_id, neighbor_patch_frac=2.13):
-    """Extracts individual pixel weights for least-squares fitting.
+    """Extract individual pixel weights for least-squares fitting.
 
-    Weight for each pixel is sampled from a gaussian distribution based on its distance
+    Each pixel weight is sampled from a Gaussian distribution based on its distance
     to the patch center.
 
     Args:
-        n_points: total number of points in the full RGB-D square patch.
-        center_id: id of the center point in point_cloud.
-        neighbor_patch_frac: fraction of the patch width that defines the std
-            of the gaussian distribution used to sample the weights.
+        n_points: Total number of points in the full RGB-D square patch.
+        center_id: ID of the center point in the point cloud.
+        neighbor_patch_frac: Fraction of the patch width that defines the standard
+            deviation of the Gaussian distribution used to sample the weights.
 
     Returns:
-        w_diag
+        Diagonal weight matrix of shape (n_points, 1).
     """
     # Extract center and all its neighbors
     patch_width = int(np.sqrt(n_points))
@@ -583,10 +582,15 @@ def weight_matrix(n_points, center_id, neighbor_patch_frac=2.13):
 
 
 def pixel_dist_to_center(n_points, patch_width, center_id):
-    """Extracts the relative distance of each pixel to patch center (in pixel space).
+    """Extract the relative distance of each pixel to the patch center (in pixel space).
+
+    Args:
+        n_points: Total number of points in the patch.
+        patch_width: Width of the square patch.
+        center_id: ID of the patch center.
 
     Returns:
-        Relative distance of each pixel to patch center (in pixel space)
+        Relative distance of each pixel to the patch center (in pixel space).
     """
     # Get coordinates (in pixel space) of all pixels in the patch
     point_idx = np.arange(n_points).reshape(patch_width, patch_width)
@@ -599,16 +603,16 @@ def pixel_dist_to_center(n_points, patch_width, center_id):
 
 
 def point_pair_features(pos_i, pos_j, normal_i, normal_j):
-    """Get point pair features between two points.
+    """Return point pair features between two points.
 
     Args:
-        pos_i: Location of point 1
-        pos_j: Location of point 2
-        normal_i: Surface normal of point 1
-        normal_j: Surface normal of point 2
+        pos_i: Location of point 1.
+        pos_j: Location of point 2.
+        normal_i: Surface normal of point 1.
+        normal_j: Surface normal of point 2.
 
     Returns:
-        Point pair feature
+        Point pair features.
     """
     pseudo = pos_j - pos_i
     return torch.stack(
@@ -622,45 +626,44 @@ def point_pair_features(pos_i, pos_j, normal_i, normal_j):
 
 
 def scale_clip(to_scale, clip):
-    """Clip values into range and scale with sqrt.
+    """Clip values into a range and scale with the square root.
 
-    This can be used to get gaussian and mean curvatures into
-    a reasonable range and remove outliers. Makes it easier to deal
-    with noise.
-    Preserves sign before applying sqrt.
+    This can be used to bring Gaussian and mean curvatures into a reasonable range
+    and remove outliers, which makes it easier to handle noise.
+    The sign is preserved before applying the square root.
 
     Args:
-        to_scale: array where each element should be scaled.
-        clip: range to which the array values should be clipped.
+        to_scale: Array where each element should be scaled.
+        clip: Range to which the array values should be clipped.
 
     Returns:
-        scaled values of array.
+        Scaled values of the array.
     """
     to_scale = np.clip(to_scale, -clip, clip)
     negative = to_scale < 0
     scaled = np.sqrt(np.abs(to_scale))
-    if len(scaled.shape) == 0:  # just a scalar value
+    if len(scaled.shape) == 0:  # Just a scalar value
         if negative:
             scaled = scaled * -1
-    else:  # an array
+    else:  # An array
         scaled[negative] = scaled[negative] * -1
     return scaled
 
 
 def log_sign(to_scale):
-    """Apply symlog to input array, preserving sign.
+    """Apply symlog to the input array, preserving sign.
 
-    This implementation makes sure to preserve the sign of the input values and to
-    avoid extreme outputs when values are close to 0.
+    This implementation ensures that the sign of the input values is preserved and
+    avoids extreme outputs when values are close to 0.
 
     Args:
-        to_scale: array to scale.
+        to_scale: Array to scale.
 
     Returns:
-        Scaled values of array.
+        Scaled values of the array.
     """
     to_scale = np.asarray(to_scale)
-    sign = np.sign(to_scale)  # preserve sign
+    sign = np.sign(to_scale)  # Preserve sign
     abs_vals = np.abs(to_scale)
-    log_vals = np.log(abs_vals + 1)  # avoid extreme values around 0
+    log_vals = np.log(abs_vals + 1)  # Avoid extreme values around 0
     return sign * log_vals

@@ -17,7 +17,7 @@ In this tutorial we will introduce the basic mechanics of Monty experiment confi
 >
 > Below instructions assume you'll be running an experiment within the checked out `tbp.monty` repository. This is the recommended way to start. Once you are familiar with Monty, if you'd rather setup your experiment in your own repository, then take a look at [Running An Experiment From A Different Repository](./running-an-experiment-from-a-different-repository.md).
 
-Monty uses [Hydra](https://hydra.cc/) for configuration. The `conf` directory serves as the root configuration directory, and experiment configs are located under `conf/experiment`. The experiment config for this tutorial is located at `conf/experiment/tutorial/first_experiment.yaml` which contains the following:
+Monty uses [Hydra](https://hydra.cc/) for configuration. The `conf` directory serves as the root configuration directory, and experiment configs are located under `src/tbp/monty/conf/experiment`. The experiment config for this tutorial is located at `src/tbp/monty/conf/experiment/tutorial/first_experiment.yaml` which contains the following:
 
 ```yaml
 # To test your env and help you familiarize yourself with the code, we'll run the simplest possible
@@ -71,7 +71,7 @@ Monty experiments are run with `run.py` (or `run_parallel.py`) located directly 
 python run.py experiment=tutorial/first_experiment
 ```
 
-The `experiment` argument is determined by the location of the experiment config, relative to the `conf/experiment` directory. This experiment is named `tutorial/first_experiment` since the config is located at `conf/experiment/tutorial/first_experiment.yaml`.
+The `experiment` argument is determined by the location of the experiment config, relative to the `src/tbp/monty/conf/experiment` directory. This experiment is named `tutorial/first_experiment` since the config is located at `src/tbp/monty/conf/experiment/tutorial/first_experiment.yaml`.
 
 # What Just Happened?
 
