@@ -679,6 +679,7 @@ class StateFilter(Protocol):
     def reset(self) -> None: ...
 
 
+
 class PassthroughStateFilter(StateFilter):
     def __call__(self, state: State) -> State:
         """Passthrough state filter. Never sets `state.use_state` to False.
