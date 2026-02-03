@@ -66,7 +66,7 @@ class SensorModuleTest(unittest.TestCase):
             exp.pre_epoch()
             exp.pre_episode()
             for step, observation in enumerate(exp.env_interface):
-                exp.model.step(observation)
+                exp.model.step(exp.ctx, observation)
                 if step == 1:
                     break
 

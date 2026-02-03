@@ -82,9 +82,9 @@ class TrainedGraphLM:
         """Number of episodes/objects this LM was trained on."""
         return len(self.episodes)
 
-    def pre_episode(self, rng: np.random.RandomState, primary_target) -> None:
+    def pre_episode(self, primary_target) -> None:
         """Delegates pre_episode calls to the LM."""
-        self.learning_module.pre_episode(rng, primary_target)
+        self.learning_module.pre_episode(primary_target)
 
 
 class GraphLearningTest(BaseGraphTest):
@@ -203,7 +203,7 @@ class GraphLearningTest(BaseGraphTest):
             exp.pre_epoch()
             exp.pre_episode()
             for step, observation in enumerate(exp.env_interface):
-                exp.model.step(observation)
+                exp.model.step(exp.ctx, observation)
                 self.assertEqual(
                     step + 1,
                     len(exp.model.learning_modules[0].buffer),
@@ -605,9 +605,7 @@ class GraphLearningTest(BaseGraphTest):
             offset = np.zeros(3)
 
         graph_lm.mode = "train"
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
 
         offset_obs = []
         for observation in observations:
@@ -688,9 +686,7 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm.mode = "eval"
         # Don't need to give target object since we are not logging performance
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             graph_lm.matching_step([observation])
             self.assertEqual(
@@ -727,9 +723,7 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             graph_lm.matching_step([observation])
             print(graph_lm.get_possible_matches())
@@ -766,9 +760,7 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             observation.location = observation.location + np.ones(3)
             graph_lm.matching_step([observation])
@@ -811,9 +803,7 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             graph_lm.matching_step([observation])
             self.assertEqual(
@@ -850,9 +840,7 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for i, observation in enumerate(fake_obs_test):
             graph_lm.matching_step([observation])
             if i == 0:
@@ -876,9 +864,7 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             graph_lm.matching_step([observation])
             self.assertEqual(
@@ -897,9 +883,7 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for step, observation in enumerate(fake_obs_test):
             graph_lm.matching_step([observation])
             if step == 0:
@@ -929,9 +913,7 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = "eval"
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             if not observation.use_state:
                 pass
@@ -999,7 +981,7 @@ class GraphLearningTest(BaseGraphTest):
                 # `pre_episode` method, but it expects to feed data from an environment
                 # interface to the model, and we aren't using that, so we call it again
                 # with the correct target value.
-                monty.pre_episode(exp.rng, self.placeholder_target)
+                monty.pre_episode(self.placeholder_target)
                 for step in range(tm.num_observations(episode_num)):
                     # Manually run through the internal Monty steps since we aren't
                     # using the data from the environment interface and are instead
@@ -1008,6 +990,7 @@ class GraphLearningTest(BaseGraphTest):
                         lm.episodes[episode_num].observations[step]
                         for lm in trained_modules
                     ]
+                    monty.set_context(exp.ctx)
                     monty._step_learning_modules()
                     monty._vote()
                     monty._pass_goal_states()
