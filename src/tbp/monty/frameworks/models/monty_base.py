@@ -12,10 +12,8 @@ from __future__ import annotations
 import logging
 from typing import ClassVar
 
-import numpy as np
-
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
-from tbp.monty.frameworks.models.abstract_monty_classes import Monty
+from tbp.monty.frameworks.models.abstract_monty_classes import Monty, RuntimeContext
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
 
@@ -134,13 +132,13 @@ class MontyBase(Monty):
     # Basic methods that specify the algorithm
     ###
 
-    def step(self, observation):
+    def step(self, ctx: RuntimeContext, observation):
         # For the base class, just use matching step. Note that matching_step and
         # exploratory_step are fully implemented by the abstract class.
         if self.step_type == "matching_step":
-            self._matching_step(observation)
+            self._matching_step(ctx, observation)
         elif self.step_type == "exploratory_step":
-            self._exploratory_step(observation)
+            self._exploratory_step(ctx, observation)
         else:
             raise ValueError(f"step type {self.step_type} not found in base monty")
 
@@ -163,7 +161,7 @@ class MontyBase(Monty):
     def pass_features_directly_to_motor_system(self, observation):
         """Pass features directly to motor system without stepping LMs."""
         self.aggregate_sensory_inputs(observation)
-        self._pass_input_obs_to_motor_system(
+        self._pass_input_obs_to_motor_system(  # TODO: not part of MontyBase
             get_first_sensory_state(self.sensor_module_outputs)
         )
         self.total_steps += 1
@@ -333,20 +331,26 @@ class MontyBase(Monty):
             lm.set_experiment_mode(mode)
         # for sm in self.sensor_modules: sm.set_experiment_mode() unused & removed
 
-    def pre_episode(self, rng: np.random.RandomState):
+    def pre_episode(self):
         self._is_done = False
         self.reset_episode_steps()
         self.switch_to_matching_step()
         for lm in self.learning_modules:
-            lm.pre_episode(rng)
+            lm.pre_episode()
 
         for sm in self.sensor_modules:
-            sm.pre_episode(rng)
+            sm.pre_episode()
 
     def post_episode(self):
         for lm in self.learning_modules:
             lm.post_episode()
         # for sm in self.sensor_modules: sm.post_episode() unused & removed
+
+    def set_context(self, ctx: RuntimeContext):
+        for lm in self.learning_modules:
+            lm.set_context(ctx)
+        for sm in self.sensor_modules:
+            sm.set_context(ctx)
 
     ###
     # Methods for saving and loading

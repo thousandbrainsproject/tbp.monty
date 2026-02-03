@@ -25,6 +25,8 @@ from tbp.monty.frameworks.experiments.monty_experiment import (
 
 __all__ = ["MontySupervisedObjectPretrainingExperiment"]
 
+from tbp.monty.frameworks.models.abstract_monty_classes import RuntimeContext
+
 logger = logging.getLogger(__name__)
 
 
@@ -72,6 +74,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         easier as long as we don't have a good solution for dealing with incomplete
         objects.
         """
+        ctx = RuntimeContext(rng=self.rng)
         self.pre_episode()
         # Save compute if we are providing labels to all models, so don't need to
         # perform matching parts of LM updates (default is matching_step)
@@ -92,7 +95,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                     num_steps,
                     is_saccade_on_image_env_interface,
                 )
-            self.model.step(observation)
+            self.model.step(ctx, observation)
             if self.model.is_done:
                 break
 
@@ -164,7 +167,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         self.reset_episode_rng()
 
         # TODO: Fix invalid pre_episode signature call
-        self.model.pre_episode(self.rng, self.env_interface.primary_target)
+        self.model.pre_episode(self.env_interface.primary_target)
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps  # no eval mode here

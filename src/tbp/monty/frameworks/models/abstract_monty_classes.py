@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import abc
+from dataclasses import dataclass
 from typing import Dict, TypedDict
 
 import numpy as np
@@ -28,6 +29,7 @@ __all__ = [
     "Monty",
     "ObjectModel",
     "Observations",
+    "RuntimeContext",
     "SensorModule",
     "SensorObservations",
 ]
@@ -58,15 +60,21 @@ class Observations(Dict[AgentID, AgentObservations]):
     pass
 
 
+@dataclass
+class RuntimeContext:
+    rng: np.random.RandomState
+
+
 class Monty(metaclass=abc.ABCMeta):
     ###
     # Methods that specify the algorithm
     ###
-    def _matching_step(self, observation):
+    def _matching_step(self, ctx: RuntimeContext, observation):
         """Step format for matching observations to graph.
 
         Used during training or evaluation.
         """
+        self.set_context(ctx)
         self.aggregate_sensory_inputs(observation)
         self._step_learning_modules()
         self._vote()
@@ -75,11 +83,12 @@ class Monty(metaclass=abc.ABCMeta):
         self._set_step_type_and_check_if_done()
         self._post_step()
 
-    def _exploratory_step(self, observation):
+    def _exploratory_step(self, ctx: RuntimeContext, observation):
         """Step format for adding data to an existing model.
 
         Used only during training.
         """
+        self.set_context(ctx)
         self.aggregate_sensory_inputs(observation)
         self._step_learning_modules()
         self._pass_goal_states()
@@ -88,7 +97,16 @@ class Monty(metaclass=abc.ABCMeta):
         self._post_step()
 
     @abc.abstractmethod
-    def step(self, observation):
+    def set_context(self, ctx: RuntimeContext):
+        """Adjust context variables before stepping.
+
+        Args:
+            ctx: The runtime context variables.
+        """
+        pass
+
+    @abc.abstractmethod
+    def step(self, ctx: RuntimeContext, observation):
         """Take a matching, exploratory, or custom user-defined step.
 
         Step taken depends on the value of self.step_type.
@@ -161,12 +179,8 @@ class Monty(metaclass=abc.ABCMeta):
     ###
 
     @abc.abstractmethod
-    def pre_episode(self, rng: np.random.RandomState) -> None:
-        """Recursively call pre_episode on child classes.
-
-        Args:
-            rng: The random number generator.
-        """
+    def pre_episode(self) -> None:
+        """Recursively call pre_episode on child classes."""
         pass
 
     @abc.abstractmethod
@@ -199,17 +213,22 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def pre_episode(self, rng: np.random.RandomState) -> None:
-        """Do things like reset buffers or possible_matches before training.
-
-        Args:
-            rng: The random number generator.
-        """
+    def pre_episode(self) -> None:
+        """Do things like reset buffers or possible_matches before training."""
         pass
 
     @abc.abstractmethod
     def post_episode(self):
         """Do things like update object models with stored data after an episode."""
+        pass
+
+    @abc.abstractmethod
+    def set_context(self, ctx: RuntimeContext):
+        """Do things like adjust context variables before stepping.
+
+        Args:
+            ctx: The runtime context variables.
+        """
         pass
 
     @abc.abstractmethod
@@ -364,11 +383,16 @@ class SensorModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def pre_episode(self, rng: np.random.RandomState) -> None:
-        """This method is called before each episode.
+    def pre_episode(self) -> None:
+        """This method is called before each episode."""
+        pass
+
+    @abc.abstractmethod
+    def set_context(self, ctx: RuntimeContext):
+        """Adjust context variables before stepping.
 
         Args:
-            rng: The random number generator.
+            ctx: The runtime context variables.
         """
         pass
 

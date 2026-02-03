@@ -35,10 +35,13 @@ class FakeSensorModule(SensorModule):
     def update_state(self, agent: AgentState):
         pass
 
-    def pre_episode(self, rng: np.random.RandomState) -> None:
+    def pre_episode(self) -> None:
         pass
 
     def post_episode(self):
+        pass
+
+    def set_context(self, ctx):
         pass
 
     def set_experiment_mode(self, mode: str):

@@ -22,6 +22,8 @@ from tbp.monty.frameworks.experiments.monty_experiment import (
 
 __all__ = ["MontyGeneralizationExperiment", "MontyObjectRecognitionExperiment"]
 
+from tbp.monty.frameworks.models.abstract_monty_classes import RuntimeContext
+
 logger = logging.getLogger(__name__)
 
 
@@ -69,13 +71,12 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         if hasattr(self.env_interface, "semantic_id_to_label"):
             # TODO: Fix invalid pre_episode signature call
             self.model.pre_episode(
-                self.rng,
                 self.env_interface.primary_target,
                 self.env_interface.semantic_id_to_label,
             )
         else:
             # TODO: Fix invalid pre_episode signature call
-            self.model.pre_episode(self.rng, self.env_interface.primary_target)
+            self.model.pre_episode(self.env_interface.primary_target)
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps
@@ -97,6 +98,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         Returns:
             The number of total steps taken in the episode.
         """
+        ctx = RuntimeContext(rng=self.rng)
         for loader_step, observation in enumerate(self.env_interface):
             if self.show_sensor_output:
                 is_saccade_on_image_data_loader = isinstance(
@@ -129,7 +131,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 # system, so bypass the main model step (i.e. updating of LMs)
                 self.model.pass_features_directly_to_motor_system(observation)
             else:
-                self.model.step(observation)
+                self.model.step(ctx, observation)
 
             if self.model.is_done:
                 # Check this right after step to avoid setting time out

@@ -36,8 +36,10 @@ from tbp.monty.frameworks.loggers.exp_logger import (
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
+    RuntimeContext,
     SensorModule,
 )
+from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import (
@@ -67,6 +69,7 @@ class MontyExperiment:
         self.config = config
 
         self.rng = np.random.RandomState(config["seed"])
+        self.ctx = RuntimeContext(rng=self.rng)
 
         self.do_train = config["do_train"]
         self.do_eval = config["do_eval"]
@@ -126,7 +129,7 @@ class MontyExperiment:
         """
         self.init_loggers(self.config["logging"])
         logger.info(self.config)
-        self.model = self.init_model(
+        self.model: MontyBase = self.init_model(
             monty_config=config["monty_config"],
             model_path=self.model_path,
         )
@@ -498,10 +501,11 @@ class MontyExperiment:
 
     def run_episode(self):
         """Run one episode until model.is_done."""
+        ctx = RuntimeContext(rng=self.rng)
         self.pre_episode()
         for step, observation in enumerate(self.env_interface):
             self.pre_step(step, observation)
-            self.model.step(observation)
+            self.model.step(ctx, observation)
             self.post_step(step, observation)
             if self.model.is_done or step >= self.max_steps:
                 break
@@ -522,7 +526,7 @@ class MontyExperiment:
 
         self.reset_episode_rng()
 
-        self.model.pre_episode(self.rng)
+        self.model.pre_episode()
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps

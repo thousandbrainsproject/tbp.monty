@@ -23,7 +23,11 @@ from tbp.monty.frameworks.loggers.graph_matching_loggers import (
     DetailedGraphMatchingLogger,
     SelectiveEvidenceLogger,
 )
-from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule, LMMemory
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    LearningModule,
+    LMMemory,
+    RuntimeContext,
+)
 from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_state_generation import GraphGoalStateGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
@@ -55,9 +59,7 @@ class MontyForGraphMatching(MontyBase):
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
-    def pre_episode(
-        self, rng: np.random.RandomState, primary_target, semantic_id_to_label=None
-    ) -> None:
+    def pre_episode(self, primary_target, semantic_id_to_label=None) -> None:
         """Reset values and call sub-pre_episode functions."""
         self._is_done = False
         self.reset_episode_steps()
@@ -67,10 +69,10 @@ class MontyForGraphMatching(MontyBase):
         self.semantic_id_to_label = semantic_id_to_label
 
         for lm in self.learning_modules:
-            lm.pre_episode(rng, primary_target)
+            lm.pre_episode(primary_target)
 
         for sm in self.sensor_modules:
-            sm.pre_episode(rng)
+            sm.pre_episode()
 
         logger.debug(
             f"Models in memory: {self.learning_modules[0].get_all_known_object_ids()}"
@@ -582,11 +584,10 @@ class GraphLM(LearningModule):
             self.possible_poses,
         ) = self.graph_memory.get_initial_hypotheses()
 
-    def pre_episode(self, rng: np.random.RandomState, primary_target) -> None:
+    def pre_episode(self, primary_target) -> None:
         """Set target object var and reset others from last episode.
 
         Args:
-            rng: The random number generator.
             primary_target: The primary target for the learning module/
                 Monty system to recognize (e.g. the object the agent begins on, or an
                 important object in the environment; NB that a learning module can also
@@ -594,7 +595,6 @@ class GraphLM(LearningModule):
                 it is currently on, while it is attempting to classify the
                 primary_target)
         """
-        self._rng = rng
         self.reset()
         self.buffer.reset()
         if self.gsg is not None:
@@ -607,6 +607,10 @@ class GraphLM(LearningModule):
         self.detected_object = None
         self.detected_pose = [None for _ in range(7)]
         self.detected_rotation_r = None
+
+    def set_context(self, ctx: RuntimeContext):
+        """Adjust context variables before stepping."""
+        self._rng = ctx.rng
 
     def matching_step(self, observations):
         """Update the possible matches given an observation."""

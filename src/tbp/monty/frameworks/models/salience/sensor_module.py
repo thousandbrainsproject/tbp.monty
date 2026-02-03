@@ -13,7 +13,10 @@ from typing import Any
 import numpy as np
 import quaternion as qt
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    RuntimeContext,
+    SensorModule,
+)
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
     on_object_observation,
@@ -150,13 +153,16 @@ class HabitatSalienceSM(SensorModule):
 
         return (weighted_salience - min_) / scale
 
-    def pre_episode(self, rng: np.random.RandomState) -> None:
+    def pre_episode(self) -> None:
         """This method is called before each episode."""
-        self._rng = rng
         self._goals.clear()
         self._return_inhibitor.reset()
         self._snapshot_telemetry.reset()
         self.is_exploring = False
+
+    def set_context(self, ctx: RuntimeContext):
+        """Adjust context variables before stepping."""
+        self._rng = ctx.rng
 
     def propose_goal_states(self) -> list[GoalState]:
         return self._goals

@@ -84,14 +84,17 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
 
         self.reset_episode_rng()
 
-        self.model.pre_episode(self.rng)
+        self.model.pre_episode()
         self.env_interface.pre_episode(self.rng)
         self.max_steps = self.max_train_steps
         self.logger_handler.pre_episode(self.logger_args)
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-    def post_episode(self):
+    def post_episode(
+        self,
+        steps,  # noqa: ARG002
+    ):
         torch.save(
             self.model.sensor_modules[0].processed_obs[:-1],
             self.output_dir / f"observations{self.train_episodes}.pt",
