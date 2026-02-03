@@ -74,7 +74,8 @@ class PositioningProcedure(Protocol):
         #       This should be made robust.
         observation_shape = observation[agent_id][sensor_id]["depth"].shape
         return observation[agent_id][sensor_id]["depth"][
-            observation_shape[0] // 2, observation_shape[1] // 2
+            observation_shape[0] // 2,
+            observation_shape[1] // 2,
         ]
 
     def __call__(
@@ -96,7 +97,8 @@ class PositioningProcedure(Protocol):
 
 
 def get_perc_on_obj_semantic(
-    semantic_obs, semantic_id: SemanticID | Literal["any"] = "any"
+    semantic_obs,
+    semantic_id: SemanticID | Literal["any"] = "any",
 ):
     """Get the percentage of pixels in the observation that land on the target object.
 
@@ -188,7 +190,9 @@ class GetGoodView(PositioningProcedure):
         self._executed_multiple_objects_orientation = False
 
     def compute_look_amounts(
-        self, relative_location: np.ndarray, state: MotorSystemState
+        self,
+        relative_location: np.ndarray,
+        state: MotorSystemState,
     ) -> tuple[float, float]:
         """Compute the amount to look down and left given a relative location.
 
@@ -264,12 +268,16 @@ class GetGoodView(PositioningProcedure):
         # as an int or boolean rather than float
         kernel_size = on_object_image.shape[0] // 16
         smoothed_on_object_image = scipy.ndimage.gaussian_filter(
-            on_object_image, kernel_size, mode="constant"
+            on_object_image,
+            kernel_size,
+            mode="constant",
         )
         idx_loc_to_look_at = np.argmax(smoothed_on_object_image * on_object_image)
         idx_loc_to_look_at = np.unravel_index(idx_loc_to_look_at, on_object_image.shape)
         location_to_look_at = sem3d_obs_image[
-            idx_loc_to_look_at[0], idx_loc_to_look_at[1], :3
+            idx_loc_to_look_at[0],
+            idx_loc_to_look_at[1],
+            :3,
         ]
         camera_location = (
             state[self._agent_id].sensors[SensorID(f"{self._sensor_id}.depth")].position
@@ -331,15 +339,16 @@ class GetGoodView(PositioningProcedure):
         if n_points_on_target_obj > 0:
             closest_point_on_target_obj = np.min(depth_image[points_on_target_obj])
             logger.debug(
-                "closest target object point: " + str(closest_point_on_target_obj)
+                f"closest target object point: {closest_point_on_target_obj}",
             )
         else:
             raise ValueError(
-                "May be initializing experiment with no visible target object"
+                "May be initializing experiment with no visible target object",
             )
 
         perc_on_target_obj = get_perc_on_obj_semantic(
-            semantic_image, semantic_id=self._target_semantic_id
+            semantic_image,
+            semantic_id=self._target_semantic_id,
         )
         logger.debug("% on target object: " + str(perc_on_target_obj))
 
@@ -355,7 +364,7 @@ class GetGoodView(PositioningProcedure):
                     closest_point_on_any_obj < self._desired_object_distance / 4
                 ):
                     logger.debug(
-                        "Getting too close to other objects, not moving forward."
+                        "Getting too close to other objects, not moving forward.",
                     )
                     return None
 
@@ -369,7 +378,9 @@ class GetGoodView(PositioningProcedure):
         return None
 
     def orient_to_object(
-        self, observation: Mapping, state: MotorSystemState
+        self,
+        observation: Mapping,
+        state: MotorSystemState,
     ) -> list[Action]:
         """Rotate sensors so that they are centered on the object using the view finder.
 
@@ -400,7 +411,8 @@ class GetGoodView(PositioningProcedure):
             state=state,
         )
         down_amount, left_amount = self.compute_look_amounts(
-            relative_location, state=state
+            relative_location,
+            state=state,
         )
         return [
             LookDown(agent_id=self._agent_id, rotation_degrees=down_amount),
@@ -422,7 +434,7 @@ class GetGoodView(PositioningProcedure):
             on_target_object = self.is_on_target_object(observation)
             if not on_target_object:
                 return PositioningProcedureResult(
-                    actions=self.orient_to_object(observation, state)
+                    actions=self.orient_to_object(observation, state),
                 )
 
         if self._allow_translation:
@@ -442,7 +454,7 @@ class GetGoodView(PositioningProcedure):
         ):
             self._num_orientation_attempts += 1
             return PositioningProcedureResult(
-                actions=self.orient_to_object(observation, state)
+                actions=self.orient_to_object(observation, state),
             )
 
         if on_target_object:

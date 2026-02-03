@@ -438,7 +438,7 @@ class MontyExperiment:
             logger.warning(
                 "You are setting the monty logging level to DETAILED, but all your "
                 "handlers are BASIC. Consider setting the level to BASIC, or adding a "
-                "DETAILED handler"
+                "DETAILED handler",
             )
 
         for lm in self.model.learning_modules:

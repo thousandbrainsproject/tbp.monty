@@ -48,7 +48,8 @@ class GetGoodViewTest(unittest.TestCase):
         In this case, the object is a bit too far away, and so the agent moves forward.
         """
         with hydra.initialize(
-            version_base=None, config_path="../../../src/tbp/monty/conf"
+            version_base=None,
+            config_path="../../../src/tbp/monty/conf",
         ):
             config = hydra_config("dist_agent_too_far_away", self.output_dir)
             exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(config.test)
@@ -70,7 +71,8 @@ class GetGoodViewTest(unittest.TestCase):
                 ]
                 semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
                 perc_on_target_obj = get_perc_on_obj_semantic(
-                    semantic, semantic_id=SemanticID(1)
+                    semantic,
+                    semantic_id=SemanticID(1),
                 )
 
                 assert perc_on_target_obj >= target_perc_on_target_obj, (
@@ -79,7 +81,7 @@ class GetGoodViewTest(unittest.TestCase):
                 )
                 points_on_target_obj = semantic == 1
                 closest_point_on_target_obj = np.min(
-                    view["depth"][points_on_target_obj]
+                    view["depth"][points_on_target_obj],
                 )
 
                 assert closest_point_on_target_obj > target_closest_point, (
@@ -100,7 +102,8 @@ class GetGoodViewTest(unittest.TestCase):
         viewfinder, and then move towards it.
         """
         with hydra.initialize(
-            version_base=None, config_path="../../../src/tbp/monty/conf"
+            version_base=None,
+            config_path="../../../src/tbp/monty/conf",
         ):
             config = hydra_config("multi_object_target_not_visible", self.output_dir)
             exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(config.test)
@@ -124,7 +127,8 @@ class GetGoodViewTest(unittest.TestCase):
                 ]
                 semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
                 perc_on_target_obj = get_perc_on_obj_semantic(
-                    semantic, semantic_id=SemanticID(1)
+                    semantic,
+                    semantic_id=SemanticID(1),
                 )
 
                 assert perc_on_target_obj >= target_perc_on_target_obj, (
@@ -134,7 +138,7 @@ class GetGoodViewTest(unittest.TestCase):
 
                 points_on_target_obj = semantic == 1
                 closest_point_on_target_obj = np.min(
-                    view["depth"][points_on_target_obj]
+                    view["depth"][points_on_target_obj],
                 )
 
                 assert closest_point_on_target_obj > target_closest_point, (
