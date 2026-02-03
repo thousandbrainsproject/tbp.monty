@@ -81,5 +81,19 @@ class TransformChainTest(unittest.TestCase):
              transforms.TransformMiddleware(transforms.AddNoiseToRawDepthImage, **add_noise_to_raw_depth_image_args)])
         transform(TEST_OBS, TransformContext(rng=np.random.RandomState(42)))
 
+class DepthTo3DLocationsTest(unittest.TestCase):
+    def test_missing_max_depth_to_depth_to_3d(self):
+        resolution = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"].shape
+        missing_to_max_depth_args = {"agent_id": AGENT_ID, "max_depth": 10.0}
+        depth_to_3d_args = {
+            "agent_id": AGENT_ID,
+            "sensor_ids": [SENSOR_ID],
+            "resolutions": [resolution],
+            "use_semantic_sensor": True
+        }
+        transform = transforms.TransformPipeline([transforms.TransformMiddleware(transforms.MissingToMaxDepth, **missing_to_max_depth_args),
+                                                  transforms.TransformMiddleware(transforms.DepthTo3DLocations, **depth_to_3d_args)])
+        transform(TEST_OBS, TransformContext(rng=np.random.RandomState(42)))
+
 if __name__ == "__main__":
     unittest.main()
