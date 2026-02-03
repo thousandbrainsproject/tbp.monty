@@ -75,3 +75,72 @@ def rotation_from_quat(quat: ArrayLike, scalar_first: bool = True) -> Rotation:
     if scalar_first:
         quat = quat[..., [1, 2, 3, 0]]
     return Rotation.from_quat(quat)
+
+
+def cartesian_to_spherical(coords: ArrayLike) -> np.ndarray:
+    """Convert Cartesian coordinates to spherical coordinates.
+
+    Converts Cartesian (x, y, z) coordinates to spherical (radius, azimuth, elevation)
+    coordinates under the assumption that
+     - +x points right, +y points up, and +z points backward
+     - azimuth is measured away from the forward (-z) axis, and elevation is
+       measured upward from the horizontal (xz) plane.
+
+    Azimuth is bound to [-pi, pi), and elevation is bound to [-pi/2, pi/2]. Undefined
+    angles are returned as 0.
+
+    Args:
+        coords: x, y, z coordinates with shape (3,) for a single point or
+            (N, 3) for multiple points.
+
+    Returns:
+        A (3,) or (N, 3) shaped array of spherical coordinates.
+    """
+    coords = np.asarray(coords, dtype=float)
+
+    # We want to work with 1D arrays, not scalars.
+    if coords.ndim == 1:
+        x, y, z = coords.reshape(1, 3).T
+    else:
+        x, y, z = coords.T
+
+    radius = np.sqrt(x**2 + y**2 + z**2)
+    radius_xz = np.sqrt(x**2 + z**2)
+    azimuth = -np.arctan2(x, -z)
+    elevation = np.arctan2(y, radius_xz)
+
+    # Enforce undefined angles to be 0.
+    is_vertical = np.isclose(radius_xz, 0)
+    if np.any(is_vertical):
+        azimuth = np.where(is_vertical, 0, azimuth)
+        elevation = np.where(np.isclose(radius, 0), 0, elevation)
+
+    spherical = np.column_stack([radius, azimuth, elevation])
+    return spherical[0] if coords.ndim == 1 else spherical
+
+
+def spherical_to_cartesian(coords: ArrayLike) -> np.ndarray:
+    """Convert spherical coordinates to Cartesian coordinates.
+
+    Converts (radius, azimuth, elevation) coordinates to (x, y, z) coordinates
+    under the assumption that
+     - +x points right, +y points up, and +z points backward.
+     - azimuth = 0 points down the forward axis (i.e., -z), and elevation is measured
+       upward from the horizontal xz-plane.
+
+    Args:
+        coords: (radius, azimuth, elevation coordinates) in with shape (3,) for
+            a single point or (N, 3) for multiple points.
+
+    Returns:
+        A (3,) or (N, 3) shaped array of Cartesian coordinates.
+    """
+    coords = np.asarray(coords, dtype=float)
+    radius, azimuth, elevation = coords if coords.ndim == 1 else coords.T
+
+    y = radius * np.sin(elevation)
+    radius_xz = radius * np.cos(elevation)
+    x = -radius_xz * np.sin(azimuth)
+    z = -radius_xz * np.cos(azimuth)
+
+    return np.array([x, y, z]) if coords.ndim == 1 else np.column_stack([x, y, z])
