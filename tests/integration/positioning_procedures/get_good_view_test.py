@@ -22,6 +22,7 @@ from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.object_recognition_experiments import (
     MontyObjectRecognitionExperiment,
 )
+from tests import HYDRA_ROOT
 
 
 def hydra_config(test_name: str, output_dir: str) -> DictConfig:
@@ -47,9 +48,7 @@ class GetGoodViewTest(unittest.TestCase):
 
         In this case, the object is a bit too far away, and so the agent moves forward.
         """
-        with hydra.initialize(
-            version_base=None, config_path="../../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("dist_agent_too_far_away", self.output_dir)
             exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(config.test)
             with exp:
@@ -99,9 +98,7 @@ class GetGoodViewTest(unittest.TestCase):
         Positioning procedure must turn the agent towards the target object using the
         viewfinder, and then move towards it.
         """
-        with hydra.initialize(
-            version_base=None, config_path="../../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("multi_object_target_not_visible", self.output_dir)
             exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(config.test)
             with exp:

@@ -45,6 +45,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tests import HYDRA_ROOT
 
 AGENT_ID = AgentID("agent_id_0")
 SENSOR_ID = SensorID("sensor_id_0")
@@ -163,9 +164,7 @@ class FakeOmniglotEnvironment(FakeEnvironmentAbs):
 
 class EmbodiedDataTest(unittest.TestCase):
     def setUp(self) -> None:
-        with hydra.initialize(
-            config_path="../../src/tbp/monty/conf", version_base=None
-        ):
+        with hydra.initialize_config_dir(config_dir=str(HYDRA_ROOT), version_base=None):
             self.policy_cfg_fragment = hydra.compose(
                 config_name="experiment/config/monty/motor_system/defaults"
             ).experiment.config.monty.motor_system.motor_system_args.policy_args

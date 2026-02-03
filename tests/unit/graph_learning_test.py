@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -137,9 +139,7 @@ class GraphLearningTest(BaseGraphTest):
                 overrides += extra_overrides
             return hydra.compose(config_name="test", overrides=overrides)
 
-        with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.base_cfg = hydra_config("base")
             self.surface_agent_eval_cfg = hydra_config("surface_agent_eval")
             self.ppf_pred_cfg = hydra_config("ppf_pred")

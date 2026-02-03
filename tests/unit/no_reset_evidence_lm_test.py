@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -34,9 +36,7 @@ class NoResetEvidenceLMTest(BaseGraphTest):
 
         self.output_dir = tempfile.mkdtemp()
 
-        with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.pretraining_cfg = hydra.compose(
                 config_name="test",
                 overrides=[
