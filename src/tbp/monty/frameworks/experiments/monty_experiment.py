@@ -324,7 +324,7 @@ class MontyExperiment:
         """Get current status of counters for the logger.
 
         Returns:
-            dict with current expirent state.
+            The current experiment state.
         """
         current_rng_seed = (
             self._rng_seed_history[-1]
@@ -436,9 +436,9 @@ class MontyExperiment:
 
         if self.monty_log_level == "DETAILED" and not has_detailed_logger:
             logger.warning(
-                "You are setting the monty logging level to DETAILED, but all your"
-                "handlers are BASIC. Consider setting the level to BASIC, or adding a"
-                "DETAILED handler",
+                "You are setting the monty logging level to DETAILED, but all your "
+                "handlers are BASIC. Consider setting the level to BASIC, or adding a "
+                "DETAILED handler"
             )
 
         for lm in self.model.learning_modules:
@@ -573,7 +573,7 @@ class MontyExperiment:
                 while True:
                     self.run_episode()
             except KeyboardInterrupt:
-                logger.info("Data streaming interupted. Stopping experiment.")
+                logger.info("Data streaming interrupted. Stopping experiment.")
         elif isinstance(self.env_interface, SaccadeOnImageEnvironmentInterface):
             num_episodes = len(self.env_interface.scenes)
             for _ in range(num_episodes):
@@ -723,7 +723,7 @@ class MontyExperiment:
         Ensure that we always close the environment if necessary.
 
         Returns:
-            Whether to supress any exceptions that were raised.
+            Whether to suppress any exceptions that were raised.
         """
         self.close()
         return False  # don't silence exceptions inside the with block
