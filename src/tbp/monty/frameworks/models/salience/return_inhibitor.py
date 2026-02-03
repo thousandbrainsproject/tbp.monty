@@ -8,8 +8,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 
 
