@@ -649,7 +649,7 @@ class HabitatSM(SensorModule):
         Returns:
             State with features and morphological features. Noise may be added.
             use_state flag may be set.
-        """
+        """ 
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
                 data, self.state.rotation, self.state.position
