@@ -655,6 +655,7 @@ class HabitatSM(SensorModule):
                 data, self.state.rotation, self.state.position
             )
 
+        # TRANSFORM CHAIN CALL HERE
         observed_state = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
