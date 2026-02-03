@@ -25,7 +25,7 @@ import habitat_sim.utils as hab_utils
 import hydra
 import numpy as np
 import quaternion as qt
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
@@ -593,7 +593,7 @@ class PolicyTest(unittest.TestCase):
         Note these movements are not actually performed, i.e. they represent
         hypothetical outputs from the motor-system.
         """
-        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
         policy_class = motor_system_cfg["motor_system_args"]["policy_class"]
         policy_args = motor_system_cfg["motor_system_args"]["policy_args"]
         policy_args["max_pc_bias_steps"] = 2
@@ -709,7 +709,7 @@ class PolicyTest(unittest.TestCase):
         such as checks to avoid doubling back on ourself, and how to handle when the
         proposed PC points in the z direction (i.e. towards or away from the agent).
         """
-        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
 
         policy_class = motor_system_cfg["motor_system_args"]["policy_class"]
         policy_args = motor_system_cfg["motor_system_args"]["policy_args"]
@@ -929,7 +929,7 @@ class PolicyTest(unittest.TestCase):
         """
         lm, gsg_args = self.initialize_lm_with_gsg()
 
-        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
         motor_system_class = motor_system_cfg["motor_system_class"]
         motor_system_args = motor_system_cfg["motor_system_args"]
         policy_class = motor_system_args["policy_class"]

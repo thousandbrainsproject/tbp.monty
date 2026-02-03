@@ -15,7 +15,6 @@ from pathlib import Path
 import hydra
 import numpy as np
 import numpy.typing as npt
-from omegaconf import OmegaConf
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_data import (
@@ -175,7 +174,7 @@ class EmbodiedDataTest(unittest.TestCase):
     def test_embodied_env_interface_dist(self):
         seed = 42
         rng = np.random.RandomState(seed)
-        base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
+        base_policy_cfg_dist = hydra.utils.instantiate(self.policy_cfg_fragment)
         base_policy_cfg_dist["agent_id"] = AGENT_ID
         motor_system_dist = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_cfg_dist)
@@ -212,7 +211,7 @@ class EmbodiedDataTest(unittest.TestCase):
     def test_embodied_env_interface_abs(self):
         seed = 42
         rng = np.random.RandomState(seed)
-        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
+        base_policy_cfg_abs = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
 
         motor_system_abs = MotorSystem(
@@ -249,7 +248,7 @@ class EmbodiedDataTest(unittest.TestCase):
     def test_embodied_env_interface_dist_states(self):
         seed = 42
         rng = np.random.RandomState(seed)
-        base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
+        base_policy_cfg_dist = hydra.utils.instantiate(self.policy_cfg_fragment)
         base_policy_cfg_dist["agent_id"] = AGENT_ID
 
         motor_system_dist = MotorSystem(
@@ -276,7 +275,7 @@ class EmbodiedDataTest(unittest.TestCase):
         seed = 42
         rng = np.random.RandomState(seed)
 
-        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
+        base_policy_cfg_abs = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
 
         motor_system_abs = MotorSystem(
@@ -323,7 +322,7 @@ class EmbodiedDataTest(unittest.TestCase):
     def test_omniglot_data_loader(self):
         rng = np.random.RandomState(42)
 
-        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
+        base_policy_cfg_abs = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
 
         motor_system_abs = MotorSystem(
@@ -361,7 +360,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
         data_path = Path(__file__).parent / "resources" / "dataloader_test_images"
 
-        base_policy_cfg_rel = OmegaConf.to_object(self.policy_cfg_fragment)
+        base_policy_cfg_rel = hydra.utils.instantiate(self.policy_cfg_fragment)
         base_policy_cfg_rel["agent_id"] = AGENT_ID
 
         motor_system_rel = MotorSystem(
@@ -414,7 +413,7 @@ class EmbodiedDataTest(unittest.TestCase):
             / "0_numenta_mug"
         )
 
-        base_policy_cfg_rel = OmegaConf.to_object(self.policy_cfg_fragment)
+        base_policy_cfg_rel = hydra.utils.instantiate(self.policy_cfg_fragment)
         base_policy_cfg_rel["agent_id"] = AGENT_ID
 
         motor_system_rel = MotorSystem(
