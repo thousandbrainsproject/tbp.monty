@@ -10,6 +10,8 @@
 
 import pytest
 
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -32,9 +34,7 @@ class BaseConfigTest(unittest.TestCase):
         """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
 
-        with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.base_cfg = hydra.compose(
                 config_name="test",
                 overrides=[
@@ -206,9 +206,7 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
 
-        with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.cfg = hydra.compose(
                 config_name="test",
                 overrides=[

@@ -10,6 +10,8 @@
 
 import pytest
 
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -66,9 +68,7 @@ class PolicyTest(unittest.TestCase):
                 ],
             )
 
-        with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.base_dist_cfg = hydra_config("base_dist")
             self.base_surf_cfg = hydra_config("base_surf")
             self.spiral_cfg = hydra_config("spiral")

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -87,9 +89,7 @@ class EvidenceLMTest(BaseGraphTest):
 
             return hydra.compose(config_name="test", overrides=overrides)
 
-        with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.evidence_cfg = hydra_config("evidence")
             self.fixed_actions_evidence_cfg = hydra_config(
                 "fixed_actions_evidence", self.fixed_actions_path

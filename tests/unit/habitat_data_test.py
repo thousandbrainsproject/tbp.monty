@@ -14,6 +14,7 @@ from omegaconf import OmegaConf
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.sensors import SensorID
+from tests import HYDRA_ROOT
 
 pytest.importorskip(
     "habitat_sim",
@@ -73,9 +74,7 @@ class HabitatDataTest(unittest.TestCase):
             {0: {f"{SENSOR_ID}.depth": s}} for s in EXPECTED_STATES[1:]
         ]
 
-        with hydra.initialize(
-            config_path="../../src/tbp/monty/conf", version_base=None
-        ):
+        with hydra.initialize_config_dir(config_dir=str(HYDRA_ROOT), version_base=None):
             self.policy_cfg_fragment = hydra.compose(
                 config_name="experiment/config/monty/motor_system/defaults",
             ).experiment.config.monty.motor_system.motor_system_args.policy_args
