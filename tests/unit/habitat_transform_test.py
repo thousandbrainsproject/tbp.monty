@@ -14,6 +14,7 @@ import unittest
 import numpy as np
 import quaternion as qt
 from scipy.spatial.transform import Rotation
+from unittest_parametrize import ParametrizedTestCase
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
@@ -96,7 +97,7 @@ EXPECTED_SEMANTIC_XY = np.array(
 )
 
 
-class HabitatTransformTest(unittest.TestCase):
+class HabitatTransformTest(ParametrizedTestCase):
     def test_max_depth_transform(self):
         """Test replacing 0 with user specified max_range."""
         max_depth = 20
@@ -129,7 +130,6 @@ class HabitatTransformTest(unittest.TestCase):
             agent_id=AGENT_ID,
             sensor_ids=[SENSOR_ID],
             resolutions=[resolution],
-            use_semantic_sensor=True,
         )
         obs = transform.call(md_obs)
         module_obs = obs[AGENT_ID][SENSOR_ID]
@@ -167,7 +167,11 @@ class HabitatTransformTest(unittest.TestCase):
         np.testing.assert_array_almost_equal(actual, EXPECTED_SEMANTIC_XY)
 
     def setup_test_data(
-        self, agent_position, agent_rotation, sensor_position, sensor_rotation
+        self,
+        agent_position,
+        agent_rotation,
+        sensor_position,
+        sensor_rotation,
     ):
         resolution = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"].shape
         md_transform = MissingToMaxDepth(agent_id=AGENT_ID, max_depth=100)
@@ -194,7 +198,6 @@ class HabitatTransformTest(unittest.TestCase):
             resolutions=[resolution],
             world_coord=True,
             get_all_points=False,
-            use_semantic_sensor=True,
         )
 
         obs = transform.call(md_obs, state=mock_state)
