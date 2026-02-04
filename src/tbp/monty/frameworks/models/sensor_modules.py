@@ -18,7 +18,11 @@ import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    RuntimeContext,
+    SensorID,
+    SensorModule,
+)
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     SensorState,
@@ -393,10 +397,7 @@ class Probe(SensorModule):
     """
 
     def __init__(
-        self,
-        rng,  # noqa: ARG002
-        sensor_module_id: str,
-        save_raw_obs: bool,
+        self, rng: np.random.RandomState, sensor_module_id: str, save_raw_obs: bool
     ):
         """Initialize the probe.
 
@@ -408,6 +409,7 @@ class Probe(SensorModule):
         super().__init__()
 
         self.is_exploring = False
+        self._rng = rng
         self.sensor_module_id = sensor_module_id
         self.state = None
         self.save_raw_obs = save_raw_obs
@@ -435,10 +437,18 @@ class Probe(SensorModule):
 
         return None
 
-    def pre_episode(self, rng: np.random.RandomState) -> None:  # noqa: ARG002
+    def pre_episode(self) -> None:
         """Reset buffer and is_exploring flag."""
         self._snapshot_telemetry.reset()
         self.is_exploring = False
+
+    def set_context(self, ctx: RuntimeContext):
+        """Adjust context variables before stepping.
+
+        Args:
+            ctx: The runtime context variables.
+        """
+        self._rng = ctx.rng
 
 
 class MessageNoise(Protocol):
@@ -617,13 +627,16 @@ class HabitatSM(SensorModule):
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
 
-    def pre_episode(self, rng: np.random.RandomState) -> None:
-        self._rng = rng
+    def pre_episode(self) -> None:
         self._snapshot_telemetry.reset()
         self._state_filter.reset()
         self.is_exploring = False
         self.processed_obs = []
         self.states = []
+
+    def set_context(self, ctx: RuntimeContext):
+        """Adjust context variables before stepping."""
+        self._rng = ctx.rng
 
     def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""

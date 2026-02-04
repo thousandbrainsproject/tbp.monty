@@ -501,7 +501,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         }
 
         lm.mode = "train"
-        lm.pre_episode(rng=np.random.RandomState(), primary_target=obj_target)
+        lm.pre_episode(primary_target=obj_target)
         for observation in obs:
             lm.exploratory_step([observation])
         lm.detected_object = obj_name
@@ -546,7 +546,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         }
 
         lm.mode = "eval"
-        lm.pre_episode(rng=np.random.RandomState(), primary_target=placeholder_target)
+        lm.pre_episode(primary_target=placeholder_target)
         for observation in obs[:-1]:
             lm.add_lm_processing_to_buffer_stats(lm_processed=True)
             self.match(lm, [observation])

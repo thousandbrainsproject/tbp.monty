@@ -46,10 +46,13 @@ class FakeLearningModule(LearningModule):
         self.test_attr_1 = state_dict["test_attr_1"]
         self.test_attr_2 = state_dict["test_attr_2"]
 
-    def pre_episode(self, rng: np.random.RandomState) -> None:
+    def pre_episode(self) -> None:
         pass
 
     def post_episode(self):
+        pass
+
+    def set_context(self, ctx):
         pass
 
     def set_experiment_mode(self, inputs):

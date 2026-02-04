@@ -253,7 +253,7 @@ class PolicyTest(unittest.TestCase):
 
             # Get a first step to allow the surface agent to touch the object
             observation_pre_touch = next(exp.env_interface)
-            exp.model.step(observation_pre_touch)
+            exp.model.step(exp.ctx, observation_pre_touch)
 
             # Check initial view post touch-attempt
             observation_post_touch = next(exp.env_interface)
@@ -305,7 +305,7 @@ class PolicyTest(unittest.TestCase):
 
             # Manually step through part of run_episode function
             for loader_step, observation in enumerate(exp.env_interface):
-                exp.model.step(observation)
+                exp.model.step(exp.ctx, observation)
 
                 last_action = exp.model.motor_system._policy.action
 
@@ -414,7 +414,7 @@ class PolicyTest(unittest.TestCase):
             # Take several steps in a fixed direction until we fall off the object, then
             # ensure we get back on to it
             for loader_step, observation in enumerate(exp.env_interface):
-                exp.model.step(observation)
+                exp.model.step(exp.ctx, observation)
 
                 #  Step | Action           | Motor-only? | Obs processed? | Source
                 # ------|------------------|-------------|----------------|-------------
@@ -549,7 +549,7 @@ class PolicyTest(unittest.TestCase):
             exp.pre_episode()
 
             for loader_step, observation in enumerate(exp.env_interface):
-                exp.model.step(observation)
+                exp.model.step(exp.ctx, observation)
                 exp.post_step(loader_step, observation)
 
                 if loader_step == 3:  # Surface agent should have re-oriented
@@ -886,7 +886,6 @@ class PolicyTest(unittest.TestCase):
         )
 
         lm.pre_episode(
-            rng=np.random.RandomState(),
             primary_target=dict(
                 object="dummy_object",
                 quat_rotation=[1.0, 0.0, 0.0, 0.0],  # Filler value
