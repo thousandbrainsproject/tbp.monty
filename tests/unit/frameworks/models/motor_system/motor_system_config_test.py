@@ -9,7 +9,6 @@
 import unittest
 
 import hydra
-import numpy as np
 
 from tbp.monty.frameworks.actions.action_samplers import ActionSampler
 from tests import HYDRA_ROOT
