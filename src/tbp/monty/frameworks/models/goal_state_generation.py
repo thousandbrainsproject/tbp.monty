@@ -17,9 +17,21 @@ from tbp.monty.frameworks.models.abstract_monty_classes import GoalStateGenerato
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.utils.communication_utils import get_state_from_channel
 
-__all__ = ["EvidenceGoalStateGenerator", "GraphGoalStateGenerator"]
+__all__ = [
+    "EvidenceGoalStateGenerator",
+    "GraphGoalStateGenerator",
+    "ParentLMNotProvided",
+]
 
 logger = logging.getLogger(__name__)
+
+
+class ParentLMNotProvided(AttributeError):
+    """Parent LM wasn't provided to a GoalStateGenerator.
+
+    Error raised when a parent learning module is accessed before it is provided to
+    a goal state generator.
+    """
 
 
 class GraphGoalStateGenerator(GoalStateGenerator):
@@ -42,19 +54,22 @@ class GraphGoalStateGenerator(GoalStateGenerator):
     Note that all Goals conform to the State-class cortical messaging protocol (CMP).
     """
 
-    def __init__(self, parent_lm, goal_tolerances=None, **_kwargs) -> None:
+    def __init__(self, goal_tolerances=None, **_kwargs) -> None:
         """Initialize the GSG.
 
+        Note: the GSG is not fully initialized until the `parent_lm` is set by the owner
+        of the GSG. This step is separated out to allow for dependency injection.
+
         Args:
-            parent_lm: The learning-module class instance that the GSG is embedded
-                within.
             goal_tolerances: The tolerances for each attribute of the Goal that can be
                 used by the GSG when determining whether a Goal is achieved. These are
                 not necessarily the same as an LM's tolerances used for matching, as
                 here we are evaluating whether a Goal is achieved.
             **kwargs: Additional keyword arguments. Unused.
         """
-        self.parent_lm = parent_lm
+        # Do not access directly, use the property defined below.
+        self._parent_lm = None
+
         if goal_tolerances is None:
             self.goal_tolerances = dict(
                 location=0.015,  # distance in meters
@@ -62,12 +77,24 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         else:
             self.goal_tolerances = goal_tolerances
 
-        self.reset()
-        self.set_driving_goal_state(self._generate_none_goal_state())
-
     # =============== Public Interface Functions ===============
 
     # ------------------ Getters & Setters ---------------------
+
+    @property
+    def parent_lm(self):
+        if not self._parent_lm:
+            raise ParentLMNotProvided("Parent learning module has not been provided.")
+        return self._parent_lm
+
+    @parent_lm.setter
+    def parent_lm(self, parent_lm):
+        """Sets the parent learning module for this GSG.
+
+        After setting the LM, it resets the GSG.
+        """
+        self._parent_lm = parent_lm
+        self.reset()
 
     def reset(self):
         """Reset any stored attributes of the GSG."""
@@ -459,7 +486,6 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
     def __init__(
         self,
-        parent_lm,
         goal_tolerances=None,
         elapsed_steps_factor=10,
         min_post_goal_success_steps=np.inf,
@@ -512,7 +538,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
                 in turn controls how long to wait before the next jump attempt.
             **kwargs: Additional keyword arguments.
         """
-        super().__init__(parent_lm, goal_tolerances, **kwargs)
+        super().__init__(goal_tolerances, **kwargs)
 
         self.elapsed_steps_factor = elapsed_steps_factor
         self.min_post_goal_success_steps = min_post_goal_success_steps

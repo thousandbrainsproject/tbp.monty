@@ -561,7 +561,7 @@ class GraphLM(LearningModule):
         if initialize_base_modules:
             self.graph_memory = GraphMemory(k=None, graph_delta_thresholds=None)
             self.gsg = GraphGoalStateGenerator(self)
-            self.gsg.reset()
+            self.gsg.parent_lm = self
 
         self.mode: ExperimentMode | None = (
             None  # initialize to neither training nor testing

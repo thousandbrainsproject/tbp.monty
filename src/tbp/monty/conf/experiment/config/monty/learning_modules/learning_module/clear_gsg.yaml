@@ -1,0 +1,2 @@
+# TODO: is this still useful, now that we aren't doing gsg_args?
+gsg: null  # Overrides the gsg in the parent config
