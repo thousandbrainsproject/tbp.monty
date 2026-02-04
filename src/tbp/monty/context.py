@@ -18,5 +18,6 @@ class RuntimeContext:
 
     The RuntimeContext carries runtime-scoped values used throughout Monty.
     """
+
     rng: np.random.RandomState
     """Random number generator."""
