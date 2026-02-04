@@ -10,6 +10,7 @@
 
 import pytest
 
+from tbp.monty.context import RuntimeContext
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -597,9 +598,11 @@ class PolicyTest(unittest.TestCase):
         policy_class = motor_system_cfg["motor_system_args"]["policy_class"]
         policy_args = motor_system_cfg["motor_system_args"]["policy_args"]
         policy_args["max_pc_bias_steps"] = 2
+        policy = policy_class(**policy_args)
+        policy.pre_episode()
+
         rng = np.random.RandomState(123)
-        policy = policy_class(rng=rng, **policy_args)
-        policy.pre_episode(rng)
+        ctx = RuntimeContext(rng)
 
         # Initialize motor-system state
         proprioceptive_state = ProprioceptiveState(
@@ -620,7 +623,7 @@ class PolicyTest(unittest.TestCase):
         # Note that the movement is a unit vector because it is a direction, the amount
         # (i.e. size) of the translation is represented separately.
         policy.processed_observations = self.fake_obs_pc[0]
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -633,7 +636,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 2
         policy.processed_observations = self.fake_obs_pc[1]
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -647,7 +650,7 @@ class PolicyTest(unittest.TestCase):
         # Step 3: Our bias should change from following minimal to maximal
         # PC
         policy.processed_observations = self.fake_obs_pc[2]
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [0, 1, 0])), (
             "Not following correct PC direction"
         )
@@ -660,7 +663,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 4
         policy.processed_observations = self.fake_obs_pc[3]
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [0, 1, 0])), (
             "Not following correct PC direction"
         )
@@ -673,7 +676,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 5: Pass observation *without* a well-defined PC direction
         policy.processed_observations = self.fake_obs_pc[4]
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.isclose(
             np.dot(self.fake_obs_pc[4].get_surface_normal(), direction), 0
         ), "Direction should be orthogonal to tangent (surface) plane"
@@ -697,7 +700,7 @@ class PolicyTest(unittest.TestCase):
         proprioceptive_state[AgentID("agent_id_0")].rotation = qt.quaternion(0, 0, 1, 0)
 
         policy.processed_observations = self.fake_obs_pc[5]
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [1.0, 0.0, 0])), (
             "Not following correct PC direction"
         )
@@ -716,9 +719,11 @@ class PolicyTest(unittest.TestCase):
         # Overwrite min_general_steps default value so that we more quickly transition
         # into taking PC steps when testing this
         policy_args["min_general_steps"] = 1
+        policy = policy_class(**policy_args)
+        policy.pre_episode()
+
         rng = np.random.RandomState(123)
-        policy = policy_class(rng=rng, **policy_args)
-        policy.pre_episode(rng)
+        ctx = RuntimeContext(rng)
 
         # Initialize motor system state
         proprioceptive_state = ProprioceptiveState(
@@ -739,7 +744,7 @@ class PolicyTest(unittest.TestCase):
         # done in graph_matching.py normally
         policy.tangent_locs.append(self.fake_obs_advanced_pc[0].location)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.isclose(
             np.dot(self.fake_obs_advanced_pc[0].get_surface_normal(), direction), 0
         ), "Direction should be orthogonal to tangent (surface) plane"
@@ -757,7 +762,7 @@ class PolicyTest(unittest.TestCase):
         # done in graph_matching.py normally
         policy.tangent_locs.append(self.fake_obs_pc[0].location)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -773,7 +778,7 @@ class PolicyTest(unittest.TestCase):
         policy.processed_observations = self.fake_obs_advanced_pc[1]
         policy.tangent_locs.append(self.fake_obs_advanced_pc[1].location)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -788,7 +793,7 @@ class PolicyTest(unittest.TestCase):
         policy.processed_observations = self.fake_obs_advanced_pc[2]
         policy.tangent_locs.append(self.fake_obs_advanced_pc[2].location)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.isclose(np.linalg.norm(direction), 1), (
             "Direction should be a unit vector"
         )
@@ -813,7 +818,7 @@ class PolicyTest(unittest.TestCase):
         # following PC would cause it to visit the observation 1 again (which it is
         # designed to avoid)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         # Note the following movement is a random direction deterministically set by the
         # random seed
         assert np.isclose(
@@ -934,10 +939,9 @@ class PolicyTest(unittest.TestCase):
         motor_system_args = motor_system_cfg["motor_system_args"]
         policy_class = motor_system_args["policy_class"]
         policy_args = motor_system_args["policy_args"]
-        rng = np.random.RandomState(123)
-        policy = policy_class(rng=rng, **policy_args)
+        policy = policy_class(**policy_args)
         motor_system = motor_system_class(policy=policy)
-        motor_system.pre_episode(rng)
+        motor_system.pre_episode()
 
         # The target displacement of the agent from the object; used to determine
         # the validity of the final agent location

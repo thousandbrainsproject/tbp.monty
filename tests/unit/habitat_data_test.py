@@ -10,6 +10,7 @@
 import hydra
 import pytest
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.sensors import SensorID
@@ -107,9 +108,7 @@ class HabitatDataTest(unittest.TestCase):
         base_policy_cfg_dist = hydra.utils.instantiate(self.policy_cfg_fragment)
         base_policy_cfg_dist["agent_id"] = AGENT_ID
 
-        motor_system_dist = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_dist)
-        )
+        motor_system_dist = MotorSystem(policy=BasePolicy(**base_policy_cfg_dist))
 
         # Create habitat env datasets with distant-agent action space
         env_init_args = {"agents": self.camera_dist_config}
@@ -122,10 +121,11 @@ class HabitatDataTest(unittest.TestCase):
             experiment_mode=ExperimentMode.EVAL,
         )
 
+        ctx = RuntimeContext(rng)
         # Check if env interface is getting observations from simulator
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, NUM_STEPS):
-            obs_dist, _ = env_interface_dist.step(motor_system_dist())
+            obs_dist, _ = env_interface_dist.step(motor_system_dist(ctx))
             camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_dist[MODALITY] == EXPECTED_STATES[i]))
 
@@ -136,7 +136,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if env interface actions affect simulator observations
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
-        obs_dist, _ = env_interface_dist.step(motor_system_dist())
+        obs_dist, _ = env_interface_dist.step(motor_system_dist(ctx))
         camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_dist[MODALITY] == initial_camera_obs_dist[MODALITY])
@@ -164,9 +164,7 @@ class HabitatDataTest(unittest.TestCase):
         base_policy_cfg_abs = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
 
-        motor_system_abs = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
-        )
+        motor_system_abs = MotorSystem(policy=BasePolicy(**base_policy_cfg_abs))
 
         # Create habitat env with absolute action space
         env_init_args = {"agents": self.camera_abs_config}
@@ -179,10 +177,11 @@ class HabitatDataTest(unittest.TestCase):
             experiment_mode=ExperimentMode.EVAL,
         )
 
+        ctx = RuntimeContext(rng)
         # Check if env interfaces are getting observations from simulator
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, NUM_STEPS):
-            obs_abs, _ = env_interface_abs.step(motor_system_abs())
+            obs_abs, _ = env_interface_abs.step(motor_system_abs(ctx))
             camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_abs[MODALITY] == EXPECTED_STATES[i]))
 
@@ -193,7 +192,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if env interface actions affect simulator observations
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
-        obs_abs, _ = env_interface_abs.step(motor_system_abs())
+        obs_abs, _ = env_interface_abs.step(motor_system_abs(ctx))
         camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_abs[MODALITY] == initial_camera_obs_abs[MODALITY])
@@ -222,9 +221,7 @@ class HabitatDataTest(unittest.TestCase):
         base_policy_cfg_surf = hydra.utils.instantiate(self.policy_cfg_surf_fragment)
         base_policy_cfg_surf["agent_id"] = AGENT_ID
 
-        motor_system_surf = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_surf)
-        )
+        motor_system_surf = MotorSystem(policy=BasePolicy(**base_policy_cfg_surf))
 
         # Create habitat env interface with distant-agent action space
         env_init_args = {"agents": self.camera_surf_config}
@@ -237,10 +234,11 @@ class HabitatDataTest(unittest.TestCase):
             experiment_mode=ExperimentMode.EVAL,
         )
 
+        ctx = RuntimeContext(rng)
         # Check if datasets are getting observations from simulator
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, NUM_STEPS):
-            obs_surf, _ = env_interface_surf.step(motor_system_surf())
+            obs_surf, _ = env_interface_surf.step(motor_system_surf(ctx))
             camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_surf[MODALITY] == EXPECTED_STATES[i]))
 
@@ -251,7 +249,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if dataset actions affect simulator observations
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
-        obs_surf, _ = env_interface_surf.step(motor_system_surf())
+        obs_surf, _ = env_interface_surf.step(motor_system_surf(ctx))
         camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_surf[MODALITY] == initial_camera_obs_surf[MODALITY])
@@ -279,9 +277,7 @@ class HabitatDataTest(unittest.TestCase):
 
         base_policy_cfg_dist = hydra.utils.instantiate(self.policy_cfg_fragment)
         base_policy_cfg_dist["agent_id"] = AGENT_ID
-        motor_system_dist = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_dist)
-        )
+        motor_system_dist = MotorSystem(policy=BasePolicy(**base_policy_cfg_dist))
 
         env_init_args = {"agents": self.camera_dist_config}
         env = HabitatEnvironment(**env_init_args)
@@ -321,9 +317,7 @@ class HabitatDataTest(unittest.TestCase):
 
         base_policy_cfg_abs = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
-        motor_system_abs = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
-        )
+        motor_system_abs = MotorSystem(policy=BasePolicy(**base_policy_cfg_abs))
         env_init_args = {"agents": self.camera_abs_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_abs = EnvironmentInterface(
@@ -363,9 +357,7 @@ class HabitatDataTest(unittest.TestCase):
         # action space
         base_policy_cfg_surf = hydra.utils.instantiate(self.policy_cfg_surf_fragment)
         base_policy_cfg_surf["agent_id"] = AGENT_ID
-        motor_system_surf = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_surf)
-        )
+        motor_system_surf = MotorSystem(policy=BasePolicy(**base_policy_cfg_surf))
 
         env_init_args = {"agents": self.camera_surf_config}
         env = HabitatEnvironment(**env_init_args)

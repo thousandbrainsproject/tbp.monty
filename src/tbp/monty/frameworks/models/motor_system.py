@@ -9,8 +9,7 @@
 
 from __future__ import annotations
 
-import numpy as np
-
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
@@ -39,9 +38,9 @@ class MotorSystem:
         """Post episode hook."""
         self._policy.post_episode()
 
-    def pre_episode(self, rng: np.random.RandomState) -> None:
+    def pre_episode(self) -> None:
         """Pre episode hook."""
-        self._policy.pre_episode(rng)
+        self._policy.pre_episode()
 
     def set_experiment_mode(self, mode: ExperimentMode) -> None:
         """Sets the experiment mode.
@@ -51,12 +50,15 @@ class MotorSystem:
         """
         self._policy.set_experiment_mode(mode)
 
-    def __call__(self) -> list[Action]:
+    def __call__(self, ctx: RuntimeContext) -> list[Action]:
         """Defines the structure for __call__.
 
         Delegates to the motor policy.
 
+        Args:
+            ctx: The runtime context.
+
         Returns:
             The action to take.
         """
-        return self._policy(self._state)
+        return self._policy(ctx, self._state)

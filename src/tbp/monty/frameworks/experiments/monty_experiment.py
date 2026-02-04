@@ -180,7 +180,7 @@ class MontyExperiment:
             raise TypeError(
                 f"policy_class must be a subclass of MotorPolicy, got {policy_class}"
             )
-        policy = policy_class(rng=self.rng, **policy_args)
+        policy = policy_class(**policy_args)
         motor_system = motor_system_class(policy=policy)
 
         # Get mapping between sensor modules, learning modules and agents
