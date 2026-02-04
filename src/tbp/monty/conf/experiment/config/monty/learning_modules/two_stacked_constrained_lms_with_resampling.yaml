@@ -1,6 +1,5 @@
 defaults:
   - two_stacked_constrained_lms
-  - learning_module/clear_gsg@learning_module_0.learning_module_args
 
 learning_module_0:
   learning_module_args:
