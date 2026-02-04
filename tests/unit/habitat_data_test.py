@@ -9,11 +9,11 @@
 # https://opensource.org/licenses/MIT.
 import hydra
 import pytest
-from omegaconf import OmegaConf
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.sensors import SensorID
+from tests import HYDRA_ROOT
 
 pytest.importorskip(
     "habitat_sim",
@@ -73,9 +73,7 @@ class HabitatDataTest(unittest.TestCase):
             {0: {f"{SENSOR_ID}.depth": s}} for s in EXPECTED_STATES[1:]
         ]
 
-        with hydra.initialize(
-            config_path="../../src/tbp/monty/conf", version_base=None
-        ):
+        with hydra.initialize_config_dir(config_dir=str(HYDRA_ROOT), version_base=None):
             self.policy_cfg_fragment = hydra.compose(
                 config_name="experiment/config/monty/motor_system/defaults",
             ).experiment.config.monty.motor_system.motor_system_args.policy_args
@@ -106,7 +104,7 @@ class HabitatDataTest(unittest.TestCase):
         rng = np.random.RandomState(seed)
 
         # Create distant-agent motor systems / policies
-        base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
+        base_policy_cfg_dist = hydra.utils.instantiate(self.policy_cfg_fragment)
         base_policy_cfg_dist["agent_id"] = AGENT_ID
 
         motor_system_dist = MotorSystem(
@@ -163,7 +161,7 @@ class HabitatDataTest(unittest.TestCase):
         seed = 42
         rng = np.random.RandomState(seed)
 
-        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
+        base_policy_cfg_abs = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
 
         motor_system_abs = MotorSystem(
@@ -221,7 +219,7 @@ class HabitatDataTest(unittest.TestCase):
         rng = np.random.RandomState(seed)
         # Note we just test random actions (i.e. base policy) with the surface-agent
         # action space
-        base_policy_cfg_surf = OmegaConf.to_object(self.policy_cfg_surf_fragment)
+        base_policy_cfg_surf = hydra.utils.instantiate(self.policy_cfg_surf_fragment)
         base_policy_cfg_surf["agent_id"] = AGENT_ID
 
         motor_system_surf = MotorSystem(
@@ -279,7 +277,7 @@ class HabitatDataTest(unittest.TestCase):
         seed = 42
         rng = np.random.RandomState(seed)
 
-        base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
+        base_policy_cfg_dist = hydra.utils.instantiate(self.policy_cfg_fragment)
         base_policy_cfg_dist["agent_id"] = AGENT_ID
         motor_system_dist = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_cfg_dist)
@@ -321,7 +319,7 @@ class HabitatDataTest(unittest.TestCase):
         seed = 42
         rng = np.random.RandomState(seed)
 
-        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
+        base_policy_cfg_abs = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
         base_policy_cfg_abs["agent_id"] = AGENT_ID
         motor_system_abs = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
@@ -363,7 +361,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Note we just test random actions (i.e. base policy) with the surface-agent
         # action space
-        base_policy_cfg_surf = OmegaConf.to_object(self.policy_cfg_surf_fragment)
+        base_policy_cfg_surf = hydra.utils.instantiate(self.policy_cfg_surf_fragment)
         base_policy_cfg_surf["agent_id"] = AGENT_ID
         motor_system_surf = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_cfg_surf)

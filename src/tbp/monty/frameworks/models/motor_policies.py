@@ -147,8 +147,7 @@ class BasePolicy(MotorPolicy):
     def __init__(
         self,
         rng: np.random.RandomState,
-        action_sampler_args: dict,
-        action_sampler_class: type[ActionSampler],
+        action_sampler: ActionSampler,
         agent_id: AgentID,
         file_name=None,
         file_names_per_episode=None,
@@ -157,8 +156,7 @@ class BasePolicy(MotorPolicy):
 
         Args:
             rng: Random number generator to use
-            action_sampler_args: arguments for the ActionSampler
-            action_sampler_class: The ActionSampler to use
+            action_sampler: The ActionSampler to use
             agent_id: The agent ID
             file_name: Path to file with predefined actions. Defaults to None.
             file_names_per_episode: ?. Defaults to None.
@@ -169,8 +167,7 @@ class BasePolicy(MotorPolicy):
         ###
         self.rng = rng
         self.agent_id = agent_id
-
-        self.action_sampler = action_sampler_class(**action_sampler_args)
+        self.action_sampler = action_sampler
 
         self.action_sequence = []
         self.timestep = 0
