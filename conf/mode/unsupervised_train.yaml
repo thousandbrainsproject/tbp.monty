@@ -1,0 +1,9 @@
+# @package _global_
+# Unsupervised training mode - train without supervision
+
+defaults:
+  - _defaults
+
+config:
+  do_train: true
+  do_eval: false
