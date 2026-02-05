@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import copy
 import logging
 from pprint import pformat
@@ -18,6 +20,7 @@ import quaternion as qt
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import (
+    Action,
     MoveTangentially,
     OrientVertical,
     SetAgentPose,
@@ -160,12 +163,26 @@ class EnvironmentInterface:
             return self._observation
 
         actions = self.motor_system(ctx)
-        observation, state = self.env.step(actions)
-        if self.transform is not None:
-            observation = self.apply_transform(self.transform, observation, state)
+        observation, state = self._step(actions)
         self.motor_system._state = MotorSystemState(state)
         self._observation = observation
         return self._observation
+
+    def _step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
+        """Take actions in the environment and apply the transform to the observations.
+
+        Args:
+            actions: The actions to take in the environment.
+
+        Returns:
+            The observations and proprioceptive state.
+        """
+        observations, state = self.env.step(actions)
+        if self.transform is not None:
+            observations = self.apply_transform(self.transform, observations, state)
+        return observations, state
 
     def pre_episode(self, rng: np.random.RandomState):
         self.motor_system.pre_episode()
@@ -570,7 +587,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         )
         result = positioning_procedure(self._observation, self.motor_system._state)
         while not result.terminated and not result.truncated:
-            self._observation, proprio_state = self.step(result.actions)
+            self._observation, proprio_state = self._step(result.actions)
             self.motor_system._state = (
                 MotorSystemState(proprio_state) if proprio_state else None
             )
@@ -657,7 +674,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=qt.one,
         )
-        self._observation, proprioceptive_state = self.step(
+        self._observation, proprioceptive_state = self._step(
             [set_agent_pose, set_sensor_rotation]
         )
         self.motor_system._state = (
@@ -745,7 +762,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=pre_jump_state.sensors[first_sensor].rotation,
         )
-        self._observation, proprioceptive_state = self.step(
+        self._observation, proprioceptive_state = self._step(
             [set_agent_pose, set_sensor_rotation]
         )
 
