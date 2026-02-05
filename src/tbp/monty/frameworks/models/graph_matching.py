@@ -447,9 +447,11 @@ class MontyForGraphMatching(MontyBase):
                         for sm in self.sensor_modules:
                             sm.is_exploring = True
 
-                    elif self.experiment_mode is ExperimentMode.EVAL:
-                        if self.matching_steps > self.min_eval_steps:
-                            self._is_done = True
+                    elif (
+                        self.experiment_mode is ExperimentMode.EVAL
+                        and self.matching_steps > self.min_eval_steps
+                    ):
+                        self._is_done = True
 
             else:
                 self.matching_steps -= 1
