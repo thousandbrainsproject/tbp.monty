@@ -293,7 +293,7 @@ class HabitatDataTest(unittest.TestCase):
         i = 0
         ctx = RuntimeContext(rng)
         while True:
-            obs = env_interface_dist.step(ctx)
+            obs = env_interface_dist.step(ctx, first=(i == 0))
             camera_obs_dist = obs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_dist[MODALITY] == EXPECTED_STATES[i]))
             if i >= NUM_STEPS - 1:
@@ -336,7 +336,7 @@ class HabitatDataTest(unittest.TestCase):
         i = 0
         ctx = RuntimeContext(rng)
         while True:
-            obs = env_interface_abs.step(ctx)
+            obs = env_interface_abs.step(ctx, first=(i == 0))
             camera_obs_abs = obs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_abs[MODALITY] == EXPECTED_STATES[i]))
             if i >= NUM_STEPS - 1:
@@ -382,7 +382,7 @@ class HabitatDataTest(unittest.TestCase):
         i = 0
         ctx = RuntimeContext(rng)
         while True:
-            obs = env_interface_surf.step(ctx)
+            obs = env_interface_surf.step(ctx, first=(i == 0))
             camera_obs_surf = obs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_surf[MODALITY] == EXPECTED_STATES[i]))
             if i >= NUM_STEPS - 1:

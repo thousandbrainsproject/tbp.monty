@@ -235,7 +235,7 @@ class EmbodiedDataTest(unittest.TestCase):
         self.assertTrue(
             np.all(initial_state[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[0])
         )
-        obs_abs, _ = env_interface_abs.step(motor_system_abs(ctx))
+        obs_abs = env_interface_abs.step(ctx)
         self.assertFalse(
             np.all(
                 obs_abs[AGENT_ID][SENSOR_ID]["raw"]
@@ -263,7 +263,7 @@ class EmbodiedDataTest(unittest.TestCase):
         i = 0
         ctx = RuntimeContext(rng)
         while True:
-            obs = env_interface_dist.step(ctx)
+            obs = env_interface_dist.step(ctx, first=(i == 0))
             self.assertTrue(
                 np.all(obs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
             )
@@ -293,7 +293,7 @@ class EmbodiedDataTest(unittest.TestCase):
         i = 0
         ctx = RuntimeContext(rng)
         while True:
-            obs = env_interface_abs.step(ctx)
+            obs = env_interface_abs.step(ctx, first=(i == 0))
             self.assertTrue(
                 np.all(obs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
             )

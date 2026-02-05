@@ -253,7 +253,7 @@ class PolicyTest(unittest.TestCase):
 
             # Get a first step to allow the surface agent to touch the object
             ctx = RuntimeContext(rng=exp.rng)
-            observation_pre_touch = exp.env_interface.step(ctx)
+            observation_pre_touch = exp.env_interface.step(ctx, first=True)
             exp.model.step(observation_pre_touch)
 
             # Check initial view post touch-attempt
@@ -308,7 +308,7 @@ class PolicyTest(unittest.TestCase):
             step = 0
             ctx = RuntimeContext(rng=exp.rng)
             while True:
-                observations = exp.env_interface.step(ctx)
+                observations = exp.env_interface.step(ctx, first=(step == 0))
                 exp.model.step(observations)
 
                 last_action = exp.model.motor_system._policy.action
@@ -422,7 +422,7 @@ class PolicyTest(unittest.TestCase):
             step = 0
             ctx = RuntimeContext(rng=exp.rng)
             while True:
-                observations = exp.env_interface.step(ctx)
+                observations = exp.env_interface.step(ctx, first=(step == 0))
                 exp.model.step(observations)
 
                 #  Step | Action           | Motor-only? | Obs processed? | Source
@@ -562,7 +562,7 @@ class PolicyTest(unittest.TestCase):
             step = 0
             ctx = RuntimeContext(rng=exp.rng)
             while True:
-                observations = exp.env_interface.step(ctx)
+                observations = exp.env_interface.step(ctx, first=(step == 0))
                 exp.model.step(observations)
                 exp.post_step(step, observations)
 

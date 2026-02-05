@@ -86,7 +86,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         num_steps = 0
         while True:
             try:
-                observations = self.env_interface.step(ctx)
+                observations = self.env_interface.step(ctx, first=(num_steps == 0))
             except StopIteration:
                 break
 

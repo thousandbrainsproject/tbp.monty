@@ -498,7 +498,7 @@ class MontyExperiment:
         ctx = RuntimeContext(rng=self.rng)
         while True:
             try:
-                observations = self.env_interface.step(ctx)
+                observations = self.env_interface.step(ctx, first=(step == 0))
             except StopIteration:
                 break
 
