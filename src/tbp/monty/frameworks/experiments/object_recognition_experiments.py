@@ -146,6 +146,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
 
             step += 1
 
+
 class MontyGeneralizationExperiment(MontyObjectRecognitionExperiment):
     """Remove the tested object model from memory to see what is recognized instead."""
 
