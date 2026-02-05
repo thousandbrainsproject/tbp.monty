@@ -355,7 +355,7 @@ def show_one_step(
     model_features = lm_models[model_id][lm_num][object_to_inspect].x.numpy()
     model_normals = lm_models[model_id][lm_num][object_to_inspect].norm.numpy()
     model_f_mapping = lm_models[model_id][lm_num][object_to_inspect].feature_mapping
-    first_input_channel = list(model_f_mapping.keys())[0]
+    first_input_channel = next(iter(model_f_mapping.keys()))
 
     fig = plt.figure(figsize=(7, 7))
     fig.tight_layout()
@@ -975,14 +975,14 @@ class PolicyPlot:
         )
 
         # If on a step associated with a failed jump, also visualize this
-        if self.jumps_used:
-            if (
-                episode_step
-                in self.detailed_stats[str(self.episode)]["motor_system"][
-                    "action_details"
-                ]["episode_step_for_jump"]
-            ):
-                self.check_failed_jump(episode_step)
+        if (
+            self.jumps_used
+            and episode_step
+            in self.detailed_stats[str(self.episode)]["motor_system"]["action_details"][
+                "episode_step_for_jump"
+            ]
+        ):
+            self.check_failed_jump(episode_step)
 
         # Additional, optional visualizations
         if self.extra_vis == "lm_processed":

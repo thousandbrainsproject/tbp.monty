@@ -447,9 +447,11 @@ class MontyForGraphMatching(MontyBase):
                         for sm in self.sensor_modules:
                             sm.is_exploring = True
 
-                    elif self.experiment_mode is ExperimentMode.EVAL:
-                        if self.matching_steps > self.min_eval_steps:
-                            self._is_done = True
+                    elif (
+                        self.experiment_mode is ExperimentMode.EVAL
+                        and self.matching_steps > self.min_eval_steps
+                    ):
+                        self._is_done = True
 
             else:
                 self.matching_steps -= 1
@@ -561,7 +563,7 @@ class GraphLM(LearningModule):
         if initialize_base_modules:
             self.graph_memory = GraphMemory(k=None, graph_delta_thresholds=None)
             self.gsg = GraphGoalStateGenerator(self)
-            self.gsg.reset()
+            self.gsg.parent_lm = self
 
         self.mode: ExperimentMode | None = (
             None  # initialize to neither training nor testing
