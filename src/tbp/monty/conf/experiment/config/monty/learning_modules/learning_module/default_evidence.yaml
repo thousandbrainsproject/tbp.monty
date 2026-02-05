@@ -16,8 +16,8 @@ learning_module_args:
   # NOTE: Currently not used when loading pretrained graphs.
   max_graph_size: 0.3 # 30cm
   num_model_voxels_per_dim: 100
-  gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
-  gsg_args:
+  gsg:
+    _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
     # Tolerance(s) when determining goal-state success
     goal_tolerances:
       location: 0.015 # distance in meters

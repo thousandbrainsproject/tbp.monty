@@ -136,8 +136,7 @@ class EvidenceGraphLM(GraphLM):
             voxel. All locations that fall into the same voxel will be averaged and
             represented as one value. num_model_voxels_per_dim should not be too large
             since the memory requirements grow cubically with this number.
-        gsg_class: The type of goal-state-generator to associate with the LM.
-        gsg_args: Dictionary of configuration parameters for the GSG.
+        gsg: The goal-state-generator to associate with the LM.
         hypotheses_updater_class: The type of hypotheses updater to associate with the
             LM.
         hypotheses_updater_args: Dictionary of configuration parameters for the
@@ -173,8 +172,7 @@ class EvidenceGraphLM(GraphLM):
         max_nodes_per_graph=2000,
         num_model_voxels_per_dim=50,  # -> voxel size = 6mm3 (0.006)
         use_multithreading=True,
-        gsg_class=EvidenceGoalStateGenerator,
-        gsg_args=None,
+        gsg: EvidenceGoalStateGenerator | None = None,
         hypotheses_updater_class: type[HypothesesUpdater] = DefaultHypothesesUpdater,
         hypotheses_updater_args: dict | None = None,
         *args,
@@ -189,12 +187,10 @@ class EvidenceGraphLM(GraphLM):
             max_graph_size=max_graph_size,
             num_model_voxels_per_dim=num_model_voxels_per_dim,
         )
-        if gsg_class is not None:
-            gsg_args = gsg_args or {}
-            self.gsg = gsg_class(self, **gsg_args)
-            self.gsg.reset()
-        else:
-            self.gsg = None
+        self.gsg = gsg
+        if self.gsg:
+            self.gsg.parent_lm = self
+
         # --- Matching Params ---
         self.max_match_distance = max_match_distance
         self.tolerances = tolerances
