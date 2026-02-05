@@ -489,11 +489,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             #       the object using its full repertoire of actions.
             self.motor_system._policy.touch_search_amount = 0
 
-        observation, state = self.env.step(actions)
-        if self.transform is not None:
-            observation = self.apply_transform(self.transform, observation, state)
-        motor_system_state = MotorSystemState(state)
-        self._observation = observation
+        self._observation, proprioceptive_state = self._step(actions)
+        motor_system_state = MotorSystemState(proprioceptive_state)
 
         # TODO: Refactor this so that all of this is contained within the
         #       SurfacePolicy and/or positioning procedure.
