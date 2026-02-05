@@ -10,7 +10,7 @@ config:
     motor_system_config:
       motor_system_args:
         policy_args:
-          action_sampler_args:
+          action_sampler:
             translation_distance: 0.05
           desired_object_distance: 0.025
           alpha: 0.0  # Overwrite default of 0.1

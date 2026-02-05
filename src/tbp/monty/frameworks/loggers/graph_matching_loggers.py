@@ -15,6 +15,7 @@ import pandas as pd
 import wandb
 from sklearn.preprocessing import LabelEncoder
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
 from tbp.monty.frameworks.utils.logging_utils import (
     get_stats_per_lm,
@@ -235,9 +236,11 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         self.data["BASIC"][f"{mode}_timing"][episode] = logger_time
         self.data["BASIC"][f"{mode}_stats"][episode]["target"] = target_dict
 
-    def update_overall_stats(self, mode, episode, episode_steps, monty_matching_steps):
+    def update_overall_stats(
+        self, mode: ExperimentMode, episode, episode_steps, monty_matching_steps
+    ) -> None:
         """Update overall run stats for mode."""
-        if mode == "train":
+        if mode is ExperimentMode.TRAIN:
             stats = self.overall_train_stats
         else:
             stats = self.overall_eval_stats
@@ -299,7 +302,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         stats["num_episodes"] += 1
 
     def get_formatted_overall_stats(self, mode, episode):
-        if mode == "train":
+        if mode is ExperimentMode.TRAIN:
             stats = self.overall_train_stats
         else:
             stats = self.overall_eval_stats
@@ -564,7 +567,7 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
             lm_dict.update(lm.buffer.features)
             lm_dict.update({"displacements": lm.buffer.displacements})
             lm_dict.update(lm.buffer.stats)
-            lm_dict.update(mode=model.experiment_mode)
+            lm_dict.update(mode=model.experiment_mode.value)
             lm_dict.update({"stepwise_targets_list": lm.stepwise_targets_list})
             buffer_data[f"LM_{i}"] = lm_dict  # NOTE: probably same for all LMs
 

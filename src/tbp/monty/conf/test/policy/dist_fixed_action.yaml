@@ -8,6 +8,6 @@ config:
     motor_system_config:
       motor_system_args:
         policy_args:
-          action_sampler_args:
+          action_sampler:
             actions:
               - ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}

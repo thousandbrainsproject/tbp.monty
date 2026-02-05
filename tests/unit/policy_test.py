@@ -10,6 +10,8 @@
 
 import pytest
 
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -23,7 +25,7 @@ import habitat_sim.utils as hab_utils
 import hydra
 import numpy as np
 import quaternion as qt
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
@@ -66,9 +68,7 @@ class PolicyTest(unittest.TestCase):
                 ],
             )
 
-        with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.base_dist_cfg = hydra_config("base_dist")
             self.base_surf_cfg = hydra_config("base_surf")
             self.spiral_cfg = hydra_config("spiral")
@@ -247,7 +247,7 @@ class PolicyTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.pre_episode()
 
@@ -297,7 +297,7 @@ class PolicyTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.dist_fixed_action_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
 
             # Only do a single episode
@@ -405,7 +405,7 @@ class PolicyTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.surf_fixed_action_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
 
             # Only do a single episode
@@ -544,7 +544,7 @@ class PolicyTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.rotated_cube_view_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.pre_episode()
 
@@ -593,7 +593,7 @@ class PolicyTest(unittest.TestCase):
         Note these movements are not actually performed, i.e. they represent
         hypothetical outputs from the motor-system.
         """
-        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
         policy_class = motor_system_cfg["motor_system_args"]["policy_class"]
         policy_args = motor_system_cfg["motor_system_args"]["policy_args"]
         policy_args["max_pc_bias_steps"] = 2
@@ -709,7 +709,7 @@ class PolicyTest(unittest.TestCase):
         such as checks to avoid doubling back on ourself, and how to handle when the
         proposed PC points in the z direction (i.e. towards or away from the agent).
         """
-        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
 
         policy_class = motor_system_cfg["motor_system_args"]["policy_class"]
         policy_args = motor_system_cfg["motor_system_args"]["policy_args"]
@@ -929,7 +929,7 @@ class PolicyTest(unittest.TestCase):
         """
         lm, gsg_args = self.initialize_lm_with_gsg()
 
-        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
         motor_system_class = motor_system_cfg["motor_system_class"]
         motor_system_args = motor_system_cfg["motor_system_args"]
         policy_class = motor_system_args["policy_class"]
