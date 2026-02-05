@@ -69,7 +69,7 @@ class SensorModuleTest(unittest.TestCase):
             step = 0
             ctx = RuntimeContext(rng=exp.rng)
             while True:
-                observations = exp.env_interface.step(ctx)
+                observations = exp.env_interface.step(ctx, first=(step == 0))
                 exp.model.step(observations)
                 if step == 1:
                     break
@@ -86,7 +86,7 @@ class SensorModuleTest(unittest.TestCase):
             exp.pre_epoch()
             exp.pre_episode()
             ctx = RuntimeContext(rng=exp.rng)
-            observations = exp.env_interface.step(ctx)
+            observations = exp.env_interface.step(ctx, first=True)
             exp.model.aggregate_sensory_inputs(observations)
 
             # Dig the features list out of the hydra config

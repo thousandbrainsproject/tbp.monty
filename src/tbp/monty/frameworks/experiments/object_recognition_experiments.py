@@ -104,7 +104,8 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
             try:
                 observations = self.env_interface.step(ctx, first=(step == 0))
             except StopIteration:
-                break
+                self.model.set_is_done()
+                return step
 
             if self.show_sensor_output:
                 is_saccade_on_image_data_loader = isinstance(
