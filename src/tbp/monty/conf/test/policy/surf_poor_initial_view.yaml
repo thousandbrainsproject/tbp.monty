@@ -1,5 +1,5 @@
 defaults:
-  - /test/policy/dist_poor_initial_view@
+  - /test/policy/base_dist@
   - /experiment/config/monty/clear_monty_config@config
   - /experiment/config/monty/surface_and_view@config.monty_config
   - /experiment/config/environment/clear_env_interface_config@config
@@ -10,7 +10,7 @@ config:
     motor_system_config:
       motor_system_args:
         policy_args:
-          action_sampler_args:
+          action_sampler:
             translation_distance: 0.05
           desired_object_distance: 0.025
           alpha: 0.0

@@ -10,6 +10,8 @@
 
 import pytest
 
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -23,7 +25,7 @@ import habitat_sim.utils as hab_utils
 import hydra
 import numpy as np
 import quaternion as qt
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
@@ -43,9 +45,6 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
 )
 from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
-)
-from tbp.monty.frameworks.models.motor_policies import (
-    get_perc_on_obj_semantic,
 )
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
@@ -69,9 +68,7 @@ class PolicyTest(unittest.TestCase):
                 ],
             )
 
-        with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.base_dist_cfg = hydra_config("base_dist")
             self.base_surf_cfg = hydra_config("base_surf")
             self.spiral_cfg = hydra_config("spiral")
@@ -81,11 +78,7 @@ class PolicyTest(unittest.TestCase):
             self.dist_hypo_driven_multi_lm_cfg = hydra_config(
                 "dist_hypo_driven_multi_lm"
             )
-            self.dist_poor_initial_view_cfg = hydra_config("dist_poor_initial_view")
             self.surf_poor_initial_view_cfg = hydra_config("surf_poor_initial_view")
-            self.poor_initial_view_multi_object_cfg = hydra_config(
-                "poor_initial_view_multi_object"
-            )
             self.dist_fixed_action_cfg = hydra_config("dist_fixed_action")
             self.surf_fixed_action_cfg = hydra_config("surf_fixed_action")
             self.rotated_cube_view_cfg = hydra_config("rotated_cube_view")
@@ -242,54 +235,6 @@ class PolicyTest(unittest.TestCase):
         )
         return graph_lm, gsg_args
 
-    def test_get_good_view_basic_dist_agent(self):
-        """Test ability to move a distant agent to a good view of an object.
-
-        Given a substandard view of an object, the "experimenter" (via agent actions)
-        can move a distant agent to a good view of the object before beginning the
-        experiment.
-
-        In this basic version, the object is a bit too far away, and so the agent
-        moves forward
-        """
-        exp = hydra.utils.instantiate(self.dist_poor_initial_view_cfg.test)
-        with exp:
-            exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
-            exp.pre_epoch()
-            exp.pre_episode()
-
-            # Check the initial view
-            observation = next(exp.env_interface)
-            # TODO M remove the following train-wreck during refactor
-            view = observation[exp.model.motor_system._policy.agent_id]["view_finder"]
-            semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
-            perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
-
-            config = self.dist_poor_initial_view_cfg.test.config
-
-            target_perc_on_target_obj = config["monty_config"]["motor_system_config"][
-                "motor_system_args"
-            ]["policy_args"]["good_view_percentage"]
-
-            assert perc_on_target_obj >= target_perc_on_target_obj, (
-                f"Initial view is not good enough, {perc_on_target_obj} "
-                f"vs target of {target_perc_on_target_obj}"
-            )
-
-            points_on_target_obj = semantic == 1
-            closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
-
-            target_closest_point = config["monty_config"]["motor_system_config"][
-                "motor_system_args"
-            ]["policy_args"]["desired_object_distance"]
-
-            # Utility policy should not have moved too close to the object
-            assert closest_point_on_target_obj > target_closest_point, (
-                f"Initial view is too close, {closest_point_on_target_obj} "
-                f"vs target of {target_closest_point}"
-            )
-
     def test_touch_object_basic_surf_agent(self):
         """Test ability to move a surface agent to touch an object.
 
@@ -302,7 +247,7 @@ class PolicyTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.pre_episode()
 
@@ -340,70 +285,6 @@ class PolicyTest(unittest.TestCase):
                 f"vs target of {target_closest_point}"
             )
 
-    def test_get_good_view_multi_object(self):
-        """Test ability to move a distant agent to a good view of an object.
-
-        Given a substandard view of an object, the "experimenter" (via agent actions)
-        can move a distant agent to a good view of the object before beginning the
-        experiment.
-
-        In this case, there are multiple objects, such that at the start of the
-        experiment, the target object is not visible in the central pixel of the view.
-        Thus, the policy must both turn towards the target object (using the
-        viewfinder), and move towards it.
-        """
-        exp = hydra.utils.instantiate(self.poor_initial_view_multi_object_cfg.test)
-        with exp:
-            exp.train()
-
-            # Manually go through evaluation (i.e. methods in .evaluate()
-            # and run_epoch())
-            exp.experiment_mode = ExperimentMode.EVAL
-            exp.model.set_experiment_mode("eval")
-            exp.pre_epoch()
-            exp.pre_episode()
-
-            # Check the initial view
-            observation = next(exp.env_interface)
-            # TODO M remove the following train-wreck during refactor
-            view = observation[exp.model.motor_system._policy.agent_id]["view_finder"]
-            semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
-            perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
-
-            config = self.poor_initial_view_multi_object_cfg.test.config
-
-            target_perc_on_target_obj = config["monty_config"]["motor_system_config"][
-                "motor_system_args"
-            ]["policy_args"]["good_view_percentage"]
-
-            assert perc_on_target_obj >= target_perc_on_target_obj, (
-                f"Initial view is not good enough, {perc_on_target_obj} "
-                f"vs target of {target_perc_on_target_obj}"
-            )
-
-            points_on_target_obj = semantic == 1
-            closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
-
-            target_closest_point = config["monty_config"]["motor_system_config"][
-                "motor_system_args"
-            ]["policy_args"]["desired_object_distance"]
-
-            # Utility policy should not have moved too close to the object
-            assert closest_point_on_target_obj > target_closest_point, (
-                f"Initial view is too close to target, {closest_point_on_target_obj}"
-                f" vs target of {target_closest_point}"
-            )
-
-            # Also calculate the closest point on *any* object so that we don't get
-            # too close and clip into objects; NB that any object will have a
-            # semantic ID > 0
-            points_on_any_obj = view["semantic"] > 0
-            closest_point_on_any_obj = np.min(view["depth"][points_on_any_obj])
-            assert closest_point_on_any_obj > target_closest_point / 6, (
-                f"Initial view too close to other objects, {closest_point_on_any_obj} "
-                f"vs target of {target_closest_point / 6}"
-            )
-
     def test_distant_policy_moves_back_to_object(self):
         """Test ability of distant agent to move back to an object.
 
@@ -416,7 +297,7 @@ class PolicyTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.dist_fixed_action_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
 
             # Only do a single episode
@@ -524,7 +405,7 @@ class PolicyTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.surf_fixed_action_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
 
             # Only do a single episode
@@ -663,7 +544,7 @@ class PolicyTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.rotated_cube_view_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.pre_episode()
 
@@ -712,7 +593,7 @@ class PolicyTest(unittest.TestCase):
         Note these movements are not actually performed, i.e. they represent
         hypothetical outputs from the motor-system.
         """
-        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
         policy_class = motor_system_cfg["motor_system_args"]["policy_class"]
         policy_args = motor_system_cfg["motor_system_args"]["policy_args"]
         policy_args["max_pc_bias_steps"] = 2
@@ -828,7 +709,7 @@ class PolicyTest(unittest.TestCase):
         such as checks to avoid doubling back on ourself, and how to handle when the
         proposed PC points in the z direction (i.e. towards or away from the agent).
         """
-        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
 
         policy_class = motor_system_cfg["motor_system_args"]["policy_class"]
         policy_args = motor_system_cfg["motor_system_args"]["policy_args"]
@@ -1048,7 +929,7 @@ class PolicyTest(unittest.TestCase):
         """
         lm, gsg_args = self.initialize_lm_with_gsg()
 
-        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
         motor_system_class = motor_system_cfg["motor_system_class"]
         motor_system_args = motor_system_cfg["motor_system_args"]
         policy_class = motor_system_args["policy_class"]

@@ -83,7 +83,7 @@ class FeatureGraphLM(GraphLM):
             graph_delta_thresholds=graph_delta_thresholds,
         )
         # make sure we extract pose dependent features because they
-        # are nescessary for the algorithm to work.
+        # are necessary for the algorithm to work.
         self.tolerances = add_pose_features_to_tolerances(tolerances)
         self.max_match_distance = max_match_distance
         self.path_similarity_threshold = path_similarity_threshold
@@ -152,7 +152,7 @@ class FeatureGraphLM(GraphLM):
         NOTE: Add object back into possible matches if majority of other modules
                 think it is correct? Could help with dealing with noise but may
                 also prevent LMs from narrowing down quickly. Since we are not
-                working with this LM anymore, we probably wont add that.
+                working with this LM anymore, we probably won't add that.
 
         Args:
             vote_data: positive and negative votes on object IDs + positive
@@ -323,9 +323,9 @@ class FeatureGraphLM(GraphLM):
             equals = np.equal(current_unique_poses, self.last_unique_poses)
             if np.hstack(equals).all():
                 self.symmetry_evidence += 1
-            else:  # has to be consequtive
+            else:  # has to be consecutive
                 self.symmetry_evidence = 0
-        else:  # has to be consequtive
+        else:  # has to be consecutive
             self.symmetry_evidence = 0
 
         if self._enough_symmetry_evidence_accumulated():
@@ -360,7 +360,7 @@ class FeatureGraphLM(GraphLM):
         self._remove_inconsistent_objects(consistent_objects)
 
     def _update_matches_using_features(self, features, displacement, graph_id):
-        """Use displacement to compare obseved features to possible graph features.
+        """Use displacement to compare observed features to possible graph features.
 
         At first observation (no displacement yet):
             Check which nodes in the graph are consistent with the observed features.

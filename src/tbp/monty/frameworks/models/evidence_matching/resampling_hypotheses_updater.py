@@ -142,15 +142,15 @@ class ResamplingHypothesesUpdater:
         """Initializes the ResamplingHypothesesUpdater.
 
         Args:
-            feature_weights: How much should each feature be weighted when
-                calculating the evidence update for hypothesis. Weights are stored in a
-                dictionary with keys corresponding to features (same as keys in
+            feature_weights: How much each feature should be weighted when
+                calculating the evidence update for a hypothesis. Weights are stored
+                in a dictionary with keys corresponding to features (same as keys in
                 tolerances).
             graph_memory: The graph memory to read graphs from.
-            max_match_distance: Maximum distance of a tested and stored location
-                to be matched.
-            tolerances: How much can each observed feature deviate from the
-                stored features to still be considered a match.
+            max_match_distance: Maximum distance between a tested location and a stored
+                location for them to be matched.
+            tolerances: How much each observed feature can deviate from the
+                stored features while still being considered a match.
             evidence_threshold_config: How to decide which hypotheses
                 should be updated. In the `ResamplingHypothesesUpdater` we always
                 update 'all' hypotheses. Hypotheses with decreasing evidence are deleted
@@ -160,7 +160,7 @@ class ResamplingHypothesesUpdater:
             feature_evidence_increment: Feature evidence (between 0 and 1) is
                 multiplied by this value before being added to the overall evidence of
                 a hypothesis. This factor is only multiplied with the feature evidence
-                (not the pose evidence as opposed to the present_weight). Defaults to 1.
+                (not the pose evidence, unlike the present_weight). Defaults to 1.
             features_for_matching_selector: Class to
                 select if features should be used for matching. Defaults to the default
                 selector.
@@ -179,21 +179,21 @@ class ResamplingHypothesesUpdater:
                 resampling telemetry in the `update_hypotheses` method. Defaults to
                 False.
             initial_possible_poses: Initial
-                possible poses that should be tested for. Defaults to "informed".
+                possible poses to test. Defaults to "informed".
             max_nneighbors: Maximum number of nearest neighbors to consider in the
                 radius of a hypothesis for calculating the evidence. Defaults to 3.
-            past_weight: How much should the evidence accumulated so far be
+            past_weight: How much the evidence accumulated so far should be
                 weighted when combined with the evidence from the most recent
                 observation. Defaults to 1.
-            present_weight: How much should the current evidence be weighted
+            present_weight: How much the current evidence should be weighted
                 when added to the previous evidence. If past_weight and present_weight
                 add up to 1, the evidence is bounded and can't grow infinitely. Defaults
                 to 1.
-                NOTE: right now this doesn't give as good performance as with unbounded
+                NOTE: Right now this doesn't give as good performance as with unbounded
                 evidence since we don't keep a full history of what we saw. With a more
-                efficient policy and better parameters that may be possible to use
-                though and could help when moving from one object to another and to
-                generally make setting thresholds etc. more intuitive.
+                efficient policy and better parameters, that may be possible to use and
+                could help when moving from one object to another and generally make
+                setting thresholds more intuitive.
             umbilical_num_poses: Number of sampled rotations in the direction of
                 the plane perpendicular to the surface normal. These are sampled at
                 umbilical points (i.e., points where PC directions are undefined).
@@ -292,14 +292,14 @@ class ResamplingHypothesesUpdater:
     ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
-        Updates existing hypothesis space or initializes a new hypothesis space
+        Updates the existing hypothesis space or initializes a new hypothesis space
         if one does not exist (i.e., at the beginning of the episode). Updating the
-        hypothesis space includes displacing the hypotheses possible locations, as well
+        hypothesis space includes displacing the hypotheses' possible locations, as well
         as updating their evidence scores. This process is repeated for each input
         channel in the graph.
 
         Args:
-            hypotheses: Hypotheses for all input channels in the graph_id
+            hypotheses: Hypotheses for all input channels in the graph
             features: Input features
             displacements: Given displacements
             graph_id: Identifier of the graph being updated
@@ -308,7 +308,7 @@ class ResamplingHypothesesUpdater:
             evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            A tuple containing the list of hypotheses updates to be applied to each
+            A tuple containing the list of hypothesis updates to be applied to each
             input channel and hypotheses update telemetry for analysis. The hypotheses
             update telemetry is a dictionary containing:
                 - added_ids: IDs of hypotheses added during resampling at the current
@@ -317,7 +317,7 @@ class ResamplingHypothesesUpdater:
                 - evidence_slopes: The slopes extracted from the `EvidenceSlopeTracker`.
                 - removed_ids: IDs of hypotheses removed during resampling. Note that
                     these IDs can only be used to index hypotheses from the previous
-                    timestep.
+                    time step.
         """
         # Initialize a `EvidenceSlopeTracker` to keep track of evidence slopes
         # for hypotheses of a specific graph_id
@@ -693,7 +693,7 @@ class ResamplingHypothesesUpdater:
                 ]
             )
 
-        # newly sampled hypotheses cannot be possible
+        # Newly sampled hypotheses cannot be marked as possible
         possible_hyp = np.zeros_like(selected_feature_evidence, dtype=np.bool_)
 
         # Add hypotheses to slope trackers

@@ -27,6 +27,7 @@ from torch_geometric.data import Data
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import find_step_on_new_object
 from tbp.monty.frameworks.utils.plot_utils import (
@@ -111,7 +112,7 @@ def plot_graph(
 def get_model_id(epoch, mode):
     if epoch == 0:
         model_id = "pretrained"
-    elif mode == "eval":
+    elif mode is ExperimentMode.EVAL:
         model_id = str(epoch)
     else:
         model_id = str(epoch - 1)
