@@ -174,8 +174,6 @@ class BasePolicy(MotorPolicy):
         self.timestep = 0
         self.episode_step = 0
         self.episode_count = 0
-        # Ensure our first action only samples from those that can be random
-        self.action: Action | None = self.get_random_action()
 
         ###
         # Load data for predefined actions and amounts if specified
@@ -230,7 +228,6 @@ class BasePolicy(MotorPolicy):
     def post_action(
         self, action: Action | None, _: MotorSystemState | None = None
     ) -> None:
-        self.action = action
         self.timestep += 1
         self.episode_step += 1
         self.action_sequence.append([action])
@@ -380,7 +377,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         desired_object_distance,
         use_goal_state_driven_actions=False,
         **kwargs,
-    ):
+    ) -> None:
         """Initialize policy.
 
         Args:
@@ -400,6 +397,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
+        self.action: Action | None = None
         self.min_perc_on_obj = min_perc_on_obj
         self.good_view_percentage = good_view_percentage
         self.desired_object_distance = desired_object_distance
