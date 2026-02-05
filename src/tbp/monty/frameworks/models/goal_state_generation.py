@@ -10,15 +10,18 @@
 from __future__ import annotations
 
 import logging
+import typing
 
 import numpy as np
 
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     GoalStateGenerator,
 )
-from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.utils.communication_utils import get_state_from_channel
+
+if typing.TYPE_CHECKING:
+    from tbp.monty.frameworks.models.graph_matching import GraphLM
 
 __all__ = [
     "EvidenceGoalStateGenerator",
@@ -71,7 +74,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             **kwargs: Additional keyword arguments. Unused.
         """
         # Do not access directly, use the property defined below.
-        self._parent_lm = None
+        self._parent_lm: GraphLM | None = None
 
         if goal_tolerances is None:
             self.goal_tolerances = dict(
