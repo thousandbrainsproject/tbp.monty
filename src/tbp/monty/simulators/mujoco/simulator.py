@@ -94,17 +94,17 @@ class MuJoCoSimulator(Simulator):
         rotation: QuaternionWXYZ,
         scale: VectorXYZ,
     ) -> None:
-        """Adds a builtin MuJoCo primitive geom to the scene spec.
+        """Adds a built-in MuJoCo primitive geom to the scene spec.
 
         Arguments:
             obj_name: Identifier for the object in the scene, must be unique.
             shape_type: The primitive shape to add.
-            position: Initial position of the object
-            rotation: Initial orientation of the object
-            scale: Initial scale of the object
+            position: Initial position of the object.
+            rotation: Initial orientation of the object.
+            scale: Initial scale of the object.
 
         Raises:
-            UnknownShapeType: when the shape_type is unknown
+            UnknownShapeType: When the shape_type is unknown.
         """
         world_body: MjsBody = self.spec.worldbody
 

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -50,7 +52,7 @@ class RunParallelTest(unittest.TestCase):
                 )
             return hydra.compose(config_name="experiment", overrides=overrides)
 
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.supervised_pre_training_cfg = hydra_config(
                 "supervised_pre_training", self.output_dir
             )

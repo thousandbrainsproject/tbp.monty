@@ -9,11 +9,10 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 import numpy as np
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 
@@ -44,7 +43,7 @@ class MotorSystem:
         """Pre episode hook."""
         self._policy.pre_episode(rng)
 
-    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+    def set_experiment_mode(self, mode: ExperimentMode) -> None:
         """Sets the experiment mode.
 
         Args:

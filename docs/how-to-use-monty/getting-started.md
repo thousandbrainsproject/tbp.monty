@@ -108,11 +108,11 @@ Note that by the time you read that, there may be more or less unit tests in the
 
 # 4. Run an Experiment
 
-In your usual interaction with this code base, you will most likely run experiments, not just unit tests. You can find experiment configs in the `conf/experiment` folder.
+In your usual interaction with this code base, you will most likely run experiments, not just unit tests. You can find experiment configs in the `src/tbp/monty/conf/experiment` folder.
 
 ## 4.1 Download the YCB Dataset
 
-A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, run 
+A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, run
 
 ```
 python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
@@ -209,7 +209,7 @@ Now you can finally run an experiment! To do this, simply use this command:
 python run.py experiment=my_experiment
 ```
 
-Replace `my_experiment` with the name of one of the experiment configs in `conf/experiment`. For example, a good one to start with could be `randrot_noise_10distinctobj_surf_agent`.
+Replace `my_experiment` with the name of one of the experiment configs in `src/tbp/monty/conf/experiment`. For example, a good one to start with could be `randrot_noise_10distinctobj_surf_agent`.
 
 If you want to run an experiment with parallel processing to make use of multiple CPUs, simply use the `run_parallel.py` script instead of the `run.py` script like this:
 

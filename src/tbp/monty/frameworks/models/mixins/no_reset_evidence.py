@@ -32,13 +32,18 @@ class HypothesesUpdaterChannelTelemetry:
 
     hypotheses_updater: dict[str, Any]
     """Any telemetry from the hypotheses updater."""
+
     evidence: npt.NDArray[np.float64]
     """The hypotheses evidence scores."""
-    rotations: npt.NDArray[np.float64]
-    """Rotations of the hypotheses.
 
+    rotations: npt.NDArray[np.float64]
+    """Rotations of the hypotheses."""
+
+<<<<<<< fix-spelling-in-models-mixins
     Note that the buffer encoder will encode those as Euler "xyz" rotations in degrees.
     """
+=======
+>>>>>>> main
     locations: npt.NDArray[np.float64]
     """Locations of the hypotheses."""
 
@@ -103,7 +108,7 @@ class TheoreticalLimitLMLoggingMixin:
         """
         assert isinstance(self, EvidenceGraphLM)
 
-        stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items()}
+        stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items() if len(v)}
         stats["target_object_theoretical_limit"] = (
             self._theoretical_limit_target_object_pose_error()
         )
@@ -143,6 +148,16 @@ class TheoreticalLimitLMLoggingMixin:
         assert isinstance(self, EvidenceGraphLM)
 
         mapper = self.channel_hypothesis_mapping[graph_id]
+
+        if input_channel not in mapper.channels:
+            return HypothesesUpdaterChannelTelemetry(
+                hypotheses_updater=channel_telemetry.copy(),
+                evidence=np.empty(shape=(0,), dtype=np.float64),
+                rotations=np.empty(shape=(0, 3), dtype=np.float64),
+                locations=np.empty(shape=(0, 3), dtype=np.float64),
+                pose_errors=np.empty(shape=(0,), dtype=np.float64),
+            )
+
         channel_rotations = mapper.extract(self.possible_poses[graph_id], input_channel)
         channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
         channel_evidence = mapper.extract(self.evidence[graph_id], input_channel)
@@ -153,7 +168,7 @@ class TheoreticalLimitLMLoggingMixin:
         return HypothesesUpdaterChannelTelemetry(
             hypotheses_updater=channel_telemetry.copy(),
             evidence=channel_evidence,
-            rotations=channel_rotations_inv,
+            rotations=channel_rotations_inv.as_euler("xyz", degrees=True),
             locations=channel_locations,
             pose_errors=cast(
                 "npt.NDArray[np.float64]",
@@ -184,9 +199,12 @@ class TheoreticalLimitLMLoggingMixin:
         """
         assert isinstance(self, EvidenceGraphLM)
 
-        hyp_rotations = Rotation.from_matrix(
-            self.possible_poses[self.primary_target]
-        ).inv()
+        object_possible_poses = self.possible_poses[self.primary_target]
+        if not len(object_possible_poses):
+            return -1
+
+        hyp_rotations = Rotation.from_matrix(object_possible_poses).inv()
+
         target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
         return compute_pose_error(hyp_rotations, target_rotation)
 

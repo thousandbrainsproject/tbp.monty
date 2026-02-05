@@ -53,7 +53,7 @@ class OmniglotEnvironment(SimulatedEnvironment):
 
         Args:
             patch_size: height and width of patch in pixels, defaults to 10
-            data_path: path to the omniglot dataset. If None its set to
+            data_path: path to the omniglot dataset. If None, defaults to
                 ~/tbp/data/omniglot/python/
         """
         self.patch_size = patch_size
@@ -83,8 +83,8 @@ class OmniglotEnvironment(SimulatedEnvironment):
         move in increments specified by amount through this list. Overall there are
         usually several hundred points (~200-400) but it varies between characters and
         versions.
-        If the reach the end of a move path and the episode is not finished, we start
-        from the beginning again. If len(move_path) % amount != 0 we will sample
+        If we reach the end of a move path and the episode is not finished, we start
+        from the beginning again. If len(move_path) % amount != 0, we will sample
         different points on the second pass.
 
         Args:
@@ -266,7 +266,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
 
         Args:
             patch_size: height and width of patch in pixels, defaults to 64
-            data_path: path to the image dataset. If None its set to
+            data_path: path to the image dataset. If None, defaults to
                 ~/tbp/data/worldimages/labeled_scenes/
         """
         self.patch_size = patch_size
@@ -418,8 +418,8 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         """Reset environment and extract image patch.
 
-        TODO: clean up. Do we need this? No reset required in this env interface, maybe
-        indicate this better here.
+        TODO: clean up. Do we need this? No reset is required in this environment
+          interface, so this should be indicated more clearly.
 
         Returns:
             The observation from the image patch.
@@ -463,7 +463,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
 
         Returns:
             current_depth_image: The depth image.
-            current_rgb_image: The rgb image.
+            current_rgb_image: The RGB image.
             start_location: The start location.
         """
         # Set data paths
@@ -504,7 +504,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         depth[np.isnan(depth)] = 10
 
         depth_clipped = depth.copy()
-        # Anything thats further away than 40cm is clipped
+        # Anything that's further away than 40cm is clipped
         # TODO: make this a hyperparameter?
         depth_clipped[depth > 0.4] = 10
         # flipping image makes visualization more intuitive. If we want to have this
@@ -517,7 +517,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         """Load RGB image and put into np array.
 
         Returns:
-            The rgb image.
+            The RGB image.
         """
         return np.array(
             PIL.Image.open(rgb_path)  # .transpose(PIL.Image.FLIP_TOP_BOTTOM)
@@ -572,7 +572,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             zooms=1,
             # hfov of iPad front camera from
             # https://developer.apple.com/library/archive/documentation/DeviceInformation/Reference/iOSDeviceCompatibility/Cameras/Cameras.html
-            # TODO: determine dynamically from which device is sending data
+            # TODO: determine dynamically which device is sending data
             hfov=54.201,
             get_all_points=True,
             use_semantic_sensor=False,
@@ -690,7 +690,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
 
         Args:
             patch_size: height and width of patch in pixels, defaults to 64
-            data_path: path to the image dataset. If None its set to
+            data_path: path to the image dataset. If None, defaults to
                 ~/tbp/data/worldimages/world_data_stream/
         """
         # TODO: use super() to avoid repeating lines of code
