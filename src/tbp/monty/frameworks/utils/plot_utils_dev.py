@@ -975,14 +975,14 @@ class PolicyPlot:
         )
 
         # If on a step associated with a failed jump, also visualize this
-        if self.jumps_used:
-            if (
-                episode_step
-                in self.detailed_stats[str(self.episode)]["motor_system"][
-                    "action_details"
-                ]["episode_step_for_jump"]
-            ):
-                self.check_failed_jump(episode_step)
+        if (
+            self.jumps_used
+            and episode_step
+            in self.detailed_stats[str(self.episode)]["motor_system"]["action_details"][
+                "episode_step_for_jump"
+            ]
+        ):
+            self.check_failed_jump(episode_step)
 
         # Additional, optional visualizations
         if self.extra_vis == "lm_processed":

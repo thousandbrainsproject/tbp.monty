@@ -230,8 +230,7 @@ class PolicyTest(unittest.TestCase):
                     "hsv": np.array([1, 0, 0]),
                 }
             },
-            gsg_class=EvidenceGoalStateGenerator,
-            gsg_args=gsg_args,
+            gsg=EvidenceGoalStateGenerator(**gsg_args),
         )
         return graph_lm, gsg_args
 
