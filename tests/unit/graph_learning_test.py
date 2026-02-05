@@ -351,8 +351,8 @@ class GraphLearningTest(BaseGraphTest):
             ].graph_memory.get_all_models_in_memory()
 
             # Loop over each graph model and check they have the exact same data
-            for obj_name in graph_memory_1.keys():
-                for input_channel in graph_memory_1[obj_name].keys():
+            for obj_name in graph_memory_1:
+                for input_channel in graph_memory_1[obj_name]:
                     graph_1 = graph_memory_1[obj_name][input_channel]
                     graph_2 = graph_memory_2[obj_name][input_channel]
                     self.check_graphs_equal(graph_1, graph_2)
@@ -546,7 +546,7 @@ class GraphLearningTest(BaseGraphTest):
             load_eval=True,
             load_detailed=True,
         )
-        for episode in lm_models.keys():
+        for episode in lm_models:
             self.assertEqual(
                 list(lm_models[episode]["LM_0"].keys()),
                 ["new_object0"],

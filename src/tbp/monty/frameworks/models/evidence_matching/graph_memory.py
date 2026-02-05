@@ -74,7 +74,7 @@ class EvidenceGraphMemory(GraphMemory):
 
         """
         self.models_in_memory[graph_id] = {}
-        for input_channel in model.keys():
+        for input_channel in model:
             channel_model = model[input_channel]
             try:
                 if not isinstance(channel_model, GridObjectModel):
