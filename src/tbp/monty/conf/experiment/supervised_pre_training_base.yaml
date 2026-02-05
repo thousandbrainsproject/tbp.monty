@@ -8,7 +8,7 @@ defaults:
   - config/monty/motor_system/clear_motor_system_config@config.monty_config
   # use spiral policy for more even object coverage during learning
   - config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
-  - config/monty/motor_system/policy/naive_scan@config.monty_config.motor_system_config.motor_system_args.policy_args
+  - config/monty/motor_system/policy/naive_scan@config.monty_config.motor_system_config.motor_system_args.policy
   - config/environment/patch_view_finder_mount_habitat@config.env_interface_config
   - config/environment_interface/per_object@config.train_env_interface_args
   - config/environment_interface/ycb/distinct_objects@config.train_env_interface_args.object_names
@@ -25,7 +25,7 @@ config:
       num_exploratory_steps: 500
     motor_system_config:
       motor_system_args:
-        policy_args:
+        policy:
           fixed_amount: 5
     learning_module_configs:
       learning_module_0:

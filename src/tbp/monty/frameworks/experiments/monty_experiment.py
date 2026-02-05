@@ -39,7 +39,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
     SensorModule,
 )
-from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
@@ -175,14 +174,7 @@ class MontyExperiment:
                 "motor_system_class must be a subclass of MotorSystem, got "
                 f"{motor_system_class}"
             )
-        policy_class = motor_system_args["policy_class"]
-        policy_args = motor_system_args["policy_args"]
-        if not issubclass(policy_class, MotorPolicy):
-            raise TypeError(
-                f"policy_class must be a subclass of MotorPolicy, got {policy_class}"
-            )
-        policy = policy_class(**policy_args)
-        motor_system = motor_system_class(policy=policy)
+        motor_system = motor_system_class(**motor_system_args)
 
         # Get mapping between sensor modules, learning modules and agents
         lm_len = len(learning_modules)

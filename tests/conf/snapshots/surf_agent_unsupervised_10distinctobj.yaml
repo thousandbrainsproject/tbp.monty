@@ -101,7 +101,7 @@ experiment:
     monty_config:
       motor_system_config:
         motor_system_args:
-          policy_args:
+          policy:
             file_name: null
             good_view_percentage: 0.5
             desired_object_distance: 0.025
@@ -116,7 +116,7 @@ experiment:
               - ${monty.class:tbp.monty.frameworks.actions.actions.OrientHorizontal}
               - ${monty.class:tbp.monty.frameworks.actions.actions.OrientVertical}
               _target_: tbp.monty.frameworks.actions.action_samplers.ConstantSampler
-          policy_class: ${monty.class:tbp.monty.frameworks.models.motor_policies.SurfacePolicy}
+            _target_: tbp.monty.frameworks.models.motor_policies.SurfacePolicy
         motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
       monty_args:
         num_exploratory_steps: 1000

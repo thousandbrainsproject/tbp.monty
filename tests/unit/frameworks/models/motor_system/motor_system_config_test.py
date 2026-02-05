@@ -11,6 +11,9 @@ import unittest
 import hydra
 
 from tbp.monty.frameworks.actions.action_samplers import ActionSampler
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.models.motor_policies import BasePolicy
+from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tests import HYDRA_ROOT
 
 
@@ -25,19 +28,17 @@ class MotorSystemConfigTest(unittest.TestCase):
         HYDRA_ROOT / "experiment" / "config" / "monty" / "motor_system"
     )
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         with hydra.initialize_config_dir(
-            config_dir=str(cls.MOTOR_SYSTEM_CONFIG), version_base=None
+            config_dir=str(self.MOTOR_SYSTEM_CONFIG), version_base=None
         ):
-            cls.motor_system_cfg = hydra.compose(config_name="defaults")
-            cls.motor_system = hydra.utils.instantiate(cls.motor_system_cfg)
+            self.motor_system_cfg = hydra.compose(config_name="defaults")
+            self.motor_system = hydra.utils.instantiate(self.motor_system_cfg)
 
     def test_default_config_instantiates_action_sampler(self):
         """Test that the default motor system config instantiates the ActionSampler."""
-        action_sampler = self.motor_system["motor_system_args"]["policy_args"][
-            "action_sampler"
-        ]
+        motor_policy = self.motor_system["motor_system_args"]["policy"]
+        action_sampler = motor_policy.action_sampler
         self.assertIsInstance(action_sampler, ActionSampler)
         # These values come from "action_space/distant_agent.yaml"
         self.assertListEqual(
@@ -45,18 +46,24 @@ class MotorSystemConfigTest(unittest.TestCase):
             ["look_up", "look_down", "turn_left", "turn_right"],
         )
 
-    def test_default_config_motor_policy_takes_action_sampler_instance(self):
-        """Test that the motor policy receives the same ActionSampler.
+    def test_default_config_instantiates_motor_policy(self):
+        """Test the default motor system config instantiates the MotorPolicy object."""
+        motor_policy = self.motor_system["motor_system_args"]["policy"]
 
-        The motor policy should be created with the same instance of the ActionSampler
+        self.assertIsInstance(motor_policy, BasePolicy)
+        self.assertEqual(motor_policy.agent_id, AgentID("agent_id_0"))
+
+    def test_default_config_motor_system_takes_motor_policy_instance(self):
+        """Test that the motor system receives the same motor policy.
+
+        The motor system should be created with the same instance of the MotorPolicy
         that the configuration instantiates for us.
         """
-        action_sampler = self.motor_system["motor_system_args"]["policy_args"][
-            "action_sampler"
-        ]
-        # TODO - change when we switch to instantiating the policy directly
-        motor_policy_class = self.motor_system["motor_system_args"]["policy_class"]
-        motor_policy_args = self.motor_system["motor_system_args"]["policy_args"]
-        motor_policy = motor_policy_class(**motor_policy_args)
+        motor_policy = self.motor_system["motor_system_args"]["policy"]
 
-        self.assertIs(motor_policy.action_sampler, action_sampler)
+        # TODO - change when we switch to instantiating the policy directly
+        motor_system_class = self.motor_system["motor_system_class"]
+        motor_system_args = self.motor_system["motor_system_args"]
+        motor_system: MotorSystem = motor_system_class(**motor_system_args)
+
+        self.assertIs(motor_system._policy, motor_policy)

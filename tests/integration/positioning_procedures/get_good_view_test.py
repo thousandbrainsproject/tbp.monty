@@ -58,11 +58,11 @@ class GetGoodViewTest(unittest.TestCase):
                 exp.pre_epoch()
                 exp.pre_episode()
 
-                policy_args = config.test.config["monty_config"]["motor_system_config"][
+                policy_cfg = config.test.config["monty_config"]["motor_system_config"][
                     "motor_system_args"
-                ]["policy_args"]
-                target_perc_on_target_obj = policy_args["good_view_percentage"]
-                target_closest_point = policy_args["desired_object_distance"]
+                ]["policy"]
+                target_perc_on_target_obj = policy_cfg["good_view_percentage"]
+                target_closest_point = policy_cfg["desired_object_distance"]
 
                 ctx = RuntimeContext(rng=exp.rng)
                 observation = exp.env_interface.step(ctx, first=True)
@@ -111,11 +111,11 @@ class GetGoodViewTest(unittest.TestCase):
                 exp.pre_epoch()
                 exp.pre_episode()
 
-                policy_args = config.test.config["monty_config"]["motor_system_config"][
+                policy_cfg = config.test.config["monty_config"]["motor_system_config"][
                     "motor_system_args"
-                ]["policy_args"]
-                target_perc_on_target_obj = policy_args["good_view_percentage"]
-                target_closest_point = policy_args["desired_object_distance"]
+                ]["policy"]
+                target_perc_on_target_obj = policy_cfg["good_view_percentage"]
+                target_closest_point = policy_cfg["desired_object_distance"]
 
                 ctx = RuntimeContext(rng=exp.rng)
                 observation = exp.env_interface.step(ctx, first=True)
