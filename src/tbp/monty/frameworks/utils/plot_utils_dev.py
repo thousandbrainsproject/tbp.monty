@@ -355,7 +355,7 @@ def show_one_step(
     model_features = lm_models[model_id][lm_num][object_to_inspect].x.numpy()
     model_normals = lm_models[model_id][lm_num][object_to_inspect].norm.numpy()
     model_f_mapping = lm_models[model_id][lm_num][object_to_inspect].feature_mapping
-    first_input_channel = list(model_f_mapping.keys())[0]
+    first_input_channel = next(iter(model_f_mapping.keys()))
 
     fig = plt.figure(figsize=(7, 7))
     fig.tight_layout()
