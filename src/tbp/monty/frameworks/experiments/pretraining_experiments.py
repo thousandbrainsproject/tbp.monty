@@ -15,6 +15,7 @@ import numpy as np
 from omegaconf import DictConfig, OmegaConf
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
 )
@@ -79,20 +80,27 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         if set(self.supervised_lm_ids) == set(all_lm_ids):
             self.model.switch_to_exploratory_step()
 
+        ctx = RuntimeContext(rng=self.rng)
+
         # Collect data about the object (exploratory steps)
         num_steps = 0
-        for observation in self.env_interface:
+        while True:
+            try:
+                observations = self.env_interface.step(ctx)
+            except StopIteration:
+                break
+
             num_steps += 1
             if self.show_sensor_output:
                 is_saccade_on_image_env_interface = isinstance(
                     self.env_interface, SaccadeOnImageEnvironmentInterface
                 )
                 self.live_plotter.show_observations(
-                    *self.live_plotter.hardcoded_assumptions(observation, self.model),
+                    *self.live_plotter.hardcoded_assumptions(observations, self.model),
                     num_steps,
                     is_saccade_on_image_env_interface,
                 )
-            self.model.step(observation)
+            self.model.step(observations)
             if self.model.is_done:
                 break
 

@@ -123,29 +123,6 @@ class EnvironmentInterface:
         self._counter = 0
         self.experiment_mode = experiment_mode
 
-    def __iter__(self) -> Self:
-        """Implement the iterator protocol.
-
-        Returns:
-            The iterator.
-        """
-        return self
-
-    def __next__(self):
-        if self._counter == 0:
-            # Return first observation after 'reset' before any action is applied
-            self._counter += 1
-            return self._observation
-
-        ctx = RuntimeContext(rng=self.rng)
-        actions = self.motor_system(ctx)
-        self._observation, proprioceptive_state = self.step(actions)
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-        )
-        self._counter += 1
-        return self._observation
-
     def reset(self, rng: np.random.RandomState):
         self.rng = rng
         observation, state = self.env.reset()
@@ -165,11 +142,20 @@ class EnvironmentInterface:
             observation = transform(observation, ctx)
         return observation
 
-    def step(self, actions: Sequence[Action]):
+    def step(self, ctx: RuntimeContext) -> Observations:
+        if self._counter == 0:
+            # Return first observation after 'reset' before any action is applied
+            self._counter += 1
+            return self._observation
+
+        actions = self.motor_system(ctx)
         observation, state = self.env.step(actions)
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, state
+        self.motor_system._state = MotorSystemState(state)
+        self._counter += 1
+        self._observation = observation
+        return self._observation
 
     def pre_episode(self, rng: np.random.RandomState):
         self.motor_system.pre_episode()
@@ -441,7 +427,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
     iv) Supports hypothesis-testing "jump" policy
     """
 
-    def __next__(self):
+    def step(self, ctx: RuntimeContext) -> Observations:
         if self._counter == 0:
             return self.first_step()
 
@@ -457,7 +443,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # NOTE: terminal conditions are now handled in experiment.run_episode loop
         attempting_to_find_object = False
         actions = []
-        ctx = RuntimeContext(self.rng)
         try:
             actions = self.motor_system(ctx)
         except ObjectNotVisible:
@@ -480,8 +465,11 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             #       the object using its full repertoire of actions.
             self.motor_system._policy.touch_search_amount = 0
 
-        self._observation, proprioceptive_state = self.step(actions)
-        motor_system_state = MotorSystemState(proprioceptive_state)
+        observation, state = self.env.step(actions)
+        if self.transform is not None:
+            observation = self.apply_transform(self.transform, observation, state)
+        motor_system_state = MotorSystemState(state)
+        self._observation = observation
 
         # TODO: Refactor this so that all of this is contained within the
         #       SurfacePolicy and/or positioning procedure.

@@ -21,6 +21,7 @@ import torch
 from omegaconf import DictConfig
 from typing_extensions import Self
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterface,
     EnvironmentInterfacePerObject,
@@ -493,12 +494,21 @@ class MontyExperiment:
     def run_episode(self):
         """Run one episode until model.is_done."""
         self.pre_episode()
-        for step, observation in enumerate(self.env_interface):
-            self.pre_step(step, observation)
-            self.model.step(observation)
-            self.post_step(step, observation)
+        step = 0
+        ctx = RuntimeContext(rng=self.rng)
+        while True:
+            try:
+                observations = self.env_interface.step(ctx)
+            except StopIteration:
+                break
+
+            self.pre_step(step, observations)
+            self.model.step(observations)
+            self.post_step(step, observations)
             if self.model.is_done or step >= self.max_steps:
                 break
+            step += 1
+
         self.post_episode(step)
 
     def pre_episode(self):
