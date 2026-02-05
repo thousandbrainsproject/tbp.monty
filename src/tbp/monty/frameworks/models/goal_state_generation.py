@@ -23,23 +23,23 @@ logger = logging.getLogger(__name__)
 
 
 class GraphGoalStateGenerator(GoalStateGenerator):
-    """Generate sub-goal states until the received goal state is achieved.
+    """Generate sub-Goals until the received Goal is achieved.
 
-    A component associated with each learning module that receives a high level goal
-    state, and generates sub-goal states until the received goal state is achieved.
+    A component (embedded in a learning module) that receives a high-level Goal and
+    generates sub-Goals until that Goal is achieved.
 
-    Generated goal-states are received by either:
-        i) other learning modules, which may model world-objects (e.g. a mug), or may
-        model internal systems (e.g. the agent's robotic limb)
-        ii) motor actuators, in which case they represent simpler, primitive goal-states
-        for the actuator to achieve (e.g. location and orientation of an actuator-sensor
-        pair)
+    Generated Goals are received by either:
+        i) other learning modules, which may model world objects (e.g., a mug) or
+        internal systems (e.g., the agent's robotic limb)
+        ii) motor actuators, in which case they represent simpler, primitive Goals
+        for the actuator to achieve (e.g., the location and orientation of an
+        actuator-sensor pair)
 
-    As well as the high-level, "driving" goal-state, generated goal-states can also be
-    conditioned on other information, such as the LMs current most-likely hypothesis,
-    and the structure of known object models (i.e. information local to the LM).
+    Alongside the high-level driving Goal, generated sub-Goals can also be
+    conditioned on other information such as the LM's current most-likely hypothesis
+    and the structure of known object models (i.e., information local to the LM).
 
-    Note all goal-states conform to the State-class cortical messaging protocol (CMP).
+    Note that all Goals conform to the State-class cortical messaging protocol (CMP).
     """
 
     def __init__(self, parent_lm, goal_tolerances=None, **_kwargs) -> None:
@@ -48,11 +48,10 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         Args:
             parent_lm: The learning-module class instance that the GSG is embedded
                 within.
-            goal_tolerances: The tolerances for each attribute of the goal-state
-                that can be used by the GSG when determining whether a goal-state is
-                achieved. These are not necessarily the same as an LM's tolerances used
-                for matching, as here we are evaluating whether a goal-state is
-                achieved.
+            goal_tolerances: The tolerances for each attribute of the Goal that can be
+                used by the GSG when determining whether a Goal is achieved. These are
+                not necessarily the same as an LM's tolerances used for matching, as
+                here we are evaluating whether a Goal is achieved.
             **kwargs: Additional keyword arguments. Unused.
         """
         self.parent_lm = parent_lm
@@ -86,27 +85,26 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         )
 
     def set_driving_goal_state(self, received_goal_state):
-        """Receive a new high-level goal to drive this goal-state-generator (GSG).
+        """Receive a new high-level Goal to drive this Goal State Generator (GSG).
 
-        If none is provided, the goal-state generator should default to pursuing a
-        goal-state of high confidence, with no other attributes of the state specified;
-        in other words, it attempts to reduce uncertainty about the LM's output
+        If none is provided, the GSG should default to pursuing a high confidence
+        Goal, with no other attributes of the state specified; in
+        other words, it attempts to reduce uncertainty about the LM's output
         (object ID and pose, whatever these may be).
 
-        TODO M: Currently GSGs always use the default, however future
-        work will implement hierarchical action policies/GSGs, as well as the ability to
-        specify a top goal-state by the experimenter.
+        TODO M: Currently GSGs always use the default, however future work will
+        implement hierarchical action policies/GSGs, as well as the ability to
+        specify a top Goal by the experimenter.
 
-        TODO M : we currently just use "None" as a placehodler for the default
-        goal-state
-        > plan : set the default driving goal-state to a meaningful, non-None value
-        that is compatible with the current method for checking convergence of an LM,
-        such that achieving the driving goal-state can be used as a test for Monty
+        TODO M: we currently just use "None" as a placeholder for the default Goal.
+        > plan : set the default driving Goal to a meaningful, non-None value
+        that is compatible with the current method for checking convergence of an
+        LM, such that achieving the driving Goal can be used as a test for Monty
         convergence. This might be something like the below.
         """
         # if received_goal_state is None:
-        #     # The current default goal-state, which is to reduce uncertainty; this is
-        #     # defined by having a high-confidence in the goal-state, and an arbitrary
+        #     # The current default Goal, which is to reduce uncertainty; this is
+        #     # defined by having a high-confidence in the Goal, and an arbitrary
         #     # single object ID.
         #     self.driving_goal_state = GoalState(
         #         location=None,
@@ -127,12 +125,12 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         self.driving_goal_state = received_goal_state
 
     def output_goal_states(self) -> list[GoalState]:
-        """Retrieve the output goal-states of the GSG.
+        """Retrieve the output Goals of the GSG.
 
-        This is the goal-state projected to other LM's GSGs +/- motor-actuators.
+        This is the Goal projected to other LMs' GSGs and/or motor actuators.
 
         Returns:
-            Output goal-states of the GSG if it exists, otherwise empty list.
+            Output Goals of the GSG if it exists, otherwise empty list.
         """
         return [self.output_goal_state] if self.output_goal_state else []
 
@@ -141,17 +139,17 @@ class GraphGoalStateGenerator(GoalStateGenerator):
     def step(self, observations):
         """Step the GSG.
 
-        Check whether the GSG's output and driving goal-states are achieved, and
-        generate a new output goal-state if necessary.
+        Check whether the GSG's output and driving Goals are achieved, and
+        generate a new output Goal if necessary.
         """
         output_goal_achieved = self._check_output_goal_state_achieved(observations)
 
         self._update_gsg_logging(output_goal_achieved)
 
-        # If driving goal-state achieved, from this LM's perspective, other LMs/GSGs
+        # If driving Goal achieved, from this LM's perspective, other LMs/GSGs
         # need not do anything
         # TODO M re-introduce when replacing the current check for convergence with
-        # achievement of the driving goal-state
+        # achievement of the driving Goal
         # if self._check_driving_goal_state_achieved():
         #     self._set_output_goal_state(
         #         new_goal_state=self._generate_none_goal_state()
@@ -173,31 +171,31 @@ class GraphGoalStateGenerator(GoalStateGenerator):
     # ------------------- Main Algorithm -----------------------
 
     def _generate_none_goal_state(self):
-        """Return a None-type goal state.
+        """Return a None-type Goal.
 
-        A None-type goal state specifies nothing other than high confidence.
+        A None-type Goal specifies nothing other than high confidence.
 
-        NOTE currently we just use a None value, however in the future we might specify
-        a GoalState object with a None value for the location, morphological features,
-        etc, or some variation of this.
+        NOTE: currently we just use a None value, however in the future we might
+        specify a GoalState object with a None value for the location, morphological
+        features, etc, or some variation of this.
         """
         return
 
     def _generate_goal_state(self, _observations):
-        """Generate a new goal-state to send out to other LMs and/or motor actuators.
+        """Generate a new Goal to send out to other LMs and/or motor actuators.
 
-        Given the driving goal-state, and information from the parent LM of the GSG
-        (including the current observations), generate a new goal-state to send out
-        to other LMs and/or motor actuators.
+        Given the driving Goal, and information from the parent LM of the GSG
+        (including the current observations), generate a new Goal to send out to
+        other LMs and/or motor actuators.
 
-        Note the output goal-state is in a common, body-centered frame of reference,
-        as for voting, such that different modules can mutually communicate.
+        Note the output Goal is in a common, body-centered frame of reference, as
+        for voting, such that different modules can mutually communicate.
 
-        This version is a base place-holder method that just returns a None goal-state,
-        and does not actually make use of observations or the driving-goal state.
+        This version is a base placeholder method that just returns a None Goal,
+        and does not actually make use of observations or the driving Goal.
 
         Returns:
-            A None-type goal state.
+            A None Goal.
         """
         return self._generate_none_goal_state()
 
@@ -215,8 +213,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         When checking whether the states are different, a dictionary must be passed
         of tolerances; in the GSG-class, this is typically the GSG's own default
         goal-tolerances that are used, but specific tolerances can also be passed
-        along with a goal-state itself (i.e. achieve this goal-state, to within these
-        tolerance bounds).
+        along with a Goal itself (i.e. achieve this Goal within these tolerance bounds).
 
         Note:
             If a state is undefined (None), we define a difference as unmeaningful and
@@ -226,7 +223,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
         TODO M consider making this a utility function, as might be useful in e.g. the
         LM itself as well. However, the significant presence of None/NaN values in
-        Goal States may mean we want to take a different appraoch.
+        Goals may mean we want to take a different approach.
 
         Returns:
             Whether the states are different.
@@ -273,16 +270,15 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         return states_different
 
     def _check_driving_goal_state_achieved(self) -> bool:
-        """Check if parent LM's output state is close enough to driving goal-state.
+        """Check if parent LM's output state is close enough to driving Goal.
 
         TODO M Move some of the checks for convergence here
 
         Returns:
-            Whether the parent LM's output state is close enough to the driving
-            goal-state.
+            Whether the parent LM's output state is close enough to the driving Goal.
         """
         if self.driving_goal_state.goal_tolerances is None:
-            # When not specified by the incoming driving-goal-state, use the GSG's own
+            # When not specified by the incoming driving Goal, use the GSG's own
             # default matching tolerances
             diff_tolerances = self.goal_tolerances
 
@@ -291,11 +287,11 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         )
 
     def _check_output_goal_state_achieved(self, observations) -> bool:
-        """Check if the output goal-state was achieved.
+        """Check if the output Goal was achieved.
 
-        Check whether the information entering the LM suggests that the output goal
-        state of the GSG was achieved. Recall that the output goal is the one sent by
-        this GSG to other LMs and motor-actuators to be achieved.
+        Check whether the information entering the LM suggests that the output Goal
+        of the GSG was achieved. Recall that the output Goal is the one sent by this
+        GSG to other LMs and motor-actuators to be achieved.
 
         Note:
             In the future we might use feedback from a receiving system that is not
@@ -303,17 +299,17 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             Instead, such feedback could include the state of an LM that controls a
             motor system (such as a hand model LM), or the state of a motor-actuator
             (akin to proprioceptive feedback); in this case, we could directly compare
-            the output goal-state to the state recived by this feedback, to determine
-            whether the goal-state was likely achieved. This input would likely come
+            the output Goal to the state received by this feedback to determine
+            whether the Goal was likely achieved. This input would likely come
             from a separate channel (similar to voting). Finally, note that this
-            information could be complimentary to feedback from the sensory input and
+            information could be complementary to feedback from the sensory input and
             our sensory predictions, as in some cases we might have no proprioceptive
             feedback, while in other cases we might have no sensory input (e.g.
             blindfolded); alignment or mismatch between these two could form useful
             signals for learning policies and object behaviors.
 
         Returns:
-            Whether the output goal-state was achieved.
+            Whether the output Goal was achieved.
         """
         if self.output_goal_state is not None:
             return self._check_input_matches_sensory_prediction(observations)
@@ -324,20 +320,20 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         """Check whether the input matches the sensory prediction.
 
         Here the sensory prediction is simply that the input state has changed, as
-        when the motor-system attempts to achieve a goal-state and fails (e.g. due
-        to collision with another object), it moves back to the original position.
+        when the motor-system attempts to achieve a Goal and fails (e.g. due to
+        collision with another object), it moves back to the original position.
 
-        Note that there can still be some difference even when a goal-state
-        failed, as the feature-change-SM and motor-only steps can result in the agent
-        moving after it has returned to its original position. Futhermore, there may
-        not always be a difference if the agent did "succeed", if the goal-state
-        it wanted to acheive happened to be very close to its original position. Thus
-        this is an approximate method.
+        Note that there can still be some difference even when a Goal fails, as the
+        feature-change-SM and motor-only steps can result in the agent moving after it
+        has returned to its original position. Furthermore, there may not always be a
+        difference if the agent did "succeed", if the Goal it wanted to achieve
+        happened to be very close to its original position. Thus this is an
+        approximate method.
 
-        TODO M implement also using the target goal-state and internal model
-        to predict a specific input state, and then compare to that to determine
-        not just whether a movement took place, but whether the agent moved to a
-        particular point on a particular object.
+        TODO M: Implement also using the target Goal and internal model to predict a
+        specific input state, and then compare to that to determine not just whether
+        a movement took place, but whether the agent moved to a particular point on a
+        particular object.
 
         Returns:
             Whether the input matches the sensory prediction.
@@ -358,7 +354,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             previous_sensory_input = None
         # NB if no history of inputs, get_previous_input_states returns None, in which
         # case _check_states_different will return False, and we return goal_achieved as
-        # False, as we cannot meaningfully evaluate whether this occured
+        # False, as we cannot meaningfully evaluate whether this occurred
 
         return self._check_states_different(
             current_sensory_input,
@@ -367,13 +363,13 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         )
 
     def _check_need_new_output_goal(self, output_goal_achieved) -> bool:
-        """Determine whether the GSG should generate a new output goal-state.
+        """Determine whether the GSG should generate a new output Goal.
 
         In the base version, this is True if the output-goal was achieved, suggesting
         we should move on to the next goal.
 
         Returns:
-            Whether the GSG should generate a new output goal-state.
+            Whether the GSG should generate a new output Goal.
         """
         return bool(output_goal_achieved)
 
@@ -418,19 +414,19 @@ class GraphGoalStateGenerator(GoalStateGenerator):
     # ------------------ Getters, Setters & Logging ---------------------
 
     def _set_output_goal_state(self, new_goal_state):
-        """Set the output goal-state of the GSG."""
+        """Set the output Goal of the GSG."""
         self.output_goal_state = new_goal_state
 
     def _update_gsg_logging(self, output_goal_achieved: bool):
         """Update any logging information (stored in the parent LM's buffer).
 
         Update any logging information (stored in the parent LM's buffer), such as
-        the matching step on which an output goal-state was output.
+        the matching step on which an output Goal was output.
         """
         # Only consider output-state achieved for the purpose of logging when the
-        # output-goal state is meaningful (i.e. not None)
+        # output Goal is meaningful (i.e. not None)
         if self.output_goal_state is not None:
-            # Subtract 1 as the goal-state was actually set (and potentially achieved)
+            # Subtract 1 as the Goal was actually set (and potentially achieved)
             # on the previous step, we are simply first checking it now
 
             match_step = self.parent_lm.buffer.get_num_matching_steps() - 1
@@ -451,9 +447,9 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
 
 class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
-    """Generator of goal states for an evidence-based graph LM.
+    """Generator of Goals for an evidence-based graph LM.
 
-    GSG specifically setup for generating goal states for an evidence-based graph LM,
+    GSG specifically set up for generating Goals for an evidence-based graph LM,
     which can therefore leverage the hypothesis-testing action policy. This policy uses
     hypotheses about the most likely objects, as well as knowledge of their structure
     from long-term memory, to propose test-points that should efficiently disambiguate
@@ -481,21 +477,22 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             parent_lm: ?
             goal_tolerances: ?
             elapsed_steps_factor: Factor that considers the number of elapsed
-                steps as a possible condition for initiating a hypothesis-testing goal
-                state; should be set to an integer reflecting a number of steps. In
-                general, when we have taken number of non-goal-state driven steps
-                greater than elapsed_steps_factor, then this is an indiciation to
-                initiate a hypothesis-testing goal-state. In addition however, we can
-                multiply elapsed_steps_factor by an exponentiall increasing wait-factor,
-                such that we use longer and longer intervals as the experiment
+                steps as a possible condition for initiating a hypothesis-testing Goal;
+                should be set to an integer reflecting a number of steps. In general,
+                when we have taken number of non-Goal-driven steps
+                greater than elapsed_steps_factor, then this is an indication to
+                initiate a hypothesis-testing Goal. In addition however, we can
+                multiply elapsed_steps_factor by an exponentially increasing
+                wait-factor, such that we use longer and longer intervals as the
+                experiment
                 continues. Defaults to 10.
             min_post_goal_success_steps: Number of necessary steps for a hypothesis
-                goal-state to be considered. Unlike elapsed_steps_factor, this is a
-                *necessary* criteria for us to generate a new hypothesis-testing
-                goal-state. For example, if set to 5, then the agent must take 5
+                Goal to be considered. Unlike elapsed_steps_factor, this is a
+                *necessary* criteria for us to generate a new hypothesis-testing Goal.
+                For example, if set to 5, then the agent must take 5
                 non-hypothesis-testing steps before it can even consider generating a
-                new hypothesis-testing goal-state. Infinity by default, resulting in no
-                use of the hypothesis-testing policy (desirable for unit tests etc.).
+                new hypothesis-testing Goal. Infinity by default, resulting in no use
+                of the hypothesis-testing policy (desirable for unit tests etc.).
                 Defaults to np.infty.
             x_percent_scale_factor: Scale x-percent threshold to decide when to focus
                 on pose rather than determining object ID; in particular, this is used
@@ -549,13 +546,13 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
     # ------------------- Main Algorithm -----------------------
 
     def _generate_goal_state(self, observations) -> list:
-        """Use the hypothesis-testing policy to generate a goal-state.
+        """Use the hypothesis-testing policy to generate a Goal.
 
-        The goal-state will rapidly disambiguate the pose and/or ID of the object the
+        The Goal will rapidly disambiguate the pose and/or ID of the object the
         LM is currently observing.
 
         Returns:
-            A goal-state for the motor system.
+            A Goal for the motor system.
         """
         # Determine where we want to test in the MLH graph
         target_loc_id = self._compute_graph_mismatch()
@@ -563,11 +560,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # Get pose information for the target point
         target_info = self._get_target_loc_info(target_loc_id)
 
-        # Estimate how important this goal-state will be for the Monty-system as a
+        # Estimate how important this Goal will be for the Monty-system as a
         # whole
         goal_confidence = self.parent_lm.get_output().confidence
 
-        # Compute the goal-state (for the motor-actuator)
+        # Compute the Goal (for the motor-actuator)
         return self._compute_goal_state_for_target_loc(
             observations,
             target_info,
@@ -580,7 +577,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         The aim is to propose a point for the model to test, with the aim of performing
         object pose and ID recognition, by looking at the graph of the most likely
         object, and comparing it to the graph of the second most likely object. If there
-        is a local mismatch in the graphs (e.g. the presense of a handle in one and not
+        is a local mismatch in the graphs (e.g. the presence of a handle in one and not
         the other), this should return the necessary coordinates to move there.
 
         Returns the index of the point in the graph of the most likely object that
@@ -603,15 +600,16 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         distance to estimate which of these approaches would be better.
         - i.e. imagine 2nd MLH is a mug with a handle, and MLH has no handle; when
         checking all the points for the handleless mug, there will always be nearby
-        points
-        - Re. implementing this : could start with the MLH as the query points, looking
+        points.
+        - Re. implementing this: could start with the MLH as the query points, looking
         for points with minimal neighbors with the 2nd most likely graph; if found
-        too many neighbors in a given radius (threshold dependent), this suggest the 1st
-        MLH graph is a sub-graph of the 2nd MLH; therefore, check whether the 2nd graph
-        has any points with few neighbors with the first; if still many neighbors, this
-        could then serve as a learning signal to merge the graphs? (at least at some
-        levels of hierarchy) --> NB merging should use "picky" graph-building method to
-        ensure we don't just double the number of points in the graph unecessarily
+        too many neighbors in a given radius (threshold dependent), this suggests
+        the 1st MLH graph is a sub-graph of the 2nd MLH; therefore, check whether
+        the 2nd graph has any points with few neighbors with the first; if still many
+        neighbors, this could then serve as a learning signal to merge the graphs?
+        (at least at some levels of hierarchy) --> NB merging should use "picky" graph-
+        building method to ensure we don't just double the number of points in the graph
+        unnecessarily.
 
         TODO M consider adding a factor so that we ensure our testing spot is also far
         away from any previously visited locations (at least according to MLH path),
@@ -730,10 +728,10 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
     def _compute_goal_state_for_target_loc(
         self, observations, target_info, goal_confidence=1.0
     ) -> GoalState:
-        """Specify a goal state for the motor-actuator.
+        """Specify a Goal for the motor-actuator.
 
         Based on a target location (in object-centric coordinates) and the associated
-        surface normal of that location, specify a goal state for the motor-actuator,
+        surface normal of that location, specify a Goal for the motor-actuator,
         such that any sensors associated with the motor-actuator should be pointed down
         at and observing the target location (i.e. parallel to the surface normal).
 
@@ -748,12 +746,12 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
                 input.
             target_info: A dictionary containing the target location and surface normal
                 of the target point on the object.
-            goal_confidence: The confidence of the goal-state, which should be in the
+            goal_confidence: The confidence of the Goal, which should be in the
                 range [0, 1]. This is used by receiving modules to weigh the
-                importance of the goal-state relative to other goal-states.
+                importance of the Goal relative to other Goals.
 
         Returns:
-            A goal-state for the motor-actuator.
+            A Goal for the motor-actuator.
         """
         # Determine the displacement, and therefore the environmental target location,
         # that we will use
@@ -777,7 +775,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # The target location on the object's surface in global/body-centric coordinates
         proposed_surface_loc = sensory_input.location + rotated_disp
 
-        # Rotate the learned surface normal (which was commited to memory assuming a
+        # Rotate the learned surface normal (which was committed to memory assuming a
         # default 0,0,0 orientation of the object)
         target_surface_normal_rotated = object_rot.apply(
             target_info["target_surface_normal"]
@@ -794,7 +792,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         # Extra metadata for logging. 'achieved' and
         # 'matching_step_when_output_goal_set' should be updated at the next step.
-        # We initialize them as `None` to inidicate that no valid values have been set.
+        # We initialize them as `None` to indicate that no valid values have been set.
         info = {
             "proposed_surface_loc": proposed_surface_loc,
             "hypothesis_to_test": target_info["hypothesis_to_test"],
@@ -854,14 +852,14 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         )
 
     def _check_need_new_output_goal(self, output_goal_achieved) -> bool:
-        """Determine whether the GSG should generate a new output goal-state.
+        """Determine whether the GSG should generate a new output Goal.
 
-        Unlike the base version, success in achieving the goal-state is not an
+        Unlike the base version, success in achieving the Goal is not an
         indication to need a new goal, because we should now be exploring a new
         part of the hypothesis-space, and so want to stay there for some time.
 
         Returns:
-            Whether the GSG should generate a new output goal-state.
+            Whether the GSG should generate a new output Goal.
         """
         if output_goal_achieved:
             return False
@@ -869,14 +867,14 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         return self._check_conditions_for_hypothesis_test()
 
     def _check_keep_current_output_goal(self) -> bool:
-        """Determine whether the GSG should keep the current goal-state.
+        """Determine whether the GSG should keep the current Goal.
 
         Hypothesis-testing actions should be executed as one-off attempts, lest we get
         stuck in a loop of trying to achieve the same goal that is impossible (e.g.
         due to collision with objects).
 
         Returns:
-            Whether the GSG should keep the current goal-state. Always returns False.
+            Whether the GSG should keep the current Goal. Always returns False.
         """
         return False
 
@@ -920,7 +918,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         if second_id is None:
             # If we only have one object with a single hypothesis, we should not
-            # attempt to generate a goal state.
+            # attempt to generate a Goal.
             if len(self.parent_lm.evidence[top_id]) == 1:
                 return False
 
@@ -933,7 +931,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         # If the MLH evidence is significantly above the second MLH (where "significant"
         # is determined by x_percent_scale_factor below), then focus on discriminating
-        # its pose on some (random) occasions; always focus on pose if we've convereged
+        # its pose on some (random) occasions; always focus on pose if we've converged
         # to one object
         # TODO M update so that not accessing private methods here; part of 2nd phase
         # of refactoring
@@ -946,7 +944,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             len(pm_smaller_thresh) == 1 and (self.parent_lm._rng.uniform() <= 0.5)
         ) or len(pm_base_thresh) == 1:
             # If we only have one object with a single hypothesis, we should not
-            # attempt to generate a goal state.
+            # attempt to generate a Goal.
             if len(self.parent_lm.evidence[top_id]) == 1:
                 return False
 
@@ -1007,10 +1005,10 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         return False
 
     def _get_num_steps_post_output_goal_generated(self):
-        """Number of steps since last output goal-state.
+        """Number of steps since last output Goal.
 
         Returns:
             The number of Monty-matching steps that have elapsed since the last time
-            an output goal-state was generated.
+            an output Goal was generated.
         """
         return self.parent_lm.buffer.get_num_steps_post_output_goal_generated()

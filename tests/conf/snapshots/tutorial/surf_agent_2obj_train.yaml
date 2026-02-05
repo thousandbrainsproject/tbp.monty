@@ -106,14 +106,14 @@ experiment:
             use_goal_state_driven_actions: false
             min_perc_on_obj: 0.25
             agent_id: ${monty.agent_id:agent_id_0}
-            action_sampler_args:
+            action_sampler:
               actions:
               - ${monty.class:tbp.monty.frameworks.actions.actions.MoveForward}
               - ${monty.class:tbp.monty.frameworks.actions.actions.MoveTangentially}
               - ${monty.class:tbp.monty.frameworks.actions.actions.OrientHorizontal}
               - ${monty.class:tbp.monty.frameworks.actions.actions.OrientVertical}
+              _target_: tbp.monty.frameworks.actions.action_samplers.ConstantSampler
               rotation_degrees: 5.0
-            action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}
             alpha: 0.1
             pc_alpha: 0.5
             max_pc_bias_steps: 32

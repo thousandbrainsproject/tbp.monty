@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -23,11 +23,11 @@ class State:
     components and makes sure we can easily set up arbitrary configurations of them.
     This class makes it easier to define the CMP in one place and defines the content
     and structure of messages passed between Monty components. It also contains some
-    helper funtions to access and modify the message content.
+    helper functions to access and modify the message content.
 
     States are represented in this format but can be interpreted by the receiver in
     different ways:
-       Observed states: states output py sensor modules
+       Observed states: states output by sensor modules
        Hypothesized states: states output by learning modules
        Goal states: motor output of learning modules
 

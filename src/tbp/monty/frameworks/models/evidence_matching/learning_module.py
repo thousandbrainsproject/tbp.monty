@@ -19,6 +19,7 @@ import numpy.typing as npt
 from scipy.spatial import KDTree
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
 )
@@ -505,7 +506,10 @@ class EvidenceGraphLM(GraphLM):
             graph_id = self.get_possible_matches()[0]
         # If we are evaluating and reach a time out, we set the object to the
         # most likely hypothesis (if evidence for it is above object_evidence_threshold)
-        elif self.mode == "eval" and terminal_state in {"time_out", "pose_time_out"}:
+        elif self.mode is ExperimentMode.EVAL and terminal_state in {
+            "time_out",
+            "pose_time_out",
+        }:
             mlh = self.get_current_mlh()
             if "evidence" in mlh.keys() and (
                 mlh["evidence"] > self.object_evidence_threshold

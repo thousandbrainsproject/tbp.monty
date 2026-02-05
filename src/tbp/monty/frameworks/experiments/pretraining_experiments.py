@@ -193,7 +193,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         """Save state_dict at the end of training."""
         self.experiment_mode = ExperimentMode.TRAIN
         self.logger_handler.pre_train(self.logger_args)
-        self.model.set_experiment_mode("train")
+        self.model.set_experiment_mode(self.experiment_mode)
         for sm in self.model.sensor_modules:
             sm.save_raw_obs = False
         for _ in range(self.n_train_epochs):

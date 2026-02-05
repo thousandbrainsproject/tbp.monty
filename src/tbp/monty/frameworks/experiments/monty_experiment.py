@@ -98,18 +98,12 @@ class MontyExperiment:
 
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
-        if self.model.experiment_mode == "train":
-            seed = episode_seed(
-                self.config["seed"],
-                ExperimentMode.TRAIN,
-                self.train_episodes,
-            )
-        else:
-            seed = episode_seed(
-                self.config["seed"],
-                ExperimentMode.EVAL,
-                self.eval_episodes,
-            )
+        episodes = (
+            self.train_episodes
+            if self.model.experiment_mode is ExperimentMode.TRAIN
+            else self.eval_episodes
+        )
+        seed = episode_seed(self.config["seed"], self.model.experiment_mode, episodes)
 
         if seed in self._rng_seed_history:
             logger.warning(f"RNG seed {seed} was used in a previous episode")
@@ -622,7 +616,7 @@ class MontyExperiment:
         logger.info(f"running {self.n_train_epochs} train epochs")
         self.experiment_mode = ExperimentMode.TRAIN
         self.logger_handler.pre_train(self.logger_args)
-        self.model.set_experiment_mode("train")
+        self.model.set_experiment_mode(self.experiment_mode)
         for _ in range(self.n_train_epochs):
             self.run_epoch()
         self.logger_handler.post_train(self.logger_args)
@@ -634,7 +628,7 @@ class MontyExperiment:
         # TODO: check that number of eval epochs is at least as many as length
         # of environment interface number of rotations
         self.logger_handler.pre_eval(self.logger_args)
-        self.model.set_experiment_mode("eval")
+        self.model.set_experiment_mode(self.experiment_mode)
         for _ in range(self.n_eval_epochs):
             self.run_epoch()
         self.logger_handler.post_eval(self.logger_args)

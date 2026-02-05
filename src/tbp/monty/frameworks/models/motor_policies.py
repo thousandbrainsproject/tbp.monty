@@ -16,7 +16,7 @@ import json
 import logging
 import math
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 import numpy as np
 import quaternion as qt
@@ -41,6 +41,7 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.positioning_procedures import (
     PositioningProcedure,
 )
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.sensors import SensorID
@@ -117,7 +118,7 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+    def set_experiment_mode(self, mode: ExperimentMode) -> None:
         """Sets the experiment mode.
 
         Args:
@@ -147,8 +148,7 @@ class BasePolicy(MotorPolicy):
     def __init__(
         self,
         rng: np.random.RandomState,
-        action_sampler_args: dict,
-        action_sampler_class: type[ActionSampler],
+        action_sampler: ActionSampler,
         agent_id: AgentID,
         file_name=None,
         file_names_per_episode=None,
@@ -157,8 +157,7 @@ class BasePolicy(MotorPolicy):
 
         Args:
             rng: Random number generator to use
-            action_sampler_args: arguments for the ActionSampler
-            action_sampler_class: The ActionSampler to use
+            action_sampler: The ActionSampler to use
             agent_id: The agent ID
             file_name: Path to file with predefined actions. Defaults to None.
             file_names_per_episode: ?. Defaults to None.
@@ -169,8 +168,7 @@ class BasePolicy(MotorPolicy):
         ###
         self.rng = rng
         self.agent_id = agent_id
-
-        self.action_sampler = action_sampler_class(**action_sampler_args)
+        self.action_sampler = action_sampler
 
         self.action_sequence = []
         self.timestep = 0
@@ -292,7 +290,7 @@ class BasePolicy(MotorPolicy):
         self.timestep = state_dict["timestep"]
         self.episode_step = state_dict["episode_step"]
 
-    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+    def set_experiment_mode(self, mode: ExperimentMode) -> None:
         pass
 
 

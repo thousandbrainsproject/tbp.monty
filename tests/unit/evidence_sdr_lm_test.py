@@ -16,6 +16,7 @@ import unittest
 
 import numpy as np
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_sdr_matching import (
     EncoderSDR,
     EvidenceSDRGraphLM,
@@ -500,7 +501,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
             "quat_rotation": [1, 0, 0, 0],
         }
 
-        lm.mode = "train"
+        lm.mode = ExperimentMode.TRAIN
         lm.pre_episode(rng=np.random.RandomState(), primary_target=obj_target)
         for observation in obs:
             lm.exploratory_step([observation])
@@ -545,7 +546,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
             "quat_rotation": [1, 0, 0, 0],
         }
 
-        lm.mode = "eval"
+        lm.mode = ExperimentMode.EVAL
         lm.pre_episode(rng=np.random.RandomState(), primary_target=placeholder_target)
         for observation in obs[:-1]:
             lm.add_lm_processing_to_buffer_stats(lm_processed=True)
