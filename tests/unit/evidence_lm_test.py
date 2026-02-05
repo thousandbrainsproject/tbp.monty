@@ -171,11 +171,7 @@ class EvidenceLMTest(BaseGraphTest):
         shutil.rmtree(self.output_dir)
 
     def get_elm_with_fake_object(
-        self,
-        fake_obs,
-        initial_possible_poses="informed",
-        gsg_class=None,
-        gsg_args=None,
+        self, fake_obs, initial_possible_poses="informed", gsg=None
     ):
         graph_lm = EvidenceGraphLM(
             rng=np.random.RandomState(),
@@ -193,8 +189,7 @@ class EvidenceLMTest(BaseGraphTest):
             },
             # set graph size larger since fake obs displacements are meters
             max_graph_size=10,
-            gsg_class=gsg_class,
-            gsg_args=gsg_args,
+            gsg=gsg,
             hypotheses_updater_args=dict(
                 initial_possible_poses=initial_possible_poses,
             ),
@@ -227,7 +222,11 @@ class EvidenceLMTest(BaseGraphTest):
         return graph_lm
 
     def get_elm_with_two_fake_objects(
-        self, fake_obs, fake_obs_two, initial_possible_poses, gsg_class, gsg_args
+        self,
+        fake_obs,
+        fake_obs_two,
+        initial_possible_poses,
+        gsg,
     ) -> EvidenceGraphLM:
         """Train on two fake observation objects.
 
@@ -238,8 +237,7 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm = self.get_elm_with_fake_object(
             fake_obs,
             initial_possible_poses=initial_possible_poses,
-            gsg_class=gsg_class,
-            gsg_args=gsg_args,
+            gsg=gsg,
         )
 
         # Train on second object
@@ -869,8 +867,7 @@ class EvidenceLMTest(BaseGraphTest):
             self.fake_obs_house,
             initial_possible_poses=[[0, 0, 0]],  # Note we isolate the influence of
             # ambiguous pose on the hypothesis testing
-            gsg_class=EvidenceGoalStateGenerator,
-            gsg_args=self.default_gsg_config,
+            gsg=EvidenceGoalStateGenerator(**self.default_gsg_config),
         )
 
         self._evaluate_target_location(
@@ -895,8 +892,7 @@ class EvidenceLMTest(BaseGraphTest):
             self.fake_obs_house,
             initial_possible_poses=[[45, 75, 190]],  # Note we isolate the influence of
             # ambiguous pose on the hypothesis testing
-            gsg_class=EvidenceGoalStateGenerator,
-            gsg_args=self.default_gsg_config,
+            gsg=EvidenceGoalStateGenerator(**self.default_gsg_config),
         )
 
         self._evaluate_target_location(
@@ -921,8 +917,7 @@ class EvidenceLMTest(BaseGraphTest):
             # Note pose *is* ambiguous in this unti test, vs. in proposal_for_id; in
             # particular, house can either be right-side up, or upside-down (rotated
             # about z)
-            gsg_class=EvidenceGoalStateGenerator,
-            gsg_args=self.default_gsg_config,
+            gsg=EvidenceGoalStateGenerator(**self.default_gsg_config),
         )
 
         self._evaluate_target_location(
@@ -950,8 +945,7 @@ class EvidenceLMTest(BaseGraphTest):
             # Note pose *is* ambiguous in this unti test, vs. in proposal_for_id; in
             # particular, house can either be right-side up, or upside-down (was rotated
             # about z before the additional complex transformation was applied)
-            gsg_class=EvidenceGoalStateGenerator,
-            gsg_args=self.default_gsg_config,
+            gsg=EvidenceGoalStateGenerator(**self.default_gsg_config),
         )
 
         self._evaluate_target_location(

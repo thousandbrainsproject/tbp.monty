@@ -168,8 +168,8 @@ learning_module_args:
   # Use this to update all hypotheses > 80% of the max hypothesis evidence
   evidence_threshold_config: 80%
   x_percent_threshold: 20
-  gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
-  gsg_args:
+  gsg:
+    _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
     # Tolerance(s) when determining goal-state success
     goal_tolerances:
       location: 0.015 # distance in meters
