@@ -13,7 +13,10 @@ import logging
 
 import numpy as np
 
-from tbp.monty.frameworks.models.abstract_monty_classes import GoalStateGenerator
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    GoalStateGenerator,
+)
+from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.utils.communication_utils import get_state_from_channel
 
@@ -82,13 +85,13 @@ class GraphGoalStateGenerator(GoalStateGenerator):
     # ------------------ Getters & Setters ---------------------
 
     @property
-    def parent_lm(self):
+    def parent_lm(self) -> GraphLM:
         if not self._parent_lm:
             raise ParentLMNotProvided("Parent learning module has not been provided.")
         return self._parent_lm
 
     @parent_lm.setter
-    def parent_lm(self, parent_lm):
+    def parent_lm(self, parent_lm: GraphLM) -> None:
         """Sets the parent learning module for this GSG.
 
         After setting the LM, it resets the GSG.
