@@ -9,7 +9,7 @@ config:
   monty_config:
     motor_system_config:
       motor_system_args:
-        policy_args:
+        policy:
           action_sampler:
             translation_distance: 0.05
           desired_object_distance: 0.025

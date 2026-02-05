@@ -27,9 +27,8 @@ config:
       num_exploratory_steps: 1000
     motor_system_config:
       motor_system_args:
-        policy_args:
+        policy:
           fixed_amount: 1
   train_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-

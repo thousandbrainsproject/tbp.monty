@@ -10,7 +10,7 @@ config:
   monty_config:
     motor_system_config:
       motor_system_args:
-        policy_args:
+        policy:
           action_sampler:
             rotation_degrees: 5.0
           good_view_percentage: 0.5
