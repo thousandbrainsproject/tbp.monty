@@ -450,7 +450,7 @@ class FeatureGraphLM(GraphLM):
         Returns:
             New possible paths and poses.
         """
-        first_input_channel = list(features.keys())[0]
+        first_input_channel = next(iter(features.keys()))
         displacement = displacement[first_input_channel]
         new_possible_paths = []
         new_possible_poses = []
@@ -569,7 +569,7 @@ class FeatureGraphLM(GraphLM):
         Args:
             consistent_objects: For each object whether it is still consistent.
         """
-        for graph_id in consistent_objects.keys():
+        for graph_id in consistent_objects:
             if consistent_objects[graph_id] is False:
                 self._remove_object_from_matches(graph_id)
 
@@ -736,7 +736,7 @@ class FeatureGraphMemory(GraphMemory):
         Returns:
             The reduced lists of ids / locs.
         """
-        first_input_channel = list(features.keys())[0]
+        first_input_channel = next(iter(features.keys()))
         all_node_ids = self.get_graph_node_ids(graph_id, first_input_channel)
         all_node_locs = self.get_graph(graph_id, first_input_channel).pos
         # Just use first input channel for now. Since FeatureLM doesn't work with

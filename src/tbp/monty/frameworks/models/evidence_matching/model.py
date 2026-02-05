@@ -84,7 +84,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                             f"rotation: "
                             f"{sensor_rotation_disp}"
                         )
-                        for obj in votes_per_lm[j]["possible_states"].keys():
+                        for obj in votes_per_lm[j]["possible_states"]:
                             # Get the displacement between the sending and receiving
                             # sensor and take this into account when transmitting
                             # possible locations on the object.
@@ -111,7 +111,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                                     rotation=sensor_rotation_disp,
                                 )
                                 transformed_lm_states_for_object.append(new_s)
-                            if obj in lm_state_votes.keys():
+                            if obj in lm_state_votes:
                                 lm_state_votes[obj].extend(
                                     transformed_lm_states_for_object
                                 )

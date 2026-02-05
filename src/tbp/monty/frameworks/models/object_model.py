@@ -195,11 +195,11 @@ class GraphObjectModel(ObjectModel):
         # Iterate through the different feature types, stacking on (i.e. appending)
         # those features associated w/ candidate new points to the old-graph point
         # features
-        for feature in features.keys():
+        for feature in features:
             new_feat = np.array(features[feature])
             if len(new_feat.shape) == 1:
                 new_feat = new_feat.reshape((new_feat.shape[0], 1))
-            if feature in feature_mapping.keys():
+            if feature in feature_mapping:
                 feature_idx = feature_mapping[feature]
                 old_feat = np.array(self.x)[:, feature_idx[0] : feature_idx[1]]
             else:
@@ -219,7 +219,7 @@ class GraphObjectModel(ObjectModel):
             all_features[feature] = both_feat
 
             for graph_feature in self.feature_ids_in_graph:
-                if graph_feature not in features.keys() and graph_feature != "node_ids":
+                if graph_feature not in features and graph_feature != "node_ids":
                     raise NotImplementedError(
                         f"{graph_feature} is represented in graph but",
                         " was not observed at this step. Implement padding with nan.",
@@ -263,7 +263,7 @@ class GraphObjectModel(ObjectModel):
         feature_mapping = {}
         feature_mapping["node_ids"] = [0, 1]
 
-        for feature_id in features.keys():
+        for feature_id in features:
             # Get only the features-at-points that were not removed as close/
             # redundant points
             feats = np.array([features[feature_id][i] for i in clean_ids])
@@ -711,7 +711,7 @@ class GridObjectModel(GraphObjectModel):
         """
         feature_mapping = {}
         feature_array = None
-        for feature in feature_dict.keys():
+        for feature in feature_dict:
             feats = feature_dict[feature]
 
             if len(feats.shape) == 1:
@@ -774,9 +774,7 @@ class GridObjectModel(GraphObjectModel):
             New average features for a voxel.
         """
         new_feature_avg = np.zeros(target_feat_dim)
-        if ("pose_vectors" in obs_fm.keys()) and (
-            "pose_fully_defined" in obs_fm.keys()
-        ):
+        if ("pose_vectors" in obs_fm) and ("pose_fully_defined" in obs_fm):
             # TODO: deal with case where not all of those keys are present
             pv_ids = obs_fm["pose_vectors"]
             pdefined_ids = obs_fm["pose_fully_defined"]

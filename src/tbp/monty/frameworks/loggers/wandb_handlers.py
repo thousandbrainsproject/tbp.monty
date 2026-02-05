@@ -198,7 +198,7 @@ class DetailedWandbTableStatsHandler(BasicWandbTableStatsHandler):
         # for episode in action_data.keys():
         # TODO: is table the best format for this?
 
-        episode = list(action_data.keys())[0]
+        episode = next(iter(action_data.keys()))
         table_name = f"{mode}_actions/episode_{episode}_table"
         actions = action_data[episode]
         for i, action in enumerate(actions):
@@ -275,7 +275,7 @@ class DetailedWandbHandler(WandbHandler):
 
     def get_episode_frames(self, episode_stats):
         frames_per_sm = {}
-        sm_ids = [sm for sm in episode_stats.keys() if sm.startswith("SM_")]
+        sm_ids = [sm for sm in episode_stats if sm.startswith("SM_")]
         for sm in sm_ids:
             observations = episode_stats[sm]["raw_observations"]
             frames_per_sm[sm] = get_rgba_frames_single_sm(observations)

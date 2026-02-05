@@ -303,7 +303,7 @@ class DisplacementGraphLM(GraphLM):
         # multiple input channels, and I am not sure if it is worth the time investment
         # at the moment since we don't actively use this LM. So for now we just take
         # the first input channel here.
-        first_input_channel = list(self.possible_matches[graph_id].keys())[0]
+        first_input_channel = next(iter(self.possible_matches[graph_id]))
         displacement_plus_tolerance = np.stack(
             [displacement - self.tolerance, displacement + self.tolerance],
             axis=1,

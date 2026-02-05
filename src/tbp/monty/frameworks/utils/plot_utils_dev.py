@@ -355,7 +355,7 @@ def show_one_step(
     model_features = lm_models[model_id][lm_num][object_to_inspect].x.numpy()
     model_normals = lm_models[model_id][lm_num][object_to_inspect].norm.numpy()
     model_f_mapping = lm_models[model_id][lm_num][object_to_inspect].feature_mapping
-    first_input_channel = list(model_f_mapping.keys())[0]
+    first_input_channel = next(iter(model_f_mapping.keys()))
 
     fig = plt.figure(figsize=(7, 7))
     fig.tight_layout()
@@ -632,7 +632,7 @@ def plot_evidence_at_step(
         sm_step = step * 4 + 3  # get observation after 3 corrective movements
     else:
         sm_step = step
-    if "rgba" in view_finder_obs[sm_step].keys():
+    if "rgba" in view_finder_obs[sm_step]:
         obs_key = "rgba"
     else:
         obs_key = "depth"
@@ -679,11 +679,11 @@ def plot_evidence_at_step(
     for n, obj in enumerate(objects):
         #     continue
         locs = np.array(lm_stats["possible_locations"][step][obj])
-        if "pretrained" in lm_models.keys():
+        if "pretrained" in lm_models:
             model_pos = lm_models["pretrained"][0][obj][
                 input_feature_channel
             ].pos  # TODO: test
-        elif str(episode - 1) in lm_models.keys():
+        elif str(episode - 1) in lm_models:
             model_pos = lm_models[str(episode - 1)][lm][obj].pos
         else:
             last_stored_models = np.max(np.array(list(lm_models.keys()), dtype=int))
@@ -1137,7 +1137,7 @@ class PolicyPlot:
     def add_sensor_scatter(self, step_iter):
         """Utility to visualize an agent/sensor(s)'s location and orientation."""
         sensors_to_plot = [
-            x for x in self.detailed_stats[str(self.episode)].keys() if "SM_" in x
+            x for x in self.detailed_stats[str(self.episode)] if "SM_" in x
         ]
 
         for sensor_key in sensors_to_plot:
