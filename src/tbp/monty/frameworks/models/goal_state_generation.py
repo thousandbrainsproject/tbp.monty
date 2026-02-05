@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-import typing
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -20,7 +20,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.utils.communication_utils import get_state_from_channel
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from tbp.monty.frameworks.models.graph_matching import GraphLM
 
 __all__ = [
