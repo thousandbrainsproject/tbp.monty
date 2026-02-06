@@ -14,7 +14,7 @@ Monty uses the _right-up-backward_ [axes convention](https://en.wikipedia.org/wi
 Note that the forward direction therefore corresponds to the _negative_ z-axis. Users with a background in graphics programming (especially OpenGL) may be accustomed to this convention, but many find it unintuitive at first.
 
 For spherical coordinates, we use the convention that places azimuth = 0 and elevation = 0 down the forward axis. More explicitly,
-  - Azimuth is measured away from the forward axis.
+  - Azimuth (theta) is measured away from the forward axis, within the horizontal plane.
   - Elevation is measured up from the horizontal plane.
 
 Be aware that this convention is not standard in [physics or mathematics](https://en.wikipedia.org/wiki/Spherical_coordinate_system), so it's also a common source of confusion and does not match most references you may find elsewhere.
