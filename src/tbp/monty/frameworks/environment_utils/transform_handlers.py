@@ -85,6 +85,23 @@ class TransformMiddleware:
     def __call__(self, next_transform: Transform) -> Transform:
         return self._transform(next_transform, **self._kwargs)
 
+class BlankTF(Transform):
+
+    def __init__(self, next_transform: Transform, agent_id: AgentID):
+        self.next_transform = next_transform
+        self.agent_id = agent_id
+
+    def __call__(
+        self, observations: Observations, _ctx: TransformContext
+    ) -> Observations:
+        observations = self.call(observations)
+        return self.next_transform(observations, _ctx)
+
+    def call(self, observations: Observations) -> Observations:
+        print("BLANK TRANSFORM CALLED")
+        observations = Observations({self.agent_id: observations})
+        print(type(observations))
+        return observations
 
 class MissingToMaxDepth(Transform):
     """Return max depth when no mesh is present at a location.
@@ -125,9 +142,10 @@ class MissingToMaxDepth(Transform):
             Observations, same as input, with missing data modified in place
         """
         # loop over sensor modules
-
-        m = np.where(observations[self.agent_id]["depth"] <= self.threshold)
-        observations[self.agent_id]["depth"][m] = self.max_depth
+        print("MISSING TO MAX DEPTH TRANSFORM CALLED")
+        for sm in observations[self.agent_id].keys():
+            m = np.where(observations[self.agent_id][sm]["depth"] <= self.threshold)
+            observations[self.agent_id][sm]["depth"][m] = self.max_depth
         return observations
 
 

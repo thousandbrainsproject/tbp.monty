@@ -19,7 +19,6 @@ import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.environment_utils.transforms import TransformContext
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule, Observations, AgentID
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
@@ -36,7 +35,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 from tbp.monty.psu.transform_middleware_test import TEST_OBS
-from tbp.monty.frameworks.environment_utils import transform_handlers
+from tbp.monty.frameworks.environment_utils.transform_handlers import TransformPipeline, TransformMiddleware, TransformContext
 
 __all__ = [
     "DefaultMessageNoise",
@@ -555,6 +554,7 @@ class HabitatSM(SensorModule):
         rng: np.random.RandomState,
         sensor_module_id: str,
         features: list[str],
+        transform_pipeline: TransformPipeline | None = None,
         save_raw_obs: bool = False,
         pc1_is_pc2_threshold: int = 10,
         noise_params: dict[str, Any] | None = None,
@@ -620,6 +620,7 @@ class HabitatSM(SensorModule):
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
+        self.transform_pipeline = transform_pipeline
 
     def pre_episode(self, rng: np.random.RandomState) -> None:
         self._rng = rng
@@ -660,18 +661,20 @@ class HabitatSM(SensorModule):
             )
 
         # TRANSFORM CHAIN CALL HERE
-        print("HEREHEREHEREHERE")
-        print(type(data))
+        # print("HEREHEREHEREHERE")
+        # print(type(data))
 
-        agent_id = AgentID("MyAgent")
-        TEST_OBS = Observations({agent_id: data})
+        # agent_id = AgentID("MyAgent")
+        # TEST_OBS = Observations({agent_id: data})
         
-        missing_to_max_depth_args = {"agent_id": "MyAgent", "max_depth": 10.0}
-        transform = transform_handlers.TransformPipeline([transform_handlers.TransformMiddleware(transform_handlers.MissingToMaxDepth, **missing_to_max_depth_args)])
-        transform(TEST_OBS, TransformContext(rng=np.random.RandomState(42)))
+        # missing_to_max_depth_args = {"agent_id": "MyAgent", "max_depth": 10.0}
+        # transform = transform_handlers.TransformPipeline([transform_handlers.TransformMiddleware(transform_handlers.MissingToMaxDepth, **missing_to_max_depth_args)])
+        # transform(TEST_OBS, TransformContext(rng=np.random.RandomState(42)))
 
-        for key in data:
-            print(f"DATA KEY: {key}")
+        # for key in data:
+        #     print(f"DATA KEY: {key}")
+        tf_context = TransformContext(None, None)
+        self.transform_pipeline(data, tf_context)
         observed_state = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
