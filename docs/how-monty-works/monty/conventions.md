@@ -29,7 +29,7 @@ The above may be useful when, for example, writing motor policy code that steers
 
 ## Example: Visualizing with matplotlib
 
-![Left: Monty's initial view of the mug during training. Center: The learned model without transforming into the right-forward-up axes convention used by matplotlib. Right: The learned model after performing the transformation.](../../figures/how-monty-works/matplotlib_example.png#width=400px)
+![Left: Monty's initial view of the mug during training. Center: The learned model without transforming into the right-forward-up axes convention used by matplotlib. Right: The learned model after performing the transformation.](../../figures/how-monty-works/matplotlib_example.png#width=800px)
 
 Anytime we want to interface with external libraries, we need to account for any differences in axes conventions. For example, matplotlib uses the right-forward-up axes convention. Since Monty's data is in the right-up-backward convention, we must transform our data such that
  - x-coordinates become x-coordinates (no change),
