@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import copy
 import logging
 from pprint import pformat
@@ -15,7 +17,6 @@ from typing import Iterable, Mapping, Sequence
 
 import numpy as np
 import quaternion as qt
-from typing_extensions import Self
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import (
@@ -117,34 +118,8 @@ class EnvironmentInterface:
         self.seed = seed
         self.transform = transform
         self._observation, proprioceptive_state = self.reset(self.rng)
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-        )
-        self._counter = 0
+        self.motor_system._state = MotorSystemState(proprioceptive_state)
         self.experiment_mode = experiment_mode
-
-    def __iter__(self) -> Self:
-        """Implement the iterator protocol.
-
-        Returns:
-            The iterator.
-        """
-        return self
-
-    def __next__(self):
-        if self._counter == 0:
-            # Return first observation after 'reset' before any action is applied
-            self._counter += 1
-            return self._observation
-
-        ctx = RuntimeContext(rng=self.rng)
-        actions = self.motor_system(ctx)
-        self._observation, proprioceptive_state = self.step(actions)
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-        )
-        self._counter += 1
-        return self._observation
 
     def reset(self, rng: np.random.RandomState):
         self.rng = rng
@@ -165,21 +140,55 @@ class EnvironmentInterface:
             observation = transform(observation, ctx)
         return observation
 
-    def step(self, actions: Sequence[Action]):
-        observation, state = self.env.step(actions)
+    def step(self, ctx: RuntimeContext, first: bool = False) -> Observations:
+        """Request actions from the motor system and step the environment.
+
+        Args:
+            ctx: The runtime context.
+            first: Whether this is the first step of the episode. If True, then
+                return the initial observation without requesting actions from the
+                motor system or stepping the environment.
+                TODO: This is a hack to preserve the behavior that the first call
+                      to the environment interface returns the observation that
+                      is returned by the environment's reset method. Once the
+                      EnvironmentInterface stops invoking motor_system(ctx), this
+                      can be removed as the runtime/experiment will initialize
+                      the runtime loop by calling step(ctx, actions=[]) instead.
+
+        Returns:
+            The observations.
+        """
+        if first:
+            # Return first observation after 'reset' before any action is applied
+            return self._observation
+
+        actions = self.motor_system(ctx)
+        self._observation, proprioceptive_state = self._step(actions)
+        self.motor_system._state = MotorSystemState(proprioceptive_state)
+        return self._observation
+
+    def _step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
+        """Take actions in the environment and apply the transform to the observations.
+
+        Args:
+            actions: The actions to take in the environment.
+
+        Returns:
+            The observations and proprioceptive state.
+        """
+        observations, state = self.env.step(actions)
         if self.transform is not None:
-            observation = self.apply_transform(self.transform, observation, state)
-        return observation, state
+            observations = self.apply_transform(self.transform, observations, state)
+        return observations, state
 
     def pre_episode(self, rng: np.random.RandomState):
         self.motor_system.pre_episode()
 
         # Reset the environment interface state.
         self._observation, proprioceptive_state = self.reset(rng)
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-        )
-        self._counter = 0
+        self.motor_system._state = MotorSystemState(proprioceptive_state)
 
     def post_episode(self):
         self.motor_system.post_episode()
@@ -441,8 +450,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
     iv) Supports hypothesis-testing "jump" policy
     """
 
-    def __next__(self):
-        if self._counter == 0:
+    def step(self, ctx: RuntimeContext, first: bool = False) -> Observations:
+        if first:
             return self.first_step()
 
         # Check if any LM's have output a goal-state (such as hypothesis-testing
@@ -457,7 +466,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # NOTE: terminal conditions are now handled in experiment.run_episode loop
         attempting_to_find_object = False
         actions = []
-        ctx = RuntimeContext(self.rng)
         try:
             actions = self.motor_system(ctx)
         except ObjectNotVisible:
@@ -480,7 +488,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             #       the object using its full repertoire of actions.
             self.motor_system._policy.touch_search_amount = 0
 
-        self._observation, proprioceptive_state = self.step(actions)
+        self._observation, proprioceptive_state = self._step(actions)
         motor_system_state = MotorSystemState(proprioceptive_state)
 
         # TODO: Refactor this so that all of this is contained within the
@@ -511,9 +519,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
         self.motor_system._state = motor_system_state
 
-        if not attempting_to_find_object:
-            self._counter += 1
-
         return self._observation
 
     def pre_episode(self, rng: np.random.RandomState):
@@ -536,7 +541,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             The observation from the first step.
         """
         # Return first observation after 'reset' before any action is applied
-        self._counter += 1
 
         # For first step of surface-agent policy, always bypass LM processing
         # For distant-agent policy, we still process the first sensation if it is
@@ -579,7 +583,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         )
         result = positioning_procedure(self._observation, self.motor_system._state)
         while not result.terminated and not result.truncated:
-            self._observation, proprio_state = self.step(result.actions)
+            self._observation, proprio_state = self._step(result.actions)
             self.motor_system._state = (
                 MotorSystemState(proprio_state) if proprio_state else None
             )
@@ -666,7 +670,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=qt.one,
         )
-        self._observation, proprioceptive_state = self.step(
+        self._observation, proprioceptive_state = self._step(
             [set_agent_pose, set_sensor_rotation]
         )
         self.motor_system._state = (
@@ -688,10 +692,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
         else:
             self.handle_failed_jump(pre_jump_state, first_sensor)
-
-        # Regardless of whether movement was successful, counts as a step,
-        # and we provide the observation to the next step of the motor policy
-        self._counter += 1
 
         self.motor_system._state[
             self.motor_system._policy.agent_id
@@ -758,7 +758,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=pre_jump_state.sensors[first_sensor].rotation,
         )
-        self._observation, proprioceptive_state = self.step(
+        self._observation, proprioceptive_state = self._step(
             [set_agent_pose, set_sensor_rotation]
         )
 
@@ -834,10 +834,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.motor_system = motor_system
         self.transform = transform
         self._observation, proprioceptive_state = self.reset(self.rng)
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-        )
-        self._counter = 0
+        self.motor_system._state = MotorSystemState(proprioceptive_state)
 
         self.alphabets = alphabets
         self.characters = characters
@@ -936,10 +933,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self.motor_system = motor_system
         self.transform = transform
         self._observation, proprioceptive_state = self.reset(self.rng)
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-        )
-        self._counter = 0
+        self.motor_system._state = MotorSystemState(proprioceptive_state)
 
         self.scenes = scenes
         self.versions = versions
@@ -1034,10 +1028,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self.motor_system = motor_system
         self.transform = transform
         self._observation, proprioceptive_state = self.reset(self.rng)
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-        )
-        self._counter = 0
+        self.motor_system._state = MotorSystemState(proprioceptive_state)
         self.current_scene = 0
         self.episodes = 0
         self.epochs = 0

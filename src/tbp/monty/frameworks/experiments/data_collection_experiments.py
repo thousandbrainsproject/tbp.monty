@@ -12,8 +12,8 @@
 import logging
 
 import torch
-from tqdm import tqdm
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.object_recognition_experiments import (
     MontyObjectRecognitionExperiment,
@@ -35,15 +35,24 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
 
     def run_episode(self):
         self.pre_episode()
-        for step, observation in tqdm(enumerate(self.env_interface)):
+        step = 0
+        ctx = RuntimeContext(rng=self.rng)
+        while True:
+            try:
+                observations = self.env_interface.step(ctx, first=(step == 0))
+            except StopIteration:
+                break
+
             if step > self.max_steps:
                 break
             if self.show_sensor_output:
                 self.live_plotter.show_observations(
-                    *self.live_plotter.hardcoded_assumptions(observation, self.model),
+                    *self.live_plotter.hardcoded_assumptions(observations, self.model),
                     step,
                 )
-            self.pass_features_to_motor_system(observation, step)
+            self.pass_features_to_motor_system(observations, step)
+            step += 1
+
         self.post_episode()
 
     def pass_features_to_motor_system(self, observation, step):

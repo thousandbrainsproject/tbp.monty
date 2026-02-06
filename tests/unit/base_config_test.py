@@ -10,6 +10,7 @@
 
 import pytest
 
+from tbp.monty.context import RuntimeContext
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -91,11 +92,14 @@ class BaseConfigTest(unittest.TestCase):
 
             # Handle the training loop manually for this interim test
             max_count = 5
-            for count, observation in enumerate(exp.train_env_interface):
-                agent_keys = set(observation.keys())
+            count = 0
+            ctx = RuntimeContext(rng=exp.rng)
+            while True:
+                observations = exp.train_env_interface.step(ctx)
+                agent_keys = set(observations.keys())
                 sensor_keys = []
                 for agent in agent_keys:
-                    sensor_keys.extend(list(observation[agent].keys()))
+                    sensor_keys.extend(list(observations[agent].keys()))
 
                 sensor_key_set = set(sensor_keys)
                 self.assertCountEqual(
@@ -105,9 +109,11 @@ class BaseConfigTest(unittest.TestCase):
                 if count >= max_count:
                     break
 
+                count += 1
+
             # Verify we can skip the loop and just run a single
             for s in exp.model.sensor_modules:
-                s_obs = exp.model.get_observations(observation, s.sensor_module_id)
+                s_obs = exp.model.get_observations(observations, s.sensor_module_id)
                 feature = s.step(s_obs)
                 self.assertIn(
                     "rgba",
