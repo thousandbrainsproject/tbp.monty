@@ -15,7 +15,7 @@ Note that the forward direction therefore corresponds to the _negative_ z-axis. 
 
 For spherical coordinates, we use the convention that places azimuth = 0 and elevation = 0 down the forward axis. More explicitly,
   - Azimuth (theta) is measured away from the forward axis, within the horizontal plane.
-  - Elevation is measured up from the horizontal plane.
+  - Elevation (phi) is measured up from the horizontal plane.
 
 Be aware that this convention is not standard in [physics or mathematics](https://en.wikipedia.org/wiki/Spherical_coordinate_system), so it's also a common source of confusion and does not match most references you may find elsewhere.
 
