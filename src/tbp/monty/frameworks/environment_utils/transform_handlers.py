@@ -20,6 +20,7 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations, AgentObservations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.psu.introspection_utils import print_dict_structure
 
 __all__ = [
     "AddNoiseToRawDepthImage",
@@ -74,6 +75,7 @@ class TransformPipeline(Transform):
     def __call__(
         self, observations: Observations, ctx: TransformContext
     ) -> Observations:
+        print("TRANSFORM PIPELINE CALLED")
         return self._transform(observations, ctx)
 
 
@@ -99,8 +101,8 @@ class BlankTF(Transform):
 
     def call(self, observations: Observations) -> Observations:
         print("BLANK TRANSFORM CALLED")
+        print_dict_structure(observations)
         observations = Observations({self.agent_id: observations})
-        print(type(observations))
         return observations
 
 class MissingToMaxDepth(Transform):
@@ -143,6 +145,7 @@ class MissingToMaxDepth(Transform):
         """
         # loop over sensor modules
         print("MISSING TO MAX DEPTH TRANSFORM CALLED")
+        print_dict_structure(observations)
         for sm in observations[self.agent_id].keys():
             m = np.where(observations[self.agent_id][sm]["depth"] <= self.threshold)
             observations[self.agent_id][sm]["depth"][m] = self.max_depth
@@ -495,7 +498,11 @@ class DepthTo3DLocations(Transform):
                     sensor. Has the same structure as "semantic_3d". Included only
                     when `self.get_all_points` is `True`.
         """
+        print("IN DEPTH TO 3D CALL")
         for i, sensor_id in enumerate(self.sensor_ids):
+            if sensor_id not in observations[self.agent_id]:
+                continue
+            print_dict_structure(observations)
             agent_obs = observations[self.agent_id][sensor_id]
             depth_patch = agent_obs["depth"]
 
@@ -555,10 +562,11 @@ class DepthTo3DLocations(Transform):
             xyz = xyz.reshape(4, -1)
             xyz = np.matmul(self.inv_k[i], xyz)
             sensor_frame_data = xyz.T.copy()
-
+            print("DID WE MAKE IT?")
             if self.world_coord and state is not None:
                 # Get agent and sensor states from state dictionary
-                agent_state = state[self.agent_id]
+                #agent_state = state[self.agent_id]
+                agent_state = state
                 depth_state = agent_state.sensors[SensorID(sensor_id + ".depth")]
                 agent_rotation = agent_state.rotation
                 agent_rotation_matrix = qt.as_rotation_matrix(agent_rotation)
@@ -584,7 +592,7 @@ class DepthTo3DLocations(Transform):
                 # Add sensor-to-world coordinate frame transform, used for surface
                 # normal extraction. View direction is the third column of the matrix.
                 observations[self.agent_id][sensor_id]["world_camera"] = world_camera
-
+                print("DID WE MAKE IT PART 2?")
             # Extract 3D coordinates of detected objects (semantic_id != 0)
             semantic = surface_patch.reshape(1, -1)
             if self.get_all_points:

@@ -20,6 +20,7 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.psu.introspection_utils import print_dict_structure
 
 __all__ = [
     "AddNoiseToRawDepthImage",
@@ -35,7 +36,6 @@ __all__ = [
 class TransformContext:
     rng: np.random.RandomState
     state: ProprioceptiveState | None = None
-
 
 class Transform(Protocol):
     """A transform that can be applied to observations."""
@@ -91,6 +91,7 @@ class MissingToMaxDepth(Transform):
             Observations, same as input, with missing data modified in place
         """
         # loop over sensor modules
+        print_dict_structure(observations)
         for sm in observations[self.agent_id].keys():
             m = np.where(observations[self.agent_id][sm]["depth"] <= self.threshold)
             observations[self.agent_id][sm]["depth"][m] = self.max_depth

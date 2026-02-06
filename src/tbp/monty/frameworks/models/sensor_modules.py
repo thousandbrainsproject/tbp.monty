@@ -36,6 +36,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 from tbp.monty.psu.transform_middleware_test import TEST_OBS
 from tbp.monty.frameworks.environment_utils.transform_handlers import TransformPipeline, TransformMiddleware, TransformContext
+from tbp.monty.psu.introspection_utils import print_dict_structure
 
 __all__ = [
     "DefaultMessageNoise",
@@ -673,8 +674,12 @@ class HabitatSM(SensorModule):
 
         # for key in data:
         #     print(f"DATA KEY: {key}")
+        print("IN SENSOR MODULE STEP METHOD")
+        data = {self.sensor_module_id: data}
+        print_dict_structure(data)
         tf_context = TransformContext(None, None)
         self.transform_pipeline(data, tf_context)
+        data = data[self.sensor_module_id]
         observed_state = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
