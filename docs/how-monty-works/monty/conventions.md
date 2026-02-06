@@ -11,7 +11,7 @@ Monty uses the _right-up-backward_ [axes convention](https://en.wikipedia.org/wi
  - the y-axis points up,
  - the z-axis points backwards.
 
-Note that the forward direction corresponds to the _negative_ z-axis. Users with a background in graphics programming (especially OpenGL) may be accustomed to this convention, but many find it unintuitive at first.
+Note that the forward direction therefore corresponds to the _negative_ z-axis. Users with a background in graphics programming (especially OpenGL) may be accustomed to this convention, but many find it unintuitive at first.
 
 For spherical coordinates, we use the convention that places azimuth = 0 and elevation = 0 down the forward axis. More explicitly,
   - Azimuth is measured away from the forward axis.
