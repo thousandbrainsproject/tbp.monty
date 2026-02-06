@@ -15,8 +15,8 @@ from pathlib import Path
 import hydra
 import numpy as np
 import numpy.typing as npt
-from omegaconf import OmegaConf
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterface,
@@ -45,6 +45,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tests import HYDRA_ROOT
 
 AGENT_ID = AgentID("agent_id_0")
 SENSOR_ID = SensorID("sensor_id_0")
@@ -163,24 +164,20 @@ class FakeOmniglotEnvironment(FakeEnvironmentAbs):
 
 class EmbodiedDataTest(unittest.TestCase):
     def setUp(self) -> None:
-        with hydra.initialize(
-            config_path="../../src/tbp/monty/conf", version_base=None
-        ):
+        with hydra.initialize_config_dir(config_dir=str(HYDRA_ROOT), version_base=None):
             self.policy_cfg_fragment = hydra.compose(
                 config_name="experiment/config/monty/motor_system/defaults"
-            ).experiment.config.monty.motor_system.motor_system_args.policy_args
+            ).experiment.config.monty.motor_system.motor_system_args.policy
             self.policy_cfg_abs_fragment = hydra.compose(
                 config_name="test/config/monty/motor_system/absolute"
-            ).test.config.monty.motor_system.motor_system_args.policy_args
+            ).test.config.monty.motor_system.motor_system_args.policy
 
     def test_embodied_env_interface_dist(self):
         seed = 42
         rng = np.random.RandomState(seed)
-        base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
-        base_policy_cfg_dist["agent_id"] = AGENT_ID
-        motor_system_dist = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_dist)
-        )
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
+        base_policy.agent_id = AGENT_ID
+        motor_system_dist = MotorSystem(policy=base_policy)
         env = FakeEnvironmentRel()
         env_interface_dist = EnvironmentInterface(
             env,
@@ -190,8 +187,9 @@ class EmbodiedDataTest(unittest.TestCase):
             experiment_mode=ExperimentMode.EVAL,
         )
 
+        ctx = RuntimeContext(rng)
         for i in range(1, NUM_STEPS):
-            obs_dist, _ = env_interface_dist.step(motor_system_dist())
+            obs_dist, _ = env_interface_dist.step(motor_system_dist(ctx))
             print(obs_dist)
             self.assertTrue(
                 np.all(obs_dist[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
@@ -201,7 +199,7 @@ class EmbodiedDataTest(unittest.TestCase):
         self.assertTrue(
             np.all(initial_obs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[0])
         )
-        obs_dist, _ = env_interface_dist.step(motor_system_dist())
+        obs_dist, _ = env_interface_dist.step(motor_system_dist(ctx))
         self.assertFalse(
             np.all(
                 obs_dist[AGENT_ID][SENSOR_ID]["raw"]
@@ -213,12 +211,10 @@ class EmbodiedDataTest(unittest.TestCase):
     def test_embodied_env_interface_abs(self):
         seed = 42
         rng = np.random.RandomState(seed)
-        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
-        base_policy_cfg_abs["agent_id"] = AGENT_ID
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
+        base_policy.agent_id = AGENT_ID
 
-        motor_system_abs = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
-        )
+        motor_system_abs = MotorSystem(policy=base_policy)
         env = FakeEnvironmentAbs()
         env_interface_abs = EnvironmentInterface(
             env,
@@ -228,8 +224,9 @@ class EmbodiedDataTest(unittest.TestCase):
             experiment_mode=ExperimentMode.EVAL,
         )
 
+        ctx = RuntimeContext(rng)
         for i in range(1, NUM_STEPS):
-            obs_abs, _ = env_interface_abs.step(motor_system_abs())
+            obs_abs, _ = env_interface_abs.step(motor_system_abs(ctx))
             self.assertTrue(
                 np.all(obs_abs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
             )
@@ -238,7 +235,7 @@ class EmbodiedDataTest(unittest.TestCase):
         self.assertTrue(
             np.all(initial_state[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[0])
         )
-        obs_abs, _ = env_interface_abs.step(motor_system_abs())
+        obs_abs, _ = env_interface_abs.step(motor_system_abs(ctx))
         self.assertFalse(
             np.all(
                 obs_abs[AGENT_ID][SENSOR_ID]["raw"]
@@ -250,12 +247,10 @@ class EmbodiedDataTest(unittest.TestCase):
     def test_embodied_env_interface_dist_states(self):
         seed = 42
         rng = np.random.RandomState(seed)
-        base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
-        base_policy_cfg_dist["agent_id"] = AGENT_ID
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
+        base_policy.agent_id = AGENT_ID
 
-        motor_system_dist = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_dist)
-        )
+        motor_system_dist = MotorSystem(policy=base_policy)
         env = FakeEnvironmentRel()
         env_interface_dist = EnvironmentInterface(
             env=env,
@@ -277,12 +272,10 @@ class EmbodiedDataTest(unittest.TestCase):
         seed = 42
         rng = np.random.RandomState(seed)
 
-        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
-        base_policy_cfg_abs["agent_id"] = AGENT_ID
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
+        base_policy.agent_id = AGENT_ID
 
-        motor_system_abs = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
-        )
+        motor_system_abs = MotorSystem(policy=base_policy)
         env = FakeEnvironmentAbs()
         env_interface_abs = EnvironmentInterface(
             env=env,
@@ -324,12 +317,10 @@ class EmbodiedDataTest(unittest.TestCase):
     def test_omniglot_data_loader(self):
         rng = np.random.RandomState(42)
 
-        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
-        base_policy_cfg_abs["agent_id"] = AGENT_ID
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
+        base_policy.agent_id = AGENT_ID
 
-        motor_system_abs = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
-        )
+        motor_system_abs = MotorSystem(policy=base_policy)
 
         alphabets = [0, 0, 0, 1, 1, 1]
         characters = [1, 2, 3, 1, 2, 3]
@@ -362,12 +353,10 @@ class EmbodiedDataTest(unittest.TestCase):
 
         data_path = Path(__file__).parent / "resources" / "dataloader_test_images"
 
-        base_policy_cfg_rel = OmegaConf.to_object(self.policy_cfg_fragment)
-        base_policy_cfg_rel["agent_id"] = AGENT_ID
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
+        base_policy.agent_id = AGENT_ID
 
-        motor_system_rel = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_rel), state=MotorSystemState()
-        )
+        motor_system_rel = MotorSystem(policy=base_policy, state=MotorSystemState())
 
         env_init_args = {"patch_size": patch_size, "data_path": data_path}
         env = SaccadeOnImageEnvironment(**env_init_args)
@@ -415,12 +404,10 @@ class EmbodiedDataTest(unittest.TestCase):
             / "0_numenta_mug"
         )
 
-        base_policy_cfg_rel = OmegaConf.to_object(self.policy_cfg_fragment)
-        base_policy_cfg_rel["agent_id"] = AGENT_ID
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
+        base_policy.agent_id = AGENT_ID
 
-        motor_system_rel = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_rel)
-        )
+        motor_system_rel = MotorSystem(policy=base_policy)
 
         env_init_args = {"patch_size": patch_size, "data_path": data_path}
         env = SaccadeOnImageFromStreamEnvironment(**env_init_args)

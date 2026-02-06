@@ -177,8 +177,8 @@ def add_pose_features_to_tolerances(tolerances, default_tolerances=20) -> dict:
     Returns:
         Tolerances dictionary with added pose_vectors if not set.
     """
-    for input_channel in tolerances.keys():
-        if "pose_vectors" not in tolerances[input_channel].keys():
+    for input_channel in tolerances:
+        if "pose_vectors" not in tolerances[input_channel]:
             # NOTE: assumes that there are 3 pose vectors
             tolerances[input_channel]["pose_vectors"] = np.ones(3) * default_tolerances
 
@@ -203,19 +203,19 @@ def get_relevant_curvature(features):
     Returns:
         Magnitude of sensed curvature (maximum if using two principal curvatures).
     """
-    if "principal_curvatures_log" in features.keys():
+    if "principal_curvatures_log" in features:
         curvatures = features["principal_curvatures_log"]
         curvatures = np.max(np.abs(curvatures))
-    elif "principal_curvatures" in features.keys():
+    elif "principal_curvatures" in features:
         curvatures = features["principal_curvatures"]
         curvatures = np.max(np.abs(curvatures))
-    elif "mean_curvature" in features.keys():
+    elif "mean_curvature" in features:
         curvatures = features["mean_curvature"]
-    elif "mean_curvature_sc" in features.keys():
+    elif "mean_curvature_sc" in features:
         curvatures = features["mean_curvature_sc"]
-    elif "gaussian_curvature" in features.keys():
+    elif "gaussian_curvature" in features:
         curvatures = features["gaussian_curvature"]
-    elif "gaussian_curvature_sc" in features.keys():
+    elif "gaussian_curvature_sc" in features:
         curvatures = features["gaussian_curvature_sc"]
     else:
         logger.info(f"No curvatures contained in the features {list(features.keys())}.")
