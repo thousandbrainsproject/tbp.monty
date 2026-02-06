@@ -13,12 +13,14 @@ import logging
 from enum import Enum
 from typing import Any, ClassVar, Protocol, TypedDict
 
+from matplotlib import transforms
 import numpy as np
 import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule
+from tbp.monty.frameworks.environment_utils.transforms import TransformContext
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule, Observations, AgentID
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     SensorState,
@@ -33,6 +35,8 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     surface_normal_total_least_squares,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
+from tbp.monty.psu.transform_middleware_test import TEST_OBS
+from tbp.monty.frameworks.environment_utils import transform_handlers
 
 __all__ = [
     "DefaultMessageNoise",
@@ -656,6 +660,18 @@ class HabitatSM(SensorModule):
             )
 
         # TRANSFORM CHAIN CALL HERE
+        print("HEREHEREHEREHERE")
+        print(type(data))
+
+        agent_id = AgentID("MyAgent")
+        TEST_OBS = Observations({agent_id: data})
+        
+        missing_to_max_depth_args = {"agent_id": "MyAgent", "max_depth": 10.0}
+        transform = transform_handlers.TransformPipeline([transform_handlers.TransformMiddleware(transform_handlers.MissingToMaxDepth, **missing_to_max_depth_args)])
+        transform(TEST_OBS, TransformContext(rng=np.random.RandomState(42)))
+
+        for key in data:
+            print(f"DATA KEY: {key}")
         observed_state = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
