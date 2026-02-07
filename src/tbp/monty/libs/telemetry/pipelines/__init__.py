@@ -1,4 +1,5 @@
 # Copyright 2025-2026 Thousand Brains Project
+# Copyright 2021-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -7,6 +8,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from .config import Config
+from .basic_async import BasicAsyncPipeline
+from .protocol import Pipeline
 
-__all__ = ["Config"]
+__all__ = ["BasicAsyncPipeline", "Pipeline"]

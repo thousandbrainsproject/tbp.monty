@@ -7,3 +7,19 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+
+
+from tbp.monty.platform import Platform, PlatformConfig
+
+
+def run(**args) -> None:
+    config = PlatformConfig(**args)
+
+    platform = Platform(config)
+
+    # execution configuration here
+    try:
+        platform.init()
+        platform.run()
+    finally:
+        platform.shutdown()
