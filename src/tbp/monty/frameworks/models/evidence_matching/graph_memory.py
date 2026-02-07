@@ -82,7 +82,8 @@ class EvidenceGraphMemory(GraphMemory):
                     # it to the GridObjectModel (with use_original_graph == True)
                     loaded_graph = channel_model._graph
                     channel_model = self._initialize_model_with_graph(
-                        graph_id, loaded_graph,
+                        graph_id,
+                        loaded_graph,
                     )
                 else:
                     # serialization seems to mess up the sparse tensors, so we need to

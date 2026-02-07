@@ -485,7 +485,8 @@ class HabitatSim(HabitatActuator, Simulator):
                 new_object.rotation = sim_utils.quat_to_magnum(start_orientation)
 
             viewpoint_collision = self.check_viewpoint_collision(
-                primary_obj_bb=primary_obj_bb, new_obj_bb=[min_corner, max_corner],
+                primary_obj_bb=primary_obj_bb,
+                new_obj_bb=[min_corner, max_corner],
             )
 
             if not physical_collision and not viewpoint_collision:
@@ -511,7 +512,8 @@ class HabitatSim(HabitatActuator, Simulator):
         return self._sim.get_agent(agent_index)
 
     def step(
-        self, actions: Sequence[Action],
+        self,
+        actions: Sequence[Action],
     ) -> tuple[Observations, ProprioceptiveState]:
         """Execute given actions in the environment.
 

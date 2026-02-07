@@ -48,7 +48,9 @@ class ActuationVecSpec(ActuationSpec):
 
 
 def _move_along_diagonal(
-    scene_node: SceneNode, distance: float, direction: list,
+    scene_node: SceneNode,
+    distance: float,
+    direction: list,
 ) -> None:
     ax = mn.Vector3(direction)
     scene_node.translate_local(ax * distance)
@@ -206,7 +208,9 @@ class MoveForward(SceneNodeControl):
 class MoveTangentially(SceneNodeControl):
     def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _move_along_diagonal(
-            scene_node, actuation_spec.amount, direction=actuation_spec.constraint,
+            scene_node,
+            actuation_spec.amount,
+            direction=actuation_spec.constraint,
         )
 
 

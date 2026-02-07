@@ -30,7 +30,8 @@ class MotorSystemConfigTest(unittest.TestCase):
 
     def setUp(self):
         with hydra.initialize_config_dir(
-            config_dir=str(self.MOTOR_SYSTEM_CONFIG), version_base=None,
+            config_dir=str(self.MOTOR_SYSTEM_CONFIG),
+            version_base=None,
         ):
             self.motor_system_cfg = hydra.compose(config_name="defaults")
             self.motor_system = hydra.utils.instantiate(self.motor_system_cfg)

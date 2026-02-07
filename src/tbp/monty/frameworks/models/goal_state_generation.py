@@ -316,7 +316,9 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             diff_tolerances = self.goal_tolerances
 
         return self._check_states_different(
-            self.parent_lm.get_output(), self.driving_goal_state, diff_tolerances,
+            self.parent_lm.get_output(),
+            self.driving_goal_state,
+            diff_tolerances,
         )
 
     def _check_output_goal_state_achieved(self, observations) -> bool:
@@ -374,7 +376,8 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
 
         current_sensory_input = get_state_from_channel(
-            states=observations, channel_name=sensor_channel_name,
+            states=observations,
+            channel_name=sensor_channel_name,
         )
 
         prev_input_states = self.parent_lm.buffer.get_previous_input_states()
@@ -662,7 +665,8 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
 
         top_mlh_graph = self.parent_lm.get_graph(
-            top_id, input_channel=sensor_channel_name,
+            top_id,
+            input_channel=sensor_channel_name,
         ).pos
 
         if self.focus_on_pose:
@@ -715,7 +719,8 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # Note we ultimately want the target location to be one on the most likely
         # graph, so we pass the top-MLH graph in as the query points
         second_mlh_graph = self.parent_lm.get_graph(
-            second_id, input_channel=sensor_channel_name,
+            second_id,
+            input_channel=sensor_channel_name,
         )
         radius_node_dists = second_mlh_graph.find_nearest_neighbors(
             top_mlh_graph,
@@ -748,7 +753,8 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         target_loc = target_graph.pos[target_loc_id]
         surface_normal_mapping = target_graph.feature_mapping["pose_vectors"]
         target_surface_normal = target_graph.x[
-            target_loc_id, surface_normal_mapping[0] : surface_normal_mapping[0] + 3,
+            target_loc_id,
+            surface_normal_mapping[0] : surface_normal_mapping[0] + 3,
         ]
 
         return {
@@ -758,7 +764,10 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         }
 
     def _compute_goal_state_for_target_loc(
-        self, observations, target_info, goal_confidence=1.0,
+        self,
+        observations,
+        target_info,
+        goal_confidence=1.0,
     ) -> GoalState:
         """Specify a Goal for the motor-actuator.
 
@@ -789,7 +798,8 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # that we will use
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
         sensory_input = get_state_from_channel(
-            states=observations, channel_name=sensor_channel_name,
+            states=observations,
+            channel_name=sensor_channel_name,
         )
         displacement = (
             target_info["target_loc"] - target_info["hypothesis_to_test"]["location"]

@@ -35,7 +35,8 @@ class TestUpload(unittest.TestCase):
 
         mock_rdme_instance.create_version_if_not_exists.assert_called_once()
         mock_rdme_instance.create_category_if_not_exists.assert_called_once_with(
-            "cat1", "Category 1",
+            "cat1",
+            "Category 1",
         )
         mock_process_children.assert_called_once()
 

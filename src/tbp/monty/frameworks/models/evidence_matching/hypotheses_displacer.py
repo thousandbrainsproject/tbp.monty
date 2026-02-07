@@ -236,7 +236,8 @@ class DefaultHypothesesDisplacer:
         )
         # Get max_nneighbors nearest nodes to search locations.
         nearest_node_ids = self.graph_memory.get_graph(
-            graph_id, input_channel,
+            graph_id,
+            input_channel,
         ).find_nearest_neighbors(
             search_locations,
             num_neighbors=self.max_nneighbors,
@@ -245,7 +246,8 @@ class DefaultHypothesesDisplacer:
             nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
 
         nearest_node_locs = self.graph_memory.get_locations_in_graph(
-            graph_id, input_channel,
+            graph_id,
+            input_channel,
         )[nearest_node_ids]
         max_abs_curvature = get_relevant_curvature(channel_features)
         custom_nearest_node_dists = get_custom_distances(

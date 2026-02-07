@@ -25,7 +25,8 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
 
     for category in new_hierarchy:
         cat_id, created = rdme.create_category_if_not_exists(
-            category["slug"], category["title"],
+            category["slug"],
+            category["title"],
         )
         logging.info(
             f"\n{BLUE}{category['title'].upper()}{GRAY}{created * ' [created]'}{RESET}",

@@ -101,7 +101,9 @@ class HabitatTransformTest(unittest.TestCase):
         """Test replacing 0 with user specified max_range."""
         max_depth = 20
         transform = MissingToMaxDepth(
-            agent_id=AGENT_ID, max_depth=max_depth, threshold=0,
+            agent_id=AGENT_ID,
+            max_depth=max_depth,
+            threshold=0,
         )
 
         # Make a copy since this transform modifies the observation in place
@@ -167,7 +169,11 @@ class HabitatTransformTest(unittest.TestCase):
         np.testing.assert_array_almost_equal(actual, EXPECTED_SEMANTIC_XY)
 
     def setup_test_data(
-        self, agent_position, agent_rotation, sensor_position, sensor_rotation,
+        self,
+        agent_position,
+        agent_rotation,
+        sensor_position,
+        sensor_rotation,
     ):
         resolution = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"].shape
         md_transform = MissingToMaxDepth(agent_id=AGENT_ID, max_depth=100)
@@ -254,7 +260,10 @@ class HabitatTransformTest(unittest.TestCase):
         sensor_rotation = qt.quaternion(1.0, 0.0, 0.0, 0.0)
 
         md_obs, depth_obs, semantic_obs, semantic_3d_obs = self.setup_test_data(
-            agent_position, agent_rotation, sensor_position, sensor_rotation,
+            agent_position,
+            agent_rotation,
+            sensor_position,
+            sensor_rotation,
         )
 
         expected = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"]
@@ -286,7 +295,10 @@ class HabitatTransformTest(unittest.TestCase):
         sensor_rotation = qt.quaternion(1.0, 0.0, 0.0, 0.0)
 
         md_obs, depth_obs, semantic_obs, semantic_3d_obs = self.setup_test_data(
-            agent_position, agent_rotation, sensor_position, sensor_rotation,
+            agent_position,
+            agent_rotation,
+            sensor_position,
+            sensor_rotation,
         )
 
         expected = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"]
@@ -317,7 +329,10 @@ class HabitatTransformTest(unittest.TestCase):
         sensor_rotation = qt.quaternion(w, x, y, z)
 
         md_obs, depth_obs, semantic_obs, semantic_3d_obs = self.setup_test_data(
-            agent_position, agent_rotation, sensor_position, sensor_rotation,
+            agent_position,
+            agent_rotation,
+            sensor_position,
+            sensor_rotation,
         )
 
         expected = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"]

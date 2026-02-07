@@ -57,7 +57,10 @@ class MontyForGraphMatching(MontyBase):
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
     def pre_episode(
-        self, rng: np.random.RandomState, primary_target, semantic_id_to_label=None,
+        self,
+        rng: np.random.RandomState,
+        primary_target,
+        semantic_id_to_label=None,
     ) -> None:
         """Reset values and call sub-pre_episode functions."""
         self._is_done = False
@@ -330,7 +333,8 @@ class MontyForGraphMatching(MontyBase):
                             sending_lm_pose[0],
                         )
                         sensor_rotation_disp, _ = Rotation.align_vectors(
-                            sending_lm_pose[1:], receiving_lm_pose[1:],
+                            sending_lm_pose[1:],
+                            receiving_lm_pose[1:],
                         )
                         logger.debug(
                             f"LM {i} to {j} - displacement: {sensor_disp}, "
@@ -544,7 +548,9 @@ class GraphLM(LearningModule):
     """General Learning Module that contains a graph memory."""
 
     def __init__(
-        self, rng: np.random.RandomState, initialize_base_modules=True,
+        self,
+        rng: np.random.RandomState,
+        initialize_base_modules=True,
     ) -> None:
         """Initialize general Learning Module based on graphs.
 
@@ -628,7 +634,8 @@ class GraphLM(LearningModule):
             logger.debug("we have not moved yet.")
 
         self._compute_possible_matches(
-            observations, first_movement_detected=first_movement_detected,
+            observations,
+            first_movement_detected=first_movement_detected,
         )
 
         if len(self.get_possible_matches()) == 0:
@@ -824,7 +831,8 @@ class GraphLM(LearningModule):
                     path_poses = []
                     for pose in path:
                         euler_pose = np.round(
-                            pose.inv().as_euler("xyz", degrees=True), 5,
+                            pose.inv().as_euler("xyz", degrees=True),
+                            5,
                         )
                         path_poses.append(euler_pose)
                     euler_poses.append(path_poses)
@@ -926,7 +934,8 @@ class GraphLM(LearningModule):
                 this particular episode step
         """
         self.buffer.update_stats(
-            dict(lm_processed_steps=lm_processed), update_time=False,
+            dict(lm_processed_steps=lm_processed),
+            update_time=False,
         )
 
     def state_dict(self):
@@ -1140,7 +1149,8 @@ class GraphMemory(LMMemory):
                     input_channel_features,
                     input_channel_locations,
                 ) = self._extract_entries_with_content(
-                    features[input_channel], locations[input_channel],
+                    features[input_channel],
+                    locations[input_channel],
                 )
                 # Update graph
                 if (
@@ -1406,7 +1416,9 @@ class GraphMemory(LMMemory):
     # ------------------------ Helper --------------------------
 
     def _get_all_node_features(
-        self, graph_id, input_channel,
+        self,
+        graph_id,
+        input_channel,
     ) -> tuple[np.ndarray, list]:
         """Create an array of all features for all nodes in a graph.
 
@@ -1421,7 +1433,9 @@ class GraphMemory(LMMemory):
         """
         all_node_ids = self.get_graph_node_ids(graph_id, input_channel).astype(int)
         feature_arrays = self._get_empty_feature_arrays(
-            graph_id, input_channel, len(all_node_ids),
+            graph_id,
+            input_channel,
+            len(all_node_ids),
         )
         feature_order = []
         # TODO: This should be possible without this for loop (currently 3rd slowest).
@@ -1444,7 +1458,10 @@ class GraphMemory(LMMemory):
         return feature_arrays, feature_order
 
     def _get_empty_feature_arrays(
-        self, graph_id, input_channel, num_nodes,
+        self,
+        graph_id,
+        input_channel,
+        num_nodes,
     ) -> np.ndarray:
         """Get nan array with space for all features per input channel.
 

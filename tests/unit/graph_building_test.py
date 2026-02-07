@@ -160,7 +160,8 @@ class GraphBuildingTest(unittest.TestCase):
         )
         for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
             graph = exp.model.learning_modules[0].get_graph(
-                graph_id, input_channel="first",
+                graph_id,
+                input_channel="first",
             )
             # Make sure that all features that are extracted by the SM are stored in
             # the graph.
@@ -185,7 +186,8 @@ class GraphBuildingTest(unittest.TestCase):
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
-                    graph_id, input_channel="first",
+                    graph_id,
+                    input_channel="first",
                 )
                 self.check_graph_formatting(
                     graph,
@@ -199,7 +201,8 @@ class GraphBuildingTest(unittest.TestCase):
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
-                    graph_id, input_channel="first",
+                    graph_id,
+                    input_channel="first",
                 )
                 self.check_graph_formatting(
                     graph,
@@ -218,7 +221,8 @@ class GraphBuildingTest(unittest.TestCase):
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
-                    graph_id, input_channel="first",
+                    graph_id,
+                    input_channel="first",
                 )
                 self.check_graph_formatting(
                     graph,
@@ -237,7 +241,8 @@ class GraphBuildingTest(unittest.TestCase):
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
-                    graph_id, input_channel="first",
+                    graph_id,
+                    input_channel="first",
                 )
                 self.check_graph_formatting(
                     graph,

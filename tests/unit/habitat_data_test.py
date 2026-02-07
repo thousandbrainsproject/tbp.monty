@@ -44,7 +44,8 @@ EXPECTED_STATES = np.random.rand(NUM_STEPS, 64, 64, 1)
 class HabitatDataTest(unittest.TestCase):
     def setUp(self):
         self.camera_dist_config = AgentConfig(
-            SingleSensorAgent, dict(agent_id=AGENT_ID, sensor_id=SENSOR_ID),
+            SingleSensorAgent,
+            dict(agent_id=AGENT_ID, sensor_id=SENSOR_ID),
         )
         self.camera_dist = SingleSensorAgent(agent_id=AGENT_ID, sensor_id=SENSOR_ID)
         self.camera_abs_config = AgentConfig(
@@ -56,7 +57,9 @@ class HabitatDataTest(unittest.TestCase):
             ),
         )
         self.camera_abs = SingleSensorAgent(
-            agent_id=AGENT_ID, sensor_id=SENSOR_ID, action_space_type="absolute_only",
+            agent_id=AGENT_ID,
+            sensor_id=SENSOR_ID,
+            action_space_type="absolute_only",
         )
         self.camera_surf_config = AgentConfig(
             SingleSensorAgent,
@@ -67,7 +70,9 @@ class HabitatDataTest(unittest.TestCase):
             ),
         )
         self.camera_surf = SingleSensorAgent(
-            agent_id=AGENT_ID, sensor_id=SENSOR_ID, action_space_type="surface_agent",
+            agent_id=AGENT_ID,
+            sensor_id=SENSOR_ID,
+            action_space_type="surface_agent",
         )
         self.mock_reset = {0: {f"{SENSOR_ID}.depth": EXPECTED_STATES[0]}}
         self.mock_observations = [
@@ -92,7 +97,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_dist = mock_agent_class.return_value
         mock_agent_dist.agent_config = self.camera_dist.get_spec()
         mock_agent_dist.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={},
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_dist = mock_simulator_class.return_value
         mock_sim_dist.agents = [mock_agent_dist]
@@ -149,7 +155,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_abs = mock_agent_class.return_value
         mock_agent_abs.agent_config = self.camera_abs.get_spec()
         mock_agent_abs.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={},
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_abs = mock_simulator_class.return_value
         mock_sim_abs.agents = [mock_agent_abs]
@@ -205,7 +212,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_surf = mock_agent_class.return_value
         mock_agent_surf.agent_config = self.camera_surf.get_spec()
         mock_agent_surf.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={},
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_surf = mock_simulator_class.return_value
         mock_sim_surf.agents = [mock_agent_surf]
@@ -262,7 +270,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_dist = mock_agent_class.return_value
         mock_agent_dist.agent_config = self.camera_dist.get_spec()
         mock_agent_dist.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={},
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_dist = mock_simulator_class.return_value
         mock_sim_dist.agents = [mock_agent_dist]
@@ -302,7 +311,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_abs = mock_agent_class.return_value
         mock_agent_abs.agent_config = self.camera_abs.get_spec()
         mock_agent_abs.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={},
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_abs = mock_simulator_class.return_value
         mock_sim_abs.agents = [mock_agent_abs]
@@ -340,7 +350,8 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_surf = mock_agent_class.return_value
         mock_agent_surf.agent_config = self.camera_surf.get_spec()
         mock_agent_surf.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={},
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_surf = mock_simulator_class.return_value
         mock_sim_surf.agents = [mock_agent_surf]

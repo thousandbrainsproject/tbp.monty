@@ -100,7 +100,8 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         for loader_step, observation in enumerate(self.env_interface):
             if self.show_sensor_output:
                 is_saccade_on_image_data_loader = isinstance(
-                    self.env_interface, SaccadeOnImageEnvironmentInterface,
+                    self.env_interface,
+                    SaccadeOnImageEnvironmentInterface,
                 )
                 self.live_plotter.show_observations(
                     *self.live_plotter.hardcoded_assumptions(observation, self.model),

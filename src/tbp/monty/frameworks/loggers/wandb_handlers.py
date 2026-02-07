@@ -107,7 +107,11 @@ class WandbHandler(MontyHandler):
         return ""
 
     def report_episode(
-        self, data, output_dir, mode: ExperimentMode = ExperimentMode.TRAIN, **kwargs,
+        self,
+        data,
+        output_dir,
+        mode: ExperimentMode = ExperimentMode.TRAIN,
+        **kwargs,
     ):
         pass
 
@@ -299,7 +303,8 @@ class DetailedWandbHandler(WandbHandler):
             wandb.log(
                 {
                     f"episode_{episode}_{self.report_key}_{sm}": wandb.Video(
-                        frames, format="gif",
+                        frames,
+                        format="gif",
                     ),
                 },
                 step=episode,

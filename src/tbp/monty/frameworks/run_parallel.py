@@ -108,7 +108,9 @@ def post_parallel_log_cleanup(filenames: Iterable[Path], outfile: Path, cat_fn):
 
 
 def post_parallel_profile_cleanup(
-    parallel_dirs: Iterable[Path], base_dir: Path, mode: ExperimentMode,
+    parallel_dirs: Iterable[Path],
+    base_dir: Path,
+    mode: ExperimentMode,
 ):
     profile_dirs = [pdir / "profile" for pdir in parallel_dirs]
 
@@ -683,7 +685,8 @@ def main(cfg: DictConfig):
         ), "parallel experiments only work (for now) with per object env interfaces"
 
         train_configs = generate_parallel_train_configs(
-            cfg.experiment, cfg.experiment.config.logging.run_name,
+            cfg.experiment,
+            cfg.experiment.config.logging.run_name,
         )
         train_configs = filter_episode_configs(train_configs, cfg.episodes)
         if cfg.print_cfg:
@@ -705,7 +708,8 @@ def main(cfg: DictConfig):
         ), "parallel experiments only work (for now) with per object env interfaces"
 
         eval_configs = generate_parallel_eval_configs(
-            cfg.experiment, cfg.experiment.config.logging.run_name,
+            cfg.experiment,
+            cfg.experiment.config.logging.run_name,
         )
         eval_configs = filter_episode_configs(eval_configs, cfg.episodes)
         if cfg.print_cfg:

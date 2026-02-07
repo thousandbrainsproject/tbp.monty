@@ -85,14 +85,17 @@ class HabitatSalienceSM(SensorModule):
         """
         if self._save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data, self.state.rotation, self.state.position,
+                data,
+                self.state.rotation,
+                self.state.position,
             )
 
         salience_map = self._salience_strategy(rgba=data["rgba"], depth=data["depth"])
 
         on_object = on_object_observation(data, salience_map)
         ior_weights = self._return_inhibitor(
-            on_object.center_location, on_object.locations,
+            on_object.center_location,
+            on_object.locations,
         )
         salience = self._weight_salience(on_object.salience, ior_weights)
 
@@ -124,7 +127,9 @@ class HabitatSalienceSM(SensorModule):
         return self._normalize_salience(weighted_salience)
 
     def _decay_salience(
-        self, salience: np.ndarray, ior_weights: np.ndarray,
+        self,
+        salience: np.ndarray,
+        ior_weights: np.ndarray,
     ) -> np.ndarray:
         decay_factor = 0.75
         return salience - decay_factor * ior_weights
@@ -132,7 +137,9 @@ class HabitatSalienceSM(SensorModule):
     def _randomize_salience(self, weighted_salience: np.ndarray) -> np.ndarray:
         randomness_factor = 0.05
         weighted_salience += self._rng.normal(
-            loc=0, scale=randomness_factor, size=weighted_salience.shape[0],
+            loc=0,
+            scale=randomness_factor,
+            size=weighted_salience.shape[0],
         )
         return weighted_salience
 

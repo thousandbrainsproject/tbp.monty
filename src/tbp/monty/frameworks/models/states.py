@@ -107,7 +107,8 @@ class State:
             self.location += translation
         if rotation is not None:
             self.morphological_features["pose_vectors"] = np.dot(
-                rotation, self.morphological_features["pose_vectors"],
+                rotation,
+                self.morphological_features["pose_vectors"],
             )
 
     def set_displacement(self, displacement, ppf=None):

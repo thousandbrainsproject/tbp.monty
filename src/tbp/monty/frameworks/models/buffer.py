@@ -509,7 +509,8 @@ class FeatureAtLocationBuffer:
             # sure the same index in different feature array corresponds to
             # the same time step and location.
             self.features[input_channel][attr_name] = np.full(
-                (len(self) + 1, attr_shape), np.nan,
+                (len(self) + 1, attr_shape),
+                np.nan,
             )
         else:
             padded_feat = self._pad_to_target_length(
@@ -550,7 +551,8 @@ class FeatureAtLocationBuffer:
             self.displacements[input_channel] = {}
         if disp_name not in self.displacements[input_channel]:
             self.displacements[input_channel][disp_name] = np.full(
-                (len(self.locations), len(disp_val)), np.nan,
+                (len(self.locations), len(disp_val)),
+                np.nan,
             )
 
         padded_vals = self._pad_to_target_length(

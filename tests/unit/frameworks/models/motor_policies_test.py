@@ -63,7 +63,9 @@ class BasePolicyTest(unittest.TestCase):
             {
                 self.agent_id: expected_state,
                 AgentID("different_agent_id"): AgentState(
-                    sensors={}, position=(), rotation=(),
+                    sensors={},
+                    position=(),
+                    rotation=(),
                 ),
             },
         )

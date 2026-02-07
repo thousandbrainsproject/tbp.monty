@@ -99,7 +99,9 @@ class BaseConfigTest(unittest.TestCase):
 
                 sensor_key_set = set(sensor_keys)
                 self.assertCountEqual(
-                    sensor_key_set, monty_module_sids, "sensor module ids must match",
+                    sensor_key_set,
+                    monty_module_sids,
+                    "sensor module ids must match",
                 )
 
                 if count >= max_count:

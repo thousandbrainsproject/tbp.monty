@@ -294,7 +294,8 @@ class BaseGraphTest(TestCase):
         # Same edge data
         num_edge_attrs_same = (g1.edge_attr == g2.edge_attr).sum()
         self.assertEqual(
-            num_edge_attrs_same, g1.edge_attr.size(0) * g1.edge_attr.size(1),
+            num_edge_attrs_same,
+            g1.edge_attr.size(0) * g1.edge_attr.size(1),
         )
 
         # Same positions in space
@@ -469,7 +470,8 @@ class BaseGraphTest(TestCase):
                         elif key3 == "allowable_sender_types":
                             for f_idx in range(len(step_old[key3])):
                                 self.assertEqual(
-                                    step_old[key3][f_idx], step_new[key3][f_idx],
+                                    step_old[key3][f_idx],
+                                    step_new[key3][f_idx],
                                 )
                         elif isinstance(step_old[key3], str):
                             # sm_id can not be compared as array

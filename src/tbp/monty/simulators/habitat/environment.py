@@ -63,13 +63,17 @@ class HabitatAgentArgs:
 
 # SingleSensorAgentArgs dataclass based on constructor args
 SingleSensorAgentArgs = create_dataclass_args(
-    "SingleSensorAgentArgs", SingleSensorAgent.__init__, HabitatAgentArgs,
+    "SingleSensorAgentArgs",
+    SingleSensorAgent.__init__,
+    HabitatAgentArgs,
 )
 SingleSensorAgentArgs.__module__ = __name__
 
 # MultiSensorAgentArgs dataclass based on constructor args
 MultiSensorAgentArgs = create_dataclass_args(
-    "MultiSensorAgentArgs", MultiSensorAgent.__init__, HabitatAgentArgs,
+    "MultiSensorAgentArgs",
+    MultiSensorAgent.__init__,
+    HabitatAgentArgs,
 )
 MultiSensorAgentArgs.__module__ = __name__
 
@@ -145,7 +149,8 @@ class HabitatEnvironment(SimulatedObjectEnvironment):
         ).object_id
 
     def step(
-        self, actions: Sequence[Action],
+        self,
+        actions: Sequence[Action],
     ) -> tuple[Observations, ProprioceptiveState]:
         return self._env.step(actions)
 

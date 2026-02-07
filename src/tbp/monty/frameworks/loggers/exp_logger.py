@@ -77,7 +77,9 @@ class LoggingCallbackHandler:
     def call_event(self, event, logger_args):
         for logger in self.loggers:
             getattr(logger, event)(
-                logger_args=logger_args, output_dir=self.output_dir, model=self.model,
+                logger_args=logger_args,
+                output_dir=self.output_dir,
+                model=self.model,
             )
 
 

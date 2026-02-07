@@ -100,7 +100,8 @@ class DisplacementGraphLM(GraphLM):
             detected_path = possible_paths[0]
             # get locations in model RF for nodes (int IDs) in the detected path
             detected_path_locs = self.graph_memory.get_locations_in_graph(
-                object_id, input_channel=first_channel,
+                object_id,
+                input_channel=first_channel,
             )[detected_path]
             # The location in object RF where the sensor is right now will be the last
             # on in the detected path
@@ -148,7 +149,10 @@ class DisplacementGraphLM(GraphLM):
         return pose_and_scale
 
     def get_object_rotation(
-        self, sensed_displacements, model_displacements, get_reverse_r=False,
+        self,
+        sensed_displacements,
+        model_displacements,
+        get_reverse_r=False,
     ):
         """Calculate the rotation between two sets of displacement vectors.
 
@@ -271,7 +275,9 @@ class DisplacementGraphLM(GraphLM):
         predictions = {}
         for graph_id in self.possible_matches:
             prediction = self._predict_using_displacements(
-                np.array(query), graph_id, use_relative_len,
+                np.array(query),
+                graph_id,
+                use_relative_len,
             )
             predictions[graph_id] = prediction
         return predictions
@@ -471,12 +477,15 @@ class DisplacementGraphMemory(GraphMemory):
         for graph_id in self.get_memory_ids():
             first_input_channel = self.get_input_channels_in_graph(graph_id)[0]
             next_possible_paths[graph_id] = np.swapaxes(
-                self.get_graph(graph_id, first_input_channel).edge_index, 0, 1,
+                self.get_graph(graph_id, first_input_channel).edge_index,
+                0,
+                1,
             )
             if self.get_graph(graph_id, first_input_channel).x.dim() > 1:
                 # Features of nodes contain more than just IDs (i.e. RGBA)
                 possible_paths[graph_id] = self.get_graph_node_ids(
-                    graph_id, first_input_channel,
+                    graph_id,
+                    first_input_channel,
                 )
             else:
                 possible_paths[graph_id] = np.array(

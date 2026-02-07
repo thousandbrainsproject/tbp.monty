@@ -531,7 +531,9 @@ class EvidenceGraphLM(GraphLM):
 
             # Check if all possible poses are similar
             pose_is_unique = self._check_for_unique_poses(
-                object_id, possible_object_hypotheses_ids, mlh["rotation"],
+                object_id,
+                possible_object_hypotheses_ids,
+                mlh["rotation"],
             )
 
             # Check for symmetry
@@ -674,7 +676,8 @@ class EvidenceGraphLM(GraphLM):
                 for pose in poses[obj]:
                     scipy_pose = Rotation.from_matrix(pose)
                     euler_pose = np.round(
-                        scipy_pose.inv().as_euler("xyz", degrees=True), 5,
+                        scipy_pose.inv().as_euler("xyz", degrees=True),
+                        5,
                     )
                     euler_poses.append(euler_pose)
                 all_poses[obj] = euler_poses
@@ -1007,7 +1010,8 @@ class EvidenceGraphLM(GraphLM):
 
         center_location = np.mean(possible_locations, axis=0)
         distances_to_center = np.linalg.norm(
-            possible_locations - center_location, axis=1,
+            possible_locations - center_location,
+            axis=1,
         )
         location_unique = np.max(distances_to_center) < self.path_similarity_threshold
         if location_unique:
@@ -1024,7 +1028,9 @@ class EvidenceGraphLM(GraphLM):
         # Compute the difference between each rotation matrix in the list of possible
         # rotations and the most likely rotation in radians.
         trace = np.trace(
-            most_likely_r.as_matrix().T @ possible_rotations, axis1=1, axis2=2,
+            most_likely_r.as_matrix().T @ possible_rotations,
+            axis1=1,
+            axis2=2,
         )
         differences = np.arccos(np.clip((trace - 1) / 2, -1, 1))
         # Check if none of them differ by more than pose_similarity_threshold

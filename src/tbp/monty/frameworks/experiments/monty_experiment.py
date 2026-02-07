@@ -240,7 +240,8 @@ class MontyExperiment:
             )
 
             self.train_env_interface = self.create_env_interface(
-                env_interface_class, env_interface_args,
+                env_interface_class,
+                env_interface_args,
             )
         else:
             self.train_env_interface = None
@@ -256,7 +257,8 @@ class MontyExperiment:
             )
 
             self.eval_env_interface = self.create_env_interface(
-                env_interface_class, env_interface_args,
+                env_interface_class,
+                env_interface_args,
             )
         else:
             self.eval_env_interface = None
@@ -458,7 +460,9 @@ class MontyExperiment:
             ]
         # Instantiate logging callback handler for custom monty loggers
         self.logger_handler = LoggingCallbackHandler(
-            self.monty_logger, self.model, output_dir=self.output_dir,
+            self.monty_logger,
+            self.model,
+            output_dir=self.output_dir,
         )
 
     def get_epoch_state(self):

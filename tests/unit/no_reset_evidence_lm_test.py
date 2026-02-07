@@ -53,7 +53,10 @@ class NoResetEvidenceLMTest(BaseGraphTest):
             )
 
     def assert_dicts_equal(
-        self, d1: dict[Any, np.ndarray], d2: dict[Any, np.ndarray], msg: str,
+        self,
+        d1: dict[Any, np.ndarray],
+        d2: dict[Any, np.ndarray],
+        msg: str,
     ) -> None:
         """Asserts that two dictionaries containing NumPy arrays are equal.
 

@@ -130,7 +130,8 @@ class ReadMe:
             return
         logging.info(f"{GREEN}Setting version {self.version} to stable{RESET}")
         if not put(
-            f"{PREFIX}/version/{self.version}", {"is_stable": True, "is_hidden": False},
+            f"{PREFIX}/version/{self.version}",
+            {"is_stable": True, "is_hidden": False},
         ):
             raise ValueError("Failed to make version stable")
 
@@ -179,7 +180,8 @@ class ReadMe:
 
     def create_category_if_not_exists(self, slug: str, title: str) -> tuple[str, bool]:
         category = get(
-            f"{PREFIX}/categories/{slug}", {"x-readme-version": self.version},
+            f"{PREFIX}/categories/{slug}",
+            {"x-readme-version": self.version},
         )
         if category is None:
             response = post(
@@ -273,7 +275,12 @@ class ReadMe:
         return REGEX_CSV_TABLE.sub(replace_match, body)
 
     def create_or_update_doc(
-        self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str,
+        self,
+        order: int,
+        category_id: str,
+        doc: dict,
+        parent_id: str,
+        file_path: str,
     ) -> tuple[str, bool]:
         markdown = self.process_markdown(doc["body"], file_path, doc["slug"])
 

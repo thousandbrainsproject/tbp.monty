@@ -188,7 +188,9 @@ class MoveForwardTest(unittest.TestCase):
 class MoveTangentiallyTest(unittest.TestCase):
     def setUp(self) -> None:
         self.action = MoveTangentially(
-            agent_id=AGENT_ID, distance=1, direction=(1, 2, 3),
+            agent_id=AGENT_ID,
+            distance=1,
+            direction=(1, 2, 3),
         )
         self.rng = RandomState(RNG_SEED)
 
@@ -383,7 +385,9 @@ class SetAgentPitchTest(unittest.TestCase):
 class SetAgentPoseTest(unittest.TestCase):
     def setUp(self) -> None:
         self.action = SetAgentPose(
-            agent_id=AGENT_ID, location=(1, 2, 3), rotation_quat=(1, 2, 3, 4),
+            agent_id=AGENT_ID,
+            location=(1, 2, 3),
+            rotation_quat=(1, 2, 3, 4),
         )
         self.rng = RandomState(RNG_SEED)
 
@@ -476,7 +480,9 @@ class SetSensorPitchTest(unittest.TestCase):
 class SetSensorPoseTest(unittest.TestCase):
     def setUp(self) -> None:
         self.action = SetSensorPose(
-            agent_id=AGENT_ID, location=(1, 2, 3), rotation_quat=(1, 2, 3, 4),
+            agent_id=AGENT_ID,
+            location=(1, 2, 3),
+            rotation_quat=(1, 2, 3, 4),
         )
         self.rng = RandomState(RNG_SEED)
 

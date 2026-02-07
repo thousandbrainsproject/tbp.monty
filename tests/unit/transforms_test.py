@@ -28,7 +28,9 @@ class GaussianSmoothingTest(unittest.TestCase):
             ],
         )
         gaussian_smoother = GaussianSmoothing(
-            agent_id=AgentID("0"), sigma=2, kernel_width=5,
+            agent_id=AgentID("0"),
+            sigma=2,
+            kernel_width=5,
         )
 
         self.assertTrue(
@@ -37,7 +39,9 @@ class GaussianSmoothingTest(unittest.TestCase):
         )
 
         all_equal = np.allclose(
-            gaussian_smoother.kernel, kernel_ground_truth, atol=1e-5,
+            gaussian_smoother.kernel,
+            kernel_ground_truth,
+            atol=1e-5,
         )
         self.assertTrue(all_equal, "Kernel values do not match.")
 
@@ -56,7 +60,9 @@ class GaussianSmoothingTest(unittest.TestCase):
             ],
         )
         gaussian_smoother = GaussianSmoothing(
-            agent_id=AgentID("0"), sigma=5, kernel_width=7,
+            agent_id=AgentID("0"),
+            sigma=5,
+            kernel_width=7,
         )
         padded_img = gaussian_smoother.get_padded_img(img, pad_type="edge")
 
@@ -72,13 +78,16 @@ class GaussianSmoothingTest(unittest.TestCase):
         # TEST CASE 1
         img = np.ones((64, 64))
         gaussian_smoother = GaussianSmoothing(
-            agent_id=AgentID("0"), sigma=15, kernel_width=15,
+            agent_id=AgentID("0"),
+            sigma=15,
+            kernel_width=15,
         )
         padded_img = gaussian_smoother.get_padded_img(img, pad_type="empty")
         filtered_img = gaussian_smoother.conv2d(padded_img, kernel_renorm=True)
 
         self.assertTrue(
-            (img.shape == filtered_img.shape), "Filtered image shapes do not match.",
+            (img.shape == filtered_img.shape),
+            "Filtered image shapes do not match.",
         )
 
         all_equal = np.allclose(img, filtered_img, atol=1e-5)
@@ -97,7 +106,9 @@ class GaussianSmoothingTest(unittest.TestCase):
         )
 
         gaussian_smoother = GaussianSmoothing(
-            agent_id=AgentID("0"), sigma=2, kernel_width=3,
+            agent_id=AgentID("0"),
+            sigma=2,
+            kernel_width=3,
         )
         padded_img = gaussian_smoother.get_padded_img(img, pad_type="empty")
         filtered_img = gaussian_smoother.conv2d(padded_img, kernel_renorm=True)

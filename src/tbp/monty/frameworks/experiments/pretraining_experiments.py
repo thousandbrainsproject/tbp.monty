@@ -85,7 +85,8 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             num_steps += 1
             if self.show_sensor_output:
                 is_saccade_on_image_env_interface = isinstance(
-                    self.env_interface, SaccadeOnImageEnvironmentInterface,
+                    self.env_interface,
+                    SaccadeOnImageEnvironmentInterface,
                 )
                 self.live_plotter.show_observations(
                     *self.live_plotter.hardcoded_assumptions(observation, self.model),

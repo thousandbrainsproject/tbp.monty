@@ -31,7 +31,8 @@ def main():
     )
     parser.add_argument("index_file", help="The JSON file to validate and transform")
     parser.add_argument(
-        "output_dir", help="The output directory to create and save data.json",
+        "output_dir",
+        help="The output directory to create and save data.json",
     )
     parser.add_argument(
         "--docs-snippets-dir",

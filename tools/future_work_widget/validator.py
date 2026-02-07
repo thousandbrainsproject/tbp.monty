@@ -144,7 +144,8 @@ class FutureWorkRecord(BaseModel):
 
     @classmethod
     def _allowed_values(
-        cls, info: ValidationInfo,
+        cls,
+        info: ValidationInfo,
     ) -> tuple[str | None, list[str] | None]:
         """Extract allowed values from validation context.
 
@@ -163,7 +164,9 @@ class FutureWorkRecord(BaseModel):
 
     @classmethod
     def _parse_comma_separated_list(
-        cls, v: Any, max_items: int = MAX_COMMA_SEPARATED_ITEMS,
+        cls,
+        v: Any,
+        max_items: int = MAX_COMMA_SEPARATED_ITEMS,
     ) -> list[str] | None:
         """Parse and validate comma-separated string into list.
 
@@ -196,7 +199,9 @@ class FutureWorkRecord(BaseModel):
     @field_validator("tags", "skills", "output_type", "improved_metric", mode="before")
     @classmethod
     def validate_comma_separated_list(
-        cls, v: Any, info: ValidationInfo,
+        cls,
+        v: Any,
+        info: ValidationInfo,
     ) -> list[str] | None:
         """Parse comma-separated strings and validate against allowed values.
 
@@ -246,7 +251,9 @@ class FutureWorkRecord(BaseModel):
     @field_validator("estimated_scope", "status")
     @classmethod
     def validate_single_value_field(
-        cls, v: str | None, info: ValidationInfo,
+        cls,
+        v: str | None,
+        info: ValidationInfo,
     ) -> str | None:
         """Validate single-value fields against allowed values.
 

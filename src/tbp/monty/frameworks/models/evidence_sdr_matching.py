@@ -256,7 +256,8 @@ class EncoderSDR:
         self.stable_ids = np.arange(stable_data.shape[0])
 
         new_obj_sdrs = np.random.randn(
-            stable_data.shape[0] + n_objects, self.sdr_length,
+            stable_data.shape[0] + n_objects,
+            self.sdr_length,
         )
 
         new_obj_sdrs[: stable_data.shape[0]] = stable_data
@@ -484,7 +485,8 @@ class EvidenceSDRTargetOverlaps:
         # calculate the mask of indices with True values where existing overlaps
         # are nan and new overlaps are not nan.
         mask_overwrite = np.logical_and(
-            np.isnan(self._overlaps), ~np.isnan(mapped_overlaps),
+            np.isnan(self._overlaps),
+            ~np.isnan(mapped_overlaps),
         )
 
         # overlap existing nan values in `self._overlaps` with new overlaps values
@@ -633,7 +635,8 @@ class EvidenceSDRLMMixin:
 
         # Step 3: update running average with new evidence scores
         self.target_overlaps.add_evidence(
-            relative_evidences, [0, self.sdr_args["sdr_on_bits"]],
+            relative_evidences,
+            [0, self.sdr_args["sdr_on_bits"]],
         )
 
     def post_episode(self, *args, **kwargs):

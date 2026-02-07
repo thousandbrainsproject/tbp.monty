@@ -67,7 +67,9 @@ class TestBuild(unittest.TestCase):
         return base_item
 
     def _run_build(
-        self, input_data: list[dict[str, Any]], snippets_dir: str | None = None,
+        self,
+        input_data: list[dict[str, Any]],
+        snippets_dir: str | None = None,
     ) -> list[dict[str, Any]]:
         """Helper method to run build with test data and return results.
 
@@ -188,7 +190,8 @@ class TestBuild(unittest.TestCase):
 
                 self.assertEqual(len(result_data), 1)
                 self.assertEqual(
-                    result_data[0][case["field_name"]], case["expected_result"],
+                    result_data[0][case["field_name"]],
+                    case["expected_result"],
                 )
 
     def test_build_without_snippets_dir(self):
@@ -206,7 +209,8 @@ class TestBuild(unittest.TestCase):
         """Test JSON output mode for successful build."""
         input_data = [
             self._create_future_work_item(
-                path2="test-success", title="Test success item",
+                path2="test-success",
+                title="Test success item",
             ),
         ]
 

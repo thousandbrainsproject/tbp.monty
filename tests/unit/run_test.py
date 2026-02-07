@@ -74,12 +74,14 @@ class MontyRunTest(unittest.TestCase):
         # Mock habitat_sim classes
         mock_agent_class = agent_patch.start()
         camera = SingleSensorAgent(
-            agent_id=AgentID("agent_id_0"), sensor_id=SensorID("sensor_id_0"),
+            agent_id=AgentID("agent_id_0"),
+            sensor_id=SensorID("sensor_id_0"),
         )
         self.mock_agent = mock_agent_class.return_value
         self.mock_agent.agent_config = camera.get_spec()
         self.mock_agent.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={},
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_class = sim_patch.start()
         self.mock_sim = mock_sim_class.return_value

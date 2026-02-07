@@ -112,7 +112,9 @@ class DataclassSerializationTest(unittest.TestCase):
 
     def test_nested_dataclass_with_dict(self):
         obj = NestedDataclassWithDict(
-            field1="1", field2=SimpleDataclass(field1="2", field2=2), field3={"a": 1},
+            field1="1",
+            field2=SimpleDataclass(field1="2", field2=2),
+            field3={"a": 1},
         )
         datadict = dataclass_utils.as_dataclass_dict(obj)
         self.assertDictEqual(
@@ -190,7 +192,8 @@ class CreateDataclassArgsTest(unittest.TestCase):
             pass
 
         dc = dataclass_utils.create_dataclass_args(
-            "test2", sample_function_with_default,
+            "test2",
+            sample_function_with_default,
         )
 
         self.assertTrue(dataclasses.is_dataclass(dc))
@@ -250,7 +253,8 @@ class ConfigToDictTest(unittest.TestCase):
 
     def test_nested_dataclass(self):
         config = NestedDataclass(
-            field1="1", field2=SimpleDataclass(field1="2", field2=2),
+            field1="1",
+            field2=SimpleDataclass(field1="2", field2=2),
         )
         datadict = dataclass_utils.config_to_dict(config)
         self.assertDictEqual(
@@ -266,7 +270,9 @@ class ConfigToDictTest(unittest.TestCase):
 
     def test_nested_dataclass_with_dict(self):
         config = NestedDataclassWithDict(
-            field1="1", field2=SimpleDataclass(field1="2", field2=2), field3={"a": 1},
+            field1="1",
+            field2=SimpleDataclass(field1="2", field2=2),
+            field3={"a": 1},
         )
         datadict = dataclass_utils.config_to_dict(config)
         self.assertDictEqual(
@@ -602,7 +608,8 @@ class GetSubsetArgsTest(unittest.TestCase):
 
         pooled_dict = dict(field1="a", field2=3, field3="b")
         subset_args = dataclass_utils.get_subset_of_args(
-            pooled_dict, SampleClass2.__init__,
+            pooled_dict,
+            SampleClass2.__init__,
         )
 
         expected_subset_args = dict(field2=3, field3="b")

@@ -179,7 +179,10 @@ def matches_to_target_str(possible_matches, graph_to_target):
 
 
 def compute_unsupervised_stats(
-    possible_matches, target, graph_to_target, target_to_graph,
+    possible_matches,
+    target,
+    graph_to_target,
+    target_to_graph,
 ):
     """Compute statistics like how many graphs are built per object.
 
@@ -271,7 +274,8 @@ def check_rotation_accuracy(stats, last_n_step=1):
                         ],
                     )
                     if np.array_equal(
-                        np.array(detected_rotation), np.array(target_rotation),
+                        np.array(detected_rotation),
+                        np.array(target_rotation),
                     ) or np.array_equal(np.array(dual_pose), np.array(target_rotation)):
                         performance = "correct_rotation"
                     else:
@@ -390,7 +394,8 @@ def get_time_stats(all_ds, all_conditions) -> pd.DataFrame:
 
 
 def compute_pose_errors(
-    predicted_rotation: Rotation, target_rotation: Rotation,
+    predicted_rotation: Rotation,
+    target_rotation: Rotation,
 ) -> npt.NDArray[np.float64] | float:
     """Computes the angular pose errors between predicted and target rotations.
 
@@ -595,7 +600,8 @@ def get_graph_lm_episode_stats(lm):
                     # Invert them since these are possible poses to rotate displacement
                     # not the object rotations.
                     detected_rotation = rotations_to_quats(
-                        lm.buffer.stats["symmetric_rotations"], invert=True,
+                        lm.buffer.stats["symmetric_rotations"],
+                        invert=True,
                     )
                 else:
                     detected_rotation = lm.buffer.stats["detected_rotation_quat"]
@@ -703,7 +709,8 @@ def add_pose_lm_episode_stats(lm, stats):
         possible_matches = lm.get_possible_matches()
         all_possible_poses = lm.possible_poses[possible_matches[0]]
         stats["possible_object_poses"] = get_unique_rotations(
-            all_possible_poses, lm.pose_similarity_threshold,
+            all_possible_poses,
+            lm.pose_similarity_threshold,
         )
         paths = np.array(lm.possible_paths[possible_matches[0]])
         stats["possible_object_locations"] = paths[:, -1]
@@ -716,7 +723,8 @@ def add_pose_lm_episode_stats(lm, stats):
                 pose = stats["possible_object_poses"][i][j]
                 if isinstance(pose, Rotation):
                     stats["possible_object_poses"][i][j] = pose.as_euler(
-                        "xyz", degrees=True,
+                        "xyz",
+                        degrees=True,
                     )
     else:
         # All fields must be included in each update to enable periodic appending to csv
@@ -742,7 +750,9 @@ def get_stats_per_lm(model, target, episode_seed: int):
         lm_stats = get_graph_lm_episode_stats(lm)
         if hasattr(lm, "evidence"):
             lm_stats = add_evidence_lm_episode_stats(
-                lm, lm_stats, target["consistent_child_objects"],
+                lm,
+                lm_stats,
+                target["consistent_child_objects"],
             )
         else:
             lm_stats = add_pose_lm_episode_stats(lm, lm_stats)
@@ -785,7 +795,10 @@ def add_evidence_lm_episode_stats(lm, stats, consistent_child_objects):
     )
     stats = calculate_performance(stats, "primary_performance", lm, lm.primary_target)
     stats = calculate_performance(
-        stats, "stepwise_performance", lm, lm.stepwise_target_object,
+        stats,
+        "stepwise_performance",
+        lm,
+        lm.stepwise_target_object,
     )
     if stats["primary_performance"] == "correct_mlh":
         stats["rotation_error"] = np.round(
@@ -900,11 +913,13 @@ def consistent_child_objects_accuracy(eval_stats_for_lm, parent_to_child_mapping
 
 
 def accuracy_stats_for_compositional_objects(
-    eval_stats_for_lm, parent_to_child_mapping,
+    eval_stats_for_lm,
+    parent_to_child_mapping,
 ):
     compositional_object_accuracy = overall_accuracy(eval_stats_for_lm)
     consistent_child_accuracy = consistent_child_objects_accuracy(
-        eval_stats_for_lm, parent_to_child_mapping,
+        eval_stats_for_lm,
+        parent_to_child_mapping,
     )
 
     return compositional_object_accuracy, consistent_child_accuracy
@@ -916,7 +931,8 @@ def compositional_stats_for_all_lms(eval_stats, all_lm_ids, parent_to_child_mapp
         eval_stats_for_lm = eval_stats[eval_stats["lm_id"] == f"LM_{lm_id}"]
         compositional_object_accuracy, consistent_child_accuracy = (
             accuracy_stats_for_compositional_objects(
-                eval_stats_for_lm, parent_to_child_mapping,
+                eval_stats_for_lm,
+                parent_to_child_mapping,
             )
         )
         print(

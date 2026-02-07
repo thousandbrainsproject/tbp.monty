@@ -133,7 +133,8 @@ class MuJoCoSimulator(Simulator):
 
     @override
     def step(
-        self, actions: Sequence[Action],
+        self,
+        actions: Sequence[Action],
     ) -> tuple[Observations, ProprioceptiveState]:
         return Observations({}), ProprioceptiveState({})
 

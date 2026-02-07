@@ -65,7 +65,8 @@ class Simulator(Protocol):
         ...
 
     def step(
-        self, actions: Sequence[Action],
+        self,
+        actions: Sequence[Action],
     ) -> tuple[Observations, ProprioceptiveState]:
         """Execute the given actions in the environment.
 

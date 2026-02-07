@@ -129,7 +129,9 @@ class LivePlotter:
             if len(raw_obs) > 0:
                 center_pixel_id = np.array(raw_obs[-1]["pixel_loc"])
                 view_finder_rgba = add_patch_outline_to_view_finder(
-                    view_finder_rgba, center_pixel_id, patch_size,
+                    view_finder_rgba,
+                    center_pixel_id,
+                    patch_size,
                 )
             self.camera_image = self.ax[0].imshow(view_finder_rgba, zorder=-99)
         else:
@@ -186,7 +188,11 @@ class LivePlotter:
         )
         # add mlh location to the graph
         self.ax[2].scatter(
-            mlh["location"][1], mlh["location"][0], mlh["location"][2], c="red", s=15,
+            mlh["location"][1],
+            mlh["location"][0],
+            mlh["location"][2],
+            c="red",
+            s=15,
         )
         self.ax[2].set_title("MLH")
         self.ax[2].set_axis_off()

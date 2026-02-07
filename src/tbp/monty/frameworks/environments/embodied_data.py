@@ -155,7 +155,10 @@ class EnvironmentInterface:
         return observation, state
 
     def apply_transform(
-        self, transform, observation: Observations, state: ProprioceptiveState,
+        self,
+        transform,
+        observation: Observations,
+        state: ProprioceptiveState,
     ) -> Observations:
         ctx = TransformContext(rng=self.rng, state=state)
         if isinstance(transform, Iterable):
@@ -259,7 +262,10 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         self.epochs = 0
         self.object_init_sampler = object_init_sampler
         self.object_params = self.object_init_sampler(
-            self.seed, self.experiment_mode, self.epochs, self.episodes,
+            self.seed,
+            self.experiment_mode,
+            self.epochs,
+            self.episodes,
         )
         self.current_object = 0
         self.n_objects = len(self.object_names)
@@ -280,7 +286,10 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         super().post_episode()
         self.episodes += 1
         self.object_params = self.object_init_sampler(
-            self.seed, self.experiment_mode, self.epochs, self.episodes,
+            self.seed,
+            self.experiment_mode,
+            self.epochs,
+            self.episodes,
         )
         self.cycle_object()
 
@@ -290,7 +299,10 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
     def post_epoch(self):
         self.epochs += 1
         self.object_params = self.object_init_sampler(
-            self.seed, self.experiment_mode, self.epochs, self.episodes,
+            self.seed,
+            self.experiment_mode,
+            self.epochs,
+            self.episodes,
         )
 
     def create_semantic_mapping(self):
@@ -352,7 +364,8 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
         # TODO clean this up with its own specific call i.e. Law of Demeter
         primary_target_obj = self.env.add_object(
-            name=self.object_names[idx], **init_params,
+            name=self.object_names[idx],
+            **init_params,
         )
 
         if self.num_distractors > 0:
@@ -703,7 +716,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # Call post_action (normally taken care of __call__ within
         # self.motor_system._policy())
         self.motor_system._policy.post_action(
-            self.motor_system._policy.action, self.motor_system._state,
+            self.motor_system._policy.action,
+            self.motor_system._state,
         )
 
         return self._observation
@@ -882,7 +896,9 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         """
         assert idx <= self.n_objects, "idx must be <= self.n_objects"
         self.env.switch_to_object(
-            self.alphabets[idx], self.characters[idx], self.versions[idx],
+            self.alphabets[idx],
+            self.characters[idx],
+            self.versions[idx],
         )
         self.current_object = idx
         self.primary_target = {

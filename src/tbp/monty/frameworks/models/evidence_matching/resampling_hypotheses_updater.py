@@ -325,13 +325,15 @@ class ResamplingHypothesesUpdater:
         tracker = self.evidence_slope_trackers[graph_id]
 
         input_channels_to_use = all_usable_input_channels(
-            features, self.graph_memory.get_input_channels_in_graph(graph_id),
+            features,
+            self.graph_memory.get_input_channels_in_graph(graph_id),
         )
 
         hypotheses_updates = []
         resampling_telemetry: dict[str, Any] = {}
         channel_hypothesis_displacer_telemetry: dict[
-            str, HypothesisDisplacerTelemetry,
+            str,
+            HypothesisDisplacerTelemetry,
         ] = {}
 
         for input_channel in input_channels_to_use:
@@ -484,7 +486,8 @@ class ResamplingHypothesesUpdater:
         new_informed = 0
         if self.sampling_burst_steps > 0:
             graph_num_points = self.graph_memory.get_locations_in_graph(
-                graph_id, input_channel,
+                graph_id,
+                input_channel,
             ).shape[0]
             num_hyps_per_node = self._num_hyps_per_node(channel_features)
 
@@ -501,7 +504,8 @@ class ResamplingHypothesesUpdater:
         # Returns a selection of hypotheses to maintain/delete
         hypotheses_selection = (
             tracker.select_hypotheses(
-                slope_threshold=self.deletion_trigger_slope, channel=input_channel,
+                slope_threshold=self.deletion_trigger_slope,
+                channel=input_channel,
             )
             if input_channel in mapper.channels
             else HypothesesSelection(maintain_mask=[])
@@ -650,32 +654,39 @@ class ResamplingHypothesesUpdater:
             node_feature_evidence_filtered = np.zeros(len(top_indices))
 
         selected_feature_evidence = np.tile(
-            node_feature_evidence_filtered, num_hyps_per_node,
+            node_feature_evidence_filtered,
+            num_hyps_per_node,
         )
 
         # === Calculate selected locations by top-k indices === #
         all_channel_locations_filtered = self.graph_memory.get_locations_in_graph(
-            graph_id, input_channel,
+            graph_id,
+            input_channel,
         )[top_indices]
         selected_locations = np.tile(
-            all_channel_locations_filtered, (num_hyps_per_node, 1),
+            all_channel_locations_filtered,
+            (num_hyps_per_node, 1),
         )
 
         # === Calculate selected rotations by top-k indices === #
         if self.initial_possible_poses is None:
             node_directions_filtered = (
                 self.graph_memory.get_rotation_features_at_all_nodes(
-                    graph_id, input_channel,
+                    graph_id,
+                    input_channel,
                 )[top_indices]
             )
             sensed_directions = channel_features["pose_vectors"]
             possible_s_d = possible_sensed_directions(
-                sensed_directions, num_hyps_per_node,
+                sensed_directions,
+                num_hyps_per_node,
             )
             selected_rotations = np.vstack(
                 [
                     align_multiple_orthonormal_vectors(
-                        node_directions_filtered, s_d, as_scipy=False,
+                        node_directions_filtered,
+                        s_d,
+                        as_scipy=False,
                     )
                     for s_d in possible_s_d
                 ],

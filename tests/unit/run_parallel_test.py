@@ -36,7 +36,9 @@ class RunParallelTest(unittest.TestCase):
         self.output_dir = Path(tempfile.mkdtemp())
 
         def hydra_config(
-            test_name: str, output_dir: Path, model_name_or_path: Path | None = None,
+            test_name: str,
+            output_dir: Path,
+            model_name_or_path: Path | None = None,
         ) -> DictConfig:
             overrides = [
                 f"experiment=test/{test_name}",
@@ -54,7 +56,8 @@ class RunParallelTest(unittest.TestCase):
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.supervised_pre_training_cfg = hydra_config(
-                "supervised_pre_training", self.output_dir,
+                "supervised_pre_training",
+                self.output_dir,
             )
             self.eval_cfg = hydra_config(
                 "eval",
@@ -87,7 +90,8 @@ class RunParallelTest(unittest.TestCase):
 
         # Same objects
         self.assertEqual(
-            parallel_model["lm_dict"][0].keys(), serial_model["lm_dict"][0].keys(),
+            parallel_model["lm_dict"][0].keys(),
+            serial_model["lm_dict"][0].keys(),
         )
 
         # Same number of features

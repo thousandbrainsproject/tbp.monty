@@ -51,7 +51,8 @@ class Environment(Protocol):
     """Base protocol for all environments that support steppable actions."""
 
     def step(
-        self, actions: Sequence[Action],
+        self,
+        actions: Sequence[Action],
     ) -> tuple[Observations, ProprioceptiveState]:
         """Apply the given actions to the environment.
 
@@ -132,6 +133,9 @@ class SimulatedEnvironment(Environment, ResettableEnvironment, Protocol):
 
 
 class SimulatedObjectEnvironment(
-    Environment, ObjectEnvironment, ResettableEnvironment, Protocol,
+    Environment,
+    ObjectEnvironment,
+    ResettableEnvironment,
+    Protocol,
 ):
     pass

@@ -240,7 +240,10 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         pose_fully_defined=st.booleans(),
     )
     def test_sample_count_returns_informed_count_during_burst(
-        self, sampling_multiplier, graph_num_nodes, pose_fully_defined,
+        self,
+        sampling_multiplier,
+        graph_num_nodes,
+        pose_fully_defined,
     ) -> None:
         """Test informed_count with various resampling parameters.
 
@@ -358,7 +361,8 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         sampling_burst_duration=st.integers(min_value=1, max_value=10),
     )
     def test_burst_triggers_on_first_step_with_no_trackers(
-        self, sampling_burst_duration,
+        self,
+        sampling_burst_duration,
     ) -> None:
         """Test that burst triggers on first step when no trackers exist.
 
@@ -536,7 +540,9 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         num_euler_angles=st.integers(min_value=1, max_value=10),
     )
     def test_num_hyps_per_node_with_initial_possible_poses(
-        self, pose_fully_defined, num_euler_angles,
+        self,
+        pose_fully_defined,
+        num_euler_angles,
     ) -> None:
         """Test _num_hyps_per_node returns length of initial_possible_poses.
 
@@ -561,7 +567,8 @@ class ResamplingHypothesesUpdaterTest(TestCase):
 
     @given(pose_fully_defined=st.booleans())
     def test_sample_informed_returns_empty_when_informed_count_zero(
-        self, pose_fully_defined,
+        self,
+        pose_fully_defined,
     ) -> None:
         tracker = EvidenceSlopeTracker()
 
@@ -584,7 +591,9 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         num_hyps_per_node=st.integers(min_value=1, max_value=10),
     )
     def test_sample_informed_without_feature_matching(
-        self, num_nodes, num_hyps_per_node,
+        self,
+        num_nodes,
+        num_hyps_per_node,
     ) -> None:
         """Test _sample_informed when use_features_for_matching is False.
 
@@ -749,7 +758,9 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         num_rotations=st.integers(min_value=1, max_value=10),
     )
     def test_sample_informed_with_initial_poses_set(
-        self, num_nodes, num_rotations,
+        self,
+        num_nodes,
+        num_rotations,
     ) -> None:
         """Test _sample_informed when initial_possible_poses is set.
 

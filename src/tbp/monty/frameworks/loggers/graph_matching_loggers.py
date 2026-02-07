@@ -211,7 +211,9 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                     stats
         """
         performance_dict = get_stats_per_lm(
-            model, logger_args["target"], logger_args["episode_seed"],
+            model,
+            logger_args["target"],
+            logger_args["episode_seed"],
         )
         target_dict = target_data_to_dict(logger_args["target"])
         if len(self.lms) == 0:  # first time function is called
@@ -226,7 +228,10 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         self.data["BASIC"][f"{mode}_stats"][episode] = performance_dict
 
         self.update_overall_stats(
-            mode, episode, model.episode_steps, model.matching_steps,
+            mode,
+            episode,
+            model.episode_steps,
+            model.matching_steps,
         )
         overall_stats = self.get_formatted_overall_stats(mode, episode)
 
@@ -237,7 +242,11 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         self.data["BASIC"][f"{mode}_stats"][episode]["target"] = target_dict
 
     def update_overall_stats(
-        self, mode: ExperimentMode, episode, episode_steps, monty_matching_steps,
+        self,
+        mode: ExperimentMode,
+        episode,
+        episode_steps,
+        monty_matching_steps,
     ) -> None:
         """Update overall run stats for mode."""
         if mode is ExperimentMode.TRAIN:

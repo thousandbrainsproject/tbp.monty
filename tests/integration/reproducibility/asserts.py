@@ -16,7 +16,8 @@ from tbp.monty.frameworks.models.object_model import GraphObjectModel
 
 
 def assert_graph_object_models_equal(
-    left: GraphObjectModel, right: GraphObjectModel,
+    left: GraphObjectModel,
+    right: GraphObjectModel,
 ) -> None:
     """Custom assertion comparison for GraphObjectModel.
 
@@ -90,9 +91,11 @@ def assert_trained_models_equal(serial_model: dict, parallel_model: dict) -> Non
 
             for channel_id in p_graph:
                 p_graph_data: GraphObjectModel = cast(
-                    "GraphObjectModel", p_graph[channel_id],
+                    "GraphObjectModel",
+                    p_graph[channel_id],
                 )
                 s_graph_data: GraphObjectModel = cast(
-                    "GraphObjectModel", s_graph[channel_id],
+                    "GraphObjectModel",
+                    s_graph[channel_id],
                 )
                 assert_graph_object_models_equal(p_graph_data, s_graph_data)

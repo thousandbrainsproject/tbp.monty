@@ -68,7 +68,8 @@ class TestReadme(unittest.TestCase):
             self.readme.get_stable_version()
 
         self.assertEqual(
-            str(context.exception), "Failed to retrieve versions or no versions found",
+            str(context.exception),
+            "Failed to retrieve versions or no versions found",
         )
         mock_get.assert_called_once_with(
             "https://dash.readme.com/api/v1/version",
@@ -275,7 +276,8 @@ This is a test document.""",
         mock_get.return_value = None
         mock_post.return_value = json.dumps({"_id": "new-category-id"})
         category_id, created = self.readme.create_category_if_not_exists(
-            "new-category", "New Category",
+            "new-category",
+            "New Category",
         )
         self.assertTrue(created)
         self.assertEqual(category_id, "new-category-id")
@@ -448,7 +450,8 @@ This is a test document.""",
 
         for path in markdown_paths_without_deep_link:
             self.assertEqual(
-                self.readme.correct_file_locations(path), "[File 1](/docs/slug)",
+                self.readme.correct_file_locations(path),
+                "[File 1](/docs/slug)",
             )
 
         for path in markdown_paths_that_should_not_change:
@@ -479,7 +482,8 @@ This is a test document.""",
         with self.assertRaises(ValueError) as context:
             self.readme.correct_image_locations(body)
         self.assertEqual(
-            str(context.exception), "IMAGE_PATH environment variable not set",
+            str(context.exception),
+            "IMAGE_PATH environment variable not set",
         )
 
     def test_convert_note_tags_with_link(self):
@@ -498,7 +502,8 @@ This is a test document.""",
         """
 
         self.assertEqual(
-            self.readme.convert_note_tags(input_text).strip(), expected_output.strip(),
+            self.readme.convert_note_tags(input_text).strip(),
+            expected_output.strip(),
         )
         input_text = """
         > [!NOTE]    This is a note.
@@ -518,7 +523,8 @@ This is a test document.""",
 
         # Compare stripped versions to ensure we ignore leading/trailing whitespace
         self.assertEqual(
-            self.readme.convert_note_tags(input_text).strip(), expected_output.strip(),
+            self.readme.convert_note_tags(input_text).strip(),
+            expected_output.strip(),
         )
 
     def test_convert_cloudinary_videos(self):
@@ -722,7 +728,8 @@ This is a test document.""",
 
             # Test with non-existent file
             result = self.readme.convert_csv_to_html_table(
-                "!table[non_existent.csv]", "",
+                "!table[non_existent.csv]",
+                "",
             )
             self.assertTrue(result.startswith("[Failed to load table"))
         finally:
@@ -764,7 +771,8 @@ This is a test document.""",
 
             # Test relative path from doc to csv
             result = self.readme.convert_csv_to_html_table(
-                "!table[../../data/test.csv]", doc_path,
+                "!table[../../data/test.csv]",
+                doc_path,
             )
 
             # Check the table structure
@@ -793,7 +801,8 @@ This is a test document.""",
             doc_path = docs_dir / "doc.md"
 
             result = self.readme.insert_markdown_snippet(
-                "!snippet[../../other/source.md]", doc_path,
+                "!snippet[../../other/source.md]",
+                doc_path,
             )
 
             expected_content = (
@@ -802,7 +811,8 @@ This is a test document.""",
             self.assertEqual(result, expected_content)
 
             result = self.readme.insert_markdown_snippet(
-                "!snippet[../other/nonexistent.md]", doc_path,
+                "!snippet[../other/nonexistent.md]",
+                doc_path,
             )
             self.assertIn("File not found", result)
 

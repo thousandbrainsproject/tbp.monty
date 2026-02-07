@@ -52,7 +52,8 @@ class HabitatSimTest(unittest.TestCase):
 
             # Look up until it reaches the defined constraint
             action = LookUp(
-                agent_id=AgentID("camera"), rotation_degrees=rotation_degrees,
+                agent_id=AgentID("camera"),
+                rotation_degrees=rotation_degrees,
             )
             constraint = action.constraint_degrees
 
@@ -66,7 +67,8 @@ class HabitatSimTest(unittest.TestCase):
 
             # Look down until it reaches the defined constraint
             action = LookDown(
-                agent_id=AgentID("camera"), rotation_degrees=rotation_degrees,
+                agent_id=AgentID("camera"),
+                rotation_degrees=rotation_degrees,
             )
             constraint = action.constraint_degrees
 

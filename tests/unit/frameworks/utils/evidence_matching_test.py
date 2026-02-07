@@ -238,7 +238,8 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
 
         expected = np.array([[1.0, 2.0, 3.0], [2.0, 3.0, 4.0]])
         np.testing.assert_array_equal(
-            self.tracker.evidence_buffer[self.channel], expected,
+            self.tracker.evidence_buffer[self.channel],
+            expected,
         )
         np.testing.assert_array_equal(self.tracker.hyp_age[self.channel], [3, 3])
 
@@ -256,7 +257,8 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         # Final buffer should be [5.0, 4.0, 3.0]
         expected_buffer = np.array([[5.0, 4.0, 3.0]])
         np.testing.assert_array_equal(
-            self.tracker.evidence_buffer[self.channel], expected_buffer,
+            self.tracker.evidence_buffer[self.channel],
+            expected_buffer,
         )
 
         # Slopes: (3.0 - 4.0) + (4.0 - 5.0) = (-1) + (-1) = -2 / 2 = -1.0
@@ -276,7 +278,8 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         self.tracker.remove_hyp(np.array([1]), self.channel)
         self.assertEqual(self.tracker.total_size(self.channel), 2)
         np.testing.assert_array_equal(
-            self.tracker.evidence_buffer[self.channel][:, -1], [1.0, 3.0],
+            self.tracker.evidence_buffer[self.channel][:, -1],
+            [1.0, 3.0],
         )
 
     def test_clear_hyp_removes_all_hypotheses(self) -> None:
@@ -326,7 +329,8 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         self.tracker.hyp_age[self.channel] = np.array([3, 3, 3, 1], dtype=int)
 
         selection = self.tracker.select_hypotheses(
-            slope_threshold=-0.5, channel=self.channel,
+            slope_threshold=-0.5,
+            channel=self.channel,
         )
 
         # 0,1 have higher slopes, 3 is too young

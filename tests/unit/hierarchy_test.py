@@ -243,7 +243,8 @@ class HierarchyTest(unittest.TestCase):
                     self.assertIn(f"patch_{lm_idx}", loaded_graph.keys())
                     # check that it is of type GridObjectModel.
                     self.assertIsInstance(
-                        loaded_graph[f"patch_{lm_idx}"], GridObjectModel,
+                        loaded_graph[f"patch_{lm_idx}"],
+                        GridObjectModel,
                     )
             lm_0_memory_before_learning = exp.model.learning_modules[
                 0

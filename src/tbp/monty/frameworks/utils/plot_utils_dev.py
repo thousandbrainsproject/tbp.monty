@@ -482,7 +482,11 @@ def show_one_step(
                 # print("angle between rotated and observed: " + str(angle))
                 plot_normal(ax, closest_node_position, norm, norm_len, "black")
                 plot_normal(
-                    ax, closest_node_position, graph_surface_normal, norm_len, "pink",
+                    ax,
+                    closest_node_position,
+                    graph_surface_normal,
+                    norm_len,
+                    "pink",
                 )
 
         search_positions = np.array(search_positions)
@@ -643,7 +647,9 @@ def plot_evidence_at_step(
         center_pixel_id = np.array(sm_stats["raw_observations"][step]["pixel_loc"])
         patch_size = np.array(patch_image).shape[0]
         view_finder_image = add_patch_outline_to_view_finder(
-            view_finder_image, center_pixel_id, patch_size,
+            view_finder_image,
+            center_pixel_id,
+            patch_size,
         )
     plt.imshow(view_finder_image)
     plt.title("view finder")
@@ -1623,7 +1629,9 @@ def plot_evidence_transitions(
     processed_stepwise_targets = stepwise_targets[lm_processed]
 
     terminus_point = find_step_on_new_object(
-        processed_stepwise_targets, primary_target, n_steps_off_primary_target=3,
+        processed_stepwise_targets,
+        primary_target,
+        n_steps_off_primary_target=3,
     )
     if terminus_point is None or not stop_at_detected_new_object:
         stop_point = len(lm_stats["evidences"])

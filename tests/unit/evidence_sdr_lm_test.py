@@ -49,14 +49,22 @@ class EvidenceSDRUnitTest(unittest.TestCase):
 
         """
         encoder_sdr = EncoderSDR(
-            sdr_length=100, sdr_on_bits=100, lr=1e-2, n_epochs=100, log_flag=False,
+            sdr_length=100,
+            sdr_on_bits=100,
+            lr=1e-2,
+            n_epochs=100,
+            log_flag=False,
         )
 
         # test that the sparsity is adjusted to 2%
         self.assertEqual(encoder_sdr.sdr_on_bits, int(100 * 0.02))
 
         encoder_sdr = EncoderSDR(
-            sdr_length=100, sdr_on_bits=0, lr=1e-2, n_epochs=100, log_flag=False,
+            sdr_length=100,
+            sdr_on_bits=0,
+            lr=1e-2,
+            n_epochs=100,
+            log_flag=False,
         )
 
         # test that the sparsity is adjusted to 2%
@@ -113,7 +121,11 @@ class EvidenceSDRUnitTest(unittest.TestCase):
 
         """
         encoder = EncoderSDR(
-            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True,
+            sdr_length=100,
+            sdr_on_bits=5,
+            lr=1e-2,
+            n_epochs=100,
+            log_flag=True,
         )
         encoder.add_objects(5)
 
@@ -137,7 +149,11 @@ class EvidenceSDRUnitTest(unittest.TestCase):
             - Representations of the last 2 objects shouldn't change
         """
         encoder = EncoderSDR(
-            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True,
+            sdr_length=100,
+            sdr_on_bits=5,
+            lr=1e-2,
+            n_epochs=100,
+            log_flag=True,
         )
         encoder.add_objects(5)
         training_data = np.full((5, 5), np.nan)
@@ -179,7 +195,11 @@ class EvidenceSDRUnitTest(unittest.TestCase):
         """
         # test for some points out of bound
         encoder = EncoderSDR(
-            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True,
+            sdr_length=100,
+            sdr_on_bits=5,
+            lr=1e-2,
+            n_epochs=100,
+            log_flag=True,
         )
         encoder.add_objects(3)
         training_data = np.full((5, 5), np.nan)
@@ -198,7 +218,11 @@ class EvidenceSDRUnitTest(unittest.TestCase):
 
         # test for all points out of bounds
         encoder = EncoderSDR(
-            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True,
+            sdr_length=100,
+            sdr_on_bits=5,
+            lr=1e-2,
+            n_epochs=100,
+            log_flag=True,
         )
         encoder.add_objects(3)
         training_data = np.full((5, 5), np.nan)
@@ -222,7 +246,11 @@ class EvidenceSDRUnitTest(unittest.TestCase):
             - SDR overlaps should be close to target overlaps
         """
         encoder = EncoderSDR(
-            sdr_length=2048, sdr_on_bits=41, lr=1e-2, n_epochs=1000, log_flag=True,
+            sdr_length=2048,
+            sdr_on_bits=41,
+            lr=1e-2,
+            n_epochs=1000,
+            log_flag=True,
         )
         encoder.add_objects(3)
         training_data = np.full((3, 3), np.nan)
@@ -317,7 +345,11 @@ class EvidenceSDRUnitTest(unittest.TestCase):
             - SDRs should be identical with overlap of exactly `sdr_on_bits`
         """
         encoder = EncoderSDR(
-            sdr_length=2048, sdr_on_bits=41, lr=1e-2, n_epochs=1000, log_flag=True,
+            sdr_length=2048,
+            sdr_on_bits=41,
+            lr=1e-2,
+            n_epochs=1000,
+            log_flag=True,
         )
         encoder.add_objects(2)
         training_data = np.full((2, 2), np.nan)
@@ -529,7 +561,8 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         lm.buffer.append_input_states(observations)
 
         lm._compute_possible_matches(
-            observations, first_movement_detected=first_movement_detected,
+            observations,
+            first_movement_detected=first_movement_detected,
         )
 
         if len(lm.get_possible_matches()) == 0:

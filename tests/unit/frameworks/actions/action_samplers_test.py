@@ -30,7 +30,9 @@ RNG_SEED = 1337
 
 class FakeActionOneActionSampler(Protocol):
     def sample_fake_action_one(
-        self, agent_id: AgentID, rng: RandomState,
+        self,
+        agent_id: AgentID,
+        rng: RandomState,
     ) -> FakeActionOne: ...
 
 
@@ -41,7 +43,10 @@ class FakeActionOneActuator(Protocol):
 class FakeActionOne(Action):
     @classmethod
     def sample(
-        cls, agent_id: AgentID, sampler: FakeActionOneActionSampler, rng: RandomState,
+        cls,
+        agent_id: AgentID,
+        sampler: FakeActionOneActionSampler,
+        rng: RandomState,
     ) -> FakeActionOne:
         return sampler.sample_fake_action_one(agent_id, rng)
 
@@ -54,7 +59,9 @@ class FakeActionOne(Action):
 
 class FakeActionTwoActionSampler(Protocol):
     def sample_fake_action_two(
-        self, agent_id: AgentID, rng: RandomState,
+        self,
+        agent_id: AgentID,
+        rng: RandomState,
     ) -> FakeActionTwo: ...
 
 
@@ -65,7 +72,10 @@ class FakeActionTwoActuator(Protocol):
 class FakeActionTwo(Action):
     @classmethod
     def sample(
-        cls, agent_id: AgentID, sampler: FakeActionTwoActionSampler, rng: RandomState,
+        cls,
+        agent_id: AgentID,
+        sampler: FakeActionTwoActionSampler,
+        rng: RandomState,
     ) -> FakeActionTwo:
         return sampler.sample_fake_action_two(agent_id, rng)
 
@@ -78,7 +88,9 @@ class FakeActionTwo(Action):
 
 class FakeActionThreeActionSampler(Protocol):
     def sample_fake_action_three(
-        self, agent_id: AgentID, rng: RandomState,
+        self,
+        agent_id: AgentID,
+        rng: RandomState,
     ) -> FakeActionThree: ...
 
 
@@ -89,7 +101,10 @@ class FakeActionThreeActuator(Protocol):
 class FakeActionThree(Action):
     @classmethod
     def sample(
-        cls, agent_id: AgentID, sampler: FakeActionThreeActionSampler, rng: RandomState,
+        cls,
+        agent_id: AgentID,
+        sampler: FakeActionThreeActionSampler,
+        rng: RandomState,
     ) -> FakeActionThree:
         return sampler.sample_fake_action_three(agent_id, rng)
 
@@ -108,17 +123,23 @@ class FakeSampler(ActionSampler):
         super().__init__(actions=actions)
 
     def sample_fake_action_one(
-        self, agent_id: AgentID, _rng: RandomState,
+        self,
+        agent_id: AgentID,
+        _rng: RandomState,
     ) -> FakeActionOne:
         return FakeActionOne(agent_id)
 
     def sample_fake_action_two(
-        self, agent_id: AgentID, _rng: RandomState,
+        self,
+        agent_id: AgentID,
+        _rng: RandomState,
     ) -> FakeActionTwo:
         return FakeActionTwo(agent_id)
 
     def sample_fake_action_three(
-        self, agent_id: AgentID, _rng: RandomState,
+        self,
+        agent_id: AgentID,
+        _rng: RandomState,
     ) -> FakeActionThree:
         return FakeActionThree(agent_id)
 
@@ -420,7 +441,8 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
             self.assertNotAlmostEqual(action1.location[i], action2.location[i])
         for i in range(4):
             self.assertNotAlmostEqual(
-                action1.rotation_quat[i], action2.rotation_quat[i],
+                action1.rotation_quat[i],
+                action2.rotation_quat[i],
             )
 
     def test_samples_set_sensor_pitch_with_sample_params(self) -> None:
@@ -441,7 +463,8 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
             self.assertNotAlmostEqual(action1.location[i], action2.location[i])
         for i in range(4):
             self.assertNotAlmostEqual(
-                action1.rotation_quat[i], action2.rotation_quat[i],
+                action1.rotation_quat[i],
+                action2.rotation_quat[i],
             )
 
     def test_samples_set_sensor_rotation_with_sample_params(self) -> None:
@@ -449,7 +472,8 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
         action2 = self.sampler.sample_set_sensor_rotation(AGENT_ID_2, self.rng)
         for i in range(4):
             self.assertNotAlmostEqual(
-                action1.rotation_quat[i], action2.rotation_quat[i],
+                action1.rotation_quat[i],
+                action2.rotation_quat[i],
             )
 
     def test_samples_set_yaw_with_sample_params(self) -> None:

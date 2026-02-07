@@ -323,7 +323,9 @@ class PolicyTest(unittest.TestCase):
                         "Should have moved back by reversing last movement"
                     )
                     self.assertIsInstance(
-                        last_action, type(stored_action), should_have_moved_back,
+                        last_action,
+                        type(stored_action),
+                        should_have_moved_back,
                     )
                     if isinstance(stored_action, (LookDown, LookUp)):
                         self.assertEqual(
@@ -579,7 +581,10 @@ class PolicyTest(unittest.TestCase):
 
             assert np.all(
                 np.isclose(
-                    current_pose[1], agent_direction * (-1), rtol=1.0e-3, atol=1.0e-2,
+                    current_pose[1],
+                    agent_direction * (-1),
+                    rtol=1.0e-3,
+                    atol=1.0e-2,
                 ),
             ), "Agent should be (approximately) looking down on the surface normal"
 
@@ -680,7 +685,8 @@ class PolicyTest(unittest.TestCase):
         policy.processed_observations = self.fake_obs_pc[4]
         direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.isclose(
-            np.dot(self.fake_obs_pc[4].get_surface_normal(), direction), 0,
+            np.dot(self.fake_obs_pc[4].get_surface_normal(), direction),
+            0,
         ), "Direction should be orthogonal to tangent (surface) plane"
         assert policy.ignoring_pc_counter == 1, (
             "Should have reset ignoring_pc_counter, and then incremented"
@@ -751,7 +757,8 @@ class PolicyTest(unittest.TestCase):
         policy.tangent_norms.append([0, 0, 1])
         direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.isclose(
-            np.dot(self.fake_obs_advanced_pc[0].get_surface_normal(), direction), 0,
+            np.dot(self.fake_obs_advanced_pc[0].get_surface_normal(), direction),
+            0,
         ), "Direction should be orthogonal to tangent (surface) plane"
         assert policy.following_pc_counter == 0, (
             "Should not have followed PC and incremented counter"
@@ -827,7 +834,8 @@ class PolicyTest(unittest.TestCase):
         # Note the following movement is a random direction deterministically set by the
         # random seed
         assert np.isclose(
-            np.dot(self.fake_obs_advanced_pc[0].get_surface_normal(), direction), 0,
+            np.dot(self.fake_obs_advanced_pc[0].get_surface_normal(), direction),
+            0,
         ), "Direction should be orthogonal to tangent (surface) plane"
         assert policy.ignoring_pc_counter == 0, (
             "Should have reset ignoring_pc_counter, and not incremented"
@@ -841,7 +849,11 @@ class PolicyTest(unittest.TestCase):
         assert policy.pc_is_z_defined is False, "Should have reset z-defind flag"
 
     def core_evaluate_compute_goal_state_for_target_loc(
-        self, lm, motor_system, object_orientation, target_location_on_object,
+        self,
+        lm,
+        motor_system,
+        object_orientation,
+        target_location_on_object,
     ):
         """Test GSGs ability to propose a motor-system goal-state.
 
@@ -871,7 +883,9 @@ class PolicyTest(unittest.TestCase):
                 "graph_id": "dummy_object",
                 "location": np.array([0.1, 0.1, 0.1]),
                 "rotation": Rotation.from_euler(
-                    "xyz", object_orientation, degrees=True,
+                    "xyz",
+                    object_orientation,
+                    degrees=True,
                 ).inv(),  # Rotation to transform the feature
                 "scale": 1,
                 "evidence": 100,

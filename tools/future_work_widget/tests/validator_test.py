@@ -86,7 +86,8 @@ class TestFutureWorkRecord(unittest.TestCase):
         self.assertEqual(validated.contributor, ["alice", "bob"])
         self.assertEqual(validated.output_type, ["documentation", "website"])
         self.assertEqual(
-            validated.improved_metric, ["community-engagement", "infrastructure"],
+            validated.improved_metric,
+            ["community-engagement", "infrastructure"],
         )
 
     def test_path_field_required(self):
@@ -168,7 +169,8 @@ class TestFutureWorkRecord(unittest.TestCase):
         allowed_values = {"tags": ["accuracy", "pose"]}
 
         validated = FutureWorkRecord.model_validate(
-            record, context={"allowed_values": allowed_values},
+            record,
+            context={"allowed_values": allowed_values},
         )
         self.assertEqual(validated.tags, ["accuracy"])
 
@@ -185,7 +187,8 @@ class TestFutureWorkRecord(unittest.TestCase):
 
         with self.assertRaises(ValidationError) as cm:
             FutureWorkRecord.model_validate(
-                record, context={"allowed_values": allowed_values},
+                record,
+                context={"allowed_values": allowed_values},
             )
 
         errors = cm.exception.errors()
@@ -204,7 +207,8 @@ class TestFutureWorkRecord(unittest.TestCase):
 
         with self.assertRaises(ValidationError) as cm:
             FutureWorkRecord.model_validate(
-                record, context={"allowed_values": allowed_values},
+                record,
+                context={"allowed_values": allowed_values},
             )
 
         errors = cm.exception.errors()
@@ -223,7 +227,8 @@ class TestFutureWorkRecord(unittest.TestCase):
 
         with self.assertRaises(ValidationError) as cm:
             FutureWorkRecord.model_validate(
-                record, context={"allowed_values": allowed_values},
+                record,
+                context={"allowed_values": allowed_values},
             )
 
         errors = cm.exception.errors()
@@ -247,11 +252,13 @@ class TestFutureWorkRecord(unittest.TestCase):
         }
 
         validated = FutureWorkRecord.model_validate(
-            record, context={"allowed_values": allowed_values},
+            record,
+            context={"allowed_values": allowed_values},
         )
         self.assertEqual(validated.output_type, ["documentation", "website"])
         self.assertEqual(
-            validated.improved_metric, ["community-engagement", "infrastructure"],
+            validated.improved_metric,
+            ["community-engagement", "infrastructure"],
         )
 
     def test_github_username_validation(self):

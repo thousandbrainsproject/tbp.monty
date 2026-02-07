@@ -121,14 +121,19 @@ class TheoreticalLimitLMLoggingMixin:
         for graph_id, graph_telemetry in self.hypotheses_updater_telemetry.items():
             stats[graph_id] = {
                 input_channel: self._channel_telemetry(
-                    graph_id, input_channel, channel_telemetry,
+                    graph_id,
+                    input_channel,
+                    channel_telemetry,
                 )
                 for input_channel, channel_telemetry in graph_telemetry.items()
             }
         return stats
 
     def _channel_telemetry(
-        self, graph_id: str, input_channel: str, channel_telemetry: dict[str, Any],
+        self,
+        graph_id: str,
+        input_channel: str,
+        channel_telemetry: dict[str, Any],
     ) -> HypothesesUpdaterChannelTelemetry:
         """Assemble channel telemetry for specific graph ID and input channel.
 
@@ -157,7 +162,8 @@ class TheoreticalLimitLMLoggingMixin:
         channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
         channel_evidence = mapper.extract(self.evidence[graph_id], input_channel)
         channel_locations = mapper.extract(
-            self.possible_locations[graph_id], input_channel,
+            self.possible_locations[graph_id],
+            input_channel,
         )
 
         return HypothesesUpdaterChannelTelemetry(

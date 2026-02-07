@@ -18,19 +18,28 @@ from tbp.monty.frameworks.utils.plot_utils_dev import get_action_name
 class GetActionNameTest(unittest.TestCase):
     def test_is_match_step_on_object(self) -> None:
         name = get_action_name(
-            action_stats=[], step=0, is_match_step=True, obs_on_object=True,
+            action_stats=[],
+            step=0,
+            is_match_step=True,
+            obs_on_object=True,
         )
         self.assertEqual(name, "updating possible matches")
 
     def test_is_match_step_not_on_object(self) -> None:
         name = get_action_name(
-            action_stats=[], step=0, is_match_step=True, obs_on_object=False,
+            action_stats=[],
+            step=0,
+            is_match_step=True,
+            obs_on_object=False,
         )
         self.assertEqual(name, "patch not on object")
 
     def test_not_match_step_step_0(self) -> None:
         name = get_action_name(
-            action_stats=[], step=0, is_match_step=False, obs_on_object=False,
+            action_stats=[],
+            step=0,
+            is_match_step=False,
+            obs_on_object=False,
         )
         self.assertEqual(name, "not moved yet")
 
@@ -45,7 +54,9 @@ class GetActionNameTest(unittest.TestCase):
 
     def test_not_match_step_action_name(self) -> None:
         action = MoveTangentially(
-            agent_id=AgentID("agent_id_0"), distance=13, direction=(1, 2, 3),
+            agent_id=AgentID("agent_id_0"),
+            distance=13,
+            direction=(1, 2, 3),
         )
         name = get_action_name(
             action_stats=[[action, {}]],

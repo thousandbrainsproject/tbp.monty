@@ -51,7 +51,12 @@ def torch_graph_to_numpy(torch_graph):
 
 
 def already_in_list(
-    existing_points, new_point, features, clean_ids, query_id, graph_delta_thresholds,
+    existing_points,
+    new_point,
+    features,
+    clean_ids,
+    query_id,
+    graph_delta_thresholds,
 ) -> bool:
     """Check if a given point is already in a list of points.
 
@@ -210,7 +215,12 @@ def remove_close_points(point_cloud, features, graph_delta_thresholds, old_graph
             clean_ids.append(i)
 
         elif not already_in_list(
-            new_points, p, features, clean_ids, i, graph_delta_thresholds,
+            new_points,
+            p,
+            features,
+            clean_ids,
+            i,
+            graph_delta_thresholds,
         ):
             new_points.append(p)
             clean_ids.append(i)
@@ -235,7 +245,9 @@ def increment_sparse_tensor_by_count(old_tensor, indices):
     # us to call .indices() instead of needing to use ._indices(). May remove this
     # if time overhead is too high but is pretty small atm (5.1e-5s).
     new_sparse_tensor = torch.sparse_coo_tensor(
-        new_indices, new_values, old_tensor.shape,
+        new_indices,
+        new_values,
+        old_tensor.shape,
     ).coalesce()
     # Add the new sparse tensor to the old one
     return old_tensor + new_sparse_tensor

@@ -53,7 +53,8 @@ def main():
     logger.info("Press Ctrl+C to stop the server\n")
 
     with socketserver.TCPServer(
-        ("", port), http.server.SimpleHTTPRequestHandler,
+        ("", port),
+        http.server.SimpleHTTPRequestHandler,
     ) as httpd:
         httpd.serve_forever()
 

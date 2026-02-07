@@ -105,7 +105,8 @@ class ProfileExperimentMixinTest(TestCase):
             with file.open("r") as f:
                 first_line = f.readline().rstrip("\n")
                 self.assertEqual(
-                    first_line, ",func,ncalls,ccalls,tottime,cumtime,callers",
+                    first_line,
+                    ",func,ncalls,ccalls,tottime,cumtime,callers",
                 )
 
     def test_run_episode_is_profiled(self) -> None:

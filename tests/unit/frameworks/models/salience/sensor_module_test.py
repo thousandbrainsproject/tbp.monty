@@ -92,7 +92,9 @@ class HabitatSalienceSMTest(unittest.TestCase):
 
         if self.should_snapshot:  # type: ignore[attr-defined]
             self.sensor_module._snapshot_telemetry.raw_observation.assert_called_once_with(  # type: ignore[attr-defined]
-                data, self.state.rotation, ArrayEqual(self.state.position),
+                data,
+                self.state.rotation,
+                ArrayEqual(self.state.position),
             )
         else:
             self.sensor_module._snapshot_telemetry.raw_observation.assert_not_called()  # type: ignore[attr-defined]
@@ -102,7 +104,8 @@ class HabitatSalienceSMTest(unittest.TestCase):
 
     @patch("tbp.monty.frameworks.models.salience.sensor_module.on_object_observation")
     def test_step_proposes_goals_properly(
-        self, on_object_observation: MagicMock,
+        self,
+        on_object_observation: MagicMock,
     ) -> None:
         self.sensor_module._salience_strategy.return_value = sentinel.salience_map  # type: ignore[attr-defined]
         locations = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
@@ -123,14 +126,17 @@ class HabitatSalienceSMTest(unittest.TestCase):
         goals = self.sensor_module.propose_goal_states()
 
         self.sensor_module._salience_strategy.assert_called_once_with(  # type: ignore[attr-defined]
-            rgba=data["rgba"], depth=data["depth"],
+            rgba=data["rgba"],
+            depth=data["depth"],
         )
         on_object_observation.assert_called_once_with(data, sentinel.salience_map)
         self.sensor_module._return_inhibitor.assert_called_once_with(  # type: ignore[attr-defined]
-            sentinel.center_location, locations,
+            sentinel.center_location,
+            locations,
         )
         self.sensor_module._weight_salience.assert_called_once_with(
-            sentinel.salience_map, sentinel.ior_weights,
+            sentinel.salience_map,
+            sentinel.ior_weights,
         )
 
         self.assertEqual(len(goals), locations.shape[0])
@@ -150,10 +156,12 @@ class HabitatSalienceSMTest(unittest.TestCase):
             self.assertEqual(g.confidence, expected_goal.confidence)
             self.assertEqual(g.use_state, expected_goal.use_state)
             self.assertEqual(
-                g.morphological_features, expected_goal.morphological_features,
+                g.morphological_features,
+                expected_goal.morphological_features,
             )
             self.assertEqual(
-                g.non_morphological_features, expected_goal.non_morphological_features,
+                g.non_morphological_features,
+                expected_goal.non_morphological_features,
             )
             self.assertEqual(g.goal_tolerances, expected_goal.goal_tolerances)
             self.assertEqual(g.sender_id, expected_goal.sender_id)
@@ -198,7 +206,8 @@ class HabitatSalienceSMPrivateTest(unittest.TestCase):
         weighted = self.sensor_module._weight_salience(salience, ior_weights)
 
         self.sensor_module._decay_salience.assert_called_once_with(
-            salience, ior_weights,
+            salience,
+            ior_weights,
         )
         self.sensor_module._randomize_salience.assert_called_once_with(sentinel.decayed)
         self.sensor_module._normalize_salience.assert_called_once_with(

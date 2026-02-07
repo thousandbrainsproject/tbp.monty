@@ -129,7 +129,10 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
 
 
 def surface_normal_ordinary_least_squares(
-    sensor_frame_data, world_camera, center_id, neighbor_patch_frac=3.2,
+    sensor_frame_data,
+    world_camera,
+    center_id,
+    neighbor_patch_frac=3.2,
 ):
     """Extracts the surface normal direction from a noisy point cloud.
 
@@ -195,7 +198,10 @@ def surface_normal_ordinary_least_squares(
 
 
 def surface_normal_total_least_squares(
-    point_cloud_base, center_id, view_dir, neighbor_patch_frac=3.2,
+    point_cloud_base,
+    center_id,
+    view_dir,
+    neighbor_patch_frac=3.2,
 ):
     """Extracts the surface normal direction from a noisy point-cloud.
 
@@ -451,7 +457,9 @@ def principal_curvatures(
             # Compute the weights for weighted least-square regression
             n_points = on_obj.shape[0]
             weights = weight_matrix(
-                n_points, center_id, neighbor_patch_frac=neighbor_patch_frac,
+                n_points,
+                center_id,
+                neighbor_patch_frac=neighbor_patch_frac,
             )
             weights = weights[on_obj, :]  # Filter off-object points
 
