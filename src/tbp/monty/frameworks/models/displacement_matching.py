@@ -123,7 +123,10 @@ class DisplacementGraphLM(GraphLM):
                 self.detected_rotation_r = r
                 scale = self.get_object_scale(
                     np.array(
-                        self.buffer.get_nth_displacement(1, input_channel=first_channel),
+                        self.buffer.get_nth_displacement(
+                            1,
+                            input_channel=first_channel,
+                        ),
                     ),
                     model_displacements[0],
                 )

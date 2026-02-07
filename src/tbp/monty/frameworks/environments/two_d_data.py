@@ -539,7 +539,11 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         obs = Observations(
             {
                 agent_id: AgentObservations(
-                    {sensor_id: SensorObservations({"depth": self.current_depth_image})},
+                    {
+                        sensor_id: SensorObservations(
+                            {"depth": self.current_depth_image},
+                        ),
+                    },
                 ),
             },
         )

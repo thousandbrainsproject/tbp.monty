@@ -194,7 +194,9 @@ class TestBuild(unittest.TestCase):
     def test_build_without_snippets_dir(self):
         """Test that build works without snippets directory for validation."""
         input_data = [
-            self._create_future_work_item(title="Test item without snippets validation"),
+            self._create_future_work_item(
+                title="Test item without snippets validation",
+            ),
         ]
 
         result_data = self._run_build(input_data)

@@ -38,7 +38,8 @@ def export(output_dir: str, rdme: ReadMe):
         hierarchy.append(category_entry)
 
         logging.info(
-            "\n" if i > 0 else "" + f"{BLUE}{slugify(category['title']).upper()}{RESET}",
+            ("\n" if i > 0 else "")
+            + f"{BLUE}{slugify(category['title']).upper()}{RESET}",
         )
 
         category_folder_path = output_dir / slugify(category["title"])

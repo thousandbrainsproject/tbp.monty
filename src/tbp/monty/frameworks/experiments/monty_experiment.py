@@ -225,7 +225,8 @@ class MontyExperiment:
         # Initialize everything needed for environment interface
         env_interface_config = config["env_interface_config"]
         self.init_env(
-            env_interface_config["env_init_func"], env_interface_config["env_init_args"],
+            env_interface_config["env_init_func"],
+            env_interface_config["env_init_args"],
         )
 
         # Initialize train environment interface if needed

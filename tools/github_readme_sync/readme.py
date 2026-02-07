@@ -302,7 +302,9 @@ class ReadMe:
                 raise ValueError(f"Failed to update doc {doc['title']}")
         else:
             response = post(
-                f"{PREFIX}/docs", create_doc_request, {"x-readme-version": self.version},
+                f"{PREFIX}/docs",
+                create_doc_request,
+                {"x-readme-version": self.version},
             )
             if response is None:
                 raise ValueError(f"Failed to create doc {doc['title']}")

@@ -323,7 +323,8 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         """
         next_object = (self.current_object + 1) % self.n_objects
         logger.info(
-            f"\n\nGoing from {self.current_object} to {next_object} of {self.n_objects}",
+            f"\n\nGoing from {self.current_object} to {next_object} "
+            f"of {self.n_objects}",
         )
         self.change_object_by_idx(next_object)
 
@@ -868,7 +869,8 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         """Switch to the next character image."""
         next_object = (self.current_object + 1) % self.n_objects
         logger.info(
-            f"\n\nGoing from {self.current_object} to {next_object} of {self.n_objects}",
+            f"\n\nGoing from {self.current_object} to {next_object} "
+            f"of {self.n_objects}",
         )
         self.change_object_by_idx(next_object)
 

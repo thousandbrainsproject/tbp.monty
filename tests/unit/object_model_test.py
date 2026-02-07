@@ -74,7 +74,9 @@ class ObjectModelTest(unittest.TestCase):
         self.assertEqual(model.num_nodes, 4, "graph model should have 4 nodes.")
         for feature in self.dummy_features:
             self.assertIn(
-                feature, model.feature_mapping.keys(), f"{feature} not stored in model.",
+                feature,
+                model.feature_mapping.keys(),
+                f"{feature} not stored in model.",
             )
 
     def test_can_build_grid_object_model(self):
@@ -87,7 +89,9 @@ class ObjectModelTest(unittest.TestCase):
         self.assertEqual(model.num_nodes, 4, "graph model should have 4 nodes.")
         for feature in self.dummy_features:
             self.assertIn(
-                feature, model.feature_mapping.keys(), f"{feature} not stored in model.",
+                feature,
+                model.feature_mapping.keys(),
+                f"{feature} not stored in model.",
             )
 
     def test_apply_delta_thresholds_correctly(self):

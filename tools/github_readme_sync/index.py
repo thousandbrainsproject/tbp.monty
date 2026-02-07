@@ -101,7 +101,8 @@ def generate_index(docs_dir: str, output_file_path: Path):
         json.dump(entries, f, indent=2, ensure_ascii=False)
 
     logger.info(
-        f"{GREEN}Generated index with {len(entries)} entries: {output_file_path}{RESET}",
+        f"{GREEN}Generated index with {len(entries)} entries: "
+        f"{output_file_path}{RESET}",
     )
 
 

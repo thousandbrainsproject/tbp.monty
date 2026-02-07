@@ -796,7 +796,10 @@ class GraphLM(LearningModule):
             elif possible_paths_obj.shape[0] > 0:
                 # deals with case where first observation is not on object
                 possible_locations[obj] = np.array(
-                    self.graph_memory.get_locations_in_graph(obj, input_channel="first"),
+                    self.graph_memory.get_locations_in_graph(
+                        obj,
+                        input_channel="first",
+                    ),
                 )
             else:
                 possible_locations[obj] = np.array([])

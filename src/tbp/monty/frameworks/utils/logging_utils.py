@@ -480,7 +480,9 @@ def print_unsupervised_stats(stats, epoch_len):
     later_acc = (
         (
             len(
-                later_epoch_stats[later_epoch_stats["primary_performance"] == "correct"],
+                later_epoch_stats[
+                    later_epoch_stats["primary_performance"] == "correct"
+                ],
             )
             + len(
                 later_epoch_stats[
