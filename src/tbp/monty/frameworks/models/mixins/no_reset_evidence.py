@@ -37,13 +37,10 @@ class HypothesesUpdaterChannelTelemetry:
     """The hypotheses evidence scores."""
 
     rotations: npt.NDArray[np.float64]
-    """Rotations of the hypotheses."""
+    """Rotations of the hypotheses.
 
-<<<<<<< fix-spelling-in-models-mixins
     Note that the buffer encoder will encode those as Euler "xyz" rotations in degrees.
     """
-=======
->>>>>>> main
     locations: npt.NDArray[np.float64]
     """Locations of the hypotheses."""
 
