@@ -19,7 +19,7 @@ import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule, Observations, AgentID, SensorObservations, AgentObservations
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule, SensorObservations, AgentObservations
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     SensorState,
@@ -35,7 +35,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 from tbp.monty.psu.transform_middleware_test import TEST_OBS
-from tbp.monty.frameworks.environment_utils.transform_handlers import TransformPipeline, TransformMiddleware, TransformContext
+from tbp.monty.frameworks.environment_utils.transform_handlers import TransformPipeline, TransformContext
 from tbp.monty.psu.introspection_utils import print_dict_structure
 
 __all__ = [
@@ -639,6 +639,9 @@ class HabitatSM(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
+        #START
+        self.agent_state = agent
+        #END
         self.motor_only_step = agent.motor_only_step
 
     def state_dict(self):
@@ -670,7 +673,7 @@ class HabitatSM(SensorModule):
         data: AgentObservations = {self.sensor_module_id: data}
         print_dict_structure(data)
         # TF context object none for now
-        tf_context = TransformContext(None, None)
+        tf_context = TransformContext(None, self.agent_state)
         self.transform_pipeline(data, tf_context)
         # Turn data back into its original form that the rest of the SM's step function expect
         data: SensorObservations = data[self.sensor_module_id]

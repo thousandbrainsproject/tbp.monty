@@ -17,7 +17,7 @@ import quaternion as qt
 import scipy
 
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.models.abstract_monty_classes import Observations, AgentObservations
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.psu.introspection_utils import print_dict_structure
@@ -499,6 +499,7 @@ class DepthTo3DLocations(Transform):
                     when `self.get_all_points` is `True`.
         """
         print("IN DEPTH TO 3D CALL")
+        state = ProprioceptiveState({self.agent_id: state})
         for i, sensor_id in enumerate(self.sensor_ids):
             if sensor_id not in observations[self.agent_id]:
                 continue
@@ -562,11 +563,11 @@ class DepthTo3DLocations(Transform):
             xyz = xyz.reshape(4, -1)
             xyz = np.matmul(self.inv_k[i], xyz)
             sensor_frame_data = xyz.T.copy()
+
             print("DID WE MAKE IT?")
             if self.world_coord and state is not None:
                 # Get agent and sensor states from state dictionary
-                #agent_state = state[self.agent_id]
-                agent_state = state
+                agent_state = state[self.agent_id]
                 depth_state = agent_state.sensors[SensorID(sensor_id + ".depth")]
                 agent_rotation = agent_state.rotation
                 agent_rotation_matrix = qt.as_rotation_matrix(agent_rotation)
