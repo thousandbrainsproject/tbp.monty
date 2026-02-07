@@ -19,7 +19,7 @@ import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule, Observations, AgentID
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule, Observations, AgentID, SensorObservations, AgentObservations
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     SensorState,
@@ -661,25 +661,20 @@ class HabitatSM(SensorModule):
                 data, self.state.rotation, self.state.position
             )
 
-        # TRANSFORM CHAIN CALL HERE
-        # print("HEREHEREHEREHERE")
-        # print(type(data))
-
-        # agent_id = AgentID("MyAgent")
-        # TEST_OBS = Observations({agent_id: data})
-        
-        # missing_to_max_depth_args = {"agent_id": "MyAgent", "max_depth": 10.0}
-        # transform = transform_handlers.TransformPipeline([transform_handlers.TransformMiddleware(transform_handlers.MissingToMaxDepth, **missing_to_max_depth_args)])
-        # transform(TEST_OBS, TransformContext(rng=np.random.RandomState(42)))
-
-        # for key in data:
-        #     print(f"DATA KEY: {key}")
         print("IN SENSOR MODULE STEP METHOD")
-        data = {self.sensor_module_id: data}
+
+        # We make 'data' into an AgentObservations object since that's the closest to an Observations object that
+        # we can get. The transform handlers have a reference to the agent ID, which it can use to build an Observations
+        # object from the passed in AgentObservations object. From here, the observation data is in the form that the
+        # original transform functions expect.
+        data: AgentObservations = {self.sensor_module_id: data}
         print_dict_structure(data)
+        # TF context object none for now
         tf_context = TransformContext(None, None)
         self.transform_pipeline(data, tf_context)
-        data = data[self.sensor_module_id]
+        # Turn data back into its original form that the rest of the SM's step function expect
+        data: SensorObservations = data[self.sensor_module_id]
+
         observed_state = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
