@@ -65,7 +65,10 @@ class SnapshotTelemetry:
         self.poses = []
 
     def raw_observation(
-        self, raw_observation, rotation: qt.quaternion, position: np.ndarray
+        self,
+        raw_observation,
+        rotation: qt.quaternion,
+        position: np.ndarray,
     ):
         """Record a snapshot of a raw observation and its pose information.
 
@@ -79,7 +82,7 @@ class SnapshotTelemetry:
             dict(
                 sm_rotation=qt.as_float_array(rotation),
                 sm_location=np.array(position),
-            )
+            ),
         )
 
     def state_dict(self) -> dict[str, list[np.ndarray]]:
@@ -283,11 +286,17 @@ class HabitatObservationProcessor:
         # ------------ Extract Morphological Features ------------
         # Get surface normal for graph matching with features
         surface_normal, valid_sn = self._get_surface_normals(
-            obs_3d, sensor_frame_data, center_id, world_camera
+            obs_3d,
+            sensor_frame_data,
+            center_id,
+            world_camera,
         )
 
         k1, k2, dir1, dir2, valid_pc = principal_curvatures(
-            obs_3d, center_id, surface_normal, weighted=self._weight_curvature
+            obs_3d,
+            center_id,
+            surface_normal,
+            weighted=self._weight_curvature,
         )
         # TODO: test using log curvatures instead
         if np.abs(k1 - k2) < self._pc1_is_pc2_threshold:
@@ -301,7 +310,7 @@ class HabitatObservationProcessor:
                     surface_normal,
                     dir1,
                     dir2,
-                ]
+                ],
             ),
             "pose_fully_defined": pose_fully_defined,
         }
@@ -363,20 +372,25 @@ class HabitatObservationProcessor:
     ) -> tuple[np.ndarray, bool]:
         if self._surface_normal_method == SurfaceNormalMethod.TLS:
             surface_normal, valid_sn = surface_normal_total_least_squares(
-                obs_3d, center_id, world_camera[:3, 2]
+                obs_3d,
+                center_id,
+                world_camera[:3, 2],
             )
         elif self._surface_normal_method == SurfaceNormalMethod.OLS:
             surface_normal, valid_sn = surface_normal_ordinary_least_squares(
-                sensor_frame_data, world_camera, center_id
+                sensor_frame_data,
+                world_camera,
+                center_id,
             )
         elif self._surface_normal_method == SurfaceNormalMethod.NAIVE:
             surface_normal, valid_sn = surface_normal_naive(
-                obs_3d, patch_radius_frac=2.5
+                obs_3d,
+                patch_radius_frac=2.5,
             )
         else:
             raise ValueError(
                 f"surface_normal_method must be in [{SurfaceNormalMethod.TLS} (default)"
-                f", {SurfaceNormalMethod.OLS}, {SurfaceNormalMethod.NAIVE}]."
+                f", {SurfaceNormalMethod.OLS}, {SurfaceNormalMethod.NAIVE}].",
             )
 
         return surface_normal, valid_sn
@@ -430,7 +444,9 @@ class Probe(SensorModule):
     def step(self, data) -> State | None:
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data, self.state.rotation, self.state.position
+                data,
+                self.state.rotation,
+                self.state.position,
             )
 
         return None
@@ -488,13 +504,17 @@ class DefaultMessageNoise(MessageNoise):
                         # TODO: apply same rotation to both to make sure they stay
                         # orthogonal?
                         noise_angles = rng.normal(
-                            0, self.noise_params["features"][key], 3
+                            0,
+                            self.noise_params["features"][key],
+                            3,
                         )
                         noise_rotation = Rotation.from_euler(
-                            "xyz", noise_angles, degrees=True
+                            "xyz",
+                            noise_angles,
+                            degrees=True,
                         )
                         state.morphological_features[key] = noise_rotation.apply(
-                            state.morphological_features[key]
+                            state.morphological_features[key],
                         )
                     else:
                         state.morphological_features[key] = (
@@ -598,13 +618,13 @@ class HabitatSM(SensorModule):
         #       of noise_params.
         if noise_params:
             self._message_noise: MessageNoise = DefaultMessageNoise(
-                noise_params=noise_params
+                noise_params=noise_params,
             )
         else:
             self._message_noise = NoMessageNoise()
         if delta_thresholds:
             self._state_filter: StateFilter = FeatureChangeFilter(
-                delta_thresholds=delta_thresholds
+                delta_thresholds=delta_thresholds,
             )
         else:
             self._state_filter = PassthroughStateFilter()
@@ -652,7 +672,9 @@ class HabitatSM(SensorModule):
         """
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data, self.state.rotation, self.state.position
+                data,
+                self.state.rotation,
+                self.state.position,
             )
 
         observed_state = self._habitat_observation_processor.process(data)
@@ -728,7 +750,7 @@ class FeatureChangeFilter(StateFilter):
                     return True
             elif feature == "distance":
                 distance = np.linalg.norm(
-                    np.array(self._last_state.location) - np.array(state.location)
+                    np.array(self._last_state.location) - np.array(state.location),
                 )
 
                 if distance > self._delta_thresholds[feature]:
@@ -739,7 +761,8 @@ class FeatureChangeFilter(StateFilter):
                 last_hue = last_feat[0]
                 current_hue = current_feat[0]
                 hue_d = min(
-                    abs(current_hue - last_hue), 1 - abs(current_hue - last_hue)
+                    abs(current_hue - last_hue),
+                    1 - abs(current_hue - last_hue),
                 )
                 if hue_d > self._delta_thresholds[feature][0]:
                     return True
@@ -756,7 +779,7 @@ class FeatureChangeFilter(StateFilter):
                 )
                 if angle_between >= self._delta_thresholds[feature][0]:
                     logger.debug(
-                        f"new point because of {feature} angle : {angle_between}"
+                        f"new point because of {feature} angle : {angle_between}",
                     )
                     return True
 

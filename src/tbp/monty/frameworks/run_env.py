@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -33,7 +33,7 @@ def setup_env(
     monty_models_dir = os.getenv("MONTY_MODELS")
     if monty_models_dir is None:
         monty_models_dir = str(
-            Path(monty_models_dir_default).expanduser() / "pretrained_models"
+            Path(monty_models_dir_default).expanduser() / "pretrained_models",
         )
         os.environ["MONTY_MODELS"] = monty_models_dir
         print(f"MONTY_MODELS not set. Using default directory: {monty_models_dir}")

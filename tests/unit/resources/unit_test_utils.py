@@ -116,11 +116,11 @@ class BaseGraphTest(TestCase):
                 [1.0, 1.0, 0.0],
                 [0.0, 1.0, 0.0],
                 [0.5, 1.5, 0.0],  # The rooftop
-            ]
+            ],
         )
         # Define the local coordinate frame for each point
         ref_frames = np.array(
-            [[[0, 1, 0], [1, 0, 0], [0, 0, -1]] for _ in house_points]
+            [[[0, 1, 0], [1, 0, 0], [0, 0, -1]] for _ in house_points],
         )
 
         center_point = [0.5, 0.5, 0.0]
@@ -238,7 +238,7 @@ class BaseGraphTest(TestCase):
             self.assertLessEqual(
                 np.abs(
                     train_stats["detected_scale"][4 * num_lms + lm_id]
-                    - train_stats["primary_target_scale"][4 * num_lms + lm_id]
+                    - train_stats["primary_target_scale"][4 * num_lms + lm_id],
                 ),
                 0.01,
                 "Scale of capsule3DSolid not detected correctly.",
@@ -246,17 +246,17 @@ class BaseGraphTest(TestCase):
             self.assertLessEqual(
                 np.abs(
                     train_stats["detected_scale"][5 * num_lms + lm_id]
-                    - train_stats["primary_target_scale"][5 * num_lms + lm_id]
+                    - train_stats["primary_target_scale"][5 * num_lms + lm_id],
                 ),
                 0.05,
                 "Scale of cubeSolid not detected correctly.",
             )
 
             capsule_r = self.string_to_array(
-                train_stats["detected_rotation"][4 * num_lms + lm_id]
+                train_stats["detected_rotation"][4 * num_lms + lm_id],
             )
             cube_r = self.string_to_array(
-                train_stats["detected_rotation"][5 * num_lms + lm_id]
+                train_stats["detected_rotation"][5 * num_lms + lm_id],
             )
             self.assertEqual(len(capsule_r), 3, "Should store 3d detected rotation.")
             self.assertEqual(len(cube_r), 3, "Should store 3d detected rotation.")
@@ -294,7 +294,8 @@ class BaseGraphTest(TestCase):
         # Same edge data
         num_edge_attrs_same = (g1.edge_attr == g2.edge_attr).sum()
         self.assertEqual(
-            num_edge_attrs_same, g1.edge_attr.size(0) * g1.edge_attr.size(1)
+            num_edge_attrs_same,
+            g1.edge_attr.size(0) * g1.edge_attr.size(1),
         )
 
         # Same positions in space
@@ -326,7 +327,7 @@ class BaseGraphTest(TestCase):
                 f"Scale of capsule3DSolid not detected correctly by lm {lm_id}.",
             )
             capsule_r = self.string_to_array(
-                eval_stats["detected_rotation"][2 * num_lms + lm_id]
+                eval_stats["detected_rotation"][2 * num_lms + lm_id],
             )
             self.assertEqual(len(capsule_r), 3, "Should store 3d detected rotation.")
             self.assertLessEqual(
@@ -469,7 +470,8 @@ class BaseGraphTest(TestCase):
                         elif key3 == "allowable_sender_types":
                             for f_idx in range(len(step_old[key3])):
                                 self.assertEqual(
-                                    step_old[key3][f_idx], step_new[key3][f_idx]
+                                    step_old[key3][f_idx],
+                                    step_new[key3][f_idx],
                                 )
                         elif isinstance(step_old[key3], str):
                             # sm_id can not be compared as array

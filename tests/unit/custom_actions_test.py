@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -52,7 +52,8 @@ class HabitatSimTest(unittest.TestCase):
 
             # Look up until it reaches the defined constraint
             action = LookUp(
-                agent_id=AgentID("camera"), rotation_degrees=rotation_degrees
+                agent_id=AgentID("camera"),
+                rotation_degrees=rotation_degrees,
             )
             constraint = action.constraint_degrees
 
@@ -66,7 +67,8 @@ class HabitatSimTest(unittest.TestCase):
 
             # Look down until it reaches the defined constraint
             action = LookDown(
-                agent_id=AgentID("camera"), rotation_degrees=rotation_degrees
+                agent_id=AgentID("camera"),
+                rotation_degrees=rotation_degrees,
             )
             constraint = action.constraint_degrees
 

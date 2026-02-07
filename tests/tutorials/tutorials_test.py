@@ -42,7 +42,7 @@ class TutorialsTest(TestCase):
                 overrides=["experiment=tutorial/surf_agent_2obj_train"],
             )
             config.experiment.config.logging.output_dir = str(
-                output_dir_from_run_name(config)
+                output_dir_from_run_name(config),
             )
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:
@@ -87,7 +87,7 @@ class TutorialsTest(TestCase):
                 overrides=["experiment=tutorial/dist_agent_5lm_2obj_train"],
             )
             config.experiment.config.logging.output_dir = str(
-                output_dir_from_run_name(config)
+                output_dir_from_run_name(config),
             )
             experiment = hydra.utils.instantiate(config.experiment)
             with experiment:

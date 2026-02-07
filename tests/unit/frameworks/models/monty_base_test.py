@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -65,6 +65,6 @@ class MontyBasePrivateTest(unittest.TestCase):
                 sentinel.lm3_goal_2,
                 sentinel.sm2_goal_1,
                 sentinel.sm2_goal_2,
-            }
+            },
         )
         self.assertEqual(set(self.monty_base.gsg_outputs), expected)

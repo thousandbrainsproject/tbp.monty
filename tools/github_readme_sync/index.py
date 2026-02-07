@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -50,14 +50,14 @@ def _check_and_sanitize(
     if len(key) > max_key_length:
         logger.warning(
             f"Key '{key[:50]}...' exceeds maximum length of "
-            f"{max_key_length} characters (actual: {len(key)})"
+            f"{max_key_length} characters (actual: {len(key)})",
         )
         return None
 
     if len(value) > max_value_length:
         logger.warning(
             f"Value for key '{key}' exceeds maximum length of "
-            f"{max_value_length} characters (actual: {len(value)})"
+            f"{max_value_length} characters (actual: {len(value)})",
         )
         return None
 
@@ -73,7 +73,7 @@ def _check_and_sanitize(
     if sanitized_value != value:
         logger.info(
             f"Value for key '{key}' sanitized: '{value[:100]}...' -> "
-            f"'{sanitized_value[:100]}...'"
+            f"'{sanitized_value[:100]}...'",
         )
 
     return sanitized_key, sanitized_value
@@ -101,7 +101,8 @@ def generate_index(docs_dir: str, output_file_path: Path):
         json.dump(entries, f, indent=2, ensure_ascii=False)
 
     logger.info(
-        f"{GREEN}Generated index with {len(entries)} entries: {output_file_path}{RESET}"
+        f"{GREEN}Generated index with {len(entries)} entries: "
+        f"{output_file_path}{RESET}",
     )
 
 

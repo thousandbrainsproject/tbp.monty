@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -26,7 +26,7 @@ class EncodeGoalStateTest(unittest.TestCase):
                         -np.ones(3),
                         [np.nan, np.nan, np.nan],
                         [np.nan, np.nan, np.nan],
-                    ]
+                    ],
                 ),
                 "pose_fully_defined": None,
                 "on_object": 1,

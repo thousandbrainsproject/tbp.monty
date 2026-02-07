@@ -83,7 +83,7 @@ class DefaultFeatureEvidenceCalculator:
 
         feature_differences = np.zeros_like(channel_feature_array)
         feature_differences[:, ~circular_var] = np.abs(
-            channel_feature_array[:, ~circular_var] - feature_list[~circular_var]
+            channel_feature_array[:, ~circular_var] - feature_list[~circular_var],
         )
         cnode_fs = channel_feature_array[:, circular_var]
         cquery_fs = feature_list[circular_var]

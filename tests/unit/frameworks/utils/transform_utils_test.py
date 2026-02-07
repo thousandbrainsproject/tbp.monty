@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -28,7 +28,7 @@ class RotationAsQuatTest(unittest.TestCase):
                 [-0.0969695, -0.27647282, -0.86246987, -0.41268078],
                 [-0.10221075, 0.89104681, -0.15463931, 0.41433709],
                 [-0.5451644, -0.7671974, -0.00654478, 0.33787734],
-            ]
+            ],
         )
         self.rotations = Rotation.from_quat(seed_quats)
         self.quats_scalar_last = self.rotations.as_quat()
@@ -70,7 +70,7 @@ class RotationFromQuatTest(unittest.TestCase):
                 [-0.0969695, -0.27647282, -0.86246987, -0.41268078],
                 [-0.10221075, 0.89104681, -0.15463931, 0.41433709],
                 [-0.5451644, -0.7671974, -0.00654478, 0.33787734],
-            ]
+            ],
         )
         self.quats_scalar_first = self.quats_scalar_last[:, [3, 0, 1, 2]]
         self.rotations = Rotation.from_quat(self.quats_scalar_last)

@@ -73,7 +73,8 @@ class OmniglotEnvironment(SimulatedEnvironment):
         self._agents = [type("FakeAgent", (object,), {"action_space_type": "2d"})()]
 
     def step(
-        self, actions: Sequence[Action]
+        self,
+        actions: Sequence[Action],
     ) -> tuple[Observations, ProprioceptiveState]:
         """Retrieve the next observation.
 
@@ -123,17 +124,17 @@ class OmniglotEnvironment(SimulatedEnvironment):
                                 "depth": depth,
                                 "semantic": np.array(~patch, dtype=int),
                                 "rgba": np.stack([depth, depth, depth], axis=2),
-                            }
+                            },
                         ),
                         SensorID("view_finder"): SensorObservations(
                             {
                                 "depth": self.current_image,
                                 "semantic": np.array(~patch, dtype=int),
-                            }
+                            },
                         ),
-                    }
-                )
-            }
+                    },
+                ),
+            },
         )
         return obs, self.get_state()
 
@@ -163,8 +164,8 @@ class OmniglotEnvironment(SimulatedEnvironment):
                     },
                     rotation=self.rotation,
                     position=np.array([0, 0, 0]),
-                )
-            }
+                ),
+            },
         )
 
     def switch_to_object(self, alphabet_id, character_id, version_id):
@@ -176,7 +177,9 @@ class OmniglotEnvironment(SimulatedEnvironment):
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self.step_num = 0
         patch = self.get_image_patch(
-            self.current_image, self.locations[self.step_num], self.patch_size
+            self.current_image,
+            self.locations[self.step_num],
+            self.patch_size,
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
         obs = Observations(
@@ -188,17 +191,17 @@ class OmniglotEnvironment(SimulatedEnvironment):
                                 "depth": depth,
                                 "semantic": np.array(~patch, dtype=int),
                                 "rgba": np.stack([depth, depth, depth], axis=2),
-                            }
+                            },
                         ),
                         SensorID("view_finder"): SensorObservations(
                             {
                                 "depth": self.current_image,
                                 "semantic": np.array(~patch, dtype=int),
-                            }
+                            },
                         ),
-                    }
-                )
-            }
+                    },
+                ),
+            },
         )
         return obs, self.get_state()
 
@@ -229,7 +232,7 @@ class OmniglotEnvironment(SimulatedEnvironment):
             (locations[:, 0] > self.patch_size)
             & (locations[:, 1] > self.patch_size)
             & (locations[:, 0] < maxloc)
-            & (locations[:, 1] < maxloc)
+            & (locations[:, 1] < maxloc),
         )
         locations = locations[locs_in_range]
         self.max_steps = len(locations) - 1
@@ -298,7 +301,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                 "FakeAgent",
                 (object,),
                 {"action_space_type": "distant_agent_no_translation"},
-            )()
+            )(),
         ]
 
         # Instantiate once and reuse when checking action name in step()
@@ -306,7 +309,8 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         self._valid_actions = ["look_up", "look_down", "turn_left", "turn_right"]
 
     def step(
-        self, actions: Sequence[Action]
+        self,
+        actions: Sequence[Action],
     ) -> tuple[Observations, ProprioceptiveState]:
         """Retrieve the next observation.
 
@@ -353,17 +357,17 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                                 "world_camera": self.world_camera,
                                 # Save pixel loc for plotting
                                 "pixel_loc": self.current_loc,
-                            }
+                            },
                         ),
                         SensorID("view_finder"): SensorObservations(
                             {
                                 "depth": self.current_depth_image,
                                 "rgba": self.current_rgb_image,
-                            }
+                            },
                         ),
-                    }
-                )
-            }
+                    },
+                ),
+            },
         )
         return obs, self.get_state()
 
@@ -379,10 +383,12 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                 AgentID("agent_id_0"): AgentState(
                     sensors={
                         SensorID("patch" + ".depth"): SensorState(
-                            rotation=self.rotation, position=sensor_position
+                            rotation=self.rotation,
+                            position=sensor_position,
                         ),
                         SensorID("patch" + ".rgba"): SensorState(
-                            rotation=self.rotation, position=sensor_position
+                            rotation=self.rotation,
+                            position=sensor_position,
                         ),
                         SensorID("view_finder" + ".depth"): SensorState(
                             rotation=self.rotation,
@@ -395,8 +401,8 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                     },
                     rotation=self.rotation,
                     position=np.array([0, 0, 0]),
-                )
-            }
+                ),
+            },
         )
 
     def switch_to_object(self, scene_id, scene_version_id):
@@ -444,17 +450,17 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                                 "sensor_frame_data": sensor_frame_patch,
                                 "world_camera": self.world_camera,
                                 "pixel_loc": np.array(self.current_loc),
-                            }
+                            },
                         ),
                         SensorID("view_finder"): SensorObservations(
                             {
                                 "depth": self.current_depth_image,
                                 "rgba": self.current_rgb_image,
-                            }
+                            },
                         ),
-                    }
-                )
-            }
+                    },
+                ),
+            },
         )
         return obs, self.get_state()
 
@@ -520,7 +526,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             The RGB image.
         """
         return np.array(
-            PIL.Image.open(rgb_path)  # .transpose(PIL.Image.FLIP_TOP_BOTTOM)
+            PIL.Image.open(rgb_path),  # .transpose(PIL.Image.FLIP_TOP_BOTTOM)
         )
 
     def get_3d_scene_point_cloud(self):
@@ -539,9 +545,13 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         obs = Observations(
             {
                 agent_id: AgentObservations(
-                    {sensor_id: SensorObservations({"depth": self.current_depth_image})}
-                )
-            }
+                    {
+                        sensor_id: SensorObservations(
+                            {"depth": self.current_depth_image},
+                        ),
+                    },
+                ),
+            },
         )
         rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
         state = ProprioceptiveState(
@@ -551,12 +561,12 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                         SensorID(sensor_id + ".depth"): SensorState(
                             rotation=rotation,
                             position=np.array([0, 0, 0]),
-                        )
+                        ),
                     },
                     rotation=rotation,
                     position=np.array([0, 0, 0]),
-                )
-            }
+                ),
+            },
         )
 
         # Apply gaussian smoothing transform to depth image
@@ -583,11 +593,11 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         current_scene_point_cloud = obs_3d[agent_id][sensor_id]["semantic_3d"]
         image_shape = self.current_depth_image.shape
         current_scene_point_cloud = current_scene_point_cloud.reshape(
-            (image_shape[0], image_shape[1], 4)
+            (image_shape[0], image_shape[1], 4),
         )
         current_sf_scene_point_cloud = obs_3d[agent_id][sensor_id]["sensor_frame_data"]
         current_sf_scene_point_cloud = current_sf_scene_point_cloud.reshape(
-            (image_shape[0], image_shape[1], 4)
+            (image_shape[0], image_shape[1], 4),
         )
         self.world_camera = obs_3d[agent_id][sensor_id]["world_camera"]
         return current_scene_point_cloud, current_sf_scene_point_cloud
@@ -613,7 +623,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             [
                 [half_patch_size, obs_shape[0] - half_patch_size],
                 [half_patch_size, obs_shape[1] - half_patch_size],
-            ]
+            ],
         )
 
     def get_next_loc(self, action_name, amount):
@@ -663,13 +673,14 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         depth3d_patch = self.current_scene_point_cloud[x_start:x_stop, y_start:y_stop]
         depth_shape = depth3d_patch.shape
         depth3d_patch = depth3d_patch.reshape(
-            (depth_shape[0] * depth_shape[1], depth_shape[2])
+            (depth_shape[0] * depth_shape[1], depth_shape[2]),
         )
         sensor_frame_patch = self.current_sf_scene_point_cloud[
-            x_start:x_stop, y_start:y_stop
+            x_start:x_stop,
+            y_start:y_stop,
         ]
         sensor_frame_patch = sensor_frame_patch.reshape(
-            (depth_shape[0] * depth_shape[1], depth_shape[2])
+            (depth_shape[0] * depth_shape[1], depth_shape[2]),
         )
 
         assert (
@@ -721,7 +732,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
                 "FakeAgent",
                 (object,),
                 {"action_space_type": "distant_agent_no_translation"},
-            )()
+            )(),
         ]
 
         # Instantiate once and reuse when checking action name in step()
@@ -774,7 +785,9 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         while not load_succeeded:
             try:
                 current_depth_image = self.load_depth_data(
-                    current_depth_path, height, width
+                    current_depth_path,
+                    height,
+                    width,
                 )
                 load_succeeded = True
             except ValueError:

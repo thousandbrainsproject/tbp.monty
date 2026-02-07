@@ -69,7 +69,8 @@ class GetGoodViewTest(unittest.TestCase):
                 ]
                 semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
                 perc_on_target_obj = get_perc_on_obj_semantic(
-                    semantic, semantic_id=SemanticID(1)
+                    semantic,
+                    semantic_id=SemanticID(1),
                 )
 
                 assert perc_on_target_obj >= target_perc_on_target_obj, (
@@ -78,7 +79,7 @@ class GetGoodViewTest(unittest.TestCase):
                 )
                 points_on_target_obj = semantic == 1
                 closest_point_on_target_obj = np.min(
-                    view["depth"][points_on_target_obj]
+                    view["depth"][points_on_target_obj],
                 )
 
                 assert closest_point_on_target_obj > target_closest_point, (
@@ -121,7 +122,8 @@ class GetGoodViewTest(unittest.TestCase):
                 ]
                 semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
                 perc_on_target_obj = get_perc_on_obj_semantic(
-                    semantic, semantic_id=SemanticID(1)
+                    semantic,
+                    semantic_id=SemanticID(1),
                 )
 
                 assert perc_on_target_obj >= target_perc_on_target_obj, (
@@ -131,7 +133,7 @@ class GetGoodViewTest(unittest.TestCase):
 
                 points_on_target_obj = semantic == 1
                 closest_point_on_target_obj = np.min(
-                    view["depth"][points_on_target_obj]
+                    view["depth"][points_on_target_obj],
                 )
 
                 assert closest_point_on_target_obj > target_closest_point, (

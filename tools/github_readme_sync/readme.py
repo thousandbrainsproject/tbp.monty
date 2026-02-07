@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -40,7 +40,7 @@ GITHUB_RAW = "https://raw.githubusercontent.com"
 
 regex_images = re.compile(r"!\[(.*?)\]\((.*?)\)")
 regex_image_path = re.compile(
-    r"(\.\./){1,5}figures/((.+)\.(png|jpg|jpeg|gif|svg|webp))"
+    r"(\.\./){1,5}figures/((.+)\.(png|jpg|jpeg|gif|svg|webp))",
 )
 regex_markdown_path = re.compile(r"\(([\./]*)([\w\-/]+)\.md(#.*?)?\)")
 regex_cloudinary_video = re.compile(
@@ -130,7 +130,8 @@ class ReadMe:
             return
         logging.info(f"{GREEN}Setting version {self.version} to stable{RESET}")
         if not put(
-            f"{PREFIX}/version/{self.version}", {"is_stable": True, "is_hidden": False}
+            f"{PREFIX}/version/{self.version}",
+            {"is_stable": True, "is_hidden": False},
         ):
             raise ValueError("Failed to make version stable")
 
@@ -142,7 +143,7 @@ class ReadMe:
             stable_version = self.get_stable_version()
             logging.info(
                 f"{GRAY}Creating version: {self.version} "
-                f"forked from {stable_version}{RESET}"
+                f"forked from {stable_version}{RESET}",
             )
             if not post(
                 f"{PREFIX}/version",
@@ -174,12 +175,13 @@ class ReadMe:
     def validate_csv_align_param(self, align_value: str) -> None:
         if align_value not in ["left", "right"]:
             raise ValueError(
-                f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
+                f"Invalid alignment value: {align_value}. Must be 'left' or 'right'",
             )
 
     def create_category_if_not_exists(self, slug: str, title: str) -> tuple[str, bool]:
         category = get(
-            f"{PREFIX}/categories/{slug}", {"x-readme-version": self.version}
+            f"{PREFIX}/categories/{slug}",
+            {"x-readme-version": self.version},
         )
         if category is None:
             response = post(
@@ -273,7 +275,12 @@ class ReadMe:
         return REGEX_CSV_TABLE.sub(replace_match, body)
 
     def create_or_update_doc(
-        self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str
+        self,
+        order: int,
+        category_id: str,
+        doc: dict,
+        parent_id: str,
+        file_path: str,
     ) -> tuple[str, bool]:
         markdown = self.process_markdown(doc["body"], file_path, doc["slug"])
 
@@ -302,7 +309,9 @@ class ReadMe:
                 raise ValueError(f"Failed to update doc {doc['title']}")
         else:
             response = post(
-                f"{PREFIX}/docs", create_doc_request, {"x-readme-version": self.version}
+                f"{PREFIX}/docs",
+                create_doc_request,
+                {"x-readme-version": self.version},
             )
             if response is None:
                 raise ValueError(f"Failed to create doc {doc['title']}")
@@ -493,7 +502,7 @@ class ReadMe:
                     f'poster="{new_url.replace(".mp4", ".jpg")}">'
                     f'<source src="{new_url}" type="video/mp4">'
                     f"Your browser does not support the video tag.</video></div>"
-                )
+                ),
             }
             return self._create_video_block("html", block)
 

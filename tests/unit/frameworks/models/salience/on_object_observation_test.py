@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -70,7 +70,8 @@ class OnObjectObservationTest(unittest.TestCase):
         on_object = on_object_observation(raw_observation, data["salience_map"])
         self.assertIsNotNone(on_object.center_location)
         nptest.assert_array_equal(
-            on_object.center_location, self.center_location_sentinel
+            on_object.center_location,
+            self.center_location_sentinel,
         )  # type: ignore[arg-type]
 
     def test_center_is_not_on_object_returns_none_center_location(self) -> None:

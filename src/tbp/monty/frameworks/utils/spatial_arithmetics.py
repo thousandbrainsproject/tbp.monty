@@ -163,13 +163,13 @@ def check_orthonormal(matrix):
     if not is_orthogonal:
         logger.debug(
             "not orthogonal. Error: "
-            f"{np.mean(np.abs(np.linalg.inv(matrix) - matrix.T))}"
+            f"{np.mean(np.abs(np.linalg.inv(matrix) - matrix.T))}",
         )
     is_normal = np.mean(np.abs(np.linalg.norm(matrix, axis=1) - [1, 1, 1])) < 0.01
     if not is_normal:
         logger.debug(
             "not normal. Error: "
-            f"{np.mean(np.abs(np.linalg.norm(matrix, axis=1) - [1, 1, 1]))}"
+            f"{np.mean(np.abs(np.linalg.norm(matrix, axis=1) - [1, 1, 1]))}",
         )
     return is_orthogonal and is_normal
 
