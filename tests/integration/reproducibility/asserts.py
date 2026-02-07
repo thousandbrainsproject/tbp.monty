@@ -16,7 +16,7 @@ from tbp.monty.frameworks.models.object_model import GraphObjectModel
 
 
 def assert_graph_object_models_equal(
-    left: GraphObjectModel, right: GraphObjectModel
+    left: GraphObjectModel, right: GraphObjectModel,
 ) -> None:
     """Custom assertion comparison for GraphObjectModel.
 
@@ -37,7 +37,7 @@ def assert_graph_object_models_equal(
         raise AssertionError(
             "The keys of the two GraphObjectModel instances are not equal.\n"
             f"Left keys: {set(left._graph.keys)}\n"
-            f"Right keys: {set(right._graph.keys)}\n"
+            f"Right keys: {set(right._graph.keys)}\n",
         )
 
     for key in left._graph.keys:
@@ -48,13 +48,13 @@ def assert_graph_object_models_equal(
                 raise AssertionError(
                     f"The {key} values of the two GraphObjectModel instances are not "
                     f"equal.\nLeft value: {v_left}\n"
-                    f"Right value: {v_right}\n"
+                    f"Right value: {v_right}\n",
                 )
         elif v_left != v_right:
             raise AssertionError(
                 f"The {key} values of the two GraphObjectModel instances are not "
                 f"equal.\nLeft value: {v_left}\n"
-                f"Right value: {v_right}"
+                f"Right value: {v_right}",
             )
 
 
@@ -90,9 +90,9 @@ def assert_trained_models_equal(serial_model: dict, parallel_model: dict) -> Non
 
             for channel_id in p_graph:
                 p_graph_data: GraphObjectModel = cast(
-                    "GraphObjectModel", p_graph[channel_id]
+                    "GraphObjectModel", p_graph[channel_id],
                 )
                 s_graph_data: GraphObjectModel = cast(
-                    "GraphObjectModel", s_graph[channel_id]
+                    "GraphObjectModel", s_graph[channel_id],
                 )
                 assert_graph_object_models_equal(p_graph_data, s_graph_data)

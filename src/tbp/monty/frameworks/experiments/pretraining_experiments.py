@@ -56,7 +56,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             self.sensor_pos = np.array(
                 config["env_interface_config"]["env_init_args"]["agents"]["agent_args"][
                     "positions"
-                ]
+                ],
             )
         else:
             self.sensor_pos = np.array([0, 0, 0])
@@ -85,7 +85,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             num_steps += 1
             if self.show_sensor_output:
                 is_saccade_on_image_env_interface = isinstance(
-                    self.env_interface, SaccadeOnImageEnvironmentInterface
+                    self.env_interface, SaccadeOnImageEnvironmentInterface,
                 )
                 self.live_plotter.show_observations(
                     *self.live_plotter.hardcoded_assumptions(observation, self.model),
@@ -114,11 +114,11 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                     self.first_epoch_object_location[target["object"]]
                 )
                 lm.buffer.stats["detected_location_rel_body"] = np.array(
-                    target["position"]
+                    target["position"],
                 )
                 lm.buffer.stats["detected_rotation"] = target["euler_rotation"]
                 lm.detected_rotation_r = Rotation.from_quat(
-                    target["quat_rotation"]
+                    target["quat_rotation"],
                 ).inv()
                 lm.buffer.stats["detected_scale"] = target["scale"]
             else:
@@ -153,12 +153,12 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(
                 f"running train epoch {self.train_epochs} "
-                f"train episode {self.train_episodes}"
+                f"train episode {self.train_episodes}",
             )
         else:
             logger.info(
                 f"running eval epoch {self.eval_epochs} "
-                f"eval episode {self.eval_episodes}"
+                f"eval episode {self.eval_episodes}",
             )
 
         self.reset_episode_rng()

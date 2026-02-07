@@ -153,7 +153,7 @@ class HabitatSim(HabitatActuator, Simulator):
             agent_configs.append(config)
 
         self._sim = habitat_sim.Simulator(
-            habitat_sim.Configuration(backend_config, agent_configs)
+            habitat_sim.Configuration(backend_config, agent_configs),
         )
 
         # Load objects from data_path
@@ -470,7 +470,7 @@ class HabitatSim(HabitatActuator, Simulator):
 
             # Extract updated bounding box of new object being added
             min_corner, max_corner = self._bounding_corners(
-                ObjectID(new_object.object_id)
+                ObjectID(new_object.object_id),
             )
 
             # Step the physics simulation to allow objects to settle and compute
@@ -485,7 +485,7 @@ class HabitatSim(HabitatActuator, Simulator):
                 new_object.rotation = sim_utils.quat_to_magnum(start_orientation)
 
             viewpoint_collision = self.check_viewpoint_collision(
-                primary_obj_bb=primary_obj_bb, new_obj_bb=[min_corner, max_corner]
+                primary_obj_bb=primary_obj_bb, new_obj_bb=[min_corner, max_corner],
             )
 
             if not physical_collision and not viewpoint_collision:
@@ -511,7 +511,7 @@ class HabitatSim(HabitatActuator, Simulator):
         return self._sim.get_agent(agent_index)
 
     def step(
-        self, actions: Sequence[Action]
+        self, actions: Sequence[Action],
     ) -> tuple[Observations, ProprioceptiveState]:
         """Execute given actions in the environment.
 

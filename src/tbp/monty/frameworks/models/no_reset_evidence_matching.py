@@ -70,7 +70,7 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         self.init_pre_episode = False
 
     def pre_episode(
-        self, rng: np.random.RandomState, primary_target, semantic_id_to_label=None
+        self, rng: np.random.RandomState, primary_target, semantic_id_to_label=None,
     ) -> None:
         if not self.init_pre_episode:
             self.init_pre_episode = True

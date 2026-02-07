@@ -74,7 +74,7 @@ def plot_rotation_stat_animation(detailed_stats, n_steps):
                     "object not\nin matches",
                     "wrong rotation",
                     "not in possible\nposes",
-                ]
+                ],
             )
         #         else:
         #             h.set_xticks(range(5))
@@ -82,7 +82,7 @@ def plot_rotation_stat_animation(detailed_stats, n_steps):
         h.set_ylim([0, len(detailed_stats.keys())])
 
     anim = animation.FuncAnimation(
-        fig, animate, frames=n_steps, fargs=(n_steps,), interval=1000
+        fig, animate, frames=n_steps, fargs=(n_steps,), interval=1000,
     )
     video = anim.to_html5_video()
     html = display.HTML(video)
@@ -111,7 +111,7 @@ def make_detection_stat_animation(detailed_stats, n_steps):
     def animate(frame_step, total_steps):
         step = total_steps - (frame_step + 1)
         detection_stats = check_detection_accuracy_at_step(
-            detailed_stats, last_n_step=step + 1
+            detailed_stats, last_n_step=step + 1,
         )
         ax.clear()
         h = sns.histplot(
@@ -125,7 +125,7 @@ def make_detection_stat_animation(detailed_stats, n_steps):
         h.set_ylim([0, len(detailed_stats.keys())])
 
     anim = animation.FuncAnimation(
-        fig, animate, frames=n_steps, fargs=(n_steps,), interval=1000
+        fig, animate, frames=n_steps, fargs=(n_steps,), interval=1000,
     )
 
     return fig, ax, anim
@@ -205,7 +205,7 @@ def plot_sample_animation(all_obs, patch_obs, viz_obs):
 
 
 def plot_sample_animation_multiobj(
-    patch_obs, viz_obs, semantic_obs, primary_target="", save_bool=False
+    patch_obs, viz_obs, semantic_obs, primary_target="", save_bool=False,
 ):
     """Simplified video of sampled observations.
 
@@ -236,7 +236,7 @@ def plot_sample_animation_multiobj(
             "primary_target: "
             + primary_target
             + "\nstepwise_target: "
-            + semantic_obs[i]
+            + semantic_obs[i],
         )
 
         return (ax1,)
@@ -256,7 +256,7 @@ def plot_sample_animation_multiobj(
 
 
 def plot_detection_animation(
-    all_obs, patch_obs, viz_obs, path_matches, model, model_name
+    all_obs, patch_obs, viz_obs, path_matches, model, model_name,
 ):
     """Plot video of object detection using displacements."""
     fig = plt.figure(figsize=(12, 7))
@@ -284,7 +284,7 @@ def plot_detection_animation(
     obj_obs = plot_obs[np.where(plot_obs[:res, 3] > 0)]
     # For scaling the plot the same way as the model graph
     ax3.scatter(
-        -model.pos[:, 1], model.pos[:, 0], model.pos[:, 2], c="white", alpha=0.1
+        -model.pos[:, 1], model.pos[:, 0], model.pos[:, 2], c="white", alpha=0.1,
     )
     p1 = ax3.scatter(
         -obj_obs[:, 1],
@@ -457,7 +457,7 @@ def plot_feature_matching_animation(
                         "features"
                     ]["on_object"]
                     for i in processed_obs_ids
-                ]
+                ],
             )
             steps_on_obj = sum(all_on_obj[:step])
             step = int(steps_on_obj)
@@ -470,7 +470,7 @@ def plot_feature_matching_animation(
                 # Load model from end of previous epoch
                 model_pos = lm_models[model_id][lm_num][object_n].pos
                 all_colors[i] = get_model_colors(
-                    model_pos.shape[0], step, is_match_step
+                    model_pos.shape[0], step, is_match_step,
                 )
                 matches_at_step = get_match_step(is_match_step, step)
 
@@ -509,7 +509,7 @@ def plot_feature_matching_animation(
                                 displacement,
                             )
                             plot_search_displacements(
-                                axes[i], search_positions, start_node
+                                axes[i], search_positions, start_node,
                             )
                         # Plot Path
                         if show_path:

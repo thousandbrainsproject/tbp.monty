@@ -129,7 +129,7 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
 
 
 def surface_normal_ordinary_least_squares(
-    sensor_frame_data, world_camera, center_id, neighbor_patch_frac=3.2
+    sensor_frame_data, world_camera, center_id, neighbor_patch_frac=3.2,
 ):
     """Extracts the surface normal direction from a noisy point cloud.
 
@@ -195,7 +195,7 @@ def surface_normal_ordinary_least_squares(
 
 
 def surface_normal_total_least_squares(
-    point_cloud_base, center_id, view_dir, neighbor_patch_frac=3.2
+    point_cloud_base, center_id, view_dir, neighbor_patch_frac=3.2,
 ):
     """Extracts the surface normal direction from a noisy point-cloud.
 
@@ -243,7 +243,7 @@ def surface_normal_total_least_squares(
             n_dir = np.array([0.0, 0.0, 1.0])
             valid_sn = False
             logger.debug(
-                "Warning : Non-diagonalizable matrix for surface normal estimation!"
+                "Warning : Non-diagonalizable matrix for surface normal estimation!",
             )
 
     # Patch center does not lie on an object
@@ -365,7 +365,7 @@ def curvature_at_point(point_cloud, center_id, normal):
             k1, k2, dir1, dir2 = 0, 0, [0, 0, 0], [0, 0, 0]
             valid_pc = False
             logger.debug(
-                "Warning : Singular matrix encountered in get-curvature-at-point!"
+                "Warning : Singular matrix encountered in get-curvature-at-point!",
             )
 
     else:
@@ -451,7 +451,7 @@ def principal_curvatures(
             # Compute the weights for weighted least-square regression
             n_points = on_obj.shape[0]
             weights = weight_matrix(
-                n_points, center_id, neighbor_patch_frac=neighbor_patch_frac
+                n_points, center_id, neighbor_patch_frac=neighbor_patch_frac,
             )
             weights = weights[on_obj, :]  # Filter off-object points
 
@@ -511,7 +511,7 @@ def principal_curvatures(
             k1, k2, pc1_dir, pc2_dir = 0, 0, [0, 0, 0], [0, 0, 0]
             valid_pc = False
             logger.debug(
-                "Warning : Singular matrix encountered in get-curvature-at-point!"
+                "Warning : Singular matrix encountered in get-curvature-at-point!",
             )
 
     else:
@@ -621,7 +621,7 @@ def point_pair_features(pos_i, pos_j, normal_i, normal_j):
             get_angle_torch(normal_i, pseudo),
             get_angle_torch(normal_j, pseudo),
             get_angle_torch(normal_i, normal_j),
-        ]
+        ],
     )
 
 

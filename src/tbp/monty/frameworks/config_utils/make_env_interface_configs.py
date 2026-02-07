@@ -119,7 +119,7 @@ def make_sensor_positions_on_grid(
 
     # Convert indices to locations in agent space.
     positions = np.array(
-        [[x[idx[0], idx[1]] * delta, y[idx[0], idx[1]] * delta] for idx in indices]
+        [[x[idx[0], idx[1]] * delta, y[idx[0], idx[1]] * delta] for idx in indices],
     )
 
     # Add z-positions.

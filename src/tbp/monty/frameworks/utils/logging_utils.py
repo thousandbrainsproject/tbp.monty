@@ -146,7 +146,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
                 "WARNING: episode keys did not equal json keys. This can happen if "
                 "json file was not appended to in episode order. To manually load the"
                 "whole file for debugging, run `deserialize_json_chunks(my_file)` with"
-                "no further arguments"
+                "no further arguments",
             )
     return detailed_json
 
@@ -179,7 +179,7 @@ def matches_to_target_str(possible_matches, graph_to_target):
 
 
 def compute_unsupervised_stats(
-    possible_matches, target, graph_to_target, target_to_graph
+    possible_matches, target, graph_to_target, target_to_graph,
 ):
     """Compute statistics like how many graphs are built per object.
 
@@ -268,10 +268,10 @@ def check_rotation_accuracy(stats, last_n_step=1):
                             (detected_rotation[0] + 180) % 360,
                             (-detected_rotation[1] + 180) % 360,
                             (detected_rotation[2] + 180) % 360,
-                        ]
+                        ],
                     )
                     if np.array_equal(
-                        np.array(detected_rotation), np.array(target_rotation)
+                        np.array(detected_rotation), np.array(target_rotation),
                     ) or np.array_equal(np.array(dual_pose), np.array(target_rotation)):
                         performance = "correct_rotation"
                     else:
@@ -286,7 +286,7 @@ def check_rotation_accuracy(stats, last_n_step=1):
                                 (detected_rotation[0] + 180) % 360,
                                 (-detected_rotation[1] + 180) % 360,
                                 (detected_rotation[2] + 180) % 360,
-                            ]
+                            ],
                         )
                         all_unique_poses.append(detected_rotation)
                         all_unique_poses.append(dual_pose)
@@ -308,8 +308,8 @@ def check_rotation_accuracy(stats, last_n_step=1):
                         performance,
                         num_paths,
                         num_poses,
-                    ]
-                )
+                    ],
+                ),
             )
     pose_stats = pd.concat(pose_stats, axis=1).T
     pose_stats.columns = [
@@ -348,8 +348,8 @@ def check_detection_accuracy_at_step(stats, last_n_step=1):
                     [
                         target_object,
                         performance,
-                    ]
-                )
+                    ],
+                ),
             )
     detection_stats = pd.concat(detection_stats, axis=1).T
     detection_stats.columns = [
@@ -380,8 +380,8 @@ def get_time_stats(all_ds, all_conditions) -> pd.DataFrame:
                             all_conditions[i],
                             times[step],
                             step,
-                        ]
-                    )
+                        ],
+                    ),
                 )
 
     df = pd.concat(time_stats, axis=1).T
@@ -390,7 +390,7 @@ def get_time_stats(all_ds, all_conditions) -> pd.DataFrame:
 
 
 def compute_pose_errors(
-    predicted_rotation: Rotation, target_rotation: Rotation
+    predicted_rotation: Rotation, target_rotation: Rotation,
 ) -> npt.NDArray[np.float64] | float:
     """Computes the angular pose errors between predicted and target rotations.
 
@@ -442,7 +442,7 @@ def compute_pose_error(
         The minimum angular error in radians (or degrees if `return_degrees` is True).
     """
     rotation_error: float = np.min(  # type: ignore[assignment]
-        compute_pose_errors(predicted_rotation, target_rotation)
+        compute_pose_errors(predicted_rotation, target_rotation),
     )
 
     return rotation_error * 180 / np.pi if return_degrees else rotation_error
@@ -464,7 +464,7 @@ def print_overall_stats(stats):
         f"overall run time: {np.round(rt, 2)} seconds "
         f"({np.round(rt / 60, 2)} minutes), "
         f"{np.round(rt / len(stats), 2)} seconds per episode, "
-        f"{np.round(rt_per_step, 2)} seconds per step."
+        f"{np.round(rt_per_step, 2)} seconds per step.",
     )
 
 
@@ -480,12 +480,12 @@ def print_unsupervised_stats(stats, epoch_len):
     later_acc = (
         (
             len(
-                later_epoch_stats[later_epoch_stats["primary_performance"] == "correct"]
+                later_epoch_stats[later_epoch_stats["primary_performance"] == "correct"],
             )
             + len(
                 later_epoch_stats[
                     later_epoch_stats["primary_performance"] == "correct_mlh"
-                ]
+                ],
             )
         )
         / len(later_epoch_stats)
@@ -493,7 +493,7 @@ def print_unsupervised_stats(stats, epoch_len):
     )
     print(
         f"Detected {np.round(first_epoch_acc, 2)}% correctly as new object"
-        "in first epoch"
+        "in first epoch",
     )
     print(f"Detected {np.round(later_acc, 2)}% correctly after first epoch")
     print(f"Mean objects per graph: {list(stats['mean_objects_per_graph'])[-1]}")
@@ -505,7 +505,7 @@ def print_unsupervised_stats(stats, epoch_len):
     rt = np.sum(stats["time"])
     print(
         f"overall run time: {np.round(rt, 2)} seconds ({np.round(rt / 60, 2)} minutes),"
-        f" {np.round(rt / len(stats), 2)} seconds per episode."
+        f" {np.round(rt / len(stats), 2)} seconds per episode.",
     )
 
 
@@ -593,7 +593,7 @@ def get_graph_lm_episode_stats(lm):
                     # Invert them since these are possible poses to rotate displacement
                     # not the object rotations.
                     detected_rotation = rotations_to_quats(
-                        lm.buffer.stats["symmetric_rotations"], invert=True
+                        lm.buffer.stats["symmetric_rotations"], invert=True,
                     )
                 else:
                     detected_rotation = lm.buffer.stats["detected_rotation_quat"]
@@ -701,7 +701,7 @@ def add_pose_lm_episode_stats(lm, stats):
         possible_matches = lm.get_possible_matches()
         all_possible_poses = lm.possible_poses[possible_matches[0]]
         stats["possible_object_poses"] = get_unique_rotations(
-            all_possible_poses, lm.pose_similarity_threshold
+            all_possible_poses, lm.pose_similarity_threshold,
         )
         paths = np.array(lm.possible_paths[possible_matches[0]])
         stats["possible_object_locations"] = paths[:, -1]
@@ -714,7 +714,7 @@ def add_pose_lm_episode_stats(lm, stats):
                 pose = stats["possible_object_poses"][i][j]
                 if isinstance(pose, Rotation):
                     stats["possible_object_poses"][i][j] = pose.as_euler(
-                        "xyz", degrees=True
+                        "xyz", degrees=True,
                     )
     else:
         # All fields must be included in each update to enable periodic appending to csv
@@ -740,7 +740,7 @@ def get_stats_per_lm(model, target, episode_seed: int):
         lm_stats = get_graph_lm_episode_stats(lm)
         if hasattr(lm, "evidence"):
             lm_stats = add_evidence_lm_episode_stats(
-                lm, lm_stats, target["consistent_child_objects"]
+                lm, lm_stats, target["consistent_child_objects"],
             )
         else:
             lm_stats = add_pose_lm_episode_stats(lm, lm_stats)
@@ -752,7 +752,7 @@ def get_stats_per_lm(model, target, episode_seed: int):
         performance_dict[f"LM_{i}"].update(primary_target_dict)
         # Add LM-specific target information
         performance_dict[f"LM_{i}"].update(
-            {"stepwise_target_object": lm.stepwise_target_object}
+            {"stepwise_target_object": lm.stepwise_target_object},
         )
     return performance_dict
 
@@ -779,11 +779,11 @@ def add_evidence_lm_episode_stats(lm, stats, consistent_child_objects):
     )
     stats["highest_evidence"] = last_mlh["evidence"]
     stats["episode_avg_prediction_error"] = np.mean(
-        lm.buffer.stats["mlh_prediction_error"]
+        lm.buffer.stats["mlh_prediction_error"],
     )
     stats = calculate_performance(stats, "primary_performance", lm, lm.primary_target)
     stats = calculate_performance(
-        stats, "stepwise_performance", lm, lm.stepwise_target_object
+        stats, "stepwise_performance", lm, lm.stepwise_target_object,
     )
     if stats["primary_performance"] == "correct_mlh":
         stats["rotation_error"] = np.round(
@@ -892,17 +892,17 @@ def consistent_child_objects_accuracy(eval_stats_for_lm, parent_to_child_mapping
         else:
             raise ValueError(
                 f"No mappings found for target object"
-                f" {episode_stats.primary_target_object}"
+                f" {episode_stats.primary_target_object}",
             )
     return consistent_child_count / total_count * 100
 
 
 def accuracy_stats_for_compositional_objects(
-    eval_stats_for_lm, parent_to_child_mapping
+    eval_stats_for_lm, parent_to_child_mapping,
 ):
     compositional_object_accuracy = overall_accuracy(eval_stats_for_lm)
     consistent_child_accuracy = consistent_child_objects_accuracy(
-        eval_stats_for_lm, parent_to_child_mapping
+        eval_stats_for_lm, parent_to_child_mapping,
     )
 
     return compositional_object_accuracy, consistent_child_accuracy
@@ -914,7 +914,7 @@ def compositional_stats_for_all_lms(eval_stats, all_lm_ids, parent_to_child_mapp
         eval_stats_for_lm = eval_stats[eval_stats["lm_id"] == f"LM_{lm_id}"]
         compositional_object_accuracy, consistent_child_accuracy = (
             accuracy_stats_for_compositional_objects(
-                eval_stats_for_lm, parent_to_child_mapping
+                eval_stats_for_lm, parent_to_child_mapping,
             )
         )
         print(
@@ -930,7 +930,7 @@ def compositional_stats_for_all_lms(eval_stats, all_lm_ids, parent_to_child_mapp
             "compositional_object_accuracy": compositional_object_accuracy,
             "consistent_child_accuracy": consistent_child_accuracy,
             "episode_avg_prediction_error": np.mean(
-                eval_stats_for_lm["episode_avg_prediction_error"]
+                eval_stats_for_lm["episode_avg_prediction_error"],
             ),
         }
     return lm_stats_dict
@@ -1008,13 +1008,13 @@ def maybe_rename_existing_file(filepath: Path) -> None:
 
     logger.warning(
         f"Output file {filepath.name} already exists. "
-        f"This file will be moved to {new_filepath.name}"
+        f"This file will be moved to {new_filepath.name}",
     )
 
     if new_filepath.exists():
         logger.warning(
             f"Output file {new_filepath} also already exists. This file will be removed"
-            " before renaming."
+            " before renaming.",
         )
         new_filepath.unlink()
 
@@ -1039,13 +1039,13 @@ def maybe_rename_existing_dir(dirpath: Path) -> None:
 
     logger.warning(
         f"Output directory {dirpath.name} already exists. "
-        f"This directory will be moved to {new_dirpath.name}"
+        f"This directory will be moved to {new_dirpath.name}",
     )
 
     if new_dirpath.exists():
         logger.warning(
             f"Output directory {new_dirpath} also already exists. "
-            "This directory will be removed before renaming."
+            "This directory will be removed before renaming.",
         )
         shutil.rmtree(new_dirpath)
 

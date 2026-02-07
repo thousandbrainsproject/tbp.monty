@@ -149,14 +149,14 @@ class DefaultHypothesesDisplacer:
 
         # Get indices of hypotheses with evidence > threshold
         hyp_ids_to_test = np.where(
-            possible_hypotheses.evidence >= evidence_update_threshold
+            possible_hypotheses.evidence >= evidence_update_threshold,
         )[0]
         num_hypotheses_to_test = hyp_ids_to_test.shape[0]
         if num_hypotheses_to_test > 0:
             logger.info(
                 f"Testing {num_hypotheses_to_test} out of "
                 f"{total_hypotheses_count} hypotheses for {graph_id} "
-                f"(evidence > {evidence_update_threshold})"
+                f"(evidence > {evidence_update_threshold})",
             )
 
             # Get evidence update for all hypotheses with evidence > current
@@ -227,7 +227,7 @@ class DefaultHypothesesDisplacer:
             The location evidence.
         """
         logger.debug(
-            f"Calculating evidence for {graph_id} using input from {input_channel}"
+            f"Calculating evidence for {graph_id} using input from {input_channel}",
         )
 
         pose_transformed_features = rotate_pose_dependent_features(
@@ -236,7 +236,7 @@ class DefaultHypothesesDisplacer:
         )
         # Get max_nneighbors nearest nodes to search locations.
         nearest_node_ids = self.graph_memory.get_graph(
-            graph_id, input_channel
+            graph_id, input_channel,
         ).find_nearest_neighbors(
             search_locations,
             num_neighbors=self.max_nneighbors,
@@ -245,7 +245,7 @@ class DefaultHypothesesDisplacer:
             nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
 
         nearest_node_locs = self.graph_memory.get_locations_in_graph(
-            graph_id, input_channel
+            graph_id, input_channel,
         )[nearest_node_ids]
         max_abs_curvature = get_relevant_curvature(channel_features)
         custom_nearest_node_dists = get_custom_distances(
@@ -256,7 +256,7 @@ class DefaultHypothesesDisplacer:
         )
         # shape=(H, K)
         node_distance_weights = self._get_node_distance_weights(
-            custom_nearest_node_dists
+            custom_nearest_node_dists,
         )
         # Get IDs where custom_nearest_node_dists > max_match_distance
         mask = node_distance_weights <= 0

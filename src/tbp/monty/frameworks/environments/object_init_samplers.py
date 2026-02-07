@@ -38,7 +38,7 @@ class Default:
 
 class Predefined(Default):
     def __init__(
-        self, positions=None, rotations=None, scales=None, change_every_episode=None
+        self, positions=None, rotations=None, scales=None, change_every_episode=None,
     ):
         # NOTE: added param change_every_episode. This is so if I want to run an
         # experiment and specify an exact list of objects, with specific poses per

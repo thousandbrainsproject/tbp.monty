@@ -98,12 +98,12 @@ class ProfileExperimentMixinTest(TestCase):
             if not file.is_file():
                 continue
             self.assertGreater(
-                file.stat().st_size, 0, "Empty profile file was unexpectedly generated."
+                file.stat().st_size, 0, "Empty profile file was unexpectedly generated.",
             )
             with file.open("r") as f:
                 first_line = f.readline().rstrip("\n")
                 self.assertEqual(
-                    first_line, ",func,ncalls,ccalls,tottime,cumtime,callers"
+                    first_line, ",func,ncalls,ccalls,tottime,cumtime,callers",
                 )
 
     def test_run_episode_is_profiled(self) -> None:

@@ -39,7 +39,7 @@ class BasePolicyTest(unittest.TestCase):
         )
         self.agent_sensors = {
             SensorID(
-                f"sensor_id_{self.rng.randint(0, 999_999_999)}"
+                f"sensor_id_{self.rng.randint(0, 999_999_999)}",
             ): self.default_sensor_state,
         }
         self.default_agent_state = AgentState(
@@ -63,9 +63,9 @@ class BasePolicyTest(unittest.TestCase):
             {
                 self.agent_id: expected_state,
                 AgentID("different_agent_id"): AgentState(
-                    sensors={}, position=(), rotation=()
+                    sensors={}, position=(), rotation=(),
                 ),
-            }
+            },
         )
         self.assertEqual(self.policy.get_agent_state(state), expected_state)
 
@@ -75,7 +75,7 @@ class BasePolicyTest(unittest.TestCase):
         state = MotorSystemState(
             {
                 self.agent_id: self.default_agent_state,
-            }
+            },
         )
         self.assertFalse(self.policy.is_motor_only_step(state))
 
@@ -90,7 +90,7 @@ class BasePolicyTest(unittest.TestCase):
                     rotation=self.default_agent_state.rotation,
                     motor_only_step=True,
                 ),
-            }
+            },
         )
         self.assertTrue(self.policy.is_motor_only_step(state))
 
@@ -105,7 +105,7 @@ class BasePolicyTest(unittest.TestCase):
                     rotation=self.default_agent_state.rotation,
                     motor_only_step=False,
                 ),
-            }
+            },
         )
         self.assertFalse(self.policy.is_motor_only_step(state))
 
@@ -129,7 +129,7 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
             location=self.location,
             morphological_features={
                 "pose_vectors": np.array(
-                    [self.tangent_norm.tolist(), [1, 0, 0], [0, 0, -1]]
+                    [self.tangent_norm.tolist(), [1, 0, 0], [0, 0, -1]],
                 ),
                 "pose_fully_defined": True,
                 "on_object": 1,

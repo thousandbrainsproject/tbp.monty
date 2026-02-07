@@ -33,7 +33,7 @@ def post(url: str, data: dict, headers=None):
     headers = headers or {}
     headers["Authorization"] = f"Basic {os.getenv('README_API_KEY')}"
     response = requests.post(
-        url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
+        url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS,
     )
     logging.debug("post %s %s", url, response.status_code)
     if response.status_code < 200 or response.status_code >= 300:
@@ -46,7 +46,7 @@ def put(url: str, data: dict, headers=None):
     headers = headers or {}
     headers["Authorization"] = f"Basic {os.getenv('README_API_KEY')}"
     response = requests.put(
-        url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
+        url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS,
     )
     logging.debug("put %s %s", url, response.status_code)
     if response.status_code < 200 or response.status_code >= 300:

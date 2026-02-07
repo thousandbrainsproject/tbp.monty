@@ -192,7 +192,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
         if self._check_need_new_output_goal(output_goal_achieved):
             self._set_output_goal_state(
-                new_goal_state=self._generate_goal_state(observations)
+                new_goal_state=self._generate_goal_state(observations),
             )
         elif self._check_keep_current_output_goal():
             pass
@@ -285,7 +285,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             ):
                 raise NotImplementedError(
                     "TODO M implement pose-vector comparisons that handle "
-                    "symmetry of objects"
+                    "symmetry of objects",
                 )
                 # TODO M consider using an angular distance instead of Euclidean
                 # when we actually begin making use of this feature; try to ensure
@@ -316,7 +316,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             diff_tolerances = self.goal_tolerances
 
         return self._check_states_different(
-            self.parent_lm.get_output(), self.driving_goal_state, diff_tolerances
+            self.parent_lm.get_output(), self.driving_goal_state, diff_tolerances,
         )
 
     def _check_output_goal_state_achieved(self, observations) -> bool:
@@ -374,7 +374,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
 
         current_sensory_input = get_state_from_channel(
-            states=observations, channel_name=sensor_channel_name
+            states=observations, channel_name=sensor_channel_name,
         )
 
         prev_input_states = self.parent_lm.buffer.get_previous_input_states()
@@ -662,7 +662,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
 
         top_mlh_graph = self.parent_lm.get_graph(
-            top_id, input_channel=sensor_channel_name
+            top_id, input_channel=sensor_channel_name,
         ).pos
 
         if self.focus_on_pose:
@@ -670,7 +670,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             # *pose* of the most-likely object
             second_id = top_id
             _, second_mlh = self.parent_lm.get_top_two_pose_hypotheses_for_graph_id(
-                top_id
+                top_id,
             )
 
         else:
@@ -699,7 +699,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         # Perform the same transformation to the estimated location (sanity check)
         transformed_current_loc = top_mlh["rotation"].inv().apply(
-            top_mlh["location"]
+            top_mlh["location"],
         ) - top_mlh["rotation"].inv().apply(top_mlh["location"])
         transformed_current_loc = (
             second_mlh["rotation"].apply(transformed_current_loc)
@@ -715,7 +715,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # Note we ultimately want the target location to be one on the most likely
         # graph, so we pass the top-MLH graph in as the query points
         second_mlh_graph = self.parent_lm.get_graph(
-            second_id, input_channel=sensor_channel_name
+            second_id, input_channel=sensor_channel_name,
         )
         radius_node_dists = second_mlh_graph.find_nearest_neighbors(
             top_mlh_graph,
@@ -748,7 +748,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         target_loc = target_graph.pos[target_loc_id]
         surface_normal_mapping = target_graph.feature_mapping["pose_vectors"]
         target_surface_normal = target_graph.x[
-            target_loc_id, surface_normal_mapping[0] : surface_normal_mapping[0] + 3
+            target_loc_id, surface_normal_mapping[0] : surface_normal_mapping[0] + 3,
         ]
 
         return {
@@ -758,7 +758,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         }
 
     def _compute_goal_state_for_target_loc(
-        self, observations, target_info, goal_confidence=1.0
+        self, observations, target_info, goal_confidence=1.0,
     ) -> GoalState:
         """Specify a Goal for the motor-actuator.
 
@@ -789,7 +789,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # that we will use
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
         sensory_input = get_state_from_channel(
-            states=observations, channel_name=sensor_channel_name
+            states=observations, channel_name=sensor_channel_name,
         )
         displacement = (
             target_info["target_loc"] - target_info["hypothesis_to_test"]["location"]
@@ -810,7 +810,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # Rotate the learned surface normal (which was committed to memory assuming a
         # default 0,0,0 orientation of the object)
         target_surface_normal_rotated = object_rot.apply(
-            target_info["target_surface_normal"]
+            target_info["target_surface_normal"],
         )
 
         # Scale the surface normal by the desired distance x1.5 (i.e. so that we start
@@ -869,7 +869,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
                         (-1) * target_surface_normal_rotated,
                         [np.nan, np.nan, np.nan],
                         [np.nan, np.nan, np.nan],
-                    ]
+                    ],
                 ),
                 "pose_fully_defined": None,
                 "on_object": 1,
@@ -969,7 +969,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # of refactoring
         pm_base_thresh = self.parent_lm._threshold_possible_matches()
         pm_smaller_thresh = self.parent_lm._threshold_possible_matches(
-            x_percent_scale_factor=self.x_percent_scale_factor
+            x_percent_scale_factor=self.x_percent_scale_factor,
         )
 
         if (
@@ -985,7 +985,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             # (len(pm_smaller_thresh) == 1), then we sometimes (hence the randomness)
             # focus on pose.
             logger.debug(
-                "Hypothesis jump indicated: One object more likely, focusing on pose"
+                "Hypothesis jump indicated: One object more likely, focusing on pose",
             )
             self.focus_on_pose = True
             return True
@@ -1001,10 +1001,10 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
                 self.prev_top_mlhs[0]["graph_id"],
                 self.prev_top_mlhs[1]["graph_id"],
             ]
-            != [top_id, second_id]
+            != [top_id, second_id],
         ):
             logger.debug(
-                "Hypothesis jump indicated: change or shuffle in top-two MLH IDs"
+                "Hypothesis jump indicated: change or shuffle in top-two MLH IDs",
             )
             return True
 
@@ -1016,10 +1016,10 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # which we consider it a new pose (rather than it needing to be identical)
         if self.prev_top_mlhs is not None and np.all(
             top_mlh["rotation"].as_euler("xyz")
-            != self.prev_top_mlhs[0]["rotation"].as_euler("xyz")
+            != self.prev_top_mlhs[0]["rotation"].as_euler("xyz"),
         ):
             logger.debug(
-                "Hypothesis jump indicated: change in most-likely rotation of MLH"
+                "Hypothesis jump indicated: change in most-likely rotation of MLH",
             )
             return True
 
@@ -1028,7 +1028,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # increases, so that we avoid continuously returning to the same location
         if num_elapsed_steps % (self.wait_factor * self.elapsed_steps_factor) == 0:
             logger.debug(
-                "Hypothesis jump indicated: sufficient steps elapsed with no jump"
+                "Hypothesis jump indicated: sufficient steps elapsed with no jump",
             )
 
             self.wait_factor *= self.wait_growth_multiplier

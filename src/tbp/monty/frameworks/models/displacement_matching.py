@@ -100,7 +100,7 @@ class DisplacementGraphLM(GraphLM):
             detected_path = possible_paths[0]
             # get locations in model RF for nodes (int IDs) in the detected path
             detected_path_locs = self.graph_memory.get_locations_in_graph(
-                object_id, input_channel=first_channel
+                object_id, input_channel=first_channel,
             )[detected_path]
             # The location in object RF where the sensor is right now will be the last
             # on in the detected path
@@ -109,11 +109,11 @@ class DisplacementGraphLM(GraphLM):
                 [
                     np.array(detected_path_locs[i + 1] - detected_path_locs[i])
                     for i in range(len(detected_path_locs) - 1)
-                ]
+                ],
             )
             r_euler, _, r = self.get_object_rotation(
                 sensed_displacements=np.array(
-                    self.buffer.displacements[first_channel]["displacement"][1:]
+                    self.buffer.displacements[first_channel]["displacement"][1:],
                 ),
                 model_displacements=model_displacements,
                 get_reverse_r=False,
@@ -123,7 +123,7 @@ class DisplacementGraphLM(GraphLM):
                 self.detected_rotation_r = r
                 scale = self.get_object_scale(
                     np.array(
-                        self.buffer.get_nth_displacement(1, input_channel=first_channel)
+                        self.buffer.get_nth_displacement(1, input_channel=first_channel),
                     ),
                     model_displacements[0],
                 )
@@ -133,7 +133,7 @@ class DisplacementGraphLM(GraphLM):
                     "detected_path": detected_path,
                     "detected_location_on_model": current_model_loc,
                     "detected_location_rel_body": self.buffer.get_current_location(
-                        input_channel=first_channel
+                        input_channel=first_channel,
                     ),
                     "detected_rotation": r_euler,
                     "detected_rotation_quat": r.as_quat(),
@@ -145,7 +145,7 @@ class DisplacementGraphLM(GraphLM):
         return pose_and_scale
 
     def get_object_rotation(
-        self, sensed_displacements, model_displacements, get_reverse_r=False
+        self, sensed_displacements, model_displacements, get_reverse_r=False,
     ):
         """Calculate the rotation between two sets of displacement vectors.
 
@@ -217,7 +217,7 @@ class DisplacementGraphLM(GraphLM):
 
         if self.match_attribute == "PPF" and self.use_relative_len:
             query[0] = query[0] / self.buffer.get_first_displacement_len(
-                input_channel="first"
+                input_channel="first",
             )
 
         logger.debug(f"query: {query}")
@@ -268,7 +268,7 @@ class DisplacementGraphLM(GraphLM):
         predictions = {}
         for graph_id in self.possible_matches:
             prediction = self._predict_using_displacements(
-                np.array(query), graph_id, use_relative_len
+                np.array(query), graph_id, use_relative_len,
             )
             predictions[graph_id] = prediction
         return predictions
@@ -339,7 +339,7 @@ class DisplacementGraphLM(GraphLM):
                 current_possible_paths.append(path)
                 edges_of_node = np.where(
                     self.possible_matches[graph_id][first_input_channel].edge_index[0]
-                    == current_node
+                    == current_node,
                 )[0]
                 next_nodes = self.possible_matches[graph_id][
                     first_input_channel
@@ -407,11 +407,11 @@ class DisplacementGraphLM(GraphLM):
             # TODO S: Make sure result of get_current_location() and get_current_pose()
             # is on object (should always be atm).
             displacement = np.array(
-                obs_to_use.location
+                obs_to_use.location,
             ) - self.buffer.get_current_location(input_channel=obs_to_use.sender_id)
 
             pos1 = torch.tensor(
-                self.buffer.get_current_location(input_channel=obs_to_use.sender_id)
+                self.buffer.get_current_location(input_channel=obs_to_use.sender_id),
             )
             pos2 = torch.tensor(obs_to_use.location)
             norm1 = torch.tensor(
@@ -468,19 +468,19 @@ class DisplacementGraphMemory(GraphMemory):
         for graph_id in self.get_memory_ids():
             first_input_channel = self.get_input_channels_in_graph(graph_id)[0]
             next_possible_paths[graph_id] = np.swapaxes(
-                self.get_graph(graph_id, first_input_channel).edge_index, 0, 1
+                self.get_graph(graph_id, first_input_channel).edge_index, 0, 1,
             )
             if self.get_graph(graph_id, first_input_channel).x.dim() > 1:
                 # Features of nodes contain more than just IDs (i.e. RGBA)
                 possible_paths[graph_id] = self.get_graph_node_ids(
-                    graph_id, first_input_channel
+                    graph_id, first_input_channel,
                 )
             else:
                 possible_paths[graph_id] = np.array(
-                    self.get_graph(graph_id, first_input_channel).x
+                    self.get_graph(graph_id, first_input_channel).x,
                 )
             scale_factors[graph_id] = np.array(
-                self.get_graph(graph_id, first_input_channel).edge_attr[:, 0]
+                self.get_graph(graph_id, first_input_channel).edge_attr[:, 0],
             )
         return (
             possible_matches,

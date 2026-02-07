@@ -52,12 +52,12 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(
                 f"running train epoch {self.train_epochs} "
-                f"train episode {self.train_episodes}"
+                f"train episode {self.train_episodes}",
             )
         else:
             logger.info(
                 f"running eval epoch {self.eval_epochs} "
-                f"eval episode {self.eval_episodes}"
+                f"eval episode {self.eval_episodes}",
             )
 
         self.reset_episode_rng()
@@ -100,7 +100,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         for loader_step, observation in enumerate(self.env_interface):
             if self.show_sensor_output:
                 is_saccade_on_image_data_loader = isinstance(
-                    self.env_interface, SaccadeOnImageEnvironmentInterface
+                    self.env_interface, SaccadeOnImageEnvironmentInterface,
                 )
                 self.live_plotter.show_observations(
                     *self.live_plotter.hardcoded_assumptions(observation, self.model),
@@ -110,7 +110,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
 
             if self.model.check_reached_max_matching_steps(self.max_steps):
                 logger.info(
-                    f"Terminated due to maximum matching steps : {self.max_steps}"
+                    f"Terminated due to maximum matching steps : {self.max_steps}",
                 )
                 # Need to break here already, otherwise there are problems
                 # when the object is recognized in the last step
@@ -123,7 +123,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
 
             if self.model.is_motor_only_step:
                 logger.debug(
-                    "Performing a motor-only step, so passing info straight to motor"
+                    "Performing a motor-only step, so passing info straight to motor",
                 )
                 # On these sensations, we just want to pass information to the motor
                 # system, so bypass the main model step (i.e. updating of LMs)

@@ -179,7 +179,7 @@ class ReturnInhibitorTest(unittest.TestCase):
         query_locations = np.array([[4, 5, 6]])
         self.return_inhibitor(central_location, query_locations)
         self.return_inhibitor._decay_field.add.assert_called_once_with(  # type: ignore[attr-defined]
-            central_location
+            central_location,
         )
 
     def test_return_inhibitor_does_not_add_central_location_if_not_present_to_decay_field(  # noqa: E501

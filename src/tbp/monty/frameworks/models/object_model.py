@@ -230,7 +230,7 @@ class GraphObjectModel(ObjectModel):
         return all_locations, all_features
 
     def _build_adjacency_graph(
-        self, locations, features, k_n, graph_delta_thresholds, old_graph_index
+        self, locations, features, k_n, graph_delta_thresholds, old_graph_index,
     ):
         """Build graph from observations with nodes linking to the n nearest neighbors.
 
@@ -256,7 +256,7 @@ class GraphObjectModel(ObjectModel):
             locations, with edges between the k_n nearest neighbors.
         """
         locations_reduced, clean_ids = remove_close_points(
-            np.array(locations), features, graph_delta_thresholds, old_graph_index
+            np.array(locations), features, graph_delta_thresholds, old_graph_index,
         )
         num_nodes = locations_reduced.shape[0]
         node_features = np.linspace(0, num_nodes - 1, num_nodes).reshape((num_nodes, 1))
@@ -280,7 +280,7 @@ class GraphObjectModel(ObjectModel):
                 norm = torch.tensor(feats[:, :3], dtype=torch.float)
 
         assert np.all(
-            locations[:old_graph_index] == locations_reduced[:old_graph_index]
+            locations[:old_graph_index] == locations_reduced[:old_graph_index],
         ), "Old graph points shouldn't change"
 
         x = torch.tensor(node_features, dtype=torch.float)
@@ -292,7 +292,7 @@ class GraphObjectModel(ObjectModel):
             k_n = get_correct_k_n(k_n, num_nodes)
 
             scipy_graph = kneighbors_graph(
-                locations_reduced, n_neighbors=k_n, include_self=False
+                locations_reduced, n_neighbors=k_n, include_self=False,
             )
 
             scipygraph = torch_geometric.utils.from_scipy_sparse_matrix(scipy_graph)
@@ -302,7 +302,7 @@ class GraphObjectModel(ObjectModel):
             for e, edge_start in enumerate(edge_index[0]):
                 edge_end = edge_index[1][e]
                 displacements.append(
-                    locations_reduced[edge_end] - locations_reduced[edge_start]
+                    locations_reduced[edge_end] - locations_reduced[edge_start],
                 )
 
             edge_attr = torch.tensor(np.array(displacements), dtype=torch.float)
@@ -517,7 +517,7 @@ class GridObjectModel(GraphObjectModel):
         # Find multiplier that turns voxel locations into round integer indices
         self._location_scale_factor = 1 / voxel_size
         start_index = np.array(
-            np.round(start_location * self._location_scale_factor), dtype=int
+            np.round(start_location * self._location_scale_factor), dtype=int,
         )
         # Find offset factor that places start_location at the center of the grid
         center_id = self._num_voxels_per_dim // 2
@@ -525,11 +525,11 @@ class GridObjectModel(GraphObjectModel):
         self._location_offset = center_voxel_index - start_index
 
     def _initialize_and_fill_grid(
-        self, locations, features, observation_feature_mapping
+        self, locations, features, observation_feature_mapping,
     ):
         # TODO: Do we still need to do this with sparse tensors?
         self._observation_count = self._generate_empty_grid(
-            self._num_voxels_per_dim, n_entries=1
+            self._num_voxels_per_dim, n_entries=1,
         )
         # initialize location mapping by calculating the scale factor and offset.
         # The offset is set such that the first observed location starts at the
@@ -540,10 +540,10 @@ class GridObjectModel(GraphObjectModel):
         # initialize self._feature_grid with feat_dim calculated from features
         feat_dim = features.shape[-1]
         self._feature_grid = self._generate_empty_grid(
-            self._num_voxels_per_dim, n_entries=feat_dim
+            self._num_voxels_per_dim, n_entries=feat_dim,
         )
         self._location_grid = self._generate_empty_grid(
-            self._num_voxels_per_dim, n_entries=3
+            self._num_voxels_per_dim, n_entries=3,
         )
         # increment counters in observation_count
         self._update_grids(
@@ -567,12 +567,12 @@ class GridObjectModel(GraphObjectModel):
         if percent_in_bounds < 0.9:
             logger.info(
                 "Too many observations outside of grid "
-                f"({np.round(percent_in_bounds * 100, 2)}%). Skipping update of grids."
+                f"({np.round(percent_in_bounds * 100, 2)}%). Skipping update of grids.",
             )
             raise GridTooSmallError
         voxel_ids_of_new_obs = location_grid_ids[locations_in_bounds]
         self._observation_count = increment_sparse_tensor_by_count(
-            self._observation_count, voxel_ids_of_new_obs
+            self._observation_count, voxel_ids_of_new_obs,
         )
 
         # if new features contain input channel or features, add them to mapping
@@ -603,13 +603,13 @@ class GridObjectModel(GraphObjectModel):
             voxels_with_values[2],
         ):
             observations_in_voxel_ids = np.where(
-                (voxel_ids_of_new_obs == voxel).all(axis=1)
+                (voxel_ids_of_new_obs == voxel).all(axis=1),
             )[0]
             # Only update if there are new observations for this voxel
             if len(observations_in_voxel_ids) > 0:
                 new_indices.append(np.array(voxel))
                 previous_loc_in_voxel = get_values_from_dense_last_dim(
-                    self._location_grid, voxel
+                    self._location_grid, voxel,
                 )
                 previous_locations_at_indices.append(previous_loc_in_voxel)
                 locations_in_voxel = locations[observations_in_voxel_ids]
@@ -621,7 +621,7 @@ class GridObjectModel(GraphObjectModel):
                 new_locations.append(new_avg_location)
 
                 previous_feat_in_voxel = get_values_from_dense_last_dim(
-                    self._feature_grid, voxel
+                    self._feature_grid, voxel,
                 )
 
                 previous_features_at_indices.append(previous_feat_in_voxel)
@@ -671,10 +671,10 @@ class GridObjectModel(GraphObjectModel):
         top_voxel_idxs = self._get_top_k_voxel_indices()
 
         locations_at_ids = self._location_grid.to_dense()[
-            top_voxel_idxs[0], top_voxel_idxs[1], top_voxel_idxs[2]
+            top_voxel_idxs[0], top_voxel_idxs[1], top_voxel_idxs[2],
         ]
         features_at_ids = self._feature_grid.to_dense()[
-            top_voxel_idxs[0], top_voxel_idxs[1], top_voxel_idxs[2]
+            top_voxel_idxs[0], top_voxel_idxs[1], top_voxel_idxs[2],
         ]
         graph = build_point_cloud_graph(
             locations=np.array(locations_at_ids),
@@ -736,12 +736,12 @@ class GridObjectModel(GraphObjectModel):
         shape = (num_voxels, num_voxels, num_voxels, n_entries)
         # Create empty sparse tensor
         sparse_tensor = torch.sparse_coo_tensor(
-            torch.zeros((4, 0), dtype=torch.long), torch.tensor([]), size=shape
+            torch.zeros((4, 0), dtype=torch.long), torch.tensor([]), size=shape,
         )
         return sparse_tensor.coalesce()
 
     def _get_new_voxel_location(
-        self, new_locations_in_voxel, previous_loc_in_voxel, voxel
+        self, new_locations_in_voxel, previous_loc_in_voxel, voxel,
     ):
         """Calculate new average location for a voxel.
 
@@ -753,7 +753,7 @@ class GridObjectModel(GraphObjectModel):
         # since self._observation_count already includes the new observations it needs
         # to be > the number of new observations in the voxel.
         if self._observation_count[voxel[0], voxel[1], voxel[2], 0] > len(
-            new_locations_in_voxel
+            new_locations_in_voxel,
         ):
             # NOTE: could weight these
             avg_loc = (avg_loc + previous_loc_in_voxel) / 2
@@ -875,7 +875,7 @@ class GridObjectModel(GraphObjectModel):
         )
 
     def _old_new_lists_to_sparse_tensors(
-        self, indices, new_values, old_values, target_mat_shape
+        self, indices, new_values, old_values, target_mat_shape,
     ):
         """Turn two lists of old and new values into sparse tensors.
 

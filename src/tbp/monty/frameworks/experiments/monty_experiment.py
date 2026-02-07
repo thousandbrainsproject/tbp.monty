@@ -84,7 +84,7 @@ class MontyExperiment:
         self.supervised_lm_ids = config["supervised_lm_ids"]
         if self.supervised_lm_ids == "all":
             self.supervised_lm_ids = list(
-                self.config["monty_config"]["learning_module_configs"].keys()
+                self.config["monty_config"]["learning_module_configs"].keys(),
             )
 
         if self.show_sensor_output:
@@ -171,7 +171,7 @@ class MontyExperiment:
         if not issubclass(motor_system_class, MotorSystem):
             raise TypeError(
                 "motor_system_class must be a subclass of MotorSystem, got "
-                f"{motor_system_class}"
+                f"{motor_system_class}",
             )
         motor_system = motor_system_class(**motor_system_args)
 
@@ -205,7 +205,7 @@ class MontyExperiment:
             new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
             print(
                 "max_total_steps is set < num_exploratory_steps + max_train_steps."
-                f" Resetting it to {new_max_steps}"
+                f" Resetting it to {new_max_steps}",
             )
             self.max_total_steps = new_max_steps
 
@@ -225,7 +225,7 @@ class MontyExperiment:
         # Initialize everything needed for environment interface
         env_interface_config = config["env_interface_config"]
         self.init_env(
-            env_interface_config["env_init_func"], env_interface_config["env_init_args"]
+            env_interface_config["env_init_func"], env_interface_config["env_init_args"],
         )
 
         # Initialize train environment interface if needed
@@ -239,7 +239,7 @@ class MontyExperiment:
             )
 
             self.train_env_interface = self.create_env_interface(
-                env_interface_class, env_interface_args
+                env_interface_class, env_interface_args,
             )
         else:
             self.train_env_interface = None
@@ -255,7 +255,7 @@ class MontyExperiment:
             )
 
             self.eval_env_interface = self.create_env_interface(
-                env_interface_class, env_interface_args
+                env_interface_class, env_interface_args,
             )
         else:
             self.eval_env_interface = None
@@ -277,7 +277,7 @@ class MontyExperiment:
         # training and validation are just different environment interfaces
         if not issubclass(env_interface_class, EnvironmentInterface):
             raise TypeError(
-                "env_interface_class must be EnvironmentInterface (for now)"
+                "env_interface_class must be EnvironmentInterface (for now)",
             )
 
         env_interface = env_interface_class(
@@ -328,7 +328,7 @@ class MontyExperiment:
             target = self.env_interface.primary_target
             if target is not None:
                 target.update(
-                    consistent_child_objects=self.env_interface.consistent_child_objects
+                    consistent_child_objects=self.env_interface.consistent_child_objects,
                 )
             args.update(target=target)
         return args
@@ -359,14 +359,14 @@ class MontyExperiment:
         python_logging_handlers: list[logging.Handler] = []
         if self.log_to_file:
             python_logging_handlers.append(
-                logging.FileHandler(self.output_dir / "log.txt", mode="w")
+                logging.FileHandler(self.output_dir / "log.txt", mode="w"),
             )
         if self.log_to_stderr:
             handler = logging.StreamHandler()
             handler.setFormatter(
                 logging.Formatter(
-                    fmt="%(levelname)s:%(name)s:%(funcName)s:%(lineno)d:%(message)s"
-                )
+                    fmt="%(levelname)s:%(name)s:%(funcName)s:%(lineno)d:%(message)s",
+                ),
             )
             python_logging_handlers.append(handler)
 
@@ -413,7 +413,7 @@ class MontyExperiment:
             logger.warning(
                 f"Log level is set to {self.monty_log_level} but you "
                 "specified a detailed logging handler. Setting log level "
-                "to detailed."
+                "to detailed.",
             )
             self.monty_log_level = "DETAILED"
 
@@ -421,7 +421,7 @@ class MontyExperiment:
             logger.warning(
                 "You are setting the monty logging level to DETAILED, but all your "
                 "handlers are BASIC. Consider setting the level to BASIC, or adding a "
-                "DETAILED handler"
+                "DETAILED handler",
             )
 
         for lm in self.model.learning_modules:
@@ -434,7 +434,7 @@ class MontyExperiment:
                         "You are using a DETAILED logger with sensor module "
                         f"{sm.sensor_module_id} but 'save_raw_obs' is False. "
                         "Consider setting 'save_raw_obs' to True to log and visualize "
-                        "the SM RGB raw values."
+                        "the SM RGB raw values.",
                     )
 
         # monty_log_level determines if we used Basic or Detailed logger
@@ -447,7 +447,7 @@ class MontyExperiment:
         else:
             logger.warning(
                 "Unable to match monty logger to log level. "
-                "An empty logger will be used as a placeholder"
+                "An empty logger will be used as a placeholder",
             )
             self.monty_logger = BaseMontyLogger(handlers=[])
 
@@ -457,7 +457,7 @@ class MontyExperiment:
             ]
         # Instantiate logging callback handler for custom monty loggers
         self.logger_handler = LoggingCallbackHandler(
-            self.monty_logger, self.model, output_dir=self.output_dir
+            self.monty_logger, self.model, output_dir=self.output_dir,
         )
 
     def get_epoch_state(self):
@@ -498,12 +498,12 @@ class MontyExperiment:
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(
                 f"running train epoch {self.train_epochs} "
-                f"train episode {self.train_episodes}"
+                f"train episode {self.train_episodes}",
             )
         else:
             logger.info(
                 f"running eval epoch {self.eval_epochs} "
-                f"eval episode {self.eval_episodes}"
+                f"eval episode {self.eval_episodes}",
             )
 
         self.reset_episode_rng()

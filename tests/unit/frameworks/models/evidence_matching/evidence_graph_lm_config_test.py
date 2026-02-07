@@ -38,7 +38,7 @@ class EvidenceGraphLMConfigTest(unittest.TestCase):
     def setUp(self):
         # This can't be setUpClass because using the GSG with an LM modifies both
         with hydra.initialize_config_dir(
-            config_dir=str(self.LM_CONFIGS), version_base=None
+            config_dir=str(self.LM_CONFIGS), version_base=None,
         ):
             self.lm_config = hydra.compose(config_name="default_evidence")
             self.learning_module = hydra.utils.instantiate(self.lm_config)

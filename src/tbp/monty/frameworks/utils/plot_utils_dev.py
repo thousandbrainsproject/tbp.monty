@@ -200,19 +200,19 @@ def format_ax(ax, all_model_pos, ax_range, rotate, step):
             [
                 np.mean(all_model_pos[1:, 0]) - ax_range,
                 np.mean(all_model_pos[1:, 0]) + ax_range,
-            ]
+            ],
         )
         ax.set_ylim(
             [
                 np.mean(all_model_pos[1:, 1]) - ax_range,
                 np.mean(all_model_pos[1:, 1]) + ax_range,
-            ]
+            ],
         )
         ax.set_zlim(
             [
                 np.mean(all_model_pos[1:, 2]) - ax_range,
                 np.mean(all_model_pos[1:, 2]) + ax_range,
-            ]
+            ],
         )
 
     ax.set_xticks([]), ax.set_yticks([]), ax.set_zticks([])
@@ -392,7 +392,7 @@ def show_one_step(
     observed_surface_normal = stats[str(episode)][lm_id]["pose_vectors"][step + 1][:3]
 
     num_possible_paths = len(
-        stats[str(episode)][lm_id]["possible_poses"][step][object_to_inspect]
+        stats[str(episode)][lm_id]["possible_poses"][step][object_to_inspect],
     )
     for path in range(num_possible_paths):
         current_path = stats[str(episode)][lm_id]["possible_paths"][step][
@@ -455,7 +455,7 @@ def show_one_step(
                     f"---\npose {pose} with closest node {closest_node_id} \n"
                     f"at position {closest_node_position} \n"
                     f"with distance {node_distances[closest_node_id]} \n"
-                    f"has feature {model_features[closest_node_id]}"
+                    f"has feature {model_features[closest_node_id]}",
                 )
                 color = "limegreen"
                 size = 40
@@ -482,7 +482,7 @@ def show_one_step(
                 # print("angle between rotated and observed: " + str(angle))
                 plot_normal(ax, closest_node_position, norm, norm_len, "black")
                 plot_normal(
-                    ax, closest_node_position, graph_surface_normal, norm_len, "pink"
+                    ax, closest_node_position, graph_surface_normal, norm_len, "pink",
                 )
 
         search_positions = np.array(search_positions)
@@ -521,7 +521,7 @@ def show_initial_hypotheses(
         [
             Rotation.from_matrix(pose).as_euler("xyz", degrees=True)[axis]
             for pose in lm_stats["possible_rotations"][0][obj]
-        ]
+        ],
     )
     ax = plt.subplot(1, 1, 1, projection="3d")
     s = ax.scatter(
@@ -600,7 +600,7 @@ def plot_evidence_at_step(
         (
             3,
             3,
-        )
+        ),
     )
     ax = plt.subplot(2, 4, 1, projection="3d")
     loc = np.array([0, 0, 0])
@@ -643,7 +643,7 @@ def plot_evidence_at_step(
         center_pixel_id = np.array(sm_stats["raw_observations"][step]["pixel_loc"])
         patch_size = np.array(patch_image).shape[0]
         view_finder_image = add_patch_outline_to_view_finder(
-            view_finder_image, center_pixel_id, patch_size
+            view_finder_image, center_pixel_id, patch_size,
         )
     plt.imshow(view_finder_image)
     plt.title("view finder")
@@ -811,7 +811,7 @@ class PolicyPlot:
         converted_quat = numpy_to_scipy_quat(
             self.detailed_stats[str(self.episode)]["target"][
                 "primary_target_rotation_quat"
-            ]
+            ],
         )
         object_rot = Rotation.from_quat(converted_quat)
 
@@ -859,7 +859,7 @@ class PolicyPlot:
         self.lm_steps_mask = np.array(
             self.detailed_stats[str(self.episode)]["LM_" + str(self.lm_index)][
                 "lm_processed_steps"
-            ]
+            ],
         )
 
         # Get the a boolean mask of the observations that were associated with
@@ -872,7 +872,7 @@ class PolicyPlot:
             ]["action_sequence"]:
                 if current_action[0] is not None:
                     self.tangential_steps_mask.append(
-                        "move_tangentially" in current_action[0]
+                        "move_tangentially" in current_action[0],
                     )
                 else:
                     # First movement is associated with [None, None]
@@ -896,12 +896,12 @@ class PolicyPlot:
             self.pc_headings = np.array(
                 self.detailed_stats[str(self.episode)]["motor_system"][
                     "action_details"
-                ]["pc_heading"]
+                ]["pc_heading"],
             )
             self.new_headings = np.array(
                 self.detailed_stats[str(self.episode)]["motor_system"][
                     "action_details"
-                ]["avoidance_heading"]
+                ]["avoidance_heading"],
             )
             assert len(self.tangential_locs) == len(self.new_headings), (
                 "Mismatch in number of heading-markers"
@@ -934,9 +934,9 @@ class PolicyPlot:
                     np.array(
                         self.detailed_stats[str(self.episode)]["motor_system"][
                             "action_details"
-                        ]["episode_step_for_jump"]
+                        ]["episode_step_for_jump"],
                     )
-                    == episode_step
+                    == episode_step,
                 )[0][0]
                 jump_successful = self.detailed_stats[str(self.episode)][
                     "motor_system"
@@ -1010,9 +1010,9 @@ class PolicyPlot:
             np.array(
                 self.detailed_stats[str(self.episode)]["motor_system"][
                     "action_details"
-                ]["episode_step_for_jump"]
+                ]["episode_step_for_jump"],
             )
-            == step_iter
+            == step_iter,
         )[0][0]
 
         # Jump was a failure
@@ -1029,8 +1029,8 @@ class PolicyPlot:
                 numpy_to_scipy_quat(
                     self.detailed_stats[str(self.episode)]["motor_system"][
                         "action_details"
-                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")].rotation
-                )
+                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")].rotation,
+                ),
             )
 
             # === PLOT SENSOR POSE ===
@@ -1052,7 +1052,7 @@ class PolicyPlot:
                         "action_details"
                     ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]
                     .sensors[sensor_key]
-                    .position
+                    .position,
                 )
 
                 partial_sensor_rot = Rotation.from_quat(
@@ -1061,8 +1061,8 @@ class PolicyPlot:
                             "action_details"
                         ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]
                         .sensors[sensor_key]
-                        .rotation
-                    )
+                        .rotation,
+                    ),
                 )
                 temp_sensor_rot = (
                     temp_agent_rot * partial_sensor_rot
@@ -1118,12 +1118,12 @@ class PolicyPlot:
 
             pose_colors = ["lightblue", "lightcoral", "bisque"]
             qf = np.array(
-                detailed_features[matching_index]["features"]["pose_vectors"]
+                detailed_features[matching_index]["features"]["pose_vectors"],
             ).reshape(
                 (
                     3,
                     3,
-                )
+                ),
             )
 
             for n, p in enumerate(np.array(qf)):
@@ -1148,8 +1148,8 @@ class PolicyPlot:
                 numpy_to_scipy_quat(
                     self.detailed_stats[str(self.episode)][sensor_key]["sm_properties"][
                         np.where(self.tangential_steps_mask)[0][step_iter]
-                    ]["sm_rotation"]
-                )
+                    ]["sm_rotation"],
+                ),
             )
 
             # As the agent faces "forward" along the negative z-axis, we use this vector
@@ -1266,7 +1266,7 @@ def plot_learned_graph(
     learned_model_cloud = lm_models["pretrained"][lm_index][object_id].pos
 
     converted_quat = numpy_to_scipy_quat(
-        detailed_stats[str(episode)]["target"]["primary_target_rotation_quat"]
+        detailed_stats[str(episode)]["target"]["primary_target_rotation_quat"],
     )
     object_rot = Rotation.from_quat(converted_quat)
 
@@ -1623,7 +1623,7 @@ def plot_evidence_transitions(
     processed_stepwise_targets = stepwise_targets[lm_processed]
 
     terminus_point = find_step_on_new_object(
-        processed_stepwise_targets, primary_target, n_steps_off_primary_target=3
+        processed_stepwise_targets, primary_target, n_steps_off_primary_target=3,
     )
     if terminus_point is None or not stop_at_detected_new_object:
         stop_point = len(lm_stats["evidences"])

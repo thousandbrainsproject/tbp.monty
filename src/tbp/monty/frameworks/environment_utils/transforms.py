@@ -41,7 +41,7 @@ class Transform(Protocol):
     """A transform that can be applied to observations."""
 
     def __call__(
-        self, observations: Observations, ctx: TransformContext
+        self, observations: Observations, ctx: TransformContext,
     ) -> Observations:
         """Apply the transform to the observations.
 
@@ -77,7 +77,7 @@ class MissingToMaxDepth(Transform):
         self.threshold = threshold
 
     def __call__(
-        self, observations: Observations, _ctx: TransformContext
+        self, observations: Observations, _ctx: TransformContext,
     ) -> Observations:
         return self.call(observations)
 
@@ -112,12 +112,12 @@ class AddNoiseToRawDepthImage(Transform):
         self.sigma = sigma
 
     def __call__(
-        self, observations: Observations, ctx: TransformContext
+        self, observations: Observations, ctx: TransformContext,
     ) -> Observations:
         return self.call(observations, rng=ctx.rng)
 
     def call(
-        self, observations: Observations, rng: np.random.RandomState
+        self, observations: Observations, rng: np.random.RandomState,
     ) -> Observations:
         """Add Gaussian noise to raw sensory input.
 
@@ -142,7 +142,7 @@ class AddNoiseToRawDepthImage(Transform):
                 observations[self.agent_id][sm]["depth"] += noise
             else:
                 raise NoDepthSensorPresent(
-                    "NO DEPTH SENSOR PRESENT. Don't use this transform"
+                    "NO DEPTH SENSOR PRESENT. Don't use this transform",
                 )
         return observations
 
@@ -171,7 +171,7 @@ class GaussianSmoothing(Transform):
         self.kernel = self.create_kernel()
 
     def __call__(
-        self, observations: Observations, _ctx: TransformContext
+        self, observations: Observations, _ctx: TransformContext,
     ) -> Observations:
         return self.call(observations)
 
@@ -193,12 +193,12 @@ class GaussianSmoothing(Transform):
                 depth_img = observations[self.agent_id][sm]["depth"].copy()
                 padded_img = self.get_padded_img(depth_img, pad_type="edge")
                 filtered_img = scipy.signal.convolve(
-                    padded_img, self.kernel, mode="valid"
+                    padded_img, self.kernel, mode="valid",
                 )
                 observations[self.agent_id][sm]["depth"] = filtered_img
             else:
                 raise NoDepthSensorPresent(
-                    "NO DEPTH SENSOR PRESENT. Don't use this transform"
+                    "NO DEPTH SENSOR PRESENT. Don't use this transform",
                 )
         return observations
 
@@ -342,7 +342,7 @@ class DepthTo3DLocations(Transform):
                     [0.0, 1 / fy, 0.0, 0.0],
                     [0.0, 0.0, 1.0, 0],
                     [0.0, 0.0, 0.0, 1.0],
-                ]
+                ],
             )
             # Inverse K
             self.inv_k.append(np.linalg.inv(k))
@@ -358,12 +358,12 @@ class DepthTo3DLocations(Transform):
         )
 
     def __call__(
-        self, observations: Observations, ctx: TransformContext
+        self, observations: Observations, ctx: TransformContext,
     ) -> Observations:
         return self.call(observations, state=ctx.state)
 
     def call(
-        self, observations: Observations, state: ProprioceptiveState | None = None
+        self, observations: Observations, state: ProprioceptiveState | None = None,
     ) -> Observations:
         """Apply the depth-to-3D-locations transform to sensor observations.
 
@@ -484,7 +484,7 @@ class DepthTo3DLocations(Transform):
 
             # Approximate true world coordinates
             x, y = np.meshgrid(
-                np.linspace(-1, 1, self.w[i]), np.linspace(1, -1, self.h[i])
+                np.linspace(-1, 1, self.w[i]), np.linspace(1, -1, self.h[i]),
             )
             x = x.reshape(1, self.h[i], self.w[i])
             y = y.reshape(1, self.h[i], self.w[i])
@@ -610,7 +610,7 @@ class DepthTo3DLocations(Transform):
             # only check for bimodal distribution if we have a large enough
             # range in depth values
             height, bins = np.histogram(
-                np.array(depth_patch).flatten(), bins=8, density=False
+                np.array(depth_patch).flatten(), bins=8, density=False,
             )
             gap = np.where(height == 0)[0]
             if len(gap) > 0:

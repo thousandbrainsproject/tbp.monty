@@ -35,7 +35,7 @@ class TestUpload(unittest.TestCase):
 
         mock_rdme_instance.create_version_if_not_exists.assert_called_once()
         mock_rdme_instance.create_category_if_not_exists.assert_called_once_with(
-            "cat1", "Category 1"
+            "cat1", "Category 1",
         )
         mock_process_children.assert_called_once()
 
@@ -74,7 +74,7 @@ class TestUpload(unittest.TestCase):
         mock_rdme_instance = MagicMock()
         mock_rdme_instance.get_categories.return_value = [{"slug": "cat1"}]
         mock_rdme_instance.get_category_docs.return_value = [
-            {"slug": "doc1", "children": []}
+            {"slug": "doc1", "children": []},
         ]
 
         result = get_all_categories_docs(mock_rdme_instance)

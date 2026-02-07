@@ -85,7 +85,7 @@ class TheoreticalLimitLMLoggingMixin:
         if not any(issubclass(b, (EvidenceGraphLM)) for b in cls.__bases__):
             raise TypeError(
                 "TheoreticalLimitLMLoggingMixin must be mixed in with a subclass of "
-                f"EvidenceGraphLM, got {cls.__bases__}"
+                f"EvidenceGraphLM, got {cls.__bases__}",
             )
 
     def _add_detailed_stats(self, stats: dict[str, Any]) -> dict[str, Any]:
@@ -121,14 +121,14 @@ class TheoreticalLimitLMLoggingMixin:
         for graph_id, graph_telemetry in self.hypotheses_updater_telemetry.items():
             stats[graph_id] = {
                 input_channel: self._channel_telemetry(
-                    graph_id, input_channel, channel_telemetry
+                    graph_id, input_channel, channel_telemetry,
                 )
                 for input_channel, channel_telemetry in graph_telemetry.items()
             }
         return stats
 
     def _channel_telemetry(
-        self, graph_id: str, input_channel: str, channel_telemetry: dict[str, Any]
+        self, graph_id: str, input_channel: str, channel_telemetry: dict[str, Any],
     ) -> HypothesesUpdaterChannelTelemetry:
         """Assemble channel telemetry for specific graph ID and input channel.
 
@@ -157,7 +157,7 @@ class TheoreticalLimitLMLoggingMixin:
         channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
         channel_evidence = mapper.extract(self.evidence[graph_id], input_channel)
         channel_locations = mapper.extract(
-            self.possible_locations[graph_id], input_channel
+            self.possible_locations[graph_id], input_channel,
         )
 
         return HypothesesUpdaterChannelTelemetry(

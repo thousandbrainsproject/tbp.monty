@@ -51,7 +51,7 @@ def torch_graph_to_numpy(torch_graph):
 
 
 def already_in_list(
-    existing_points, new_point, features, clean_ids, query_id, graph_delta_thresholds
+    existing_points, new_point, features, clean_ids, query_id, graph_delta_thresholds,
 ) -> bool:
     """Check if a given point is already in a list of points.
 
@@ -114,7 +114,7 @@ def already_in_list(
 
                     if hue_d > graph_delta_thresholds[feature][0]:
                         logger.debug(
-                            f"Interesting point because of {feature} : {hue_d}"
+                            f"Interesting point because of {feature} : {hue_d}",
                         )
                         redundant_point = False
                         break
@@ -134,19 +134,19 @@ def already_in_list(
 
                 else:
                     delta_change = np.abs(
-                        features[feature][feature_idx] - features[feature][query_id]
+                        features[feature][feature_idx] - features[feature][query_id],
                     )
                     if len(delta_change.shape) > 0:
                         for i, dc in enumerate(delta_change):
                             if dc > graph_delta_thresholds[feature][i]:
                                 logger.debug(
-                                    f"Interesting point because of {feature} : {dc}"
+                                    f"Interesting point because of {feature} : {dc}",
                                 )
                                 redundant_point = False
                                 break
                     elif delta_change > graph_delta_thresholds[feature]:
                         logger.debug(
-                            f"Interesting point because of {feature} : {delta_change}"
+                            f"Interesting point because of {feature} : {delta_change}",
                         )
                         redundant_point = False
                         break
@@ -186,7 +186,7 @@ def remove_close_points(point_cloud, features, graph_delta_thresholds, old_graph
         with their associated indices.
     """
     clean_ids = list(
-        range(old_graph_index)
+        range(old_graph_index),
     )  # Create list of indices that are already clean / have been checked
 
     new_points = list(point_cloud[:old_graph_index])
@@ -210,7 +210,7 @@ def remove_close_points(point_cloud, features, graph_delta_thresholds, old_graph
             clean_ids.append(i)
 
         elif not already_in_list(
-            new_points, p, features, clean_ids, i, graph_delta_thresholds
+            new_points, p, features, clean_ids, i, graph_delta_thresholds,
         ):
             new_points.append(p)
             clean_ids.append(i)
@@ -235,7 +235,7 @@ def increment_sparse_tensor_by_count(old_tensor, indices):
     # us to call .indices() instead of needing to use ._indices(). May remove this
     # if time overhead is too high but is pretty small atm (5.1e-5s).
     new_sparse_tensor = torch.sparse_coo_tensor(
-        new_indices, new_values, old_tensor.shape
+        new_indices, new_values, old_tensor.shape,
     ).coalesce()
     # Add the new sparse tensor to the old one
     return old_tensor + new_sparse_tensor
@@ -291,7 +291,7 @@ def get_cubic_patches(arr_shape, centers, size):
             np.arange(-size, size + 1),
             np.arange(-size, size + 1),
             np.arange(-size, size + 1),
-        )
+        ),
     ).T.reshape(-1, 3)
 
     # Add offsets to the center indices
@@ -379,7 +379,7 @@ def get_most_common_bool(booleans):
         raise NotImplementedError(
             "get_most_common_bool not implemented for features"
             "with more than 1 bool value. Current bool shape: "
-            f"{np.array(booleans).shape} D={np.ndim(booleans)}"
+            f"{np.array(booleans).shape} D={np.ndim(booleans)}",
         )
 
     booleans = np.array(booleans).flatten()

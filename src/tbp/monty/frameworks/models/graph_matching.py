@@ -57,7 +57,7 @@ class MontyForGraphMatching(MontyBase):
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
     def pre_episode(
-        self, rng: np.random.RandomState, primary_target, semantic_id_to_label=None
+        self, rng: np.random.RandomState, primary_target, semantic_id_to_label=None,
     ) -> None:
         """Reset values and call sub-pre_episode functions."""
         self._is_done = False
@@ -74,7 +74,7 @@ class MontyForGraphMatching(MontyBase):
             sm.pre_episode(rng)
 
         logger.debug(
-            f"Models in memory: {self.learning_modules[0].get_all_known_object_ids()}"
+            f"Models in memory: {self.learning_modules[0].get_all_known_object_ids()}",
         )
 
     def send_vote_to_lm(self, lm, lm_id, combined_votes):
@@ -163,7 +163,7 @@ class MontyForGraphMatching(MontyBase):
         for lm in self.learning_modules:
             lm.update_terminal_condition()
             logger.debug(
-                f"{lm.learning_module_id} has terminal state: {lm.terminal_state}"
+                f"{lm.learning_module_id} has terminal state: {lm.terminal_state}",
             )
             # If any LM is not done yet, we are not done yet
             if lm.terminal_state == "match":
@@ -201,16 +201,16 @@ class MontyForGraphMatching(MontyBase):
                     )
 
                 lm_dict[lm]["graph_memory"].update(
-                    state_dict["lm_dict"][lm]["graph_memory"]
+                    state_dict["lm_dict"][lm]["graph_memory"],
                 )
 
                 # TODO: this is presumably going to be wrong, but we're not really using
                 # this attribute right now.
                 lm_dict[lm]["target_to_graph_id"].update(
-                    state_dict["lm_dict"][lm]["target_to_graph_id"]
+                    state_dict["lm_dict"][lm]["target_to_graph_id"],
                 )
                 lm_dict[lm]["graph_id_to_target"].update(
-                    state_dict["lm_dict"][lm]["graph_id_to_target"]
+                    state_dict["lm_dict"][lm]["graph_id_to_target"],
                 )
 
                 # TODO: handle target to graph id stuff here, but ignoring for now
@@ -240,7 +240,7 @@ class MontyForGraphMatching(MontyBase):
                     input_channels = [obs.sender_id for obs in sensory_inputs]
                     logger.info(
                         f"Sending input from {input_channels}"
-                        f" to {self.learning_modules[i].learning_module_id}"
+                        f" to {self.learning_modules[i].learning_module_id}",
                     )
                 lm_step_method = getattr(self.learning_modules[i], self.step_type)
                 assert callable(lm_step_method), f"{lm_step_method} must be callable"
@@ -248,13 +248,13 @@ class MontyForGraphMatching(MontyBase):
                 if self.step_type == "matching_step":
                     logger.debug(f"Stepping learning module {i}")
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
-                    lm_processed=True
+                    lm_processed=True,
                 )
             else:
                 if self.step_type == "matching_step":
                     logger.info(f"Skipping step on learning module {i}")
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
-                    lm_processed=False
+                    lm_processed=False,
                 )
 
                 """
@@ -267,7 +267,7 @@ class MontyForGraphMatching(MontyBase):
                 TODO make use of a buffer method to handle the below logging
                 """
                 self.learning_modules[i].stepwise_targets_list.append(
-                    self.learning_modules[i].stepwise_target_object
+                    self.learning_modules[i].stepwise_target_object,
                 )
 
     def _combine_votes(self, votes_per_lm):
@@ -320,22 +320,22 @@ class MontyForGraphMatching(MontyBase):
                         lm_loc_vote = votes_per_lm[j]["location_vote"][obj]
                         lm_rot_vote = votes_per_lm[j]["rotation_vote"][obj]
                         logger.debug(
-                            f"loc vote from LM {j} - {obj}: {lm_loc_vote.shape}"
+                            f"loc vote from LM {j} - {obj}: {lm_loc_vote.shape}",
                         )
                         logger.debug(
-                            f"rot vote from LM {j} - {obj}: {len(lm_rot_vote)}"
+                            f"rot vote from LM {j} - {obj}: {len(lm_rot_vote)}",
                         )
                         sending_lm_pose = votes_per_lm[j]["sensed_pose_rel_body"]
                         sensor_disp = np.array(receiving_lm_pose[0]) - np.array(
-                            sending_lm_pose[0]
+                            sending_lm_pose[0],
                         )
                         sensor_rotation_disp, _ = Rotation.align_vectors(
-                            sending_lm_pose[1:], receiving_lm_pose[1:]
+                            sending_lm_pose[1:], receiving_lm_pose[1:],
                         )
                         logger.debug(
                             f"LM {i} to {j} - displacement: {sensor_disp}, "
                             f"rotation: "
-                            f"{sensor_rotation_disp.as_euler('xyz', degrees=True)}"
+                            f"{sensor_rotation_disp.as_euler('xyz', degrees=True)}",
                         )
 
                         # NOTE: ideally we also want negative votes here. Otherwise
@@ -364,19 +364,19 @@ class MontyForGraphMatching(MontyBase):
                                     [
                                         lm_object_location_votes[obj],
                                         np.array(lm_loc_vote_transformed),
-                                    ]
+                                    ],
                                 )
                                 lm_object_rotation_votes[obj].append(
-                                    lm_rot_vote_transformed
+                                    lm_rot_vote_transformed,
                                 )
                             else:
                                 lm_object_location_votes[obj] = np.array(
-                                    lm_loc_vote_transformed
+                                    lm_loc_vote_transformed,
                                 )
                                 lm_object_rotation_votes[obj] = lm_rot_vote_transformed
                 logger.info(
                     f"VOTE from LMs {self.lm_to_lm_vote_matrix[i]} to LM {i}: + "
-                    f"{pos_object_id_votes}, - {neg_object_id_votes}"
+                    f"{pos_object_id_votes}, - {neg_object_id_votes}",
                 )
                 vote = {
                     "pos_object_id_votes": pos_object_id_votes,
@@ -544,7 +544,7 @@ class GraphLM(LearningModule):
     """General Learning Module that contains a graph memory."""
 
     def __init__(
-        self, rng: np.random.RandomState, initialize_base_modules=True
+        self, rng: np.random.RandomState, initialize_base_modules=True,
     ) -> None:
         """Initialize general Learning Module based on graphs.
 
@@ -628,7 +628,7 @@ class GraphLM(LearningModule):
             logger.debug("we have not moved yet.")
 
         self._compute_possible_matches(
-            observations, first_movement_detected=first_movement_detected
+            observations, first_movement_detected=first_movement_detected,
         )
 
         if len(self.get_possible_matches()) == 0:
@@ -668,7 +668,7 @@ class GraphLM(LearningModule):
         all_objects = set(self.get_all_known_object_ids())
         vote = all_objects.difference(possible_matches)
         logger.debug(
-            f"PM: {possible_matches} out of all: {all_objects} -> vote: {vote}"
+            f"PM: {possible_matches} out of all: {all_objects} -> vote: {vote}",
         )
         return vote
 
@@ -796,7 +796,7 @@ class GraphLM(LearningModule):
             elif possible_paths_obj.shape[0] > 0:
                 # deals with case where first observation is not on object
                 possible_locations[obj] = np.array(
-                    self.graph_memory.get_locations_in_graph(obj, input_channel="first")
+                    self.graph_memory.get_locations_in_graph(obj, input_channel="first"),
                 )
             else:
                 possible_locations[obj] = np.array([])
@@ -821,7 +821,7 @@ class GraphLM(LearningModule):
                     path_poses = []
                     for pose in path:
                         euler_pose = np.round(
-                            pose.inv().as_euler("xyz", degrees=True), 5
+                            pose.inv().as_euler("xyz", degrees=True), 5,
                         )
                         path_poses.append(euler_pose)
                     euler_poses.append(path_poses)
@@ -884,7 +884,7 @@ class GraphLM(LearningModule):
 
     def set_individual_ts(self, terminal_state):
         logger.info(
-            f"Setting terminal state of {self.learning_module_id} to {terminal_state}"
+            f"Setting terminal state of {self.learning_module_id} to {terminal_state}",
         )
         self.set_detected_object(terminal_state)
         if terminal_state == "match":
@@ -893,7 +893,7 @@ class GraphLM(LearningModule):
                 f"Detected {self.detected_object} "
                 f"at location {np.round(self.detected_pose[:3], 3)},"
                 f" rotation {np.round(self.detected_pose[3:6], 3)},"
-                f" and scale {self.detected_pose[6]}"
+                f" and scale {self.detected_pose[6]}",
             )
             self.buffer.set_individual_ts(self.detected_object, self.detected_pose)
         else:
@@ -923,7 +923,7 @@ class GraphLM(LearningModule):
                 this particular episode step
         """
         self.buffer.update_stats(
-            dict(lm_processed_steps=lm_processed), update_time=False
+            dict(lm_processed_steps=lm_processed), update_time=False,
         )
 
     def state_dict(self):
@@ -1024,7 +1024,7 @@ class GraphLM(LearningModule):
         for o in obs:
             if self.buffer.get_buffer_len_by_channel(o.sender_id) > 0:
                 displacement = o.location - self.buffer.get_current_location(
-                    input_channel=o.sender_id
+                    input_channel=o.sender_id,
                 )
             else:
                 displacement = np.zeros(3)
@@ -1137,7 +1137,7 @@ class GraphMemory(LMMemory):
                     input_channel_features,
                     input_channel_locations,
                 ) = self._extract_entries_with_content(
-                    features[input_channel], locations[input_channel]
+                    features[input_channel], locations[input_channel],
                 )
                 # Update graph
                 if (
@@ -1145,7 +1145,7 @@ class GraphMemory(LMMemory):
                     and input_channel in self.get_input_channels_in_graph(graph_id)
                 ):
                     logger.info(
-                        f"{graph_id} already in memory ({self.get_memory_ids()})"
+                        f"{graph_id} already in memory ({self.get_memory_ids()})",
                     )
                     self._extend_graph(
                         input_channel_locations,
@@ -1288,7 +1288,7 @@ class GraphMemory(LMMemory):
         if graph is None:
             logger.debug(
                 f"{input_channel} not stored in graph {graph_id} yet. "
-                "-> Input not used for matching."
+                "-> Input not used for matching.",
             )
         else:
             for key in feature_keys:
@@ -1397,13 +1397,13 @@ class GraphMemory(LMMemory):
 
         logger.info(
             f"Extended graph {graph_id} with new points. New model:\n"
-            f"{self.models_in_memory[graph_id][input_channel]}"
+            f"{self.models_in_memory[graph_id][input_channel]}",
         )
 
     # ------------------------ Helper --------------------------
 
     def _get_all_node_features(
-        self, graph_id, input_channel
+        self, graph_id, input_channel,
     ) -> tuple[np.ndarray, list]:
         """Create an array of all features for all nodes in a graph.
 
@@ -1418,7 +1418,7 @@ class GraphMemory(LMMemory):
         """
         all_node_ids = self.get_graph_node_ids(graph_id, input_channel).astype(int)
         feature_arrays = self._get_empty_feature_arrays(
-            graph_id, input_channel, len(all_node_ids)
+            graph_id, input_channel, len(all_node_ids),
         )
         feature_order = []
         # TODO: This should be possible without this for loop (currently 3rd slowest).
@@ -1441,7 +1441,7 @@ class GraphMemory(LMMemory):
         return feature_arrays, feature_order
 
     def _get_empty_feature_arrays(
-        self, graph_id, input_channel, num_nodes
+        self, graph_id, input_channel, num_nodes,
     ) -> np.ndarray:
         """Get nan array with space for all features per input channel.
 

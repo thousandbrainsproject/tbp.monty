@@ -108,7 +108,7 @@ def post_parallel_log_cleanup(filenames: Iterable[Path], outfile: Path, cat_fn):
 
 
 def post_parallel_profile_cleanup(
-    parallel_dirs: Iterable[Path], base_dir: Path, mode: ExperimentMode
+    parallel_dirs: Iterable[Path], base_dir: Path, mode: ExperimentMode,
 ):
     profile_dirs = [pdir / "profile" for pdir in parallel_dirs]
 
@@ -255,7 +255,7 @@ def generate_parallel_eval_configs(
         List of configs for evaluation episodes.
     """
     sampler = hydra.utils.instantiate(
-        experiment.config["eval_env_interface_args"]["object_init_sampler"]
+        experiment.config["eval_env_interface_args"]["object_init_sampler"],
     )
     object_names = experiment.config["eval_env_interface_args"]["object_names"]
     # sampler_params = sampler.all_combinations_of_params()
@@ -267,7 +267,7 @@ def generate_parallel_eval_configs(
     seed = experiment.config["seed"]
 
     params = sample_params_to_init_args(
-        sampler(seed, ExperimentMode.EVAL, epoch_count, episode_count)
+        sampler(seed, ExperimentMode.EVAL, epoch_count, episode_count),
     )
 
     # Try to mimic the exact workflow instead of guessing
@@ -305,12 +305,12 @@ def generate_parallel_eval_configs(
             new_experiments.append(new_experiment)
             episode_count += 1
             params = sample_params_to_init_args(
-                sampler(seed, ExperimentMode.EVAL, epoch_count, episode_count)
+                sampler(seed, ExperimentMode.EVAL, epoch_count, episode_count),
             )
 
         epoch_count += 1
         params = sample_params_to_init_args(
-            sampler(seed, ExperimentMode.EVAL, epoch_count, episode_count)
+            sampler(seed, ExperimentMode.EVAL, epoch_count, episode_count),
         )
 
     return new_experiments
@@ -338,7 +338,7 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
 
     """
     sampler = hydra.utils.instantiate(
-        experiment.config["train_env_interface_args"]["object_init_sampler"]
+        experiment.config["train_env_interface_args"]["object_init_sampler"],
     )
     object_names = experiment.config["train_env_interface_args"]["object_names"]
     new_experiments = []
@@ -359,7 +359,7 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
 
         # Object id, pose parameters for single episode
         new_experiment["config"]["train_env_interface_args"].update(
-            object_names=[obj for _ in range(len(sampler))]
+            object_names=[obj for _ in range(len(sampler))],
         )
         new_experiment["config"]["train_env_interface_args"]["object_init_sampler"][
             "change_every_episode"
@@ -432,7 +432,7 @@ def get_overall_stats(stats):
         np.mean(stats["episode/consistent_child_obj"]) * 100
     )
     overall_stats["overall/avg_prediction_error"] = np.mean(
-        stats["episode/avg_prediction_error"]
+        stats["episode/avg_prediction_error"],
     )
 
     correct_ids = np.where(np.array(stats["episode/correct"]) == 1)
@@ -441,16 +441,16 @@ def get_overall_stats(stats):
     overall_stats["overall/avg_num_lm_steps"] = np.mean(stats["episode/lm_steps"])
     overall_stats["overall/avg_num_monty_steps"] = np.mean(stats["episode/monty_steps"])
     overall_stats["overall/avg_num_monty_matching_steps"] = np.mean(
-        stats["episode/monty_matching_steps"]
+        stats["episode/monty_matching_steps"],
     )
     overall_stats["overall/run_time"] = np.sum(stats["episode/run_time"])
     overall_stats["overall/avg_episode_run_time"] = np.mean(stats["episode/run_time"])
     overall_stats["overall/num_episodes"] = len(stats["episode/correct"])
     overall_stats["overall/avg_goal_attempts"] = np.mean(
-        stats["episode/goal_states_attempted"]
+        stats["episode/goal_states_attempted"],
     )
     overall_stats["overall/avg_goal_success"] = np.mean(
-        stats["episode/goal_state_success_rate"]
+        stats["episode/goal_state_success_rate"],
     )
 
     return overall_stats
@@ -586,7 +586,7 @@ def run_episodes_parallel(
     exp_type = "training" if train else "evaluation"
     print(
         f"-------- Running {exp_type} experiment {experiment_name}"
-        f" with {num_parallel} episodes in parallel --------"
+        f" with {num_parallel} episodes in parallel --------",
     )
     start_time = time.time()
     log_parallel_wandb = experiments[0]["config"]["logging"]["log_parallel_wandb"]
@@ -653,7 +653,7 @@ def run_episodes_parallel(
 
     print(
         f"Total time for {len(experiments)} running {num_parallel} episodes in "
-        f"parallel: {total_time}"
+        f"parallel: {total_time}",
     )
     if log_parallel_wandb:
         run.finish()
@@ -683,7 +683,7 @@ def main(cfg: DictConfig):
         ), "parallel experiments only work (for now) with per object env interfaces"
 
         train_configs = generate_parallel_train_configs(
-            cfg.experiment, cfg.experiment.config.logging.run_name
+            cfg.experiment, cfg.experiment.config.logging.run_name,
         )
         train_configs = filter_episode_configs(train_configs, cfg.episodes)
         if cfg.print_cfg:
@@ -705,7 +705,7 @@ def main(cfg: DictConfig):
         ), "parallel experiments only work (for now) with per object env interfaces"
 
         eval_configs = generate_parallel_eval_configs(
-            cfg.experiment, cfg.experiment.config.logging.run_name
+            cfg.experiment, cfg.experiment.config.logging.run_name,
         )
         eval_configs = filter_episode_configs(eval_configs, cfg.episodes)
         if cfg.print_cfg:

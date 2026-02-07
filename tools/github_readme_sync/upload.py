@@ -25,10 +25,10 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
 
     for category in new_hierarchy:
         cat_id, created = rdme.create_category_if_not_exists(
-            category["slug"], category["title"]
+            category["slug"], category["title"],
         )
         logging.info(
-            f"\n{BLUE}{category['title'].upper()}{GRAY}{created * ' [created]'}{RESET}"
+            f"\n{BLUE}{category['title'].upper()}{GRAY}{created * ' [created]'}{RESET}",
         )
 
         set_do_not_delete(to_be_deleted, category["slug"])
@@ -108,7 +108,7 @@ def get_all_categories_docs(rdme: ReadMe):
                 all_categories_and_docs.append({"slug": child["slug"], "type": "doc"})
                 for sub_child in child["children"]:
                     all_categories_and_docs.append(
-                        {"slug": sub_child["slug"], "type": "doc"}
+                        {"slug": sub_child["slug"], "type": "doc"},
                     )
     return all_categories_and_docs
 
@@ -118,7 +118,7 @@ def print_child(level: int, doc: dict, created: bool):
     indent = INDENTATION_UNIT * level
     suffix = f"{GRAY}[created]{RESET}" if created else f"{GRAY}[updated]{RESET}"
     logging.info(
-        f"{color}{indent}{doc['title']} {WHITE}/{doc['slug']} {GRAY}{suffix}{RESET}"
+        f"{color}{indent}{doc['title']} {WHITE}/{doc['slug']} {GRAY}{suffix}{RESET}",
     )
 
 

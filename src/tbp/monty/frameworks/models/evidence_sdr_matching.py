@@ -118,7 +118,7 @@ class EncoderSDR:
     ):
         if sdr_on_bits >= sdr_length or sdr_on_bits <= 0:
             logger.warning(
-                f"Invalid sparsity: sdr_on_bits set to 2% ({round(sdr_length * 0.02)})"
+                f"Invalid sparsity: sdr_on_bits set to 2% ({round(sdr_length * 0.02)})",
             )
             sdr_on_bits = round(sdr_length * 0.02)
 
@@ -129,7 +129,7 @@ class EncoderSDR:
         if self.stability > 1.0 or self.stability < 0.0:
             self.stability = np.clip(self.stability, 0.0, 1.0)
             logger.warning(
-                f"Invalid stability parameter: stability clamped to {self.stability}"
+                f"Invalid stability parameter: stability clamped to {self.stability}",
             )
         self.log_flag = log_flag
 
@@ -256,7 +256,7 @@ class EncoderSDR:
         self.stable_ids = np.arange(stable_data.shape[0])
 
         new_obj_sdrs = np.random.randn(
-            stable_data.shape[0] + n_objects, self.sdr_length
+            stable_data.shape[0] + n_objects, self.sdr_length,
         )
 
         new_obj_sdrs[: stable_data.shape[0]] = stable_data
@@ -320,7 +320,7 @@ class EncoderSDR:
         if np.all(np.array(target_overlaps.shape) > self.n_objects):
             logger.warning(
                 f"Overlap targets have larger size than "
-                f"{(self.n_objects, self.n_objects)}"
+                f"{(self.n_objects, self.n_objects)}",
             )
             target_overlaps = target_overlaps[: self.n_objects, : self.n_objects]
 
@@ -484,7 +484,7 @@ class EvidenceSDRTargetOverlaps:
         # calculate the mask of indices with True values where existing overlaps
         # are nan and new overlaps are not nan.
         mask_overwrite = np.logical_and(
-            np.isnan(self._overlaps), ~np.isnan(mapped_overlaps)
+            np.isnan(self._overlaps), ~np.isnan(mapped_overlaps),
         )
 
         # overlap existing nan values in `self._overlaps` with new overlaps values
@@ -633,7 +633,7 @@ class EvidenceSDRLMMixin:
 
         # Step 3: update running average with new evidence scores
         self.target_overlaps.add_evidence(
-            relative_evidences, [0, self.sdr_args["sdr_on_bits"]]
+            relative_evidences, [0, self.sdr_args["sdr_on_bits"]],
         )
 
     def post_episode(self, *args, **kwargs):
@@ -655,7 +655,7 @@ class EvidenceSDRLMMixin:
                 {
                     "obj2id": self.obj2id,
                     "id2obj": self.id2obj,
-                }
+                },
             )
             self.tmp_logger.log_episode(stats)
 

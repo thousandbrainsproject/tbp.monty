@@ -34,7 +34,7 @@ TUTORIAL_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots" / "tutorial"
 
 
 def _assert_config_matches_snapshot(
-    current_config_yaml: str, snapshot_config_yaml: str, name: str
+    current_config_yaml: str, snapshot_config_yaml: str, name: str,
 ):
     try:
         assert snapshot_config_yaml == current_config_yaml
@@ -44,7 +44,7 @@ def _assert_config_matches_snapshot(
             f"\nThe {name} configuration does not match the stored "
             "snapshot.\nPlease see the direct cause exception above for details about "
             "the mismatch.\nFor more information on how to update snapshots"
-            ", please see the tests/conf/README.md file."
+            ", please see the tests/conf/README.md file.",
         ) from e
 
 
@@ -57,7 +57,7 @@ class ExperimentTest(ParametrizedTestCase):
         snapshot_path = EXPERIMENT_SNAPSHOTS_DIR / f"{experiment}.yaml"
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
-                config_name="experiment", overrides=[f"experiment={experiment}"]
+                config_name="experiment", overrides=[f"experiment={experiment}"],
             )
             # force resolving the config for any parsing errors
             OmegaConf.to_object(config)
@@ -68,7 +68,7 @@ class ExperimentTest(ParametrizedTestCase):
                 snapshot_config_yaml = None
             if snapshot_config_yaml is not None:
                 _assert_config_matches_snapshot(
-                    current_config_yaml, snapshot_config_yaml, experiment
+                    current_config_yaml, snapshot_config_yaml, experiment,
                 )
             else:
                 with snapshot_path.open("w") as f:
@@ -84,7 +84,7 @@ class TutorialTest(ParametrizedTestCase):
         snapshot_path = TUTORIAL_SNAPSHOTS_DIR / f"{tutorial}.yaml"
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
-                config_name="experiment", overrides=[f"experiment=tutorial/{tutorial}"]
+                config_name="experiment", overrides=[f"experiment=tutorial/{tutorial}"],
             )
             # force resolving the config for any parsing errors
             OmegaConf.to_object(config)
@@ -95,7 +95,7 @@ class TutorialTest(ParametrizedTestCase):
                 snapshot_config_yaml = None
             if snapshot_config_yaml is not None:
                 _assert_config_matches_snapshot(
-                    current_config_yaml, snapshot_config_yaml, tutorial
+                    current_config_yaml, snapshot_config_yaml, tutorial,
                 )
             else:
                 with snapshot_path.open("w") as f:

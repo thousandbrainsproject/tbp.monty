@@ -64,7 +64,7 @@ def build(
 
         try:
             index = FutureWorkIndex.model_validate(
-                future_work_items, context={"allowed_values": allowed_values}
+                future_work_items, context={"allowed_values": allowed_values},
             )
         except PydanticValidationError as e:
             return _return_error_result(e, future_work_items, total_items)
@@ -142,7 +142,7 @@ def _return_error_result(
                 level="error",
                 title=title,
                 annotation_level="failure",
-            )
+            ),
         )
 
     return BuildResult(

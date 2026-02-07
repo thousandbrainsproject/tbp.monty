@@ -25,10 +25,10 @@ class GaussianSmoothingTest(unittest.TestCase):
                 [0.03832756, 0.05576627, 0.06319146, 0.05576627, 0.03832756],
                 [0.03382395, 0.04921356, 0.05576627, 0.04921356, 0.03382395],
                 [0.02324684, 0.03382395, 0.03832756, 0.03382395, 0.02324684],
-            ]
+            ],
         )
         gaussian_smoother = GaussianSmoothing(
-            agent_id=AgentID("0"), sigma=2, kernel_width=5
+            agent_id=AgentID("0"), sigma=2, kernel_width=5,
         )
 
         self.assertTrue(
@@ -37,7 +37,7 @@ class GaussianSmoothingTest(unittest.TestCase):
         )
 
         all_equal = np.allclose(
-            gaussian_smoother.kernel, kernel_ground_truth, atol=1e-5
+            gaussian_smoother.kernel, kernel_ground_truth, atol=1e-5,
         )
         self.assertTrue(all_equal, "Kernel values do not match.")
 
@@ -53,10 +53,10 @@ class GaussianSmoothingTest(unittest.TestCase):
                 [4.0, 4.0, 4.0, 4.0, 5.0, 6.0, 6.0, 6.0, 6.0],
                 [4.0, 4.0, 4.0, 4.0, 5.0, 6.0, 6.0, 6.0, 6.0],
                 [4.0, 4.0, 4.0, 4.0, 5.0, 6.0, 6.0, 6.0, 6.0],
-            ]
+            ],
         )
         gaussian_smoother = GaussianSmoothing(
-            agent_id=AgentID("0"), sigma=5, kernel_width=7
+            agent_id=AgentID("0"), sigma=5, kernel_width=7,
         )
         padded_img = gaussian_smoother.get_padded_img(img, pad_type="edge")
 
@@ -72,13 +72,13 @@ class GaussianSmoothingTest(unittest.TestCase):
         # TEST CASE 1
         img = np.ones((64, 64))
         gaussian_smoother = GaussianSmoothing(
-            agent_id=AgentID("0"), sigma=15, kernel_width=15
+            agent_id=AgentID("0"), sigma=15, kernel_width=15,
         )
         padded_img = gaussian_smoother.get_padded_img(img, pad_type="empty")
         filtered_img = gaussian_smoother.conv2d(padded_img, kernel_renorm=True)
 
         self.assertTrue(
-            (img.shape == filtered_img.shape), "Filtered image shapes do not match."
+            (img.shape == filtered_img.shape), "Filtered image shapes do not match.",
         )
 
         all_equal = np.allclose(img, filtered_img, atol=1e-5)
@@ -93,11 +93,11 @@ class GaussianSmoothingTest(unittest.TestCase):
                 [4.45152116, 4.37522804, 4.41742389, 3.83576027],
                 [5.42629393, 4.91199635, 5.0033111, 3.95219812],
                 [5.53056036, 5.29703499, 5.50863473, 4.12873359],
-            ]
+            ],
         )
 
         gaussian_smoother = GaussianSmoothing(
-            agent_id=AgentID("0"), sigma=2, kernel_width=3
+            agent_id=AgentID("0"), sigma=2, kernel_width=3,
         )
         padded_img = gaussian_smoother.get_padded_img(img, pad_type="empty")
         filtered_img = gaussian_smoother.conv2d(padded_img, kernel_renorm=True)

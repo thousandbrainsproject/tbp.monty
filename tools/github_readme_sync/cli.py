@@ -35,25 +35,25 @@ from tools.github_readme_sync.upload import upload  # noqa: E402
 
 def main():
     parser = argparse.ArgumentParser(
-        description="CLI tool to manage exporting, checking, and uploading docs."
+        description="CLI tool to manage exporting, checking, and uploading docs.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Export command
     export_parser = subparsers.add_parser(
-        "export", help="Export the readme docs and create a hierarchy.md file"
+        "export", help="Export the readme docs and create a hierarchy.md file",
     )
     export_parser.add_argument(
-        "folder", help="The directory where the exported docs will be stored"
+        "folder", help="The directory where the exported docs will be stored",
     )
     export_parser.add_argument("version", help="The version for the exported docs")
 
     # Check command
     check_parser = subparsers.add_parser(
-        "check", help="Check the hierarchy.md file and ensure all docs exist"
+        "check", help="Check the hierarchy.md file and ensure all docs exist",
     )
     check_parser.add_argument(
-        "folder", help="The directory containing hierarchy.md and corresponding docs"
+        "folder", help="The directory containing hierarchy.md and corresponding docs",
     )
 
     # Upload command
@@ -70,10 +70,10 @@ def main():
         help="Check external links in all markdown files from the specified directory",
     )
     check_external_parser.add_argument(
-        "folder", help="The directory containing markdown files to check"
+        "folder", help="The directory containing markdown files to check",
     )
     check_external_parser.add_argument(
-        "version", help="The version to check external links for"
+        "version", help="The version to check external links for",
     )
     check_external_parser.add_argument(
         "--ignore",
@@ -84,16 +84,16 @@ def main():
 
     # Delete version command
     delete_parser = subparsers.add_parser(
-        "delete", help="Delete a specific version from ReadMe"
+        "delete", help="Delete a specific version from ReadMe",
     )
     delete_parser.add_argument("version", help="The version to delete")
 
     # Generate index command
     index_parser = subparsers.add_parser(
-        "generate-index", help="Generate index.json from docs front-matter"
+        "generate-index", help="Generate index.json from docs front-matter",
     )
     index_parser.add_argument(
-        "folder", help="The docs directory to scan for markdown files"
+        "folder", help="The docs directory to scan for markdown files",
     )
     index_parser.add_argument("output_file", help="Path to output data file")
 

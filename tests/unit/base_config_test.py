@@ -99,7 +99,7 @@ class BaseConfigTest(unittest.TestCase):
 
                 sensor_key_set = set(sensor_keys)
                 self.assertCountEqual(
-                    sensor_key_set, monty_module_sids, "sensor module ids must match"
+                    sensor_key_set, monty_module_sids, "sensor module ids must match",
                 )
 
                 if count >= max_count:
@@ -135,7 +135,7 @@ class BaseConfigTest(unittest.TestCase):
             prev_model = exp.model
 
         config_2: Mapping = OmegaConf.to_object(  # ignore: type[assignment]
-            self.base_cfg
+            self.base_cfg,
         )
         config_2["test"]["config"]["model_name_or_path"] = exp.output_dir
 

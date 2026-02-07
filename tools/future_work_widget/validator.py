@@ -144,7 +144,7 @@ class FutureWorkRecord(BaseModel):
 
     @classmethod
     def _allowed_values(
-        cls, info: ValidationInfo
+        cls, info: ValidationInfo,
     ) -> tuple[str | None, list[str] | None]:
         """Extract allowed values from validation context.
 
@@ -163,7 +163,7 @@ class FutureWorkRecord(BaseModel):
 
     @classmethod
     def _parse_comma_separated_list(
-        cls, v: Any, max_items: int = MAX_COMMA_SEPARATED_ITEMS
+        cls, v: Any, max_items: int = MAX_COMMA_SEPARATED_ITEMS,
     ) -> list[str] | None:
         """Parse and validate comma-separated string into list.
 
@@ -196,7 +196,7 @@ class FutureWorkRecord(BaseModel):
     @field_validator("tags", "skills", "output_type", "improved_metric", mode="before")
     @classmethod
     def validate_comma_separated_list(
-        cls, v: Any, info: ValidationInfo
+        cls, v: Any, info: ValidationInfo,
     ) -> list[str] | None:
         """Parse comma-separated strings and validate against allowed values.
 
@@ -237,7 +237,7 @@ class FutureWorkRecord(BaseModel):
                 raise ValueError(
                     f"Invalid {display_name} value '{stripped_item}'. "
                     f"Valid values are: {valid_list}. "
-                    f"To add a new value, edit {snippet_file}"
+                    f"To add a new value, edit {snippet_file}",
                 )
             sanitized_items.append(nh3.clean(stripped_item))
 
@@ -246,7 +246,7 @@ class FutureWorkRecord(BaseModel):
     @field_validator("estimated_scope", "status")
     @classmethod
     def validate_single_value_field(
-        cls, v: str | None, info: ValidationInfo
+        cls, v: str | None, info: ValidationInfo,
     ) -> str | None:
         """Validate single-value fields against allowed values.
 
@@ -283,7 +283,7 @@ class FutureWorkRecord(BaseModel):
             raise ValueError(
                 f"Invalid {display_name} value '{stripped_value}'. "
                 f"Valid values are: {valid_list}. "
-                f"To add a new value, edit {snippet_file}"
+                f"To add a new value, edit {snippet_file}",
             )
 
         return nh3.clean(stripped_value)
@@ -319,7 +319,7 @@ class FutureWorkRecord(BaseModel):
                 raise ValueError(
                     f"Invalid contributor username '{stripped_contributor}'. "
                     f"Must be valid GitHub username (1-39 characters, "
-                    f"alphanumeric and hyphens, cannot start with hyphen)"
+                    f"alphanumeric and hyphens, cannot start with hyphen)",
                 )
             validated_contributors.append(stripped_contributor)
         return validated_contributors
@@ -365,7 +365,7 @@ def load_allowed_values(docs_snippets_dir: Path) -> dict[str, list[str]]:
             allowed_values[field_name] = parsed_values
             logger.debug(
                 f"Loaded {len(parsed_values)} allowed values for "
-                f"'{field_name}' from {file_path.name}"
+                f"'{field_name}' from {file_path.name}",
             )
 
     return allowed_values

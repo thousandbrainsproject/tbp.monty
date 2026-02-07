@@ -49,14 +49,14 @@ class EvidenceSDRUnitTest(unittest.TestCase):
 
         """
         encoder_sdr = EncoderSDR(
-            sdr_length=100, sdr_on_bits=100, lr=1e-2, n_epochs=100, log_flag=False
+            sdr_length=100, sdr_on_bits=100, lr=1e-2, n_epochs=100, log_flag=False,
         )
 
         # test that the sparsity is adjusted to 2%
         self.assertEqual(encoder_sdr.sdr_on_bits, int(100 * 0.02))
 
         encoder_sdr = EncoderSDR(
-            sdr_length=100, sdr_on_bits=0, lr=1e-2, n_epochs=100, log_flag=False
+            sdr_length=100, sdr_on_bits=0, lr=1e-2, n_epochs=100, log_flag=False,
         )
 
         # test that the sparsity is adjusted to 2%
@@ -80,7 +80,7 @@ class EvidenceSDRUnitTest(unittest.TestCase):
 
         first_second_avg = np.round((first_overlaps + second_overlaps) / 2)
         first_second_third_avg = np.round(
-            (first_overlaps + second_overlaps + third_overlaps) / 3
+            (first_overlaps + second_overlaps + third_overlaps) / 3,
         )
 
         # Instantiate target overlap class to keep track of running average
@@ -113,7 +113,7 @@ class EvidenceSDRUnitTest(unittest.TestCase):
 
         """
         encoder = EncoderSDR(
-            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True
+            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True,
         )
         encoder.add_objects(5)
 
@@ -137,7 +137,7 @@ class EvidenceSDRUnitTest(unittest.TestCase):
             - Representations of the last 2 objects shouldn't change
         """
         encoder = EncoderSDR(
-            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True
+            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True,
         )
         encoder.add_objects(5)
         training_data = np.full((5, 5), np.nan)
@@ -155,12 +155,12 @@ class EvidenceSDRUnitTest(unittest.TestCase):
 
         # test that the first 3 representations changed
         self.assertFalse(
-            np.all(representations_before[:3] == representations_after[:3])
+            np.all(representations_before[:3] == representations_after[:3]),
         )
 
         # test that the last 2 representations did not change
         self.assertTrue(
-            np.all(representations_before[-2:] == representations_after[-2:])
+            np.all(representations_before[-2:] == representations_after[-2:]),
         )
 
     def test_unit_can_train_superset_objects(self):
@@ -179,7 +179,7 @@ class EvidenceSDRUnitTest(unittest.TestCase):
         """
         # test for some points out of bound
         encoder = EncoderSDR(
-            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True
+            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True,
         )
         encoder.add_objects(3)
         training_data = np.full((5, 5), np.nan)
@@ -198,7 +198,7 @@ class EvidenceSDRUnitTest(unittest.TestCase):
 
         # test for all points out of bounds
         encoder = EncoderSDR(
-            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True
+            sdr_length=100, sdr_on_bits=5, lr=1e-2, n_epochs=100, log_flag=True,
         )
         encoder.add_objects(3)
         training_data = np.full((5, 5), np.nan)
@@ -222,7 +222,7 @@ class EvidenceSDRUnitTest(unittest.TestCase):
             - SDR overlaps should be close to target overlaps
         """
         encoder = EncoderSDR(
-            sdr_length=2048, sdr_on_bits=41, lr=1e-2, n_epochs=1000, log_flag=True
+            sdr_length=2048, sdr_on_bits=41, lr=1e-2, n_epochs=1000, log_flag=True,
         )
         encoder.add_objects(3)
         training_data = np.full((3, 3), np.nan)
@@ -317,7 +317,7 @@ class EvidenceSDRUnitTest(unittest.TestCase):
             - SDRs should be identical with overlap of exactly `sdr_on_bits`
         """
         encoder = EncoderSDR(
-            sdr_length=2048, sdr_on_bits=41, lr=1e-2, n_epochs=1000, log_flag=True
+            sdr_length=2048, sdr_on_bits=41, lr=1e-2, n_epochs=1000, log_flag=True,
         )
         encoder.add_objects(2)
         training_data = np.full((2, 2), np.nan)
@@ -462,12 +462,12 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
                 "patch": {
                     "hsv": [0.1, 1, 1],
                     "principal_curvatures_log": [1, 1],
-                }
+                },
             },
             feature_weights={
                 "patch": {
                     "hsv": np.array([1, 0, 0]),
-                }
+                },
             },
             # set graph size larger since fake obs displacements are meters
             max_graph_size=10,
@@ -507,7 +507,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         lm.detected_object = obj_name
         lm.detected_rotation_r = None
         lm.buffer.stats["detected_location_rel_body"] = lm.buffer.get_current_location(
-            input_channel="first"
+            input_channel="first",
         )
 
         self.assertEqual(
@@ -529,7 +529,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         lm.buffer.append_input_states(observations)
 
         lm._compute_possible_matches(
-            observations, first_movement_detected=first_movement_detected
+            observations, first_movement_detected=first_movement_detected,
         )
 
         if len(lm.get_possible_matches()) == 0:
@@ -604,7 +604,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         sdrs = eslm.sdr_encoder.sdrs
         overlaps = sdrs @ sdrs.T
         self.assertTrue(
-            overlaps[1, 2] > overlaps[0, 2] and overlaps[1, 2] > overlaps[0, 1]
+            overlaps[1, 2] > overlaps[0, 2] and overlaps[1, 2] > overlaps[0, 1],
         )
 
     def tearDown(self):

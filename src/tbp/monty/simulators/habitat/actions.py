@@ -48,7 +48,7 @@ class ActuationVecSpec(ActuationSpec):
 
 
 def _move_along_diagonal(
-    scene_node: SceneNode, distance: float, direction: list
+    scene_node: SceneNode, distance: float, direction: list,
 ) -> None:
     ax = mn.Vector3(direction)
     scene_node.translate_local(ax * distance)
@@ -146,7 +146,7 @@ class SetSensorPose(SceneNodeControl):
                 actuation_spec.amount[0][0],
                 actuation_spec.amount[0][1],
                 actuation_spec.amount[0][2],
-            ]
+            ],
         )
 
         magnum_quat = hab_utils.common.quat_to_magnum(actuation_spec.amount[1])
@@ -189,7 +189,7 @@ class SetAgentPose(SceneNodeControl):
                 actuation_spec.amount[0][0],
                 actuation_spec.amount[0][1],
                 actuation_spec.amount[0][2],
-            ]
+            ],
         )
 
         magnum_quat = hab_utils.common.quat_to_magnum(actuation_spec.amount[1])
@@ -206,7 +206,7 @@ class MoveForward(SceneNodeControl):
 class MoveTangentially(SceneNodeControl):
     def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _move_along_diagonal(
-            scene_node, actuation_spec.amount, direction=actuation_spec.constraint
+            scene_node, actuation_spec.amount, direction=actuation_spec.constraint,
         )
 
 

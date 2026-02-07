@@ -128,7 +128,7 @@ def get_uniform_initial_possible_poses(n_degrees_sampled=9):
                 (pose[0] + 180) % 360,
                 (-pose[1] + 180) % 360,
                 (pose[2] + 180) % 360,
-            ]
+            ],
         )
         if list(pose) not in dual_poses:
             unique_poses.append(Rotation.from_euler("xyz", pose, degrees=True))
@@ -402,7 +402,7 @@ def detect_new_object_k_steps(
         threshold; False otherwise.
     """
     ev_changes, positive_jump_loc = process_delta_evidence_values(
-        max_ev_per_step[-(k + 1) :]
+        max_ev_per_step[-(k + 1) :],
         # NB: If looking at one evidence step change in the past, then need two
         # evidence values; hence k+1 is used.
     )
@@ -450,7 +450,7 @@ def process_delta_evidence_values(max_ev_per_step):
 
 
 def find_step_on_new_object(
-    stepwise_targets, primary_target, n_steps_off_primary_target
+    stepwise_targets, primary_target, n_steps_off_primary_target,
 ):
     """Returns the episode step at which we've moved off the primary target object.
 
@@ -473,7 +473,7 @@ def find_step_on_new_object(
 
 
 def possible_sensed_directions(
-    sensed_directions: np.ndarray, num_hyps_per_node: int
+    sensed_directions: np.ndarray, num_hyps_per_node: int,
 ) -> list[np.ndarray]:
     """Return the possible sensed directions for all nodes.
 
@@ -502,6 +502,6 @@ def possible_sensed_directions(
         possible_s_d[1][1:] = possible_s_d[1][1:] * -1
     else:
         possible_s_d = get_more_directions_in_plane(
-            sensed_directions, num_hyps_per_node
+            sensed_directions, num_hyps_per_node,
         )
     return possible_s_d

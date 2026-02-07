@@ -71,7 +71,7 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def dynamic_call(
-        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+        self, ctx: RuntimeContext, state: MotorSystemState | None = None,
     ) -> Action | None:
         """Use this method when actions are not predefined.
 
@@ -87,7 +87,7 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def post_action(
-        self, action: Action | None, state: MotorSystemState | None = None
+        self, action: Action | None, state: MotorSystemState | None = None,
     ) -> None:
         """This post action hook will automatically be called at the end of __call__.
 
@@ -131,7 +131,7 @@ class MotorPolicy(abc.ABC):
         pass
 
     def __call__(
-        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+        self, ctx: RuntimeContext, state: MotorSystemState | None = None,
     ) -> list[Action]:
         """Select either dynamic or predefined call.
 
@@ -238,7 +238,7 @@ class BasePolicy(MotorPolicy):
         return self.action_list[self.episode_step % len(self.action_list)]
 
     def post_action(
-        self, action: Action | None, _: MotorSystemState | None = None
+        self, action: Action | None, _: MotorSystemState | None = None,
     ) -> None:
         self.timestep += 1
         self.episode_step += 1
@@ -440,7 +440,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     ###
 
     def dynamic_call(
-        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+        self, ctx: RuntimeContext, state: MotorSystemState | None = None,
     ) -> Action | None:
         """Return the next action to take.
 
@@ -542,7 +542,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         raise TypeError(f"Invalid action: {last_action}")
 
     def post_action(
-        self, action: Action | None, state: MotorSystemState | None = None
+        self, action: Action | None, state: MotorSystemState | None = None,
     ) -> None:
         self.action = action
         self.timestep += 1
@@ -829,7 +829,7 @@ class SurfacePolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
     def dynamic_call(
-        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+        self, ctx: RuntimeContext, state: MotorSystemState | None = None,
     ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Return the next action to take.
 
@@ -856,8 +856,8 @@ class SurfacePolicy(InformedPolicy):
             logger.debug(
                 "Object coverage of only "
                 + str(
-                    self.processed_observations.get_feature_by_name("object_coverage")
-                )
+                    self.processed_observations.get_feature_by_name("object_coverage"),
+                ),
             )
             logger.debug(f"Attempting to find object: {self.attempting_to_find_object}")
             logger.debug("Initiating attempts to touch object")
@@ -873,22 +873,22 @@ class SurfacePolicy(InformedPolicy):
             logger.debug(
                 "Object coverage good at initialization: "
                 + str(
-                    self.processed_observations.get_feature_by_name("object_coverage")
-                )
+                    self.processed_observations.get_feature_by_name("object_coverage"),
+                ),
             )
 
             # In this case, we are on the first action, but the object view is already
             # good; therefore initialize the cycle of actions as if we had just
             # moved forward (e.g. to get a good view)
             self.action = self.action_sampler.sample_move_forward(
-                self.agent_id, ctx.rng
+                self.agent_id, ctx.rng,
             )
             self.last_surface_policy_action = self.action
 
         return self.get_next_action(ctx, state)
 
     def post_action(
-        self, action: Action, state: MotorSystemState | None = None
+        self, action: Action, state: MotorSystemState | None = None,
     ) -> None:
         """Temporary SurfacePolicy post_action to distinguish types of last action.
 
@@ -932,7 +932,7 @@ class SurfacePolicy(InformedPolicy):
             OrientHorizontal action.
         """
         rotation_degrees = self.orienting_angle_from_normal(
-            orienting="horizontal", state=state
+            orienting="horizontal", state=state,
         )
         left_distance, forward_distance = self.horizontal_distances(rotation_degrees)
         return OrientHorizontal(
@@ -952,7 +952,7 @@ class SurfacePolicy(InformedPolicy):
             OrientVertical action.
         """
         rotation_degrees = self.orienting_angle_from_normal(
-            orienting="vertical", state=state
+            orienting="vertical", state=state,
         )
         down_distance, forward_distance = self.vertical_distances(rotation_degrees)
         return OrientVertical(
@@ -963,7 +963,7 @@ class SurfacePolicy(InformedPolicy):
         )
 
     def _move_tangentially(
-        self, ctx: RuntimeContext, state: MotorSystemState
+        self, ctx: RuntimeContext, state: MotorSystemState,
     ) -> MoveTangentially:
         """Move tangentially along the object surface.
 
@@ -1009,7 +1009,7 @@ class SurfacePolicy(InformedPolicy):
         )
 
     def get_next_action(
-        self, ctx: RuntimeContext, state: MotorSystemState
+        self, ctx: RuntimeContext, state: MotorSystemState,
     ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Retrieve next action from a cycle of four actions.
 
@@ -1050,7 +1050,7 @@ class SurfacePolicy(InformedPolicy):
         return None
 
     def tangential_direction(
-        self, ctx: RuntimeContext, state: MotorSystemState
+        self, ctx: RuntimeContext, state: MotorSystemState,
     ) -> VectorXYZ:
         """Set the direction of the action to be a direction 0 - 2pi.
 
@@ -1157,7 +1157,7 @@ class SurfacePolicy(InformedPolicy):
         return qt.quaternion(w, x, y, z)
 
     def orienting_angle_from_normal(
-        self, orienting: str, state: MotorSystemState
+        self, orienting: str, state: MotorSystemState,
     ) -> float:
         """Compute turn angle to face the object.
 
@@ -1176,7 +1176,7 @@ class SurfacePolicy(InformedPolicy):
         inverse_quaternion_rotation = self.get_inverse_agent_rot(state)
 
         rotated_surface_normal = qt.rotate_vectors(
-            inverse_quaternion_rotation, original_surface_normal
+            inverse_quaternion_rotation, original_surface_normal,
         )
         x, y, z = rotated_surface_normal
 
@@ -1396,7 +1396,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             )
             if "pose_vectors" in percept.morphological_features:
                 self.tangent_norms.append(
-                    percept.morphological_features["pose_vectors"][0]
+                    percept.morphological_features["pose_vectors"][0],
                 )
             else:
                 self.tangent_norms.append(None)
@@ -1432,7 +1432,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 [
                     self.processed_observations.get_surface_normal(),
                     self.processed_observations.get_curvature_directions(),
-                ]
+                ],
             )
         else:
             self.action_details["z_defined_pc"].append(None)
@@ -1499,7 +1499,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         return tang_movement
 
     def perform_pc_guided_step(
-        self, ctx: RuntimeContext, state: MotorSystemState
+        self, ctx: RuntimeContext, state: MotorSystemState,
     ) -> VectorXYZ:
         """Inform steps to take using defined directions of principal curvature.
 
@@ -1577,7 +1577,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             self.following_heading_counter = 0
 
             return tuple(
-                qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec)
+                qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec),
             )
 
         # Otherwise our heading is good; we continue and use our original heading (or
@@ -1597,11 +1597,11 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.continuous_pc_steps += 1
 
         return tuple(
-            qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec)
+            qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec),
         )
 
     def perform_standard_tang_step(
-        self, ctx: RuntimeContext, state: MotorSystemState
+        self, ctx: RuntimeContext, state: MotorSystemState,
     ) -> VectorXYZ:
         """Perform a standard tangential step across the object.
 
@@ -1669,7 +1669,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             qt.rotate_vectors(
                 state[self.agent_id].rotation,
                 self.tangential_vec,
-            )
+            ),
         )
 
     def update_tangential_reps(self, vec_form=None, angle_form=None):
@@ -1761,7 +1761,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             Principal curvature to use.
         """
         absolute_pcs = np.abs(
-            self.processed_observations.get_feature_by_name("principal_curvatures")
+            self.processed_observations.get_feature_by_name("principal_curvatures"),
         )
 
         if self.min_dir_pref:  # Follow minimal curvature direction
@@ -1827,7 +1827,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # we might take
             # TODO could vectorize this
             rotated_locs = qt.rotate_vectors(
-                inverse_quaternion_rotation, adjusted_prev_locs
+                inverse_quaternion_rotation, adjusted_prev_locs,
             )
 
             # Until we have not found a direction that we can guarentee is
@@ -1855,7 +1855,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
                 # Check all prev. locations for conflict; TODO could vectorize this
                 for ii in range(
-                    max(0, len(rotated_locs) - 50), len(rotated_locs) - 1
+                    max(0, len(rotated_locs) - 50), len(rotated_locs) - 1,
                 ):  # Ignore current point, and points before the last 50 sensations
                     # Check if there is actually a conflict
                     on_conflict = self.conflict_check(rotated_locs, ii)
@@ -1893,7 +1893,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                         self.conflict_divisor += 1
 
                         logger.debug(
-                            f"Updating conflict divisor: {self.conflict_divisor}"
+                            f"Updating conflict divisor: {self.conflict_divisor}",
                         )
 
     def conflict_check(self, rotated_locs, ii):
@@ -1985,7 +1985,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             <= np.pi / 4
         ):
             logger.debug(
-                "Evidence that PC direction arbitrarily flipped, flipping back"
+                "Evidence that PC direction arbitrarily flipped, flipping back",
             )
             self.update_tangential_reps(vec_form=np.array(self.tangential_vec) * -1)
 

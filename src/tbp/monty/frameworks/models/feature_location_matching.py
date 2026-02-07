@@ -134,7 +134,7 @@ class FeatureGraphLM(GraphLM):
             object_id_vote[obj] = obj in possible_matches
         logger.info(
             f"PM: {possible_matches} out of all: {all_objects} "
-            f"-> vote: {object_id_vote}"
+            f"-> vote: {object_id_vote}",
         )
         possible_locations = self.get_possible_locations()
         possible_poses = self.get_possible_poses(as_euler=False)
@@ -187,7 +187,7 @@ class FeatureGraphLM(GraphLM):
                     removed_locations = np.zeros((1, 3))
                     # print("updating possible locations on model")
                     for path_id, path in reversed(
-                        list(enumerate(self.possible_paths[possible_obj]))
+                        list(enumerate(self.possible_paths[possible_obj])),
                     ):
                         location = path[-1]
                         dists, _ = vote_location_tree.query([location], k=k)
@@ -205,7 +205,7 @@ class FeatureGraphLM(GraphLM):
                             removed_locations = np.vstack([removed_locations, location])
                     logger.info(
                         f"removed {removed_locations.shape[0] - 1} locations from "
-                        f"possible matches for {possible_obj}"
+                        f"possible matches for {possible_obj}",
                     )
                     # NOTE: could also use votes to add hypotheses -> increase
                     # robustness, especially with possible poses.
@@ -250,7 +250,7 @@ class FeatureGraphLM(GraphLM):
                 "detected_path": detected_path,
                 "detected_location_on_model": current_model_loc,
                 "detected_location_rel_body": self.buffer.get_current_location(
-                    input_channel="first"
+                    input_channel="first",
                 ),
                 "detected_rotation": r_euler[0],
                 "detected_rotation_quat": [rot.as_quat() for rot in r],
@@ -285,11 +285,11 @@ class FeatureGraphLM(GraphLM):
         location_is_unique = len(unique_locations) == 1
         all_poses = self.possible_poses[graph_id]
         euler_poses, unique_poses = get_unique_rotations(
-            all_poses, self.pose_similarity_threshold, get_reverse_r
+            all_poses, self.pose_similarity_threshold, get_reverse_r,
         )
         rotation_is_unique = len(unique_poses) == 1
         symmetry_detected = self._check_for_symmetry(
-            np.array(euler_poses), len(unique_locations)
+            np.array(euler_poses), len(unique_locations),
         )
 
         assert not (location_is_unique and rotation_is_unique and symmetry_detected)
@@ -354,7 +354,7 @@ class FeatureGraphLM(GraphLM):
         consistent_objects = {}
         for graph_id in self.possible_matches:
             consistent = self._update_matches_using_features(
-                query[0], query[1], graph_id
+                query[0], query[1], graph_id,
             )
             consistent_objects[graph_id] = consistent
         self._remove_inconsistent_objects(consistent_objects)
@@ -411,7 +411,7 @@ class FeatureGraphLM(GraphLM):
                 n_removed = 0
                 for path_id, node_id in enumerate(path_start_ids):
                     possible_poses_for_path = self._get_informed_possible_poses(
-                        graph_id, node_id, features
+                        graph_id, node_id, features,
                     )
                     if len(possible_poses_for_path) > 0:
                         self.possible_poses[graph_id].append(possible_poses_for_path)
@@ -435,12 +435,12 @@ class FeatureGraphLM(GraphLM):
             if len(self.possible_poses[graph_id]) < 10:
                 logger.info(
                     f"possible poses after matching for "
-                    f"{graph_id}: {self.get_possible_poses()[graph_id]}"
+                    f"{graph_id}: {self.get_possible_poses()[graph_id]}",
                 )
         self.possible_paths[graph_id] = new_possible_paths
         logger.debug(
             f"possible paths after matching for "
-            f"{graph_id}: {len(self.possible_paths[graph_id])}"
+            f"{graph_id}: {len(self.possible_paths[graph_id])}",
         )
         return len(self.possible_paths[graph_id]) > 0
 
@@ -485,7 +485,7 @@ class FeatureGraphLM(GraphLM):
                     sort_results=True,
                 )
                 while searching_near_nodes and num_loops < len(
-                    feature_matched_node_ids
+                    feature_matched_node_ids,
                 ):
                     # Find closest node using KD Tree search
                     closest_node_id = feature_matched_node_ids[
@@ -504,7 +504,7 @@ class FeatureGraphLM(GraphLM):
                             feature_keys=["pose_vectors", "pose_fully_defined"],
                         )
                         pose_transformed_features = rotate_pose_dependent_features(
-                            features[first_input_channel], pose
+                            features[first_input_channel], pose,
                         )
                         pose_features_match = self._match_pose_dependent_features(
                             pose_transformed_features,
@@ -514,7 +514,7 @@ class FeatureGraphLM(GraphLM):
                         if pose_features_match:
                             searching_near_nodes = False
                             new_possible_paths.append(
-                                np.append(path, [search_pos], axis=0)
+                                np.append(path, [search_pos], axis=0),
                             )
                             new_possible_poses.append([pose])
                         else:
@@ -522,7 +522,7 @@ class FeatureGraphLM(GraphLM):
         return new_possible_paths, new_possible_poses
 
     def _match_pose_dependent_features(
-        self, query_features, node_features, input_channel
+        self, query_features, node_features, input_channel,
     ):
         """Determine whether pose features match.
 
@@ -601,7 +601,7 @@ class FeatureGraphLM(GraphLM):
                 n_back = 0
             recent_paths = np.array(possible_paths)[:, -n_back:]
             unique_recent_paths = get_unique_paths(
-                recent_paths, threshold=self.path_similarity_threshold
+                recent_paths, threshold=self.path_similarity_threshold,
             )
         return unique_recent_paths
 
@@ -622,7 +622,7 @@ class FeatureGraphLM(GraphLM):
         all_input_channels = list(sensed_features.keys())
         first_input_channel = all_input_channels[0]
         node_directions = self.graph_memory.get_rotation_features_at_node(
-            graph_id, node_id, first_input_channel
+            graph_id, node_id, first_input_channel,
         )
         sensed_directions = sensed_features[first_input_channel]["pose_vectors"]
         # Check if PCs in patch are similar -> need to sample more directions
@@ -631,10 +631,10 @@ class FeatureGraphLM(GraphLM):
             possible_s_d = possible_sensed_directions(sensed_directions, 2)
         else:
             logger.debug(
-                "PC 1 is similar to PC2 -> Their directions are not meaningful"
+                "PC 1 is similar to PC2 -> Their directions are not meaningful",
             )
             possible_s_d = possible_sensed_directions(
-                sensed_directions, self.umbilical_num_poses
+                sensed_directions, self.umbilical_num_poses,
             )
 
         for s_d in possible_s_d:
@@ -649,7 +649,7 @@ class FeatureGraphLM(GraphLM):
                     # rotations or more robustness. n_sample currently set to 0.
                     rand_rot = self._rng.vonmises(0, kappa, 3)
                     rot = Rotation.from_euler(
-                        "xyz", [rand_rot[0], rand_rot[1], rand_rot[2]]
+                        "xyz", [rand_rot[0], rand_rot[1], rand_rot[2]],
                     )
                     r_sample = r * rot
                     possible_poses.append(r_sample)
@@ -694,7 +694,7 @@ class FeatureGraphMemory(GraphMemory):
             first_input_channel = self.get_input_channels_in_graph(graph_id)[0]
             # Get node IDs (fist element in x)
             possible_paths[graph_id] = self.get_graph_node_ids(
-                graph_id, first_input_channel
+                graph_id, first_input_channel,
             )
             possible_poses[graph_id] = []
 
@@ -743,7 +743,7 @@ class FeatureGraphMemory(GraphMemory):
         # heterarchy this should be fine. May want to allow for multiple sensor inputs
         # but probably not worth the time atm if we don't use this LM much.
         possible_nodes_idx = self._match_all_node_features(
-            features, first_input_channel, graph_id
+            features, first_input_channel, graph_id,
         )
 
         if list_of_lists:

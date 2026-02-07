@@ -67,7 +67,7 @@ class TestBuild(unittest.TestCase):
         return base_item
 
     def _run_build(
-        self, input_data: list[dict[str, Any]], snippets_dir: str | None = None
+        self, input_data: list[dict[str, Any]], snippets_dir: str | None = None,
     ) -> list[dict[str, Any]]:
         """Helper method to run build with test data and return results.
 
@@ -180,7 +180,7 @@ class TestBuild(unittest.TestCase):
 
                 if "snippet_file" in case:
                     snippets_dir = self._create_snippets(
-                        {case["snippet_file"]: case["snippet_content"]}
+                        {case["snippet_file"]: case["snippet_content"]},
                     )
                     result_data = self._run_build([test_item], snippets_dir)
                 else:
@@ -188,13 +188,13 @@ class TestBuild(unittest.TestCase):
 
                 self.assertEqual(len(result_data), 1)
                 self.assertEqual(
-                    result_data[0][case["field_name"]], case["expected_result"]
+                    result_data[0][case["field_name"]], case["expected_result"],
                 )
 
     def test_build_without_snippets_dir(self):
         """Test that build works without snippets directory for validation."""
         input_data = [
-            self._create_future_work_item(title="Test item without snippets validation")
+            self._create_future_work_item(title="Test item without snippets validation"),
         ]
 
         result_data = self._run_build(input_data)
@@ -204,8 +204,8 @@ class TestBuild(unittest.TestCase):
         """Test JSON output mode for successful build."""
         input_data = [
             self._create_future_work_item(
-                path2="test-success", title="Test success item"
-            )
+                path2="test-success", title="Test success item",
+            ),
         ]
 
         index_file = self.temp_path / "index.json"
@@ -224,7 +224,7 @@ class TestBuild(unittest.TestCase):
     def test_json_output_validation_errors(self):
         """Test JSON output mode with validation errors."""
         snippets_dir = self._create_snippets(
-            {"future-work-tags.md": "`accuracy` `pose` `learning`"}
+            {"future-work-tags.md": "`accuracy` `pose` `learning`"},
         )
 
         input_data = [
@@ -233,7 +233,7 @@ class TestBuild(unittest.TestCase):
                 path2="test-item",
                 title="Test item with invalid tags",
                 tags="invalid-tag,accuracy",
-            )
+            ),
         ]
 
         index_file = self.temp_path / "index.json"
@@ -268,7 +268,7 @@ class TestBuild(unittest.TestCase):
                 path2="test-limits",
                 title="Test item with too many tags",
                 tags=too_many_tags,
-            )
+            ),
         ]
 
         index_file = self.temp_path / "index.json"
@@ -364,11 +364,11 @@ class TestBuild(unittest.TestCase):
         for case in validation_cases:
             with self.subTest(case=case["name"]):
                 snippets_dir = self._create_snippets(
-                    {case["snippet_file"]: case["snippet_content"]}
+                    {case["snippet_file"]: case["snippet_content"]},
                 )
 
                 valid_item = self._create_future_work_item(
-                    **{case["field_name"]: case["valid_value"]}
+                    **{case["field_name"]: case["valid_value"]},
                 )
 
                 index_file = self.temp_path / "index.json"
@@ -379,7 +379,7 @@ class TestBuild(unittest.TestCase):
                 self.assertTrue(result.success)
 
                 invalid_item = self._create_future_work_item(
-                    **{case["field_name"]: case["invalid_value"]}
+                    **{case["field_name"]: case["invalid_value"]},
                 )
 
                 with index_file.open("w", encoding="utf-8") as f:

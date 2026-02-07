@@ -72,7 +72,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                     if votes_per_lm[j] is not None:
                         sending_lm_pose = votes_per_lm[j]["sensed_pose_rel_body"]
                         sensor_disp = np.array(receiving_lm_pose[0]) - np.array(
-                            sending_lm_pose[0]
+                            sending_lm_pose[0],
                         )
                         sensor_rotation_disp, _ = align_orthonormal_vectors(
                             sending_lm_pose[1:],
@@ -82,7 +82,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                         logger.debug(
                             f"LM {j} to {i} - displacement: {sensor_disp}, "
                             f"rotation: "
-                            f"{sensor_rotation_disp}"
+                            f"{sensor_rotation_disp}",
                         )
                         for obj in votes_per_lm[j]["possible_states"]:
                             # Get the displacement between the sending and receiving
@@ -104,7 +104,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                                 # receiving LMs' poses
                                 new_s = copy.deepcopy(s)
                                 rotated_displacement = new_s.get_pose_vectors().dot(
-                                    sensor_disp
+                                    sensor_disp,
                                 )
                                 new_s.transform_morphological_features(
                                     translation=rotated_displacement,
@@ -113,7 +113,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                                 transformed_lm_states_for_object.append(new_s)
                             if obj in lm_state_votes:
                                 lm_state_votes[obj].extend(
-                                    transformed_lm_states_for_object
+                                    transformed_lm_states_for_object,
                                 )
                             else:
                                 lm_state_votes[obj] = transformed_lm_states_for_object

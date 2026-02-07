@@ -63,16 +63,16 @@ class GraphBuildingTest(unittest.TestCase):
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.supervised_pre_training_cfg = training_config(
-                "supervised_pre_training"
+                "supervised_pre_training",
             )
             self.spth_feat_cfg = training_config("spth_feat")
             self.load_habitat_cfg = loading_config("load_habitat")
             self.load_habitat_for_ppf_cfg = loading_config("load_habitat_for_ppf")
             self.load_habitat_for_feat_eval_cfg = loading_config(
-                "load_habitat_for_feat_eval"
+                "load_habitat_for_feat_eval",
             )
             self.load_habitat_for_feat_train_cfg = loading_config(
-                "load_habitat_for_feat_train"
+                "load_habitat_for_feat_train",
             )
 
     def tearDown(self):
@@ -151,7 +151,7 @@ class GraphBuildingTest(unittest.TestCase):
         exp = self.build_and_save_supervised_graph()
 
         cfg_object_names = list(
-            self.supervised_pre_training_cfg.test.config.train_env_interface_args.object_names
+            self.supervised_pre_training_cfg.test.config.train_env_interface_args.object_names,
         )
         self.assertListEqual(
             cfg_object_names,
@@ -160,7 +160,7 @@ class GraphBuildingTest(unittest.TestCase):
         )
         for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
             graph = exp.model.learning_modules[0].get_graph(
-                graph_id, input_channel="first"
+                graph_id, input_channel="first",
             )
             # Make sure that all features that are extracted by the SM are stored in
             # the graph.
@@ -185,7 +185,7 @@ class GraphBuildingTest(unittest.TestCase):
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
-                    graph_id, input_channel="first"
+                    graph_id, input_channel="first",
                 )
                 self.check_graph_formatting(
                     graph,
@@ -199,7 +199,7 @@ class GraphBuildingTest(unittest.TestCase):
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
-                    graph_id, input_channel="first"
+                    graph_id, input_channel="first",
                 )
                 self.check_graph_formatting(
                     graph,
@@ -218,7 +218,7 @@ class GraphBuildingTest(unittest.TestCase):
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
-                    graph_id, input_channel="first"
+                    graph_id, input_channel="first",
                 )
                 self.check_graph_formatting(
                     graph,
@@ -237,7 +237,7 @@ class GraphBuildingTest(unittest.TestCase):
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
-                    graph_id, input_channel="first"
+                    graph_id, input_channel="first",
                 )
                 self.check_graph_formatting(
                     graph,

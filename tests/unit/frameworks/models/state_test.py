@@ -26,7 +26,7 @@ class EncodeGoalStateTest(unittest.TestCase):
                         -np.ones(3),
                         [np.nan, np.nan, np.nan],
                         [np.nan, np.nan, np.nan],
-                    ]
+                    ],
                 ),
                 "pose_fully_defined": None,
                 "on_object": 1,

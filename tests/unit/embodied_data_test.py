@@ -82,11 +82,11 @@ class FakeEnvironmentRel(SimulatedObjectEnvironment):
                 AGENT_ID: AgentObservations(
                     {
                         SENSOR_ID: SensorObservations(
-                            {"raw": EXPECTED_STATES[self._current_state]}
-                        )
-                    }
-                )
-            }
+                            {"raw": EXPECTED_STATES[self._current_state]},
+                        ),
+                    },
+                ),
+            },
         )
         return obs, ProprioceptiveState({})
 
@@ -100,11 +100,11 @@ class FakeEnvironmentRel(SimulatedObjectEnvironment):
                 AGENT_ID: AgentObservations(
                     {
                         SENSOR_ID: SensorObservations(
-                            {"raw": EXPECTED_STATES[self._current_state]}
-                        )
-                    }
-                )
-            }
+                            {"raw": EXPECTED_STATES[self._current_state]},
+                        ),
+                    },
+                ),
+            },
         )
         return obs, ProprioceptiveState({})
 
@@ -126,11 +126,11 @@ class FakeEnvironmentAbs(SimulatedObjectEnvironment):
                 AGENT_ID: AgentObservations(
                     {
                         SENSOR_ID: SensorObservations(
-                            {"raw": EXPECTED_STATES[self._current_state]}
-                        )
-                    }
-                )
-            }
+                            {"raw": EXPECTED_STATES[self._current_state]},
+                        ),
+                    },
+                ),
+            },
         )
         return obs, ProprioceptiveState({})
 
@@ -144,11 +144,11 @@ class FakeEnvironmentAbs(SimulatedObjectEnvironment):
                 AGENT_ID: AgentObservations(
                     {
                         SENSOR_ID: SensorObservations(
-                            {"raw": EXPECTED_STATES[self._current_state]}
-                        )
-                    }
-                )
-            }
+                            {"raw": EXPECTED_STATES[self._current_state]},
+                        ),
+                    },
+                ),
+            },
         )
         return obs, ProprioceptiveState({})
 
@@ -166,10 +166,10 @@ class EmbodiedDataTest(unittest.TestCase):
     def setUp(self) -> None:
         with hydra.initialize_config_dir(config_dir=str(HYDRA_ROOT), version_base=None):
             self.policy_cfg_fragment = hydra.compose(
-                config_name="experiment/config/monty/motor_system/defaults"
+                config_name="experiment/config/monty/motor_system/defaults",
             ).experiment.config.monty.motor_system.motor_system_args.policy
             self.policy_cfg_abs_fragment = hydra.compose(
-                config_name="test/config/monty/motor_system/absolute"
+                config_name="test/config/monty/motor_system/absolute",
             ).test.config.monty.motor_system.motor_system_args.policy
 
     def test_embodied_env_interface_dist(self):
@@ -192,19 +192,19 @@ class EmbodiedDataTest(unittest.TestCase):
             obs_dist, _ = env_interface_dist.step(motor_system_dist(ctx))
             print(obs_dist)
             self.assertTrue(
-                np.all(obs_dist[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
+                np.all(obs_dist[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i]),
             )
 
         initial_obs, _ = env_interface_dist.reset(rng)
         self.assertTrue(
-            np.all(initial_obs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[0])
+            np.all(initial_obs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[0]),
         )
         obs_dist, _ = env_interface_dist.step(motor_system_dist(ctx))
         self.assertFalse(
             np.all(
                 obs_dist[AGENT_ID][SENSOR_ID]["raw"]
-                == initial_obs[AGENT_ID][SENSOR_ID]["raw"]
-            )
+                == initial_obs[AGENT_ID][SENSOR_ID]["raw"],
+            ),
         )
 
     # @unittest.skip("debugging")
@@ -228,19 +228,19 @@ class EmbodiedDataTest(unittest.TestCase):
         for i in range(1, NUM_STEPS):
             obs_abs, _ = env_interface_abs.step(motor_system_abs(ctx))
             self.assertTrue(
-                np.all(obs_abs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
+                np.all(obs_abs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i]),
             )
 
         initial_state, _ = env_interface_abs.reset(rng)
         self.assertTrue(
-            np.all(initial_state[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[0])
+            np.all(initial_state[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[0]),
         )
         obs_abs, _ = env_interface_abs.step(motor_system_abs(ctx))
         self.assertFalse(
             np.all(
                 obs_abs[AGENT_ID][SENSOR_ID]["raw"]
-                == initial_state[AGENT_ID][SENSOR_ID]["raw"]
-            )
+                == initial_state[AGENT_ID][SENSOR_ID]["raw"],
+            ),
         )
 
     # @unittest.skip("debugging")
@@ -262,7 +262,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
         for i, item in enumerate(env_interface_dist):
             self.assertTrue(
-                np.all(item[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
+                np.all(item[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i]),
             )
             if i >= NUM_STEPS - 1:
                 break
@@ -287,7 +287,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
         for i, item in enumerate(env_interface_abs):
             self.assertTrue(
-                np.all(item[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
+                np.all(item[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i]),
             )
             if i >= NUM_STEPS - 1:
                 break
@@ -412,7 +412,7 @@ class EmbodiedDataTest(unittest.TestCase):
         env_init_args = {"patch_size": patch_size, "data_path": data_path}
         env = SaccadeOnImageFromStreamEnvironment(**env_init_args)
         env_interface_rel = SaccadeOnImageFromStreamEnvironmentInterface(
-            env=env, rng=rng, motor_system=motor_system_rel
+            env=env, rng=rng, motor_system=motor_system_rel,
         )
         env_interface_rel.pre_episode(rng)
         initial_state = next(env_interface_rel)

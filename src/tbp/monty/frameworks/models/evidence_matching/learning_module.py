@@ -379,7 +379,7 @@ class EvidenceGraphLM(GraphLM):
             evidences = get_scaled_evidences(self.evidence)
             for graph_id in evidences:
                 interesting_hyp = np.where(
-                    evidences[graph_id] > self.vote_evidence_threshold
+                    evidences[graph_id] > self.vote_evidence_threshold,
                 )
                 if len(interesting_hyp[0]) > 0:
                     possible_states[graph_id] = []
@@ -429,7 +429,7 @@ class EvidenceGraphLM(GraphLM):
         #           object_evidence_threshold
         use_state = bool(
             self.buffer.get_currently_on_object()
-            and mlh["evidence"] > self.object_evidence_threshold
+            and mlh["evidence"] > self.object_evidence_threshold,
         )
         # TODO H: is this a good way to scale evidence to [0, 1]?
         confidence = (
@@ -531,12 +531,12 @@ class EvidenceGraphLM(GraphLM):
 
             # Check if all possible poses are similar
             pose_is_unique = self._check_for_unique_poses(
-                object_id, possible_object_hypotheses_ids, mlh["rotation"]
+                object_id, possible_object_hypotheses_ids, mlh["rotation"],
             )
 
             # Check for symmetry
             last_possible_object_hypotheses_ids = np.flatnonzero(
-                self.possible_hyps[object_id]
+                self.possible_hyps[object_id],
             )
             symmetry_detected = self._check_for_symmetry(
                 last_possible_object_hypotheses_ids=last_possible_object_hypotheses_ids,
@@ -553,7 +553,7 @@ class EvidenceGraphLM(GraphLM):
                 r_euler = np.round(r_euler, 3) % 360
 
                 pose_and_scale = np.concatenate(
-                    [mlh["location"], r_euler, [mlh["scale"]]]
+                    [mlh["location"], r_euler, [mlh["scale"]]],
                 )
                 logger.debug(f"(location, rotation, scale): {pose_and_scale}")
                 # Set LM variables to detected object & pose
@@ -564,7 +564,7 @@ class EvidenceGraphLM(GraphLM):
                     "detected_path": mlh["location"],
                     "detected_location_on_model": mlh["location"],
                     "detected_location_rel_body": self.buffer.get_current_location(
-                        input_channel="first"
+                        input_channel="first",
                     ),
                     "detected_rotation": r_euler,
                     "detected_rotation_quat": r_inv.as_quat(),
@@ -674,7 +674,7 @@ class EvidenceGraphLM(GraphLM):
                 for pose in poses[obj]:
                     scipy_pose = Rotation.from_matrix(pose)
                     euler_pose = np.round(
-                        scipy_pose.inv().as_euler("xyz", degrees=True), 5
+                        scipy_pose.inv().as_euler("xyz", degrees=True), 5,
                     )
                     euler_poses.append(euler_pose)
                 all_poses[obj] = euler_poses
@@ -691,10 +691,10 @@ class EvidenceGraphLM(GraphLM):
             x_percent_of_max = max_obj_evidence / 100 * self.x_percent_threshold
             # Get all pose IDs that have an evidence in the top n%
             possible_object_hypotheses_ids = np.where(
-                object_evidence_scores > max_obj_evidence - x_percent_of_max
+                object_evidence_scores > max_obj_evidence - x_percent_of_max,
             )[0]
             logger.debug(
-                f"possible hpids: {possible_object_hypotheses_ids} for {object_id}"
+                f"possible hpids: {possible_object_hypotheses_ids} for {object_id}",
             )
             logger.debug(f"hpid evidence is > {max_obj_evidence} - {x_percent_of_max}")
             return possible_object_hypotheses_ids
@@ -1001,19 +1001,19 @@ class EvidenceGraphLM(GraphLM):
             Whether the pose is unique.
         """
         possible_locations = np.array(
-            self.possible_locations[graph_id][possible_object_hypotheses_ids]
+            self.possible_locations[graph_id][possible_object_hypotheses_ids],
         )
         logger.debug(f"{possible_locations.shape[0]} possible locations")
 
         center_location = np.mean(possible_locations, axis=0)
         distances_to_center = np.linalg.norm(
-            possible_locations - center_location, axis=1
+            possible_locations - center_location, axis=1,
         )
         location_unique = np.max(distances_to_center) < self.path_similarity_threshold
         if location_unique:
             logger.info(
                 "all possible locations are in radius "
-                f"{self.path_similarity_threshold} of {center_location}"
+                f"{self.path_similarity_threshold} of {center_location}",
             )
 
         possible_rotations = np.array(self.possible_poses[graph_id])[
@@ -1024,7 +1024,7 @@ class EvidenceGraphLM(GraphLM):
         # Compute the difference between each rotation matrix in the list of possible
         # rotations and the most likely rotation in radians.
         trace = np.trace(
-            most_likely_r.as_matrix().T @ possible_rotations, axis1=1, axis2=2
+            most_likely_r.as_matrix().T @ possible_rotations, axis1=1, axis2=2,
         )
         differences = np.arccos(np.clip((trace - 1) / 2, -1, 1))
         # Check if none of them differ by more than pose_similarity_threshold
@@ -1063,7 +1063,7 @@ class EvidenceGraphLM(GraphLM):
             return False  # need more steps to meet symmetry condition
         logger.debug(
             f"\n\nchecking for symmetry for hp ids {possible_object_hypotheses_ids}"
-            f" with last ids {last_possible_object_hypotheses_ids}"
+            f" with last ids {last_possible_object_hypotheses_ids}",
         )
         if increment_evidence:
             previous_hyps = set(last_possible_object_hypotheses_ids)
@@ -1078,7 +1078,7 @@ class EvidenceGraphLM(GraphLM):
 
         if self._enough_symmetry_evidence_accumulated():
             logger.info(
-                f"Symmetry detected for hypotheses {possible_object_hypotheses_ids}"
+                f"Symmetry detected for hypotheses {possible_object_hypotheses_ids}",
             )
             return True
 
@@ -1146,7 +1146,7 @@ class EvidenceGraphLM(GraphLM):
                         shape = 1
                     default_weights = np.ones(shape) * default
                     logger.debug(
-                        f"adding {key} to feature_weights with value {default_weights}"
+                        f"adding {key} to feature_weights with value {default_weights}",
                     )
                     self.feature_weights[input_channel][key] = default_weights
 
@@ -1191,7 +1191,7 @@ class EvidenceGraphLM(GraphLM):
             logger.debug(f"evidences for each object: {graph_evidences}")
             logger.debug(
                 f"mean evidence: {np.round(mean_ge, 3)}, std: {np.round(std_ge, 3)}"
-                f" -> th={th}"
+                f" -> th={th}",
             )
         elif len(self.graph_memory) == 1:
             # Making it a bit more explicit what happens if we only have one graph
@@ -1255,7 +1255,7 @@ class EvidenceGraphLM(GraphLM):
             mlh["graph_id"] = "new_object0"
         logger.info(
             f"current most likely hypothesis: {mlh['graph_id']} "
-            f"with evidence {np.round(mlh['evidence'], 2)}"
+            f"with evidence {np.round(mlh['evidence'], 2)}",
         )
         return mlh
 

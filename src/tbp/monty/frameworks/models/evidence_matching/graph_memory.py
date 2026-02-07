@@ -82,7 +82,7 @@ class EvidenceGraphMemory(GraphMemory):
                     # it to the GridObjectModel (with use_original_graph == True)
                     loaded_graph = channel_model._graph
                     channel_model = self._initialize_model_with_graph(
-                        graph_id, loaded_graph
+                        graph_id, loaded_graph,
                     )
                 else:
                     # serialization seems to mess up the sparse tensors, so we need to
@@ -149,7 +149,7 @@ class EvidenceGraphMemory(GraphMemory):
         except GridTooSmallError:
             logger.info(
                 "Grid too small for given locations. Not building a model "
-                f"for {graph_id}"
+                f"for {graph_id}",
             )
 
     def _extend_graph(
@@ -186,7 +186,7 @@ class EvidenceGraphMemory(GraphMemory):
             )
             logger.info(
                 f"Extended graph {graph_id} with new points. New model:\n"
-                f"{self.models_in_memory[graph_id]}"
+                f"{self.models_in_memory[graph_id]}",
             )
         except GridTooSmallError:
             logger.info("Grid too small for given locations. Not updating model.")
