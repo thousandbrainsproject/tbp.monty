@@ -42,7 +42,7 @@ Monty experiments are defined using a nested dictionary. These dictionaries defi
 
 # Setting up the Experiment Config for Pretraining
 
-To follow along, open the `conf/experiment/tutorial/surf_agent_2obj_train.yaml`. Let's highlight the various aspects of a training experiment configuration.
+To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_train.yaml`. Let's highlight the various aspects of a training experiment configuration.
 
 ```yaml
 # Basic setup

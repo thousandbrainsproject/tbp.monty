@@ -14,6 +14,7 @@ from typing import ClassVar
 
 import numpy as np
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import Monty
 from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -95,14 +96,16 @@ class MontyBase(Monty):
         # Counters, logging, default step_type
         self.step_type = "matching_step"
         self.is_seeking_match = True  # for consistency with custom monty experiments
-        self.experiment_mode = None  # initialize to neither training nor testing
+        self.experiment_mode: ExperimentMode | None = (
+            None  # initialize to neither training nor testing
+        )
         self.total_steps = 0
-        # number of overall steps. Counts also steps where no LM update was perfomed.
+        # Number of overall steps. Counts also steps where no LM update was performed.
         self.episode_steps = 0
         # Number of steps in which at least 1 LM received information during exploration
         self.exploratory_steps = 0
-        # Number of steps in which at least 1 LM was updated. Is not the same as each
-        # individual LMs number of matching steps
+        # Number of steps in which at least 1 LM was updated. It is not the same as each
+        # individual LM's number of matching steps.
         self.matching_steps = 0
 
         if self.sm_to_lm_matrix is None:
@@ -309,7 +312,7 @@ class MontyBase(Monty):
                 logger.info(f"finished exploring after {self.exploratory_steps} steps")
 
             elif self.step_type == "matching_step":
-                if self.experiment_mode == "train":
+                if self.experiment_mode is ExperimentMode.TRAIN:
                     self.switch_to_exploratory_step()
                 else:
                     self._is_done = True
@@ -324,8 +327,7 @@ class MontyBase(Monty):
     # Methods (other than step) that interact with the experiment
     ###
 
-    def set_experiment_mode(self, mode):
-        assert mode in ["train", "eval"], "mode must be either `train` or `eval`"
+    def set_experiment_mode(self, mode: ExperimentMode) -> None:
         self.experiment_mode = mode
         self.motor_system.set_experiment_mode(mode)
         self.step_type = "matching_step"
@@ -356,7 +358,7 @@ class MontyBase(Monty):
         assert len(state_dict["lm_dict"]) == len(self.learning_modules)
         lm_counter = 0
         lm_dict = state_dict["lm_dict"]
-        for lm_key in lm_dict.keys():
+        for lm_key in lm_dict:
             self.learning_modules[lm_counter].load_state_dict(lm_dict[lm_key])
             lm_counter = lm_counter + 1
 
@@ -446,10 +448,10 @@ class MontyBase(Monty):
     @property
     def min_steps(self):
         if self.step_type == "matching_step":
-            if self.experiment_mode == "train":
+            if self.experiment_mode is ExperimentMode.TRAIN:
                 return self.min_train_steps
 
-            if self.experiment_mode == "eval":
+            if self.experiment_mode is ExperimentMode.EVAL:
                 return self.min_eval_steps
 
         elif self.step_type == "exploratory_step":

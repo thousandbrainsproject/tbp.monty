@@ -43,10 +43,10 @@ class Simulator(Protocol):
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:
-        """Add new object to simulated environment.
+        """Add a new object to the simulated environment.
 
         Adds a new object based on the named object. This assumes that the set of
-        available objects are preloaded and keyed by name.
+        available objects is preloaded and keyed by name.
 
         Args:
             name: Registered object name.
@@ -56,8 +56,8 @@ class Simulator(Protocol):
             semantic_id: Optional override for the object's semantic ID.
             primary_target_object: ID of the primary target object. If not None, the
                 added object will be positioned so that it does not obscure the initial
-                view of the primary target object (which avoiding collision alone cannot
-                guarantee). Used when adding multiple objects. Defaults to None.
+                view of the primary target object, which avoiding collisions alone
+                cannot guarantee. Used when adding multiple objects. Defaults to None.
 
         Returns:
             The added object's information.
