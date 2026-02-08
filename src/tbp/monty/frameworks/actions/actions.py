@@ -14,6 +14,7 @@ from json import JSONDecoder, JSONEncoder
 from typing import Any, Generator, Tuple
 
 from numpy.random import RandomState
+from pydantic.alias_generators import to_snake
 from typing_extensions import (
     Protocol,  # Enables default __init__ in Protocol classes
     runtime_checkable,  # For JSONEncoder instance checks
@@ -85,17 +86,6 @@ class Action(Protocol):
     agent_id: AgentID
     """The ID of the agent that will take this action."""
 
-    @staticmethod
-    def _camel_case_to_snake_case(name: str) -> str:
-        """Given a class name in CamelCase, return it in snake_case.
-
-        Returns:
-            The class name in snake_case.
-        """
-        return "".join(
-            ["_" + char.lower() if char.isupper() else char for char in name]
-        ).lstrip("_")
-
     @classmethod
     def action_name(cls) -> str:
         """Generate the action name based on the class.
@@ -105,7 +95,7 @@ class Action(Protocol):
         Returns:
             The action name in snake_case.
         """
-        return Action._camel_case_to_snake_case(cls.__name__)
+        return to_snake(cls.__name__)
 
     def __init__(self, agent_id: AgentID) -> None:
         """Initialize the action with the agent ID.
