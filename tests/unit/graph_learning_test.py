@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -61,12 +63,12 @@ class TrainedGraphLM:
     episodes: list[EpisodeObservations]
 
     @property
-    def mode(self) -> str:
+    def mode(self) -> ExperimentMode | None:
         """Helper property to make setting and reading the LM mode easier."""
         return self.learning_module.mode
 
     @mode.setter
-    def mode(self, mode: str):
+    def mode(self, mode: ExperimentMode | None):
         self.learning_module.mode = mode
 
     def num_observations(self, episode_num: int) -> int:
@@ -110,7 +112,7 @@ class GraphLearningTest(BaseGraphTest):
                 "monty_config",
                 "motor_system_config",
                 "motor_system_args",
-                "policy_args",
+                "policy",
                 "file_name",
             ]
         )
@@ -137,9 +139,7 @@ class GraphLearningTest(BaseGraphTest):
                 overrides += extra_overrides
             return hydra.compose(config_name="test", overrides=overrides)
 
-        with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.base_cfg = hydra_config("base")
             self.surface_agent_eval_cfg = hydra_config("surface_agent_eval")
             self.ppf_pred_cfg = hydra_config("ppf_pred")
@@ -191,7 +191,7 @@ class GraphLearningTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.run_episode()
 
@@ -199,7 +199,7 @@ class GraphLearningTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.pre_episode()
             for step, observation in enumerate(exp.env_interface):
@@ -249,7 +249,7 @@ class GraphLearningTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
-            exp.model.set_experiment_mode("eval")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.run_episode()
 
@@ -257,7 +257,7 @@ class GraphLearningTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.surface_agent_eval_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
-            exp.model.set_experiment_mode("eval")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.run_episode()
 
@@ -351,8 +351,8 @@ class GraphLearningTest(BaseGraphTest):
             ].graph_memory.get_all_models_in_memory()
 
             # Loop over each graph model and check they have the exact same data
-            for obj_name in graph_memory_1.keys():
-                for input_channel in graph_memory_1[obj_name].keys():
+            for obj_name in graph_memory_1:
+                for input_channel in graph_memory_1[obj_name]:
                     graph_1 = graph_memory_1[obj_name][input_channel]
                     graph_2 = graph_memory_2[obj_name][input_channel]
                     self.check_graphs_equal(graph_1, graph_2)
@@ -370,7 +370,7 @@ class GraphLearningTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.feature_pred_time_out_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             for e in range(6):
                 if e % 2 == 0:
                     exp.pre_epoch()
@@ -431,7 +431,7 @@ class GraphLearningTest(BaseGraphTest):
         exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             # Overwrite target with a false name to test confused logging.
             for e in range(4):
@@ -546,7 +546,7 @@ class GraphLearningTest(BaseGraphTest):
             load_eval=True,
             load_detailed=True,
         )
-        for episode in lm_models.keys():
+        for episode in lm_models:
             self.assertEqual(
                 list(lm_models[episode]["LM_0"].keys()),
                 ["new_object0"],
@@ -604,7 +604,7 @@ class GraphLearningTest(BaseGraphTest):
         if offset is None:
             offset = np.zeros(3)
 
-        graph_lm.mode = "train"
+        graph_lm.mode = ExperimentMode.TRAIN
         graph_lm.pre_episode(primary_target=self.placeholder_target)
 
         offset_obs = []
@@ -684,7 +684,7 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm = self.get_gm_with_fake_object()
 
-        graph_lm.mode = "eval"
+        graph_lm.mode = ExperimentMode.EVAL
         # Don't need to give target object since we are not logging performance
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
@@ -722,7 +722,7 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm = self.get_gm_with_fake_object()
 
-        graph_lm.mode = "eval"
+        graph_lm.mode = ExperimentMode.EVAL
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             graph_lm.matching_step([observation])
@@ -759,7 +759,7 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm = self.get_gm_with_fake_object()
 
-        graph_lm.mode = "eval"
+        graph_lm.mode = ExperimentMode.EVAL
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             observation.location = observation.location + np.ones(3)
@@ -802,7 +802,7 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm = self.get_gm_with_fake_object()
 
-        graph_lm.mode = "eval"
+        graph_lm.mode = ExperimentMode.EVAL
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             graph_lm.matching_step([observation])
@@ -839,7 +839,7 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm = self.get_gm_with_fake_object()
 
-        graph_lm.mode = "eval"
+        graph_lm.mode = ExperimentMode.EVAL
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         for i, observation in enumerate(fake_obs_test):
             graph_lm.matching_step([observation])
@@ -863,7 +863,7 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm = self.get_gm_with_fake_object()
 
-        graph_lm.mode = "eval"
+        graph_lm.mode = ExperimentMode.EVAL
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             graph_lm.matching_step([observation])
@@ -882,7 +882,7 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm = self.get_gm_with_fake_object()
 
-        graph_lm.mode = "eval"
+        graph_lm.mode = ExperimentMode.EVAL
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         for step, observation in enumerate(fake_obs_test):
             graph_lm.matching_step([observation])
@@ -912,7 +912,7 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm = self.get_gm_with_fake_object()
 
-        graph_lm.mode = "eval"
+        graph_lm.mode = ExperimentMode.EVAL
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             if not observation.use_state:
@@ -968,11 +968,11 @@ class GraphLearningTest(BaseGraphTest):
             trained_modules = self.get_5lm_gm_with_fake_objects(objects)
             exp.experiment_mode = ExperimentMode.EVAL
             monty = exp.model
-            monty.set_experiment_mode("eval")
+            monty.set_experiment_mode(exp.experiment_mode)
             monty.learning_modules = [tm.learning_module for tm in trained_modules]
 
             for tm in trained_modules:
-                tm.mode = "eval"
+                tm.mode = ExperimentMode.EVAL
 
             exp.pre_epoch()
             for episode_num in range(tm.num_episodes):

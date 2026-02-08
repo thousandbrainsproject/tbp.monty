@@ -18,8 +18,8 @@ config:
       min_train_steps: 500
     motor_system_config:
       motor_system_args:
-        policy_args:
-          action_sampler_args:
+        policy:
+          action_sampler:
             # As learning with random saccades + hypothesis jumps,
             # make saccades smaller
             rotation_degrees: 2.0

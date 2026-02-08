@@ -22,6 +22,7 @@ from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.object_recognition_experiments import (
     MontyObjectRecognitionExperiment,
 )
+from tests import HYDRA_ROOT
 
 
 def hydra_config(test_name: str, output_dir: str) -> DictConfig:
@@ -47,22 +48,20 @@ class GetGoodViewTest(unittest.TestCase):
 
         In this case, the object is a bit too far away, and so the agent moves forward.
         """
-        with hydra.initialize(
-            version_base=None, config_path="../../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("dist_agent_too_far_away", self.output_dir)
             exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(config.test)
             with exp:
                 exp.experiment_mode = ExperimentMode.TRAIN
-                exp.model.set_experiment_mode("train")
+                exp.model.set_experiment_mode(exp.experiment_mode)
                 exp.pre_epoch()
                 exp.pre_episode()
 
-                policy_args = config.test.config["monty_config"]["motor_system_config"][
+                policy_cfg = config.test.config["monty_config"]["motor_system_config"][
                     "motor_system_args"
-                ]["policy_args"]
-                target_perc_on_target_obj = policy_args["good_view_percentage"]
-                target_closest_point = policy_args["desired_object_distance"]
+                ]["policy"]
+                target_perc_on_target_obj = policy_cfg["good_view_percentage"]
+                target_closest_point = policy_cfg["desired_object_distance"]
 
                 observation = next(exp.env_interface)
                 view = observation[exp.model.motor_system._policy.agent_id][
@@ -99,24 +98,22 @@ class GetGoodViewTest(unittest.TestCase):
         Positioning procedure must turn the agent towards the target object using the
         viewfinder, and then move towards it.
         """
-        with hydra.initialize(
-            version_base=None, config_path="../../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("multi_object_target_not_visible", self.output_dir)
             exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(config.test)
             with exp:
                 exp.train()
 
-                exp.experiment_mode = ExperimentMode.TRAIN
-                exp.model.set_experiment_mode("train")
+                exp.experiment_mode = ExperimentMode.EVAL
+                exp.model.set_experiment_mode(exp.experiment_mode)
                 exp.pre_epoch()
                 exp.pre_episode()
 
-                policy_args = config.test.config["monty_config"]["motor_system_config"][
+                policy_cfg = config.test.config["monty_config"]["motor_system_config"][
                     "motor_system_args"
-                ]["policy_args"]
-                target_perc_on_target_obj = policy_args["good_view_percentage"]
-                target_closest_point = policy_args["desired_object_distance"]
+                ]["policy"]
+                target_perc_on_target_obj = policy_cfg["good_view_percentage"]
+                target_closest_point = policy_cfg["desired_object_distance"]
 
                 observation = next(exp.env_interface)
                 view = observation[exp.model.motor_system._policy.agent_id][

@@ -43,7 +43,7 @@ def hydra_config(
     if fixed_actions_path:
         overrides.append(
             "+experiment.config.monty_config.motor_system_config"
-            f".motor_system_args.policy_args.file_name={fixed_actions_path}",
+            f".motor_system_args.policy.file_name={fixed_actions_path}",
         )
     if model_name_or_path:
         overrides.append(

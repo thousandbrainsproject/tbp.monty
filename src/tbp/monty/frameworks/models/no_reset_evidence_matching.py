@@ -140,7 +140,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
             The list of observations, each updated with a displacement vector.
         """
         for o in obs:
-            if o.sender_id in self.last_location.keys():
+            if o.sender_id in self.last_location:
                 displacement = o.location - self.last_location[o.sender_id]
             else:
                 displacement = np.zeros(3)

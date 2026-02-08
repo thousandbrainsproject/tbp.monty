@@ -10,6 +10,12 @@
 
 import pytest
 
+from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.models.motor_policies import (
+    SurfacePolicyCurvatureInformed,
+)
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -23,7 +29,7 @@ import habitat_sim.utils as hab_utils
 import hydra
 import numpy as np
 import quaternion as qt
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
@@ -66,9 +72,7 @@ class PolicyTest(unittest.TestCase):
                 ],
             )
 
-        with hydra.initialize(
-            version_base=None, config_path="../../src/tbp/monty/conf"
-        ):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.base_dist_cfg = hydra_config("base_dist")
             self.base_surf_cfg = hydra_config("base_surf")
             self.spiral_cfg = hydra_config("spiral")
@@ -230,8 +234,7 @@ class PolicyTest(unittest.TestCase):
                     "hsv": np.array([1, 0, 0]),
                 }
             },
-            gsg_class=EvidenceGoalStateGenerator,
-            gsg_args=gsg_args,
+            gsg=EvidenceGoalStateGenerator(**gsg_args),
         )
         return graph_lm, gsg_args
 
@@ -247,7 +250,7 @@ class PolicyTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.pre_episode()
 
@@ -277,7 +280,7 @@ class PolicyTest(unittest.TestCase):
 
             target_closest_point = config["monty_config"]["motor_system_config"][
                 "motor_system_args"
-            ]["policy_args"]["desired_object_distance"]
+            ]["policy"]["desired_object_distance"]
 
             # Utility policy should not have moved too close to the object
             assert closest_point_on_target_obj > target_closest_point, (
@@ -297,7 +300,7 @@ class PolicyTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.dist_fixed_action_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
 
             # Only do a single episode
@@ -405,7 +408,7 @@ class PolicyTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.surf_fixed_action_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
 
             # Only do a single episode
@@ -544,7 +547,7 @@ class PolicyTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.rotated_cube_view_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.pre_episode()
 
@@ -593,13 +596,15 @@ class PolicyTest(unittest.TestCase):
         Note these movements are not actually performed, i.e. they represent
         hypothetical outputs from the motor-system.
         """
-        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
-        policy_class = motor_system_cfg["motor_system_args"]["policy_class"]
-        policy_args = motor_system_cfg["motor_system_args"]["policy_args"]
-        policy_args["max_pc_bias_steps"] = 2
+        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
+        policy: SurfacePolicyCurvatureInformed = motor_system_cfg["motor_system_args"][
+            "policy"
+        ]
+        policy.max_pc_bias_steps = 2
+        policy.pre_episode()
+
         rng = np.random.RandomState(123)
-        policy = policy_class(rng=rng, **policy_args)
-        policy.pre_episode(rng)
+        ctx = RuntimeContext(rng)
 
         # Initialize motor-system state
         proprioceptive_state = ProprioceptiveState(
@@ -620,7 +625,7 @@ class PolicyTest(unittest.TestCase):
         # Note that the movement is a unit vector because it is a direction, the amount
         # (i.e. size) of the translation is represented separately.
         policy.processed_observations = self.fake_obs_pc[0]
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -633,7 +638,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 2
         policy.processed_observations = self.fake_obs_pc[1]
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -647,7 +652,7 @@ class PolicyTest(unittest.TestCase):
         # Step 3: Our bias should change from following minimal to maximal
         # PC
         policy.processed_observations = self.fake_obs_pc[2]
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [0, 1, 0])), (
             "Not following correct PC direction"
         )
@@ -660,7 +665,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 4
         policy.processed_observations = self.fake_obs_pc[3]
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [0, 1, 0])), (
             "Not following correct PC direction"
         )
@@ -673,7 +678,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 5: Pass observation *without* a well-defined PC direction
         policy.processed_observations = self.fake_obs_pc[4]
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.isclose(
             np.dot(self.fake_obs_pc[4].get_surface_normal(), direction), 0
         ), "Direction should be orthogonal to tangent (surface) plane"
@@ -693,11 +698,13 @@ class PolicyTest(unittest.TestCase):
         # the same); note the agent is still orthogonal to the PC directions.
 
         # Update relevant motor-system variables
-        policy.ignoring_pc_counter = policy_args["min_general_steps"]
+        policy.ignoring_pc_counter = self.motor_system_cfg_fragment[
+            "motor_system_args"
+        ]["policy"]["min_general_steps"]
         proprioceptive_state[AgentID("agent_id_0")].rotation = qt.quaternion(0, 0, 1, 0)
 
         policy.processed_observations = self.fake_obs_pc[5]
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [1.0, 0.0, 0])), (
             "Not following correct PC direction"
         )
@@ -709,16 +716,19 @@ class PolicyTest(unittest.TestCase):
         such as checks to avoid doubling back on ourself, and how to handle when the
         proposed PC points in the z direction (i.e. towards or away from the agent).
         """
-        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
 
-        policy_class = motor_system_cfg["motor_system_args"]["policy_class"]
-        policy_args = motor_system_cfg["motor_system_args"]["policy_args"]
         # Overwrite min_general_steps default value so that we more quickly transition
         # into taking PC steps when testing this
-        policy_args["min_general_steps"] = 1
+        policy: SurfacePolicyCurvatureInformed = motor_system_cfg["motor_system_args"][
+            "policy"
+        ]
+        initial_min_general_steps = 1
+        policy.min_general_steps = initial_min_general_steps
+        policy.pre_episode()
+
         rng = np.random.RandomState(123)
-        policy = policy_class(rng=rng, **policy_args)
-        policy.pre_episode(rng)
+        ctx = RuntimeContext(rng)
 
         # Initialize motor system state
         proprioceptive_state = ProprioceptiveState(
@@ -739,7 +749,7 @@ class PolicyTest(unittest.TestCase):
         # done in graph_matching.py normally
         policy.tangent_locs.append(self.fake_obs_advanced_pc[0].location)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.isclose(
             np.dot(self.fake_obs_advanced_pc[0].get_surface_normal(), direction), 0
         ), "Direction should be orthogonal to tangent (surface) plane"
@@ -757,7 +767,7 @@ class PolicyTest(unittest.TestCase):
         # done in graph_matching.py normally
         policy.tangent_locs.append(self.fake_obs_pc[0].location)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -773,7 +783,7 @@ class PolicyTest(unittest.TestCase):
         policy.processed_observations = self.fake_obs_advanced_pc[1]
         policy.tangent_locs.append(self.fake_obs_advanced_pc[1].location)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -788,14 +798,14 @@ class PolicyTest(unittest.TestCase):
         policy.processed_observations = self.fake_obs_advanced_pc[2]
         policy.tangent_locs.append(self.fake_obs_advanced_pc[2].location)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         assert np.isclose(np.linalg.norm(direction), 1), (
             "Direction should be a unit vector"
         )
         assert np.isclose(direction[2], 0), (
             "Direction should be in the x-y plane (relative to the agent)"
         )
-        assert policy.ignoring_pc_counter == policy_args["min_general_steps"], (
+        assert policy.ignoring_pc_counter == initial_min_general_steps, (
             "Shouldn't increment ignoring_pc_counter"
         )
         assert policy.following_pc_counter == 2, (
@@ -813,7 +823,7 @@ class PolicyTest(unittest.TestCase):
         # following PC would cause it to visit the observation 1 again (which it is
         # designed to avoid)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(proprioceptive_state)
+        direction = policy.tangential_direction(ctx, proprioceptive_state)
         # Note the following movement is a random direction deterministically set by the
         # random seed
         assert np.isclose(
@@ -928,15 +938,11 @@ class PolicyTest(unittest.TestCase):
         """
         lm, gsg_args = self.initialize_lm_with_gsg()
 
-        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
         motor_system_class = motor_system_cfg["motor_system_class"]
         motor_system_args = motor_system_cfg["motor_system_args"]
-        policy_class = motor_system_args["policy_class"]
-        policy_args = motor_system_args["policy_args"]
-        rng = np.random.RandomState(123)
-        policy = policy_class(rng=rng, **policy_args)
-        motor_system = motor_system_class(policy=policy)
-        motor_system.pre_episode(rng)
+        motor_system = motor_system_class(**motor_system_args)
+        motor_system.pre_episode()
 
         # The target displacement of the agent from the object; used to determine
         # the validity of the final agent location

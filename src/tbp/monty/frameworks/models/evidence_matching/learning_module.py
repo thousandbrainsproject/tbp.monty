@@ -19,6 +19,7 @@ import numpy.typing as npt
 from scipy.spatial import KDTree
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
 )
@@ -135,8 +136,7 @@ class EvidenceGraphLM(GraphLM):
             voxel. All locations that fall into the same voxel will be averaged and
             represented as one value. num_model_voxels_per_dim should not be too large
             since the memory requirements grow cubically with this number.
-        gsg_class: The type of goal-state-generator to associate with the LM.
-        gsg_args: Dictionary of configuration parameters for the GSG.
+        gsg: The goal-state-generator to associate with the LM.
         hypotheses_updater_class: The type of hypotheses updater to associate with the
             LM.
         hypotheses_updater_args: Dictionary of configuration parameters for the
@@ -172,8 +172,7 @@ class EvidenceGraphLM(GraphLM):
         max_nodes_per_graph=2000,
         num_model_voxels_per_dim=50,  # -> voxel size = 6mm3 (0.006)
         use_multithreading=True,
-        gsg_class=EvidenceGoalStateGenerator,
-        gsg_args=None,
+        gsg: EvidenceGoalStateGenerator | None = None,
         hypotheses_updater_class: type[HypothesesUpdater] = DefaultHypothesesUpdater,
         hypotheses_updater_args: dict | None = None,
         *args,
@@ -188,12 +187,10 @@ class EvidenceGraphLM(GraphLM):
             max_graph_size=max_graph_size,
             num_model_voxels_per_dim=num_model_voxels_per_dim,
         )
-        if gsg_class is not None:
-            gsg_args = gsg_args or {}
-            self.gsg = gsg_class(self, **gsg_args)
-            self.gsg.reset()
-        else:
-            self.gsg = None
+        self.gsg = gsg
+        if self.gsg:
+            self.gsg.parent_lm = self
+
         # --- Matching Params ---
         self.max_match_distance = max_match_distance
         self.tolerances = tolerances
@@ -310,7 +307,7 @@ class EvidenceGraphLM(GraphLM):
         ):
             thread_list = []
             for graph_id in self.get_all_known_object_ids():
-                if graph_id in vote_data.keys():
+                if graph_id in vote_data:
                     if self.use_multithreading:
                         t = threading.Thread(
                             target=self._update_evidence_with_vote,
@@ -380,7 +377,7 @@ class EvidenceGraphLM(GraphLM):
 
             possible_states = {}
             evidences = get_scaled_evidences(self.evidence)
-            for graph_id in evidences.keys():
+            for graph_id in evidences:
                 interesting_hyp = np.where(
                     evidences[graph_id] > self.vote_evidence_threshold
                 )
@@ -505,11 +502,12 @@ class EvidenceGraphLM(GraphLM):
             graph_id = self.get_possible_matches()[0]
         # If we are evaluating and reach a time out, we set the object to the
         # most likely hypothesis (if evidence for it is above object_evidence_threshold)
-        elif self.mode == "eval" and terminal_state in {"time_out", "pose_time_out"}:
+        elif self.mode is ExperimentMode.EVAL and terminal_state in {
+            "time_out",
+            "pose_time_out",
+        }:
             mlh = self.get_current_mlh()
-            if "evidence" in mlh.keys() and (
-                mlh["evidence"] > self.object_evidence_threshold
-            ):
+            if "evidence" in mlh and (mlh["evidence"] > self.object_evidence_threshold):
                 # Use most likely hypothesis
                 graph_id = mlh["graph_id"]
             else:
@@ -671,7 +669,7 @@ class EvidenceGraphLM(GraphLM):
         poses = self.possible_poses.copy()
         if as_euler:
             all_poses = {}
-            for obj in poses.keys():
+            for obj in poses:
                 euler_poses = []
                 for pose in poses[obj]:
                     scipy_pose = Rotation.from_matrix(pose)
@@ -707,7 +705,7 @@ class EvidenceGraphLM(GraphLM):
     ) -> tuple[list[str], npt.NDArray[np.float64]]:
         """Return maximum evidence count for a pose on each graph."""
         graph_ids = self.get_all_known_object_ids()
-        if graph_ids[0] not in self.evidence.keys():
+        if graph_ids[0] not in self.evidence:
             return ["patch_off_object"], np.array([0])
 
         available_graph_ids = []
@@ -1136,10 +1134,10 @@ class EvidenceGraphLM(GraphLM):
 
     def _fill_feature_weights_with_default(self, default: int) -> None:
         for input_channel, channel_tolerances in self.tolerances.items():
-            if input_channel not in self.feature_weights.keys():
+            if input_channel not in self.feature_weights:
                 self.feature_weights[input_channel] = {}
             for key, tolerance in channel_tolerances.items():
-                if key not in self.feature_weights[input_channel].keys():
+                if key not in self.feature_weights[input_channel]:
                     if hasattr(tolerance, "shape"):
                         shape = tolerance.shape
                     elif hasattr(tolerance, "__len__"):
@@ -1311,7 +1309,7 @@ class EvidenceGraphLM(GraphLM):
     def _add_detailed_stats(self, stats):
         # Save possible poses once since they don't change during episode
         get_rotations = False
-        if "possible_rotations" not in self.buffer.stats.keys():
+        if "possible_rotations" not in self.buffer.stats:
             get_rotations = True
 
         stats["possible_locations"] = self.possible_locations

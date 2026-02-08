@@ -277,9 +277,8 @@ class ResamplingHypothesesUpdater:
 
         We decrement the burst steps by 1 every step for the duration of the burst.
         """
-        if not exc_type:
-            if self.sampling_burst_steps > 0:
-                self.sampling_burst_steps -= 1
+        if not exc_type and self.sampling_burst_steps > 0:
+            self.sampling_burst_steps -= 1
 
     def update_hypotheses(
         self,
@@ -716,7 +715,7 @@ class ResamplingHypothesesUpdater:
         max_slope = float("-inf")
 
         for tracker in self.evidence_slope_trackers.values():
-            for channel in tracker.evidence_buffer.keys():
+            for channel in tracker.evidence_buffer:
                 if tracker.total_size(channel) == 0:
                     continue
 

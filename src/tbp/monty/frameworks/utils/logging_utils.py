@@ -92,7 +92,7 @@ def load_models_from_dir(exp_path, pretrained_dict=None):
             state_dict = torch.load(child / "model.pt")
             for lm_id in list(state_dict["lm_dict"].keys()):
                 epoch_models = state_dict["lm_dict"][lm_id]["graph_memory"]
-                if folder not in lm_models.keys():
+                if folder not in lm_models:
                     lm_models[folder] = {}
                 lm_models[folder]["LM_" + str(lm_id)] = epoch_models
     return lm_models
@@ -135,7 +135,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
                 # episodes because order of execution is arbitrary, all that matters is
                 # we know the parameters for that episode.
                 tmp_json = json.loads(line)
-                json_key = list(tmp_json.keys())[0]  # has only one key
+                json_key = next(iter(tmp_json.keys()))  # has only one key
                 detailed_json[str(line_counter)] = tmp_json[json_key]
                 del tmp_json
 
@@ -152,8 +152,8 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
 
 
 def get_object_graph_stats(graph_to_target, target_to_graph):
-    n_objects_per_graph = [len(graph_to_target[k]) for k in graph_to_target.keys()]
-    n_graphs_per_object = [len(target_to_graph[k]) for k in target_to_graph.keys()]
+    n_objects_per_graph = [len(graph_to_target[k]) for k in graph_to_target]
+    n_graphs_per_object = [len(target_to_graph[k]) for k in target_to_graph]
     return dict(
         mean_objects_per_graph=np.mean(n_objects_per_graph),
         mean_graphs_per_object=np.mean(n_graphs_per_object),
@@ -235,7 +235,7 @@ def get_unique_euler_poses(poses):
 
 def check_rotation_accuracy(stats, last_n_step=1):
     pose_stats = []
-    for episode in stats.keys():
+    for episode in stats:
         if len(stats[episode]["LM_0"]["possible_poses"]) >= last_n_step:
             target_object = stats[episode]["LM_0"]["target"]["object"]
             target_rotation = stats[episode]["LM_0"]["target"]["euler_rotation"]
@@ -325,7 +325,7 @@ def check_rotation_accuracy(stats, last_n_step=1):
 
 def check_detection_accuracy_at_step(stats, last_n_step=1):
     detection_stats = []
-    for episode in stats.keys():
+    for episode in stats:
         possible_matches = stats[episode]["LM_0"]["possible_matches"]
         if len(possible_matches) >= last_n_step:
             target_object = stats[episode]["LM_0"]["target"]["object"]
@@ -758,7 +758,7 @@ def get_stats_per_lm(model, target, episode_seed: int):
 
 
 def add_policy_episode_stats(lm, stats):
-    if "goal_state_achieved" in lm.buffer.stats.keys():
+    if "goal_state_achieved" in lm.buffer.stats:
         stats["goal_states_attempted"] = len(lm.buffer.stats["goal_state_achieved"])
         stats["goal_state_achieved"] = np.sum(lm.buffer.stats["goal_state_achieved"])
 
@@ -800,9 +800,9 @@ def add_evidence_lm_episode_stats(lm, stats, consistent_child_objects):
     if (
         stats["primary_performance"] in ["confused", "confused_mlh"]
         and consistent_child_objects
+        and last_mlh["graph_id"] in consistent_child_objects
     ):
-        if last_mlh["graph_id"] in consistent_child_objects:
-            stats["primary_performance"] = "consistent_child_obj"
+        stats["primary_performance"] = "consistent_child_obj"
     return stats
 
 
@@ -957,10 +957,9 @@ def format_columns_for_wandb(lm_dict):
         formatted lm_dict
     """
     formatted_dict = copy.deepcopy(lm_dict)
-    if "result" in formatted_dict:
-        if isinstance(formatted_dict["result"], list):
-            new_result = "^".join(formatted_dict["result"])
-            formatted_dict["result"] = new_result
+    if "result" in formatted_dict and isinstance(formatted_dict["result"], list):
+        new_result = "^".join(formatted_dict["result"])
+        formatted_dict["result"] = new_result
 
     return formatted_dict
 
@@ -982,15 +981,13 @@ def lm_stats_to_dataframe(stats, format_for_wandb=False):
     for episode in stats.values():
         lm_dict = {}
         # Loop over things like LM_*, SM_*, motor_system and get only LM_*
-        for key in episode.keys():
-            if isinstance(key, str):
-                if key.startswith("LM_"):
-                    if format_for_wandb:
-                        lm_dict[key] = format_columns_for_wandb(
-                            copy.deepcopy(episode[key])
-                        )
-                    else:
-                        lm_dict[key] = episode[key]
+
+        for key in episode:
+            if isinstance(key, str) and key.startswith("LM_"):
+                if format_for_wandb:
+                    lm_dict[key] = format_columns_for_wandb(copy.deepcopy(episode[key]))
+                else:
+                    lm_dict[key] = episode[key]
 
         if len(lm_dict) > 0:
             df_list.append(pd.DataFrame.from_dict(lm_dict, orient="index"))

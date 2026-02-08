@@ -9,11 +9,12 @@
 # https://opensource.org/licenses/MIT.
 import hydra
 import pytest
-from omegaconf import OmegaConf
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.sensors import SensorID
+from tests import HYDRA_ROOT
 
 pytest.importorskip(
     "habitat_sim",
@@ -73,18 +74,16 @@ class HabitatDataTest(unittest.TestCase):
             {0: {f"{SENSOR_ID}.depth": s}} for s in EXPECTED_STATES[1:]
         ]
 
-        with hydra.initialize(
-            config_path="../../src/tbp/monty/conf", version_base=None
-        ):
+        with hydra.initialize_config_dir(config_dir=str(HYDRA_ROOT), version_base=None):
             self.policy_cfg_fragment = hydra.compose(
                 config_name="experiment/config/monty/motor_system/defaults",
-            ).experiment.config.monty.motor_system.motor_system_args.policy_args
+            ).experiment.config.monty.motor_system.motor_system_args.policy
             self.policy_cfg_abs_fragment = hydra.compose(
                 config_name="test/config/monty/motor_system/absolute",
-            ).test.config.monty.motor_system.motor_system_args.policy_args
+            ).test.config.monty.motor_system.motor_system_args.policy
             self.policy_cfg_surf_fragment = hydra.compose(
                 config_name="test/config/monty/motor_system/surface",
-            ).test.config.monty.motor_system.motor_system_args.policy_args
+            ).test.config.monty.motor_system.motor_system_args.policy
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
@@ -106,12 +105,10 @@ class HabitatDataTest(unittest.TestCase):
         rng = np.random.RandomState(seed)
 
         # Create distant-agent motor systems / policies
-        base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
-        base_policy_cfg_dist["agent_id"] = AGENT_ID
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
+        base_policy.agent_id = AGENT_ID
 
-        motor_system_dist = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_dist)
-        )
+        motor_system_dist = MotorSystem(policy=base_policy)
 
         # Create habitat env datasets with distant-agent action space
         env_init_args = {"agents": self.camera_dist_config}
@@ -124,10 +121,11 @@ class HabitatDataTest(unittest.TestCase):
             experiment_mode=ExperimentMode.EVAL,
         )
 
+        ctx = RuntimeContext(rng)
         # Check if env interface is getting observations from simulator
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, NUM_STEPS):
-            obs_dist, _ = env_interface_dist.step(motor_system_dist())
+            obs_dist, _ = env_interface_dist.step(motor_system_dist(ctx))
             camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_dist[MODALITY] == EXPECTED_STATES[i]))
 
@@ -138,7 +136,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if env interface actions affect simulator observations
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
-        obs_dist, _ = env_interface_dist.step(motor_system_dist())
+        obs_dist, _ = env_interface_dist.step(motor_system_dist(ctx))
         camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_dist[MODALITY] == initial_camera_obs_dist[MODALITY])
@@ -163,12 +161,10 @@ class HabitatDataTest(unittest.TestCase):
         seed = 42
         rng = np.random.RandomState(seed)
 
-        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
-        base_policy_cfg_abs["agent_id"] = AGENT_ID
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
+        base_policy.agent_id = AGENT_ID
 
-        motor_system_abs = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
-        )
+        motor_system_abs = MotorSystem(policy=base_policy)
 
         # Create habitat env with absolute action space
         env_init_args = {"agents": self.camera_abs_config}
@@ -181,10 +177,11 @@ class HabitatDataTest(unittest.TestCase):
             experiment_mode=ExperimentMode.EVAL,
         )
 
+        ctx = RuntimeContext(rng)
         # Check if env interfaces are getting observations from simulator
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, NUM_STEPS):
-            obs_abs, _ = env_interface_abs.step(motor_system_abs())
+            obs_abs, _ = env_interface_abs.step(motor_system_abs(ctx))
             camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_abs[MODALITY] == EXPECTED_STATES[i]))
 
@@ -195,7 +192,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if env interface actions affect simulator observations
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
-        obs_abs, _ = env_interface_abs.step(motor_system_abs())
+        obs_abs, _ = env_interface_abs.step(motor_system_abs(ctx))
         camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_abs[MODALITY] == initial_camera_obs_abs[MODALITY])
@@ -221,12 +218,10 @@ class HabitatDataTest(unittest.TestCase):
         rng = np.random.RandomState(seed)
         # Note we just test random actions (i.e. base policy) with the surface-agent
         # action space
-        base_policy_cfg_surf = OmegaConf.to_object(self.policy_cfg_surf_fragment)
-        base_policy_cfg_surf["agent_id"] = AGENT_ID
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_surf_fragment)
+        base_policy.agent_id = AGENT_ID
 
-        motor_system_surf = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_surf)
-        )
+        motor_system_surf = MotorSystem(policy=base_policy)
 
         # Create habitat env interface with distant-agent action space
         env_init_args = {"agents": self.camera_surf_config}
@@ -239,10 +234,11 @@ class HabitatDataTest(unittest.TestCase):
             experiment_mode=ExperimentMode.EVAL,
         )
 
+        ctx = RuntimeContext(rng)
         # Check if datasets are getting observations from simulator
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, NUM_STEPS):
-            obs_surf, _ = env_interface_surf.step(motor_system_surf())
+            obs_surf, _ = env_interface_surf.step(motor_system_surf(ctx))
             camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_surf[MODALITY] == EXPECTED_STATES[i]))
 
@@ -253,7 +249,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if dataset actions affect simulator observations
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
-        obs_surf, _ = env_interface_surf.step(motor_system_surf())
+        obs_surf, _ = env_interface_surf.step(motor_system_surf(ctx))
         camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_surf[MODALITY] == initial_camera_obs_surf[MODALITY])
@@ -279,11 +275,9 @@ class HabitatDataTest(unittest.TestCase):
         seed = 42
         rng = np.random.RandomState(seed)
 
-        base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
-        base_policy_cfg_dist["agent_id"] = AGENT_ID
-        motor_system_dist = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_dist)
-        )
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
+        base_policy.agent_id = AGENT_ID
+        motor_system_dist = MotorSystem(policy=base_policy)
 
         env_init_args = {"agents": self.camera_dist_config}
         env = HabitatEnvironment(**env_init_args)
@@ -321,11 +315,9 @@ class HabitatDataTest(unittest.TestCase):
         seed = 42
         rng = np.random.RandomState(seed)
 
-        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
-        base_policy_cfg_abs["agent_id"] = AGENT_ID
-        motor_system_abs = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
-        )
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
+        base_policy.agent_id = AGENT_ID
+        motor_system_abs = MotorSystem(policy=base_policy)
         env_init_args = {"agents": self.camera_abs_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_abs = EnvironmentInterface(
@@ -363,11 +355,9 @@ class HabitatDataTest(unittest.TestCase):
 
         # Note we just test random actions (i.e. base policy) with the surface-agent
         # action space
-        base_policy_cfg_surf = OmegaConf.to_object(self.policy_cfg_surf_fragment)
-        base_policy_cfg_surf["agent_id"] = AGENT_ID
-        motor_system_surf = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_cfg_surf)
-        )
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_surf_fragment)
+        base_policy.agent_id = AGENT_ID
+        motor_system_surf = MotorSystem(policy=base_policy)
 
         env_init_args = {"agents": self.camera_surf_config}
         env = HabitatEnvironment(**env_init_args)

@@ -327,7 +327,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         sensed_directions = sensed_channel_features["pose_vectors"]
         # Check if PCs in patch are similar -> need to sample more directions
         if (
-            "pose_fully_defined" in sensed_channel_features.keys()
+            "pose_fully_defined" in sensed_channel_features
             and not sensed_channel_features["pose_fully_defined"]
         ):
             possible_s_d = possible_sensed_directions(
@@ -444,4 +444,4 @@ def all_usable_input_channels(
     # NOTE: We might also want to check the confidence in the input-channel
     # features, but this information is currently not available here.
     # TODO S: Once we pull the observation class into the LM we could add this.
-    return [ic for ic in features.keys() if ic in all_input_channels]
+    return [ic for ic in features if ic in all_input_channels]

@@ -476,9 +476,9 @@ class DefaultMessageNoise(MessageNoise):
                                                 {"feature_keys": noise_amount, ...},
                                             "locations": noise_amount}
         noise_amount specifies the standard deviation of the gaussian noise sampled
-        for real valued features. For boolian features it specifies the probability
+        for real valued features. For boolean features it specifies the probability
         that the boolean flips.
-        If we are dealing with normed vectors (surface_normal or curvature_directions)
+        If we are dealing with normed vectors (surface_normal or curvature_directions),
         the noise is applied by rotating the vector given a sampled rotation. Otherwise
         noise is just added onto the perceived feature value.
 
@@ -589,12 +589,12 @@ class HabitatSM(SensorModule):
                 Defaults to None.
 
         Note:
-            When using feature at location matching with graphs, surface_normal and
-            on_object needs to be in the list of features.
+            When using feature-at-location matching with graphs, surface_normal and
+            on_object need to be in the list of features.
 
         Note:
-            gaussian_curvature and mean_curvature should be used together to contain
-            the same information as principal_curvatures.
+            gaussian_curvature and mean_curvature should be used together to preserve
+            the same information contained in principal_curvatures.
         """
         self._rng = rng
         self._habitat_observation_processor = HabitatObservationProcessor(

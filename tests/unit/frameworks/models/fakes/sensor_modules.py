@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
 from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.models.states import State
@@ -41,10 +42,7 @@ class FakeSensorModule(SensorModule):
     def post_episode(self):
         pass
 
-    def set_context(self, ctx):
-        pass
-
-    def set_experiment_mode(self, mode: str):
+    def set_experiment_mode(self, mode: ExperimentMode):
         pass
 
     def step(self, data):

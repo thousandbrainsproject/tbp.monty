@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.frameworks.models.states import GoalState
 
@@ -52,10 +53,7 @@ class FakeLearningModule(LearningModule):
     def post_episode(self):
         pass
 
-    def set_context(self, ctx):
-        pass
-
-    def set_experiment_mode(self, inputs):
+    def set_experiment_mode(self, mode: ExperimentMode):
         pass
 
     def propose_goal_states(self) -> list[GoalState]:
