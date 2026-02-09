@@ -112,7 +112,7 @@ class GraphLearningTest(BaseGraphTest):
                 "monty_config",
                 "motor_system_config",
                 "motor_system_args",
-                "policy_args",
+                "policy",
                 "file_name",
             ]
         )

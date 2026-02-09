@@ -17,6 +17,7 @@ import numpy as np
 import quaternion as qt
 from typing_extensions import Self
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import (
     Action,
     MoveTangentially,
@@ -136,7 +137,8 @@ class EnvironmentInterface:
             self._counter += 1
             return self._observation
 
-        actions = self.motor_system()
+        ctx = RuntimeContext(rng=self.rng)
+        actions = self.motor_system(ctx)
         self._observation, proprioceptive_state = self.step(actions)
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -170,7 +172,7 @@ class EnvironmentInterface:
         return observation, state
 
     def pre_episode(self, rng: np.random.RandomState):
-        self.motor_system.pre_episode(rng)
+        self.motor_system.pre_episode()
 
         # Reset the environment interface state.
         self._observation, proprioceptive_state = self.reset(rng)
@@ -455,13 +457,15 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # NOTE: terminal conditions are now handled in experiment.run_episode loop
         attempting_to_find_object = False
         actions = []
+        ctx = RuntimeContext(self.rng)
         try:
-            actions = self.motor_system()
+            actions = self.motor_system(ctx)
         except ObjectNotVisible:
             # Note: Only SurfacePolicy raises ObjectNotVisible.
             attempting_to_find_object = True
             actions = [
                 self.motor_system._policy.touch_object(
+                    ctx,
                     self._observation,
                     view_sensor_id="view_finder",
                     state=self.motor_system._state,

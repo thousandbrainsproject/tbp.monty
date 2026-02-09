@@ -49,7 +49,6 @@ class BasePolicyTest(unittest.TestCase):
         )
 
         self.policy = BasePolicy(
-            rng=self.rng,
             action_sampler=UniformlyDistributedSampler(actions=[LookUp]),
             agent_id=self.agent_id,
         )
@@ -120,7 +119,6 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
             max_pc_bias_steps=32,
             min_general_steps=8,
             min_heading_steps=12,
-            rng=np.random.RandomState(),
             action_sampler=UniformlyDistributedSampler(actions=[LookUp]),
             agent_id=self.agent_id,
             desired_object_distance=0.025,
