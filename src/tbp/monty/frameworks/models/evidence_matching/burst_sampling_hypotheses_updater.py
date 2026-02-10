@@ -57,8 +57,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 
 
 @dataclass
-class ChannelHypothesesResamplingTelemetry(ChannelHypothesesUpdateTelemetry):
-    """Hypotheses resampling telemetry for a channel.
+class ChannelHypothesesBurstSamplingTelemetry(ChannelHypothesesUpdateTelemetry):
+    """Hypotheses burst sampling telemetry for a channel.
 
     For a given input channel, this class stores which hypotheses were removed or
     added at the current step.
@@ -76,10 +76,10 @@ class ChannelHypothesesResamplingTelemetry(ChannelHypothesesUpdateTelemetry):
     max_slope: float
 
 
-class ResamplingHypothesesUpdater:
+class BurstSamplingHypothesesUpdater:
     """Hypotheses updater that adds and deletes hypotheses based on evidence slope.
 
-    This updater enables updating of the hypothesis space by intelligently resampling
+    This updater enables updating of the hypothesis space by intelligently sampling
     and rebuilding the hypothesis space when the model's prediction error is high. The
     prediction error is determined based on the highest evidence slope over all the
     objects hypothesis spaces. If the hypothesis with the highest slope is unable to
@@ -90,9 +90,9 @@ class ResamplingHypothesesUpdater:
     of sensor noise. Hypotheses are deleted when their smoothed evidence slope is below
     `deletion_trigger_slope`.
 
-    The resampling process is governed by four main parameters:
-      - `sampling_multiplier`: Determines the number of hypotheses to resample
-        as a multiplier of the object graph nodes.
+    The burst sampling process is governed by four main parameters:
+      - `sampling_multiplier`: Determines the number of hypotheses to sample during
+        bursts as a multiplier of the object graph nodes.
       - `deletion_trigger_slope`: Hypotheses below this threshold are deleted.
       - `sampling_burst_duration`: The number of consecutive steps in each burst.
       - `burst_trigger_slope`: The threshold for triggering a sampling burst. This
@@ -139,7 +139,7 @@ class ResamplingHypothesesUpdater:
         present_weight: float = 1,
         umbilical_num_poses: int = 8,
     ):
-        """Initializes the ResamplingHypothesesUpdater.
+        """Initializes the BurstSamplingHypothesesUpdater.
 
         Args:
             feature_weights: How much each feature should be weighted when
@@ -152,7 +152,7 @@ class ResamplingHypothesesUpdater:
             tolerances: How much each observed feature can deviate from the
                 stored features while still being considered a match.
             evidence_threshold_config: How to decide which hypotheses
-                should be updated. In the `ResamplingHypothesesUpdater` we always
+                should be updated. In the `BurstSamplingHypothesesUpdater` we always
                 update 'all' hypotheses. Hypotheses with decreasing evidence are deleted
                 instead of excluded from updating. Must be set to 'all'.
             feature_evidence_calculator: Class to calculate feature evidence for all
@@ -164,9 +164,9 @@ class ResamplingHypothesesUpdater:
             features_for_matching_selector: Class to
                 select if features should be used for matching. Defaults to the default
                 selector.
-            sampling_multiplier: Determines the number of hypotheses to resample
-                as a multiplier of the object graph nodes. Value of 0.0 results in no
-                resampling. Value can be greater than 1 but not to exceed the
+            sampling_multiplier: Determines the number of hypotheses to sample during
+                bursts as a multiplier of the object graph nodes. Value of 0.0 results
+                in no sampling. Value can be greater than 1 but not to exceed the
                 `num_hyps_per_node` of the current step. Defaults to 0.4.
             deletion_trigger_slope: Hypotheses below this threshold are deleted.
                 Expected range matches the range of step evidence change, i.e.,
@@ -176,7 +176,7 @@ class ResamplingHypothesesUpdater:
             burst_trigger_slope: A threshold below which a sampling burst is triggered.
                 Defaults to 1.0.
             include_telemetry: Flag to control if we want to calculate and return the
-                resampling telemetry in the `update_hypotheses` method. Defaults to
+                burst sampling telemetry in the `update_hypotheses` method. Defaults to
                 False.
             initial_possible_poses: Initial
                 possible poses to test. Defaults to "informed".
@@ -207,7 +207,7 @@ class ResamplingHypothesesUpdater:
         if evidence_threshold_config != "all":
             raise InvalidEvidenceThresholdConfig(
                 "evidence_threshold_config must be "
-                "'all' for `ResamplingHypothesesUpdater`"
+                "'all' for `BurstSamplingHypothesesUpdater`"
             )
 
         self.feature_evidence_calculator = feature_evidence_calculator
@@ -241,7 +241,7 @@ class ResamplingHypothesesUpdater:
             use_features_for_matching=self.use_features_for_matching,
         )
 
-        # resampling multiplier should not be less than 0 (no resampling)
+        # Sampling multiplier should not be less than 0 (no sampling)
         if self.sampling_multiplier < 0:
             raise ValueError("sampling_multiplier should be >= 0")
 
@@ -256,8 +256,8 @@ class ResamplingHypothesesUpdater:
     def __enter__(self) -> Self:
         """Enter context manager, runs before updating the hypotheses.
 
-        We calculate the max slope and update resampling parameters before running the
-        hypotheses update loop/threads over all the graph_ids and channels.
+        We calculate the max slope and update burst sampling parameters before running
+        the hypotheses update loop/threads over all the graph_ids and channels.
 
         Returns:
             Self: The context manager instance.
@@ -310,13 +310,12 @@ class ResamplingHypothesesUpdater:
             A tuple containing the list of hypothesis updates to be applied to each
             input channel and hypotheses update telemetry for analysis. The hypotheses
             update telemetry is a dictionary containing:
-                - added_ids: IDs of hypotheses added during resampling at the current
-                    timestep.
+                - added_ids: IDs of hypotheses added during burst sampling at the
+                    current timestep.
                 - ages: The ages of hypotheses as tracked by the `EvidenceSlopeTracker`.
                 - evidence_slopes: The slopes extracted from the `EvidenceSlopeTracker`.
-                - removed_ids: IDs of hypotheses removed during resampling. Note that
-                    these IDs can only be used to index hypotheses from the previous
-                    time step.
+                - removed_ids: IDs of hypotheses removed. Note that these IDs can only
+                    be used to index hypotheses from the previous timestep.
         """
         # Initialize a `EvidenceSlopeTracker` to keep track of evidence slopes
         # for hypotheses of a specific graph_id
@@ -329,7 +328,7 @@ class ResamplingHypothesesUpdater:
         )
 
         hypotheses_updates = []
-        resampling_telemetry: dict[str, Any] = {}
+        burst_sampling_telemetry: dict[str, Any] = {}
         channel_hypothesis_displacer_telemetry: dict[
             str, HypothesisDisplacerTelemetry
         ] = {}
@@ -360,7 +359,7 @@ class ResamplingHypothesesUpdater:
                 tracker=tracker,
             )
 
-            # We only displace existing hypotheses since the newly resampled hypotheses
+            # We only displace existing hypotheses since the newly sampled hypotheses
             # should not be affected by the displacement from the last sensory input.
             if len(hypotheses_selection.maintain_ids):
                 existing_hypotheses, channel_hypothesis_displacer_telemetry = (
@@ -394,8 +393,8 @@ class ResamplingHypothesesUpdater:
             tracker.update(channel_hypotheses.evidence, input_channel)
 
             # Telemetry update
-            resampling_telemetry[input_channel] = asdict(
-                ChannelHypothesesResamplingTelemetry(
+            burst_sampling_telemetry[input_channel] = asdict(
+                ChannelHypothesesBurstSamplingTelemetry(
                     channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry,
                     added_ids=(
                         np.arange(len(channel_hypotheses.evidence))[
@@ -422,12 +421,12 @@ class ResamplingHypothesesUpdater:
                         ]
                     )
                 )
-                for k, v in resampling_telemetry.items()
+                for k, v in burst_sampling_telemetry.items()
             }
 
         return (
             hypotheses_updates,
-            resampling_telemetry if self.include_telemetry else updater_telemetry,
+            burst_sampling_telemetry if self.include_telemetry else updater_telemetry,
         )
 
     def _num_hyps_per_node(self, channel_features: dict) -> int:
@@ -474,8 +473,9 @@ class ResamplingHypothesesUpdater:
 
         Notes:
             This function takes into account the following parameters:
-              - `sampling_multiplier`: The number of hypotheses to resample. This
-                is defined as a multiplier of the number of nodes in the object graph.
+              - `sampling_multiplier`: The number of hypotheses to sample during bursts.
+                This is defined as a multiplier of the number of nodes in the object
+                graph.
               - `deletion_trigger_slope`: This dictates how many hypotheses to
                 delete. Hypotheses below this threshold are deleted.
               - `sampling_burst_steps`: The remaining number of burst steps. This value
@@ -492,7 +492,7 @@ class ResamplingHypothesesUpdater:
             # informed hypotheses
             sampling_multiplier = min(self.sampling_multiplier, num_hyps_per_node)
 
-            # Calculate the total number of informed hypotheses to be resampled
+            # Calculate the total number of informed hypotheses to be sampled
             new_informed = round(graph_num_points * sampling_multiplier)
 
             # Ensure the `new_informed` is divisible by `num_hyps_per_node`
