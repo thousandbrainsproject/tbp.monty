@@ -1,0 +1,41 @@
+# @package _global_
+# Compositional inference level 1 with compositional models and resampling.
+# Uses ResamplingHypothesesUpdater with goal-state-driven motor policy (smaller saccades).
+
+defaults:
+  - /environment/object_sampler: predefined
+  - /environment/compositional: parent_to_child_mapping
+  - override /logging: parallel
+  - override /monty: inference_two_lm_stacked
+  - override /agent_config: two_lm_stacked_habitat
+  - override /environment: compositional/objects_with_logos_lvl1
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+
+config:
+  n_eval_epochs: ${vars.rotations_all_count}
+  min_lms_match: 1
+  model_name_or_path: ${vars.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling/pretrained/
+  logging:
+    wandb_group: benchmark_experiments
+    run_name: infer_comp_lvl1_with_comp_models_and_resampling
+  monty_config:
+    monty_args:
+      min_eval_steps: ${vars.min_eval_steps}
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater.ResamplingHypothesesUpdater}
+          evidence_threshold_config: all
+          object_evidence_threshold: 1
+      learning_module_1:
+        learning_module_args:
+          hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater.ResamplingHypothesesUpdater}
+          evidence_threshold_config: all
+          object_evidence_threshold: 1
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          action_sampler_args:
+            rotation_degrees: 2.0
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}

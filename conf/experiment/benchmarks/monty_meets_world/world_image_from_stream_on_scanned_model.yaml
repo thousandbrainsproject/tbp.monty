@@ -1,0 +1,27 @@
+# @package _global_
+# World image recognition from streaming data.
+# Uses SaccadeOnImageFromStreamEnvironmentInterface for real-time data processing.
+
+defaults:
+  - override /logging: eval
+  - override /monty: world_image_inference
+  - override /agent_config: world_image
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+
+config:
+  model_name_or_path: ${vars.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
+  n_eval_epochs: 1
+  max_eval_steps: 500
+  show_sensor_output: false
+  logging:
+    python_log_level: INFO
+    wandb_handlers: []
+    run_name: world_image_from_stream_on_scanned_model
+  monty_config:
+    monty_args:
+      min_eval_steps: ${vars.min_eval_steps}
+  env_interface_config:
+    env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.SaccadeOnImageFromStreamEnvironment}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageFromStreamEnvironmentInterface}
+  eval_env_interface_args: {}

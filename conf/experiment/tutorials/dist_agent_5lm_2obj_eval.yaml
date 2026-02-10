@@ -1,0 +1,140 @@
+# @package _global_
+# Tutorial: Distant agent with 5 learning modules - evaluation on 2 objects
+#
+# This tutorial demonstrates multi-LM evaluation where 3 LMs must agree for convergence.
+# Inline configs show LM settings with tolerances and feature weights for educational purposes.
+
+defaults:
+  - /03_rotation: predefined_14
+  - override /mode: inference
+  - override /logging: eval
+  - override /agent_config: five_lm_habitat
+  - override /monty: benchmark_evidence_sota_5lm
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+config:
+  # load the pre-trained models from this path; this needs to be the same name as used for pretraining
+  model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train/pretrained"}
+  n_train_epochs: 1
+  min_lms_match: 3 # Terminate when 3 learning modules makes a decision.
+  logging:
+    output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
+    run_name: dist_agent_5lm_2obj_eval
+    monty_handlers:
+      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+    wandb_handlers: []
+  monty_config:
+    monty_args:
+      min_eval_steps: 20
+    monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
+    # LM configs with tolerances and feature weights for each patch sensor
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+        learning_module_args:
+          max_match_distance: 0.01 # =1cm
+          evidence_threshold_config: 80%
+          x_percent_threshold: 20
+          gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+          gsg_args:
+            goal_tolerances:
+              location: 0.015
+            min_post_goal_success_steps: 5
+          hypotheses_updater_args:
+            max_nneighbors: 10
+          tolerances:
+            patch_0:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+              principal_curvatures_log: ${np.ones:2}
+          feature_weights:
+            patch_0:
+              hsv: ${np.array:[1, 0.5, 0.5]}
+      learning_module_1:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+        learning_module_args:
+          max_match_distance: 0.01
+          evidence_threshold_config: 80%
+          x_percent_threshold: 20
+          gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+          gsg_args:
+            goal_tolerances:
+              location: 0.015
+            min_post_goal_success_steps: 5
+          hypotheses_updater_args:
+            max_nneighbors: 10
+          tolerances:
+            patch_1:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+              principal_curvatures_log: ${np.ones:2}
+          feature_weights:
+            patch_1:
+              hsv: ${np.array:[1, 0.5, 0.5]}
+      learning_module_2:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+        learning_module_args:
+          max_match_distance: 0.01
+          evidence_threshold_config: 80%
+          x_percent_threshold: 20
+          gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+          gsg_args:
+            goal_tolerances:
+              location: 0.015
+            min_post_goal_success_steps: 5
+          hypotheses_updater_args:
+            max_nneighbors: 10
+          tolerances:
+            patch_2:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+              principal_curvatures_log: ${np.ones:2}
+          feature_weights:
+            patch_2:
+              hsv: ${np.array:[1, 0.5, 0.5]}
+      learning_module_3:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+        learning_module_args:
+          max_match_distance: 0.01
+          evidence_threshold_config: 80%
+          x_percent_threshold: 20
+          gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+          gsg_args:
+            goal_tolerances:
+              location: 0.015
+            min_post_goal_success_steps: 5
+          hypotheses_updater_args:
+            max_nneighbors: 10
+          tolerances:
+            patch_3:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+              principal_curvatures_log: ${np.ones:2}
+          feature_weights:
+            patch_3:
+              hsv: ${np.array:[1, 0.5, 0.5]}
+      learning_module_4:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+        learning_module_args:
+          max_match_distance: 0.01
+          evidence_threshold_config: 80%
+          x_percent_threshold: 20
+          gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+          gsg_args:
+            goal_tolerances:
+              location: 0.015
+            min_post_goal_success_steps: 5
+          hypotheses_updater_args:
+            max_nneighbors: 10
+          tolerances:
+            patch_4:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+              principal_curvatures_log: ${np.ones:2}
+          feature_weights:
+            patch_4:
+              hsv: ${np.array:[1, 0.5, 0.5]}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  eval_env_interface_args:
+    object_names:
+      - mug
+      - banana
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+      rotations:
+        - ${np.array:[0, 15, 30]} # A previously unseen rotation of the objects.

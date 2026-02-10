@@ -1,0 +1,26 @@
+# @package _global_
+# NOTE: This experiment can reach a higher accuracy when using a 10% TH.
+
+defaults:
+  - /environment/object_sampler: random_rotation
+  - override /logging: parallel
+  - override /monty: benchmark_evidence_sota
+  - override /agent_config: patch_view_habitat
+  - override /environment: ycb_distinct
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+
+config:
+  model_name_or_path: ${vars.pretrained_dir}/supervised_pre_training_base/pretrained/
+  n_eval_epochs: 10
+  logging:
+    wandb_group: benchmark_experiments
+    run_name: randrot_noise_10distinctobj_dist_on_distm
+  monty_config:
+    monty_args:
+      min_eval_steps: ${vars.min_eval_steps}
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_args:
+          noise_params: ${vars.default_all_noise_params}
+  env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}

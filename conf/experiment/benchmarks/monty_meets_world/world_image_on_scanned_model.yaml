@@ -1,0 +1,29 @@
+# @package _global_
+# World image recognition on scanned models.
+# Evaluates on 12 scenes × 4 versions = 48 total evaluations.
+
+defaults:
+  - /environment/world_image: standard_scenes
+  - override /logging: parallel
+  - override /monty: world_image_inference
+  - override /agent_config: world_image
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+
+config:
+  model_name_or_path: ${vars.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
+  n_eval_epochs: 1
+  max_eval_steps: 500
+  show_sensor_output: false
+  logging:
+    wandb_group: benchmark_experiments
+    run_name: world_image_on_scanned_model
+  monty_config:
+    monty_args:
+      min_eval_steps: ${vars.min_eval_steps}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageEnvironmentInterface}
+  eval_env_interface_args:
+    # list(np.repeat(range(12), 4))
+    scenes: [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11]
+    # list(np.tile(range(4), 12))
+    versions: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]

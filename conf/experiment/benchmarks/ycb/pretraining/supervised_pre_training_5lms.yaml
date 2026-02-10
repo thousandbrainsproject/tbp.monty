@@ -1,0 +1,19 @@
+# @package _global_
+# 5LM supervised pretraining - 10 distinct YCB objects
+
+defaults:
+  - /environment/object_sampler: predefined
+  - override /mode: pretrain
+  - override /logging: pretrain
+  - override /monty: pretraining_5lm
+  - override /agent_config: five_lm_habitat
+  - override /environment: ycb_distinct
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+
+config:
+  n_train_epochs: ${vars.rotations_all_count}
+  logging:
+    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
+    run_name: supervised_pre_training_5lms
+  env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}

@@ -1,0 +1,30 @@
+# @package _global_
+# Tutorial: Monty meets world - 2D image inference
+#
+# This tutorial demonstrates saccade-based inference on 2D world images.
+# Uses real photos from the Monty World dataset for testing recognition
+# of scanned objects in naturalistic settings.
+
+defaults:
+  - override /mode: inference
+  - override /logging: parallel
+  - override /agent_config: world_image
+  - override /monty: world_image_inference
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+config:
+  model_name_or_path: ${path.expanduser:${vars.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/}
+  n_eval_epochs: 1
+  show_sensor_output: true
+  logging:
+    run_name: monty_meets_world_2dimage_inference
+    wandb_group: benchmark_experiments
+  monty_config:
+    monty_args:
+      min_eval_steps: ${vars.min_eval_steps}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageEnvironmentInterface}
+  eval_env_interface_args:
+    # list(np.repeat(range(12), 4))
+    scenes: [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11]
+    # list(np.tile(range(4), 12))
+    versions: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]

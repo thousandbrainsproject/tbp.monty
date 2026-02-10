@@ -1,0 +1,29 @@
+# @package _global_
+# Unsupervised training with surface agent on 10 distinct objects with noise.
+# Adds sensor noise to test robustness of unsupervised learning.
+
+defaults:
+  - /environment/object_sampler: random_rotation
+  - override /mode: unsupervised_train
+  - override /logging: csv
+  - override /monty: unsupervised_surface
+  - override /agent_config: surface_habitat
+  - override /environment: ycb_distinct
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+
+config:
+  n_train_epochs: 10
+  max_train_steps: 4000
+  max_total_steps: 4000
+  logging:
+    python_log_level: INFO
+    run_name: surf_agent_unsupervised_10distinctobj_noise
+  monty_config:
+    monty_args:
+      min_train_steps: 100
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_args:
+          noise_params: ${vars.default_all_noise_params}
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}

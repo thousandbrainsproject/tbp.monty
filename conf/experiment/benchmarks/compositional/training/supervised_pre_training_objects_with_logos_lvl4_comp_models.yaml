@@ -1,0 +1,25 @@
+# @package _global_
+# Two LM stacked pretraining - objects with logos level 4, compositional models
+
+defaults:
+  - /environment/object_sampler: predefined
+  - override /mode: pretrain
+  - override /logging: pretrain
+  - override /monty: pretraining_two_lm_stacked
+  - override /agent_config: two_lm_stacked_habitat
+  - override /environment: compositional/objects_with_logos_lvl4
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+
+config:
+  n_train_epochs: ${vars.rotations_all_count}
+  supervised_lm_ids: ["learning_module_1"]
+  min_lms_match: 2
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11/supervised_pre_training_curved_objects_after_flat_and_logo/pretrained/}
+  logging:
+    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
+    run_name: supervised_pre_training_objects_with_logos_lvl4_comp_models
+  monty_config:
+    monty_args:
+      min_train_steps: 100
+  env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}

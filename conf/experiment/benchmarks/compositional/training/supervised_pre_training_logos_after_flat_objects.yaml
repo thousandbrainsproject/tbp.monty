@@ -1,0 +1,37 @@
+# @package _global_
+# Two LM stacked pretraining - logos after learning flat objects
+# Loads pretrained flat objects model and learns logos with specific positions.
+
+defaults:
+  - /environment/object_sampler: predefined
+  - override /mode: pretrain
+  - override /logging: pretrain
+  - override /monty: pretraining_two_lm_stacked
+  - override /agent_config: two_lm_stacked_habitat
+  - override /environment: compositional/logos
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+
+config:
+  n_train_epochs: 3
+  supervised_lm_ids: ["learning_module_0"]
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11/supervised_pre_training_flat_objects_wo_logos/pretrained/}
+  logging:
+    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
+    run_name: supervised_pre_training_logos_after_flat_objects
+  monty_config:
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          fixed_amount: 1
+  # Logo-specific positions and rotations
+  env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+      positions:
+        - [0.0, 1.5, 0.0]
+        - [-0.03, 1.5, 0.0]
+        - [0.03, 1.5, 0.0]
+      rotations:
+        - [0.0, 0.0, 0.0]
+  env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
