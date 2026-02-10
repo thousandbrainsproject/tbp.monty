@@ -193,7 +193,7 @@ experiment:
             num_model_voxels_per_dim: 200
             max_nodes_per_graph: 2000
             object_evidence_threshold: 1
-            hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling_hypotheses_updater.BurstSamplingHypothesesUpdater}
+            hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
             evidence_threshold_config: all
             gsg:
               _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from tbp.monty.frameworks.models.evidence_matching.burst_sampling_hypotheses_updater import (  # noqa: E501
+from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
 )
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (

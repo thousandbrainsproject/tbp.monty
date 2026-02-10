@@ -14,7 +14,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 from numpy.ma.testutils import assert_array_equal
 
-from tbp.monty.frameworks.models.evidence_matching.burst_sampling_hypotheses_updater import (  # noqa: E501
+from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
 )
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
@@ -426,7 +426,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         # with the correct channels and hypotheses
         with patch(
             "tbp.monty.frameworks.models.evidence_matching."
-            "burst_sampling_hypotheses_updater.EvidenceSlopeTracker",
+            "burst_sampling.EvidenceSlopeTracker",
             return_value=new_tracker,
         ):
             self.updater.update_hypotheses(
