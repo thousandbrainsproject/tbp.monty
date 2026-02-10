@@ -123,6 +123,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                 lm.buffer.stats["detected_scale"] = target["scale"]
             else:
                 # wipe LMs hypotheses so we don't update those models
+                lm.possible_matches = []
                 lm.detected_object = None
                 lm.detected_pose = None
                 lm.detected_rotation_r = None
