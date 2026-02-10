@@ -37,10 +37,8 @@ class HypothesesUpdaterChannelTelemetry:
     """The hypotheses evidence scores."""
 
     rotations: npt.NDArray[np.float64]
-    """Rotations of the hypotheses.
+    """Rotations of the hypotheses."""
 
-    Note that the buffer encoder will encode those as Euler "xyz" rotations in degrees.
-    """
     locations: npt.NDArray[np.float64]
     """Locations of the hypotheses."""
 
@@ -179,7 +177,7 @@ class TheoreticalLimitLMLoggingMixin:
     def _theoretical_limit_target_object_pose_error(self) -> float:
         """Compute the theoretical minimum rotation error on the target object.
 
-        This considers all possible hypothesis rotations on the target object
+        This considers all possible hypotheses rotations on the target object
         and compares them to the target's rotation. The theoretical limit conveys the
         best achievable performance if Monty selects the best hypothesis as its most
         likely hypothesis (MLH).
@@ -188,8 +186,7 @@ class TheoreticalLimitLMLoggingMixin:
         sufficient to decide on the quality of the hypothesis. Although good
         hypotheses generally correlate with a good theoretical limit, the rotation
         error can be small (i.e., low geodesic distance to the ground-truth
-        rotation) while the hypothesis corresponds to a different location
-        of the object.
+        rotation) while the hypothesis is at a different location of the object.
 
         Returns:
             The minimum achievable rotation error (in radians).
