@@ -18,7 +18,7 @@ In this tutorial, we will show how Monty can be used to learn and recognize obje
 In this section, we'll show how to perform supervised pretraining with a model containing six sensor modules, of which five are connected in a 1:1 fashion to five learning modules (one sensor module is a viewfinder for experiment setup and visualization and is not connected to a learning module). By default, the sensor modules are arranged in cross shape, where four sensor modules are displaced a small distance from the center sensor module like so:
 ![](../../figures/how-to-use-monty/multi_lm_sensor_arrangement.png)
 
-To follow along, open the `conf/experiment/tutorial/dist_agent_5lm_2obj_train.yaml` file.
+To follow along, open the `src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj_train.yaml` file.
 
 ```yaml
 defaults:
@@ -62,7 +62,7 @@ config:
 
 ```
 
-If you've read the previous tutorials, much of this should look familiar. As in our [pretraining](./pretraining-a-model.md) tutorial, we've configured a `MontySupervisedObjectPretrainingExperiment` with a `conf/experiment/config/logging/pretrain` logging configuration. However, we are now using a built-in Monty model configuration called `conf/experiment/config/monty/five_lm` that specifies everything we need to have five `HabitatSM` sensor modules that each connect to exactly one of five `DisplacementGraphLM` learning modules. `conf/experiment/config/monty/five_lm` also specifies that each learning module connects to every other learning module through lateral voting connections. Note that `GraphLM` learning modules used in previous tutorials would work fine here, but we're going with the default `DisplacementGraphLM` for convenience (this is a graph-based LM that also stores displacements between points, although these are generally not used during inference at present). To see how this is done, we can take a closer look at the `conf/experiment/config/monty/five_lm` configuration which contains the following lines:
+If you've read the previous tutorials, much of this should look familiar. As in our [pretraining](./pretraining-a-model.md) tutorial, we've configured a `MontySupervisedObjectPretrainingExperiment` with a `src/tbp/monty/conf/experiment/config/logging/pretrain` logging configuration. However, we are now using a built-in Monty model configuration called `src/tbp/monty/conf/experiment/config/monty/five_lm` that specifies everything we need to have five `HabitatSM` sensor modules that each connect to exactly one of five `DisplacementGraphLM` learning modules. `src/tbp/monty/conf/experiment/config/monty/five_lm` also specifies that each learning module connects to every other learning module through lateral voting connections. Note that `GraphLM` learning modules used in previous tutorials would work fine here, but we're going with the default `DisplacementGraphLM` for convenience (this is a graph-based LM that also stores displacements between points, although these are generally not used during inference at present). To see how this is done, we can take a closer look at the `src/tbp/monty/conf/experiment/config/monty/five_lm` configuration which contains the following lines:
 
 ```yaml
 sm_to_lm_matrix:
@@ -87,9 +87,9 @@ lm_to_lm_vote_matrix:
 
 `sm_to_lm_matrix` is a list where the *i*-th entry indicates the learning module that receives input from the *i*-th sensor module. Note, the view finder, which is configured as sensor module 5, is not connected to any learning modules since `sm_to_lm_matrix[5]` does not exist. Similarly, `lm_to_lm_vote_matrix` specifies which learning modules communicate with each for voting during inference. `lm_to_lm_vote_matrix[i]` is a list of learning module IDs that communicate with learning module *i*.
 
-We have also specified that we want to use a `conf/experiment/config/monty/motor_system/naive_scan_spiral` for the motor system. This is a *learning-focused* motor policy that directs the agent to look across the object surface in a spiraling motion. That way, we can ensure efficient coverage of the entire object (of what is visible from the current perspective) during learning.
+We have also specified that we want to use a `src/tbp/monty/conf/experiment/config/monty/motor_system/naive_scan_spiral` for the motor system. This is a *learning-focused* motor policy that directs the agent to look across the object surface in a spiraling motion. That way, we can ensure efficient coverage of the entire object (of what is visible from the current perspective) during learning.
 
-Finally, we have also set the `env_interface_config` to `conf/experiment/config/environment/five_lm_mount_habitat`. This specifies that we have five `HabitatSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see `conf/experiment/config/environment/init_args/five_lm_mount`.
+Finally, we have also set the `env_interface_config` to `src/tbp/monty/conf/experiment/config/environment/five_lm_mount_habitat`. This specifies that we have five `HabitatSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see `src/tbp/monty/conf/experiment/config/environment/init_args/five_lm_mount`.
 
 To run this experiment, call the `run.py` script like so:
 ```bash
@@ -99,7 +99,7 @@ python run.py experiment=tutorial/dist_agent_5lm_2obj_train
 # Setting up and Running a Multi-LM Evaluation Experiment
 
 We will now specify an experiment config to perform inference.
-To follow along, open the `conf/experiment/tutorial/dist_agent_5lm_2obj_eval.yaml` file.
+To follow along, open the `src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj_eval.yaml` file.
 
 ```yaml
 defaults:
@@ -161,15 +161,15 @@ As usual, we set up our imports, save/load paths, and specify which objects to u
 Now we specify the learning module config. For simplicity, we define one learning module config and copy it to reuse settings across learning modules. We need only make two changes to each copy so that the feature_weights and tolerances reference the sensor ID connected to the learning module.
 
 ```yaml
-# conf/experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config.yaml
+# src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config.yaml
 learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
 learning_module_args:
   max_match_distance: 0.01, # =1cm
   # Use this to update all hypotheses > 80% of the max hypothesis evidence
   evidence_threshold_config: 80%
   x_percent_threshold: 20
-  gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
-  gsg_args:
+  gsg:
+    _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
     # Tolerance(s) when determining goal-state success
     goal_tolerances:
       location: 0.015 # distance in meters
@@ -179,14 +179,14 @@ learning_module_args:
 ```
 
 ```yaml
-# conf/experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights.yaml
+# src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights.yaml
 # Weighting saturation and value less since these might change under
 # different lighting conditions.
 hsv: ${np.array:[1, 0.5, 0.5]}
 ```
 
 ```yaml
-# conf/experiment/tutorial/dist_agent_5lm_2obj/tolerance_values.yaml
+# src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj/tolerance_values.yaml
 hsv: ${np.array:[0.1, 0.2, 0.2]}
 principal_curvatures_log: ${np.ones:2}
 ```

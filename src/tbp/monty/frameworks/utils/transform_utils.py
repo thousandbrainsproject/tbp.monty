@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -33,7 +33,7 @@ def scipy_to_numpy_quat(quat: np.ndarray) -> qt.quaternion:
 
 
 def rotation_as_quat(rot: Rotation, scalar_first: bool = True) -> np.ndarray:
-    """Convert a scipy rotation its quaternion representation.
+    """Convert a scipy rotation to its quaternion representation.
 
     Scipy added a `scalar_first` argument to `Rotation.as_quat` in version 1.14.0.
     (https://scipy.github.io/devdocs/release/1.14.0-notes.html). This function

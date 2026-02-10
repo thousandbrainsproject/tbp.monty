@@ -107,7 +107,9 @@ def post_parallel_log_cleanup(filenames: Iterable[Path], outfile: Path, cat_fn):
         f.unlink(missing_ok=True)
 
 
-def post_parallel_profile_cleanup(parallel_dirs: Iterable[Path], base_dir: Path, mode):
+def post_parallel_profile_cleanup(
+    parallel_dirs: Iterable[Path], base_dir: Path, mode: ExperimentMode
+):
     profile_dirs = [pdir / "profile" for pdir in parallel_dirs]
 
     episode_csvs = []
@@ -329,8 +331,8 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
 
     Note:
         If we view the same object from multiple poses in separate experiments, we
-        need to replicate what post_episode does in supervised pre training. To avoid
-        this, we just run training episodes parallel across OBJECTS, but poses are
+        need to replicate what post_episode does in supervised pre-training. To avoid
+        this, we just run training episodes in parallel across objects, but poses are
         still in sequence. By contrast, eval episodes are parallel across objects
         AND poses.
 
@@ -389,10 +391,10 @@ def single_evaluate(experiment):
             # `self.use_parallel_wandb_logging` set to True
             # This way, the logger does not flush its buffer in the
             # `exp.run()` call above.
-            return get_episode_stats(exp, "eval", exp.config.episode)
+            return get_episode_stats(exp, ExperimentMode.EVAL, exp.config.episode)
 
 
-def get_episode_stats(exp, mode, episode: int = 0):
+def get_episode_stats(exp, mode: ExperimentMode, episode: int = 0):
     eval_stats = exp.monty_logger.get_formatted_overall_stats(mode, episode)
     exp.monty_logger.flush()
     # Remove overall stats field since they are only averaged over 1 episode
@@ -569,7 +571,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
         post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
 
     if isinstance(exp, ProfileExperimentMixin):
-        post_parallel_profile_cleanup(parallel_dirs, base_dir, "train")
+        post_parallel_profile_cleanup(parallel_dirs, base_dir, ExperimentMode.TRAIN)
 
     with exp:
         exp.model.load_state_dict_from_parallel(parallel_dirs, save=True)
@@ -603,8 +605,8 @@ def run_episodes_parallel(
         num_parallel: Maximum number of parallel processes to run. If there
             are fewer configs to run than `num_parallel`, then the actual number of
             processes will be equal to the number of configs.
-        experiment_name: name of experiment
-        train: Whether the episodes are training or evaluating episodes.
+        experiment_name: Name of the experiment.
+        train: Whether the episodes are training or evaluation episodes.
     """
     # Use fewer processes if there are fewer configs than `num_parallel`.
     num_parallel = min(len(experiments), num_parallel)
@@ -692,7 +694,7 @@ def run_episodes_parallel(
         f.write(f"total_time: {total_time}")
 
 
-@hydra.main(config_path="../../../conf", config_name="experiment", version_base=None)
+@hydra.main(config_path="../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
     if cfg.quiet_habitat_logs:
         os.environ["MAGNUM_LOG"] = "quiet"
