@@ -17,7 +17,7 @@ import quaternion as qt
 import scipy
 
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations, AgentObservations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.psu.introspection_utils import print_dict_structure
@@ -45,7 +45,7 @@ class Transform(Protocol):
     """A transform that can be applied to observations."""
 
     def __call__(
-        self, observations: Observations, ctx: TransformContext
+        self, observations: Observations | AgentObservations, ctx: TransformContext
     ) -> Observations:
         """Apply the transform to the observations.
 
@@ -73,7 +73,7 @@ class TransformPipeline(Transform):
         self._transform = transform
 
     def __call__(
-        self, observations: Observations, ctx: TransformContext
+        self, observations: Observations | AgentObservations, ctx: TransformContext
     ) -> Observations:
         print("TRANSFORM PIPELINE CALLED")
         return self._transform(observations, ctx)
@@ -94,12 +94,12 @@ class BlankTF(Transform):
         self.agent_id = agent_id
 
     def __call__(
-        self, observations: Observations, _ctx: TransformContext
+        self, observations: AgentObservations, _ctx: TransformContext
     ) -> Observations:
         observations = self.call(observations)
         return self.next_transform(observations, _ctx)
 
-    def call(self, observations: Observations) -> Observations:
+    def call(self, observations: AgentObservations) -> Observations:
         print("BLANK TRANSFORM CALLED")
         print_dict_structure(observations)
         observations = Observations({self.agent_id: observations})
