@@ -104,6 +104,14 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
             try:
                 observations = self.env_interface.step(ctx, first=(step == 0))
             except StopIteration:
+                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
+                #       episode termination. This is a holdover from when we used
+                #       iterators. However, this also abdicates control of the
+                #       experiment to the policy. We should find a better way to handle
+                #       this, so that the experiment can control the episode termination
+                #       fully. For example, we know how many steps the policy will take,
+                #       so the experiment can set max steps based on that knowledge
+                #       alone.
                 self.model.set_is_done()
                 return step
 
