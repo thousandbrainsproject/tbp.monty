@@ -52,7 +52,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
     def setup_experiment(self, config):
         super().setup_experiment(config)
-        if "agents" in config["env_interface_config"]["env_init_args"].keys():
+        if "agents" in config["env_interface_config"]["env_init_args"]:
             self.sensor_pos = np.array(
                 config["env_interface_config"]["env_init_args"]["agents"]["agent_args"][
                     "positions"
@@ -67,9 +67,9 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         In a supervised episode we only make exploratory steps (no object recognition
         is attempted) since the target label is provided. The target label and pose
         is then used to update the object model in memory.
-        This can for instance be used to warm-up the training by starting with some
-        models in memory instead of completely from scatch. It also makes testing
-        easier as long as we don't have a good solution to dealing with incomplete
+        For instance, this can be used to warm up the training by starting with some
+        models in memory instead of completely from scratch. It also makes testing
+        easier as long as we don't have a good solution for dealing with incomplete
         objects.
         """
         self.pre_episode()
@@ -123,6 +123,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                 lm.buffer.stats["detected_scale"] = target["scale"]
             else:
                 # wipe LMs hypotheses so we don't update those models
+                lm.possible_matches = []
                 lm.detected_object = None
                 lm.detected_pose = None
                 lm.detected_rotation_r = None
@@ -171,7 +172,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
         self.logger_handler.pre_episode(self.logger_args)
 
-        # if it's the first time this object is shown, save it's location. This is
+        # if it's the first time this object is shown, save its location. This is
         # needed to provide the correct offset from the learned model when supervising.
         current_object = self.env_interface.primary_target["object"]
         if current_object not in self.first_epoch_object_location:
@@ -193,7 +194,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         """Save state_dict at the end of training."""
         self.experiment_mode = ExperimentMode.TRAIN
         self.logger_handler.pre_train(self.logger_args)
-        self.model.set_experiment_mode("train")
+        self.model.set_experiment_mode(self.experiment_mode)
         for sm in self.model.sensor_modules:
             sm.save_raw_obs = False
         for _ in range(self.n_train_epochs):
@@ -204,5 +205,5 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
     def evaluate(self):
         """Use experiment just for supervised pretraining -> no eval."""
-        logger.warning("No evalualtion mode for supervised experiment.")
+        logger.warning("No evaluation mode for supervised experiment.")
         pass

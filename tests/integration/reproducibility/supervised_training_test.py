@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -32,7 +34,7 @@ class SupervisedTrainingTest(unittest.TestCase):
         self.output_dir = Path(tempfile.mkdtemp())
 
     def test_training_results_are_equal(self):
-        with hydra.initialize(version_base=None, config_path="../../../conf"):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config(
                 "reproducibility_supervised_training",
                 self.output_dir,

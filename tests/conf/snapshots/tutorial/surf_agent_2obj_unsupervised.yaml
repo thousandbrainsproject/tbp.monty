@@ -100,25 +100,22 @@ experiment:
     monty_config:
       motor_system_config:
         motor_system_args:
-          policy_args:
+          policy:
             file_name: null
             good_view_percentage: 0.5
             desired_object_distance: 0.025
             use_goal_state_driven_actions: false
-            switch_frequency: 1.0
             min_perc_on_obj: 0.25
             agent_id: ${monty.agent_id:agent_id_0}
             alpha: 0.1
-            action_sampler_args:
+            action_sampler:
               actions:
               - ${monty.class:tbp.monty.frameworks.actions.actions.MoveForward}
               - ${monty.class:tbp.monty.frameworks.actions.actions.MoveTangentially}
               - ${monty.class:tbp.monty.frameworks.actions.actions.OrientHorizontal}
               - ${monty.class:tbp.monty.frameworks.actions.actions.OrientVertical}
-              - ${monty.class:tbp.monty.frameworks.actions.actions.SetAgentPose}
-              - ${monty.class:tbp.monty.frameworks.actions.actions.SetSensorRotation}
-            action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}
-          policy_class: ${monty.class:tbp.monty.frameworks.models.motor_policies.SurfacePolicy}
+              _target_: tbp.monty.frameworks.actions.action_samplers.ConstantSampler
+            _target_: tbp.monty.frameworks.models.motor_policies.SurfacePolicy
         motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
       monty_args:
         num_exploratory_steps: 1000

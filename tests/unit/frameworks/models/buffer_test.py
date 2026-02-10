@@ -189,7 +189,7 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         self.assertEqual(set(locations.keys()), set(features.keys()))
 
         # For each channel, locations should have same number of rows as features
-        for channel in locations.keys():
+        for channel in locations:
             loc_rows = locations[channel].shape[0]
             # Use any feature to compare (e.g., pose_vectors)
             feat_rows = features[channel]["pose_vectors"].shape[0]

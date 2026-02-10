@@ -99,25 +99,22 @@ experiment:
     monty_config:
       motor_system_config:
         motor_system_args:
-          policy_args:
+          policy:
             file_name: null
             good_view_percentage: 0.5
             desired_object_distance: 0.03
             use_goal_state_driven_actions: false
-            switch_frequency: 1.0
             min_perc_on_obj: 0.25
             agent_id: ${monty.agent_id:agent_id_0}
-            action_sampler_args:
+            action_sampler:
               actions:
               - ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}
               - ${monty.class:tbp.monty.frameworks.actions.actions.LookDown}
               - ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
               - ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}
-              - ${monty.class:tbp.monty.frameworks.actions.actions.SetAgentPose}
-              - ${monty.class:tbp.monty.frameworks.actions.actions.SetSensorRotation}
+              _target_: tbp.monty.frameworks.actions.action_samplers.ConstantSampler
               rotation_degrees: 5.0
-            action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}
-          policy_class: ${monty.class:tbp.monty.frameworks.models.motor_policies.InformedPolicy}
+            _target_: tbp.monty.frameworks.models.motor_policies.InformedPolicy
         motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
       monty_args:
         num_exploratory_steps: 1000

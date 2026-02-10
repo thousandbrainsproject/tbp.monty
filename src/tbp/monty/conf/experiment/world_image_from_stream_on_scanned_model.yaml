@@ -1,0 +1,16 @@
+defaults:
+  - world_image_on_scanned_model
+  - config/environment/clear_env_interface_config@config
+  - config/environment/world_image_from_stream@config.env_interface_config
+  - config/environment_interface/clear_eval_env_interface_args@config.eval_env_interface_args
+  - config/logging/clear_logging@config.logging
+  - config/logging/eval_evidence_lm@config.logging
+
+config:
+
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageFromStreamEnvironmentInterface}
+  eval_env_interface_args: {}
+  logging:
+    python_log_level: INFO
+    run_name: world_image_from_stream_on_scanned_model
+    wandb_handlers: []

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class MontyForEvidenceGraphMatching(MontyForGraphMatching):
-    """Monty model for evidence based graphs.
+    """Monty model for evidence-based graphs.
 
     Customize voting and union of possible matches.
     """
@@ -36,14 +36,14 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
         super().__init__(*args, **kwargs)
 
     def _pass_infos_to_motor_system(self):
-        """Pass processed observations and goal-states to the motor system.
+        """Pass processed observations and goal states to the motor system.
 
         Currently there is no complex connectivity or hierarchy, and all generated
-        goal-states are considered bound for the motor-system. TODO M change this.
+        goal states are considered bound for the motor system. TODO M change this.
         """
         super()._pass_infos_to_motor_system()
 
-        # Check the motor-system can receive goal-states
+        # Check that the motor system can receive goal states
         if self.motor_system._policy.use_goal_state_driven_actions:
             best_goal_state = None
             best_goal_confidence = -np.inf
@@ -58,7 +58,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
             self.motor_system._policy.set_driving_goal_state(best_goal_state)
 
     def _combine_votes(self, votes_per_lm):
-        """Combine evidence from different lms.
+        """Combine evidence from different LMs.
 
         Returns:
             The combined votes.
@@ -84,7 +84,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                             f"rotation: "
                             f"{sensor_rotation_disp}"
                         )
-                        for obj in votes_per_lm[j]["possible_states"].keys():
+                        for obj in votes_per_lm[j]["possible_states"]:
                             # Get the displacement between the sending and receiving
                             # sensor and take this into account when transmitting
                             # possible locations on the object.
@@ -93,15 +93,15 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                                 obj
                             ]
                             # Take the location votes and transform them so they would
-                            # apply to the receiving LMs sensor. Basically saying, if my
-                            # sensor is here and in this pose then your sensor should be
+                            # apply to the receiving LM's sensor. Basically, if my
+                            # sensor is here in this pose, then your sensor should be
                             # there in that pose.
                             # NOTE: rotation votes are not being used right now.
                             transformed_lm_states_for_object = []
                             for s in lm_states_for_object:
                                 # need to make a copy because the same vote state may be
                                 # transformed in different ways depending on the
-                                # receiving LMs' pose
+                                # receiving LMs' poses
                                 new_s = copy.deepcopy(s)
                                 rotated_displacement = new_s.get_pose_vectors().dot(
                                     sensor_disp
@@ -111,7 +111,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                                     rotation=sensor_rotation_disp,
                                 )
                                 transformed_lm_states_for_object.append(new_s)
-                            if obj in lm_state_votes.keys():
+                            if obj in lm_state_votes:
                                 lm_state_votes[obj].extend(
                                     transformed_lm_states_for_object
                                 )
@@ -123,12 +123,12 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
         return combined_votes
 
     def switch_to_exploratory_step(self):
-        """Switch to exploratory step.
+        """Switch to an exploratory step.
 
-        Also, set mlh evidence high enough to generate output during exploration.
+        Also set MLH evidence high enough to generate output during exploration.
         """
         super().switch_to_exploratory_step()
-        # Make sure new object ID gets communicated to higher level LMs during
+        # Make sure the new object ID is communicated to higher-level LMs during
         # exploration.
         for lm in self.learning_modules:
             lm.current_mlh["evidence"] = lm.object_evidence_threshold + 1

@@ -80,6 +80,7 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         self._is_done = False
         self.reset_episode_steps()
         self.switch_to_matching_step()
+        self._reset_terminal_states()
 
         # keep target up-to-date for logging
         self.primary_target = primary_target
@@ -90,6 +91,10 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
 
         # reset LMs and SMs buffers to save memory
         self._reset_modules_buffers()
+
+    def _reset_terminal_states(self):
+        for lm in self.learning_modules:
+            lm.set_individual_ts(None)
 
     def _reset_modules_buffers(self):
         """Resets buffers for LMs and SMs."""
@@ -137,7 +142,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
             The list of observations, each updated with a displacement vector.
         """
         for o in obs:
-            if o.sender_id in self.last_location.keys():
+            if o.sender_id in self.last_location:
                 displacement = o.location - self.last_location[o.sender_id]
             else:
                 displacement = np.zeros(3)

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -16,6 +16,7 @@ import pandas as pd
 import wandb
 from typing_extensions import override
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.monty_handlers import MontyHandler
 from tbp.monty.frameworks.utils.logging_utils import (
     format_columns_for_wandb,
@@ -28,12 +29,12 @@ from tbp.monty.frameworks.utils.plot_utils import mark_obs
 class WandbWrapper(MontyHandler):
     """Container for wandb handlers.
 
-    Loops over a series of handlers which log different information without commiting
+    Loops over a series of handlers which log different information without committing
     (sending it to wandb).
 
     The wrapper finally commits all logs at once. This allows us to maintain control
     over the wandb global step. This class assumes reporting takes place once per
-    episode, hence the wandb handlers have `report_episode` methods.
+    episode; hence the wandb handlers have `report_episode` methods.
     """
 
     def __init__(
@@ -58,7 +59,14 @@ class WandbWrapper(MontyHandler):
         )
         self.wandb_handlers = [wandb_handler() for wandb_handler in wandb_handlers]
 
-    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+    def report_episode(
+        self,
+        data,
+        output_dir,
+        episode,
+        mode: ExperimentMode = ExperimentMode.TRAIN,
+        **kwargs,
+    ):
         for handler in self.wandb_handlers:
             handler.report_episode(data, output_dir, episode, mode=mode, **kwargs)
 
@@ -89,8 +97,8 @@ class WandbHandler(MontyHandler):
     def post_init(self):
         """Handle additional initialization for subclasses.
 
-        Call this to handle any additional initializations for subclasses not
-        covered by init of `WandbHandler`.
+        Call this to handle any additional initialization for subclasses not
+        covered by `WandbHandler`.
         """
         pass
 
@@ -98,7 +106,9 @@ class WandbHandler(MontyHandler):
     def log_level(cls):
         return ""
 
-    def report_episode(self, data, output_dir, mode="train", **kwargs):
+    def report_episode(
+        self, data, output_dir, mode: ExperimentMode = ExperimentMode.TRAIN, **kwargs
+    ):
         pass
 
     def close(self):
@@ -113,7 +123,14 @@ class BasicWandbTableStatsHandler(WandbHandler):
         return "BASIC"
 
     @override
-    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+    def report_episode(
+        self,
+        data,
+        output_dir,
+        episode,
+        mode: ExperimentMode = ExperimentMode.TRAIN,
+        **kwargs,
+    ):
         ###
         # Log basic statistics
         # Ignore the episode value
@@ -151,9 +168,8 @@ class BasicWandbTableStatsHandler(WandbHandler):
 class DetailedWandbTableStatsHandler(BasicWandbTableStatsHandler):
     """Log LM stats and actions to wandb as tables.
 
-    This is a modified version of BasicWandbTableStatsHandler that, in addition to the
-    stats, logs the actions exectuted in each episode to wandb as tables (one table per
-    episode).
+    This modified version of BasicWandbTableStatsHandler also logs the actions executed
+    in each episode to wandb as tables (one table per episode).
     """
 
     def __init__(self):
@@ -163,19 +179,26 @@ class DetailedWandbTableStatsHandler(BasicWandbTableStatsHandler):
     def log_level(cls):
         return "DETAILED"
 
-    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+    def report_episode(
+        self,
+        data,
+        output_dir,
+        episode,
+        mode: ExperimentMode = ExperimentMode.TRAIN,
+        **kwargs,
+    ):
         super().report_episode(data, output_dir, episode, mode, **kwargs)
         basic_logs = data["BASIC"]
         # Get actions depending on mode (train or eval)
         action_key = f"{mode}_actions"
         action_data = basic_logs.get(action_key, {})
 
-        assert len(action_data) == 1, "why do we have keys for multiple or no episodes"
+        assert len(action_data) == 1, "expected data for exactly one episode"
         # Log one table of actions per episode
         # for episode in action_data.keys():
         # TODO: is table the best format for this?
 
-        episode = list(action_data.keys())[0]
+        episode = next(iter(action_data.keys()))
         table_name = f"{mode}_actions/episode_{episode}_table"
         actions = action_data[episode]
         for i, action in enumerate(actions):
@@ -205,7 +228,14 @@ class BasicWandbChartStatsHandler(WandbHandler):
         return "BASIC"
 
     @override
-    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+    def report_episode(
+        self,
+        data,
+        output_dir,
+        episode,
+        mode: ExperimentMode = ExperimentMode.TRAIN,
+        **kwargs,
+    ):
         basic_logs = data["BASIC"]
         mode_key = f"{mode}_overall_stats"
         stats = basic_logs.get(mode_key, {})
@@ -236,8 +266,8 @@ class BasicWandbChartStatsHandler(WandbHandler):
 class DetailedWandbHandler(WandbHandler):
     """Make animations from sequences of observations on wandb.
 
-    NOTE: not yet generalized for different model architectures. This assumes SM_0 is
-    the patch, SM_1 is the view finder.
+    NOTE: Not yet generalized for different model architectures. This assumes SM_0 is
+    the patch and SM_1 is the view finder.
     """
 
     def post_init(self):
@@ -245,7 +275,7 @@ class DetailedWandbHandler(WandbHandler):
 
     def get_episode_frames(self, episode_stats):
         frames_per_sm = {}
-        sm_ids = [sm for sm in episode_stats.keys() if sm.startswith("SM_")]
+        sm_ids = [sm for sm in episode_stats if sm.startswith("SM_")]
         for sm in sm_ids:
             observations = episode_stats[sm]["raw_observations"]
             frames_per_sm[sm] = get_rgba_frames_single_sm(observations)
@@ -253,7 +283,14 @@ class DetailedWandbHandler(WandbHandler):
         return frames_per_sm
 
     @override
-    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+    def report_episode(
+        self,
+        data,
+        output_dir,
+        episode,
+        mode: ExperimentMode = ExperimentMode.TRAIN,
+        **kwargs,
+    ):
         # mode is ignored when reporting this episode
 
         detailed_stats = data["DETAILED"]
@@ -273,11 +310,11 @@ class DetailedWandbHandler(WandbHandler):
 class DetailedWandbMarkedObsHandler(DetailedWandbHandler):
     """Just like DetailedWandbHandler, but use fancier observations.
 
-    NOTE: this assumes sm1 and sm0 are the view finder and patch modules respectively,
-          meaning this logger is specific to the model architecture
-    NOTE: this is slow, adding ~ a few seconds per function call. The intended use
+    NOTE: This assumes SM_1 and SM_0 are the view finder and patch modules respectively,
+          meaning this logger is specific to the model architecture.
+    NOTE: This is slow, adding a few seconds per function call. The intended use
           case is for debugging and error analysis, so speed should not be an issue
-          when the number of episodes is small. But probably do not use this fi you are
+          when the number of episodes is small, but probably do not use this if you are
           running a large number of experiments.
     """
 

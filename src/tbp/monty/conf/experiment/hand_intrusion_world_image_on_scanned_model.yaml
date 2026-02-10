@@ -1,0 +1,10 @@
+defaults:
+  - world_image_on_scanned_model
+  - config/environment/clear_env_interface_config@config
+  - config/environment/world_image@config.env_interface_config
+  - config/environment/init_args/clear_env_init_args@config.env_interface_config
+  - config/environment/init_args/monty_world_hand_intrusion_scenes@config.env_interface_config.env_init_args
+
+config:
+  logging:
+    run_name: hand_intrusion_world_image_on_scanned_model

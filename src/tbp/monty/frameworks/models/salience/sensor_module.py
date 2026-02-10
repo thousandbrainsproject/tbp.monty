@@ -8,8 +8,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import quaternion as qt
 
@@ -36,26 +34,26 @@ class HabitatSalienceSM(SensorModule):
         rng: np.random.RandomState,
         sensor_module_id: str,
         save_raw_obs: bool = False,
-        salience_strategy_class: type[SalienceStrategy] = UniformSalienceStrategy,
-        salience_strategy_args: dict[str, Any] | None = None,
-        return_inhibitor_class: type[ReturnInhibitor] = ReturnInhibitor,
-        return_inhibitor_args: dict[str, Any] | None = None,
-        snapshot_telemetry_class: type[SnapshotTelemetry] = SnapshotTelemetry,
+        salience_strategy: SalienceStrategy | None = None,
+        return_inhibitor: ReturnInhibitor | None = None,
+        snapshot_telemetry: SnapshotTelemetry | None = None,
     ) -> None:
         self._rng = rng
         self._sensor_module_id = sensor_module_id
         self._save_raw_obs = save_raw_obs
-        salience_strategy_args = (
-            dict(salience_strategy_args) if salience_strategy_args else {}
+        self._salience_strategy = (
+            UniformSalienceStrategy()
+            if salience_strategy is None
+            else salience_strategy
         )
-        self._salience_strategy = salience_strategy_class(**salience_strategy_args)
+        self._return_inhibitor = (
+            ReturnInhibitor() if return_inhibitor is None else return_inhibitor
+        )
+        self._snapshot_telemetry = (
+            SnapshotTelemetry() if snapshot_telemetry is None else snapshot_telemetry
+        )
 
-        return_inhibitor_args = (
-            dict(return_inhibitor_args) if return_inhibitor_args else {}
-        )
-        self._return_inhibitor = return_inhibitor_class(**return_inhibitor_args)
         self._goals: list[GoalState] = []
-        self._snapshot_telemetry = snapshot_telemetry_class()
         # TODO: Goes away once experiment code is extracted
         self.is_exploring = False
 
@@ -67,7 +65,7 @@ class HabitatSalienceSM(SensorModule):
         return self._snapshot_telemetry.state_dict()
 
     def update_state(self, agent: AgentState):
-        """Update information about the sensors location and rotation."""
+        """Update information about the sensor's location and rotation."""
         sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
         self.state = SensorState(
             position=agent.position

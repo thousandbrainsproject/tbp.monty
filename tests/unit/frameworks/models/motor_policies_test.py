@@ -49,11 +49,8 @@ class BasePolicyTest(unittest.TestCase):
         )
 
         self.policy = BasePolicy(
-            rng=self.rng,
-            action_sampler_args=dict(actions=[LookUp]),
-            action_sampler_class=UniformlyDistributedSampler,
+            action_sampler=UniformlyDistributedSampler(actions=[LookUp]),
             agent_id=self.agent_id,
-            switch_frequency=0.05,
         )
 
     def test_get_agent_state_selects_state_matching_agent_id(self):
@@ -122,11 +119,8 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
             max_pc_bias_steps=32,
             min_general_steps=8,
             min_heading_steps=12,
-            rng=np.random.RandomState(),
-            action_sampler_args=dict(actions=[LookUp]),
-            action_sampler_class=UniformlyDistributedSampler,
+            action_sampler=UniformlyDistributedSampler(actions=[LookUp]),
             agent_id=self.agent_id,
-            switch_frequency=0.05,
             desired_object_distance=0.025,
         )
         self.location = np.array([1.0, 2.0, 3.0])

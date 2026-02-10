@@ -1,0 +1,46 @@
+# @package _global_
+# Test: Supervised pretraining with DisplacementGraphLM
+#
+# Basic pretraining test with fixed motor policy and displacement matching.
+
+defaults:
+  - /environment/object_sampler: predefined
+  - override /mode: pretrain
+  - override /logging: pretrain
+  - override /agent_config: patch_view_habitat
+  - override /monty: patch_and_view_learning
+  - /test/motor_system/fixed_informed@config.monty_config.motor_system_config
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+config:
+  n_train_epochs: 3
+  logging:
+    run_name: test_supervised_pre_training
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 10
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+        learning_module_args:
+          k: 5
+          match_attribute: displacement
+  env_interface_config:
+    env_init_args:
+      data_path: null
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  train_env_interface_args:
+    object_names:
+      - capsule3DSolid
+      - cubeSolid
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+      rotations:
+        - [0.0, 0.0, 0.0]
+        - [0.0, 45.0, 0.0]
+        - [0.0, 135.0, 0.0]
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  eval_env_interface_args:
+    object_names: []
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined

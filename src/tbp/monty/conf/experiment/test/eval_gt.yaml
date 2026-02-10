@@ -1,0 +1,7 @@
+defaults:
+  - /experiment/test/eval@
+
+config:
+  n_eval_epochs: 4 # > len(eval_rotations)
+  logging:
+    run_name: test_eval_gt

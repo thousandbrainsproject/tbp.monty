@@ -1,0 +1,20 @@
+defaults:
+  - randrot_noise_10distinctobj_surf_agent
+
+config:
+  max_eval_steps: 100
+  logging:
+    run_name: unsupervised_inference_distinctobj_surf_agent
+  monty_config:
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.no_reset_evidence_matching.NoResetEvidenceGraphLM}
+        learning_module_args:
+          evidence_threshold_config: all
+    sensor_module_configs:
+      sensor_module_1:
+        sensor_module_args:
+          save_raw_obs: false
+    monty_class: ${monty.class:tbp.monty.frameworks.models.no_reset_evidence_matching.MontyForNoResetEvidenceGraphMatching}
+    monty_args:
+      min_eval_steps: 100

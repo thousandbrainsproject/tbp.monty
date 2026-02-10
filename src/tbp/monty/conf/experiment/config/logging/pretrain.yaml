@@ -1,0 +1,9 @@
+# @package config.logging
+# Pretraining logging configuration (silent monty logs)
+defaults:
+  - defaults
+
+monty_log_level: SILENT
+python_log_level: WARNING
+monty_handlers: []
+

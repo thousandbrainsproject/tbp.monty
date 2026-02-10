@@ -1,0 +1,30 @@
+defaults:
+  - randrot_noise_10distinctobj_dist_agent
+  - config/monty/clear_monty_config@config
+  - config/monty/surface_and_view_sota@config.monty_config
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/learning_modules/default_evidence_surf_1lm@config.monty_config.learning_module_configs
+  - config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - config/monty/motor_system/cur_informed_surface_goal_state_driven@config.monty_config.motor_system_config
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+  - config/monty/sensor_modules/sensor_module/default_all_noisy_surf_agent@config.monty_config.sensor_module_configs.sensor_module_0
+  - config/environment/clear_env_interface_config@config
+  - config/environment/surface_view_finder_mount_habitat@config.env_interface_config
+
+config:
+  model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+  n_eval_epochs: 10
+  max_total_steps: 5000 # x4 max_eval_steps for surface-policy, x2.5 for feature-change SM
+  logging:
+    run_name: randrot_noise_10distinctobj_surf_agent
+  monty_config:
+    monty_args:
+      min_eval_steps: ${benchmarks.min_eval_steps}
+    sensor_module_configs:
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: true

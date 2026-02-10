@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -53,11 +53,13 @@ class DecayKernelTest(unittest.TestCase):
 
 class DecayFieldTest(unittest.TestCase):
     def setUp(self) -> None:
-        kernel_factory_class = DecayKernelFactory
-        kernel_factory_args = {"tau_t": 10.0, "spatial_cutoff": 0.02, "w_t_min": 0.1}
+        kernel_factory = DecayKernelFactory(
+            tau_t=10.0,
+            spatial_cutoff=0.02,
+            w_t_min=0.1,
+        )
         self.field = DecayField(
-            kernel_factory_class=kernel_factory_class,
-            kernel_factory_args=kernel_factory_args,
+            kernel_factory=kernel_factory,
         )
 
     def test_single_kernel_weight_decays_within_spatial_cutoff(self) -> None:
@@ -168,7 +170,7 @@ class DecayFieldTest(unittest.TestCase):
 
 class ReturnInhibitorTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.return_inhibitor = ReturnInhibitor(decay_field_class=MagicMock)
+        self.return_inhibitor = ReturnInhibitor(decay_field=MagicMock())
 
     def test_return_inhibitor_add_central_location_if_present_to_decay_field(
         self,
