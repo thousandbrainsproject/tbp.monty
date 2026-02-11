@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.context import RuntimeContext
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -202,8 +203,11 @@ class GraphLearningTest(BaseGraphTest):
             exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.pre_episode()
-            for step, observation in enumerate(exp.env_interface):
-                exp.model.step(exp.ctx, observation)
+            step = 0
+            ctx = RuntimeContext(rng=exp.rng)
+            while True:
+                observations = exp.env_interface.step(ctx, first=(step == 0))
+                exp.model.step(ctx, observations)
                 self.assertEqual(
                     step + 1,
                     len(exp.model.learning_modules[0].buffer),
@@ -244,6 +248,8 @@ class GraphLearningTest(BaseGraphTest):
                 )
                 if step == 3:
                     break
+
+                step += 1
 
     def test_can_run_eval_episode(self):
         exp = hydra.utils.instantiate(self.base_cfg.test)

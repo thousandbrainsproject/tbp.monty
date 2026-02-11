@@ -255,11 +255,12 @@ class PolicyTest(unittest.TestCase):
             exp.pre_episode()
 
             # Get a first step to allow the surface agent to touch the object
-            observation_pre_touch = next(exp.env_interface)
+            ctx = RuntimeContext(rng=exp.rng)
+            observation_pre_touch = exp.env_interface.step(ctx, first=True)
             exp.model.step(exp.ctx, observation_pre_touch)
 
             # Check initial view post touch-attempt
-            observation_post_touch = next(exp.env_interface)
+            observation_post_touch = exp.env_interface.step(ctx)
 
             # TODO M remove the following train-wreck during refactor
             view = observation_post_touch[exp.model.motor_system._policy.agent_id][
@@ -307,18 +308,21 @@ class PolicyTest(unittest.TestCase):
             exp.pre_episode()
 
             # Manually step through part of run_episode function
-            for loader_step, observation in enumerate(exp.env_interface):
-                exp.model.step(exp.ctx, observation)
+            step = 0
+            ctx = RuntimeContext(rng=exp.rng)
+            while True:
+                observations = exp.env_interface.step(ctx, first=(step == 0))
+                exp.model.step(ctx, observations)
 
                 last_action = exp.model.motor_system._policy.action
 
-                if loader_step == 3:
+                if step == 3:
                     stored_action = last_action
                     assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), "Should be off object"
 
-                if loader_step == 4:
+                if step == 4:
                     should_have_moved_back = (
                         "Should have moved back by reversing last movement"
                     )
@@ -396,6 +400,8 @@ class PolicyTest(unittest.TestCase):
                     ].buffer.get_last_obs_processed(), "Should be back on object"
                     break  # Don't go into exploratory mode
 
+                step += 1
+
     def test_surface_policy_moves_back_to_object(self):
         """Test ability of surface agent to move back to an object.
 
@@ -416,8 +422,11 @@ class PolicyTest(unittest.TestCase):
 
             # Take several steps in a fixed direction until we fall off the object, then
             # ensure we get back on to it
-            for loader_step, observation in enumerate(exp.env_interface):
-                exp.model.step(exp.ctx, observation)
+            step = 0
+            ctx = RuntimeContext(rng=exp.rng)
+            while True:
+                observations = exp.env_interface.step(ctx, first=(step == 0))
+                exp.model.step(ctx, observations)
 
                 #  Step | Action           | Motor-only? | Obs processed? | Source
                 # ------|------------------|-------------|----------------|-------------
@@ -497,43 +506,45 @@ class PolicyTest(unittest.TestCase):
 
                 # Motor-only touch_object steps
                 if (
-                    13 <= loader_step <= 26
-                    or 31 <= loader_step <= 44
-                    or 49 <= loader_step <= 62
-                    or loader_step == 67
+                    13 <= step <= 26
+                    or 31 <= step <= 44
+                    or 49 <= step <= 62
+                    or step == 67
                 ):
                     assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), (
-                        f"Should be off object, motor-only step: {loader_step}"
+                        f"Should be off object, motor-only step: {step}"
                     )
-                if loader_step == 67:
+                if step == 67:
                     break  # Finish test
 
                 # First two on-object steps are always MoveForward & OrientHorizontal
                 # motor-only steps
-                if loader_step in [27, 28, 45, 46, 63, 64]:
+                if step in [27, 28, 45, 46, 63, 64]:
                     assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), (
-                        f"Should be on object, motor-only step: {loader_step}"
+                        f"Should be on object, motor-only step: {step}"
                     )
 
                 # Third on-object steps are always OrientVertical that send data to LM
-                if loader_step in [29, 47, 65]:
+                if step in [29, 47, 65]:
                     assert exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), (
-                        f"Should be on object, sending data to LM: {loader_step}"
+                        f"Should be on object, sending data to LM: {step}"
                     )
 
                 # Fourth on-object steps are always MoveTangentially motor-only steps
-                if loader_step in [30, 48, 66]:
+                if step in [30, 48, 66]:
                     assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), (
-                        f"Should be on object, motor-only step: {loader_step}"
+                        f"Should be on object, motor-only step: {step}"
                     )
+
+                step += 1
 
     def test_surface_policy_orientation(self):
         """Test ability of surface agent to orient to a surface normal.
@@ -551,12 +562,17 @@ class PolicyTest(unittest.TestCase):
             exp.pre_epoch()
             exp.pre_episode()
 
-            for loader_step, observation in enumerate(exp.env_interface):
-                exp.model.step(exp.ctx, observation)
-                exp.post_step(loader_step, observation)
+            step = 0
+            ctx = RuntimeContext(rng=exp.rng)
+            while True:
+                observations = exp.env_interface.step(ctx, first=(step == 0))
+                exp.model.step(ctx, observations)
+                exp.post_step(step, observations)
 
-                if loader_step == 3:  # Surface agent should have re-oriented
+                if step == 3:  # Surface agent should have re-oriented
                     break
+
+                step += 1
 
             # Most recently observed surface normal sent to the learning module
             current_pose = exp.model.learning_modules[0].buffer.get_current_pose(

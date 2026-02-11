@@ -93,7 +93,7 @@ class TheoreticalLimitLMLoggingMixin:
 
         This includes metrics like the max evidence score per object, the theoretical
         limit of Monty (i.e., pose error of Monty's best potential hypothesis on the
-        target object) , and the pose error of the MLH hypothesis on the target object.
+        target object), and the pose error of the MLH hypothesis on the target object.
 
         Args:
             stats: The existing statistics dictionary to augment.
@@ -183,11 +183,10 @@ class TheoreticalLimitLMLoggingMixin:
         likely hypothesis (MLH).
 
         Note that having a low pose error for the theoretical limit may not be
-        sufficient for deciding on the quality of the hypothesis. Despite good
-        hypotheses being generally correlated with good theoretical limit, it is
-        possible for rotation error to be small (i.e., low geodesic distance to
-        ground-truth rotation), while the hypothesis is on a different location
-        of the object.
+        sufficient to decide on the quality of the hypothesis. Although good
+        hypotheses generally correlate with a good theoretical limit, the rotation
+        error can be small (i.e., low geodesic distance to the ground-truth
+        rotation) while the hypothesis is at a different location of the object.
 
         Returns:
             The minimum achievable rotation error (in radians).

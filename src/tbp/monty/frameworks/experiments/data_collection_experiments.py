@@ -12,8 +12,8 @@
 import logging
 
 import torch
-from tqdm import tqdm
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.object_recognition_experiments import (
     MontyObjectRecognitionExperiment,
@@ -35,15 +35,32 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
 
     def run_episode(self):
         self.pre_episode()
-        for step, observation in tqdm(enumerate(self.env_interface)):
+        step = 0
+        ctx = RuntimeContext(rng=self.rng)
+        while True:
+            try:
+                observations = self.env_interface.step(ctx, first=(step == 0))
+            except StopIteration:
+                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
+                #       episode termination. This is a holdover from when we used
+                #       iterators. However, this also abdicates control of the
+                #       experiment to the policy. We should find a better way to handle
+                #       this, so that the experiment can control the episode termination
+                #       fully. For example, we know how many steps the policy will take,
+                #       so the experiment can set max steps based on that knowledge
+                #       alone.
+                break
+
             if step > self.max_steps:
                 break
             if self.show_sensor_output:
                 self.live_plotter.show_observations(
-                    *self.live_plotter.hardcoded_assumptions(observation, self.model),
+                    *self.live_plotter.hardcoded_assumptions(observations, self.model),
                     step,
                 )
-            self.pass_features_to_motor_system(observation, step)
+            self.pass_features_to_motor_system(observations, step)
+            step += 1
+
         self.post_episode()
 
     def pass_features_to_motor_system(self, observation, step):
