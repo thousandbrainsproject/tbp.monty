@@ -13,7 +13,7 @@ benchmarks:
   - hsv
   - principal_curvatures_log
   min_eval_steps: 20
-  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11}
+  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
   rotations_all_count: 14
   rotations_all:
   - - 0
