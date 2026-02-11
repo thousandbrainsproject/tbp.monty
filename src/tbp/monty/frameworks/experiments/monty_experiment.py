@@ -21,6 +21,7 @@ import torch
 from omegaconf import DictConfig
 from typing_extensions import Self
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterface,
     EnvironmentInterfacePerObject,
@@ -485,12 +486,29 @@ class MontyExperiment:
     def run_episode(self):
         """Run one episode until model.is_done."""
         self.pre_episode()
-        for step, observation in enumerate(self.env_interface):
-            self.pre_step(step, observation)
-            self.model.step(observation)
-            self.post_step(step, observation)
+        step = 0
+        ctx = RuntimeContext(rng=self.rng)
+        while True:
+            try:
+                observations = self.env_interface.step(ctx, first=(step == 0))
+            except StopIteration:
+                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
+                #       episode termination. This is a holdover from when we used
+                #       iterators. However, this also abdicates control of the
+                #       experiment to the policy. We should find a better way to handle
+                #       this, so that the experiment can control the episode termination
+                #       fully. For example, we know how many steps the policy will take,
+                #       so the experiment can set max steps based on that knowledge
+                #       alone.
+                break
+
+            self.pre_step(step, observations)
+            self.model.step(observations)
+            self.post_step(step, observations)
             if self.model.is_done or step >= self.max_steps:
                 break
+            step += 1
+
         self.post_episode(step)
 
     def pre_episode(self):

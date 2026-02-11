@@ -125,7 +125,7 @@ class HabitatDataTest(unittest.TestCase):
         # Check if env interface is getting observations from simulator
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, NUM_STEPS):
-            obs_dist, _ = env_interface_dist.step(motor_system_dist(ctx))
+            obs_dist = env_interface_dist.step(ctx)
             camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_dist[MODALITY] == EXPECTED_STATES[i]))
 
@@ -136,7 +136,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if env interface actions affect simulator observations
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
-        obs_dist, _ = env_interface_dist.step(motor_system_dist(ctx))
+        obs_dist = env_interface_dist.step(ctx)
         camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_dist[MODALITY] == initial_camera_obs_dist[MODALITY])
@@ -160,6 +160,7 @@ class HabitatDataTest(unittest.TestCase):
 
         seed = 42
         rng = np.random.RandomState(seed)
+        ctx = RuntimeContext(rng)
 
         base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
         base_policy.agent_id = AGENT_ID
@@ -177,11 +178,10 @@ class HabitatDataTest(unittest.TestCase):
             experiment_mode=ExperimentMode.EVAL,
         )
 
-        ctx = RuntimeContext(rng)
         # Check if env interfaces are getting observations from simulator
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, NUM_STEPS):
-            obs_abs, _ = env_interface_abs.step(motor_system_abs(ctx))
+            obs_abs = env_interface_abs.step(ctx)
             camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_abs[MODALITY] == EXPECTED_STATES[i]))
 
@@ -192,7 +192,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if env interface actions affect simulator observations
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
-        obs_abs, _ = env_interface_abs.step(motor_system_abs(ctx))
+        obs_abs = env_interface_abs.step(ctx)
         camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_abs[MODALITY] == initial_camera_obs_abs[MODALITY])
@@ -216,6 +216,8 @@ class HabitatDataTest(unittest.TestCase):
 
         seed = 42
         rng = np.random.RandomState(seed)
+        ctx = RuntimeContext(rng)
+
         # Note we just test random actions (i.e. base policy) with the surface-agent
         # action space
         base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_surf_fragment)
@@ -234,11 +236,10 @@ class HabitatDataTest(unittest.TestCase):
             experiment_mode=ExperimentMode.EVAL,
         )
 
-        ctx = RuntimeContext(rng)
         # Check if datasets are getting observations from simulator
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, NUM_STEPS):
-            obs_surf, _ = env_interface_surf.step(motor_system_surf(ctx))
+            obs_surf = env_interface_surf.step(ctx)
             camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_surf[MODALITY] == EXPECTED_STATES[i]))
 
@@ -249,7 +250,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if dataset actions affect simulator observations
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
-        obs_surf, _ = env_interface_surf.step(motor_system_surf(ctx))
+        obs_surf = env_interface_surf.step(ctx)
         camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_surf[MODALITY] == initial_camera_obs_surf[MODALITY])
@@ -289,11 +290,16 @@ class HabitatDataTest(unittest.TestCase):
             experiment_mode=ExperimentMode.EVAL,
         )
 
-        for i, item in enumerate(env_interface_dist):
-            camera_obs_dist = item[AGENT_ID][SENSOR_ID]
+        i = 0
+        ctx = RuntimeContext(rng)
+        while True:
+            obs = env_interface_dist.step(ctx, first=(i == 0))
+            camera_obs_dist = obs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_dist[MODALITY] == EXPECTED_STATES[i]))
             if i >= NUM_STEPS - 1:
                 break
+
+            i += 1
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
@@ -327,11 +333,16 @@ class HabitatDataTest(unittest.TestCase):
             seed=seed,
             experiment_mode=ExperimentMode.EVAL,
         )
-        for i, item in enumerate(env_interface_abs):
-            camera_obs_abs = item[AGENT_ID][SENSOR_ID]
+        i = 0
+        ctx = RuntimeContext(rng)
+        while True:
+            obs = env_interface_abs.step(ctx, first=(i == 0))
+            camera_obs_abs = obs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_abs[MODALITY] == EXPECTED_STATES[i]))
             if i >= NUM_STEPS - 1:
                 break
+
+            i += 1
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
@@ -368,11 +379,16 @@ class HabitatDataTest(unittest.TestCase):
             seed=seed,
             experiment_mode=ExperimentMode.EVAL,
         )
-        for i, item in enumerate(env_interface_surf):
-            camera_obs_surf = item[AGENT_ID][SENSOR_ID]
+        i = 0
+        ctx = RuntimeContext(rng)
+        while True:
+            obs = env_interface_surf.step(ctx, first=(i == 0))
+            camera_obs_surf = obs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_surf[MODALITY] == EXPECTED_STATES[i]))
             if i >= NUM_STEPS - 1:
                 break
+
+            i += 1
 
 
 if __name__ == "__main__":

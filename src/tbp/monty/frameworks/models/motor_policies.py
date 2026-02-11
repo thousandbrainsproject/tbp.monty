@@ -603,9 +603,11 @@ class NaiveScanPolicy(InformedPolicy):
         """
         if self.steps_per_action * self.fixed_amount >= 90:
             # Raise "StopIteration" to notify the environment interface we need to stop
-            # the experiment. This exception is automatically handled by any
-            # python loop statements using iterators.
-            # See https://docs.python.org/3/library/exceptions.html#StopIteration
+            # the experiment.
+            # TODO: We used to use iterators, which would automatically handle
+            #       StopIteration. This is no longer the case, so we need to find a
+            #       better way to handle policy declaring episode termination.
+            #       It feels like an experimental concern inside a runtime policy.
             raise StopIteration
 
         self.check_cycle_action()
