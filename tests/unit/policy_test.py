@@ -155,6 +155,10 @@ class PolicyTest(unittest.TestCase):
             State(**fo_2_corrupt_z),
         ]
 
+        # Generic RNG for tests that don't contain experiments
+        seed = 42
+        self.ctx = RuntimeContext(rng=np.random.RandomState(seed))
+
     def tearDown(self):
         """Code that gets executed after every test."""
         shutil.rmtree(self.output_dir)
@@ -257,7 +261,7 @@ class PolicyTest(unittest.TestCase):
             # Get a first step to allow the surface agent to touch the object
             ctx = RuntimeContext(rng=exp.rng)
             observation_pre_touch = exp.env_interface.step(ctx, first=True)
-            exp.model.step(exp.ctx, observation_pre_touch)
+            exp.model.step(ctx, observation_pre_touch)
 
             # Check initial view post touch-attempt
             observation_post_touch = exp.env_interface.step(ctx)
@@ -918,7 +922,7 @@ class PolicyTest(unittest.TestCase):
             ),
         )
 
-        lm.matching_step(observations=[State(**fake_sensation_config)])
+        lm.matching_step(self.ctx, observations=[State(**fake_sensation_config)])
 
         # GSG handles computing the motor goal-state
         motor_goal_state = lm.gsg._compute_goal_state_for_target_loc(

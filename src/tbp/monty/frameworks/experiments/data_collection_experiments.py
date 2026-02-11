@@ -58,13 +58,13 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
                     *self.live_plotter.hardcoded_assumptions(observations, self.model),
                     step,
                 )
-            self.pass_features_to_motor_system(observations, step)
+            self.pass_features_to_motor_system(ctx, observations, step)
             step += 1
 
         self.post_episode()
 
-    def pass_features_to_motor_system(self, observation, step):
-        self.model.aggregate_sensory_inputs(observation)
+    def pass_features_to_motor_system(self, ctx: RuntimeContext, observation, step):
+        self.model.aggregate_sensory_inputs(ctx, observation)
         self.model.motor_system._policy.processed_observations = (
             self.model.sensor_module_outputs[0]
         )

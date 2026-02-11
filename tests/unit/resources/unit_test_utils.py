@@ -14,6 +14,7 @@ from unittest import TestCase
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     make_sensor_positions_on_grid,
 )
@@ -160,6 +161,10 @@ class BaseGraphTest(TestCase):
             "object": "placeholder",
             "quat_rotation": [1, 0, 0, 0],
         }
+
+        # Generic RNG for tests that don't contain experiments
+        seed = 42
+        self.ctx = RuntimeContext(rng=np.random.RandomState(seed))
 
     def string_to_array(self, array_string, get_positive_rotations=False) -> np.ndarray:
         """Convert string representation of an array into a numpy array.

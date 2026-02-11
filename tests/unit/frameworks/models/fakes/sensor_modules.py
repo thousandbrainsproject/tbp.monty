@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
 from tbp.monty.frameworks.models.motor_system_state import AgentState
@@ -45,7 +46,11 @@ class FakeSensorModule(SensorModule):
     def set_experiment_mode(self, mode: ExperimentMode):
         pass
 
-    def step(self, data):
+    def step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        data,
+    ):
         """Returns a dummy/placeholder state."""
         return State(
             location=np.zeros(3),

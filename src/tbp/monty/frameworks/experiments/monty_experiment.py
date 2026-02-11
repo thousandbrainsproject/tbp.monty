@@ -37,7 +37,6 @@ from tbp.monty.frameworks.loggers.exp_logger import (
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
-    RuntimeContext,
     SensorModule,
 )
 from tbp.monty.frameworks.models.monty_base import MontyBase
@@ -69,7 +68,6 @@ class MontyExperiment:
         self.config = config
 
         self.rng = np.random.RandomState(config["seed"])
-        self.ctx = RuntimeContext(rng=self.rng)
 
         self.do_train = config["do_train"]
         self.do_eval = config["do_eval"]
@@ -488,7 +486,6 @@ class MontyExperiment:
 
     def run_episode(self):
         """Run one episode until model.is_done."""
-        ctx = RuntimeContext(rng=self.rng)
         self.pre_episode()
         step = 0
         ctx = RuntimeContext(rng=self.rng)

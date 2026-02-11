@@ -23,8 +23,6 @@ from tbp.monty.frameworks.experiments.monty_experiment import (
 
 __all__ = ["MontyGeneralizationExperiment", "MontyObjectRecognitionExperiment"]
 
-from tbp.monty.frameworks.models.abstract_monty_classes import RuntimeContext
-
 logger = logging.getLogger(__name__)
 
 
@@ -145,7 +143,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 )
                 # On these sensations, we just want to pass information to the motor
                 # system, so bypass the main model step (i.e. updating of LMs)
-                self.model.pass_features_directly_to_motor_system(observations)
+                self.model.pass_features_directly_to_motor_system(ctx, observations)
             else:
                 self.model.step(ctx, observations)
 

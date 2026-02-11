@@ -16,6 +16,7 @@ import unittest
 
 import numpy as np
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_sdr_matching import (
     EncoderSDR,
@@ -36,7 +37,11 @@ class EvidenceSDRUnitTest(unittest.TestCase):
     def setUp(self):
         """Setup function at the beginning of each experiment."""
         # set seed for reproducibility
-        set_seed(42)
+        seed = 42
+        set_seed(seed)
+
+        # Generic RNG for tests that don't contain experiments
+        self.ctx = RuntimeContext(rng=np.random.RandomState(seed))
 
     def test_unit_sdr_conf(self):
         """This tests edge condition of SDR configuration with invalid sparsity.
@@ -340,7 +345,11 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         self.output_dir = tempfile.mkdtemp()
 
         # set seed for reproducibility
-        set_seed(42)
+        seed = 42
+        set_seed(seed)
+
+        # Generic RNG for tests that don't contain experiments
+        self.ctx = RuntimeContext(rng=np.random.RandomState(seed))
 
         self.default_obs_args = dict(
             location=np.array([0.0, 0.0, 0.0]),
@@ -503,7 +512,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         lm.mode = ExperimentMode.TRAIN
         lm.pre_episode(primary_target=obj_target)
         for observation in obs:
-            lm.exploratory_step([observation])
+            lm.exploratory_step(self.ctx, [observation])
         lm.detected_object = obj_name
         lm.detected_rotation_r = None
         lm.buffer.stats["detected_location_rel_body"] = lm.buffer.get_current_location(

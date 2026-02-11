@@ -11,8 +11,8 @@ from __future__ import annotations
 import numpy as np
 import quaternion as qt
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
-    RuntimeContext,
     SensorModule,
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
@@ -77,10 +77,11 @@ class HabitatSalienceSM(SensorModule):
         )
         self.motor_only_step = agent.motor_only_step
 
-    def step(self, data) -> State | None:
+    def step(self, ctx: RuntimeContext, data) -> State | None:
         """Generate goal states for the current step.
 
         Args:
+            ctx: The runtime context.
             data: Raw sensor observations
 
         Returns:
@@ -97,7 +98,7 @@ class HabitatSalienceSM(SensorModule):
         ior_weights = self._return_inhibitor(
             on_object.center_location, on_object.locations
         )
-        salience = self._weight_salience(on_object.salience, ior_weights)
+        salience = self._weight_salience(ctx, on_object.salience, ior_weights)
 
         self._goals = [
             GoalState(
@@ -117,12 +118,13 @@ class HabitatSalienceSM(SensorModule):
 
     def _weight_salience(
         self,
+        ctx: RuntimeContext,
         salience: np.ndarray,
         ior_weights: np.ndarray,
     ) -> np.ndarray:
         weighted_salience = self._decay_salience(salience, ior_weights)
 
-        weighted_salience = self._randomize_salience(weighted_salience)
+        weighted_salience = self._randomize_salience(ctx, weighted_salience)
 
         return self._normalize_salience(weighted_salience)
 
@@ -132,9 +134,11 @@ class HabitatSalienceSM(SensorModule):
         decay_factor = 0.75
         return salience - decay_factor * ior_weights
 
-    def _randomize_salience(self, weighted_salience: np.ndarray) -> np.ndarray:
+    def _randomize_salience(
+        self, ctx: RuntimeContext, weighted_salience: np.ndarray
+    ) -> np.ndarray:
         randomness_factor = 0.05
-        weighted_salience += self._rng.normal(
+        weighted_salience += ctx.rng.normal(
             loc=0, scale=randomness_factor, size=weighted_salience.shape[0]
         )
         return weighted_salience
@@ -157,10 +161,6 @@ class HabitatSalienceSM(SensorModule):
         self._return_inhibitor.reset()
         self._snapshot_telemetry.reset()
         self.is_exploring = False
-
-    def set_context(self, ctx: RuntimeContext):
-        """Adjust context variables before stepping."""
-        self._rng = ctx.rng
 
     def propose_goal_states(self) -> list[GoalState]:
         return self._goals

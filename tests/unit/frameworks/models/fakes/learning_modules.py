@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.frameworks.models.states import GoalState
@@ -28,10 +29,10 @@ class FakeLearningModule(LearningModule):
     def reset(self):
         pass
 
-    def matching_step(self, inputs):
+    def matching_step(self, ctx: RuntimeContext, inputs):
         pass
 
-    def exploratory_step(self, inputs):
+    def exploratory_step(self, ctx: RuntimeContext, inputs):
         pass
 
     def receive_votes(self, inputs):

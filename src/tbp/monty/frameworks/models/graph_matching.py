@@ -16,6 +16,7 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
@@ -27,7 +28,6 @@ from tbp.monty.frameworks.loggers.graph_matching_loggers import (
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
     LMMemory,
-    RuntimeContext,
 )
 from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_state_generation import GraphGoalStateGenerator
@@ -230,7 +230,7 @@ class MontyForGraphMatching(MontyBase):
     # ======================= Private ==========================
     # ------------------- Main Algorithm -----------------------
 
-    def _step_learning_modules(self):
+    def _step_learning_modules(self, ctx: RuntimeContext):
         """Collect inputs and step each learning module."""
         for i in range(len(self.learning_modules)):
             sensory_inputs = self._collect_inputs_to_lm(i)
@@ -246,7 +246,7 @@ class MontyForGraphMatching(MontyBase):
                     )
                 lm_step_method = getattr(self.learning_modules[i], self.step_type)
                 assert callable(lm_step_method), f"{lm_step_method} must be callable"
-                lm_step_method(sensory_inputs)
+                lm_step_method(ctx, sensory_inputs)
                 if self.step_type == "matching_step":
                     logger.debug(f"Stepping learning module {i}")
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
@@ -615,11 +615,7 @@ class GraphLM(LearningModule):
         self.detected_pose = [None for _ in range(7)]
         self.detected_rotation_r = None
 
-    def set_context(self, ctx: RuntimeContext):
-        """Adjust context variables before stepping."""
-        self._rng = ctx.rng
-
-    def matching_step(self, observations):
+    def matching_step(self, ctx: RuntimeContext, observations):
         """Update the possible matches given an observation."""
         first_movement_detected = self._agent_moved_since_reset()
         buffer_data = self._add_displacements(observations)
@@ -639,12 +635,16 @@ class GraphLM(LearningModule):
             self.set_individual_ts(terminal_state="no_match")
 
         if self.gsg is not None:
-            self.gsg.step(observations)
+            self.gsg.step(ctx, observations)
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
 
-    def exploratory_step(self, observations):
+    def exploratory_step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        observations,
+    ):
         """Step without trying to recognize object (updating possible matches)."""
         buffer_data = self._add_displacements(observations)
         self.buffer.append(buffer_data)

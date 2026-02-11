@@ -26,8 +26,6 @@ from tbp.monty.frameworks.experiments.monty_experiment import (
 
 __all__ = ["MontySupervisedObjectPretrainingExperiment"]
 
-from tbp.monty.frameworks.models.abstract_monty_classes import RuntimeContext
-
 logger = logging.getLogger(__name__)
 
 
@@ -75,7 +73,6 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         easier as long as we don't have a good solution for dealing with incomplete
         objects.
         """
-        ctx = RuntimeContext(rng=self.rng)
         self.pre_episode()
         # Save compute if we are providing labels to all models, so don't need to
         # perform matching parts of LM updates (default is matching_step)

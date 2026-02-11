@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     GoalStateGenerator,
 )
@@ -169,7 +170,11 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
     # ------------------- Main Algorithm -----------------------
 
-    def step(self, observations):
+    def step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        observations,
+    ):
         """Step the GSG.
 
         Check whether the GSG's output and driving Goals are achieved, and

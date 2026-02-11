@@ -196,7 +196,7 @@ class EvidenceLMTest(BaseGraphTest):
         )
         graph_lm.mode = ExperimentMode.TRAIN
         for observation in fake_obs:
-            graph_lm.exploratory_step([observation])
+            graph_lm.exploratory_step(self.ctx, [observation])
         graph_lm.detected_object = "new_object0"
         graph_lm.detected_rotation_r = None
         graph_lm.buffer.stats["detected_location_rel_body"] = (
@@ -245,7 +245,7 @@ class EvidenceLMTest(BaseGraphTest):
         obj_two_target["object"] = "new_object1"
         graph_lm.pre_episode(primary_target=obj_two_target)
         for observation in fake_obs_two:
-            graph_lm.exploratory_step([observation])
+            graph_lm.exploratory_step(self.ctx, [observation])
         graph_lm.detected_object = obj_two_target["object"]
         graph_lm.detected_rotation_r = None
         graph_lm.buffer.stats["detected_location_rel_body"] = (
@@ -549,7 +549,7 @@ class EvidenceLMTest(BaseGraphTest):
         for i in range(12):
             observation = fake_obs_test[i % 4]
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             # since we don't have a monty class here we have to call this check
             # manually. Usually monty class coordinates terminal condition checks and
             # updates to symmetry count.
@@ -600,7 +600,7 @@ class EvidenceLMTest(BaseGraphTest):
         target_evidence = 1
         for observation in fake_obs_test:
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             self.assertEqual(
                 len(graph_lm.get_possible_matches()),
                 1,
@@ -642,7 +642,7 @@ class EvidenceLMTest(BaseGraphTest):
         target_evidence = 1
         for observation in fake_obs_test:
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             self.assertEqual(
                 len(graph_lm.get_possible_matches()),
                 1,
@@ -684,7 +684,7 @@ class EvidenceLMTest(BaseGraphTest):
         for observation in fake_obs_test:
             observation.location = observation.location + np.ones(3)
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             self.assertEqual(
                 len(graph_lm.get_possible_matches()),
                 1,
@@ -730,7 +730,7 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             self.assertEqual(
                 len(graph_lm.get_possible_matches()),
                 1,
@@ -764,7 +764,7 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         for i, observation in enumerate(fake_obs_test):
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             if i < 2:
                 self.assertEqual(
                     len(graph_lm.get_possible_matches()),
@@ -787,7 +787,7 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm.mode = ExperimentMode.EVAL
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
-        graph_lm.matching_step([fake_obs_test[0]])
+        graph_lm.matching_step(self.ctx, [fake_obs_test[0]])
 
         self.assertEqual(
             graph_lm.evidence.keys(),
@@ -812,7 +812,7 @@ class EvidenceLMTest(BaseGraphTest):
         for ii in range(4):
             observation = fake_obs_test[ii]
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
 
         if not focus_on_pose:
             # Since up to now we had identical evidence for both cube and house, we give
@@ -962,7 +962,7 @@ class EvidenceLMTest(BaseGraphTest):
         # We start at evidence 0 since we don't get feature evidence at initialization
         for target_evidence, observation in enumerate(fake_obs_test):
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             self.assertEqual(
                 len(graph_lm.get_possible_matches()),
                 1,
@@ -994,7 +994,7 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         for step, observation in enumerate(fake_obs_test):
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             if step == 0:
                 self.assertEqual(
                     len(graph_lm.get_possible_matches()),
@@ -1058,7 +1058,7 @@ class EvidenceLMTest(BaseGraphTest):
                 pass
             else:
                 graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
-                graph_lm.matching_step([observation])
+                graph_lm.matching_step(self.ctx, [observation])
                 # If we are off the object, no evidence should be added
                 if observation.morphological_features["on_object"] != 0 and step > 0:
                     target_evidence += 2

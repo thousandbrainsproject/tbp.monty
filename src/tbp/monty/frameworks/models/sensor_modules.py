@@ -18,8 +18,8 @@ import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
-    RuntimeContext,
     SensorID,
     SensorModule,
 )
@@ -429,7 +429,11 @@ class Probe(SensorModule):
         )
         self.motor_only_step = agent.motor_only_step
 
-    def step(self, data) -> State | None:
+    def step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        data,
+    ) -> State | None:
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
                 data, self.state.rotation, self.state.position
@@ -441,14 +445,6 @@ class Probe(SensorModule):
         """Reset buffer and is_exploring flag."""
         self._snapshot_telemetry.reset()
         self.is_exploring = False
-
-    def set_context(self, ctx: RuntimeContext):
-        """Adjust context variables before stepping.
-
-        Args:
-            ctx: The runtime context variables.
-        """
-        self._rng = ctx.rng
 
 
 class MessageNoise(Protocol):
@@ -634,10 +630,6 @@ class HabitatSM(SensorModule):
         self.processed_obs = []
         self.states = []
 
-    def set_context(self, ctx: RuntimeContext):
-        """Adjust context variables before stepping."""
-        self._rng = ctx.rng
-
     def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
         sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
@@ -653,10 +645,15 @@ class HabitatSM(SensorModule):
         state_dict.update(processed_observations=self.processed_obs)
         return state_dict
 
-    def step(self, data) -> State | None:
+    def step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        data,
+    ) -> State | None:
         """Turn raw observations into dict of features at location.
 
         Args:
+            ctx: The runtime context.
             data: Raw observations.
 
         Returns:
