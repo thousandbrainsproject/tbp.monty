@@ -15,6 +15,7 @@ import numpy as np
 from omegaconf import DictConfig, OmegaConf
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
 )
@@ -79,20 +80,35 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         if set(self.supervised_lm_ids) == set(all_lm_ids):
             self.model.switch_to_exploratory_step()
 
+        ctx = RuntimeContext(rng=self.rng)
+
         # Collect data about the object (exploratory steps)
         num_steps = 0
-        for observation in self.env_interface:
+        while True:
+            try:
+                observations = self.env_interface.step(ctx, first=(num_steps == 0))
+            except StopIteration:
+                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
+                #       episode termination. This is a holdover from when we used
+                #       iterators. However, this also abdicates control of the
+                #       experiment to the policy. We should find a better way to handle
+                #       this, so that the experiment can control the episode termination
+                #       fully. For example, we know how many steps the policy will take,
+                #       so the experiment can set max steps based on that knowledge
+                #       alone.
+                break
+
             num_steps += 1
             if self.show_sensor_output:
                 is_saccade_on_image_env_interface = isinstance(
                     self.env_interface, SaccadeOnImageEnvironmentInterface
                 )
                 self.live_plotter.show_observations(
-                    *self.live_plotter.hardcoded_assumptions(observation, self.model),
+                    *self.live_plotter.hardcoded_assumptions(observations, self.model),
                     num_steps,
                     is_saccade_on_image_env_interface,
                 )
-            self.model.step(observation)
+            self.model.step(observations)
             if self.model.is_done:
                 break
 
@@ -123,6 +139,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                 lm.buffer.stats["detected_scale"] = target["scale"]
             else:
                 # wipe LMs hypotheses so we don't update those models
+                lm.possible_matches = []
                 lm.detected_object = None
                 lm.detected_pose = None
                 lm.detected_rotation_r = None

@@ -14,6 +14,7 @@ import hydra
 import numpy as np
 from omegaconf import DictConfig
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.environments.positioning_procedures import (
     get_perc_on_obj_semantic,
@@ -63,7 +64,8 @@ class GetGoodViewTest(unittest.TestCase):
                 target_perc_on_target_obj = policy_cfg["good_view_percentage"]
                 target_closest_point = policy_cfg["desired_object_distance"]
 
-                observation = next(exp.env_interface)
+                ctx = RuntimeContext(rng=exp.rng)
+                observation = exp.env_interface.step(ctx, first=True)
                 view = observation[exp.model.motor_system._policy.agent_id][
                     "view_finder"
                 ]
@@ -115,7 +117,8 @@ class GetGoodViewTest(unittest.TestCase):
                 target_perc_on_target_obj = policy_cfg["good_view_percentage"]
                 target_closest_point = policy_cfg["desired_object_distance"]
 
-                observation = next(exp.env_interface)
+                ctx = RuntimeContext(rng=exp.rng)
+                observation = exp.env_interface.step(ctx, first=True)
                 view = observation[exp.model.motor_system._policy.agent_id][
                     "view_finder"
                 ]

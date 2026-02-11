@@ -653,6 +653,16 @@ def get_graph_lm_episode_stats(lm):
     relative_time = np.diff(np.array(lm.buffer.stats["time"]), prepend=0)
     lm.buffer.stats["relative_time"] = relative_time
 
+    detected_pose = lm.detected_pose
+    if detected_pose is not None:
+        detected_location = detected_pose[:3]
+        detected_rotation = detected_pose[3:6]
+        detected_scale = detected_pose[6]
+    else:
+        detected_location = None
+        detected_rotation = None
+        detected_scale = None
+
     stats = {
         "primary_performance": primary_performance,
         "stepwise_performance": stepwise_performance,
@@ -663,9 +673,9 @@ def get_graph_lm_episode_stats(lm):
         # objects is not easily specified/recovered
         "rotation_error": rotation_error,
         "num_possible_matches": len(possible_matches),
-        "detected_location": lm.detected_pose[:3],
-        "detected_rotation": lm.detected_pose[3:6],
-        "detected_scale": lm.detected_pose[6],
+        "detected_location": detected_location,
+        "detected_rotation": detected_rotation,
+        "detected_scale": detected_scale,
         "location_rel_body": location,
         "detected_path": lm.buffer.stats["detected_path"],
         "symmetry_evidence": lm.symmetry_evidence,
