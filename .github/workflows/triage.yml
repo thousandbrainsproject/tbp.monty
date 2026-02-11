@@ -1,0 +1,22 @@
+name: Triage
+on:
+  # TODO: change to pull_request_target for safety
+  pull_request:
+    branches:
+    - main
+    types:
+    - opened
+    - edited
+
+jobs:
+  validate-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title format
+        run: |
+          if [[ ! "${{ github.event.pull_request.title }}" =~ ^[a-z]+!?:.+ ]]; then
+            echo "This PR title is missing a Conventional Commits label."
+            echo "A maintainer will update it appropriately during triage."
+            echo "See https://thousandbrainsproject.readme.io/docs/triage#title-1"
+            exit 1
+          fi
