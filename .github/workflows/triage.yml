@@ -1,7 +1,6 @@
 name: Triage
 on:
-  # TODO: change to pull_request_target for safety
-  pull_request:
+  pull_request_target:
     branches:
     - main
     types:
