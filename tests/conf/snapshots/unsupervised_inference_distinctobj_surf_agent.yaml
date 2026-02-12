@@ -155,6 +155,7 @@ experiment:
               min_post_goal_success_steps: 5
               x_percent_scale_factor: 0.75
               desired_object_distance: 0.025
+            hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
             hypotheses_updater_args:
               max_nneighbors: 10
           learning_module_class: ${monty.class:tbp.monty.frameworks.models.no_reset_evidence_matching.NoResetEvidenceGraphLM}
