@@ -14,7 +14,6 @@ defaults:
   - /experiment/config/environment_interface/clear_train_env_interface_args@config
   - /experiment/config/environment_interface/per_object_train@config.train_env_interface_args
 
-
 _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 config:
   n_train_epochs: 3
@@ -34,7 +33,7 @@ config:
           feature_weights:
             patch:
               hsv: ${np.array:[1, 0, 0]}
-          hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater.ResamplingHypothesesUpdater}
+          hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
   env_interface_config:
     env_init_args:
       data_path: null

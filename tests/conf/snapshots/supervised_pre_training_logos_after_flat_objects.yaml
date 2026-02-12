@@ -13,7 +13,7 @@ benchmarks:
   - hsv
   - principal_curvatures_log
   min_eval_steps: 20
-  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11}
+  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
   rotations_all_count: 14
   rotations_all:
   - - 0
@@ -79,7 +79,7 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: 3
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11/supervised_pre_training_flat_objects_wo_logos/pretrained/}
+    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12/supervised_pre_training_flat_objects_wo_logos/pretrained/}
     min_lms_match: 1
     seed: 42
     supervised_lm_ids:

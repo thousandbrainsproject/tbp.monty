@@ -13,7 +13,7 @@ benchmarks:
   - hsv
   - principal_curvatures_log
   min_eval_steps: 20
-  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11}
+  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
   rotations_all_count: 14
   rotations_all:
   - - 0
@@ -79,7 +79,7 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: ${benchmarks.rotations_all_count}
     n_eval_epochs: 3
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11/supervised_pre_training_logos_after_flat_objects/pretrained/}
+    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12/supervised_pre_training_logos_after_flat_objects/pretrained/}
     min_lms_match: 2
     seed: 42
     supervised_lm_ids:
@@ -92,7 +92,7 @@ experiment:
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
-      run_name: supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling
+      run_name: supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
@@ -193,7 +193,7 @@ experiment:
             num_model_voxels_per_dim: 200
             max_nodes_per_graph: 2000
             object_evidence_threshold: 1
-            hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater.ResamplingHypothesesUpdater}
+            hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
             evidence_threshold_config: all
             gsg:
               _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
