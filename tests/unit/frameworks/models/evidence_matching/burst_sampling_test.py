@@ -14,11 +14,11 @@ from hypothesis import given
 from hypothesis import strategies as st
 from numpy.ma.testutils import assert_array_equal
 
+from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
+    BurstSamplingHypothesesUpdater,
+)
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
     Hypotheses,
-)
-from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (  # noqa: E501
-    ResamplingHypothesesUpdater,
 )
 
 pytest.importorskip(
@@ -38,13 +38,13 @@ from tbp.monty.frameworks.utils.evidence_matching import (
 )
 
 
-class ResamplingHypothesesUpdaterTest(TestCase):
+class BurstSamplingHypothesesUpdaterTest(TestCase):
     def setUp(self) -> None:
         # We'll add specific mocked functions for the graph memory in
         # individual tests, since they'll change from test to test.
         self.mock_graph_memory = Mock()
 
-        self.updater = ResamplingHypothesesUpdater(
+        self.updater = BurstSamplingHypothesesUpdater(
             feature_weights={},
             graph_memory=self.mock_graph_memory,
             max_match_distance=0,
@@ -63,7 +63,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
     def test_init_fails_when_passed_invalid_evidence_threshold_config(self) -> None:
         """Test that the updater only accepts "all" for evidence_threshold_config."""
         with self.assertRaises(InvalidEvidenceThresholdConfig):
-            ResamplingHypothesesUpdater(
+            BurstSamplingHypothesesUpdater(
                 feature_weights={},
                 graph_memory=self.mock_graph_memory,
                 max_match_distance=0,
@@ -242,7 +242,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
     def test_sample_count_returns_informed_count_during_burst(
         self, sampling_multiplier, graph_num_nodes, pose_fully_defined
     ) -> None:
-        """Test informed_count with various resampling parameters.
+        """Test informed_count with various burst sampling parameters.
 
         When sampling_burst_steps > 0, _sample_count should calculate and
         return a positive informed_count based on graph nodes and sampling_multiplier.
@@ -377,7 +377,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
 
     def test_init_fails_when_sampling_multiplier_is_negative(self) -> None:
         with self.assertRaises(ValueError) as context:
-            ResamplingHypothesesUpdater(
+            BurstSamplingHypothesesUpdater(
                 feature_weights={},
                 graph_memory=self.mock_graph_memory,
                 max_match_distance=0,
@@ -426,7 +426,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         # with the correct channels and hypotheses
         with patch(
             "tbp.monty.frameworks.models.evidence_matching."
-            "resampling_hypotheses_updater.EvidenceSlopeTracker",
+            "burst_sampling.EvidenceSlopeTracker",
             return_value=new_tracker,
         ):
             self.updater.update_hypotheses(
@@ -545,7 +545,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         """
         euler_angles = [[0, 0, i * 30] for i in range(num_euler_angles)]
 
-        updater = ResamplingHypothesesUpdater(
+        updater = BurstSamplingHypothesesUpdater(
             feature_weights={},
             graph_memory=self.mock_graph_memory,
             max_match_distance=0,
@@ -653,7 +653,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
             return_value=np.random.rand(num_nodes, 3)
         )
 
-        updater = ResamplingHypothesesUpdater(
+        updater = BurstSamplingHypothesesUpdater(
             feature_weights={"patch": {"feature1": 1.0}},
             graph_memory=mock_graph_memory,
             max_match_distance=0,

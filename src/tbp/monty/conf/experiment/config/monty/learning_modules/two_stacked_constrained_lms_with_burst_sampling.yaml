@@ -3,7 +3,7 @@ defaults:
 
 learning_module_0:
   learning_module_args:
-    hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater.ResamplingHypothesesUpdater}
+    hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
     evidence_threshold_config: all
     object_evidence_threshold: 1
     gsg:
