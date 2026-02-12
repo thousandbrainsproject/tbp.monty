@@ -9,12 +9,14 @@ on:
     - edited
 
 jobs:
-  validate-pr-title:
+  pr_title_triage:
+    name: pr-title-triage
     runs-on: ubuntu-latest
     steps:
       - name: Check PR title format
         run: |
-          if [[ ! "${{ github.event.pull_request.title }}" =~ ^[a-z]+!?:.+ ]]; then
+          pattern="^(build|chore|ci|docs|feat|fix|perf|refactor|revert|rfc|style|test)!?:.+"
+          if [[ ! "${{ github.event.pull_request.title }}" =~ $pattern ]]; then
             echo "This PR title is missing a Conventional Commits label."
             echo "A maintainer will update it appropriately during triage."
             echo "See https://thousandbrainsproject.readme.io/docs/triage#title-1"
