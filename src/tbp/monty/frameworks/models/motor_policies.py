@@ -388,7 +388,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 teleport) the agent to a specified goal state.
             **kwargs: Additional keyword arguments.
         """
-        kwargs = {k: v for k, v in kwargs.items() if k != "min_perc_on_obj"}
         super().__init__(**kwargs)
         self.action: Action | None = None
         self.use_goal_state_driven_actions = use_goal_state_driven_actions
