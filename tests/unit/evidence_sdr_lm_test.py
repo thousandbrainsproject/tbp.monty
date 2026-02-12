@@ -460,7 +460,6 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
             Evidence SDR Graph Learning Module.
         """
         return EvidenceSDRGraphLM(
-            rng=np.random.RandomState(),
             max_match_distance=0.005,
             tolerances={
                 "patch": {
