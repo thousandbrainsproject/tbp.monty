@@ -37,8 +37,7 @@ class EvidenceSDRUnitTest(unittest.TestCase):
     def setUp(self):
         """Setup function at the beginning of each experiment."""
         # set seed for reproducibility
-        seed = 42
-        set_seed(seed)
+        set_seed(42)
 
     def test_unit_sdr_conf(self):
         """This tests edge condition of SDR configuration with invalid sparsity.
