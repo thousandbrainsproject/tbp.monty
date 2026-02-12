@@ -63,7 +63,6 @@ def mocked_object_observation():
 class HabitatSalienceSMTest(unittest.TestCase):
     def setUp(self) -> None:
         self.sensor_module = HabitatSalienceSM(
-            rng=np.random.RandomState(42),
             sensor_module_id="test",
             salience_strategy=MagicMock(),
             return_inhibitor=MagicMock(),
@@ -82,10 +81,7 @@ class HabitatSalienceSMTest(unittest.TestCase):
             position=self.default_sensor_state.position,
             rotation=self.default_sensor_state.rotation,
         )
-
-        # Generic RNG for tests that don't contain experiments
-        seed = 42
-        self.ctx = RuntimeContext(rng=np.random.RandomState(seed))
+        self.ctx = RuntimeContext(rng=np.random.RandomState())
 
     def test_step_snapshots_raw_observation_as_needed(self) -> None:
         self.sensor_module._save_raw_obs = self.save_raw_obs  # type: ignore[attr-defined]
@@ -168,16 +164,12 @@ class HabitatSalienceSMTest(unittest.TestCase):
 class HabitatSalienceSMPrivateTest(unittest.TestCase):
     def setUp(self) -> None:
         self.sensor_module = HabitatSalienceSM(
-            rng=np.random.RandomState(42),
             sensor_module_id="test",
             salience_strategy=MagicMock(),
             return_inhibitor=MagicMock(),
             snapshot_telemetry=MagicMock(),
         )
-
-        # Generic RNG for tests that don't contain experiments
-        seed = 42
-        self.ctx = RuntimeContext(rng=np.random.RandomState(seed))
+        self.ctx = RuntimeContext(rng=np.random.RandomState())
 
     def test_normalize_salience_does_clips_uniform_salience_between_0_and_1(
         self,

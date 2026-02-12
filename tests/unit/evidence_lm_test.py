@@ -174,7 +174,6 @@ class EvidenceLMTest(BaseGraphTest):
         self, fake_obs, initial_possible_poses="informed", gsg=None
     ):
         graph_lm = EvidenceGraphLM(
-            rng=np.random.RandomState(),
             max_match_distance=0.005,
             tolerances={
                 "patch": {

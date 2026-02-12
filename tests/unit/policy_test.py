@@ -155,10 +155,6 @@ class PolicyTest(unittest.TestCase):
             State(**fo_2_corrupt_z),
         ]
 
-        # Generic RNG for tests that don't contain experiments
-        seed = 42
-        self.ctx = RuntimeContext(rng=np.random.RandomState(seed))
-
     def tearDown(self):
         """Code that gets executed after every test."""
         shutil.rmtree(self.output_dir)
@@ -225,7 +221,6 @@ class PolicyTest(unittest.TestCase):
         )
 
         graph_lm = EvidenceGraphLM(
-            rng=np.random.RandomState(),
             max_match_distance=0.005,
             tolerances={
                 "patch": {
@@ -861,7 +856,12 @@ class PolicyTest(unittest.TestCase):
         assert policy.pc_is_z_defined is False, "Should have reset z-defind flag"
 
     def core_evaluate_compute_goal_state_for_target_loc(
-        self, lm, motor_system, object_orientation, target_location_on_object
+        self,
+        ctx: RuntimeContext,
+        lm,
+        motor_system,
+        object_orientation,
+        target_location_on_object,
     ):
         """Test GSGs ability to propose a motor-system goal-state.
 
@@ -870,6 +870,7 @@ class PolicyTest(unittest.TestCase):
         orientation in Habitat-compatible coordinates.
 
         Args:
+            ctx: The runtime context
             lm: The LM with the GSG that we will test
             motor_system: The motor-system to test
             object_orientation: The orientation of the object in Euler angle degrees
@@ -922,7 +923,7 @@ class PolicyTest(unittest.TestCase):
             ),
         )
 
-        lm.matching_step(self.ctx, observations=[State(**fake_sensation_config)])
+        lm.matching_step(ctx, observations=[State(**fake_sensation_config)])
 
         # GSG handles computing the motor goal-state
         motor_goal_state = lm.gsg._compute_goal_state_for_target_loc(
@@ -968,6 +969,8 @@ class PolicyTest(unittest.TestCase):
         # the validity of the final agent location
         surface_displacement = gsg_args["desired_object_distance"] * 1.5
 
+        ctx = RuntimeContext(rng=np.random.RandomState())
+
         # === First, easy example ===
         (
             motor_goal_location,
@@ -975,6 +978,7 @@ class PolicyTest(unittest.TestCase):
             target_loc_hab,
             agent_direction_hab,
         ) = self.core_evaluate_compute_goal_state_for_target_loc(
+            ctx,
             lm,
             motor_system,
             object_orientation=[0, 0, 0],
@@ -1007,6 +1011,7 @@ class PolicyTest(unittest.TestCase):
             target_loc_hab_2,
             agent_direction_hab_2,
         ) = self.core_evaluate_compute_goal_state_for_target_loc(
+            ctx,
             lm,
             motor_system,
             object_orientation=[180, 0, 0],  # Flip the object around the x-axis, such
@@ -1042,6 +1047,7 @@ class PolicyTest(unittest.TestCase):
             target_loc_hab_3,
             agent_direction_hab_3,
         ) = self.core_evaluate_compute_goal_state_for_target_loc(
+            ctx,
             lm,
             motor_system,
             object_orientation=[160, 45, 70],

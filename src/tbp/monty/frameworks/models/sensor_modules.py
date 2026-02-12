@@ -19,15 +19,13 @@ from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.models.abstract_monty_classes import (
-    SensorID,
-    SensorModule,
-)
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     SensorState,
 )
 from tbp.monty.frameworks.models.states import State
+from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.sensor_processing import (
     log_sign,
     principal_curvatures,
@@ -396,9 +394,7 @@ class Probe(SensorModule):
     observations and does not emit a Cortical Message.
     """
 
-    def __init__(
-        self, rng: np.random.RandomState, sensor_module_id: str, save_raw_obs: bool
-    ):
+    def __init__(self, sensor_module_id: str, save_raw_obs: bool):
         """Initialize the probe.
 
         Args:
@@ -409,7 +405,6 @@ class Probe(SensorModule):
         super().__init__()
 
         self.is_exploring = False
-        self._rng = rng
         self.sensor_module_id = sensor_module_id
         self.state = None
         self.save_raw_obs = save_raw_obs
@@ -554,7 +549,6 @@ class HabitatSM(SensorModule):
 
     def __init__(
         self,
-        rng: np.random.RandomState,
         sensor_module_id: str,
         features: list[str],
         save_raw_obs: bool = False,
@@ -566,7 +560,6 @@ class HabitatSM(SensorModule):
         """Initialize Sensor Module.
 
         Args:
-            rng: Random number generator.
             sensor_module_id: Name of sensor module.
             features: Which features to extract. In [on_object, rgba, surface_normal,
                 principal_curvatures, curvature_directions, gaussian_curvature,
@@ -592,7 +585,6 @@ class HabitatSM(SensorModule):
             gaussian_curvature and mean_curvature should be used together to preserve
             the same information contained in principal_curvatures.
         """
-        self._rng = rng
         self._habitat_observation_processor = HabitatObservationProcessor(
             features=features,
             sensor_module_id=sensor_module_id,
@@ -645,11 +637,7 @@ class HabitatSM(SensorModule):
         state_dict.update(processed_observations=self.processed_obs)
         return state_dict
 
-    def step(
-        self,
-        ctx: RuntimeContext,  # noqa: ARG002
-        data,
-    ) -> State | None:
+    def step(self, ctx: RuntimeContext, data) -> State | None:
         """Turn raw observations into dict of features at location.
 
         Args:
@@ -668,7 +656,7 @@ class HabitatSM(SensorModule):
         observed_state = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
-            observed_state = self._message_noise(observed_state, rng=self._rng)
+            observed_state = self._message_noise(observed_state, rng=ctx.rng)
 
         if self.motor_only_step:
             # Set interesting-features flag to False, as should not be passed to

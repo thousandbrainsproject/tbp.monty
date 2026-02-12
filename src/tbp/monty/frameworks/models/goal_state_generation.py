@@ -170,11 +170,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
     # ------------------- Main Algorithm -----------------------
 
-    def step(
-        self,
-        ctx: RuntimeContext,  # noqa: ARG002
-        observations,
-    ):
+    def step(self, ctx: RuntimeContext, observations):
         """Step the GSG.
 
         Check whether the GSG's output and driving Goals are achieved, and
@@ -195,7 +191,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         # else:
         #     # Below code block
 
-        if self._check_need_new_output_goal(output_goal_achieved):
+        if self._check_need_new_output_goal(ctx, output_goal_achieved):
             self._set_output_goal_state(
                 new_goal_state=self._generate_goal_state(observations)
             )
@@ -400,7 +396,11 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             diff_tolerances=self.goal_tolerances,
         )
 
-    def _check_need_new_output_goal(self, output_goal_achieved) -> bool:
+    def _check_need_new_output_goal(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        output_goal_achieved,
+    ) -> bool:
         """Determine whether the GSG should generate a new output Goal.
 
         In the base version, this is True if the output-goal was achieved, suggesting
@@ -888,7 +888,9 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             info=info,
         )
 
-    def _check_need_new_output_goal(self, output_goal_achieved) -> bool:
+    def _check_need_new_output_goal(
+        self, ctx: RuntimeContext, output_goal_achieved
+    ) -> bool:
         """Determine whether the GSG should generate a new output Goal.
 
         Unlike the base version, success in achieving the Goal is not an
@@ -901,7 +903,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         if output_goal_achieved:
             return False
 
-        return self._check_conditions_for_hypothesis_test()
+        return self._check_conditions_for_hypothesis_test(ctx)
 
     def _check_keep_current_output_goal(self) -> bool:
         """Determine whether the GSG should keep the current Goal.
@@ -915,7 +917,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         """
         return False
 
-    def _check_conditions_for_hypothesis_test(self):
+    def _check_conditions_for_hypothesis_test(self, ctx: RuntimeContext):
         """Check if good chance to discriminate between conflicting object IDs or poses.
 
         Evaluates possible conditions for performing a hypothesis-guided action for
@@ -977,9 +979,9 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             x_percent_scale_factor=self.x_percent_scale_factor
         )
 
-        if (
-            len(pm_smaller_thresh) == 1 and (self.parent_lm._rng.uniform() <= 0.5)
-        ) or len(pm_base_thresh) == 1:
+        if (len(pm_smaller_thresh) == 1 and (ctx.rng.uniform() <= 0.5)) or len(
+            pm_base_thresh
+        ) == 1:
             # If we only have one object with a single hypothesis, we should not
             # attempt to generate a Goal.
             if len(self.parent_lm.evidence[top_id]) == 1:

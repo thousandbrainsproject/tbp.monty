@@ -40,9 +40,6 @@ class EvidenceSDRUnitTest(unittest.TestCase):
         seed = 42
         set_seed(seed)
 
-        # Generic RNG for tests that don't contain experiments
-        self.ctx = RuntimeContext(rng=np.random.RandomState(seed))
-
     def test_unit_sdr_conf(self):
         """This tests edge condition of SDR configuration with invalid sparsity.
 
@@ -347,8 +344,6 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         # set seed for reproducibility
         seed = 42
         set_seed(seed)
-
-        # Generic RNG for tests that don't contain experiments
         self.ctx = RuntimeContext(rng=np.random.RandomState(seed))
 
         self.default_obs_args = dict(
@@ -538,7 +533,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         lm.buffer.append_input_states(observations)
 
         lm._compute_possible_matches(
-            observations, first_movement_detected=first_movement_detected
+            self.ctx, observations, first_movement_detected=first_movement_detected
         )
 
         if len(lm.get_possible_matches()) == 0:

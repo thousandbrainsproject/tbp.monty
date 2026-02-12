@@ -545,9 +545,7 @@ class MontyForGraphMatching(MontyBase):
 class GraphLM(LearningModule):
     """General Learning Module that contains a graph memory."""
 
-    def __init__(
-        self, rng: np.random.RandomState, initialize_base_modules=True
-    ) -> None:
+    def __init__(self, initialize_base_modules=True) -> None:
         """Initialize general Learning Module based on graphs.
 
         Args:
@@ -557,7 +555,6 @@ class GraphLM(LearningModule):
                 child LMs. Defaults to True.
         """
         super().__init__()
-        self._rng = rng
         self.buffer = FeatureAtLocationBuffer()
         self.buffer.reset()
         self.learning_module_id = "LM_0"
@@ -615,7 +612,11 @@ class GraphLM(LearningModule):
         self.detected_pose = [None for _ in range(7)]
         self.detected_rotation_r = None
 
-    def matching_step(self, ctx: RuntimeContext, observations):
+    def matching_step(
+        self,
+        ctx: RuntimeContext,
+        observations,
+    ):
         """Update the possible matches given an observation."""
         first_movement_detected = self._agent_moved_since_reset()
         buffer_data = self._add_displacements(observations)
@@ -628,7 +629,7 @@ class GraphLM(LearningModule):
             logger.debug("we have not moved yet.")
 
         self._compute_possible_matches(
-            observations, first_movement_detected=first_movement_detected
+            ctx, observations, first_movement_detected=first_movement_detected
         )
 
         if len(self.get_possible_matches()) == 0:
@@ -955,10 +956,13 @@ class GraphLM(LearningModule):
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
-    def _compute_possible_matches(self, observations, first_movement_detected=True):
+    def _compute_possible_matches(
+        self, ctx: RuntimeContext, observations, first_movement_detected=True
+    ):
         """Use graph memory to get the current possible matches.
 
         Args:
+            ctx: The runtime context.
             observations: Observations to use for computing possible matches.
             first_movement_detected: Whether the agent has moved since the buffer reset
                 signal.
@@ -976,9 +980,9 @@ class GraphLM(LearningModule):
 
         logger.debug(f"query: {query}")
 
-        self._update_possible_matches(query=query)
+        self._update_possible_matches(ctx, query=query)
 
-    def _update_possible_matches(self):
+    def _update_possible_matches(self, ctx: RuntimeContext):
         # QUESTION: Should we give this a more general name? Like update_hypotheses
         # or update_state?
         # QUESTION: Should this actually be something handled in LMs?

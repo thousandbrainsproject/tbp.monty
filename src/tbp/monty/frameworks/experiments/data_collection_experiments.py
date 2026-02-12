@@ -108,10 +108,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-    def post_episode(
-        self,
-        steps,  # noqa: ARG002
-    ):
+    def post_episode(self, _):
         torch.save(
             self.model.sensor_modules[0].processed_obs[:-1],
             self.output_dir / f"observations{self.train_episodes}.pt",

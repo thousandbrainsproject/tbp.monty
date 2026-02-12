@@ -12,9 +12,7 @@ import numpy as np
 import quaternion as qt
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.models.abstract_monty_classes import (
-    SensorModule,
-)
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
     on_object_observation,
@@ -34,14 +32,12 @@ __all__ = ["HabitatSalienceSM"]
 class HabitatSalienceSM(SensorModule):
     def __init__(
         self,
-        rng: np.random.RandomState,
         sensor_module_id: str,
         save_raw_obs: bool = False,
         salience_strategy: SalienceStrategy | None = None,
         return_inhibitor: ReturnInhibitor | None = None,
         snapshot_telemetry: SnapshotTelemetry | None = None,
     ) -> None:
-        self._rng = rng
         self._sensor_module_id = sensor_module_id
         self._save_raw_obs = save_raw_obs
         self._salience_strategy = (

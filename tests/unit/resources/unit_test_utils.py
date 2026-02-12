@@ -162,9 +162,7 @@ class BaseGraphTest(TestCase):
             "quat_rotation": [1, 0, 0, 0],
         }
 
-        # Generic RNG for tests that don't contain experiments
-        seed = 42
-        self.ctx = RuntimeContext(rng=np.random.RandomState(seed))
+        self.ctx = RuntimeContext(rng=np.random.RandomState())
 
     def string_to_array(self, array_string, get_positive_rotations=False) -> np.ndarray:
         """Convert string representation of an array into a numpy array.

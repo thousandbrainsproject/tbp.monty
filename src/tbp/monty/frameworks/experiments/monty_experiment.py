@@ -154,7 +154,7 @@ class MontyExperiment:
             lm_class = lm_cfg["learning_module_class"]
             lm_args = lm_cfg["learning_module_args"]
             assert issubclass(lm_class, LearningModule)
-            learning_modules[lm_id] = lm_class(rng=self.rng, **lm_args)
+            learning_modules[lm_id] = lm_class(**lm_args)
             learning_modules[lm_id].learning_module_id = lm_id
 
         # Create sensor modules
@@ -164,7 +164,7 @@ class MontyExperiment:
             sm_class = sm_cfg["sensor_module_class"]
             sm_args = sm_cfg["sensor_module_args"]
             assert issubclass(sm_class, SensorModule)
-            sensor_modules[sm_id] = sm_class(rng=self.rng, **sm_args)
+            sensor_modules[sm_id] = sm_class(**sm_args)
 
         # Create motor system
         motor_system_config = monty_config.pop("motor_system_config")

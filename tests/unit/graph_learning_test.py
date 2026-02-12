@@ -631,7 +631,6 @@ class GraphLearningTest(BaseGraphTest):
 
     def get_gm_with_fake_object(self):
         graph_lm = FeatureGraphLM(
-            rng=np.random.RandomState(),
             max_match_distance=0.005,
             tolerances={
                 "patch": {
@@ -661,7 +660,6 @@ class GraphLearningTest(BaseGraphTest):
         graph_lms = []
         for lm in range(5):
             graph_lm = FeatureGraphLM(
-                rng=np.random.RandomState(),
                 max_match_distance=0.005,
                 tolerances={
                     "patch": {

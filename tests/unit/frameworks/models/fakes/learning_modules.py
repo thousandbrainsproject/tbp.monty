@@ -9,8 +9,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import numpy as np
-
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
@@ -22,7 +20,7 @@ __all__ = ["FakeLearningModule"]
 class FakeLearningModule(LearningModule):
     """Dummy placeholder class used only for tests."""
 
-    def __init__(self, rng: np.random.RandomState):  # noqa: ARG002
+    def __init__(self):
         self.test_attr_1 = True
         self.test_attr_2 = True
 
