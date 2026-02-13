@@ -272,7 +272,7 @@ class BasePolicy(MotorPolicy):
     def load_state_dict(self, state_dict):
         self.episode_step = state_dict["episode_step"]
 
-    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+    def set_experiment_mode(self, mode: ExperimentMode) -> None:
         pass
 
 
@@ -298,7 +298,6 @@ class PredefinedPolicy(MotorPolicy):
 
     def __init__(
         self,
-        rng: np.random.RandomState,  # noqa: ARG002
         agent_id: AgentID,
         file_name=None,
     ) -> None:
@@ -311,7 +310,11 @@ class PredefinedPolicy(MotorPolicy):
         self.episode_step = 0
         self.episode_count = 0
 
-    def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:  # noqa: ARG002
+    def dynamic_call(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        state: MotorSystemState | None = None,  # noqa: ARG002
+    ) -> Action | None:
         return self.action_list[self.episode_step % len(self.action_list)]
 
     def get_agent_state(self, state: MotorSystemState) -> AgentState:
@@ -329,7 +332,7 @@ class PredefinedPolicy(MotorPolicy):
         self.episode_step += 1
         self.action_sequence.append([action])
 
-    def pre_episode(self, rng: np.random.RandomState) -> None:  # noqa: ARG002
+    def pre_episode(self) -> None:
         self.episode_step = 0
         self.action_sequence = []
 
