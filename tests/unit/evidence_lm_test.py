@@ -71,9 +71,7 @@ class EvidenceLMTest(BaseGraphTest):
             ]
         )
 
-        def hydra_config(
-            test_name: str, action_file_name: Path | None = None
-        ) -> DictConfig:
+        def hydra_config(test_name: str) -> DictConfig:
             """Return a Hydra configuration from the specified test name.
 
             Args:
@@ -84,52 +82,26 @@ class EvidenceLMTest(BaseGraphTest):
                 f"test=evidence_lm/{test_name}",
                 f"test.config.logging.output_dir={self.output_dir}",
             ]
-            if action_file_name:
-                overrides.append(f"{actions_file_name_selector}={action_file_name}")
 
             return hydra.compose(config_name="test", overrides=overrides)
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.evidence_cfg = hydra_config("evidence")
-            self.fixed_actions_evidence_cfg = hydra_config(
-                "fixed_actions_evidence", self.fixed_actions_path
-            )
-            self.evidence_off_object_cfg = hydra_config(
-                "evidence_off_object", self.fixed_actions_off_object_path
-            )
-            self.evidence_times_out_cfg = hydra_config(
-                "evidence_times_out", self.fixed_actions_path
-            )
-            self.uniform_initial_poses_cfg = hydra_config(
-                "uniform_initial_poses", self.fixed_actions_path
-            )
-            self.no_features_cfg = hydra_config("no_features", self.fixed_actions_path)
-            self.fixed_possible_poses_cfg = hydra_config(
-                "no_features", self.fixed_actions_path
-            )
-            self.five_lm_cfg = hydra_config("five_lm", self.fixed_actions_path)
-            self.five_lm_basic_logging_cfg = hydra_config(
-                "five_lm_basic_logging", self.fixed_actions_path
-            )
-            self.five_lm_three_done_cfg = hydra_config(
-                "five_lm_three_done", self.fixed_actions_path
-            )
-            self.five_lm_off_object_cfg = hydra_config(
-                "five_lm_off_object", self.fixed_actions_off_object_path
-            )
-            self.five_lm_no_threading_cfg = hydra_config(
-                "five_lm_no_threading", self.fixed_actions_path
-            )
-            self.five_lm_maxnn1 = hydra_config(
-                "five_lm_maxnn1", self.fixed_actions_path
-            )
-            self.five_lm_bounded = hydra_config(
-                "five_lm_bounded", self.fixed_actions_path
-            )
-            self.noise_mixin_cfg = hydra_config("noise_mixin", self.fixed_actions_path)
-            self.noisy_sensor_cfg = hydra_config(
-                "noisy_sensor", self.fixed_actions_path
-            )
+            self.fixed_actions_evidence_cfg = hydra_config("fixed_actions_evidence")
+            self.evidence_off_object_cfg = hydra_config("evidence_off_object")
+            self.evidence_times_out_cfg = hydra_config("evidence_times_out")
+            self.uniform_initial_poses_cfg = hydra_config("uniform_initial_poses")
+            self.no_features_cfg = hydra_config("no_features")
+            self.fixed_possible_poses_cfg = hydra_config("fixed_possible_poses")
+            self.five_lm_cfg = hydra_config("five_lm")
+            self.five_lm_basic_logging_cfg = hydra_config("five_lm_basic_logging")
+            self.five_lm_three_done_cfg = hydra_config("five_lm_three_done")
+            self.five_lm_off_object_cfg = hydra_config("five_lm_off_object")
+            self.five_lm_no_threading_cfg = hydra_config("five_lm_no_threading")
+            self.five_lm_maxnn1 = hydra_config("five_lm_maxnn1")
+            self.five_lm_bounded = hydra_config("five_lm_bounded")
+            self.noise_mixin_cfg = hydra_config("noise_mixin")
+            self.noisy_sensor_cfg = hydra_config("noisy_sensor")
 
         """
         TESTS STILL MISSING:

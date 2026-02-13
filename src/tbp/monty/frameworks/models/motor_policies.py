@@ -309,6 +309,7 @@ class PredefinedPolicy(MotorPolicy):
         self.action_sequence: list[list[Action | None]] = []
         self.episode_step = 0
         self.episode_count = 0
+        self.use_goal_state_driven_actions = False
 
     def dynamic_call(
         self,
