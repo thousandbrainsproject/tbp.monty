@@ -13,7 +13,7 @@ defaults:
   - config/monty/sensor_modules/sensor_module/default_all_noisy@config.monty_config.sensor_module_configs.sensor_module_0
   - config/environment/clear_env_interface_config@config
   - config/environment/patch_view_finder_monty_world_mount_habitat@config.env_interface_config
-  - config/environment_interface/clear_eval_env_interface_args@config.eval_env_interface_args
+  - config/environment_interface/clear_eval_env_interface_args@config
   - config/environment_interface/per_object@config.eval_env_interface_args
   - config/environment_interface/numenta/objects@config.eval_env_interface_args.object_names
 

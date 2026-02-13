@@ -247,7 +247,6 @@ experiment:
         use_semantic_sensor: false
       rng: null
     eval_env_interface_args:
-      eval_env_interface_args: null
       parent_to_child_mapping: null
       object_names:
       - numenta_mug

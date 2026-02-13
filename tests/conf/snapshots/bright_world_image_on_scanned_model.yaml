@@ -188,7 +188,6 @@ experiment:
       env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.SaccadeOnImageEnvironment}
       transform: null
     eval_env_interface_args:
-      eval_env_interface_args: null
       scenes:
       - 0
       - 0
