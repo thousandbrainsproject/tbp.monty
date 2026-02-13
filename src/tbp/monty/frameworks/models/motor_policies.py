@@ -490,7 +490,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
     def fixme_undo_last_action(
         self,
-    ) -> LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially:
+    ) -> (
+        LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially | None
+    ):
         """Returns an action that undoes last action for supported actions.
 
         Previous InformedPolicy.dynamic_call() implementation when not on object:
@@ -524,6 +526,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         yet clear to me what to do for actions that do not support undo.
         """
         last_action = self.action
+
+        if last_action is None:
+            return None
 
         if isinstance(last_action, LookDown):
             return LookDown(
