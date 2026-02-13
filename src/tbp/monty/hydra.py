@@ -54,6 +54,7 @@ def path_expanduser_resolver(path: str) -> str:
     """Returns a path with ~ expanded to the user's home directory."""
     return str(Path(path).expanduser())
 
+
 def tests_dir_resolver(path: str) -> str:
     return str(Path(__file__).parents[3] / "tests" / Path(path))
 
