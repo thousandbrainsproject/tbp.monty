@@ -37,6 +37,8 @@ def hydra_config(test_name: str, output_dir: str) -> DictConfig:
             f"test.config.logging.output_dir={output_dir}",
             f"+test.config.train_env_interface_args.good_view_percentage={GOOD_VIEW_PERCENTAGE_DEFAULT}",
             f"+test.config.train_env_interface_args.good_view_distance={GOOD_VIEW_DISTANCE_DEFAULT}",
+            f"+test.config.eval_env_interface_args.good_view_percentage={GOOD_VIEW_PERCENTAGE_DEFAULT}",
+            f"+test.config.eval_env_interface_args.good_view_distance={GOOD_VIEW_DISTANCE_DEFAULT}",
         ],
     )
 
