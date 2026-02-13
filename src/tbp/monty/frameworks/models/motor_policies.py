@@ -277,8 +277,10 @@ class BasePolicy(MotorPolicy):
 
 
 class PredefinedPolicy(MotorPolicy):
+    """Policy that follows an action sequence read from file."""
+
     @staticmethod
-    def read_action_file(file: str) -> list[Action]:
+    def read_action_file(file: str | Path) -> list[Action]:
         """Load a file with one action per line.
 
         Args:
@@ -299,13 +301,10 @@ class PredefinedPolicy(MotorPolicy):
     def __init__(
         self,
         agent_id: AgentID,
-        file_name=None,
+        file_name: str,
     ) -> None:
         self.agent_id = agent_id
-
-        if file_name is not None:
-            self.action_list = PredefinedPolicy.read_action_file(file_name)
-
+        self.action_list: list[Action] = PredefinedPolicy.read_action_file(file_name)
         self.action_sequence: list[list[Action | None]] = []
         self.episode_step = 0
         self.episode_count = 0
