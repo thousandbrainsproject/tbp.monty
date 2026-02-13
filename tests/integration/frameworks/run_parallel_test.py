@@ -30,6 +30,10 @@ from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.frameworks.run_parallel import main
 
+FIXED_TEST_ACTIONS_PATH = (
+    Path(__file__).parents[2] / "unit" / "resources" / "fixed_test_actions.jsonl"
+)
+
 
 class RunParallelTest(unittest.TestCase):
     def setUp(self):
@@ -44,7 +48,7 @@ class RunParallelTest(unittest.TestCase):
                 f"++experiment.config.logging.output_dir={output_dir}",
                 "+experiment.config.monty_config.motor_system_config"
                 ".motor_system_args.policy.file_name="
-                f"{Path(__file__).parent / 'resources/fixed_test_actions.jsonl'}",
+                f"{FIXED_TEST_ACTIONS_PATH}",
             ]
             if model_name_or_path:
                 overrides.append(
