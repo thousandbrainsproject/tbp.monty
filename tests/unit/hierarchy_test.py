@@ -9,6 +9,8 @@
 
 import pytest
 
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -33,7 +35,7 @@ class HierarchyTest(unittest.TestCase):
         self.output_dir = Path(tempfile.mkdtemp())
         self.model_path = self.output_dir / "pretrained"
 
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.two_lms_heterarchy_cfg = hydra.compose(
                 config_name="test",
                 overrides=[

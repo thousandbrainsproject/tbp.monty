@@ -10,6 +10,9 @@
 import hydra
 import pytest
 
+from tbp.monty.context import RuntimeContext
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -27,7 +30,7 @@ class SensorModuleTest(unittest.TestCase):
         """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
 
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.base_cfg = hydra.compose(
                 config_name="test",
                 overrides=[
@@ -60,13 +63,18 @@ class SensorModuleTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.pre_episode()
-            for step, observation in enumerate(exp.env_interface):
-                exp.model.step(observation)
+            step = 0
+            ctx = RuntimeContext(rng=exp.rng)
+            while True:
+                observations = exp.env_interface.step(ctx, first=(step == 0))
+                exp.model.step(observations)
                 if step == 1:
                     break
+
+                step += 1
 
     # @unittest.skip("debugging")
     def test_features_in_sensor(self):
@@ -74,36 +82,34 @@ class SensorModuleTest(unittest.TestCase):
         exp = hydra.utils.instantiate(self.sensor_feature_cfg.test)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
-            exp.model.set_experiment_mode("train")
+            exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.pre_episode()
-            for _, observation in enumerate(exp.env_interface):
-                exp.model.aggregate_sensory_inputs(observation)
+            ctx = RuntimeContext(rng=exp.rng)
+            observations = exp.env_interface.step(ctx, first=True)
+            exp.model.aggregate_sensory_inputs(observations)
 
-                # Dig the features list out of the hydra config
-                config = self.sensor_feature_cfg.test.config
-                sensor_configs = config.monty_config.sensor_module_configs
-                tested_features = (
-                    sensor_configs.sensor_module_0.sensor_module_args.features
-                )
-                for feature in tested_features:
-                    if feature in ["pose_vectors", "pose_fully_defined", "on_object"]:
-                        self.assertIn(
-                            feature,
-                            exp.model.sensor_module_outputs[
-                                0
-                            ].morphological_features.keys(),
-                            f"{feature} not returned by SM",
-                        )
-                    else:
-                        self.assertIn(
-                            feature,
-                            exp.model.sensor_module_outputs[
-                                0
-                            ].non_morphological_features.keys(),
-                            f"{feature} not returned by SM",
-                        )
-                break
+            # Dig the features list out of the hydra config
+            config = self.sensor_feature_cfg.test.config
+            sensor_configs = config.monty_config.sensor_module_configs
+            tested_features = sensor_configs.sensor_module_0.sensor_module_args.features
+            for feature in tested_features:
+                if feature in ["pose_vectors", "pose_fully_defined", "on_object"]:
+                    self.assertIn(
+                        feature,
+                        exp.model.sensor_module_outputs[
+                            0
+                        ].morphological_features.keys(),
+                        f"{feature} not returned by SM",
+                    )
+                else:
+                    self.assertIn(
+                        feature,
+                        exp.model.sensor_module_outputs[
+                            0
+                        ].non_morphological_features.keys(),
+                        f"{feature} not returned by SM",
+                    )
 
     def test_feature_change_sm(self):
         exp = hydra.utils.instantiate(self.feature_change_sensor_cfg.test)

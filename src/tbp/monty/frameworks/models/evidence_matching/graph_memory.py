@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -45,10 +45,10 @@ class EvidenceGraphMemory(GraphMemory):
         return self.get_memory_ids()
 
     def get_rotation_features_at_all_nodes(self, graph_id, input_channel):
-        """Get rotation features from all N nodes. shape=(N, 3, 3).
+        """Get rotation features from all N nodes. Shape=(N, 3, 3).
 
         Returns:
-            The rotation features from all N nodes. shape=(N, 3, 3).
+            The rotation features from all N nodes. Shape=(N, 3, 3).
         """
         all_node_r_features = self.get_features_at_node(
             graph_id,
@@ -64,17 +64,17 @@ class EvidenceGraphMemory(GraphMemory):
 
     # ------------------- Main Algorithm -----------------------
     def _add_graph_to_memory(self, model, graph_id):
-        """Add pretrained graph to memory.
+        """Add a pretrained graph to memory.
 
         Initializes GridObjectModel and calls set_graph.
 
         Args:
-            model: new model to be added to memory
-            graph_id: id of graph that should be added
+            model: New model to be added to memory.
+            graph_id: ID of the graph that should be added.
 
         """
         self.models_in_memory[graph_id] = {}
-        for input_channel in model.keys():
+        for input_channel in model:
             channel_model = model[input_channel]
             try:
                 if not isinstance(channel_model, GridObjectModel):
@@ -119,15 +119,15 @@ class EvidenceGraphMemory(GraphMemory):
         return model
 
     def _build_graph(self, locations, features, graph_id, input_channel):
-        """Build a graph from a list of features at locations and add to memory.
+        """Build a graph from a list of features at locations and add it to memory.
 
         This initializes a new GridObjectModel and calls model.build_graph.
 
         Args:
-            locations: List of x,y,z locations.
+            locations: List of x, y, z locations.
             features: List of features.
-            graph_id: name of new graph.
-            input_channel: ?
+            graph_id: ID of the new graph.
+            input_channel: Identifier of the input channel.
         """
         logger.info("Adding a new graph to memory.")
 
@@ -165,13 +165,14 @@ class EvidenceGraphMemory(GraphMemory):
         """Add new observations into an existing graph.
 
         Args:
-            locations: List of x,y,z locations.
-            features: Features observed at the locations.
+            locations: List of x, y, z locations.
+            features: Features observed at the provided locations.
             graph_id: ID of the existing graph.
-            input_channel: ?
-            object_location_rel_body: location of the sensor in body reference frame
-            location_rel_model: location of sensor in model reference frame
-            object_rotation: rotation of the sensed object relative to the model
+            input_channel: Identifier of the input channel.
+            object_location_rel_body: Location of the sensor in the body reference
+                frame.
+            location_rel_model: Location of the sensor in the model reference frame.
+            object_rotation: Rotation of the sensed object relative to the model.
         """
         logger.info(f"Updating existing graph for {graph_id}")
 

@@ -1,0 +1,10 @@
+defaults:
+  - /experiment/config/monty/motor_system/policy/informed@motor_system_args.policy
+  - /experiment/config/monty/motor_system/action_space/distant_agent@motor_system_args.policy.action_sampler
+
+motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+motor_system_args:
+  policy:
+    _target_: tbp.monty.frameworks.models.motor_policies.InformedPolicy
+    action_sampler:
+      _target_: tbp.monty.frameworks.actions.action_samplers.UniformlyDistributedSampler

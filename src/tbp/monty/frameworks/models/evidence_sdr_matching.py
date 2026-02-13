@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -176,7 +176,7 @@ class EncoderSDR:
         Note:
             A vectorized version of the algorithm is provided below, although it
             would need to be modified to avoid repeated creation of arrays in order to
-            be more efficient. Leaving for now as this algorithm is not a bottle-neck
+            be more efficient. Leaving for now as this algorithm is not a bottleneck
             (circa 10-20 seconds to learn 60 object SDRs).:
 
             # Initialize gradients
@@ -293,7 +293,7 @@ class EncoderSDR:
         Consider two dense representations, A_dense and B_dense. We apply top-k
         operation on both to convert them to A_sdr and B_sdr, then calculate their
         overlaps. If the overlap is less than the target overlap, we move dense
-        representations (A_dense and B_dense) closer to eachother with strength
+        representations (A_dense and B_dense) closer to each other with strength
         proportional to the error in overlaps. We move them apart if they have more
         overlap than the target.
 
@@ -425,7 +425,7 @@ class EvidenceSDRTargetOverlaps:
         return np.round(self._overlaps)
 
     def add_objects(self, new_size):
-        """Expands the overlaps and the counts 2D tensors to accomodate new objects."""
+        """Expands the overlaps and the counts 2D tensors to accommodate new objects."""
         # expand the overlaps tensor to the new size
         new_overlaps = np.full((new_size, new_size), np.nan)
         new_overlaps[: self._overlaps.shape[0], : self._overlaps.shape[0]] = (
@@ -598,7 +598,7 @@ class EvidenceSDRLMMixin:
                 Refer to `EvidenceSDRTargetOverlaps` for more details.
 
         **Note:** We sort the ids in step 2 because the overlap values are
-        suppossed to be symmetric (e.g., "2,5" = "5,2"). This way the target
+        supposed to be symmetric (e.g., "2,5" = "5,2"). This way the target
         overlaps for the ids "x,y" and "y,x" will be averaged together in the
         `EvidenceSDRTargetOverlaps` class.
 
@@ -626,7 +626,7 @@ class EvidenceSDRLMMixin:
         mlh_evidence = np.max(self.evidence[mlh_object])
 
         relative_evidences = np.full_like(self.target_overlaps.overlaps, np.nan)
-        for obj in self.evidence.keys():
+        for obj in self.evidence:
             ids = sorted([mlh_object_id, self.obj2id[obj]])
             ev = np.max(self.evidence[obj]) - mlh_evidence
             relative_evidences[ids[0], ids[1]] = ev

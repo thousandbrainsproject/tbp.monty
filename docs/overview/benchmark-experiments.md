@@ -180,7 +180,7 @@ Note: To obtain these results, pretraining was run without parallelization acros
 > python run.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_monolithic_models
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl2_comp_models
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl3_comp_models
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl4_comp_models

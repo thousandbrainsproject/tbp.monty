@@ -92,7 +92,7 @@ def load_models_from_dir(exp_path, pretrained_dict=None):
             state_dict = torch.load(child / "model.pt")
             for lm_id in list(state_dict["lm_dict"].keys()):
                 epoch_models = state_dict["lm_dict"][lm_id]["graph_memory"]
-                if folder not in lm_models.keys():
+                if folder not in lm_models:
                     lm_models[folder] = {}
                 lm_models[folder]["LM_" + str(lm_id)] = epoch_models
     return lm_models
@@ -109,7 +109,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
     Args:
         json_file: full path to the json file to load
         start: int, get data starting at this episode
-        stop: int, get data ending at this episode, not inclussive as usual in python
+        stop: int, get data ending at this episode, not inclusive as usual in Python
         episodes: iterable of ints with episodes to pull
 
     Returns:
@@ -135,7 +135,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
                 # episodes because order of execution is arbitrary, all that matters is
                 # we know the parameters for that episode.
                 tmp_json = json.loads(line)
-                json_key = list(tmp_json.keys())[0]  # has only one key
+                json_key = next(iter(tmp_json.keys()))  # has only one key
                 detailed_json[str(line_counter)] = tmp_json[json_key]
                 del tmp_json
 
@@ -152,8 +152,8 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
 
 
 def get_object_graph_stats(graph_to_target, target_to_graph):
-    n_objects_per_graph = [len(graph_to_target[k]) for k in graph_to_target.keys()]
-    n_graphs_per_object = [len(target_to_graph[k]) for k in target_to_graph.keys()]
+    n_objects_per_graph = [len(graph_to_target[k]) for k in graph_to_target]
+    n_graphs_per_object = [len(target_to_graph[k]) for k in target_to_graph]
     return dict(
         mean_objects_per_graph=np.mean(n_objects_per_graph),
         mean_graphs_per_object=np.mean(n_graphs_per_object),
@@ -235,7 +235,7 @@ def get_unique_euler_poses(poses):
 
 def check_rotation_accuracy(stats, last_n_step=1):
     pose_stats = []
-    for episode in stats.keys():
+    for episode in stats:
         if len(stats[episode]["LM_0"]["possible_poses"]) >= last_n_step:
             target_object = stats[episode]["LM_0"]["target"]["object"]
             target_rotation = stats[episode]["LM_0"]["target"]["euler_rotation"]
@@ -325,7 +325,7 @@ def check_rotation_accuracy(stats, last_n_step=1):
 
 def check_detection_accuracy_at_step(stats, last_n_step=1):
     detection_stats = []
-    for episode in stats.keys():
+    for episode in stats:
         possible_matches = stats[episode]["LM_0"]["possible_matches"]
         if len(possible_matches) >= last_n_step:
             target_object = stats[episode]["LM_0"]["target"]["object"]
@@ -547,7 +547,7 @@ def calculate_fpr(fp, tn):
 
 
 def get_graph_lm_episode_stats(lm):
-    """Populate stats dictionary for one episode for a lm.
+    """Populate stats dictionary for one episode for an LM.
 
     Args:
         lm: Learning module for which to generate stats.
@@ -556,7 +556,7 @@ def get_graph_lm_episode_stats(lm):
         dict with stats of one episode.
     """
     primary_performance = "patch_off_object"  # Performance on the primary target in
-    # the environmnet, typically the target object we begin the episode on
+    # the environment, typically the target object we begin the episode on
     stepwise_performance = "patch_off_object"  # Performance relative to the object
     # the learning module is actually receiving sensory input from when it converges
     location = np.array([0, 0, 0])
@@ -653,6 +653,16 @@ def get_graph_lm_episode_stats(lm):
     relative_time = np.diff(np.array(lm.buffer.stats["time"]), prepend=0)
     lm.buffer.stats["relative_time"] = relative_time
 
+    detected_pose = lm.detected_pose
+    if detected_pose is not None:
+        detected_location = detected_pose[:3]
+        detected_rotation = detected_pose[3:6]
+        detected_scale = detected_pose[6]
+    else:
+        detected_location = None
+        detected_rotation = None
+        detected_scale = None
+
     stats = {
         "primary_performance": primary_performance,
         "stepwise_performance": stepwise_performance,
@@ -663,9 +673,9 @@ def get_graph_lm_episode_stats(lm):
         # objects is not easily specified/recovered
         "rotation_error": rotation_error,
         "num_possible_matches": len(possible_matches),
-        "detected_location": lm.detected_pose[:3],
-        "detected_rotation": lm.detected_pose[3:6],
-        "detected_scale": lm.detected_pose[6],
+        "detected_location": detected_location,
+        "detected_rotation": detected_rotation,
+        "detected_scale": detected_scale,
         "location_rel_body": location,
         "detected_path": lm.buffer.stats["detected_path"],
         "symmetry_evidence": lm.symmetry_evidence,
@@ -686,10 +696,10 @@ def get_graph_lm_episode_stats(lm):
 
 
 def add_pose_lm_episode_stats(lm, stats):
-    """Add possible poses of lm to episode stats.
+    """Add possible poses of an LM to episode stats.
 
     Args:
-        lm: LM istance from which to add the statistics.
+        lm: LM instance from which to add the statistics.
         stats: Statistics dictionary to update.
 
     Returns:
@@ -758,7 +768,7 @@ def get_stats_per_lm(model, target, episode_seed: int):
 
 
 def add_policy_episode_stats(lm, stats):
-    if "goal_state_achieved" in lm.buffer.stats.keys():
+    if "goal_state_achieved" in lm.buffer.stats:
         stats["goal_states_attempted"] = len(lm.buffer.stats["goal_state_achieved"])
         stats["goal_state_achieved"] = np.sum(lm.buffer.stats["goal_state_achieved"])
 
@@ -800,9 +810,9 @@ def add_evidence_lm_episode_stats(lm, stats, consistent_child_objects):
     if (
         stats["primary_performance"] in ["confused", "confused_mlh"]
         and consistent_child_objects
+        and last_mlh["graph_id"] in consistent_child_objects
     ):
-        if last_mlh["graph_id"] in consistent_child_objects:
-            stats["primary_performance"] = "consistent_child_obj"
+        stats["primary_performance"] = "consistent_child_obj"
     return stats
 
 
@@ -957,10 +967,9 @@ def format_columns_for_wandb(lm_dict):
         formatted lm_dict
     """
     formatted_dict = copy.deepcopy(lm_dict)
-    if "result" in formatted_dict:
-        if isinstance(formatted_dict["result"], list):
-            new_result = "^".join(formatted_dict["result"])
-            formatted_dict["result"] = new_result
+    if "result" in formatted_dict and isinstance(formatted_dict["result"], list):
+        new_result = "^".join(formatted_dict["result"])
+        formatted_dict["result"] = new_result
 
     return formatted_dict
 
@@ -973,7 +982,7 @@ def lm_stats_to_dataframe(stats, format_for_wandb=False):
         {0: {LM_0: stats, LM_1: stats...}, 1:...} --> dataframe
 
     Currently we are reporting once per episode, so the loop over episodes is only over
-    a singel key, value pair, but leaving it here because it is backward compatible.
+    a single key, value pair, but leaving it here because it is backward compatible.
 
     Returns:
         dataframe
@@ -982,15 +991,13 @@ def lm_stats_to_dataframe(stats, format_for_wandb=False):
     for episode in stats.values():
         lm_dict = {}
         # Loop over things like LM_*, SM_*, motor_system and get only LM_*
-        for key in episode.keys():
-            if isinstance(key, str):
-                if key.startswith("LM_"):
-                    if format_for_wandb:
-                        lm_dict[key] = format_columns_for_wandb(
-                            copy.deepcopy(episode[key])
-                        )
-                    else:
-                        lm_dict[key] = episode[key]
+
+        for key in episode:
+            if isinstance(key, str) and key.startswith("LM_"):
+                if format_for_wandb:
+                    lm_dict[key] = format_columns_for_wandb(copy.deepcopy(episode[key]))
+                else:
+                    lm_dict[key] = episode[key]
 
         if len(lm_dict) > 0:
             df_list.append(pd.DataFrame.from_dict(lm_dict, orient="index"))
@@ -1092,7 +1099,7 @@ def total_size(o):
 
 
     The recursive recipe universally cited on stack exchange and blogs for gauging the
-    size of python objets in memory.
+    size of Python objects in memory.
 
     See Also:
         https://code.activestate.com/recipes/577504/
