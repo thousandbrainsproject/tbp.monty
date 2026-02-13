@@ -1,6 +1,6 @@
 Experiment,Correct Child or Parent (%)|align right,Used MLH (%)|align right,Num Match Steps|align right,Rotation Error (degrees)|align right,Avg Prediction Error|align right,Run Time (mins)|align right
-infer_comp_lvl1_with_monolithic_models,60.71,53.57,321,80.71,0.38,29
+infer_comp_lvl1_with_monolithic_models,60.71,53.57,321,80.71,0.38,27
 infer_comp_lvl1_with_comp_models,84.52,41.67,44,40.76,0.33,3
 infer_comp_lvl2_with_comp_models,79.05,40.48,37,44.91,0.34,10
-infer_comp_lvl3_with_comp_models,56.57,56.57,40,41.50,0.34,17
+infer_comp_lvl3_with_comp_models,56.57,56.57,40,41.50,0.34,19
 infer_comp_lvl4_with_comp_models,58.24,56.59,33,42.52,0.33,17
