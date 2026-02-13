@@ -601,12 +601,14 @@ class HabitatSim(HabitatActuator, Simulator):
             agent_node = sim_agent.scene_node
 
             sensors: dict[SensorID, SensorState] = {}
-            for sensor_id, sensor in agent_node.node_sensors.items():
-                rotation = sim_utils.quat_from_magnum(sensor.node.rotation)
-                sensors[SensorID(sensor_id)] = SensorState(
-                    position=sensor.node.translation,
-                    rotation=rotation,
-                )
+            for habitat_sensor_id, sensor in agent_node.node_sensors.items():
+                monty_sensor_id = SensorID(habitat_sensor_id.split(".")[0])
+                if monty_sensor_id not in sensors:
+                    rotation = sim_utils.quat_from_magnum(sensor.node.rotation)
+                    sensors[monty_sensor_id] = SensorState(
+                        position=sensor.node.translation,
+                        rotation=rotation,
+                    )
 
             # Update agent/module state
             agent_id = self._agents[agent_index].agent_id
