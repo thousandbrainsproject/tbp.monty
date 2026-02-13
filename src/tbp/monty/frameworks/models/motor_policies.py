@@ -366,42 +366,23 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     """Policy that takes observation as input.
 
     Extension of BasePolicy that allows for taking the observation into account for
-    action selection. Currently it uses the percentage of the observation that is on
-    the object to reverse the last action if it is below min_perc_on_obj.
-
-    Additionally, this policy discouraces taking the reverse of the previous action
-    if we are still on the object.
+    action selection. Uses processed_observations.get_on_object() to decide whether to
+    reverse the last action when the patch is off the object.
 
     Attributes:
         guiding_sensors: List of sensors that are used to calculate the percentage
             on object. When using multiple sensors or a visualization sensor we may
             want to ignore some when determining whether we need to move back.
-        min_perc_on_obj: How much percent of the observation needs to be on the
-            object to sample a new action. Otherwise the previous action is reversed to
-            get back on the object. TODO: Not used anywhere?
     """
 
     def __init__(
         self,
-        min_perc_on_obj,
-        good_view_percentage,
-        desired_object_distance,
         use_goal_state_driven_actions=False,
         **kwargs,
     ) -> None:
         """Initialize policy.
 
         Args:
-            min_perc_on_obj: Minimum percentage of patch that needs to be on the object.
-                If under this amount, reverse the previous action to get the patch back
-                on the object.
-            good_view_percentage: How much percent of the view finder perception should
-                be filled with the object. (If less, move closer)
-            desired_object_distance: How far away should the agent be from the object
-                in view; for the distant-agent, this is used to establish a maximum
-                allowable distance of the object; note for the surface agent, this is
-                used with every set of traversal steps to ensure we remain close to the
-                surface
             use_goal_state_driven_actions: Whether to enable the motor system to make
                 use of the JumpToGoalStateMixin, which attempts to "jump" (i.e.
                 teleport) the agent to a specified goal state.
@@ -409,9 +390,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         """
         super().__init__(**kwargs)
         self.action: Action | None = None
-        self.min_perc_on_obj = min_perc_on_obj
-        self.good_view_percentage = good_view_percentage
-        self.desired_object_distance = desired_object_distance
         self.use_goal_state_driven_actions = use_goal_state_driven_actions
         if self.use_goal_state_driven_actions:
             JumpToGoalStateMixin.__init__(self)
@@ -464,7 +442,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
     def fixme_undo_last_action(
         self,
-    ) -> LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially:
+    ) -> (
+        LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially | None
+    ):
         """Returns an action that undoes last action for supported actions.
 
         Previous InformedPolicy.dynamic_call() implementation when not on object:
@@ -498,6 +478,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         yet clear to me what to do for actions that do not support undo.
         """
         last_action = self.action
+
+        if last_action is None:
+            return None
 
         if isinstance(last_action, LookDown):
             return LookDown(
@@ -561,8 +544,7 @@ class NaiveScanPolicy(InformedPolicy):
     ):
         """Initialize policy."""
         # Mostly use version of InformedPolicy to get the good view in the beginning
-        # TODO: maybe separate this out. Don't need to specify reverse_actions or
-        # min_perc_on_obj for that.
+        # TODO: maybe separate this out.
         super().__init__(**kwargs)
 
         # Specify this specific action space, otherwise it doesn't work
@@ -658,28 +640,23 @@ class SurfacePolicy(InformedPolicy):
     def __init__(
         self,
         alpha,
-        min_perc_on_obj=0.25,
-        good_view_percentage=0.5,
+        desired_object_distance=0.025,
         **kwargs,
     ):
         """Initialize policy.
 
         Args:
-            min_perc_on_obj: Minimum percentage of patch that needs to be
-                on the object. If under this amount, reverse the previous action
-                to get the patch back on the object.
-            good_view_percentage: How much percent of the view finder perception
-                should be filled with the object. (If less, move closer)
-                TODO M : since surface agent does not use get_good_view, can consider
-                removing this parameter
+            desired_object_distance: Distance to maintain from the surface; used for
+                touch_object and move-forward. Defaults to 0.025.
             alpha: to what degree should the move_tangentially direction be the
                 same as the last step or totally random? 0~same as before, 1~random walk
             **kwargs: ?
         """
-        super().__init__(min_perc_on_obj, good_view_percentage, **kwargs)
+        super().__init__(**kwargs)
         self.action = None
         self.tangential_angle = 0
         self.alpha = alpha
+        self.desired_object_distance = desired_object_distance
 
         # TODO: Remove these once TouchObject positioning procedure is implemented
         self.attempting_to_find_object: bool = False
