@@ -50,33 +50,12 @@ class EvidenceLMTest(BaseGraphTest):
             desired_object_distance=0.03,
         )
         self.output_dir = tempfile.mkdtemp()
-        self.fixed_actions_path = (
-            Path(__file__).parent / "resources" / "fixed_test_actions.jsonl"
-        )
-        self.fixed_actions_off_object_path = (
-            Path(__file__).parent / "resources" / "fixed_test_actions_off_object.jsonl"
-        )
-
-        # Generate the override string for setting the actions file name.
-        # We're doing this because the string is too long otherwise.
-        actions_file_name_selector = ".".join(  # noqa: FLY002
-            [
-                "test",
-                "config",
-                "monty_config",
-                "motor_system_config",
-                "motor_system_args",
-                "policy",
-                "file_name",
-            ]
-        )
 
         def hydra_config(test_name: str) -> DictConfig:
             """Return a Hydra configuration from the specified test name.
 
             Args:
                 test_name: the name of the test config to load
-                action_file_name: Optional path to a file of actions to use
             """
             overrides = [
                 f"test=evidence_lm/{test_name}",
