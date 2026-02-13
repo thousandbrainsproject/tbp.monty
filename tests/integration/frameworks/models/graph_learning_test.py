@@ -97,11 +97,10 @@ class GraphLearningTest(BaseGraphTest):
 
         self.output_dir = Path(tempfile.mkdtemp())
         self.compositional_save_path = tempfile.mkdtemp()
-        self.fixed_actions_path = (
-            Path(__file__).parent / "resources" / "fixed_test_actions.jsonl"
-        )
+        resources_dir = Path(__file__).parents[3] / "unit" / "resources"
+        self.fixed_actions_path = resources_dir / "fixed_test_actions.jsonl"
         self.fixed_actions_path_off_object = (
-            Path(__file__).parent / "resources" / "fixed_test_actions_off_object.jsonl"
+            resources_dir / "fixed_test_actions_off_object.jsonl"
         )
 
         # Generate the override string for setting the actions file name.
