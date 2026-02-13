@@ -458,8 +458,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self.good_view_distance = good_view_distance
-        self.good_view_percentage = good_view_percentage
+        self._good_view_distance = good_view_distance
+        self._good_view_percentage = good_view_percentage
 
     def step(self, ctx: RuntimeContext, first: bool = False) -> Observations:
         if first:
@@ -584,8 +584,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         """
         positioning_procedure = GetGoodView(
             agent_id=self.motor_system._policy.agent_id,
-            good_view_distance=self.good_view_distance,
-            good_view_percentage=self.good_view_percentage,
+            good_view_distance=self._good_view_distance,
+            good_view_percentage=self._good_view_percentage,
             multiple_objects_present=self.num_distractors > 0,
             sensor_id=sensor_id,
             target_semantic_id=self.primary_target["semantic_id"],
