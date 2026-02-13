@@ -54,6 +54,9 @@ def path_expanduser_resolver(path: str) -> str:
     """Returns a path with ~ expanded to the user's home directory."""
     return str(Path(path).expanduser())
 
+def tests_dir_resolver(path: str) -> str:
+    return str(Path(__file__).parents[3] / "tests" / Path(path))
+
 
 def register_resolvers() -> None:
     OmegaConf.register_new_resolver("monty.agent_id", agent_id_resolver)
@@ -62,3 +65,4 @@ def register_resolvers() -> None:
     OmegaConf.register_new_resolver("np.ones", ones_resolver)
     OmegaConf.register_new_resolver("np.list_eval", numpy_list_eval_resolver)
     OmegaConf.register_new_resolver("path.expanduser", path_expanduser_resolver)
+    OmegaConf.register_new_resolver("path.tests", tests_dir_resolver)

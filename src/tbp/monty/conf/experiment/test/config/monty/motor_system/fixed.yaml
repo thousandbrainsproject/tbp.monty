@@ -1,3 +1,4 @@
+# TODO: Delete if unused.
 defaults:
   - /experiment/config/monty/motor_system/policy/informed@motor_system_args.policy
   - /experiment/config/monty/motor_system/action_space/distant_agent@motor_system_args.policy.action_sampler
