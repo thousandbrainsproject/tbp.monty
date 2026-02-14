@@ -60,30 +60,23 @@ obs = Observations(
 
 Related to defining how actions change observations, you will also need to define how actions change the state of the agent. The returned proprioceptive state needs to be a `ProprioceptiveState(Dict[str, AgentState])` with an entry per agent in the environment. The entry should contain the agent's position and orientation relative to some global reference point (`AgentState`). For each sensor associated with that agent, a `SensorState` should contain the sensor's position and orientation relative to the agent.
 
-For example, if you have one agent with two sensors, the proprioceptive state could look like this:
+For example, if you have one agent with two sensors, the proprioceptive state has one `SensorState` per sensor (keyed by `SensorID`), and looks like this:
 ```python
 state = ProprioceptiveState(
   {
     AgentID("agent_id_0"): AgentState(
-      {
-        "position": current_agent_position,
-        "rotation": current_agent_rotation,
-        "sensors":
-        {
-          SensorID("patch_0.depth"): SensorState(
-            {
-              "position": current_depth_sensor_position
-              "rotation": current_depth_sensor_rotation
-            }
-          ),
-          SensorID("patch_0.rgba"): SensorState(
-            {
-              "position": current_rgba_sensor_position
-              "rotation": current_rgba_sensor_rotation
-            }
-          ),
-        }
-      }
+      sensors={
+        SensorID("patch_0"): SensorState(
+          position=current_patch_0_sensor_position,
+          rotation=current_patch_0_sensor_rotation,
+        ),
+        SensorID("patch_1"): SensorState(
+          position=current_patch_1_sensor_position,
+          rotation=current_patch_1_sensor_rotation,
+        ),
+      },
+      position=current_agent_position,
+      rotation=current_agent_rotation,
     )
   }
 )
