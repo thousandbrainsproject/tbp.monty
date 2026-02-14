@@ -16,6 +16,7 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as nptest
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
 from tbp.monty.frameworks.actions.actions import (
     ActionJSONEncoder,
@@ -244,10 +245,13 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
             file_name=self.actions_file,
         )
         cycle_length = len(policy.action_list)
+        ctx = RuntimeContext(rng=np.random.RandomState(42))
+        state = MotorSystemState()
         returned_actions = []
         for _ in range(2 * cycle_length):
-            returned_actions.append(policy.dynamic_call(None))
-            policy.post_action(returned_actions[-1], MotorSystemState())
+            action = policy.dynamic_call(ctx)
+            returned_actions.append(action)
+            policy.post_action(action, state)
 
         for i in range(cycle_length):
             first_occurrence = returned_actions[i]
