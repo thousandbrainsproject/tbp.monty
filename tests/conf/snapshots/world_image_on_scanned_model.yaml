@@ -105,10 +105,7 @@ experiment:
         motor_system_args:
           policy:
             file_name: null
-            good_view_percentage: 0.5
-            desired_object_distance: 0.03
             use_goal_state_driven_actions: false
-            min_perc_on_obj: 0.25
             agent_id: ${monty.agent_id:agent_id_0}
             action_sampler:
               actions:
@@ -192,7 +189,6 @@ experiment:
       env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.SaccadeOnImageEnvironment}
       transform: null
     eval_env_interface_args:
-      eval_env_interface_args: null
       scenes:
       - 0
       - 0

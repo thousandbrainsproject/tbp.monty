@@ -59,6 +59,12 @@ POSSIBLE_ACTIONS_DIST = [
 ]
 POSSIBLE_ACTIONS_ABS = [f"{AGENT_ID}.set_yaw", f"{AGENT_ID}.set_sensor_pitch"]
 EXPECTED_STATES: npt.NDArray[np.uint8] = np.arange(0, NUM_STEPS, dtype=np.uint8)
+TEST_DATALOADER_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "unit"
+    / "resources"
+    / "dataloader_test_images"
+)
 
 
 class FakeEnvironmentRel(SimulatedObjectEnvironment):
@@ -362,7 +368,7 @@ class EmbodiedDataTest(unittest.TestCase):
         patch_size = 48
         expected_keys = ["depth", "rgba", "pixel_loc"]
 
-        data_path = Path(__file__).parent / "resources" / "dataloader_test_images"
+        data_path = TEST_DATALOADER_PATH
 
         base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
         base_policy.agent_id = AGENT_ID
@@ -417,12 +423,7 @@ class EmbodiedDataTest(unittest.TestCase):
         patch_size = 48
         expected_keys = ["depth", "rgba", "pixel_loc"]
 
-        data_path = (
-            Path(__file__).parent
-            / "resources"
-            / "dataloader_test_images"
-            / "0_numenta_mug"
-        )
+        data_path = TEST_DATALOADER_PATH / "0_numenta_mug"
 
         base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
         base_policy.agent_id = AGENT_ID

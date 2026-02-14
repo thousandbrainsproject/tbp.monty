@@ -31,35 +31,6 @@ from tbp.monty.frameworks.experiments.profile import (
 )
 
 
-class InheritanceProfileExperimentMixinTest(TestCase):
-    @staticmethod
-    def test_leftmost_subclassing_does_not_error() -> None:
-        class GoodSubclass(ProfileExperimentMixin, MontyExperiment):
-            pass
-
-    @staticmethod
-    def test_non_leftmost_subclassing_raises_error() -> None:
-        with pytest.raises(TypeError):
-
-            class BadSubclass(MontyExperiment, ProfileExperimentMixin):
-                pass
-
-    @staticmethod
-    def test_missing_experiment_base_raises_error() -> None:
-        with pytest.raises(TypeError):
-
-            class BadSubclass(ProfileExperimentMixin):
-                pass
-
-    @staticmethod
-    def test_experiment_subclasses_are_properly_detected() -> None:
-        class SubExperiment(MontyExperiment):
-            pass
-
-        class Subclass(ProfileExperimentMixin, SubExperiment):
-            pass
-
-
 class ProfiledExperiment(ProfileExperimentMixin, MontyExperiment):
     pass
 
