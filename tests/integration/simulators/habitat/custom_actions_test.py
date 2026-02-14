@@ -42,7 +42,7 @@ class HabitatSimTest(unittest.TestCase):
         with HabitatSim(agents=[camera]) as sim:
             # Retrieve agent
             agent = sim.get_agent(AgentID("camera"))
-            scene_node = agent._sensors[f"{sensor_id}].object
+            scene_node = agent._sensors[SensorID(sensor_id)].object
 
             # Test initial conditions
             rotation = scene_node.rotation

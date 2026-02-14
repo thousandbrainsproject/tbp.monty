@@ -19,7 +19,6 @@ import scipy
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
-from tbp.monty.frameworks.sensors import SensorID
 
 __all__ = [
     "AddNoiseToRawDepthImage",
