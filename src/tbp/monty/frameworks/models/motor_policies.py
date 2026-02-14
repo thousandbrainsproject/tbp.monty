@@ -277,7 +277,10 @@ class BasePolicy(MotorPolicy):
 
 
 class PredefinedPolicy(MotorPolicy):
-    """Policy that follows an action sequence read from file."""
+    """Policy that follows an action sequence read from file.
+
+    Cycles through the actions in the file indefinitely.
+    """
 
     @staticmethod
     def read_action_file(file: str | Path) -> list[Action]:
