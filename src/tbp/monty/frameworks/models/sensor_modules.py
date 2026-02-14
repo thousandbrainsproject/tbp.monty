@@ -408,8 +408,8 @@ class Probe(SensorModule):
         super().__init__()
 
         self.is_exploring = False
-        self.sensor_module_id = sensor_module_id
-        self.state = None
+        self.sensor_module_id: SensorID = SensorID(sensor_module_id)
+        self.state: SensorState | None = None
         self.save_raw_obs = save_raw_obs
 
         self._snapshot_telemetry = SnapshotTelemetry()
@@ -612,9 +612,8 @@ class HabitatSM(SensorModule):
         # Tests check sm.features, not sure if this should be exposed
         self.features = features
         self.processed_obs = []
-        self.states = []
         # TODO: give more descriptive & distinct names
-        self.sensor_module_id = sensor_module_id
+        self.sensor_module_id: SensorID = SensorID(sensor_module_id)
         self.save_raw_obs = save_raw_obs
 
     def pre_episode(self, rng: np.random.RandomState) -> None:
@@ -623,11 +622,10 @@ class HabitatSM(SensorModule):
         self._state_filter.reset()
         self.is_exploring = False
         self.processed_obs = []
-        self.states = []
 
     def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
-        sensor = agent.sensors[SensorID(self.sensor_module_id)]
+        sensor = agent.sensors[self.sensor_module_id]
         self.state = SensorState(
             position=agent.position
             + qt.rotate_vectors(agent.rotation, sensor.position),
@@ -669,7 +667,6 @@ class HabitatSM(SensorModule):
 
         if not self.is_exploring:
             self.processed_obs.append(observed_state.__dict__)
-            self.states.append(self.state)
 
         return observed_state
 
