@@ -658,25 +658,18 @@ class HabitatSM(SensorModule):
         Returns:
             State with features and morphological features. Noise may be added.
             use_state flag may be set.
-        """ 
+        """
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
                 data, self.state.rotation, self.state.position
             )
 
         print("IN SENSOR MODULE STEP METHOD")
-
-        # We make 'data' into an AgentObservations object since that's the closest to an Observations object that
-        # we can get. The transform handlers have a reference to the agent ID, which it can use to build an Observations
-        # object from the passed in AgentObservations object. From here, the observation data is in the form that the
-        # original transform functions expect.
-        data: AgentObservations = {self.sensor_module_id: data}
+        # RAL Change the call
         print_dict_structure(data)
-        # TF context object none for now
         tf_context = TransformContext(None, self.agent_state)
         self.transform_pipeline(data, tf_context)
-        # Turn data back into its original form that the rest of the SM's step function expect
-        data: SensorObservations = data[self.sensor_module_id]
+
 
         observed_state = self._habitat_observation_processor.process(data)
 
