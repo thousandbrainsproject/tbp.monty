@@ -25,6 +25,9 @@ from tbp.monty.frameworks.experiments.object_recognition_experiments import (
 )
 from tests import HYDRA_ROOT
 
+GOOD_VIEW_PERCENTAGE_DEFAULT = 0.5
+GOOD_VIEW_DISTANCE_DEFAULT = 0.03
+
 
 def hydra_config(test_name: str, output_dir: str) -> DictConfig:
     return hydra.compose(
@@ -32,6 +35,10 @@ def hydra_config(test_name: str, output_dir: str) -> DictConfig:
         overrides=[
             f"test=integration/positioning_procedures/get_good_view/{test_name}",
             f"test.config.logging.output_dir={output_dir}",
+            f"+test.config.train_env_interface_args.good_view_percentage={GOOD_VIEW_PERCENTAGE_DEFAULT}",
+            f"+test.config.train_env_interface_args.good_view_distance={GOOD_VIEW_DISTANCE_DEFAULT}",
+            f"+test.config.eval_env_interface_args.good_view_percentage={GOOD_VIEW_PERCENTAGE_DEFAULT}",
+            f"+test.config.eval_env_interface_args.good_view_distance={GOOD_VIEW_DISTANCE_DEFAULT}",
         ],
     )
 
@@ -58,11 +65,8 @@ class GetGoodViewTest(unittest.TestCase):
                 exp.pre_epoch()
                 exp.pre_episode()
 
-                policy_cfg = config.test.config["monty_config"]["motor_system_config"][
-                    "motor_system_args"
-                ]["policy"]
-                target_perc_on_target_obj = policy_cfg["good_view_percentage"]
-                target_closest_point = policy_cfg["desired_object_distance"]
+                target_perc_on_target_obj = GOOD_VIEW_PERCENTAGE_DEFAULT
+                target_closest_point = GOOD_VIEW_DISTANCE_DEFAULT
 
                 ctx = RuntimeContext(rng=exp.rng)
                 observation = exp.env_interface.step(ctx, first=True)
@@ -111,11 +115,8 @@ class GetGoodViewTest(unittest.TestCase):
                 exp.pre_epoch()
                 exp.pre_episode()
 
-                policy_cfg = config.test.config["monty_config"]["motor_system_config"][
-                    "motor_system_args"
-                ]["policy"]
-                target_perc_on_target_obj = policy_cfg["good_view_percentage"]
-                target_closest_point = policy_cfg["desired_object_distance"]
+                target_perc_on_target_obj = GOOD_VIEW_PERCENTAGE_DEFAULT
+                target_closest_point = GOOD_VIEW_DISTANCE_DEFAULT
 
                 ctx = RuntimeContext(rng=exp.rng)
                 observation = exp.env_interface.step(ctx, first=True)

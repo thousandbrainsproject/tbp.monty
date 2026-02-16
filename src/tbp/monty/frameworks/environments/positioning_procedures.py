@@ -134,7 +134,7 @@ class GetGoodView(PositioningProcedure):
 
     First, the agent is moved towards the target object until the object fills a minimum
     of percentage (given by `good_view_percentage`) of the sensor's field of view or the
-    closest point of the object is less than `desired_object_distance` from the sensor.
+    closest point of the object is less than `good_view_distance` from the sensor.
     This makes sure that big and small objects all fill similar amount of space in the
     sensor's field of view. Otherwise small objects may be too small to perform saccades
     or the sensor ends up inside of big objects. This step is performed by default but
@@ -149,7 +149,7 @@ class GetGoodView(PositioningProcedure):
     def __init__(
         self,
         agent_id: AgentID,
-        desired_object_distance: float,
+        good_view_distance: float,
         good_view_percentage: float,
         multiple_objects_present: bool,
         sensor_id: SensorID,
@@ -161,7 +161,7 @@ class GetGoodView(PositioningProcedure):
 
         Args:
             agent_id: The ID of the agent to generate actions for.
-            desired_object_distance: The desired distance to the object.
+            good_view_distance: The desired distance to the object for a good view.
             good_view_percentage: The percentage of the sensor that should be
                 filled with the object.
             multiple_objects_present: Whether there are multiple objects in
@@ -176,7 +176,7 @@ class GetGoodView(PositioningProcedure):
                 the sensor is not on the target object.
         """
         self._agent_id = agent_id
-        self._desired_object_distance = desired_object_distance
+        self._good_view_distance = good_view_distance
         self._good_view_percentage = good_view_percentage
         self._multiple_objects_present = multiple_objects_present
         self._sensor_id = sensor_id
@@ -350,9 +350,9 @@ class GetGoodView(PositioningProcedure):
         logger.debug("closest point on any object: " + str(closest_point_on_any_obj))
 
         if perc_on_target_obj < self._good_view_percentage:
-            if closest_point_on_target_obj > self._desired_object_distance:
+            if closest_point_on_target_obj > self._good_view_distance:
                 if self._multiple_objects_present and (
-                    closest_point_on_any_obj < self._desired_object_distance / 4
+                    closest_point_on_any_obj < self._good_view_distance / 4
                 ):
                     logger.debug(
                         "Getting too close to other objects, not moving forward."

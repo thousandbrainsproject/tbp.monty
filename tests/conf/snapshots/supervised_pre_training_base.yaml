@@ -101,10 +101,7 @@ experiment:
         motor_system_args:
           policy:
             file_name: null
-            good_view_percentage: 0.5
-            desired_object_distance: 0.03
             use_goal_state_driven_actions: false
-            min_perc_on_obj: 0.25
             agent_id: ${monty.agent_id:agent_id_0}
             fixed_amount: 5
             action_sampler:

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -29,7 +29,10 @@ SENSOR_ID = "patch"
 
 class TwoDMovementTest(unittest.TestCase):
     DATA_PATH = (
-        Path(__file__).parent.parent.parent / "resources" / "dataloader_test_images"
+        Path(__file__).resolve().parents[3]
+        / "unit"
+        / "resources"
+        / "dataloader_test_images"
     )
 
     def setUp(self):

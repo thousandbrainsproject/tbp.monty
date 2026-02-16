@@ -13,7 +13,6 @@ config:
         policy:
           action_sampler:
             rotation_degrees: 5.0
-          good_view_percentage: 0.5
   env_interface_config:
     env_init_args:
       data_path: null
