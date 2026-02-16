@@ -1043,7 +1043,7 @@ class PolicyPlot:
                 for x in self.detailed_stats[str(self.episode)]["motor_system"][
                     "action_details"
                 ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")].sensors
-                if "patch" in x and ".depth" in x
+                if "patch" in x
             ]
 
             for sensor_key in sensors_to_plot:
