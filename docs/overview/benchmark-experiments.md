@@ -260,7 +260,7 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 !table[../../benchmarks/montymeetsworld.csv]
 
-**Note that rotation errors are meaningless since no ground truth rotation is provided**
+**Rotation errors are excluded because they are meaningless, since no ground truth rotation is provided**
 
 ### Explanation of Some of the Results
 
