@@ -148,14 +148,6 @@ class OmniglotEnvironment(SimulatedEnvironment):
                             rotation=self.rotation,
                             position=sensor_position,
                         ),
-                        SensorID("patch"): SensorState(
-                            rotation=self.rotation,
-                            position=sensor_position,
-                        ),
-                        SensorID("view_finder"): SensorState(
-                            rotation=self.rotation,
-                            position=sensor_position,
-                        ),
                         SensorID("view_finder"): SensorState(
                             rotation=self.rotation,
                             position=sensor_position,
