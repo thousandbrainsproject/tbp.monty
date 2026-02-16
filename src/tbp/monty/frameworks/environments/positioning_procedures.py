@@ -272,7 +272,7 @@ class GetGoodView(PositioningProcedure):
             idx_loc_to_look_at[0], idx_loc_to_look_at[1], :3
         ]
         camera_location = (
-            state[self._agent_id].sensors[SensorID(f"{self._sensor_id}.depth")].position
+            state[self._agent_id].sensors[SensorID(self._sensor_id)].position
         )
         agent_location = state[self._agent_id].position
         # Get the location of the object relative to sensor.
@@ -463,8 +463,6 @@ class GetGoodView(PositioningProcedure):
         # Retrieve agent's rotation relative to the world.
         agent_rotation = agent_state.rotation
         # Retrieve sensor's rotation relative to the agent.
-        sensor_rotation = agent_state.sensors[
-            SensorID(f"{self._sensor_id}.depth")
-        ].rotation
+        sensor_rotation = agent_state.sensors[SensorID(self._sensor_id)].rotation
         # Derive sensor's rotation relative to the world.
         return agent_rotation * sensor_rotation
