@@ -248,7 +248,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         if isinstance(object_names, Sequence):
             self.object_names = object_names
             # Return an (ordered) list of unique items:
-            self.source_object_list = list(set(object_names))
+            self.source_object_list = list(dict.fromkeys(object_names))
             self.num_distractors = 0
         elif isinstance(object_names, Mapping):
             # TODO when we want more advanced multi-object experiments, update these
