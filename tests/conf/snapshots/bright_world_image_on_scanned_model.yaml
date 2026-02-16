@@ -151,6 +151,7 @@ experiment:
             hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
             hypotheses_updater_args:
               max_nneighbors: 10
+              deletion_trigger_slope: 0.2
           learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
       sensor_module_configs:
         sensor_module_0:

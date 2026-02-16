@@ -29,6 +29,11 @@ config:
   monty_config:
     monty_args:
       min_eval_steps: ${benchmarks.min_eval_steps}
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          hypotheses_updater_args:
+            deletion_trigger_slope: 0.2
   eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageEnvironmentInterface}
   eval_env_interface_args:
     # list(np.repeat(range(12), 4))
