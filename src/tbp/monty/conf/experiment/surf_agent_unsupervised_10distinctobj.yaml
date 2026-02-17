@@ -15,7 +15,9 @@ defaults:
   - config/environment_interface/ycb/distinct_objects@config.train_env_interface_args.object_names
 
 config:
+  do_train: true
   do_eval: false
+  model_name_or_path: ""
   n_train_epochs: 10
   max_train_steps: 4000
   max_total_steps: 4000
