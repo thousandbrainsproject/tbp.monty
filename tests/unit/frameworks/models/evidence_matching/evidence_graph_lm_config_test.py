@@ -9,7 +9,6 @@
 import unittest
 
 import hydra
-import numpy as np
 import pytest
 
 from tbp.monty.frameworks.models.goal_state_generation import (
@@ -77,8 +76,7 @@ class EvidenceGraphLMConfigTest(unittest.TestCase):
         # TODO: change when we switch to instantiating the LM directly
         learning_module_class = self.learning_module["learning_module_class"]
         learning_module_args = self.learning_module["learning_module_args"]
-        rng = np.random.default_rng(42)
-        lm = learning_module_class(rng=rng, **learning_module_args)
+        lm = learning_module_class(**learning_module_args)
 
         self.assertIs(lm.gsg, gsg)
         self.assertIs(gsg.parent_lm, lm)
