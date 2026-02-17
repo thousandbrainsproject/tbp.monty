@@ -9,8 +9,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import numpy as np
-
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.frameworks.models.states import GoalState
@@ -21,17 +20,17 @@ __all__ = ["FakeLearningModule"]
 class FakeLearningModule(LearningModule):
     """Dummy placeholder class used only for tests."""
 
-    def __init__(self, rng: np.random.RandomState):  # noqa: ARG002
+    def __init__(self):
         self.test_attr_1 = True
         self.test_attr_2 = True
 
     def reset(self):
         pass
 
-    def matching_step(self, inputs):
+    def matching_step(self, ctx: RuntimeContext, inputs):
         pass
 
-    def exploratory_step(self, inputs):
+    def exploratory_step(self, ctx: RuntimeContext, inputs):
         pass
 
     def receive_votes(self, inputs):
@@ -47,7 +46,7 @@ class FakeLearningModule(LearningModule):
         self.test_attr_1 = state_dict["test_attr_1"]
         self.test_attr_2 = state_dict["test_attr_2"]
 
-    def pre_episode(self, rng: np.random.RandomState) -> None:
+    def pre_episode(self) -> None:
         pass
 
     def post_episode(self):

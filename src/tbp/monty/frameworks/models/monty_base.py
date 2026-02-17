@@ -12,11 +12,9 @@ from __future__ import annotations
 import logging
 from typing import ClassVar
 
-import numpy as np
-
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
-from tbp.monty.frameworks.models.abstract_monty_classes import Monty
+from tbp.monty.frameworks.models.abstract_monty_classes import Monty, RuntimeContext
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
 
@@ -137,22 +135,22 @@ class MontyBase(Monty):
     # Basic methods that specify the algorithm
     ###
 
-    def step(self, observation):
+    def step(self, ctx: RuntimeContext, observation):
         # For the base class, just use matching step. Note that matching_step and
         # exploratory_step are fully implemented by the abstract class.
         if self.step_type == "matching_step":
-            self._matching_step(observation)
+            self._matching_step(ctx, observation)
         elif self.step_type == "exploratory_step":
-            self._exploratory_step(observation)
+            self._exploratory_step(ctx, observation)
         else:
             raise ValueError(f"step type {self.step_type} not found in base monty")
 
-    def aggregate_sensory_inputs(self, observation):
+    def aggregate_sensory_inputs(self, ctx: RuntimeContext, observation):
         sensor_module_outputs = []
         for sensor_module in self.sensor_modules:
             raw_obs = self.get_observations(observation, sensor_module.sensor_module_id)
             sensor_module.update_state(self.get_agent_state())
-            sm_output = sensor_module.step(raw_obs)
+            sm_output = sensor_module.step(ctx, raw_obs)
             sensor_module_outputs.append(sm_output)
         # Aggregate LM outputs here to be input to higher level LM at next step
         learning_module_outputs = []
@@ -163,10 +161,10 @@ class MontyBase(Monty):
         # TODO: Maybe combine the two?
         self.learning_module_outputs = learning_module_outputs
 
-    def pass_features_directly_to_motor_system(self, observation):
+    def pass_features_directly_to_motor_system(self, ctx: RuntimeContext, observation):
         """Pass features directly to motor system without stepping LMs."""
-        self.aggregate_sensory_inputs(observation)
-        self._pass_input_obs_to_motor_system(
+        self.aggregate_sensory_inputs(ctx, observation)
+        self._pass_input_obs_to_motor_system(  # TODO: not part of MontyBase
             get_first_sensory_state(self.sensor_module_outputs)
         )
         self.total_steps += 1
@@ -201,10 +199,10 @@ class MontyBase(Monty):
         """Call any functions and logging in case of a time out."""
         pass
 
-    def _step_learning_modules(self):
+    def _step_learning_modules(self, ctx: RuntimeContext):
         for i in range(len(self.learning_modules)):
             sensory_inputs = self._collect_inputs_to_lm(i)
-            getattr(self.learning_modules[i], self.step_type)(sensory_inputs)
+            getattr(self.learning_modules[i], self.step_type)(ctx, sensory_inputs)
 
     def _collect_inputs_to_lm(self, lm_id):
         """Use sm_to_lm_matrix and lm_to_lm_matrix to collect inputs to LM i.
@@ -335,15 +333,15 @@ class MontyBase(Monty):
             lm.set_experiment_mode(mode)
         # for sm in self.sensor_modules: sm.set_experiment_mode() unused & removed
 
-    def pre_episode(self, rng: np.random.RandomState):
+    def pre_episode(self):
         self._is_done = False
         self.reset_episode_steps()
         self.switch_to_matching_step()
         for lm in self.learning_modules:
-            lm.pre_episode(rng)
+            lm.pre_episode()
 
         for sm in self.sensor_modules:
-            sm.pre_episode(rng)
+            sm.pre_episode()
 
     def post_episode(self):
         for lm in self.learning_modules:

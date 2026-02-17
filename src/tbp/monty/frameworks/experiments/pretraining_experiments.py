@@ -108,7 +108,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                     num_steps,
                     is_saccade_on_image_env_interface,
                 )
-            self.model.step(observations)
+            self.model.step(ctx, observations)
             if self.model.is_done:
                 break
 
@@ -181,7 +181,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         self.reset_episode_rng()
 
         # TODO: Fix invalid pre_episode signature call
-        self.model.pre_episode(self.rng, self.env_interface.primary_target)
+        self.model.pre_episode(self.env_interface.primary_target)
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps  # no eval mode here

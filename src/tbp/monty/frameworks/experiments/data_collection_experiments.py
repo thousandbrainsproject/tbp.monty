@@ -58,13 +58,13 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
                     *self.live_plotter.hardcoded_assumptions(observations, self.model),
                     step,
                 )
-            self.pass_features_to_motor_system(observations, step)
+            self.pass_features_to_motor_system(ctx, observations, step)
             step += 1
 
         self.post_episode()
 
-    def pass_features_to_motor_system(self, observation, step):
-        self.model.aggregate_sensory_inputs(observation)
+    def pass_features_to_motor_system(self, ctx: RuntimeContext, observation, step):
+        self.model.aggregate_sensory_inputs(ctx, observation)
         self.model.motor_system._policy.processed_observations = (
             self.model.sensor_module_outputs[0]
         )
@@ -101,14 +101,17 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
 
         self.reset_episode_rng()
 
-        self.model.pre_episode(self.rng)
+        self.model.pre_episode()
         self.env_interface.pre_episode(self.rng)
         self.max_steps = self.max_train_steps
         self.logger_handler.pre_episode(self.logger_args)
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-    def post_episode(self):
+    def post_episode(
+        self,
+        steps,  # noqa: ARG002
+    ):
         torch.save(
             self.model.sensor_modules[0].processed_obs[:-1],
             self.output_dir / f"observations{self.train_episodes}.pt",

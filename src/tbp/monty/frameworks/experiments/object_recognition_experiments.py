@@ -70,13 +70,12 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         if hasattr(self.env_interface, "semantic_id_to_label"):
             # TODO: Fix invalid pre_episode signature call
             self.model.pre_episode(
-                self.rng,
                 self.env_interface.primary_target,
                 self.env_interface.semantic_id_to_label,
             )
         else:
             # TODO: Fix invalid pre_episode signature call
-            self.model.pre_episode(self.rng, self.env_interface.primary_target)
+            self.model.pre_episode(self.env_interface.primary_target)
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps
@@ -144,9 +143,9 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 )
                 # On these sensations, we just want to pass information to the motor
                 # system, so bypass the main model step (i.e. updating of LMs)
-                self.model.pass_features_directly_to_motor_system(observations)
+                self.model.pass_features_directly_to_motor_system(ctx, observations)
             else:
-                self.model.step(observations)
+                self.model.step(ctx, observations)
 
             if self.model.is_done:
                 # Check this right after step to avoid setting time out
