@@ -608,9 +608,9 @@ class HabitatSim(HabitatActuator, Simulator):
             agent = self._agents[agent_index]
             sensors: dict[SensorID, SensorState] = {}
             for sensor_id, sensor in agent_node.node_sensors.items():
-                if not sensor_id.endswith(".rgba"):
-                    continue
                 monty_id = SensorID(agent.habitat_to_monty_sensor_id_map[sensor_id])
+                if monty_id in sensors:
+                    continue
                 rotation = sim_utils.quat_from_magnum(sensor.node.rotation)
                 sensors[monty_id] = SensorState(
                     position=sensor.node.translation,
