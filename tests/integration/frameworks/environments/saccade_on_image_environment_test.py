@@ -24,7 +24,7 @@ from tbp.monty.frameworks.environments.two_d_data import SaccadeOnImageEnvironme
 from tbp.monty.frameworks.sensors import SensorID
 
 AGENT_ID = AgentID("agent_id_0")
-SENSOR_ID = "patch"
+SENSOR_ID = SensorID("patch")
 
 
 class TwoDMovementTest(unittest.TestCase):
@@ -41,15 +41,13 @@ class TwoDMovementTest(unittest.TestCase):
         )
         self.env.reset()
         self.current_state = self.env.get_state()
-        self.prev_loc = (
-            self.current_state[AGENT_ID].sensors[SensorID(SENSOR_ID)].position
-        )
+        self.prev_loc = self.current_state[AGENT_ID].sensors[SENSOR_ID].position
 
     def test_move_forward(self):
         action = MoveForward(agent_id=AGENT_ID, distance=1)
         _ = self.env.step([action])
         current_state = self.env.get_state()
-        current_loc = current_state[AGENT_ID].sensors[SensorID(SENSOR_ID)].position
+        current_loc = current_state[AGENT_ID].sensors[SENSOR_ID].position
         self.assertLess(
             np.linalg.norm(self.prev_loc - current_loc),
             0.0001,
@@ -60,7 +58,7 @@ class TwoDMovementTest(unittest.TestCase):
         action = MoveForward(agent_id=AGENT_ID, distance=-1)
         _ = self.env.step([action])
         current_state = self.env.get_state()
-        current_loc = current_state[AGENT_ID].sensors[SensorID(SENSOR_ID)].position
+        current_loc = current_state[AGENT_ID].sensors[SENSOR_ID].position
         self.assertLess(
             np.linalg.norm(self.prev_loc - current_loc),
             0.0001,
@@ -71,7 +69,7 @@ class TwoDMovementTest(unittest.TestCase):
         action = LookUp(agent_id=AGENT_ID, rotation_degrees=10)
         _ = self.env.step([action])
         current_state = self.env.get_state()
-        current_loc = current_state[AGENT_ID].sensors[SensorID(SENSOR_ID)].position
+        current_loc = current_state[AGENT_ID].sensors[SENSOR_ID].position
         self.assertGreater(
             np.linalg.norm(self.prev_loc - current_loc),
             0.0001,
@@ -82,7 +80,7 @@ class TwoDMovementTest(unittest.TestCase):
         action = LookDown(agent_id=AGENT_ID, rotation_degrees=10)
         _ = self.env.step([action])
         current_state = self.env.get_state()
-        current_loc = current_state[AGENT_ID].sensors[SensorID(SENSOR_ID)].position
+        current_loc = current_state[AGENT_ID].sensors[SENSOR_ID].position
         self.assertGreater(
             np.linalg.norm(self.prev_loc - current_loc),
             0.0001,
@@ -93,7 +91,7 @@ class TwoDMovementTest(unittest.TestCase):
         action = TurnLeft(agent_id=AGENT_ID, rotation_degrees=10)
         _ = self.env.step([action])
         current_state = self.env.get_state()
-        current_loc = current_state[AGENT_ID].sensors[SensorID(SENSOR_ID)].position
+        current_loc = current_state[AGENT_ID].sensors[SENSOR_ID].position
         self.assertGreater(
             np.linalg.norm(self.prev_loc - current_loc),
             0.0001,
@@ -104,7 +102,7 @@ class TwoDMovementTest(unittest.TestCase):
         action = TurnRight(agent_id=AGENT_ID, rotation_degrees=10)
         _ = self.env.step([action])
         current_state = self.env.get_state()
-        current_loc = current_state[AGENT_ID].sensors[SensorID(SENSOR_ID)].position
+        current_loc = current_state[AGENT_ID].sensors[SENSOR_ID].position
         self.assertGreater(
             np.linalg.norm(self.prev_loc - current_loc),
             0.0001,

@@ -533,7 +533,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             {
                 agent_id: AgentState(
                     sensors={
-                        SensorID(sensor_id): SensorState(
+                        sensor_id: SensorState(
                             rotation=rotation,
                             position=np.array([0, 0, 0]),
                         )
