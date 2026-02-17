@@ -599,7 +599,7 @@ class HabitatSim(HabitatActuator, Simulator):
         Note: A Monty RGBD sensor is represented by separate RGBA and depth sensors in
         Habitat (and a separate semantic sensor, if enabled). Their positions and
         rotations are identical (they belong to the same body), so we arbitrarily
-        return the position and rotation from the RGBA sensor.
+        return the position and rotation from whichever sensor we see first.
         """
         result = ProprioceptiveState()
         for agent_index, sim_agent in enumerate(self._sim.agents):
