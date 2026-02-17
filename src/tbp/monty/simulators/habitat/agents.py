@@ -72,6 +72,7 @@ class HabitatAgent:
         self.rotation = rotation
         self.height = height
         self.sensors: list[SensorConfig] = []
+        self.habitat_to_monty_sensor_id_map: dict[str, str] = {}
 
     def get_spec(self) -> AgentConfiguration:
         """Return a habitat-sim agent configuration.
@@ -81,8 +82,14 @@ class HabitatAgent:
         """
         spec = AgentConfiguration()
         spec.height = self.height
+        self.habitat_to_monty_sensor_id_map.clear()
         for sensor in self.sensors:
-            spec.sensor_specifications.extend(sensor.get_specs())
+            sensor_specs = sensor.get_specs()
+            for sensor_spec in sensor_specs:
+                habitat_id = sensor_spec.uuid
+                monty_id = sensor.sensor_id
+                self.habitat_to_monty_sensor_id_map[habitat_id] = monty_id
+            spec.sensor_specifications.extend(sensor_specs)
         return spec
 
     def initialize(self, simulator):

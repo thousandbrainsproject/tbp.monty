@@ -765,9 +765,7 @@ class SurfacePolicy(InformedPolicy):
             distance = (
                 depth_at_center
                 - self.desired_object_distance
-                - state[self.agent_id]
-                .sensors[SensorID(f"{view_sensor_id}.depth")]
-                .position[2]
+                - state[self.agent_id].sensors[SensorID(view_sensor_id)].position[2]
             )
             logger.debug(f"Move to touch visible object, forward by {distance}")
 
