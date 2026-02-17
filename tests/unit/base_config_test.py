@@ -114,7 +114,7 @@ class BaseConfigTest(unittest.TestCase):
             # Verify we can skip the loop and just run a single
             for s in exp.model.sensor_modules:
                 s_obs = exp.model.get_observations(observations, s.sensor_module_id)
-                feature = s.step(s_obs)
+                feature = s.step(ctx, s_obs)
                 self.assertIn(
                     "rgba",
                     feature.non_morphological_features,
