@@ -19,6 +19,7 @@ import numpy.testing as nptest
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
 from tbp.monty.frameworks.actions.actions import (
+    Action,
     ActionJSONEncoder,
     LookDown,
     LookUp,
@@ -204,11 +205,7 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
 class PredefinedPolicyReadActionFileTest(unittest.TestCase):
     def setUp(self) -> None:
         self.agent_id = AgentID("agent_id_0")
-        self.actions_file = (
-            Path(__file__).parent.parent.parent
-            / "resources"
-            / "predefined_actions.jsonl"
-        )
+        self.actions_file = Path(__file__).parent / "motor_policies_test_actions.jsonl"
 
     def test_read_action_file(self) -> None:
         # For this test, we write our own actions to a temporary file instead of
@@ -247,9 +244,10 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
         cycle_length = len(policy.action_list)
         ctx = RuntimeContext(rng=np.random.RandomState(42))
         state = MotorSystemState()
-        returned_actions = []
+        returned_actions: list[Action] = []
         for _ in range(2 * cycle_length):
             action = policy.dynamic_call(ctx)
+            assert action is not None
             returned_actions.append(action)
             policy.post_action(action, state)
 

@@ -16,7 +16,7 @@ import json
 import logging
 import math
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import quaternion as qt
@@ -47,6 +47,9 @@ from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
+
+if TYPE_CHECKING:
+    from os import PathLike
 
 __all__ = [
     "BasePolicy",
@@ -283,16 +286,16 @@ class PredefinedPolicy(MotorPolicy):
     """
 
     @staticmethod
-    def read_action_file(file: str | Path) -> list[Action]:
+    def read_action_file(file_name: PathLike) -> list[Action]:
         """Load a file with one action per line.
 
         Args:
-            file: name of file to load
+            file_name: name of file to load
 
         Returns:
             List of actions
         """
-        file = Path(file).expanduser()
+        file = Path(file_name).expanduser()
         with file.open() as f:
             file_read = f.read()
 
@@ -304,7 +307,7 @@ class PredefinedPolicy(MotorPolicy):
     def __init__(
         self,
         agent_id: AgentID,
-        file_name: str,
+        file_name: PathLike,
     ) -> None:
         self.agent_id = agent_id
         self.action_list: list[Action] = PredefinedPolicy.read_action_file(file_name)
