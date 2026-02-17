@@ -179,7 +179,7 @@ class HabitatTransformTest(unittest.TestCase):
                     position=agent_position,
                     rotation=agent_rotation,
                     sensors={
-                        SensorID(f"{SENSOR_ID}.depth"): SensorState(
+                        SENSOR_ID: SensorState(
                             position=sensor_position,
                             rotation=sensor_rotation,
                         )

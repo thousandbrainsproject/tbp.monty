@@ -74,9 +74,7 @@ class HabitatSalienceSMTest(unittest.TestCase):
         )
         self.state = AgentState(
             sensors={
-                SensorID(
-                    self.sensor_module.sensor_module_id + ".rgba"
-                ): self.default_sensor_state
+                SensorID(self.sensor_module.sensor_module_id): self.default_sensor_state
             },
             position=self.default_sensor_state.position,
             rotation=self.default_sensor_state.rotation,
