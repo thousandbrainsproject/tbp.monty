@@ -39,6 +39,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
     SensorModule,
 )
+from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
@@ -120,7 +121,7 @@ class MontyExperiment:
         """
         self.init_loggers(self.config["logging"])
         logger.info(self.config)
-        self.model = self.init_model(
+        self.model: MontyBase = self.init_model(
             monty_config=config["monty_config"],
             model_path=self.model_path,
         )
@@ -153,7 +154,7 @@ class MontyExperiment:
             lm_class = lm_cfg["learning_module_class"]
             lm_args = lm_cfg["learning_module_args"]
             assert issubclass(lm_class, LearningModule)
-            learning_modules[lm_id] = lm_class(rng=self.rng, **lm_args)
+            learning_modules[lm_id] = lm_class(**lm_args)
             learning_modules[lm_id].learning_module_id = lm_id
 
         # Create sensor modules
@@ -163,7 +164,7 @@ class MontyExperiment:
             sm_class = sm_cfg["sensor_module_class"]
             sm_args = sm_cfg["sensor_module_args"]
             assert issubclass(sm_class, SensorModule)
-            sensor_modules[sm_id] = sm_class(rng=self.rng, **sm_args)
+            sensor_modules[sm_id] = sm_class(**sm_args)
 
         # Create motor system
         motor_system_config = monty_config.pop("motor_system_config")
@@ -503,7 +504,7 @@ class MontyExperiment:
                 break
 
             self.pre_step(step, observations)
-            self.model.step(observations)
+            self.model.step(ctx, observations)
             self.post_step(step, observations)
             if self.model.is_done or step >= self.max_steps:
                 break
@@ -526,7 +527,7 @@ class MontyExperiment:
 
         self.reset_episode_rng()
 
-        self.model.pre_episode(self.rng)
+        self.model.pre_episode()
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps
