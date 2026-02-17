@@ -15,6 +15,7 @@ import tempfile
 
 import numpy as np
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_sdr_matching import EvidenceSDRGraphLM
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
@@ -33,7 +34,9 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         self.output_dir = tempfile.mkdtemp()
 
         # set seed for reproducibility
-        set_seed(42)
+        seed = 42
+        set_seed(seed)
+        self.ctx = RuntimeContext(rng=np.random.RandomState(seed))
 
         self.default_obs_args = dict(
             location=np.array([0.0, 0.0, 0.0]),
@@ -149,7 +152,6 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
             Evidence SDR Graph Learning Module.
         """
         return EvidenceSDRGraphLM(
-            rng=np.random.RandomState(),
             max_match_distance=0.005,
             tolerances={
                 "patch": {
@@ -194,9 +196,9 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         }
 
         lm.mode = ExperimentMode.TRAIN
-        lm.pre_episode(rng=np.random.RandomState(), primary_target=obj_target)
+        lm.pre_episode(primary_target=obj_target)
         for observation in obs:
-            lm.exploratory_step([observation])
+            lm.exploratory_step(self.ctx, [observation])
         lm.detected_object = obj_name
         lm.detected_rotation_r = None
         lm.buffer.stats["detected_location_rel_body"] = lm.buffer.get_current_location(
@@ -222,7 +224,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         lm.buffer.append_input_states(observations)
 
         lm._compute_possible_matches(
-            observations, first_movement_detected=first_movement_detected
+            self.ctx, observations, first_movement_detected=first_movement_detected
         )
 
         if len(lm.get_possible_matches()) == 0:
@@ -239,7 +241,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
         }
 
         lm.mode = ExperimentMode.EVAL
-        lm.pre_episode(rng=np.random.RandomState(), primary_target=placeholder_target)
+        lm.pre_episode(primary_target=placeholder_target)
         for observation in obs[:-1]:
             lm.add_lm_processing_to_buffer_stats(lm_processed=True)
             self.match(lm, [observation])
