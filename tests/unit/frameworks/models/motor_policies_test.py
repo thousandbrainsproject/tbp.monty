@@ -250,10 +250,10 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
         state = MotorSystemState()
         returned_actions: list[Action] = []
         for _ in range(2 * cycle_length):
-            action = policy.dynamic_call(ctx)
-            assert action is not None
-            returned_actions.append(action)
-            policy.post_action(action, state)
+            result = policy.dynamic_call(ctx)
+            assert len(result.actions) == 1, "Expected 1 action, got multiple"
+            returned_actions.append(result.actions[0])
+            policy.post_actions(result.actions, state)
 
         for i in range(cycle_length):
             first_occurrence = returned_actions[i]

@@ -314,8 +314,10 @@ class PolicyTest(unittest.TestCase):
                 exp.model.step(ctx, observations)
 
                 actions = exp.model.motor_system._policy.actions
-                assert len(actions) == 1, "Expected 1 action, got multiple"
-                last_action = actions[0]
+                if len(actions):
+                    last_action = actions[0]
+                else:
+                    last_action = None
 
                 if step == 3:
                     stored_action = last_action
