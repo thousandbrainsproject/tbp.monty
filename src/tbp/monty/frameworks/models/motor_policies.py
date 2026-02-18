@@ -774,12 +774,11 @@ class SurfacePolicy(InformedPolicy):
         self.alpha = alpha
         self.desired_object_distance = desired_object_distance
 
-        self._touch_object_policy: TouchObject(
+        self._touch_object_policy = TouchObject(
             agent_id=self.agent_id,
-            sensor_id=SensorID(sensor_id),
+            sensor_id=sensor_id,
             desired_object_distance=desired_object_distance,
         )
-        self._touch_object_result: PositioningProcedureResult | None = None
         self._attempting_to_find_object = False
         self._last_action: SurfacePolicy.ActionSequence | None = None
 
@@ -846,7 +845,9 @@ class SurfacePolicy(InformedPolicy):
                     self.processed_observations.get_feature_by_name("object_coverage")
                 )
             )
-            logger.debug(f"Attempting to find object: {self.attempting_to_find_object}")
+            logger.debug(
+                f"Attempting to find object: {self._attempting_to_find_object}"
+            )
             logger.debug("Initiating attempts to touch object")
             self._touch_object_policy.reset()
             self._attempting_to_find_object = True
@@ -864,27 +865,7 @@ class SurfacePolicy(InformedPolicy):
             # good; therefore initialize the cycle of actions as if we had just
             # moved forward (e.g. to get a good view)
 
-        if (
-            self._last_action == SurfacePolicy.ActionSequence.MOVE_TANGENTIALLY
-            and not self.processed_observations.get_on_object()
-        )
-            next_action = SurfacePolicy.ActionSequence.ORIENT_HORIZONTAL
-        else:
-            next_action = SurfacePolicy.ActionSequence(self._last_action + 1 % len(SurfacePolicy.ActionSequence))
-            # orient around object if it's not centered in view
-            if not self.processed_observations.get_on_object():
-                return (
-                    self._orient_horizontal(state),
-                    SurfacePolicy.ActionSequence.ORIENT_HORIZONTAL,
-                )
-            # move to the desired_object_distance if it is in view
-            return (self._move_forward(), SurfacePolicy.ActionSequence.MOVE_FORWARD)
-
-        next_action, next_action_enum = self.get_next_action(ctx, state)
-        self._last_action = next_action_enum
-        return MotorPolicyResult(
-            actions=[next_action],
-        )
+        return self.get_next_action(ctx, state)
 
     def post_action(
         self, action: list[Action], state: MotorSystemState | None = None
@@ -913,17 +894,12 @@ class SurfacePolicy(InformedPolicy):
 
         # TODO: Remove this once TouchObject positioning procedure is implemented
         """
-        if self.attempting_to_find_object:
+        if self._attempting_to_find_object:
             # When the TouchObject positioning procedure is separated, there
             # will be no post_action calls when attempting to find the object.
             return
 
         super().post_action(action, state)
-        if action:
-            assert len(action) == 1, "Expected single action, got multiple"
-            self.last_surface_policy_action = action[0]
-        else:
-            self.last_surface_policy_action = None
 
     def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
         """Orient the agent horizontally.
@@ -1032,34 +1008,39 @@ class SurfacePolicy(InformedPolicy):
             Next action and sequence state in the cycle.
         """
         if self._last_action == SurfacePolicy.ActionSequence.MOVE_FORWARD:
-            return (
-                self._orient_horizontal(state),
-                SurfacePolicy.ActionSequence.ORIENT_HORIZONTAL,
-            )
+            action = self._orient_horizontal(state)
+            sequence_state = SurfacePolicy.ActionSequence.ORIENT_HORIZONTAL
+            motor_only_step = True
 
-        if self._last_action == SurfacePolicy.ActionSequence.ORIENT_HORIZONTAL:
-            return (
-                self._orient_vertical(state),
-                SurfacePolicy.ActionSequence.ORIENT_VERTICAL,
-            )
+        elif self._last_action == SurfacePolicy.ActionSequence.ORIENT_HORIZONTAL:
+            action = self._orient_vertical(state)
+            sequence_state = SurfacePolicy.ActionSequence.ORIENT_VERTICAL
+            motor_only_step = True
 
-        if self._last_action == SurfacePolicy.ActionSequence.ORIENT_VERTICAL:
-            return (
-                self._move_tangentially(ctx, state),
-                SurfacePolicy.ActionSequence.MOVE_TANGENTIALLY,
-            )
+        elif self._last_action == SurfacePolicy.ActionSequence.ORIENT_VERTICAL:
+            action = self._move_tangentially(ctx, state)
+            sequence_state = SurfacePolicy.ActionSequence.MOVE_TANGENTIALLY
+            motor_only_step = False
 
-        if self._last_action == SurfacePolicy.ActionSequence.MOVE_TANGENTIALLY:
-            # orient around object if it's not centered in view
+        elif self._last_action == SurfacePolicy.ActionSequence.MOVE_TANGENTIALLY:
             if not self.processed_observations.get_on_object():
-                return (
-                    self._orient_horizontal(state),
-                    SurfacePolicy.ActionSequence.ORIENT_HORIZONTAL,
-                )
-            # move to the desired_object_distance if it is in view
-            return (self._move_forward(), SurfacePolicy.ActionSequence.MOVE_FORWARD)
+                action = self._orient_horizontal(state)
+                sequence_state = SurfacePolicy.ActionSequence.ORIENT_HORIZONTAL
+                motor_only_step = True
+            else:
+                action = self._move_forward()
+                sequence_state = SurfacePolicy.ActionSequence.MOVE_FORWARD
+                motor_only_step = True
 
-        raise RuntimeError(f"Invalid last action: {self._last_action}.")
+        else:
+            raise RuntimeError(f"Invalid last action: {self._last_action}.")
+
+        self._last_action = sequence_state
+        return MotorPolicyResult(
+            actions=[action],
+            motor_only_step=motor_only_step,
+        )
+
 
     def tangential_direction(
         self, ctx: RuntimeContext, state: MotorSystemState

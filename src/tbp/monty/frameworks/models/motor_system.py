@@ -33,7 +33,7 @@ class MotorSystem:
                 Defaults to None.
         """
         self._policy = policy
-        self._observation = Observations({})
+        self._observations = Observations({})
         self._state = state
 
     def post_episode(self) -> None:
@@ -63,5 +63,8 @@ class MotorSystem:
         Returns:
             The action to take.
         """
-        policy_result = self._policy(ctx, self._state, self._observation)
+        policy_result = self._policy(ctx, self._state, self._observations)
+        self._state[
+            self._policy.agent_id
+        ].motor_only_step = policy_result.motor_only_step
         return policy_result.actions
