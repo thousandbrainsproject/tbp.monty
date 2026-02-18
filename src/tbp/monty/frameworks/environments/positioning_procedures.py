@@ -18,9 +18,18 @@ import scipy.ndimage
 from scipy.spatial.transform import Rotation as rot  # noqa: N813
 from typing_extensions import Protocol
 
-from tbp.monty.frameworks.actions.actions import Action, LookDown, MoveForward, TurnLeft
+from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.actions.actions import (
+    Action,
+    LookDown,
+    MoveForward,
+    OrientHorizontal,
+    OrientVertical,
+    TurnLeft,
+)
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.environment import SemanticID
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 from tbp.monty.frameworks.sensors import SensorID
 
@@ -49,6 +58,8 @@ class PositioningProcedureResult:
     truncated: bool = False
     """Whether the procedure was truncated due to a limit on the number of attempts or
     other criteria."""
+    motor_only_step: bool = True
+    """Whether actions are just for positioning."""
 
 
 class PositioningProcedure(Protocol):
@@ -464,3 +475,159 @@ class GetGoodView(PositioningProcedure):
         sensor_rotation = agent_state.sensors[self._sensor_id].rotation
         # Derive sensor's rotation relative to the world.
         return agent_rotation * sensor_rotation
+
+
+class TouchObject(PositioningProcedure):
+    """Touch an object.
+
+    Note: This procedure requires (and assumes) that the probe and patch are colocated
+    in x and y. Typically, the probe is behind the sensor is z (down +Z).
+    """
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sensor_id: SensorID,
+        desired_object_distance: float = 0.025,
+    ):
+        self._agent_id = agent_id
+        self._sensor_id = sensor_id
+        self._desired_object_distance = desired_object_distance
+        self._touch_search_amount = 0
+        self._distance_tolerance = 0.005
+
+    def reset(self) -> None:
+        self._touch_search_amount = 0
+
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        state: MotorSystemState,
+        observations: Observations,
+    ) -> PositioningProcedureResult:
+        """The surface agent's policy for moving onto an object for sensing it.
+
+        Like the distant agent's get_good_view, this is called at the beginning
+        of every episode, and after a "jump" has been initialized by a
+        model-based policy. In addition, it can be called when the surface agent
+        cannot sense the object, e.g. because it has fallen off its surface.
+
+        Currently uses the raw observations returned from the viewfinder via the
+        environment interface, and not the extracted features from the sensor module.
+        TODO M refactor this so that all sensory processing is done in the sensor
+        module.
+
+        If we aren't on the object, try first systematically orienting left around
+        a point, then orienting down, and finally random orientations along the surface
+        of a fixed sphere.
+
+        Args:
+            ctx: The runtime context.
+            state: The current state of the motor system.
+            observations: The raw observations from the environment.
+
+        Returns:
+            A MotorPolicyResult that contains the action to take.
+        """
+        depth_at_center = PositioningProcedure.depth_at_center(
+            agent_id=self._agent_id,
+            observation=observations,
+            sensor_id=self._sensor_id,
+        )
+
+        if depth_at_center < 1.0:
+            if (
+                abs(depth_at_center - self._desired_object_distance)
+                < self._distance_tolerance
+            ):
+                return PositioningProcedureResult(
+                    actions=[],
+                    terminated=True,
+                )
+
+            distance = (
+                depth_at_center
+                - self._desired_object_distance
+                - state[self._agent_id].sensors[self._sensor_id].position[2]
+            )
+            logger.debug(f"Move to touch visible object, forward by {distance}")
+
+            return PositioningProcedureResult(
+                actions=[MoveForward(agent_id=self._agent_id, distance=distance)],
+            )
+
+        logger.debug("Surface policy searching for object...")
+
+        # Helpful to conceptualize these movements by considering a unit circle,
+        # scaled by the radius distance_from_center
+        # This image may be useful for intuition:
+        # https://en.wikipedia.org/wiki/Exsecant#/media/File:Circle-trig6.svg
+
+        # Rotate about a circle centered in fron of the agent's current
+        # position; TODO decide how to deal with "coliding with"/entering an
+        # object; ?could just rotate about a point on which the sensor is present
+        # Currently as a heuristic we rotate about a point 4x the desired distance;
+        # as this is typically 2.5cm, this would mean a circle with radius 10cm
+        distance_from_center = self._desired_object_distance * 4
+
+        rotation_degrees = 30  # 30 degrees at a time; note this amount is also used
+        # to eventually re-orient ourselves back to the original central point;
+        # TODO may want to consider trying smaller step-sizes; will
+        # be less efficient, but may be important for smaller/distant objects that
+        # otherwise get missed
+
+        if self._touch_search_amount >= 720:
+            # Perform a random upward or downward movement along the surface of a
+            # sphere, with its centre fixed 10 cm in front of the agent
+            logger.debug("Trying random search for object")
+            if ctx.rng.uniform() < 0.5:
+                orientation = "vertical"
+                logger.debug("Orienting vertically")
+            else:
+                orientation = "horizontal"
+                logger.debug("Orienting horizontally")
+
+            rotation_degrees = ctx.rng.uniform(-180, 180)
+            logger.debug(f"Random orientation amount is : {rotation_degrees}")
+
+        elif self._touch_search_amount >= 360 and self._touch_search_amount < 720:
+            logger.debug("Trying vertical search for object")
+            orientation = "vertical"
+
+        else:
+            logger.debug("Trying horizontal search for object")
+            orientation = "horizontal"
+
+        # Move tangentally to the point we're facing, resulting in the agent's
+        # orienation about the central point changing as specified by rotation_deg,
+        # but now where the agent is no longer on the edge of the circle
+        move_lat_amount = np.tan(np.radians(rotation_degrees)) * distance_from_center
+        # The lateral movement will be down relative to the agent's facing position
+        # in the case of orient vertical, and left in the case of orient horizontal
+
+        # The below calculates the exsecant, which provides the necessary
+        # movement to bring the agent back to the same radius around the central
+        # point
+        move_forward_amount = distance_from_center * (
+            (1 - np.cos(np.radians(rotation_degrees)))
+            / np.cos(np.radians(rotation_degrees))
+        )
+
+        self._touch_search_amount += rotation_degrees  # Accumulate total rotations
+        # for touch-search
+
+        if orientation == "vertical":
+            action = OrientVertical(
+                agent_id=self._agent_id,
+                rotation_degrees=rotation_degrees,
+                down_distance=move_lat_amount,
+                forward_distance=move_forward_amount,
+            )
+        else:
+            action = OrientHorizontal(
+                agent_id=self._agent_id,
+                rotation_degrees=rotation_degrees,
+                left_distance=move_lat_amount,
+                forward_distance=move_forward_amount,
+            )
+        return PositioningProcedureResult(actions=[action])
