@@ -160,12 +160,14 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
     def test_assign_to_processed_observations_appends_to_tangent_locs_and_tangent_norms_if_last_action_is_orient_vertical(  # noqa: E501
         self,
     ):
-        self.policy.action = OrientVertical(
-            agent_id=self.agent_id,
-            rotation_degrees=90,
-            down_distance=1,
-            forward_distance=1,
-        )
+        self.policy.action = [
+            OrientVertical(
+                agent_id=self.agent_id,
+                rotation_degrees=90,
+                down_distance=1,
+                forward_distance=1,
+            )
+        ]
 
         self.policy.processed_observations = self.state
 
@@ -178,12 +180,14 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
         self,
     ):
         del self.state.morphological_features["pose_vectors"]
-        self.policy.action = OrientVertical(
-            agent_id=self.agent_id,
-            rotation_degrees=90,
-            down_distance=1,
-            forward_distance=1,
-        )
+        self.policy.action = [
+            OrientVertical(
+                agent_id=self.agent_id,
+                rotation_degrees=90,
+                down_distance=1,
+                forward_distance=1,
+            )
+        ]
 
         self.policy.processed_observations = self.state
 
@@ -194,7 +198,7 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
     def test_assign_to_processed_observations_does_not_append_to_tangent_locs_and_tangent_norms_if_last_action_is_not_orient_vertical(  # noqa: E501
         self,
     ):
-        self.policy.action = LookUp(agent_id=self.agent_id, rotation_degrees=0)
+        self.policy.action = [LookUp(agent_id=self.agent_id, rotation_degrees=0)]
 
         self.policy.processed_observations = self.state
 
@@ -254,7 +258,7 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
         for i in range(cycle_length):
             first_occurrence = returned_actions[i]
             second_occurrence = returned_actions[i + cycle_length]
-            self.assertEqual(dict(first_occurrence), dict(second_occurrence))
+            self.assertEqual(first_occurrence, second_occurrence)
 
 
 if __name__ == "__main__":
