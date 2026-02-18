@@ -3,7 +3,6 @@ defaults:
   - /experiment/config/logging/pretrain@config.logging
   - /experiment/config/monty/patch_and_view@config.monty_config
   - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
-  - /experiment/test/config/monty/motor_system/fixed@config.monty_config.motor_system_config
   - /experiment/config/monty/args/clear_monty_args@config.monty_config
   - /experiment/config/monty/args/defaults@config.monty_config.monty_args
   - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
@@ -21,6 +20,13 @@ config:
   monty_config:
     monty_args:
       num_exploratory_steps: 10
+    motor_system_config:
+      motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+      motor_system_args:
+        policy:
+          _target_: tbp.monty.frameworks.models.motor_policies.PredefinedPolicy
+          agent_id: ${monty.agent_id:agent_id_0}
+          file_name: ${path.tests:unit/resources/fixed_test_actions.jsonl}
     learning_module_configs:
       learning_module_0:
         learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}

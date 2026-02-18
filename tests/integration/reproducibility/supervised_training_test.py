@@ -36,14 +36,7 @@ class SupervisedTrainingTest(unittest.TestCase):
     def test_training_results_are_equal(self):
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config(
-                "reproducibility_supervised_training",
-                self.output_dir,
-                # Note: Since training episodes are not reproducible between run.py and
-                #       run_parallel.py, we must use the same fixed actions for both the
-                #       serial and parallel runs to get the same training results.
-                fixed_actions_path=(
-                    Path(__file__).parent / "supervised_training_actions.jsonl"
-                ),
+                "reproducibility_supervised_training", self.output_dir
             )
 
             serial_run(config)
@@ -54,14 +47,7 @@ class SupervisedTrainingTest(unittest.TestCase):
             )
 
             config = hydra_config(
-                "reproducibility_supervised_training",
-                self.output_dir,
-                # Note: Since training episodes are not reproducible between run.py and
-                #       run_parallel.py, we must use the same fixed actions for both the
-                #       serial and parallel runs to get the same training results.
-                fixed_actions_path=(
-                    Path(__file__).parent / "supervised_training_actions.jsonl"
-                ),
+                "reproducibility_supervised_training", self.output_dir
             )
 
             parallel_run(config)

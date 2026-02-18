@@ -8,16 +8,29 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 import numpy.testing as nptest
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
-from tbp.monty.frameworks.actions.actions import LookUp, OrientVertical
+from tbp.monty.frameworks.actions.actions import (
+    Action,
+    ActionJSONEncoder,
+    LookDown,
+    LookUp,
+    OrientVertical,
+    TurnLeft,
+    TurnRight,
+)
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.motor_policies import (
     BasePolicy,
+    PredefinedPolicy,
     SurfacePolicyCurvatureInformed,
 )
 from tbp.monty.frameworks.models.motor_system_state import (
@@ -187,6 +200,61 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
 
         self.assertEqual(self.policy.tangent_locs, [])
         self.assertEqual(self.policy.tangent_norms, [])
+
+
+class PredefinedPolicyReadActionFileTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.agent_id = AgentID("agent_id_0")
+        self.actions_file = Path(__file__).parent / "motor_policies_test_actions.jsonl"
+
+    def test_read_action_file(self) -> None:
+        # For this test, we write our own actions to a temporary file instead of
+        # loading a file on disk. It's a better guarantee that we're loading the
+        # actions exactly as expected.
+        expected = [
+            TurnRight(agent_id=self.agent_id, rotation_degrees=5.0),
+            LookDown(
+                agent_id=self.agent_id,
+                rotation_degrees=10.0,
+                constraint_degrees=90.0,
+            ),
+            TurnLeft(agent_id=self.agent_id, rotation_degrees=10.0),
+            LookUp(
+                agent_id=self.agent_id,
+                rotation_degrees=10.0,
+                constraint_degrees=90.0,
+            ),
+            TurnRight(agent_id=self.agent_id, rotation_degrees=5.0),
+        ]
+        with tempfile.TemporaryDirectory() as data_path:
+            actions_file = Path(data_path) / "actions.jsonl"
+            actions_file.write_text(
+                "\n".join(json.dumps(a, cls=ActionJSONEncoder) for a in expected) + "\n"
+            )
+            loaded = PredefinedPolicy.read_action_file(actions_file)
+            self.assertEqual(len(loaded), len(expected))
+            for loaded_action, expected_action in zip(loaded, expected):
+                self.assertEqual(dict(loaded_action), dict(expected_action))
+
+    def test_cycles_continuously(self) -> None:
+        policy = PredefinedPolicy(
+            agent_id=self.agent_id,
+            file_name=self.actions_file,
+        )
+        cycle_length = len(policy.action_list)
+        ctx = RuntimeContext(rng=np.random.RandomState(42))
+        state = MotorSystemState()
+        returned_actions: list[Action] = []
+        for _ in range(2 * cycle_length):
+            action = policy.dynamic_call(ctx)
+            assert action is not None
+            returned_actions.append(action)
+            policy.post_action(action, state)
+
+        for i in range(cycle_length):
+            first_occurrence = returned_actions[i]
+            second_occurrence = returned_actions[i + cycle_length]
+            self.assertEqual(dict(first_occurrence), dict(second_occurrence))
 
 
 if __name__ == "__main__":

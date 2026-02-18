@@ -144,19 +144,11 @@ class OmniglotEnvironment(SimulatedEnvironment):
             {
                 AgentID("agent_id_0"): AgentState(
                     sensors={
-                        SensorID("patch" + ".depth"): SensorState(
+                        SensorID("patch"): SensorState(
                             rotation=self.rotation,
                             position=sensor_position,
                         ),
-                        SensorID("patch" + ".rgba"): SensorState(
-                            rotation=self.rotation,
-                            position=sensor_position,
-                        ),
-                        SensorID("view_finder" + ".depth"): SensorState(
-                            rotation=self.rotation,
-                            position=sensor_position,
-                        ),
-                        SensorID("view_finder" + ".rgba"): SensorState(
+                        SensorID("view_finder"): SensorState(
                             rotation=self.rotation,
                             position=sensor_position,
                         ),
@@ -378,17 +370,10 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             {
                 AgentID("agent_id_0"): AgentState(
                     sensors={
-                        SensorID("patch" + ".depth"): SensorState(
+                        SensorID("patch"): SensorState(
                             rotation=self.rotation, position=sensor_position
                         ),
-                        SensorID("patch" + ".rgba"): SensorState(
-                            rotation=self.rotation, position=sensor_position
-                        ),
-                        SensorID("view_finder" + ".depth"): SensorState(
-                            rotation=self.rotation,
-                            position=sensor_position,
-                        ),
-                        SensorID("view_finder" + ".rgba"): SensorState(
+                        SensorID("view_finder"): SensorState(
                             rotation=self.rotation,
                             position=sensor_position,
                         ),
@@ -548,7 +533,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             {
                 agent_id: AgentState(
                     sensors={
-                        SensorID(sensor_id + ".depth"): SensorState(
+                        sensor_id: SensorState(
                             rotation=rotation,
                             position=np.array([0, 0, 0]),
                         )

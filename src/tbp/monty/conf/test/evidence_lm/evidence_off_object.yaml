@@ -2,6 +2,7 @@ defaults:
   - /test/evidence_lm/base@
   - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
   - /test/config/monty/learning_modules/default_evidence_lm@config.monty_config.learning_module_configs.learning_module_0
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
 
 config:
   do_eval: false
@@ -15,6 +16,13 @@ config:
     monty_args:
       num_exploratory_steps: 20
       min_train_steps: 12
+    motor_system_config:
+      motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+      motor_system_args:
+        policy:
+          _target_: tbp.monty.frameworks.models.motor_policies.PredefinedPolicy
+          agent_id: ${monty.agent_id:agent_id_0}
+          file_name: ${path.tests:unit/resources/fixed_test_actions_off_object.jsonl}
   train_env_interface_args:
     object_names:
       - capsule3DSolid
