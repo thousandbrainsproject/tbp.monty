@@ -103,7 +103,6 @@ experiment:
       motor_system_config:
         motor_system_args:
           policy:
-            file_name: null
             use_goal_state_driven_actions: false
             agent_id: ${monty.agent_id:agent_id_0}
             action_sampler:

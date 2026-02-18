@@ -65,7 +65,7 @@ class HabitatSalienceSM(SensorModule):
 
     def update_state(self, agent: AgentState):
         """Update information about the sensor's location and rotation."""
-        sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
+        sensor = agent.sensors[SensorID(self.sensor_module_id)]
         self.state = SensorState(
             position=agent.position
             + qt.rotate_vectors(agent.rotation, sensor.position),

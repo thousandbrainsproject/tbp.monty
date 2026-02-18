@@ -1,5 +1,6 @@
 defaults:
   - /test/evidence_lm/five_lm@
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
 
 config:
   do_eval: false
@@ -7,3 +8,11 @@ config:
     python_log_level: "INFO"
     monty_log_level: "BASIC"
     monty_handlers: []
+  monty_config:
+    motor_system_config:
+      motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+      motor_system_args:
+        policy:
+          _target_: tbp.monty.frameworks.models.motor_policies.PredefinedPolicy
+          agent_id: ${monty.agent_id:agent_id_0}
+          file_name: ${path.tests:unit/resources/fixed_test_actions.jsonl}
