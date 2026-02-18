@@ -97,46 +97,19 @@ class GraphLearningTest(BaseGraphTest):
 
         self.output_dir = Path(tempfile.mkdtemp())
         self.compositional_save_path = tempfile.mkdtemp()
-        resources_dir = Path(__file__).parents[3] / "unit" / "resources"
-        self.fixed_actions_path = resources_dir / "fixed_test_actions.jsonl"
-        self.fixed_actions_path_off_object = (
-            resources_dir / "fixed_test_actions_off_object.jsonl"
-        )
-
-        # Generate the override string for setting the actions file name.
-        # We're doing this because the string is too long otherwise.
-        actions_file_name_selector = ".".join(  # noqa: FLY002
-            [
-                "test",
-                "config",
-                "monty_config",
-                "motor_system_config",
-                "motor_system_args",
-                "policy",
-                "file_name",
-            ]
-        )
 
         def hydra_config(
             test_name: str,
-            action_file_name: Path | None = None,
-            extra_overrides: list[str] | None = None,
         ) -> DictConfig:
             """Return a Hydra configuration from the specified test name.
 
             Args:
                 test_name: the name of the test config to load
-                action_file_name: Optional path to a file of actions to use
-                extra_overrides: Optional list of extra overrides to add
             """
             overrides = [
                 f"test=graph_learning/{test_name}",
                 f"test.config.logging.output_dir={self.output_dir}",
             ]
-            if action_file_name:
-                overrides.append(f"{actions_file_name_selector}={action_file_name}")
-            if extra_overrides:
-                overrides += extra_overrides
             return hydra.compose(config_name="test", overrides=overrides)
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
@@ -145,33 +118,19 @@ class GraphLearningTest(BaseGraphTest):
             self.ppf_pred_cfg = hydra_config("ppf_pred")
             self.disp_pred_cfg = hydra_config("disp_pred")
             self.feature_pred_cfg = hydra_config("feature_pred")
-            self.fixed_actions_disp_cfg = hydra_config(
-                "fixed_actions_disp", self.fixed_actions_path
-            )
-            self.fixed_actions_ppf_cfg = hydra_config(
-                "fixed_actions_ppf", self.fixed_actions_path
-            )
-            self.fixed_actions_feat_cfg = hydra_config(
-                "fixed_actions_feat", self.fixed_actions_path
-            )
-            self.feature_pred_time_out_cfg = hydra_config(
-                "feature_pred_time_out", self.fixed_actions_path
-            )
-            self.feature_pred_off_object_cfg = hydra_config(
-                "feature_pred_off_object", self.fixed_actions_path_off_object
-            )
+            self.fixed_actions_disp_cfg = hydra_config("fixed_actions_disp")
+            self.fixed_actions_ppf_cfg = hydra_config("fixed_actions_ppf")
+            self.fixed_actions_feat_cfg = hydra_config("fixed_actions_feat")
+            self.feature_pred_time_out_cfg = hydra_config("feature_pred_time_out")
+            self.feature_pred_off_object_cfg = hydra_config("feature_pred_off_object")
             self.feature_pred_off_object_train_cfg = hydra_config(
-                "feature_pred_off_object_train", self.fixed_actions_path_off_object
+                "feature_pred_off_object_train"
             )
             self.feature_uniform_initial_poses_cfg = hydra_config(
-                "feature_uniform_initial_poses", self.fixed_actions_path
+                "feature_uniform_initial_poses"
             )
-            self.five_lm_ppf_displacement_cfg = hydra_config(
-                "five_lm_ppf_displacement", self.fixed_actions_path
-            )
-            self.five_lm_feature_cfg = hydra_config(
-                "five_lm_feature", self.fixed_actions_path
-            )
+            self.five_lm_ppf_displacement_cfg = hydra_config("five_lm_ppf_displacement")
+            self.five_lm_feature_cfg = hydra_config("five_lm_feature")
 
     def tearDown(self):
         """Code that gets executed after every test."""

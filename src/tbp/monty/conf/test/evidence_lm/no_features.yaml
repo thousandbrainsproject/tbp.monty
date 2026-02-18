@@ -1,5 +1,6 @@
 defaults:
   - /test/evidence_lm/base@
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
   - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
 
 config:
@@ -7,6 +8,13 @@ config:
     monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
     monty_args:
       num_exploratory_steps: 10
+    motor_system_config:
+      motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+      motor_system_args:
+        policy:
+          _target_: tbp.monty.frameworks.models.motor_policies.PredefinedPolicy
+          agent_id: ${monty.agent_id:agent_id_0}
+          file_name: ${path.tests:unit/resources/fixed_test_actions.jsonl}
     learning_module_configs:
       learning_module_0:
         learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
