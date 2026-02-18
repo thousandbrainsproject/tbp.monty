@@ -12,6 +12,7 @@ from __future__ import annotations
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 
@@ -32,6 +33,7 @@ class MotorSystem:
                 Defaults to None.
         """
         self._policy = policy
+        self._observation = Observations({})
         self._state = state
 
     def post_episode(self) -> None:
@@ -61,5 +63,5 @@ class MotorSystem:
         Returns:
             The action to take.
         """
-        policy_result = self._policy(ctx, self._state)
+        policy_result = self._policy(ctx, self._state, self._observation)
         return policy_result.actions

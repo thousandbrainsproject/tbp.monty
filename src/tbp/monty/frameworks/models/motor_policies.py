@@ -43,6 +43,7 @@ from tbp.monty.frameworks.environments.positioning_procedures import (
     PositioningProcedure,
 )
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.sensors import SensorID
@@ -89,7 +90,10 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def dynamic_call(
-        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+        self,
+        ctx: RuntimeContext,
+        state: MotorSystemState | None,
+        observations: Observations,
     ) -> MotorPolicyResult:
         """Use this method when actions are not predefined.
 
@@ -97,6 +101,7 @@ class MotorPolicy(abc.ABC):
             ctx: The runtime context.
             state: The current state of the motor system.
                 Defaults to None.
+            observations: The raw observations from the environment.
 
         Returns:
             The result of the motor policy.
@@ -174,7 +179,10 @@ class MotorPolicy(abc.ABC):
         pass
 
     def __call__(
-        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+        self,
+        ctx: RuntimeContext,
+        state: MotorSystemState | None,
+        observations: Observations,
     ) -> MotorPolicyResult:
         """Select either dynamic or predefined call.
 
@@ -182,11 +190,12 @@ class MotorPolicy(abc.ABC):
             ctx: The runtime context.
             state: The current state of the motor system.
                 Defaults to None.
+            observations: The raw observations from the environment.
 
         Returns:
             The actions to take.
         """
-        result = self.dynamic_call(ctx, state)
+        result = self.dynamic_call(ctx, state, observations)
         self.post_action(result.actions, state)
         return result
 
@@ -214,7 +223,8 @@ class BasePolicy(MotorPolicy):
     def dynamic_call(
         self,
         ctx: RuntimeContext,
-        state: MotorSystemState | None = None,  # noqa: ARG002
+        state: MotorSystemState | None,  # noqa: ARG002
+        observations: Observations,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return a random action.
 
@@ -223,7 +233,8 @@ class BasePolicy(MotorPolicy):
         Args:
             ctx: The runtime context.
             state: The current state of the motor system.
-                Defaults to None. Unused.
+            observations: The raw observations from the environment.
+                Unused.
 
         Returns:
             A MotorPolicyResult that contains the random action.
@@ -341,8 +352,9 @@ class PredefinedPolicy(MotorPolicy):
     def dynamic_call(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
-        state: MotorSystemState | None = None,  # noqa: ARG002
-    ) -> Action | None:
+        state: MotorSystemState | None,  # noqa: ARG002
+        observations: Observations,  # noqa: ARG002
+    ) -> MotorPolicyResult:
         actions = [self.action_list[self.episode_step % len(self.action_list)]]
         return MotorPolicyResult(
             terminated=True,
@@ -497,7 +509,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     ###
 
     def dynamic_call(
-        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+        self,
+        ctx: RuntimeContext,
+        state: MotorSystemState | None,  # noqa: ARG002
+        observations: Observations,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return the next action to take.
 
@@ -509,6 +524,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             ctx: The runtime context.
             state: The current state of the motor system.
                 Defaults to None.
+            observations: The raw observations from the environment.
 
         Returns:
             A MotorPolicyResult that contains the action to take.
@@ -647,7 +663,8 @@ class NaiveScanPolicy(InformedPolicy):
     def dynamic_call(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
-        state: MotorSystemState | None = None,  # noqa: ARG002
+        state: MotorSystemState | None,  # noqa: ARG002
+        observations: Observations,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return the next action in the spiral being executed.
 
@@ -657,6 +674,7 @@ class NaiveScanPolicy(InformedPolicy):
             ctx: The runtime context.
             state: The current state of the motor system.
                 Defaults to None. Unused.
+            observations: The raw observations from the environment.
 
         Returns:
             The action to take.
@@ -724,6 +742,7 @@ class SurfacePolicy(InformedPolicy):
     def __init__(
         self,
         alpha,
+        probe_id: str = SensorID("view_finder"),
         desired_object_distance=0.025,
         **kwargs,
     ):
@@ -743,13 +762,19 @@ class SurfacePolicy(InformedPolicy):
         self.desired_object_distance = desired_object_distance
 
         # TODO: Remove these once TouchObject positioning procedure is implemented
-        self.attempting_to_find_object: bool = False
         self.last_surface_policy_action: Action | None = None
+
+        self._touch_object_policy: TouchObject | None = TouchObject(
+            agent_id=self.agent_id,
+            view_sensor_id=SensorID(probe_id),
+            desired_object_distance=desired_object_distance,
+        )
+        self._probe_id = probe_id
 
     def pre_episode(self) -> None:
         self.tangential_angle = 0
         self.action = []  # Reset the first action for every episode
-        self.touch_search_amount = 0  # Track how many rotations the agent has made
+        self._touch_object_policy = None
         # along the horizontal plane searching for an object; when this reaches 360,
         # try searching along the vertical plane, or for 720, performing a random
         # search
@@ -758,140 +783,15 @@ class SurfacePolicy(InformedPolicy):
 
         return super().pre_episode()
 
-    def touch_object(
-        self,
-        ctx: RuntimeContext,
-        raw_observation,
-        view_sensor_id: str,
-        state: MotorSystemState,
-    ) -> MoveForward | OrientHorizontal | OrientVertical:
-        """The surface agent's policy for moving onto an object for sensing it.
-
-        Like the distant agent's get_good_view, this is called at the beginning
-        of every episode, and after a "jump" has been initialized by a
-        model-based policy. In addition, it can be called when the surface agent
-        cannot sense the object, e.g. because it has fallen off its surface.
-
-        Currently uses the raw observations returned from the viewfinder via the
-        environment interface, and not the extracted features from the sensor module.
-        TODO M refactor this so that all sensory processing is done in the sensor
-        module.
-
-        If we aren't on the object, try first systematically orienting left around
-        a point, then orienting down, and finally random orientations along the surface
-        of a fixed sphere.
-
-        Args:
-            ctx: The runtime context.
-            raw_observation: The raw observation from the simulator.
-            view_sensor_id: The ID of the viewfinder sensor.
-            state: The current state of the motor system.
-
-        Returns:
-            Action to take.
-        """
-        # If the viewfinder sees the object within range, then move to it
-        depth_at_center = PositioningProcedure.depth_at_center(
-            agent_id=self.agent_id,
-            observation=raw_observation,
-            sensor_id=view_sensor_id,
-        )
-        if depth_at_center < 1.0:
-            distance = (
-                depth_at_center
-                - self.desired_object_distance
-                - state[self.agent_id].sensors[SensorID(view_sensor_id)].position[2]
-            )
-            logger.debug(f"Move to touch visible object, forward by {distance}")
-
-            self.attempting_to_find_object = False
-
-            return MoveForward(agent_id=self.agent_id, distance=distance)
-
-        logger.debug("Surface policy searching for object...")
-
-        self.attempting_to_find_object = True
-
-        # Helpful to conceptualize these movements by considering a unit circle,
-        # scaled by the radius distance_from_center
-        # This image may be useful for intuition:
-        # https://en.wikipedia.org/wiki/Exsecant#/media/File:Circle-trig6.svg
-
-        # Rotate about a circle centered in fron of the agent's current
-        # position; TODO decide how to deal with "coliding with"/entering an
-        # object; ?could just rotate about a point on which the sensor is present
-        # Currently as a heuristic we rotate about a point 4x the desired distance;
-        # as this is typically 2.5cm, this would mean a circle with radius 10cm
-        distance_from_center = self.desired_object_distance * 4
-
-        rotation_degrees = 30  # 30 degrees at a time; note this amount is also used
-        # to eventually re-orient ourselves back to the original central point;
-        # TODO may want to consider trying smaller step-sizes; will
-        # be less efficient, but may be important for smaller/distant objects that
-        # otherwise get missed
-
-        if self.touch_search_amount >= 720:
-            # Perform a random upward or downward movement along the surface of a
-            # sphere, with its centre fixed 10 cm in front of the agent
-            logger.debug("Trying random search for object")
-            if ctx.rng.uniform() < 0.5:
-                orientation = "vertical"
-                logger.debug("Orienting vertically")
-            else:
-                orientation = "horizontal"
-                logger.debug("Orienting horizontally")
-
-            rotation_degrees = ctx.rng.uniform(-180, 180)
-            logger.debug(f"Random orientation amount is : {rotation_degrees}")
-
-        elif self.touch_search_amount >= 360 and self.touch_search_amount < 720:
-            logger.debug("Trying vertical search for object")
-            orientation = "vertical"
-
-        else:
-            logger.debug("Trying horizontal search for object")
-            orientation = "horizontal"
-
-        # Move tangentally to the point we're facing, resulting in the agent's
-        # orienation about the central point changing as specified by rotation_deg,
-        # but now where the agent is no longer on the edge of the circle
-        move_lat_amount = np.tan(np.radians(rotation_degrees)) * distance_from_center
-        # The lateral movement will be down relative to the agent's facing position
-        # in the case of orient vertical, and left in the case of orient horizontal
-
-        # The below calculates the exsecant, which provides the necessary
-        # movement to bring the agent back to the same radius around the central
-        # point
-        move_forward_amount = distance_from_center * (
-            (1 - np.cos(np.radians(rotation_degrees)))
-            / np.cos(np.radians(rotation_degrees))
-        )
-
-        self.touch_search_amount += rotation_degrees  # Accumulate total rotations
-        # for touch-search
-
-        return (
-            OrientVertical(
-                agent_id=self.agent_id,
-                rotation_degrees=rotation_degrees,
-                down_distance=move_lat_amount,
-                forward_distance=move_forward_amount,
-            )
-            if orientation == "vertical"
-            else OrientHorizontal(
-                agent_id=self.agent_id,
-                rotation_degrees=rotation_degrees,
-                left_distance=move_lat_amount,
-                forward_distance=move_forward_amount,
-            )
-        )
-
     ###
     # Methods that define behavior of __call__
     ###
     def dynamic_call(
-        self, ctx: RuntimeContext, state: MotorSystemState | None = None
-    ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
+        self,
+        ctx: RuntimeContext,
+        state: MotorSystemState | None,
+        observations: Observations,  # noqa: ARG002
+    ) -> MotorPolicyResult:
         """Return the next action to take.
 
         This requires self.processed_observations to be updated at every step
@@ -902,6 +802,7 @@ class SurfacePolicy(InformedPolicy):
             ctx: The runtime context.
             state: The current state of the motor system.
                 Defaults to None.
+            observations: The raw observations from the environment.
 
         Returns:
             The action to take.
@@ -912,7 +813,7 @@ class SurfacePolicy(InformedPolicy):
         # Check if we have poor visualization of the object
         if (
             self.processed_observations.get_feature_by_name("object_coverage") < 0.1
-            or self.attempting_to_find_object
+            or self.touch_object_policy.attempting_to_find_object
         ):
             logger.debug(
                 "Object coverage of only "
@@ -2114,3 +2015,179 @@ def projected_vec_from_angle(angle):
     assert abs(angle) < np.pi + 0.01, f"-pi : +pi bound angles only : {angle}"
 
     return [np.cos(angle - np.pi / 2), np.sin(angle + np.pi / 2), 0]
+
+
+class TouchObject(MotorPolicy):
+    def __init__(
+        self,
+        agent_id: AgentID,
+        view_sensor_id: SensorID,
+        desired_object_distance: float = 0.025,
+    ):
+        self.agent_id = agent_id
+        self.view_sensor_id = view_sensor_id
+        self.desired_object_distance = desired_object_distance
+        self.attempting_to_find_object = False
+        self.touch_search_amount = 0
+
+    def reset(self) -> None:
+        self.attempting_to_find_object = False
+        self.touch_search_amount = 0
+
+    def dynamic_call(
+        self,
+        ctx: RuntimeContext,
+        state: MotorSystemState,
+        observations: Observations,
+    ) -> MotorPolicyResult:
+        """The surface agent's policy for moving onto an object for sensing it.
+
+        Like the distant agent's get_good_view, this is called at the beginning
+        of every episode, and after a "jump" has been initialized by a
+        model-based policy. In addition, it can be called when the surface agent
+        cannot sense the object, e.g. because it has fallen off its surface.
+
+        Currently uses the raw observations returned from the viewfinder via the
+        environment interface, and not the extracted features from the sensor module.
+        TODO M refactor this so that all sensory processing is done in the sensor
+        module.
+
+        If we aren't on the object, try first systematically orienting left around
+        a point, then orienting down, and finally random orientations along the surface
+        of a fixed sphere.
+
+        Args:
+            ctx: The runtime context.
+            state: The current state of the motor system.
+            observations: The raw observations from the environment.
+
+        Returns:
+            A MotorPolicyResult that contains the action to take.
+        """
+        # If the viewfinder sees the object within range, then move to it
+        view_sensor_id = self.view_sensor_id
+        depth_at_center = PositioningProcedure.depth_at_center(
+            agent_id=self.agent_id,
+            observation=observations,
+            sensor_id=view_sensor_id,
+        )
+        if depth_at_center < 1.0:
+            distance = (
+                depth_at_center
+                - self.desired_object_distance
+                - state[self.agent_id].sensors[view_sensor_id].position[2]
+            )
+            logger.debug(f"Move to touch visible object, forward by {distance}")
+
+            self.attempting_to_find_object = False
+
+            return MotorPolicyResult(
+                actions=[MoveForward(agent_id=self.agent_id, distance=distance)],
+                terminated=True,
+            )
+
+        logger.debug("Surface policy searching for object...")
+
+        self.attempting_to_find_object = True
+
+        # Helpful to conceptualize these movements by considering a unit circle,
+        # scaled by the radius distance_from_center
+        # This image may be useful for intuition:
+        # https://en.wikipedia.org/wiki/Exsecant#/media/File:Circle-trig6.svg
+
+        # Rotate about a circle centered in fron of the agent's current
+        # position; TODO decide how to deal with "coliding with"/entering an
+        # object; ?could just rotate about a point on which the sensor is present
+        # Currently as a heuristic we rotate about a point 4x the desired distance;
+        # as this is typically 2.5cm, this would mean a circle with radius 10cm
+        distance_from_center = self.desired_object_distance * 4
+
+        rotation_degrees = 30  # 30 degrees at a time; note this amount is also used
+        # to eventually re-orient ourselves back to the original central point;
+        # TODO may want to consider trying smaller step-sizes; will
+        # be less efficient, but may be important for smaller/distant objects that
+        # otherwise get missed
+
+        if self.touch_search_amount >= 720:
+            # Perform a random upward or downward movement along the surface of a
+            # sphere, with its centre fixed 10 cm in front of the agent
+            logger.debug("Trying random search for object")
+            if ctx.rng.uniform() < 0.5:
+                orientation = "vertical"
+                logger.debug("Orienting vertically")
+            else:
+                orientation = "horizontal"
+                logger.debug("Orienting horizontally")
+
+            rotation_degrees = ctx.rng.uniform(-180, 180)
+            logger.debug(f"Random orientation amount is : {rotation_degrees}")
+
+        elif self.touch_search_amount >= 360 and self.touch_search_amount < 720:
+            logger.debug("Trying vertical search for object")
+            orientation = "vertical"
+
+        else:
+            logger.debug("Trying horizontal search for object")
+            orientation = "horizontal"
+
+        # Move tangentally to the point we're facing, resulting in the agent's
+        # orienation about the central point changing as specified by rotation_deg,
+        # but now where the agent is no longer on the edge of the circle
+        move_lat_amount = np.tan(np.radians(rotation_degrees)) * distance_from_center
+        # The lateral movement will be down relative to the agent's facing position
+        # in the case of orient vertical, and left in the case of orient horizontal
+
+        # The below calculates the exsecant, which provides the necessary
+        # movement to bring the agent back to the same radius around the central
+        # point
+        move_forward_amount = distance_from_center * (
+            (1 - np.cos(np.radians(rotation_degrees)))
+            / np.cos(np.radians(rotation_degrees))
+        )
+
+        self.touch_search_amount += rotation_degrees  # Accumulate total rotations
+        # for touch-search
+
+        if orientation == "vertical":
+            action = OrientVertical(
+                agent_id=self.agent_id,
+                rotation_degrees=rotation_degrees,
+                down_distance=move_lat_amount,
+                forward_distance=move_forward_amount,
+            )
+        else:
+            action = OrientHorizontal(
+                agent_id=self.agent_id,
+                rotation_degrees=rotation_degrees,
+                left_distance=move_lat_amount,
+                forward_distance=move_forward_amount,
+            )
+        return MotorPolicyResult(
+            actions=[action],
+        )
+
+    def post_action(
+        self, action: list[Action], _: MotorSystemState | None = None
+    ) -> None:
+        pass
+
+    def pre_episode(self) -> None:
+        self.reset()
+
+    def post_episode(self):
+        pass
+
+    def get_agent_state(self, state: MotorSystemState) -> AgentState:
+        return state[self.agent_id]
+
+    def is_motor_only_step(self, state: MotorSystemState) -> bool:
+        return self.get_agent_state(state).motor_only_step
+
+    def state_dict(self):
+        return {"episode_step": self.episode_step}
+
+    def load_state_dict(self, state_dict):
+        self.episode_step = state_dict["episode_step"]
+
+    def set_experiment_mode(self, mode: ExperimentMode) -> None:
+        pass

@@ -164,6 +164,7 @@ class EnvironmentInterface:
 
         actions = self.motor_system(ctx)
         self._observation, proprioceptive_state = self._step(actions)
+        self.motor_system._observation = self._observation
         self.motor_system._state = MotorSystemState(proprioceptive_state)
         return self._observation
 
