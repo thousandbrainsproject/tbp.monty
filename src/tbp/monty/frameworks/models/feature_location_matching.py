@@ -16,6 +16,7 @@ import torch
 from scipy.spatial.transform import Rotation
 from sklearn.neighbors import KDTree
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.graph_matching import GraphLM, GraphMemory
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
@@ -43,7 +44,6 @@ class FeatureGraphLM(GraphLM):
 
     def __init__(
         self,
-        rng: np.random.RandomState,
         max_match_distance,
         tolerances,
         path_similarity_threshold=0.1,
@@ -56,7 +56,6 @@ class FeatureGraphLM(GraphLM):
         """Initialize Learning Module.
 
         Args:
-            rng: The random number generator.
             max_match_distance: Maximum distance of a tested and stored location to
                 be matched.
             tolerances: How much can each observed feature deviate from the stored
@@ -78,7 +77,7 @@ class FeatureGraphLM(GraphLM):
             umbilical_num_poses: Number of samples rotations in the direction
                 of the plane perpendicular to the surface normal.
         """
-        super().__init__(rng=rng)
+        super().__init__()
         self.graph_memory = FeatureGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
         )
@@ -345,21 +344,24 @@ class FeatureGraphLM(GraphLM):
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
-    def _update_possible_matches(self, query):
+    def _update_possible_matches(self, ctx: RuntimeContext, query):
         """Go through all objects and update possible matches.
 
         Args:
+            ctx: The runtime context.
             query: current features at location.
         """
         consistent_objects = {}
         for graph_id in self.possible_matches:
             consistent = self._update_matches_using_features(
-                query[0], query[1], graph_id
+                ctx, query[0], query[1], graph_id
             )
             consistent_objects[graph_id] = consistent
         self._remove_inconsistent_objects(consistent_objects)
 
-    def _update_matches_using_features(self, features, displacement, graph_id):
+    def _update_matches_using_features(
+        self, ctx: RuntimeContext, features, displacement, graph_id
+    ):
         """Use displacement to compare observed features to possible graph features.
 
         At first observation (no displacement yet):
@@ -386,6 +388,7 @@ class FeatureGraphLM(GraphLM):
         return len(possible_paths) > 0
 
         Args:
+            ctx: The runtime context.
             features: Observed features at current time step.
             displacement: Displacement from previous location to current.
             graph_id: ID of model that should be tested.
@@ -411,7 +414,7 @@ class FeatureGraphLM(GraphLM):
                 n_removed = 0
                 for path_id, node_id in enumerate(path_start_ids):
                     possible_poses_for_path = self._get_informed_possible_poses(
-                        graph_id, node_id, features
+                        ctx, graph_id, node_id, features
                     )
                     if len(possible_poses_for_path) > 0:
                         self.possible_poses[graph_id].append(possible_poses_for_path)
@@ -607,6 +610,7 @@ class FeatureGraphLM(GraphLM):
 
     def _get_informed_possible_poses(
         self,
+        ctx: RuntimeContext,
         graph_id,
         node_id,
         sensed_features,
@@ -647,7 +651,7 @@ class FeatureGraphLM(GraphLM):
                 for _ in range(n_samples):
                     # If we do this we need a better terminal condition for similar
                     # rotations or more robustness. n_sample currently set to 0.
-                    rand_rot = self._rng.vonmises(0, kappa, 3)
+                    rand_rot = ctx.rng.vonmises(0, kappa, 3)
                     rot = Rotation.from_euler(
                         "xyz", [rand_rot[0], rand_rot[1], rand_rot[2]]
                     )

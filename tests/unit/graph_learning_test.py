@@ -85,9 +85,9 @@ class TrainedGraphLM:
         """Number of episodes/objects this LM was trained on."""
         return len(self.episodes)
 
-    def pre_episode(self, rng: np.random.RandomState, primary_target) -> None:
+    def pre_episode(self, primary_target) -> None:
         """Delegates pre_episode calls to the LM."""
-        self.learning_module.pre_episode(rng, primary_target)
+        self.learning_module.pre_episode(primary_target)
 
 
 class GraphLearningTest(BaseGraphTest):
@@ -97,47 +97,19 @@ class GraphLearningTest(BaseGraphTest):
 
         self.output_dir = Path(tempfile.mkdtemp())
         self.compositional_save_path = tempfile.mkdtemp()
-        self.fixed_actions_path = (
-            Path(__file__).parent / "resources" / "fixed_test_actions.jsonl"
-        )
-        self.fixed_actions_path_off_object = (
-            Path(__file__).parent / "resources" / "fixed_test_actions_off_object.jsonl"
-        )
-
-        # Generate the override string for setting the actions file name.
-        # We're doing this because the string is too long otherwise.
-        actions_file_name_selector = ".".join(  # noqa: FLY002
-            [
-                "test",
-                "config",
-                "monty_config",
-                "motor_system_config",
-                "motor_system_args",
-                "policy",
-                "file_name",
-            ]
-        )
 
         def hydra_config(
             test_name: str,
-            action_file_name: Path | None = None,
-            extra_overrides: list[str] | None = None,
         ) -> DictConfig:
             """Return a Hydra configuration from the specified test name.
 
             Args:
                 test_name: the name of the test config to load
-                action_file_name: Optional path to a file of actions to use
-                extra_overrides: Optional list of extra overrides to add
             """
             overrides = [
                 f"test=graph_learning/{test_name}",
                 f"test.config.logging.output_dir={self.output_dir}",
             ]
-            if action_file_name:
-                overrides.append(f"{actions_file_name_selector}={action_file_name}")
-            if extra_overrides:
-                overrides += extra_overrides
             return hydra.compose(config_name="test", overrides=overrides)
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
@@ -146,33 +118,19 @@ class GraphLearningTest(BaseGraphTest):
             self.ppf_pred_cfg = hydra_config("ppf_pred")
             self.disp_pred_cfg = hydra_config("disp_pred")
             self.feature_pred_cfg = hydra_config("feature_pred")
-            self.fixed_actions_disp_cfg = hydra_config(
-                "fixed_actions_disp", self.fixed_actions_path
-            )
-            self.fixed_actions_ppf_cfg = hydra_config(
-                "fixed_actions_ppf", self.fixed_actions_path
-            )
-            self.fixed_actions_feat_cfg = hydra_config(
-                "fixed_actions_feat", self.fixed_actions_path
-            )
-            self.feature_pred_time_out_cfg = hydra_config(
-                "feature_pred_time_out", self.fixed_actions_path
-            )
-            self.feature_pred_off_object_cfg = hydra_config(
-                "feature_pred_off_object", self.fixed_actions_path_off_object
-            )
+            self.fixed_actions_disp_cfg = hydra_config("fixed_actions_disp")
+            self.fixed_actions_ppf_cfg = hydra_config("fixed_actions_ppf")
+            self.fixed_actions_feat_cfg = hydra_config("fixed_actions_feat")
+            self.feature_pred_time_out_cfg = hydra_config("feature_pred_time_out")
+            self.feature_pred_off_object_cfg = hydra_config("feature_pred_off_object")
             self.feature_pred_off_object_train_cfg = hydra_config(
-                "feature_pred_off_object_train", self.fixed_actions_path_off_object
+                "feature_pred_off_object_train"
             )
             self.feature_uniform_initial_poses_cfg = hydra_config(
-                "feature_uniform_initial_poses", self.fixed_actions_path
+                "feature_uniform_initial_poses"
             )
-            self.five_lm_ppf_displacement_cfg = hydra_config(
-                "five_lm_ppf_displacement", self.fixed_actions_path
-            )
-            self.five_lm_feature_cfg = hydra_config(
-                "five_lm_feature", self.fixed_actions_path
-            )
+            self.five_lm_ppf_displacement_cfg = hydra_config("five_lm_ppf_displacement")
+            self.five_lm_feature_cfg = hydra_config("five_lm_feature")
 
     def tearDown(self):
         """Code that gets executed after every test."""
@@ -207,7 +165,7 @@ class GraphLearningTest(BaseGraphTest):
             ctx = RuntimeContext(rng=exp.rng)
             while True:
                 observations = exp.env_interface.step(ctx, first=(step == 0))
-                exp.model.step(observations)
+                exp.model.step(ctx, observations)
                 self.assertEqual(
                     step + 1,
                     len(exp.model.learning_modules[0].buffer),
@@ -611,16 +569,14 @@ class GraphLearningTest(BaseGraphTest):
             offset = np.zeros(3)
 
         graph_lm.mode = ExperimentMode.TRAIN
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
 
         offset_obs = []
         for observation in observations:
             obs_to_learn = copy.deepcopy(observation)
             obs_to_learn.location += offset
             offset_obs.append(obs_to_learn)
-            graph_lm.exploratory_step([obs_to_learn])
+            graph_lm.exploratory_step(self.ctx, [obs_to_learn])
 
         graph_lm.detected_object = obj_name
         graph_lm.detected_rotation_r = None
@@ -633,7 +589,6 @@ class GraphLearningTest(BaseGraphTest):
 
     def get_gm_with_fake_object(self):
         graph_lm = FeatureGraphLM(
-            rng=np.random.RandomState(),
             max_match_distance=0.005,
             tolerances={
                 "patch": {
@@ -663,7 +618,6 @@ class GraphLearningTest(BaseGraphTest):
         graph_lms = []
         for lm in range(5):
             graph_lm = FeatureGraphLM(
-                rng=np.random.RandomState(),
                 max_match_distance=0.005,
                 tolerances={
                     "patch": {
@@ -694,11 +648,9 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm.mode = ExperimentMode.EVAL
         # Don't need to give target object since we are not logging performance
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             self.assertEqual(
                 len(graph_lm.get_possible_matches()),
                 1,
@@ -733,11 +685,9 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             print(graph_lm.get_possible_matches())
             self.assertEqual(
                 len(graph_lm.get_possible_matches()),
@@ -772,12 +722,10 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             observation.location = observation.location + np.ones(3)
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             print(graph_lm.get_possible_matches())
             self.assertEqual(
                 len(graph_lm.get_possible_matches()),
@@ -817,11 +765,9 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             self.assertEqual(
                 len(graph_lm.get_possible_matches()),
                 1,
@@ -856,11 +802,9 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for i, observation in enumerate(fake_obs_test):
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             if i == 0:
                 self.assertEqual(
                     len(graph_lm.get_possible_matches()),
@@ -882,11 +826,9 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             self.assertEqual(
                 len(graph_lm.get_possible_matches()),
                 0,
@@ -903,11 +845,9 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for step, observation in enumerate(fake_obs_test):
-            graph_lm.matching_step([observation])
+            graph_lm.matching_step(self.ctx, [observation])
             if step == 0:
                 self.assertEqual(
                     len(graph_lm.get_possible_matches()),
@@ -935,14 +875,12 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(
-            rng=np.random.RandomState(), primary_target=self.placeholder_target
-        )
+        graph_lm.pre_episode(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             if not observation.use_state:
                 pass
             else:
-                graph_lm.matching_step([observation])
+                graph_lm.matching_step(self.ctx, [observation])
                 self.assertEqual(
                     len(graph_lm.get_possible_matches()),
                     1,
@@ -999,13 +937,15 @@ class GraphLearningTest(BaseGraphTest):
                 tm.mode = ExperimentMode.EVAL
 
             exp.pre_epoch()
+            ctx = RuntimeContext(rng=exp.rng)
+
             for episode_num in range(tm.num_episodes):
                 exp.pre_episode()
                 # Normally the experiment `pre_episode` method would call the model
                 # `pre_episode` method, but it expects to feed data from an environment
                 # interface to the model, and we aren't using that, so we call it again
                 # with the correct target value.
-                monty.pre_episode(exp.rng, self.placeholder_target)
+                monty.pre_episode(self.placeholder_target)
                 for step in range(tm.num_observations(episode_num)):
                     # Manually run through the internal Monty steps since we aren't
                     # using the data from the environment interface and are instead
@@ -1014,7 +954,7 @@ class GraphLearningTest(BaseGraphTest):
                         lm.episodes[episode_num].observations[step]
                         for lm in trained_modules
                     ]
-                    monty._step_learning_modules()
+                    monty._step_learning_modules(ctx)
                     monty._vote()
                     monty._pass_goal_states()
                     monty._set_step_type_and_check_if_done()

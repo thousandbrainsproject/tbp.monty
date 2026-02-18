@@ -221,7 +221,6 @@ class PolicyTest(unittest.TestCase):
         )
 
         graph_lm = EvidenceGraphLM(
-            rng=np.random.RandomState(),
             max_match_distance=0.005,
             tolerances={
                 "patch": {
@@ -257,7 +256,7 @@ class PolicyTest(unittest.TestCase):
             # Get a first step to allow the surface agent to touch the object
             ctx = RuntimeContext(rng=exp.rng)
             observation_pre_touch = exp.env_interface.step(ctx, first=True)
-            exp.model.step(observation_pre_touch)
+            exp.model.step(ctx, observation_pre_touch)
 
             # Check initial view post touch-attempt
             observation_post_touch = exp.env_interface.step(ctx)
@@ -312,7 +311,7 @@ class PolicyTest(unittest.TestCase):
             ctx = RuntimeContext(rng=exp.rng)
             while True:
                 observations = exp.env_interface.step(ctx, first=(step == 0))
-                exp.model.step(observations)
+                exp.model.step(ctx, observations)
 
                 last_action = exp.model.motor_system._policy.action
 
@@ -426,7 +425,7 @@ class PolicyTest(unittest.TestCase):
             ctx = RuntimeContext(rng=exp.rng)
             while True:
                 observations = exp.env_interface.step(ctx, first=(step == 0))
-                exp.model.step(observations)
+                exp.model.step(ctx, observations)
 
                 #  Step | Action           | Motor-only? | Obs processed? | Source
                 # ------|------------------|-------------|----------------|-------------
@@ -566,7 +565,7 @@ class PolicyTest(unittest.TestCase):
             ctx = RuntimeContext(rng=exp.rng)
             while True:
                 observations = exp.env_interface.step(ctx, first=(step == 0))
-                exp.model.step(observations)
+                exp.model.step(ctx, observations)
                 exp.post_step(step, observations)
 
                 if step == 3:  # Surface agent should have re-oriented
@@ -857,7 +856,12 @@ class PolicyTest(unittest.TestCase):
         assert policy.pc_is_z_defined is False, "Should have reset z-defind flag"
 
     def core_evaluate_compute_goal_state_for_target_loc(
-        self, lm, motor_system, object_orientation, target_location_on_object
+        self,
+        ctx: RuntimeContext,
+        lm,
+        motor_system,
+        object_orientation,
+        target_location_on_object,
     ):
         """Test GSGs ability to propose a motor-system goal-state.
 
@@ -866,6 +870,7 @@ class PolicyTest(unittest.TestCase):
         orientation in Habitat-compatible coordinates.
 
         Args:
+            ctx: The runtime context
             lm: The LM with the GSG that we will test
             motor_system: The motor-system to test
             object_orientation: The orientation of the object in Euler angle degrees
@@ -912,14 +917,13 @@ class PolicyTest(unittest.TestCase):
         )
 
         lm.pre_episode(
-            rng=np.random.RandomState(),
             primary_target=dict(
                 object="dummy_object",
                 quat_rotation=[1.0, 0.0, 0.0, 0.0],  # Filler value
             ),
         )
 
-        lm.matching_step(observations=[State(**fake_sensation_config)])
+        lm.matching_step(ctx, observations=[State(**fake_sensation_config)])
 
         # GSG handles computing the motor goal-state
         motor_goal_state = lm.gsg._compute_goal_state_for_target_loc(
@@ -965,6 +969,8 @@ class PolicyTest(unittest.TestCase):
         # the validity of the final agent location
         surface_displacement = gsg_args["desired_object_distance"] * 1.5
 
+        ctx = RuntimeContext(rng=np.random.RandomState())
+
         # === First, easy example ===
         (
             motor_goal_location,
@@ -972,6 +978,7 @@ class PolicyTest(unittest.TestCase):
             target_loc_hab,
             agent_direction_hab,
         ) = self.core_evaluate_compute_goal_state_for_target_loc(
+            ctx,
             lm,
             motor_system,
             object_orientation=[0, 0, 0],
@@ -1004,6 +1011,7 @@ class PolicyTest(unittest.TestCase):
             target_loc_hab_2,
             agent_direction_hab_2,
         ) = self.core_evaluate_compute_goal_state_for_target_loc(
+            ctx,
             lm,
             motor_system,
             object_orientation=[180, 0, 0],  # Flip the object around the x-axis, such
@@ -1039,6 +1047,7 @@ class PolicyTest(unittest.TestCase):
             target_loc_hab_3,
             agent_direction_hab_3,
         ) = self.core_evaluate_compute_goal_state_for_target_loc(
+            ctx,
             lm,
             motor_system,
             object_orientation=[160, 45, 70],

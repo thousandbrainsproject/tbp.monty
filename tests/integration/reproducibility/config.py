@@ -20,7 +20,6 @@ if TYPE_CHECKING:
 def hydra_config(
     test_name: str,
     output_dir: Path,
-    fixed_actions_path: Path | None = None,
     model_name_or_path: Path | None = None,
 ) -> DictConfig:
     """Helper for composing a Hydra configuration.
@@ -29,7 +28,6 @@ def hydra_config(
         test_name: The name of the test to run. Must be a present in the
             src/tbp/monty/conf/experiment/test directory.
         output_dir: The directory to store the output.
-        fixed_actions_path: The path to the fixed actions file.
         model_name_or_path: The path to the model to load.
 
     Returns:
@@ -40,11 +38,6 @@ def hydra_config(
         "num_parallel=1",
         f"++experiment.config.logging.output_dir={output_dir}",
     ]
-    if fixed_actions_path:
-        overrides.append(
-            "+experiment.config.monty_config.motor_system_config"
-            f".motor_system_args.policy.file_name={fixed_actions_path}",
-        )
     if model_name_or_path:
         overrides.append(
             f"experiment.config.model_name_or_path={model_name_or_path}",

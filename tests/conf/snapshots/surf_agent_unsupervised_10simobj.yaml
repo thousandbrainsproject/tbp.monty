@@ -71,7 +71,7 @@ benchmarks:
     - 0
 experiment:
   config:
-    do_train: false
+    do_train: true
     do_eval: false
     show_sensor_output: false
     max_train_steps: 4000
@@ -79,7 +79,7 @@ experiment:
     max_total_steps: 4000
     n_train_epochs: 10
     n_eval_epochs: ${benchmarks.rotations_all_count}
-    model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+    model_name_or_path: ''
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
@@ -102,7 +102,6 @@ experiment:
       motor_system_config:
         motor_system_args:
           policy:
-            file_name: null
             use_goal_state_driven_actions: false
             agent_id: ${monty.agent_id:agent_id_0}
             desired_object_distance: 0.025
