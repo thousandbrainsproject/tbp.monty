@@ -1083,7 +1083,7 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             Next action in the cycle.
         """
-        # TODO: Revert to last_action = self.action once TouchObject positioning
+        # TODO: Revert to last_action = self.actions once TouchObject positioning
         #       procedure is implemented
         if self.actions:
             assert len(self.actions) == 1, "Expected 1 , got multiple"

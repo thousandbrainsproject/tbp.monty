@@ -74,16 +74,16 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         )
         self.model.sensor_modules[0].processed_obs[-1]["action"] = (
             None
-            if self.model.motor_system._policy.action is None
+            if self.model.motor_system._policy.actions is None
             else (
-                f"{self.model.motor_system._policy.action.agent_id}."
-                f"{self.model.motor_system._policy.action.name}"
+                f"{self.model.motor_system._policy.actions[0].agent_id}."
+                f"{self.model.motor_system._policy.actions[0].name}"
             )
         )
         # Only include observations coming right before a move_tangentially action
         if step > 0 and (
-            self.model.motor_system._policy.action is None
-            or self.model.motor_system._policy.action.name != "move_tangentially"
+            not self.model.motor_system._policy.actions
+            or self.model.motor_system._policy.actions[0].name != "move_tangentially"
         ):
             del self.model.sensor_modules[0].processed_obs[-2]
 
