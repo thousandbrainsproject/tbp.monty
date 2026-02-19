@@ -247,13 +247,12 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
         )
         cycle_length = len(policy.action_list)
         ctx = RuntimeContext(rng=np.random.RandomState(42))
-        state = MotorSystemState()
         returned_actions: list[Action] = []
         for _ in range(2 * cycle_length):
             result = policy.dynamic_call(ctx)
             assert len(result.actions) == 1, "Expected one action"
             returned_actions.append(result.actions[0])
-            policy.post_actions(result.actions, state)
+            policy.post_actions(result.actions)
 
         for i in range(cycle_length):
             first_occurrence = returned_actions[i]

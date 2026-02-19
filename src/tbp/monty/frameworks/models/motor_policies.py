@@ -133,19 +133,11 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def post_actions(
-        self, actions: list[Action], state: MotorSystemState | None = None
-    ) -> None:
+    def post_actions(self, actions: list[Action]) -> None:
         """This post actions hook will automatically be called at the end of __call__.
-
-        TODO: Remove state parameter as it is only used to serialize the state in
-              state.convert_motor_state() and should be done within the
-              motor system.
 
         Args:
             actions: The actions to process the hook for.
-            state: The current state of the motor system.
-                Defaults to None.
         """
         pass
 
@@ -187,7 +179,7 @@ class MotorPolicy(abc.ABC):
             The actions to take.
         """
         result = self.dynamic_call(ctx, state)
-        self.post_actions(result.actions, state)
+        self.post_actions(result.actions)
         return result
 
 
@@ -236,7 +228,6 @@ class BasePolicy(MotorPolicy):
     def post_actions(
         self,
         actions: list[Action],  # noqa: ARG002
-        state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> None:
         self.episode_step += 1
 
@@ -348,7 +339,6 @@ class PredefinedPolicy(MotorPolicy):
     def post_actions(
         self,
         actions: list[Action],  # noqa: ARG002
-        state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> None:
         self.episode_step += 1
 
@@ -597,7 +587,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     def post_actions(
         self,
         actions: list[Action],
-        state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> None:
         self.actions = actions
         self.episode_step += 1
@@ -939,9 +928,7 @@ class SurfacePolicy(InformedPolicy):
             actions=actions,
         )
 
-    def post_actions(
-        self, actions: list[Action], state: MotorSystemState | None = None
-    ) -> None:
+    def post_actions(self, actions: list[Action]) -> None:
         """Temporary SurfacePolicy post_actions to distinguish types of last action.
 
         Once TouchObject positioning procedure exists, it will not run through the
@@ -971,7 +958,7 @@ class SurfacePolicy(InformedPolicy):
             # will be no post_action calls when attempting to find the object.
             return
 
-        super().post_actions(actions, state)
+        super().post_actions(actions)
         if actions:
             assert len(actions) == 1, "Expected one action"
             self.last_surface_policy_action = actions[0]
