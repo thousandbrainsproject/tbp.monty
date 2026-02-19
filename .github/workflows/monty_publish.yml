@@ -16,7 +16,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-2core
+      labels: tbp-linux-x64-ubuntu2204-4core
     steps:
       - name: Checkout tbp.monty
         uses: actions/checkout@v4
