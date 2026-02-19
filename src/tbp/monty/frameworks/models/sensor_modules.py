@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, ClassVar, Protocol, TypedDict
+from typing import Any, ClassVar, Protocol
 
 import numpy as np
 import quaternion as qt
@@ -19,7 +19,10 @@ from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    SensorModule,
+    SensorObservation,
+)
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     SensorState,
@@ -39,11 +42,10 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 __all__ = [
     "DefaultMessageNoise",
     "FeatureChangeFilter",
-    "HabitatObservation",
-    "HabitatObservationProcessor",
     "HabitatSM",
     "MessageNoise",
     "NoMessageNoise",
+    "ObservationProcessor",
     "PassthroughStateFilter",
     "Probe",
     "SnapshotTelemetry",
@@ -97,14 +99,6 @@ class SnapshotTelemetry:
         return dict(raw_observations=self.raw_observations, sm_properties=self.poses)
 
 
-class HabitatObservation(TypedDict):
-    semantic_3d: np.ndarray
-    sensor_frame_data: np.ndarray
-    world_camera: np.ndarray
-    rgba: np.ndarray
-    depth: np.ndarray
-
-
 class SurfaceNormalMethod(Enum):
     TLS = "TLS"
     """Total Least-Squares"""
@@ -114,8 +108,8 @@ class SurfaceNormalMethod(Enum):
     """Naive"""
 
 
-class HabitatObservationProcessor:
-    """Processes Habitat observations into a Cortical Message."""
+class ObservationProcessor:
+    """Processes SensorObservations into Cortical Messages."""
 
     CURVATURE_FEATURES: ClassVar[list[str]] = [
         "principal_curvatures",
@@ -182,7 +176,7 @@ class HabitatObservationProcessor:
         self._surface_normal_method = surface_normal_method
         self._weight_curvature = weight_curvature
 
-    def process(self, observation: HabitatObservation) -> State:
+    def process(self, observation: SensorObservation) -> State:
         """Processes observation.
 
         Args:
@@ -585,7 +579,7 @@ class HabitatSM(SensorModule):
             gaussian_curvature and mean_curvature should be used together to preserve
             the same information contained in principal_curvatures.
         """
-        self._habitat_observation_processor = HabitatObservationProcessor(
+        self._observation_processor = ObservationProcessor(
             features=features,
             sensor_module_id=sensor_module_id,
             pc1_is_pc2_threshold=pc1_is_pc2_threshold,
@@ -653,7 +647,7 @@ class HabitatSM(SensorModule):
                 data, self.state.rotation, self.state.position
             )
 
-        observed_state = self._habitat_observation_processor.process(data)
+        observed_state = self._observation_processor.process(data)
 
         if observed_state.use_state:
             observed_state = self._message_noise(observed_state, rng=ctx.rng)

@@ -16,7 +16,7 @@ from typing import Tuple
 import quaternion as qt
 from habitat_sim.sensor import CameraSensorSpec, SensorSpec, SensorType
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservations
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 
 __all__ = [
     "RGBDSensorConfig",
@@ -53,8 +53,8 @@ class SensorConfig:
         return []
 
     def process_observations(
-        self, sensor_obs: SensorObservations
-    ) -> SensorObservations:
+        self, sensor_obs: SensorObservation
+    ) -> SensorObservation:
         """Callback used to process Habitat raw sensor observations.
 
         Args:
