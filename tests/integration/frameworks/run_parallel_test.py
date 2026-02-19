@@ -42,9 +42,6 @@ class RunParallelTest(unittest.TestCase):
                 f"experiment=test/{test_name}",
                 "num_parallel=1",
                 f"++experiment.config.logging.output_dir={output_dir}",
-                "+experiment.config.monty_config.motor_system_config"
-                ".motor_system_args.policy.file_name="
-                f"{Path(__file__).parent / 'resources/fixed_test_actions.jsonl'}",
             ]
             if model_name_or_path:
                 overrides.append(
