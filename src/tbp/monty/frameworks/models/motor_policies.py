@@ -974,7 +974,7 @@ class SurfacePolicy(InformedPolicy):
 
         super().post_actions(actions, state)
         if actions:
-            assert len(actions) == 1, "Expected single action, got multiple"
+            assert len(actions) == 1, "Expected one action"
             self.last_surface_policy_action = actions[0]
         else:
             self.last_surface_policy_action = None
