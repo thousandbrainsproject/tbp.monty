@@ -99,7 +99,7 @@ class MotorPolicy(abc.ABC):
                 Defaults to None.
 
         Returns:
-            The result of the motor policy.
+            The motor policy result.
         """
         pass
 
