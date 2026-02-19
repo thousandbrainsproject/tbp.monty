@@ -229,6 +229,7 @@ class BasePolicy(MotorPolicy):
             A MotorPolicyResult that contains a random action.
         """
         return MotorPolicyResult(
+            success=True,
             terminated=True,
             actions=[self.action_sampler.sample(self.agent_id, ctx.rng)],
         )
