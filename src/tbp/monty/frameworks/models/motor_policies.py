@@ -1090,11 +1090,7 @@ class SurfacePolicy(InformedPolicy):
         """
         # TODO: Revert to last_action = self.actions once TouchObject positioning
         #       procedure is implemented
-        if self.actions:
-            assert len(self.actions) == 1, "Expected 1 , got multiple"
-            last_action = self.actions[0]
-        else:
-            return None
+        last_action = self.last_surface_policy_action
 
         if isinstance(last_action, MoveForward):
             return self._orient_horizontal(state)
