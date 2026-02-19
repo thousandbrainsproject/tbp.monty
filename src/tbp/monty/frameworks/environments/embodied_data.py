@@ -710,7 +710,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
         # TODO refactor so that the whole of the hypothesis driven jumps
         # makes cleaner use of self.motor_system()
-        # Call post_action (normally taken care of __call__ within
+        # Call post_actions (normally taken care of __call__ within
         # self.motor_system._policy())
         self.motor_system._policy.post_actions(
             self.motor_system._policy.actions, self.motor_system._state
