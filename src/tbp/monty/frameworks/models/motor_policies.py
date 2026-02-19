@@ -226,7 +226,7 @@ class BasePolicy(MotorPolicy):
                 Defaults to None. Unused.
 
         Returns:
-            A MotorPolicyResult that contains a 1-length list of random actions.
+            A MotorPolicyResult that contains a random action.
         """
         return MotorPolicyResult(
             terminated=True,
