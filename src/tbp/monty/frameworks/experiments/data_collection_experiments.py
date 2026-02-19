@@ -72,14 +72,11 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         self.model.sensor_modules[0].processed_obs[-1]["object"] = (
             self.env_interface.primary_target["object"]
         )
-        self.model.sensor_modules[0].processed_obs[-1]["action"] = (
-            None
-            if self.model.motor_system._policy.actions is None
-            else (
-                f"{self.model.motor_system._policy.actions[0].agent_id}."
-                f"{self.model.motor_system._policy.actions[0].name}"
-            )
-        )
+        action_strings = [
+            f"{action.agent_id}.{action.name}"
+            for action in self.model.motor_system._policy.actions
+        ]
+        self.model.sensor_modules[0].processed_obs[-1]["actions"] = action_strings
         # Only include observations coming right before a move_tangentially action
         if step > 0 and (
             not self.model.motor_system._policy.actions
