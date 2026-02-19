@@ -76,11 +76,11 @@ class MotorPolicyResult:
     actions: list[Action] = field(default_factory=list)
     """Actions to take."""
     success: bool = False
-    """Whether the procedure succeeded in its positioning goal."""
+    """Whether the policy succeeded in its goal."""
     terminated: bool = False
-    """Whether the procedure reached a terminal state with success or failure."""
+    """Whether the policy reached a terminal state with success or failure."""
     truncated: bool = False
-    """Whether the procedure was truncated due to a limit on the number of attempts or
+    """Whether the policy was truncated due to a limit on the number of attempts or
     other criteria."""
 
 
