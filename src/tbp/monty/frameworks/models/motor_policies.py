@@ -510,9 +510,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             return super().dynamic_call(ctx, state)
 
         return MotorPolicyResult(
+            success=False,
             terminated=True,
             actions=[self.fixme_undo_last_action()],
-        )
+)
 
     def fixme_undo_last_action(
         self,
