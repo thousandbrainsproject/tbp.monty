@@ -207,7 +207,6 @@ class BasePolicy(MotorPolicy):
         self.agent_id = agent_id
         self.action_sampler = action_sampler
 
-        self.action_sequence: list[list[Action]] = []
         self.episode_step = 0
         self.episode_count = 0
 
@@ -236,15 +235,13 @@ class BasePolicy(MotorPolicy):
 
     def post_actions(
         self,
-        actions: list[Action],
+        actions: list[Action],  # noqa: ARG002
         state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> None:
         self.episode_step += 1
-        self.action_sequence.append([actions])
 
     def pre_episode(self) -> None:
         self.episode_step = 0
-        self.action_sequence = []
 
     def post_episode(self):
         self.episode_count += 1
@@ -325,7 +322,6 @@ class PredefinedPolicy(MotorPolicy):
     ) -> None:
         self.agent_id = agent_id
         self.action_list: list[Action] = PredefinedPolicy.read_action_file(file_name)
-        self.action_sequence: list[list[Action | None]] = []
         self.episode_step = 0
         self.episode_count = 0
         self.use_goal_state_driven_actions = False
@@ -351,15 +347,13 @@ class PredefinedPolicy(MotorPolicy):
 
     def post_actions(
         self,
-        actions: list[Action],
+        actions: list[Action],  # noqa: ARG002
         state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> None:
         self.episode_step += 1
-        self.action_sequence.append([actions])
 
     def pre_episode(self) -> None:
         self.episode_step = 0
-        self.action_sequence = []
 
     def post_episode(self):
         self.episode_count += 1
@@ -601,12 +595,12 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         raise TypeError(f"Invalid action: {last_action}")
 
     def post_actions(
-        self, actions: list[Action], state: MotorSystemState | None = None
+        self,
+        actions: list[Action],
+        state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> None:
         self.actions = actions
         self.episode_step += 1
-        state_copy = state.convert_motor_state() if state else None
-        self.action_sequence.append([actions, state_copy])
 
 
 class NaiveScanPolicy(InformedPolicy):
