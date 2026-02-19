@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -14,7 +14,9 @@ from pathlib import Path
 import pandas as pd
 import wandb
 
-from tbp.monty.frameworks.experiments import MontyExperiment
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
+
+__all__ = ["ProfileExperimentMixin"]
 
 
 def make_stats_df(stats):
@@ -52,8 +54,8 @@ class ProfileExperimentMixin:
         We want to ensure that the mixin is always the leftmost class listed in
         the base classes when used so that the methods defined here override the ones
         defined in MontyExperiment or its subclasses. We also want to ensure that
-        any subclasses are actually extending MontyExperiment. This ensures that by
-        raising an error if it is not.
+        any subclasses actually extend MontyExperiment. This is enforced by raising
+        an error if that is not the case.
 
         Raises:
             TypeError: when the mixin isn't the leftmost base class of the subclass
@@ -86,7 +88,7 @@ class ProfileExperimentMixin:
 
     def run_episode(self):
         mode, epoch, episode = self.get_epoch_state()
-        filename = f"profile-{mode.value}_epoch_{epoch}_episode_{episode}.csv"
+        filename = f"profile-{mode}_epoch_{epoch}_episode_{episode}.csv"
         pr = cProfile.Profile()
         pr.enable()
         super().run_episode()

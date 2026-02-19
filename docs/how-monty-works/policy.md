@@ -49,22 +49,25 @@ For the former, the distant agent is moved to a "good view" such that small and 
 Some more details on the positioning procedures are provided below.
 
 ### GetGoodView
-- This is called by the distant agent in the pre-episode period, and makes use of the view-finder. To estimate whether it is on an object, it can either make use of the semantic-sensor (which provides ground-truth information about whether an object is in view and its label), or it can approximate this information using a heuristic based on depth-differences.
+
+- The experiment invokes this positioning procedure for a distant agent in the pre-episode period, and makes use of the view-finder. To estimate whether it is on an object, it can either make use of the semantic-sensor (which provides ground-truth information about whether an object is in view and its label), or it can approximate this information using a heuristic based on depth-differences.
 - Information in the view-finder is used to orient the view-finder, and the associated sensor-patch(es) onto the object, before moving closer to the object as required.
 - Contains additional logic for handling multiple objects, in particular making sure the agent *begins* on the target object in an experiment where there are distractor objects. This is less relevant for the surface agent, as currently multi-object experiments are only for the distant agent.
 - Key parameters that determine the behavior of the positioning procedure are `good_view_percentage` and `desired_object_distance`. The primary check of the algorithm is to compare `perc_on_target_obj` (the percent of the view-finder's visual field that is filled by the object) against the desired `good_view_percentage`.  `closest_point_on_target_obj` simply serves to ensure we don't get too close to the object
 
 ### Touch Object
+
 - This can be called by the surface agent when determining the next action (even within an episode), and makes use of the view-finder, but not the semantic-sensor.
 - Contains a search-loop function that will orient around to find an object, even if it is not visible in the view-finder.
 - The key parameter is `desired_object_distance`, which reflects the effective length of the agent and its sensors as it moves along the surface of the object.
 
-### Planned Changes to the Positioning Procedures
-As the positioning procedures were implemented in the early development of Monty, there are a number of aspects which we plan to adjust in the near future, and which should be reflected in any new positioning procedures.
-1) Positioning procedures should only be called in `pre_episode`, i.e. before the episode begins.
-2) Positioning procedures may make use of privileged information such as the view-finder and semantic-sensor, which are not available to the learning module. However, consistent with point (1), these should not be leveraged during learning or inference by the Monty agent.
+### When To Call And What To Access
 
-These requirements are currently not enforced in the use of `GetGoodView` and `touch_object` when an agent jumps to a location using a model-based policy. Similarly, `touch_object` is used by the surface agent if it loses contact with the object and cannot find it. Appropriately separating out the role of positioning procedures via the above requirements will clarify their role, and enable policies that do not make use of privileged information, but which serve similar purposes during an experiment.
+Positioning procedures should only be called in `pre_episode`, i.e. before the episode begins.
+
+Positioning procedures may make use of privileged information such as the view-finder and semantic-sensor, which are not available to the learning module. However, consistent with being called only in `pre_episode`, these should not be leveraged during learning or inference by the Monty agent.
+
+These requirements are currently not enforced in the use of `touch_object` when an agent jumps to a location using a model-based policy. Similarly, `touch_object` is used by the surface agent if it loses contact with the object and cannot find it. Appropriately separating out the `touch_object` positioning procedure will clarify its role, and enable policies that do not make use of privileged information, but which serve similar purposes during an experiment.
 
 
 # Input-Driven and Hypothesis-Driven Policies
@@ -90,7 +93,7 @@ The policies mentioned above are aimed at efficient inference. There is also a s
 | List of all policy classes         | Description                                                                                                                                                                                                                                                                                             |
 |------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **MotorPolicy**                    | Abstract policy class.                                                                                                                                                                                                                                                                                  |
-| **BasePolicy**                     | Policy that randomly selects actions from the action space. The switch_frequency parameter determines how likely it is to sample a new action compared to repeating the previous action. There is also an option to provide a file with predefined actions that are executed in that order.             |
+| **BasePolicy**                     | Policy that randomly selects actions from the action space. There is also an option to provide a file with predefined actions that are executed in that order.             |
 | **InformedPolicy**                 | Receives the current observation as input and implements basic input-driven heuristics. This policy can search for the object if it is not in view, move to the desired distance to an object, and make sure to stay on the object by reversing the previous action if the sensor moves off the object. |
 | **NaiveScanPolicy**                | Policy that moves in an outwards spiral. Is used for supervised pretraining with the distant agent to ensure even object coverage.                                                                                                                                                                      |
 | **SurfacePolicy**                  | Moves perpendicular to the object's surface at a constant distance using the surface normals. This is also a type of InformedPolicy.                                                                                                                                                                    |

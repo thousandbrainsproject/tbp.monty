@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,39 +9,62 @@
 # https://opensource.org/licenses/MIT.
 
 
-import torch
-from tqdm import tqdm
+import logging
 
-from .object_recognition_experiments import MontyObjectRecognitionExperiment
+import torch
+
+from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.experiments.object_recognition_experiments import (
+    MontyObjectRecognitionExperiment,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class DataCollectionExperiment(MontyObjectRecognitionExperiment):
     """Collect data in environment without performing inference.
 
-    Stripped down experiment, to explore points on the object and save JUST the
-    resulting observations as a .pt file. This was used to collect data that can then
-    be used offline to quickly test other, non-Monty methods (like ICP). Mostly useful
-    for methods that require batches of observations and do not work with inference
-    through movement over the object. Otherwise would recommend to implement approaches
-    directly in the Monty framework instead of using offline data.
+    Stripped-down experiment to explore points on the object and save the resulting
+    observations as a .pt file. This can be used to collect data that can then be used
+    offline to quickly test other, non-Monty methods (like ICP). It is mostly useful for
+    methods that require batches of observations and do not work with inference through
+    movement over the object. Otherwise, we recommend implementing approaches directly
+    in the Monty framework rather than using offline data.
     """
 
     def run_episode(self):
-        """Episode that checks the terminal states of an object recognition episode."""
         self.pre_episode()
-        for step, observation in tqdm(enumerate(self.env_interface)):
+        step = 0
+        ctx = RuntimeContext(rng=self.rng)
+        while True:
+            try:
+                observations = self.env_interface.step(ctx, first=(step == 0))
+            except StopIteration:
+                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
+                #       episode termination. This is a holdover from when we used
+                #       iterators. However, this also abdicates control of the
+                #       experiment to the policy. We should find a better way to handle
+                #       this, so that the experiment can control the episode termination
+                #       fully. For example, we know how many steps the policy will take,
+                #       so the experiment can set max steps based on that knowledge
+                #       alone.
+                break
+
             if step > self.max_steps:
                 break
             if self.show_sensor_output:
                 self.live_plotter.show_observations(
-                    *self.live_plotter.hardcoded_assumptions(observation, self.model),
+                    *self.live_plotter.hardcoded_assumptions(observations, self.model),
                     step,
                 )
-            self.pass_features_to_motor_system(observation, step)
+            self.pass_features_to_motor_system(ctx, observations, step)
+            step += 1
+
         self.post_episode()
 
-    def pass_features_to_motor_system(self, observation, step):
-        self.model.aggregate_sensory_inputs(observation)
+    def pass_features_to_motor_system(self, ctx: RuntimeContext, observation, step):
+        self.model.aggregate_sensory_inputs(ctx, observation)
         self.model.motor_system._policy.processed_observations = (
             self.model.sensor_module_outputs[0]
         )
@@ -65,15 +88,30 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
             del self.model.sensor_modules[0].processed_obs[-2]
 
     def pre_episode(self):
-        """Pre episode where we pass target object to the model for logging."""
+        if self.experiment_mode is ExperimentMode.TRAIN:
+            logger.info(
+                f"running train epoch {self.train_epochs} "
+                f"train episode {self.train_episodes}"
+            )
+        else:
+            logger.info(
+                f"running eval epoch {self.eval_epochs} "
+                f"eval episode {self.eval_episodes}"
+            )
+
+        self.reset_episode_rng()
+
         self.model.pre_episode()
-        self.env_interface.pre_episode()
+        self.env_interface.pre_episode(self.rng)
         self.max_steps = self.max_train_steps
         self.logger_handler.pre_episode(self.logger_args)
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-    def post_episode(self):
+    def post_episode(
+        self,
+        steps,  # noqa: ARG002
+    ):
         torch.save(
             self.model.sensor_modules[0].processed_obs[:-1],
             self.output_dir / f"observations{self.train_episodes}.pt",
@@ -82,5 +120,5 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         self.train_episodes += 1
 
     def post_epoch(self):
-        # This stripped down expt only allows for one pass
+        # This stripped-down experiment only allows for one epoch.
         pass

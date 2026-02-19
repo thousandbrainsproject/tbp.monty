@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -15,6 +15,7 @@ import pandas as pd
 import wandb
 from sklearn.preprocessing import LabelEncoder
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
 from tbp.monty.frameworks.utils.logging_utils import (
     get_stats_per_lm,
@@ -28,18 +29,19 @@ create and manage this pool of data, including flushing it periodically. The job
 handlers is to grab subsets of the data pool, format it, and send it to a location
 (wandb, or a certain file). The data pool can be updated at any of the callback points
 in the experiment, for example, `post_episode`. The loggers receive a standard set of
-arguments used for building the data pool, most notably a reference to the model. During
-reporting, all handlers are called upon to send data to a destination. Handlers also all
-receive a standard set of arguments, including most importantly the self.data pool.
+arguments used for building the data pool, most notably a reference to the model.
+During reporting, all handlers are called upon to send data to a destination.
+Handlers also receive a standard set of arguments, most importantly the `self.data`
+pool.
 
 The Basic logger is associated with the BASIC monty_log_level specified in
 config_args.logging. The Detailed logger is associated with the DETAILED logging
-level. The Detailed logger data pool contains a superset of the data in the basic logger
-self.data attribute.
+level. The Detailed logger's data pool contains a superset of the data in the
+BASIC logger's `self.data` attribute.
 
 The term logger is used unconventionally here. Normally, the thing being logged is a
-string of text and the destination is a file or the terminal screen. Here, the stuff
-being logged is structured data. Perhaps the term DataReporter is more apt.
+string of text and the destination is a file or the terminal screen. Here, the logged
+content is structured data. Perhaps the term DataReporter is more apt.
 
 NOTE: previously, we updated the data pool every episode, and logged at most once per
 episode. Reporting and flushing frequency were based on the size of self.data. To make
@@ -208,10 +210,12 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 lm_0 (which lm)
                     stats
         """
-        performance_dict = get_stats_per_lm(model, logger_args["target"])
+        performance_dict = get_stats_per_lm(
+            model, logger_args["target"], logger_args["episode_seed"]
+        )
         target_dict = target_data_to_dict(logger_args["target"])
         if len(self.lms) == 0:  # first time function is called
-            for lm in performance_dict.keys():
+            for lm in performance_dict:
                 if lm.startswith("LM_"):
                     self.lms.append(lm)
 
@@ -232,9 +236,11 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         self.data["BASIC"][f"{mode}_timing"][episode] = logger_time
         self.data["BASIC"][f"{mode}_stats"][episode]["target"] = target_dict
 
-    def update_overall_stats(self, mode, episode, episode_steps, monty_matching_steps):
+    def update_overall_stats(
+        self, mode: ExperimentMode, episode, episode_steps, monty_matching_steps
+    ) -> None:
         """Update overall run stats for mode."""
-        if mode == "train":
+        if mode is ExperimentMode.TRAIN:
             stats = self.overall_train_stats
         else:
             stats = self.overall_eval_stats
@@ -278,6 +284,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 else 0  # Handles division by 0
             )
 
+        episode_performance = None
         stats["episode_lm_performances"].append(lm_performances)
         for p in self.performance_options:
             if p in lm_performances:
@@ -287,14 +294,15 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 # but still have an overall performance of correct (or other).
                 episode_performance = p
 
-        for p in self.performance_options:
-            stats[f"episode_{p}"] = int(p == episode_performance)
-            stats[f"num_{p}"] += int(p == episode_performance)
+        if episode_performance:
+            for p in self.performance_options:
+                stats[f"episode_{p}"] = int(p == episode_performance)
+                stats[f"num_{p}"] += int(p == episode_performance)
 
         stats["num_episodes"] += 1
 
     def get_formatted_overall_stats(self, mode, episode):
-        if mode == "train":
+        if mode is ExperimentMode.TRAIN:
             stats = self.overall_train_stats
         else:
             stats = self.overall_eval_stats
@@ -559,7 +567,7 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
             lm_dict.update(lm.buffer.features)
             lm_dict.update({"displacements": lm.buffer.displacements})
             lm_dict.update(lm.buffer.stats)
-            lm_dict.update(mode=model.experiment_mode)
+            lm_dict.update(mode=model.experiment_mode.value)
             lm_dict.update({"stepwise_targets_list": lm.stepwise_targets_list})
             buffer_data[f"LM_{i}"] = lm_dict  # NOTE: probably same for all LMs
 

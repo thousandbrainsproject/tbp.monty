@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -33,7 +33,7 @@ class NumpyGraph:
 
 
 def torch_graph_to_numpy(torch_graph):
-    """Turn torch geometric data structure into dict with numpy arrays.
+    """Turn a torch geometric data structure into a dict with numpy arrays.
 
     Args:
         torch_graph: Torch geometric data structure.
@@ -77,7 +77,7 @@ def already_in_list(
         < graph_delta_thresholds["distance"]
     )
 
-    assert "on_object" not in graph_delta_thresholds.keys(), (
+    assert "on_object" not in graph_delta_thresholds, (
         "Don't pass feature-change SM delta_thresholds for graph_delta_thresholds"
     )
 
@@ -96,8 +96,8 @@ def already_in_list(
         # TODO: What to do when a feature is received that is not in
         # graph_delta_thresholds? Currently it will not be considered when looking at
         # redundancy of the point.
-        for feature in graph_delta_thresholds.keys():
-            if feature in features.keys():
+        for feature in graph_delta_thresholds:
+            if feature in features:
                 if feature == "hsv":
                     # Only consider hue, not saturation and lightness at this point
                     match_hue = features[feature][feature_idx][0]
@@ -192,11 +192,11 @@ def remove_close_points(point_cloud, features, graph_delta_thresholds, old_graph
     new_points = list(point_cloud[:old_graph_index])
 
     if graph_delta_thresholds is None:
-        # Asign mutable default value
+        # Assign mutable default value
         graph_delta_thresholds = dict(
             distance=0.001,
         )
-    if "pose_vectors" not in graph_delta_thresholds.keys():
+    if "pose_vectors" not in graph_delta_thresholds:
         # By default, we will still consider a nearby point as new if the difference
         # in surface normals suggests it is on the other side of an object
         # NOTE: currently not looking at curvature directions/second pose vector
@@ -263,7 +263,7 @@ def expand_index_dims(indices_3d, last_dim_size):
     """Expand 3d indices to 4d indices by adding a 4th dimension with size.
 
     Args:
-        indices_3d: 3d indices that should be comverted to 4d
+        indices_3d: 3d indices that should be converted to 4d
         last_dim_size: desired size of the 4th dimension (will be filled with
             arange indices from 0 to last_dim_size-1)
 
@@ -314,7 +314,8 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
     some computation time.
 
     Returns:
-        ?
+        Tuple containing the representative pose vector mean and a bool
+        indicating whether we used curvature directions to update it.
     """
     # Check the angle between all surface normals relative to the first curvature
     # directions. Then look at how many are positive vs. negative and use the ones

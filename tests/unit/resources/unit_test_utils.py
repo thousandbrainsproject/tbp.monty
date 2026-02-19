@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -14,6 +14,7 @@ from unittest import TestCase
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     make_sensor_positions_on_grid,
 )
@@ -160,6 +161,8 @@ class BaseGraphTest(TestCase):
             "object": "placeholder",
             "quat_rotation": [1, 0, 0, 0],
         }
+
+        self.ctx = RuntimeContext(rng=np.random.RandomState())
 
     def string_to_array(self, array_string, get_positive_rotations=False) -> np.ndarray:
         """Convert string representation of an array into a numpy array.
@@ -385,84 +388,6 @@ class BaseGraphTest(TestCase):
                 f"Not enough correct LMs for eval episode {episode}",
             )
 
-    def check_hierarchical_lm_train_results(self, train_stats):
-        for episode in range(4):
-            self.assertEqual(
-                train_stats["primary_performance"][episode * 2],
-                "no_match",
-                f"LM0 should not match in episode {episode}",
-            )
-            self.assertEqual(
-                train_stats["primary_performance"][episode * 2 + 1],
-                "no_match",
-                f"LM1 should not match in episode {episode}",
-            )
-
-        for episode in [4, 5]:
-            self.assertEqual(
-                train_stats["primary_performance"][episode * 2],
-                "correct",
-                f"LM0 should detect the correct object in episode {episode}",
-            )
-            self.assertIn(
-                train_stats["primary_performance"][episode * 2 + 1],
-                ["correct", "correct_mlh"],
-                f"LM1 should detect the correct object in episode {episode}"
-                "or have it as its most likely hypothesis.",
-            )
-
-    def check_hierarchical_lm_eval_results(self, eval_stats):
-        for episode in range(3):
-            self.assertEqual(
-                eval_stats["primary_performance"][episode * 2],
-                "correct",
-                f"LM0 should detect the correct object in episode {episode}",
-            )
-            # NOTE: LM1 gets no match (due to incomplete models, especially of LM
-            # input channel). Will not test this here since maybe in the future this
-            # will be better and it is not a feature of the system.
-
-    def check_hierarchical_models(self, models):
-        for model in ["new_object0", "new_object1"]:
-            # Check that graph was extended when recognizing object.
-            self.assertLess(
-                models["0"]["LM_0"][model]["patch_0"].num_nodes,
-                models["2"]["LM_0"][model]["patch_0"].num_nodes,
-                f"LM0 should have more points in the graph for {model} "
-                "after recognizing it and extending the graph.",
-            )
-            # Check LM0 has higher detail model of object thank LM1.
-            self.assertGreater(
-                models["0"]["LM_0"][model]["patch_0"].num_nodes,
-                models["0"]["LM_1"][model]["patch_1"].num_nodes,
-                f"LM0 should have more points in the graph for {model} than LM1 "
-                "since it is receiving higher frequency input and has a smaller "
-                "voxel size.",
-            )
-        # Check that max_nodes_per_graph is applied correctly.
-        for model in ["new_object0", "new_object1", "new_object2", "new_object3"]:
-            num_nodes = models["2"]["LM_0"][model]["patch_0"].num_nodes
-            self.assertLessEqual(
-                num_nodes,
-                50,
-                "LM0 should have <= max_nodes_per_graph nodes in"
-                f" its graph for {model} but has {num_nodes}",
-            )
-        # Check LM1 does not store LM0 input in first epoch yet.
-        self.assertNotIn(
-            "learning_module_0",
-            models["0"]["LM_1"]["new_object0"].keys(),
-            "models in LM1 should not store input from LM0 in episode 0 yet.",
-        )
-        # Check that LM1 extended its graph to add LM0 as a input channel.
-        channel_keys = models["2"]["LM_1"]["new_object0"].keys()
-        self.assertIn(
-            "learning_module_0",
-            channel_keys,
-            "models in LM1 should store input from LM0 in episode 2 "
-            f"after extending the graph but only store {channel_keys}",
-        )
-
     def check_possible_paths_or_poses(self, stats_1, stats_2, key):
         for paths1, paths2 in zip(stats_1[key], stats_2[key]):
             possible_objects_1 = set(paths1.keys())
@@ -513,7 +438,7 @@ class BaseGraphTest(TestCase):
         key = "possible_poses"
         self.check_possible_paths_or_poses(stats_1, stats_2, key)
 
-        remaining_keys = [key for key in stats_1.keys() if key not in ignore_keys]
+        remaining_keys = [key for key in stats_1 if key not in ignore_keys]
         for key in remaining_keys:
             val_old = stats_1[key]
             val_new = stats_2[key]
@@ -528,13 +453,13 @@ class BaseGraphTest(TestCase):
         for key in ["SM_0", "SM_1"]:
             sm_data_old = log_1["0"][key]
             sm_data_new = log_2["0"][key]
-            for key2 in sm_data_old.keys():
+            for key2 in sm_data_old:
                 data_old = sm_data_old[key2]
                 data_new = sm_data_new[key2]
                 for i in range(len(data_old)):
                     step_old = data_old[i]
                     step_new = data_new[i]
-                    for key3 in step_old.keys():
+                    for key3 in step_old:
                         if key3 in [
                             "morphological_features",
                             "non_morphological_features",
@@ -542,7 +467,7 @@ class BaseGraphTest(TestCase):
                         ]:
                             feat_old = step_old[key3]
                             feat_new = step_new[key3]
-                            for feature in feat_old.keys():
+                            for feature in feat_old:
                                 self.assertEqual(feat_old[feature], feat_new[feature])
                         elif key3 == "allowable_sender_types":
                             for f_idx in range(len(step_old[key3])):

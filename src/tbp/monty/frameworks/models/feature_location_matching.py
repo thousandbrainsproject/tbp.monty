@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -16,6 +16,7 @@ import torch
 from scipy.spatial.transform import Rotation
 from sklearn.neighbors import KDTree
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.graph_matching import GraphLM, GraphMemory
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
@@ -29,6 +30,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_unique_rotations,
     rotate_pose_dependent_features,
 )
+
+__all__ = ["FeatureGraphLM", "FeatureGraphMemory"]
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +82,7 @@ class FeatureGraphLM(GraphLM):
             graph_delta_thresholds=graph_delta_thresholds,
         )
         # make sure we extract pose dependent features because they
-        # are nescessary for the algorithm to work.
+        # are necessary for the algorithm to work.
         self.tolerances = add_pose_features_to_tolerances(tolerances)
         self.max_match_distance = max_match_distance
         self.path_similarity_threshold = path_similarity_threshold
@@ -148,7 +151,7 @@ class FeatureGraphLM(GraphLM):
         NOTE: Add object back into possible matches if majority of other modules
                 think it is correct? Could help with dealing with noise but may
                 also prevent LMs from narrowing down quickly. Since we are not
-                working with this LM anymore, we probably wont add that.
+                working with this LM anymore, we probably won't add that.
 
         Args:
             vote_data: positive and negative votes on object IDs + positive
@@ -319,9 +322,9 @@ class FeatureGraphLM(GraphLM):
             equals = np.equal(current_unique_poses, self.last_unique_poses)
             if np.hstack(equals).all():
                 self.symmetry_evidence += 1
-            else:  # has to be consequtive
+            else:  # has to be consecutive
                 self.symmetry_evidence = 0
-        else:  # has to be consequtive
+        else:  # has to be consecutive
             self.symmetry_evidence = 0
 
         if self._enough_symmetry_evidence_accumulated():
@@ -341,22 +344,25 @@ class FeatureGraphLM(GraphLM):
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
-    def _update_possible_matches(self, query):
+    def _update_possible_matches(self, ctx: RuntimeContext, query):
         """Go through all objects and update possible matches.
 
         Args:
+            ctx: The runtime context.
             query: current features at location.
         """
         consistent_objects = {}
         for graph_id in self.possible_matches:
             consistent = self._update_matches_using_features(
-                query[0], query[1], graph_id
+                ctx, query[0], query[1], graph_id
             )
             consistent_objects[graph_id] = consistent
         self._remove_inconsistent_objects(consistent_objects)
 
-    def _update_matches_using_features(self, features, displacement, graph_id):
-        """Use displacement to compare obseved features to possible graph features.
+    def _update_matches_using_features(
+        self, ctx: RuntimeContext, features, displacement, graph_id
+    ):
+        """Use displacement to compare observed features to possible graph features.
 
         At first observation (no displacement yet):
             Check which nodes in the graph are consistent with the observed features.
@@ -382,6 +388,7 @@ class FeatureGraphLM(GraphLM):
         return len(possible_paths) > 0
 
         Args:
+            ctx: The runtime context.
             features: Observed features at current time step.
             displacement: Displacement from previous location to current.
             graph_id: ID of model that should be tested.
@@ -407,7 +414,7 @@ class FeatureGraphLM(GraphLM):
                 n_removed = 0
                 for path_id, node_id in enumerate(path_start_ids):
                     possible_poses_for_path = self._get_informed_possible_poses(
-                        graph_id, node_id, features
+                        ctx, graph_id, node_id, features
                     )
                     if len(possible_poses_for_path) > 0:
                         self.possible_poses[graph_id].append(possible_poses_for_path)
@@ -446,7 +453,7 @@ class FeatureGraphLM(GraphLM):
         Returns:
             New possible paths and poses.
         """
-        first_input_channel = list(features.keys())[0]
+        first_input_channel = next(iter(features.keys()))
         displacement = displacement[first_input_channel]
         new_possible_paths = []
         new_possible_poses = []
@@ -565,7 +572,7 @@ class FeatureGraphLM(GraphLM):
         Args:
             consistent_objects: For each object whether it is still consistent.
         """
-        for graph_id in consistent_objects.keys():
+        for graph_id in consistent_objects:
             if consistent_objects[graph_id] is False:
                 self._remove_object_from_matches(graph_id)
 
@@ -603,6 +610,7 @@ class FeatureGraphLM(GraphLM):
 
     def _get_informed_possible_poses(
         self,
+        ctx: RuntimeContext,
         graph_id,
         node_id,
         sensed_features,
@@ -643,7 +651,7 @@ class FeatureGraphLM(GraphLM):
                 for _ in range(n_samples):
                     # If we do this we need a better terminal condition for similar
                     # rotations or more robustness. n_sample currently set to 0.
-                    rand_rot = self.rng.vonmises(0, kappa, 3)
+                    rand_rot = ctx.rng.vonmises(0, kappa, 3)
                     rot = Rotation.from_euler(
                         "xyz", [rand_rot[0], rand_rot[1], rand_rot[2]]
                     )
@@ -732,7 +740,7 @@ class FeatureGraphMemory(GraphMemory):
         Returns:
             The reduced lists of ids / locs.
         """
-        first_input_channel = list(features.keys())[0]
+        first_input_channel = next(iter(features.keys()))
         all_node_ids = self.get_graph_node_ids(graph_id, first_input_channel)
         all_node_locs = self.get_graph(graph_id, first_input_channel).pos
         # Just use first input channel for now. Since FeatureLM doesn't work with

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -14,7 +14,7 @@ from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 from typing_extensions import override
 
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.environments.embodied_environment import (
+from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
     QuaternionWXYZ,
@@ -94,17 +94,17 @@ class MuJoCoSimulator(Simulator):
         rotation: QuaternionWXYZ,
         scale: VectorXYZ,
     ) -> None:
-        """Adds a builtin MuJoCo primitive geom to the scene spec.
+        """Adds a built-in MuJoCo primitive geom to the scene spec.
 
         Arguments:
             obj_name: Identifier for the object in the scene, must be unique.
             shape_type: The primitive shape to add.
-            position: Initial position of the object
-            rotation: Initial orientation of the object
-            scale: Initial scale of the object
+            position: Initial position of the object.
+            rotation: Initial orientation of the object.
+            scale: Initial scale of the object.
 
         Raises:
-            UnknownShapeType: when the shape_type is unknown
+            UnknownShapeType: When the shape_type is unknown.
         """
         world_body: MjsBody = self.spec.worldbody
 

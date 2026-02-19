@@ -15,38 +15,52 @@ import copy
 import json
 import logging
 import math
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal, Mapping, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import quaternion as qt
-import scipy.ndimage
 from scipy.spatial.transform import Rotation as rot  # noqa: N813
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.action_samplers import ActionSampler
 from tbp.monty.frameworks.actions.actions import (
     Action,
     ActionJSONDecoder,
-    ActionJSONEncoder,
     LookDown,
     LookUp,
     MoveForward,
     MoveTangentially,
     OrientHorizontal,
     OrientVertical,
-    SetAgentPose,
-    SetSensorRotation,
     TurnLeft,
     TurnRight,
     VectorXYZ,
 )
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environments.embodied_environment import SemanticID
+from tbp.monty.frameworks.environments.positioning_procedures import (
+    PositioningProcedure,
+)
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
+from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
+
+if TYPE_CHECKING:
+    from os import PathLike
+
+__all__ = [
+    "BasePolicy",
+    "InformedPolicy",
+    "JumpToGoalStateMixin",
+    "MotorPolicy",
+    "NaiveScanPolicy",
+    "ObjectNotVisible",
+    "SurfacePolicy",
+    "SurfacePolicyCurvatureInformed",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -54,20 +68,49 @@ logger = logging.getLogger(__name__)
 class MotorPolicy(abc.ABC):
     """The abstract scaffold for motor policies."""
 
-    def __init__(self) -> None:
-        self.is_predefined = False
-
     @abc.abstractmethod
-    def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:
+    def dynamic_call(
+        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+    ) -> Action | None:
         """Use this method when actions are not predefined.
 
         Args:
+            ctx: The runtime context.
             state: The current state of the motor system.
                 Defaults to None.
 
         Returns:
             The action to take.
         """
+        pass
+
+    @abc.abstractmethod
+    def get_agent_state(self, state: MotorSystemState) -> AgentState:
+        """Get agent state.
+
+        Args:
+            state: The current state of the motor system.
+
+        Returns:
+            Agent state.
+        """
+        pass
+
+    @abc.abstractmethod
+    def is_motor_only_step(self, state: MotorSystemState) -> bool:
+        """Check if the current step is a motor-only step.
+
+        Args:
+            state: The current state of the motor system.
+
+        Returns:
+            True if the current step is a motor-only step, False otherwise.
+        """
+        pass
+
+    @abc.abstractmethod
+    def load_state_dict(self, state_dict: dict[str, Any]) -> None:
+        """Take a state dict as an argument and set state for policy."""
         pass
 
     @abc.abstractmethod
@@ -98,16 +141,7 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def predefined_call(self) -> Action:
-        """Use this method when actions are predefined.
-
-        Returns:
-            The action to take.
-        """
-        pass
-
-    @abc.abstractmethod
-    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+    def set_experiment_mode(self, mode: ExperimentMode) -> None:
         """Sets the experiment mode.
 
         Args:
@@ -115,20 +149,25 @@ class MotorPolicy(abc.ABC):
         """
         pass
 
-    def __call__(self, state: MotorSystemState | None = None) -> list[Action]:
+    @abc.abstractmethod
+    def state_dict(self) -> dict[str, Any]:
+        """Return a serializable dict with everything needed to save/load policy."""
+        pass
+
+    def __call__(
+        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+    ) -> list[Action]:
         """Select either dynamic or predefined call.
 
         Args:
+            ctx: The runtime context.
             state: The current state of the motor system.
                 Defaults to None.
 
         Returns:
             The actions to take.
         """
-        if self.is_predefined:
-            action: Action | None = self.predefined_call()
-        else:
-            action = self.dynamic_call(state)
+        action = self.dynamic_call(ctx, state)
         self.post_action(action, state)
         return [action] if action else []
 
@@ -136,119 +175,65 @@ class MotorPolicy(abc.ABC):
 class BasePolicy(MotorPolicy):
     def __init__(
         self,
-        rng,
-        action_sampler_args: dict,
-        action_sampler_class: type[ActionSampler],
+        action_sampler: ActionSampler,
         agent_id: AgentID,
-        switch_frequency,
-        file_name=None,
-        file_names_per_episode=None,
     ):
         """Initialize a base policy.
 
         Args:
-            rng: Random number generator to use
-            action_sampler_args: arguments for the ActionSampler
-            action_sampler_class: The ActionSampler to use
+            action_sampler: The ActionSampler to use
             agent_id: The agent ID
-            switch_frequency: float in [0,1], how frequently to change actions
-                when using sticky actions
-            file_name: Path to file with predefined actions. Defaults to None.
-            file_names_per_episode: ?. Defaults to None.
         """
         super().__init__()
-        ###
-        # Define instance attributes
-        ###
-        self.rng = rng
         self.agent_id = agent_id
+        self.action_sampler = action_sampler
 
-        self.action_sampler = action_sampler_class(**action_sampler_args)
-
-        self.action_sequence = []
-        self.timestep = 0
+        self.action_sequence: list[list[Action]] = []
         self.episode_step = 0
         self.episode_count = 0
-        self.switch_frequency = float(switch_frequency)
-        # Ensure our first action only samples from those that can be random
-        self.action: Action | None = self.get_random_action(
-            self.action_sampler.sample(self.agent_id, self.rng)
-        )
 
-        ###
-        # Load data for predefined actions and amounts if specified
-        ###
-
-        self.is_predefined = False
-        self.file_names_per_episode = None
-        self.action_list = []
-
-        # Don't want to go around and change all uses of file_name, so this is argument
-        # is in addition to, rather than in replacement of, file_name
-        if file_names_per_episode is not None:
-            self.file_names_per_episode = file_names_per_episode
-            # Have to set this here bc file_names_per_episode is used for loading in
-            # post_episode so won't do anything for the first episode.
-            file_name = file_names_per_episode[0]
-            self.is_predefined = True
-
-        if file_name is not None:
-            self.action_list = read_action_file(file_name)
-            self.is_predefined = True
-
-    ###
-    # Methods that define behavior of __call__
-    ###
-
-    def dynamic_call(self, _state: MotorSystemState | None = None) -> Action | None:
+    def dynamic_call(
+        self,
+        ctx: RuntimeContext,
+        state: MotorSystemState | None = None,  # noqa: ARG002
+    ) -> Action | None:
         """Return a random action.
 
         The MotorSystemState is ignored.
 
         Args:
-            _state: The current state of the motor system.
+            ctx: The runtime context.
+            state: The current state of the motor system.
                 Defaults to None. Unused.
 
         Returns:
             A random action.
         """
-        return self.get_random_action(self.action)
+        return self.get_random_action(ctx)
 
-    def get_random_action(self, action: Action) -> Action:
+    def get_random_action(self, ctx: RuntimeContext) -> Action:
         """Returns random action sampled from allowable actions.
+
+        Args:
+            ctx: The runtime context.
 
         Enables expanding the action space of the base policy with actions that
         we don't necessarily want to randomly sample
         """
-        while True:
-            if self.rng.rand() < self.switch_frequency:
-                action = self.action_sampler.sample(self.agent_id, self.rng)
-            if not isinstance(action, SetAgentPose) and not isinstance(
-                action, SetSensorRotation
-            ):
-                return action
-
-    def predefined_call(self) -> Action:
-        return self.action_list[self.episode_step % len(self.action_list)]
+        return self.action_sampler.sample(self.agent_id, ctx.rng)
 
     def post_action(
         self, action: Action | None, _: MotorSystemState | None = None
     ) -> None:
-        self.action = action
-        self.timestep += 1
         self.episode_step += 1
         self.action_sequence.append([action])
 
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         self.episode_step = 0
         self.action_sequence = []
 
     def post_episode(self):
         self.episode_count += 1
-        if self.file_names_per_episode is not None:
-            if self.episode_count in self.file_names_per_episode:
-                file_name = self.file_names_per_episode[self.episode_count]
-                self.action_list = read_action_file(file_name)
 
     ###
     # Other required abstract methods, methods called by Monty or Environment Interface
@@ -285,13 +270,88 @@ class BasePolicy(MotorPolicy):
         return agent_state.motor_only_step
 
     def state_dict(self):
-        return {"timestep": self.timestep, "episode_step": self.episode_step}
+        return {"episode_step": self.episode_step}
 
     def load_state_dict(self, state_dict):
-        self.timestep = state_dict["timestep"]
         self.episode_step = state_dict["episode_step"]
 
-    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+    def set_experiment_mode(self, mode: ExperimentMode) -> None:
+        pass
+
+
+class PredefinedPolicy(MotorPolicy):
+    """Policy that follows an action sequence read from file.
+
+    Cycles through the actions in the file indefinitely.
+    """
+
+    @staticmethod
+    def read_action_file(file_name: PathLike) -> list[Action]:
+        """Load a file with one action per line.
+
+        Args:
+            file_name: name of file to load
+
+        Returns:
+            List of actions
+        """
+        file = Path(file_name).expanduser()
+        with file.open() as f:
+            file_read = f.read()
+
+        lines = [line.strip() for line in file_read.split("\n") if line.strip()]
+        return [
+            cast("Action", json.loads(line, cls=ActionJSONDecoder)) for line in lines
+        ]
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        file_name: PathLike,
+    ) -> None:
+        self.agent_id = agent_id
+        self.action_list: list[Action] = PredefinedPolicy.read_action_file(file_name)
+        self.action_sequence: list[list[Action | None]] = []
+        self.episode_step = 0
+        self.episode_count = 0
+        self.use_goal_state_driven_actions = False
+
+    def dynamic_call(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        state: MotorSystemState | None = None,  # noqa: ARG002
+    ) -> Action | None:
+        return self.action_list[self.episode_step % len(self.action_list)]
+
+    def get_agent_state(self, state: MotorSystemState) -> AgentState:
+        return state[self.agent_id]
+
+    def is_motor_only_step(self, state: MotorSystemState) -> bool:
+        agent_state = self.get_agent_state(state)
+        return agent_state.motor_only_step
+
+    def post_action(
+        self,
+        action: Action | None,
+        state: MotorSystemState | None = None,  # noqa: ARG002
+    ) -> None:
+        self.episode_step += 1
+        self.action_sequence.append([action])
+
+    def pre_episode(self) -> None:
+        self.episode_step = 0
+        self.action_sequence = []
+
+    def post_episode(self):
+        self.episode_count += 1
+
+    def state_dict(self) -> dict[str, Any]:
+        return {"episode_step": self.episode_step}
+
+    def load_state_dict(self, state_dict):
+        self.episode_step = state_dict["episode_step"]
+
+    def set_experiment_mode(self, mode: ExperimentMode) -> None:
         pass
 
 
@@ -306,7 +366,7 @@ class JumpToGoalStateMixin:
     def __init__(self) -> None:
         self.driving_goal_state = None
 
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         self.set_driving_goal_state(None)
 
     def set_driving_goal_state(self, goal_state):
@@ -351,425 +411,6 @@ class JumpToGoalStateMixin:
         return None, None
 
 
-@dataclass
-class PositioningProcedureResult:
-    """Result of a positioning procedure.
-
-    For more on the terminated/truncated terminology, see https://farama.org/Gymnasium-Terminated-Truncated-Step-API.
-    """
-
-    actions: list[Action] = field(default_factory=list)
-    """Actions to take."""
-    success: bool = False
-    """Whether the procedure succeeded in its positioning goal."""
-    terminated: bool = False
-    """Whether the procedure reached a terminal state with success or failure."""
-    truncated: bool = False
-    """Whether the procedure was truncated due to a limit on the number of attempts or
-    other criteria."""
-
-
-class PositioningProcedure(BasePolicy):
-    """Positioning procedure to position the agent in the scene.
-
-    TODO: Remove from MotorPolicy hierarchy and refactor to standalone
-          PositioningProcedure hierarchy when they get separated.
-
-    The positioning_call method should be repeatedly called until the procedure result
-    indicates that the procedure has terminated or truncated.
-    """
-
-    @staticmethod
-    def depth_at_center(agent_id: AgentID, observation: Any, sensor_id: str) -> float:
-        """Determine the depth of the central pixel for the sensor.
-
-        Args:
-            agent_id: The ID of the agent to use.
-            observation: The observation to use.
-            sensor_id: The ID of the sensor to use.
-
-        Returns:
-            The depth of the central pixel for the sensor.
-        """
-        # TODO: A lot of assumptions are made here about the shape of the observation.
-        #       This should be made robust.
-        observation_shape = observation[agent_id][sensor_id]["depth"].shape
-        return observation[agent_id][sensor_id]["depth"][
-            observation_shape[0] // 2, observation_shape[1] // 2
-        ]
-
-    @abc.abstractmethod
-    def positioning_call(
-        self,
-        observation: Mapping,
-        state: MotorSystemState | None = None,
-    ) -> PositioningProcedureResult:
-        """Return a list of actions to position the agent in the scene.
-
-        TODO: When this becomes a PositioningProcedure it can be a __call__ method.
-
-        Args:
-            observation: The observation to use for positioning.
-            state: The current state of the motor system.
-
-        Returns:
-            Any actions to take, whether the procedure succeeded, whether the procedure
-            terminated, and whether the procedure truncated.
-        """
-        pass
-
-
-class GetGoodView(PositioningProcedure):
-    """Positioning procedure to get a good view of the object before an episode.
-
-    Used to position the distant agent so that it finds the initial view of an object
-    at the beginning of an episode with respect to a given sensor (the surface agent
-    is positioned using the TouchObject positioning procedure instead). Also currently
-    used by the distant agent after a "jump" has been initialized by a model-based
-    policy.
-
-    First, the agent is moved towards the target object until the object fills a minimum
-    of percentage (given by `good_view_percentage`) of the sensor's field of view or the
-    closest point of the object is less than `desired_object_distance` from the sensor.
-    This makes sure that big and small objects all fill similar amount of space in the
-    sensor's field of view. Otherwise small objects may be too small to perform saccades
-    or the sensor ends up inside of big objects. This step is performed by default but
-    can be skipped by setting `allow_translation=False`.
-
-    Second, the agent will then be oriented towards the object so that the sensor's
-    central pixel is on-object. In the case of multi-object experiments,
-    (i.e., when `multiple_objects_present=True`), there is an additional orientation
-    step performed prior to the translational movement step.
-    """
-
-    def __init__(
-        self,
-        desired_object_distance: float,
-        good_view_percentage: float,
-        multiple_objects_present: bool,
-        sensor_id: str,
-        target_semantic_id: SemanticID,
-        allow_translation: bool = True,
-        max_orientation_attempts: int = 1,
-        **kwargs,
-    ) -> None:
-        """Initialize the GetGoodView policy.
-
-        Args:
-            desired_object_distance: The desired distance to the object.
-            good_view_percentage: The percentage of the sensor that should be
-                filled with the object.
-            multiple_objects_present: Whether there are multiple objects in
-                the scene.
-            sensor_id: The ID of the sensor to use for positioning.
-            target_semantic_id: The semantic ID of the target object.
-            allow_translation: Whether to allow movement toward the object via
-                the motor systems's move_close_enough method. If False, only
-                orientienting movements are performed. Defaults to True.
-            max_orientation_attempts: The maximum number of orientation attempts
-                allowed before giving up and truncating the procedure indicating that
-                the sensor is not on the target object.
-            **kwargs: Additional keyword arguments.
-        """
-        super().__init__(**kwargs)
-        self._desired_object_distance = desired_object_distance
-        self._good_view_percentage = good_view_percentage
-        self._multiple_objects_present = multiple_objects_present
-        self._sensor_id = sensor_id
-        self._target_semantic_id = target_semantic_id
-        self._allow_translation = allow_translation
-        self._max_orientation_attempts = max_orientation_attempts
-
-        self._num_orientation_attempts = 0
-        self._executed_multiple_objects_orientation = False
-
-    def compute_look_amounts(
-        self, relative_location: np.ndarray, state: MotorSystemState | None = None
-    ) -> tuple[float, float]:
-        """Compute the amount to look down and left given a relative location.
-
-        This function computes the amount needed to look down and left in order
-        for the sensor to be aimed at the target. The returned amounts are relative
-        to the agent's current position and rotation. Looking up and right is done
-        by returning negative amounts.
-
-        TODO: Test whether this function works when the agent is facing in the
-        positive z-direction. It may be fine, but there were some adjustments to
-        accommodate the z-axis positive direction pointing opposite the body's initial
-        orientation (e.g., using negative  `z` in
-        `left_amount = -np.degrees(np.arctan2(x_rot, -z_rot)))`.
-
-        Args:
-            relative_location: the x,y,z coordinates of the target with respect
-                to the sensor.
-            state: The current state of the motor system. Defaults to None.
-
-        Returns:
-            down_amount: Amount to look down (degrees).
-            left_amount: Amount to look left (degrees).
-        """
-        sensor_rotation_rel_world = self.sensor_rotation_relative_to_world(state)
-
-        # Invert the sensor rotation and apply it to the relative location
-        w, x, y, z = qt.as_float_array(sensor_rotation_rel_world)
-        rotation = rot.from_quat([x, y, z, w])
-        rotated_location = rotation.inv().apply(relative_location)
-
-        # Calculate the necessary rotation amounts and convert them to degrees.
-        x_rot, y_rot, z_rot = rotated_location
-        left_amount = -np.degrees(np.arctan2(x_rot, -z_rot))
-        distance_horiz = np.sqrt(x_rot**2 + z_rot**2)
-        down_amount = -np.degrees(np.arctan2(y_rot, distance_horiz))
-
-        return down_amount, left_amount
-
-    def find_location_to_look_at(
-        self,
-        sem3d_obs: np.ndarray,
-        image_shape: tuple[int, int],
-        state: MotorSystemState | None = None,
-    ) -> np.ndarray:
-        """Find the location to look at in the observation.
-
-        Takes in a semantic 3D observation and returns an x,y,z location.
-
-        The location is on the object and surrounded by pixels that are also on
-        the object. This is done by smoothing the on_object image and then
-        taking the maximum of this smoothed image.
-
-        Args:
-            sem3d_obs: The location of each pixel and the semantic ID
-                associated with that location.
-            image_shape: The shape of the camera image.
-            state: The current state of the motor system.
-                Defaults to None.
-
-        Returns:
-            The x,y,z coordinates of the target with respect to the sensor.
-        """
-        sem3d_obs_image = sem3d_obs.reshape((image_shape[0], image_shape[1], 4))
-        on_object_image = sem3d_obs_image[:, :, 3]
-
-        if not self._multiple_objects_present:
-            on_object_image[on_object_image > 0] = self._target_semantic_id
-
-        on_object_image = on_object_image == self._target_semantic_id
-        on_object_image = on_object_image.astype(float)
-
-        # TODO add unit test that we make sure find_location_to_look at functions
-        # as expected, which can otherwise break if e.g. on_object_image is passed
-        # as an int or boolean rather than float
-        kernel_size = on_object_image.shape[0] // 16
-        smoothed_on_object_image = scipy.ndimage.gaussian_filter(
-            on_object_image, kernel_size, mode="constant"
-        )
-        idx_loc_to_look_at = np.argmax(smoothed_on_object_image * on_object_image)
-        idx_loc_to_look_at = np.unravel_index(idx_loc_to_look_at, on_object_image.shape)
-        location_to_look_at = sem3d_obs_image[
-            idx_loc_to_look_at[0], idx_loc_to_look_at[1], :3
-        ]
-        camera_location = (
-            self.get_agent_state(state)
-            .sensors[SensorID(f"{self._sensor_id}.depth")]
-            .position
-        )
-        agent_location = self.get_agent_state(state).position
-        # Get the location of the object relative to sensor.
-        return location_to_look_at - (camera_location + agent_location)
-
-    def is_on_target_object(self, observation: Mapping) -> bool:
-        """Check if a sensor is on the target object.
-
-        Args:
-            observation: The observation to use for positioning.
-
-        Returns:
-            Whether the sensor is on the target object.
-        """
-        # Reconstruct the 2D semantic/surface map embedded in 'semantic_3d'.
-        image_shape = observation[self.agent_id][self._sensor_id]["depth"].shape[0:2]
-        semantic_3d = observation[self.agent_id][self._sensor_id]["semantic_3d"]
-        semantic = semantic_3d[:, 3].reshape(image_shape).astype(int)
-        if not self._multiple_objects_present:
-            semantic[semantic > 0] = self._target_semantic_id
-
-        # Check if the central pixel is on the target object.
-        y_mid, x_mid = image_shape[0] // 2, image_shape[1] // 2
-        return semantic[y_mid, x_mid] == self._target_semantic_id
-
-    def move_close_enough(self, observation: Mapping) -> Action | None:
-        """Move closer to the object until we are close enough.
-
-        Args:
-            observation: The observation to use for positioning.
-
-        Returns:
-            The next action to take, or None if we are already close enough to the
-            object.
-
-        Raises:
-            ValueError: If the object is not visible.
-        """
-        # Reconstruct 2D semantic map.
-        depth_image = observation[self.agent_id][self._sensor_id]["depth"]
-        semantic_3d = observation[self.agent_id][self._sensor_id]["semantic_3d"]
-        semantic_image = semantic_3d[:, 3].reshape(depth_image.shape).astype(int)
-
-        if not self._multiple_objects_present:
-            semantic_image[semantic_image > 0] = self._target_semantic_id
-
-        points_on_target_obj = semantic_image == self._target_semantic_id
-        n_points_on_target_obj = points_on_target_obj.sum()
-
-        # For multi-object experiments, handle the possibility that object is no
-        # longer visible.
-        if self._multiple_objects_present and n_points_on_target_obj == 0:
-            logger.debug("Object not visible, cannot move closer")
-            return None
-
-        if n_points_on_target_obj > 0:
-            closest_point_on_target_obj = np.min(depth_image[points_on_target_obj])
-            logger.debug(
-                "closest target object point: " + str(closest_point_on_target_obj)
-            )
-        else:
-            raise ValueError(
-                "May be initializing experiment with no visible target object"
-            )
-
-        perc_on_target_obj = get_perc_on_obj_semantic(
-            semantic_image, semantic_id=self._target_semantic_id
-        )
-        logger.debug("% on target object: " + str(perc_on_target_obj))
-
-        # Also calculate closest point on *any* object so that we don't get too close
-        # and clip into objects; NB that any object will have a semantic ID > 0
-        points_on_any_obj = semantic_image > 0
-        closest_point_on_any_obj = np.min(depth_image[points_on_any_obj])
-        logger.debug("closest point on any object: " + str(closest_point_on_any_obj))
-
-        if perc_on_target_obj < self._good_view_percentage:
-            if closest_point_on_target_obj > self._desired_object_distance:
-                if self._multiple_objects_present and (
-                    closest_point_on_any_obj < self._desired_object_distance / 4
-                ):
-                    logger.debug(
-                        "Getting too close to other objects, not moving forward."
-                    )
-                    return None
-
-                logger.debug("Moving forward")
-                return MoveForward(agent_id=self.agent_id, distance=0.01)
-
-            logger.debug("Close enough.")
-            return None
-
-        logger.debug("Enough percent visible.")
-        return None
-
-    def orient_to_object(
-        self, observation: Mapping, state: MotorSystemState | None = None
-    ) -> list[Action]:
-        """Rotate sensors so that they are centered on the object using the view finder.
-
-        The view finder needs to be in the same position as the sensor patch
-        and the object needs to be somewhere in the view finders view.
-
-        Args:
-            observation: The observation to use for positioning.
-            state: The current state of the motor system.
-                Defaults to None.
-
-        Returns:
-            A list of actions of length two composed of actions needed to get us onto
-            the target object.
-        """
-        # Reconstruct 2D semantic map.
-        depth_image = observation[self.agent_id][self._sensor_id]["depth"]
-        obs_dim = depth_image.shape[0:2]
-        sem3d_obs = observation[self.agent_id][self._sensor_id]["semantic_3d"]
-        sem_obs = sem3d_obs[:, 3].reshape(obs_dim).astype(int)
-
-        if not self._multiple_objects_present:
-            sem_obs[sem_obs > 0] = self._target_semantic_id
-
-        logger.debug("Searching for object")
-        relative_location = self.find_location_to_look_at(
-            sem3d_obs,
-            image_shape=obs_dim,
-            state=state,
-        )
-        down_amount, left_amount = self.compute_look_amounts(
-            relative_location, state=state
-        )
-        return [
-            LookDown(agent_id=self.agent_id, rotation_degrees=down_amount),
-            TurnLeft(agent_id=self.agent_id, rotation_degrees=left_amount),
-        ]
-
-    def positioning_call(
-        self,
-        observation: Mapping,
-        state: MotorSystemState | None = None,
-    ) -> PositioningProcedureResult:
-        if (
-            self._multiple_objects_present
-            and not self._executed_multiple_objects_orientation
-        ):
-            # Setting this flag to True here ensures that this state machine state is
-            # not revisited.
-            self._executed_multiple_objects_orientation = True
-            on_target_object = self.is_on_target_object(observation)
-            if not on_target_object:
-                return PositioningProcedureResult(
-                    actions=self.orient_to_object(observation, state)
-                )
-
-        if self._allow_translation:
-            action = self.move_close_enough(observation)
-            if action is not None:
-                logger.debug("Moving closer to object.")
-                return PositioningProcedureResult(actions=[action])
-
-        # Setting this flag to False here ensures that this state machine state is
-        # not revisited.
-        self._allow_translation = False
-
-        on_target_object = self.is_on_target_object(observation)
-        if (
-            not on_target_object
-            and self._num_orientation_attempts < self._max_orientation_attempts
-        ):
-            self._num_orientation_attempts += 1
-            return PositioningProcedureResult(
-                actions=self.orient_to_object(observation, state)
-            )
-
-        if on_target_object:
-            return PositioningProcedureResult(success=True, terminated=True)
-
-        return PositioningProcedureResult(truncated=True)
-
-    def sensor_rotation_relative_to_world(self, state: MotorSystemState) -> Any:
-        """Derives the positioning sensor's rotation relative to the world.
-
-        Args:
-            state: The current state of the motor system.
-
-        Returns:
-            The positioning sensor's rotation relative to the world.
-        """
-        agent_state = self.get_agent_state(state)
-        # Retrieve agent's rotation relative to the world.
-        agent_rotation = agent_state.rotation
-        # Retrieve sensor's rotation relative to the agent.
-        sensor_rotation = agent_state.sensors[
-            SensorID(f"{self._sensor_id}.depth")
-        ].rotation
-        # Derive sensor's rotation relative to the world.
-        return agent_rotation * sensor_rotation
-
-
 class ObjectNotVisible(RuntimeError):
     """Error raised when the object is not visible."""
 
@@ -778,60 +419,48 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     """Policy that takes observation as input.
 
     Extension of BasePolicy that allows for taking the observation into account for
-    action selection. Currently it uses the percentage of the observation that is on
-    the object to reverse the last action if it is below min_perc_on_obj.
-
-    Additionally, this policy discouraces taking the reverse of the previous action
-    if we are still on the object.
+    action selection. Uses processed_observations.get_on_object() to decide whether to
+    reverse the last action when the patch is off the object.
 
     Attributes:
         guiding_sensors: List of sensors that are used to calculate the percentage
             on object. When using multiple sensors or a visualization sensor we may
             want to ignore some when determining whether we need to move back.
-        min_perc_on_obj: How much percent of the observation needs to be on the
-            object to sample a new action. Otherwise the previous action is reversed to
-            get back on the object. TODO: Not used anywhere?
     """
 
     def __init__(
         self,
-        min_perc_on_obj,
-        good_view_percentage,
-        desired_object_distance,
         use_goal_state_driven_actions=False,
         **kwargs,
-    ):
+    ) -> None:
         """Initialize policy.
 
         Args:
-            min_perc_on_obj: Minimum percentage of patch that needs to be on the object.
-                If under this amount, reverse the previous action to get the patch back
-                on the object.
-            good_view_percentage: How much percent of the view finder perception should
-                be filled with the object. (If less, move closer)
-            desired_object_distance: How far away should the agent be from the object
-                in view; for the distant-agent, this is used to establish a maximum
-                allowable distance of the object; note for the surface agent, this is
-                used with every set of traversal steps to ensure we remain close to the
-                surface
             use_goal_state_driven_actions: Whether to enable the motor system to make
                 use of the JumpToGoalStateMixin, which attempts to "jump" (i.e.
                 teleport) the agent to a specified goal state.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
-        self.min_perc_on_obj = min_perc_on_obj
-        self.good_view_percentage = good_view_percentage
-        self.desired_object_distance = desired_object_distance
+        self.action: Action | None = None
         self.use_goal_state_driven_actions = use_goal_state_driven_actions
         if self.use_goal_state_driven_actions:
             JumpToGoalStateMixin.__init__(self)
 
         # Observations after passing through sensor modules.
         # Are updated in Monty step method.
-        self.processed_observations = None
+        self._processed_observations = None
 
-    def pre_episode(self):
+    @property
+    def processed_observations(self) -> State | None:
+        return self._processed_observations
+
+    @processed_observations.setter
+    def processed_observations(self, percept: State | None) -> None:
+        self._processed_observations = percept
+
+    def pre_episode(self) -> None:
+        self._processed_observations = None
         if self.use_goal_state_driven_actions:
             JumpToGoalStateMixin.pre_episode(self)
 
@@ -841,7 +470,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:
+    def dynamic_call(
+        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+    ) -> Action | None:
         """Return the next action to take.
 
         This requires self.processed_observations to be updated at every step
@@ -849,6 +480,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         extracted by the sensor module for the guiding sensor (patch).
 
         Args:
+            ctx: The runtime context.
             state: The current state of the motor system.
                 Defaults to None.
 
@@ -856,14 +488,16 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             The action to take.
         """
         return (
-            super().dynamic_call(state)
+            super().dynamic_call(ctx, state)
             if self.processed_observations.get_on_object()
             else self.fixme_undo_last_action()
         )
 
     def fixme_undo_last_action(
         self,
-    ) -> LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially:
+    ) -> (
+        LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially | None
+    ):
         """Returns an action that undoes last action for supported actions.
 
         Previous InformedPolicy.dynamic_call() implementation when not on object:
@@ -897,6 +531,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         yet clear to me what to do for actions that do not support undo.
         """
         last_action = self.action
+
+        if last_action is None:
+            return None
 
         if isinstance(last_action, LookDown):
             return LookDown(
@@ -944,7 +581,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self, action: Action | None, state: MotorSystemState | None = None
     ) -> None:
         self.action = action
-        self.timestep += 1
         self.episode_step += 1
         state_copy = state.convert_motor_state() if state else None
         self.action_sequence.append([action, state_copy])
@@ -960,8 +596,7 @@ class NaiveScanPolicy(InformedPolicy):
     ):
         """Initialize policy."""
         # Mostly use version of InformedPolicy to get the good view in the beginning
-        # TODO: maybe separate this out. Don't need to specify reverse_actions or
-        # min_perc_on_obj for that.
+        # TODO: maybe separate this out.
         super().__init__(**kwargs)
 
         # Specify this specific action space, otherwise it doesn't work
@@ -980,13 +615,18 @@ class NaiveScanPolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, _state: MotorSystemState | None = None) -> Action:
+    def dynamic_call(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        state: MotorSystemState | None = None,  # noqa: ARG002
+    ) -> Action:
         """Return the next action in the spiral being executed.
 
         The MotorSystemState is ignored.
 
         Args:
-            _state: The current state of the motor system.
+            ctx: The runtime context.
+            state: The current state of the motor system.
                 Defaults to None. Unused.
 
         Returns:
@@ -997,16 +637,18 @@ class NaiveScanPolicy(InformedPolicy):
         """
         if self.steps_per_action * self.fixed_amount >= 90:
             # Raise "StopIteration" to notify the environment interface we need to stop
-            # the experiment. This exception is automatically handled by any
-            # python loop statements using iterators.
-            # See https://docs.python.org/3/library/exceptions.html#StopIteration
+            # the experiment.
+            # TODO: We used to use iterators, which would automatically handle
+            #       StopIteration. This is no longer the case, so we need to find a
+            #       better way to handle policy declaring episode termination.
+            #       It feels like an experimental concern inside a runtime policy.
             raise StopIteration
 
         self.check_cycle_action()
         self.step_on_action += 1
         return self._naive_scan_actions[self.current_action_id]
 
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         super().pre_episode()
         self.steps_per_action = 1
         self.current_action_id = 0
@@ -1050,34 +692,29 @@ class SurfacePolicy(InformedPolicy):
     def __init__(
         self,
         alpha,
-        min_perc_on_obj=0.25,
-        good_view_percentage=0.5,
+        desired_object_distance=0.025,
         **kwargs,
     ):
         """Initialize policy.
 
         Args:
-            min_perc_on_obj: Minimum percentage of patch that needs to be
-                on the object. If under this amount, reverse the previous action
-                to get the patch back on the object.
-            good_view_percentage: How much percent of the view finder perception
-                should be filled with the object. (If less, move closer)
-                TODO M : since surface agent does not use get_good_view, can consider
-                removing this parameter
+            desired_object_distance: Distance to maintain from the surface; used for
+                touch_object and move-forward. Defaults to 0.025.
             alpha: to what degree should the move_tangentially direction be the
                 same as the last step or totally random? 0~same as before, 1~random walk
             **kwargs: ?
         """
-        super().__init__(min_perc_on_obj, good_view_percentage, **kwargs)
+        super().__init__(**kwargs)
         self.action = None
         self.tangential_angle = 0
         self.alpha = alpha
+        self.desired_object_distance = desired_object_distance
 
         # TODO: Remove these once TouchObject positioning procedure is implemented
         self.attempting_to_find_object: bool = False
         self.last_surface_policy_action: Action | None = None
 
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         self.tangential_angle = 0
         self.action = None  # Reset the first action for every episode
         self.touch_search_amount = 0  # Track how many rotations the agent has made
@@ -1090,7 +727,11 @@ class SurfacePolicy(InformedPolicy):
         return super().pre_episode()
 
     def touch_object(
-        self, raw_observation, view_sensor_id: str, state: MotorSystemState
+        self,
+        ctx: RuntimeContext,
+        raw_observation,
+        view_sensor_id: str,
+        state: MotorSystemState,
     ) -> MoveForward | OrientHorizontal | OrientVertical:
         """The surface agent's policy for moving onto an object for sensing it.
 
@@ -1109,6 +750,7 @@ class SurfacePolicy(InformedPolicy):
         of a fixed sphere.
 
         Args:
+            ctx: The runtime context.
             raw_observation: The raw observation from the simulator.
             view_sensor_id: The ID of the viewfinder sensor.
             state: The current state of the motor system.
@@ -1126,9 +768,7 @@ class SurfacePolicy(InformedPolicy):
             distance = (
                 depth_at_center
                 - self.desired_object_distance
-                - state[self.agent_id]
-                .sensors[SensorID(f"{view_sensor_id}.depth")]
-                .position[2]
+                - state[self.agent_id].sensors[SensorID(view_sensor_id)].position[2]
             )
             logger.debug(f"Move to touch visible object, forward by {distance}")
 
@@ -1162,14 +802,14 @@ class SurfacePolicy(InformedPolicy):
             # Perform a random upward or downward movement along the surface of a
             # sphere, with its centre fixed 10 cm in front of the agent
             logger.debug("Trying random search for object")
-            if self.rng.uniform() < 0.5:
+            if ctx.rng.uniform() < 0.5:
                 orientation = "vertical"
                 logger.debug("Orienting vertically")
             else:
                 orientation = "horizontal"
                 logger.debug("Orienting horizontally")
 
-            rotation_degrees = self.rng.uniform(-180, 180)
+            rotation_degrees = ctx.rng.uniform(-180, 180)
             logger.debug(f"Random orientation amount is : {rotation_degrees}")
 
         elif self.touch_search_amount >= 360 and self.touch_search_amount < 720:
@@ -1218,7 +858,7 @@ class SurfacePolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
     def dynamic_call(
-        self, state: MotorSystemState | None = None
+        self, ctx: RuntimeContext, state: MotorSystemState | None = None
     ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Return the next action to take.
 
@@ -1227,6 +867,7 @@ class SurfacePolicy(InformedPolicy):
         extracted by the sensor module for the guiding sensor (patch).
 
         Args:
+            ctx: The runtime context.
             state: The current state of the motor system.
                 Defaults to None.
 
@@ -1269,11 +910,11 @@ class SurfacePolicy(InformedPolicy):
             # good; therefore initialize the cycle of actions as if we had just
             # moved forward (e.g. to get a good view)
             self.action = self.action_sampler.sample_move_forward(
-                self.agent_id, self.rng
+                self.agent_id, ctx.rng
             )
             self.last_surface_policy_action = self.action
 
-        return self.get_next_action(state)
+        return self.get_next_action(ctx, state)
 
     def post_action(
         self, action: Action, state: MotorSystemState | None = None
@@ -1350,16 +991,19 @@ class SurfacePolicy(InformedPolicy):
             forward_distance=forward_distance,
         )
 
-    def _move_tangentially(self, state: MotorSystemState) -> MoveTangentially:
+    def _move_tangentially(
+        self, ctx: RuntimeContext, state: MotorSystemState
+    ) -> MoveTangentially:
         """Move tangentially along the object surface.
 
         Args:
+            ctx: The runtime context.
             state: The current state of the motor system.
 
         Returns:
             MoveTangentially action.
         """
-        action = self.action_sampler.sample_move_tangentially(self.agent_id, self.rng)
+        action = self.action_sampler.sample_move_tangentially(self.agent_id, ctx.rng)
 
         # be careful if you're falling off the object!
         if self.processed_observations.get_feature_by_name("object_coverage") < 0.2:
@@ -1375,7 +1019,7 @@ class SurfacePolicy(InformedPolicy):
             action.distance = action.distance / 4
             logger.debug(f"Near edge so only moving by {action.distance}")
 
-        action.direction = self.tangential_direction(state)
+        action.direction = self.tangential_direction(ctx, state)
 
         return action
 
@@ -1394,7 +1038,7 @@ class SurfacePolicy(InformedPolicy):
         )
 
     def get_next_action(
-        self, state: MotorSystemState
+        self, ctx: RuntimeContext, state: MotorSystemState
     ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Retrieve next action from a cycle of four actions.
 
@@ -1405,15 +1049,12 @@ class SurfacePolicy(InformedPolicy):
         Then start over
 
         Args:
+            ctx: The runtime context.
             state: The current state of the motor system.
 
         Returns:
             Next action in the cycle.
         """
-        # TODO: is this check necessary?
-        if not hasattr(self, "processed_observations"):
-            return None
-
         # TODO: Revert to last_action = self.action once TouchObject positioning
         #       procedure is implemented
         last_action = self.last_surface_policy_action
@@ -1425,7 +1066,7 @@ class SurfacePolicy(InformedPolicy):
             return self._orient_vertical(state)
 
         if isinstance(last_action, OrientVertical):
-            return self._move_tangentially(state)
+            return self._move_tangentially(ctx, state)
 
         if isinstance(last_action, MoveTangentially):
             # orient around object if it's not centered in view
@@ -1435,7 +1076,11 @@ class SurfacePolicy(InformedPolicy):
             # move to the desired_object_distance if it is in view
             return self._move_forward()
 
-    def tangential_direction(self, state: MotorSystemState) -> VectorXYZ:
+        return None
+
+    def tangential_direction(
+        self, ctx: RuntimeContext, state: MotorSystemState
+    ) -> VectorXYZ:
         """Set the direction of the action to be a direction 0 - 2pi.
 
         - start at 0 (go up) in the reference frame of the agent; i.e. based on
@@ -1447,12 +1092,13 @@ class SurfacePolicy(InformedPolicy):
         - These are combined and weighted by the alpha parameter
 
         Args:
+            ctx: The runtime context.
             state: The current state of the motor system.
 
         Returns:
             Direction of the action
         """
-        new_target_direction = (self.rng.rand() - 0.5) * 2 * np.pi
+        new_target_direction = (ctx.rng.rand() - 0.5) * 2 * np.pi
         self.tangential_angle = (
             self.tangential_angle * (1 - self.alpha) + new_target_direction * self.alpha
         )
@@ -1569,71 +1215,6 @@ class SurfacePolicy(InformedPolicy):
             return -np.degrees(np.arctan(y / z)) if z != 0 else -np.sign(y) * 90.0
 
 
-###
-# Helper functions that can be used by multiple classes
-###
-
-
-def read_action_file(file: str) -> list[Action]:
-    """Load a file with one action per line.
-
-    Args:
-        file: name of file to load
-
-    Returns:
-        List of actions
-    """
-    file = Path(file).expanduser()
-    with file.open() as f:
-        file_read = f.read()
-
-    lines = [line.strip() for line in file_read.split("\n") if line.strip()]
-    return [cast("Action", json.loads(line, cls=ActionJSONDecoder)) for line in lines]
-
-
-def write_action_file(actions: list[Action], file: str) -> None:
-    """Write a list of actions to a file, one per line.
-
-    Should be readable by read_action_file.
-
-    Args:
-        actions: list of actions
-        file: path to file to save actions to
-    """
-    with Path(file).open("w") as f:
-        f.writelines(
-            f"{json.dumps(action, cls=ActionJSONEncoder)}\n" for action in actions
-        )
-
-
-def get_perc_on_obj_semantic(
-    semantic_obs, semantic_id: SemanticID | Literal["any"] = "any"
-):
-    """Get the percentage of pixels in the observation that land on the target object.
-
-    If a semantic ID is provided, then only pixels on the target object are counted;
-    otherwise, pixels on any object are counted.
-
-    This uses the semantic image, where each pixel is associated with a semantic ID
-    that is unique for each object, and always >0.
-
-    Args:
-        semantic_obs: Semantic image observation.
-        semantic_id: Semantic ID of the target object. If "any", then pixels belonging
-            to any object are counted. Defaults to "any".
-
-    Returns:
-        perc_on_obj: Percentage of pixels on the object.
-    """
-    res = semantic_obs.shape[0] * semantic_obs.shape[1]
-    if semantic_id == "any":
-        csum = np.sum(semantic_obs >= 1)
-    else:
-        # Count only pixels on the target (e.g. primary target) object
-        csum = np.sum(semantic_obs == semantic_id)
-    return csum / res
-
-
 class SurfacePolicyCurvatureInformed(SurfacePolicy):
     """Policy class for a more intelligent surface-agent.
 
@@ -1709,7 +1290,10 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.min_general_steps = min_general_steps
         self.min_heading_steps = min_heading_steps
 
-    def pre_episode(self):
+        self.tangent_locs = []
+        self.tangent_norms = []
+
+    def pre_episode(self) -> None:
         super().pre_episode()
 
         # == Variables for representing heading ==
@@ -1780,6 +1364,35 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 z_defined_pc=[],
             )
 
+    @property
+    def processed_observations(self) -> State | None:
+        return self._processed_observations
+
+    @processed_observations.setter
+    def processed_observations(self, percept: State | None) -> None:
+        self._processed_observations = percept
+
+        if percept is None:
+            return
+
+        last_action = self.action
+        if last_action is None:
+            return
+
+        if last_action.name == "orient_vertical":
+            # Only append locations associated with performing a tangential
+            # action, rather than some form of corrective movement; these
+            # movements are performed immediately after "orient_vertical"
+            self.tangent_locs.append(
+                percept.location,
+            )
+            if "pose_vectors" in percept.morphological_features:
+                self.tangent_norms.append(
+                    percept.morphological_features["pose_vectors"][0]
+                )
+            else:
+                self.tangent_norms.append(None)
+
     def update_action_details(self):
         """Store informaton for later logging.
 
@@ -1816,7 +1429,11 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         else:
             self.action_details["z_defined_pc"].append(None)
 
-    def tangential_direction(self, state: MotorSystemState) -> VectorXYZ:
+    def tangential_direction(
+        self,
+        ctx: RuntimeContext,
+        state: MotorSystemState,
+    ) -> VectorXYZ:
         """Set the direction of action to be a direction 0 - 2pi.
 
         This controls the move_tangential action
@@ -1828,6 +1445,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         an object's surface
 
         Args:
+            ctx: The runtime context.
             state: The current state of the motor system.
 
         Returns:
@@ -1844,7 +1462,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         ):  # Principal curvatures are defined, and counter for a min number of
             # general steps is satisfied
 
-            tang_movement = self.perform_pc_guided_step(state)
+            tang_movement = self.perform_pc_guided_step(ctx, state)
             # Note this may fail if the PC guidance directs us back towards
             # a point we have previously experienced, in which case we revert
             # to a standard tangential movement (as below)
@@ -1865,20 +1483,23 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
             self.ignoring_pc_counter += 1
 
-            tang_movement = self.perform_standard_tang_step(state)
+            tang_movement = self.perform_standard_tang_step(ctx, state)
 
         # Save detailed information about tangential steps
         self.update_action_details()
 
         return tang_movement
 
-    def perform_pc_guided_step(self, state: MotorSystemState) -> VectorXYZ:
+    def perform_pc_guided_step(
+        self, ctx: RuntimeContext, state: MotorSystemState
+    ) -> VectorXYZ:
         """Inform steps to take using defined directions of principal curvature.
 
         Use the defined directions of principal curvature to inform (ideally a
         series) of steps along the appropriate direction.
 
         Args:
+            ctx: The runtime context.
             state: The current state of the motor system.
 
         Returns:
@@ -1926,7 +1547,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # the PC-guided actions) occasionally resulted in longer, more noisy
             # inference
 
-            return self.perform_standard_tang_step(state)
+            return self.perform_standard_tang_step(ctx, state)
 
         self.update_tangential_reps(vec_form=rotated_form)
 
@@ -1935,7 +1556,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.check_for_flipped_pc()
 
         # Check if new heading is necessary
-        self.avoid_revisiting_locations(state=state)
+        self.avoid_revisiting_locations(ctx, state=state)
 
         # If we are abandoning following PC directions, return the heading that was
         # found in the avoid_revisiting_locations search
@@ -1971,7 +1592,9 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             qt.rotate_vectors(state[self.agent_id].rotation, self.tangential_vec)
         )
 
-    def perform_standard_tang_step(self, state: MotorSystemState) -> VectorXYZ:
+    def perform_standard_tang_step(
+        self, ctx: RuntimeContext, state: MotorSystemState
+    ) -> VectorXYZ:
         """Perform a standard tangential step across the object.
 
         This is in contrast to, for example, being guided by principal curvatures.
@@ -1980,6 +1603,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         surface-agent policy, because it also attempts to avoid revisiting old locations
 
         Args:
+            ctx: The runtime context.
             state: The current state of the motor system.
 
         Returns:
@@ -1989,7 +1613,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         # Select new movement, equivalent to alpha-weighted steps in the standard
         # informed surface-agent policy
-        new_target_direction = (self.rng.rand() - 0.5) * 2 * np.pi
+        new_target_direction = (ctx.rng.rand() - 0.5) * 2 * np.pi
 
         if self.tangential_angle is not None:
             # Use alternative momentum calculation (vs. original SurfacePolicy
@@ -2015,7 +1639,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # and otherwise update it; thus, if
             # we need to avoid a certain direction, we will ignore momentum on this
             # particular iteration, continuing it on the next step
-            self.avoid_revisiting_locations(state=state)
+            self.avoid_revisiting_locations(ctx, state=state)
             # Note the value for self.tangential_vec and self.tangential_angle is
             # updated by avoid_revisiting_locations (if necessary)
 
@@ -2139,6 +1763,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
     def avoid_revisiting_locations(
         self,
+        ctx: RuntimeContext,
         state: MotorSystemState,
         conflict_divisor=3,
         max_steps=100,
@@ -2153,6 +1778,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         previously visited locations.
 
         Args:
+            ctx: The runtime context.
             conflict_divisor: The amount pi is divided by to determine that a current
                 heading will be too close to a previously visited location; this is an
                 initial value that will be dynamically adjusted. Defaults to 3.
@@ -2234,7 +1860,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                         logger.debug(f"Inducing location from sensation {ii}")
                         logger.debug(f"Currently on sensation {len(rotated_locs)}")
 
-                        self.attempt_conflict_resolution(vec_copy)
+                        self.attempt_conflict_resolution(ctx, vec_copy)
 
                 if not conflicts:  # We have a valid heading
                     searching_for_heading = False
@@ -2301,8 +1927,13 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             )
         )
 
-    def attempt_conflict_resolution(self, vec_copy):
-        """Try to define direction vector that avoids revisiting previous locations."""
+    def attempt_conflict_resolution(self, ctx: RuntimeContext, vec_copy) -> None:
+        """Try to define direction vector that avoids revisiting previous locations.
+
+        Args:
+            ctx: The runtime context.
+            vec_copy: The vector to copy.
+        """
         if self.first_attempt and self.using_pc_guide and self.continuous_pc_steps == 0:
             # On the first PC-guided step in a series, try to choose a direction
             # along the PC that is away from previous locations
@@ -2325,7 +1956,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # long we've been searching, and starting with a small
             # possible rotation
             rot_limits = np.clip(0.1 + self.search_counter / self.max_steps, 0, 1)
-            rot_val = self.rng.uniform(-rot_limits, rot_limits) * np.pi
+            rot_val = ctx.rng.uniform(-rot_limits, rot_limits) * np.pi
 
             plane_rot = rot.from_euler("xyz", (0.0, 0.0, rot_val), degrees=False)
 
@@ -2340,15 +1971,15 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         automatically pass avoid_revisiting_locations and thereby continue using PCs
         where relevant.
         """
-        if self.prev_angle is not None:
-            if (
-                abs(theta_change(self.prev_angle, self.tangential_angle + np.pi))
-                <= np.pi / 4
-            ):
-                logger.debug(
-                    "Evidence that PC direction arbitrarily flipped, flipping back"
-                )
-                self.update_tangential_reps(vec_form=np.array(self.tangential_vec) * -1)
+        if (
+            self.prev_angle is not None
+            and abs(theta_change(self.prev_angle, self.tangential_angle + np.pi))
+            <= np.pi / 4
+        ):
+            logger.debug(
+                "Evidence that PC direction arbitrarily flipped, flipping back"
+            )
+            self.update_tangential_reps(vec_form=np.array(self.tangential_vec) * -1)
 
     def pc_moving_average(self):
         """Calculate a moving average of the principal curvature direction.

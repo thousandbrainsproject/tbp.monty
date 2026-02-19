@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -15,13 +15,16 @@ import numpy as np
 from omegaconf import DictConfig, OmegaConf
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
 )
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.monty_experiment import (
-    ExperimentMode,
     MontyExperiment,
 )
+
+__all__ = ["MontySupervisedObjectPretrainingExperiment"]
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +53,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
     def setup_experiment(self, config):
         super().setup_experiment(config)
-        if "agents" in config["env_interface_config"]["env_init_args"].keys():
+        if "agents" in config["env_interface_config"]["env_init_args"]:
             self.sensor_pos = np.array(
                 config["env_interface_config"]["env_init_args"]["agents"]["agent_args"][
                     "positions"
@@ -65,9 +68,9 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         In a supervised episode we only make exploratory steps (no object recognition
         is attempted) since the target label is provided. The target label and pose
         is then used to update the object model in memory.
-        This can for instance be used to warm-up the training by starting with some
-        models in memory instead of completely from scatch. It also makes testing
-        easier as long as we don't have a good solution to dealing with incomplete
+        For instance, this can be used to warm up the training by starting with some
+        models in memory instead of completely from scratch. It also makes testing
+        easier as long as we don't have a good solution for dealing with incomplete
         objects.
         """
         self.pre_episode()
@@ -77,20 +80,35 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         if set(self.supervised_lm_ids) == set(all_lm_ids):
             self.model.switch_to_exploratory_step()
 
+        ctx = RuntimeContext(rng=self.rng)
+
         # Collect data about the object (exploratory steps)
         num_steps = 0
-        for observation in self.env_interface:
+        while True:
+            try:
+                observations = self.env_interface.step(ctx, first=(num_steps == 0))
+            except StopIteration:
+                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
+                #       episode termination. This is a holdover from when we used
+                #       iterators. However, this also abdicates control of the
+                #       experiment to the policy. We should find a better way to handle
+                #       this, so that the experiment can control the episode termination
+                #       fully. For example, we know how many steps the policy will take,
+                #       so the experiment can set max steps based on that knowledge
+                #       alone.
+                break
+
             num_steps += 1
             if self.show_sensor_output:
                 is_saccade_on_image_env_interface = isinstance(
                     self.env_interface, SaccadeOnImageEnvironmentInterface
                 )
                 self.live_plotter.show_observations(
-                    *self.live_plotter.hardcoded_assumptions(observation, self.model),
+                    *self.live_plotter.hardcoded_assumptions(observations, self.model),
                     num_steps,
                     is_saccade_on_image_env_interface,
                 )
-            self.model.step(observation)
+            self.model.step(ctx, observations)
             if self.model.is_done:
                 break
 
@@ -121,6 +139,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                 lm.buffer.stats["detected_scale"] = target["scale"]
             else:
                 # wipe LMs hypotheses so we don't update those models
+                lm.possible_matches = []
                 lm.detected_object = None
                 lm.detected_pose = None
                 lm.detected_rotation_r = None
@@ -148,14 +167,28 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
     def pre_episode(self):
         """Pre episode where we pass target object to the model for logging."""
+        if self.experiment_mode is ExperimentMode.TRAIN:
+            logger.info(
+                f"running train epoch {self.train_epochs} "
+                f"train episode {self.train_episodes}"
+            )
+        else:
+            logger.info(
+                f"running eval epoch {self.eval_epochs} "
+                f"eval episode {self.eval_episodes}"
+            )
+
+        self.reset_episode_rng()
+
+        # TODO: Fix invalid pre_episode signature call
         self.model.pre_episode(self.env_interface.primary_target)
-        self.env_interface.pre_episode()
+        self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps  # no eval mode here
 
         self.logger_handler.pre_episode(self.logger_args)
 
-        # if it's the first time this object is shown, save it's location. This is
+        # if it's the first time this object is shown, save its location. This is
         # needed to provide the correct offset from the learned model when supervising.
         current_object = self.env_interface.primary_target["object"]
         if current_object not in self.first_epoch_object_location:
@@ -177,7 +210,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         """Save state_dict at the end of training."""
         self.experiment_mode = ExperimentMode.TRAIN
         self.logger_handler.pre_train(self.logger_args)
-        self.model.set_experiment_mode("train")
+        self.model.set_experiment_mode(self.experiment_mode)
         for sm in self.model.sensor_modules:
             sm.save_raw_obs = False
         for _ in range(self.n_train_epochs):
@@ -188,5 +221,5 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
     def evaluate(self):
         """Use experiment just for supervised pretraining -> no eval."""
-        logger.warning("No evalualtion mode for supervised experiment.")
+        logger.warning("No evaluation mode for supervised experiment.")
         pass

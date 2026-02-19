@@ -99,7 +99,7 @@ An object is classified as detected correctly if the detected object ID is in th
 
 !table[../../benchmarks/ycb_unsupervised.csv]
 
-To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning, by definition, cannot be parallelized across epochs. Therefore these experiments were run without multiprocessing (using `run.py`) on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
+To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning, by definition, cannot be parallelized across epochs. Therefore these experiments were run without multiprocessing (using `run.py`).
 
 ## Unsupervised Inference
 
@@ -180,7 +180,7 @@ Note: To obtain these results, pretraining was run without parallelization acros
 > python run.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_monolithic_models
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl2_comp_models
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl3_comp_models
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl4_comp_models
@@ -260,7 +260,7 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 !table[../../benchmarks/montymeetsworld.csv]
 
-**Note that rotation errors are meaningless since no ground truth rotation is provided**
+**Rotation errors are excluded because they are meaningless, since no ground truth rotation is provided**
 
 ### Explanation of Some of the Results
 

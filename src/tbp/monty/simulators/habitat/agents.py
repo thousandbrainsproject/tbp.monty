@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -6,7 +6,7 @@
 #
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
-# https://opensource.org/licenses/MIT..
+# https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
 import uuid
@@ -44,17 +44,18 @@ Size = Tuple[int, int]
 class HabitatAgent:
     """Habitat agent wrapper.
 
-    Agents are used to define moveable bodies in the environment.
-    Every habitat agent will inherit from this class.
+    Agents are used to define movable bodies in the environment.
+    Every Habitat agent will inherit from this class.
 
     Attributes:
-        agent_id: Unique ID of this agent in env. Observations returned by environment
-            will be mapped to this id. ``{"agent_id": {"sensor": [...]}}``. Actions
-            provided by this sensor module will be prefixed by this id. i.e.
-            "agent_id.move_forward"
-        position: Module initial position in meters. Default (0, 1.5, 0)
-        rotation: Module initial rotation quaternion. Default (1, 0, 0, 0)
-        height: Module height in meters. Default 0.0
+        agent_id: Unique ID of this agent in the environment.
+            Observations returned by the environment will be mapped to this ID.
+            ``{"agent_id": {"sensor": [...]}}``.
+            Actions provided by this sensor module will be prefixed by
+            this ID, i.e. "agent_id.move_forward"
+        position: Module initial position in meters. Defaults to (0, 1.5, 0).
+        rotation: Module initial rotation quaternion. Defaults to (1, 0, 0, 0).
+        height: Module height in meters. Defaults to 0.0.
     """
 
     def __init__(
@@ -71,25 +72,32 @@ class HabitatAgent:
         self.rotation = rotation
         self.height = height
         self.sensors: list[SensorConfig] = []
+        self.habitat_to_monty_sensor_id_map: dict[str, str] = {}
 
     def get_spec(self) -> AgentConfiguration:
-        """Returns a habitat-sim agent configuration.
+        """Return a habitat-sim agent configuration.
 
         Returns:
             Spec created from this sensor module configuration.
         """
         spec = AgentConfiguration()
         spec.height = self.height
+        self.habitat_to_monty_sensor_id_map.clear()
         for sensor in self.sensors:
-            spec.sensor_specifications.extend(sensor.get_specs())
+            sensor_specs = sensor.get_specs()
+            for sensor_spec in sensor_specs:
+                habitat_id = sensor_spec.uuid
+                monty_id = sensor.sensor_id
+                self.habitat_to_monty_sensor_id_map[habitat_id] = monty_id
+            spec.sensor_specifications.extend(sensor_specs)
         return spec
 
     def initialize(self, simulator):
-        """Initialize habitat-sim agent runtime state.
+        """Initialize the habitat-sim agent's runtime state.
 
         This method must be called to update the agent and sensors runtime
-        instance. This is necessary because some of the configuration attributes
-        requires access to the instanciated node.
+        instance because some of the configuration attributes require access to
+        the instantiated node.
 
         Args:
             simulator: Instantiated :class:`.HabitatSim` instance
@@ -102,23 +110,25 @@ class HabitatAgent:
         simulator.initialize_agent(self.agent_id, agent_state)
 
     def process_observations(self, agent_obs) -> AgentObservations:
-        """Callback processing raw habitat agent observations to Monty-compatible ones.
+        """Callback that processes raw Habitat agent observations.
+
+        Converts raw observations into Monty-compatible ones.
 
         Args:
-            agent_obs: Agent raw habitat-sim observations
+            agent_obs: Raw habitat-sim observations from the agent
 
         Returns:
             The processed observations grouped by sensor_id
         """
-        # Habitat raw sensor observations are flat where the observation key is
+        # Habitat raw sensor observations are flat, where the observation key is
         # composed of the `sensor_id.sensor_type`. The default agent starts by
-        # grouping habitat raw observation by sensor_id and sensor_type.
+        # grouping habitat raw observations by sensor_id and sensor_type.
         obs_by_sensor: AgentObservations = defaultdict(dict)
         for sensor_key, data in agent_obs.items():
             sensor_id, sensor_type = sensor_key.split(".")
             obs_by_sensor[SensorID(sensor_id)][sensor_type] = data
 
-        # Call each sensor to postprocess the observation data
+        # Call each sensor to post-process the observation data
         for sensor in self.sensors:
             sensor_id = SensorID(sensor.sensor_id)
             sensor_obs = obs_by_sensor.get(sensor_id)
@@ -136,10 +146,10 @@ def action_space(
 ) -> dict[str, ActionSpec]:
     """Generate an action space for a given action space type.
 
-    Action space can be absolute, for distant-agent, or for surface-agent.
-    This method is only used in a couple of unit tests at the moment.
-    If not, use a default action space.
-    Action spaces are formatted as Tuple of lists, with elements:
+    Action space can be `absolute_only`, `distant_agent`, or `surface_agent`.
+    This method is currently used only in a couple of unit tests; otherwise,
+    use a default action space.
+    Action spaces are formatted as lists of tuples, with elements:
         0: action name
         1: (initial) action amount
         2: (initial) constraint
@@ -195,7 +205,10 @@ def action_space(
     for action in action_spec:
         action_space[f"{agent_id}.{action[0]}"] = ActionSpec(
             f"{action[0]}",
-            ActuationSpec(amount=action[1], constraint=action[2]),  # type: ignore[arg-type]
+            ActuationSpec(
+                amount=action[1],
+                constraint=action[2],
+            ),  # type: ignore[arg-type]
         )
 
     return action_space
@@ -212,9 +225,9 @@ class MultiSensorAgent(HabitatAgent):
         - "`agent_id`.turn_right": Turn camera right `rotation_step`
         - "`agent_id`.look_up": Turn the camera up `rotation_step`
         - "`agent_id`.look_down": Turn the camera down `rotation_step`
-        - "`agent_id`".set_yaw" : Set camera agent absolute yaw value
-        - "`agent_id`".set_sensor_pitch" : Set camera sensor absolute pitch value
-        - "`agent_id`".set_agent_pitch" : Set camera agent absolute pitch value
+        - "`agent_id`.set_yaw": Set the camera agent's absolute yaw value
+        - "`agent_id`.set_sensor_pitch": Set the camera sensor's absolute pitch value
+        - "`agent_id`.set_agent_pitch": Set the camera agent's absolute pitch value
 
     Each camera will return the following observations:
 
@@ -226,7 +239,7 @@ class MultiSensorAgent(HabitatAgent):
         where i is an integer indexing the list of sensor_ids.
 
     Note:
-        The parameters `resolutions`, `rotations` and so on effectively specify
+        The parameters `resolutions`, `rotations`, and so on effectively specify
         both the number of sensors, and the sensor parameters. For N sensors,
         specify a list of N `resolutions`, and so on. All lists must be the same
         length. By default, a list of length one will be provided. Therefore, do
@@ -238,29 +251,30 @@ class MultiSensorAgent(HabitatAgent):
         default. All action amounts should be specified by the MotorSystem.
 
     Attributes:
-        agent_id: Actions provided by this camera will be prefixed by this id.
-            Default "camera"
-        sensor_ids: List of ids for each sensor. Actions are prefixed with agent id,
-            but observations are prefixed with sensor id.
-        resolutions: List of camera resolutions (width, height). Defaut = (16, 16)
+        agent_id: Actions provided by this camera will be prefixed by this ID.
+            Defaults to "camera".
+        sensor_ids: List of IDs for each sensor. Actions are prefixed with agent ID,
+            but observations are prefixed with sensor ID.
+        resolutions: List of camera resolutions (width, height). Defaults to (16, 16).
         positions: List of camera initial absolute positions in meters, relative
             to the agent.
-        rotations: List of camera rotations (quaternion). Default (1, 0, 0, 0)
-        zooms: List of camera zoom multipliers. Use >1 to increase, 0<factor<1 to
-            decrease. Default 1.0
-        semantics: List of booleans deciding if each RGBD sensor also gets a semantic
-            sensor with it. Default = False
-        height: Height of the mount itself in meters. Default 0.0 (but position of
-            the agent will be 1.5 meters in "height" dimension)
+        rotations: List of camera rotations (quaternion). Defaults to (1, 0, 0, 0).
+        zooms: List of camera zoom multipliers. Use >1 to increase and 0 < factor < 1
+            to decrease. Defaults to 1.0.
+        semantics: List of booleans determining if each RGBD sensor also gets a semantic
+            sensor with it. Defaults to False.
+        height: Height of the mount itself in meters. Defaults to 0.0 (but position of
+            the agent will be 1.5 meters in the "height" dimension).
         rotation_step: Rotation step in degrees used by the `turn_*` and
-            `look_*` actions. Default 0 degrees
-        translation_step: Translation step is meters used by the `move_*` actions.
-            Default: 0m
-        action_space_type: Decides between three action spaces.
+            `look_*` actions. Defaults to 0 degrees.
+        translation_step: Translation length in meters used by the `move_*` actions.
+            Defaults to 0 m.
+        action_space_type: Decides between three action spaces:
             "distant_agent" actions saccade like a ball-in-socket joint, viewing an
-            object from a distance "surface_agent" actions orient to an object surface
-            and move tangentially along it "absolute_only" actions are movements in
-            absolute world coordinates only
+            object from a distance.
+            "surface_agent" actions orient to an object surface and move tangentially
+            along it.
+            "absolute_only" actions are movements in absolute world coordinates only.
     """
 
     def __init__(
@@ -341,14 +355,14 @@ class MultiSensorAgent(HabitatAgent):
 
         This method must be called by :class:`.HabitatSim` to update the agent
         and sensors runtime instance. This is necessary because some of the
-        configuration attributes requires access to the instanciated scene node.
+        configuration attributes require access to the instantiated scene node.
 
         Args:
             simulator: Instantiated :class:`.HabitatSim` instance
         """
         super().initialize(simulator)
 
-        # Initialze camera zoom
+        # Initialize camera zoom
         agent = simulator.get_agent(self.agent_id)
         for i, sensor_id in enumerate(self.sensor_ids):
             zoom = self.zooms[i]
@@ -386,7 +400,7 @@ class SingleSensorAgent(HabitatAgent):
     ):
         """Initialize agent runtime state.
 
-        Note that like the multi-sensor agent, the position of the agent is treated
+        Note that, like the multi-sensor agent, the position of the agent is treated
         separately from the position of the sensor (which is relative to the agent).
         """
         super().__init__(agent_id, agent_position, rotation, height)
@@ -441,14 +455,14 @@ class SingleSensorAgent(HabitatAgent):
 
         This method must be called by :class:`.HabitatSim` to update the agent
         and sensors runtime instance. This is necessary because some of the
-        configuration attributes requires access to the instanciated scene node.
+        configuration attributes require access to the instantiated scene node.
 
         Args:
             simulator: Instantiated :class:`.HabitatSim` instance
         """
         super().initialize(simulator)
 
-        # Update camera zoom only when Zoom value is different than 1x
+        # Update camera zoom only when the zoom value differs from 1x
         if self.zoom != 1.0:
             agent = simulator.get_agent(self.agent_id)
             agent_config = agent.agent_config

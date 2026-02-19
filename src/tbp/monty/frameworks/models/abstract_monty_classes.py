@@ -15,10 +15,25 @@ from typing import Dict, TypedDict
 import numpy as np
 import numpy.typing as npt
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.sensors import SensorID
+
+__all__ = [
+    "AgentObservations",
+    "GoalStateGenerator",
+    "LMMemory",
+    "LearningModule",
+    "Monty",
+    "ObjectModel",
+    "Observations",
+    "RuntimeContext",
+    "SensorModule",
+    "SensorObservations",
+]
 
 
 class SensorObservations(TypedDict, total=False):
@@ -50,32 +65,33 @@ class Monty(metaclass=abc.ABCMeta):
     ###
     # Methods that specify the algorithm
     ###
-    def _matching_step(self, observation):
+    def _matching_step(self, ctx: RuntimeContext, observation):
         """Step format for matching observations to graph.
 
         Used during training or evaluation.
         """
-        self.aggregate_sensory_inputs(observation)
-        self._step_learning_modules()
+        self.aggregate_sensory_inputs(ctx, observation)
+        self._step_learning_modules(ctx)
         self._vote()
         self._pass_goal_states()
         self._pass_infos_to_motor_system()
         self._set_step_type_and_check_if_done()
         self._post_step()
 
-    def _exploratory_step(self, observation):
+    def _exploratory_step(self, ctx: RuntimeContext, observation):
         """Step format for adding data to an existing model.
 
         Used only during training.
         """
-        self.aggregate_sensory_inputs(observation)
-        self._step_learning_modules()
+        self.aggregate_sensory_inputs(ctx, observation)
+        self._step_learning_modules(ctx)
+        self._pass_goal_states()
         self._pass_infos_to_motor_system()
         self._set_step_type_and_check_if_done()
         self._post_step()
 
     @abc.abstractmethod
-    def step(self, observation):
+    def step(self, ctx: RuntimeContext, observation):
         """Take a matching, exploratory, or custom user-defined step.
 
         Step taken depends on the value of self.step_type.
@@ -83,12 +99,12 @@ class Monty(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def aggregate_sensory_inputs(self, observation):
+    def aggregate_sensory_inputs(self, ctx: RuntimeContext, observation):
         """Receive data from environment, organize on a per sensor module basis."""
         pass
 
     @abc.abstractmethod
-    def _step_learning_modules(self):
+    def _step_learning_modules(self, ctx: RuntimeContext):
         """Pass data from SMs to LMs, and have each LM take a step.
 
         LM step type depends on self.step_type.
@@ -148,7 +164,7 @@ class Monty(metaclass=abc.ABCMeta):
     ###
 
     @abc.abstractmethod
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         """Recursively call pre_episode on child classes."""
         pass
 
@@ -158,11 +174,14 @@ class Monty(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def set_experiment_mode(self, mode):
+    def set_experiment_mode(self, mode: ExperimentMode) -> None:
         """Set the experiment mode.
 
         Update state variables based on which method (train or evaluate) is being
         called at the experiment level.
+
+        Args:
+            mode: The experiment mode.
         """
         pass
 
@@ -182,7 +201,7 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         """Do things like reset buffers or possible_matches before training."""
         pass
 
@@ -192,11 +211,14 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def set_experiment_mode(self, mode):
+    def set_experiment_mode(self, mode: ExperimentMode) -> None:
         """Set the experiment mode.
 
         Update state variables based on which method (train or evaluate) is being called
         at the experiment level.
+
+        Args:
+            mode: The experiment mode.
         """
         pass
 
@@ -204,12 +226,12 @@ class LearningModule(metaclass=abc.ABCMeta):
     # Methods that define the algorithm
     ###
     @abc.abstractmethod
-    def matching_step(self):
+    def matching_step(self, ctx: RuntimeContext):
         """Matching / inference step called inside of monty._step_learning_modules."""
         pass
 
     @abc.abstractmethod
-    def exploratory_step(self):
+    def exploratory_step(self, ctx: RuntimeContext):
         """Model building step called inside of monty._step_learning_modules."""
         pass
 
@@ -296,7 +318,7 @@ class ObjectModel(metaclass=abc.ABCMeta):
 class GoalStateGenerator(metaclass=abc.ABCMeta):
     """Generate goal-states that other learning modules and motor-systems will attempt.
 
-    Generate goal-states potentially (in the case of LMs) by outputing their own
+    Generate goal-states potentially (in the case of LMs) by outputting their own
     sub-goal-states. Provides a mechanism for implementing hierarchical action policies
     that are informed by world models/hypotheses.
     """
@@ -315,7 +337,7 @@ class GoalStateGenerator(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def step(self):
+    def step(self, ctx: RuntimeContext, observations: Observations):
         """Called on each step of the LM to which the GSG belongs."""
         pass
 
@@ -334,16 +356,17 @@ class SensorModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def step(self, data):
+    def step(self, ctx: RuntimeContext, data):
         """Called on each step.
 
         Args:
+            ctx: The runtime context.
             data: Sensor observations
         """
         pass
 
     @abc.abstractmethod
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         """This method is called before each episode."""
         pass
 

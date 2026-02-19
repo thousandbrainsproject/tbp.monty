@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from enum import Enum
 from typing import Any, ClassVar, Protocol, TypedDict
 
@@ -19,12 +18,14 @@ import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule
+from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     SensorState,
 )
 from tbp.monty.frameworks.models.states import State
+from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.sensor_processing import (
     log_sign,
     principal_curvatures,
@@ -34,6 +35,21 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     surface_normal_total_least_squares,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
+
+__all__ = [
+    "DefaultMessageNoise",
+    "FeatureChangeFilter",
+    "HabitatObservation",
+    "HabitatObservationProcessor",
+    "HabitatSM",
+    "MessageNoise",
+    "NoMessageNoise",
+    "PassthroughStateFilter",
+    "Probe",
+    "SnapshotTelemetry",
+    "StateFilter",
+    "SurfaceNormalMethod",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -96,13 +112,6 @@ class SurfaceNormalMethod(Enum):
     """Ordinary Least-Squares"""
     NAIVE = "naive"
     """Naive"""
-
-
-@dataclass
-class HabitatObservationProcessorTelemetry:
-    processed_obs: State
-    visited_loc: Any
-    visited_normal: Any | None
 
 
 class HabitatObservationProcessor:
@@ -173,9 +182,7 @@ class HabitatObservationProcessor:
         self._surface_normal_method = surface_normal_method
         self._weight_curvature = weight_curvature
 
-    def process(
-        self, observation: HabitatObservation
-    ) -> tuple[State, HabitatObservationProcessorTelemetry]:
+    def process(self, observation: HabitatObservation) -> State:
         """Processes observation.
 
         Args:
@@ -251,15 +258,7 @@ class HabitatObservationProcessor:
         # This is just for logging! Do not use _ attributes for matching
         observed_state._semantic_id = semantic_id
 
-        telemetry = HabitatObservationProcessorTelemetry(
-            processed_obs=observed_state,
-            visited_loc=observed_state.location,
-            visited_normal=morphological_features["pose_vectors"][0]
-            if "pose_vectors" in morphological_features.keys()
-            else None,
-        )
-
-        return observed_state, telemetry
+        return observed_state
 
     def _extract_and_add_features(
         self,
@@ -395,12 +394,7 @@ class Probe(SensorModule):
     observations and does not emit a Cortical Message.
     """
 
-    def __init__(
-        self,
-        rng,  # noqa: ARG002
-        sensor_module_id: str,
-        save_raw_obs: bool,
-    ):
+    def __init__(self, sensor_module_id: str, save_raw_obs: bool):
         """Initialize the probe.
 
         Args:
@@ -422,7 +416,7 @@ class Probe(SensorModule):
 
     def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
-        sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
+        sensor = agent.sensors[SensorID(self.sensor_module_id)]
         self.state = SensorState(
             position=agent.position
             + qt.rotate_vectors(agent.rotation, sensor.position),
@@ -430,7 +424,11 @@ class Probe(SensorModule):
         )
         self.motor_only_step = agent.motor_only_step
 
-    def step(self, data) -> State | None:
+    def step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        data,
+    ) -> State | None:
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
                 data, self.state.rotation, self.state.position
@@ -438,7 +436,7 @@ class Probe(SensorModule):
 
         return None
 
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         """Reset buffer and is_exploring flag."""
         self._snapshot_telemetry.reset()
         self.is_exploring = False
@@ -469,9 +467,9 @@ class DefaultMessageNoise(MessageNoise):
                                                 {"feature_keys": noise_amount, ...},
                                             "locations": noise_amount}
         noise_amount specifies the standard deviation of the gaussian noise sampled
-        for real valued features. For boolian features it specifies the probability
+        for real valued features. For boolean features it specifies the probability
         that the boolean flips.
-        If we are dealing with normed vectors (surface_normal or curvature_directions)
+        If we are dealing with normed vectors (surface_normal or curvature_directions),
         the noise is applied by rotating the vector given a sampled rotation. Otherwise
         noise is just added onto the perceived feature value.
 
@@ -551,7 +549,6 @@ class HabitatSM(SensorModule):
 
     def __init__(
         self,
-        rng,
         sensor_module_id: str,
         features: list[str],
         save_raw_obs: bool = False,
@@ -563,7 +560,6 @@ class HabitatSM(SensorModule):
         """Initialize Sensor Module.
 
         Args:
-            rng: Random number generator.
             sensor_module_id: Name of sensor module.
             features: Which features to extract. In [on_object, rgba, surface_normal,
                 principal_curvatures, curvature_directions, gaussian_curvature,
@@ -582,14 +578,13 @@ class HabitatSM(SensorModule):
                 Defaults to None.
 
         Note:
-            When using feature at location matching with graphs, surface_normal and
-            on_object needs to be in the list of features.
+            When using feature-at-location matching with graphs, surface_normal and
+            on_object need to be in the list of features.
 
         Note:
-            gaussian_curvature and mean_curvature should be used together to contain
-            the same information as principal_curvatures.
+            gaussian_curvature and mean_curvature should be used together to preserve
+            the same information contained in principal_curvatures.
         """
-        self._rng = rng
         self._habitat_observation_processor = HabitatObservationProcessor(
             features=features,
             sensor_module_id=sensor_module_id,
@@ -619,27 +614,17 @@ class HabitatSM(SensorModule):
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
-        # Store visited locations in global environment coordinates to help inform
-        # more intelligent motor-policies
-        # TODO consider adding a flag or mixin to determine when these are actually
-        # saved
-        self.visited_locs = []
-        self.visited_normals = []
 
-    def pre_episode(self):
-        """Reset buffer and is_exploring flag."""
-        super().pre_episode()
+    def pre_episode(self) -> None:
         self._snapshot_telemetry.reset()
         self._state_filter.reset()
         self.is_exploring = False
         self.processed_obs = []
         self.states = []
-        self.visited_locs = []
-        self.visited_normals = []
 
     def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
-        sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
+        sensor = agent.sensors[SensorID(self.sensor_module_id)]
         self.state = SensorState(
             position=agent.position
             + qt.rotate_vectors(agent.rotation, sensor.position),
@@ -652,10 +637,11 @@ class HabitatSM(SensorModule):
         state_dict.update(processed_observations=self.processed_obs)
         return state_dict
 
-    def step(self, data) -> State | None:
+    def step(self, ctx: RuntimeContext, data) -> State | None:
         """Turn raw observations into dict of features at location.
 
         Args:
+            ctx: The runtime context.
             data: Raw observations.
 
         Returns:
@@ -667,10 +653,10 @@ class HabitatSM(SensorModule):
                 data, self.state.rotation, self.state.position
             )
 
-        observed_state, telemetry = self._habitat_observation_processor.process(data)
+        observed_state = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
-            observed_state = self._message_noise(observed_state, rng=self._rng)
+            observed_state = self._message_noise(observed_state, rng=ctx.rng)
 
         if self.motor_only_step:
             # Set interesting-features flag to False, as should not be passed to
@@ -680,10 +666,8 @@ class HabitatSM(SensorModule):
         observed_state = self._state_filter(observed_state)
 
         if not self.is_exploring:
-            self.processed_obs.append(telemetry.processed_obs.__dict__)
+            self.processed_obs.append(observed_state.__dict__)
             self.states.append(self.state)
-            self.visited_locs.append(telemetry.visited_loc)
-            self.visited_normals.append(telemetry.visited_normal)
 
         return observed_state
 

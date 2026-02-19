@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,8 +9,12 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.frameworks.models.states import GoalState
+
+__all__ = ["FakeLearningModule"]
 
 
 class FakeLearningModule(LearningModule):
@@ -23,10 +27,10 @@ class FakeLearningModule(LearningModule):
     def reset(self):
         pass
 
-    def matching_step(self, inputs):
+    def matching_step(self, ctx: RuntimeContext, inputs):
         pass
 
-    def exploratory_step(self, inputs):
+    def exploratory_step(self, ctx: RuntimeContext, inputs):
         pass
 
     def receive_votes(self, inputs):
@@ -42,13 +46,13 @@ class FakeLearningModule(LearningModule):
         self.test_attr_1 = state_dict["test_attr_1"]
         self.test_attr_2 = state_dict["test_attr_2"]
 
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         pass
 
     def post_episode(self):
         pass
 
-    def set_experiment_mode(self, inputs):
+    def set_experiment_mode(self, mode: ExperimentMode):
         pass
 
     def propose_goal_states(self) -> list[GoalState]:

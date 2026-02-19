@@ -4,6 +4,8 @@
 
 *An open-source, sensorimotor learning system following the principles of the neocortex.*
 
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/mit)
+![PyPI - Python Version](https://img.shields.io/badge/python-3.8-blue)
 [![](https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml/badge.svg)](https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml)
 
 This repository contains the first implementation of a **sensorimotor learning system** from the **Thousand Brains Project**. We lovingly call it **Monty** after Vernon Mountcastle, who proposed cortical columns as a repeating functional unit across the neocortex.
@@ -19,7 +21,7 @@ Our [**API documentation** here](https://api-monty.thousandbrains.org).
 You can find detailed instructions on how to install the project requirements and how to get started [here](https://thousandbrainsproject.readme.io/docs/getting-started)
 
 # Current Performance
-We regularly evaluate this system against a set of sensorimotor tasks, and report results in **[benchmark experiments](./benchmarks/)**. Any time a functional change is made to the code, these experiments are rerun, and results are updated. Configs for these experiments can be found in the [conf/experiment/](./conf/experiment/) folder.
+We regularly evaluate this system against a set of sensorimotor tasks, and report results in **[benchmark experiments](./benchmarks/)**. Any time a functional change is made to the code, these experiments are rerun, and results are updated. Configs for these experiments can be found in the [src/tbp/monty/conf/experiment/](./src/tbp/monty/conf/experiment/) folder.
 
 You can find our current performance on these benchmarks as well as an explanation of them [here](https://thousandbrainsproject.readme.io/docs/benchmark-experiments).
 

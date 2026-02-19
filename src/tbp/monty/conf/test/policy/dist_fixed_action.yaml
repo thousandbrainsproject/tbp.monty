@@ -1,0 +1,13 @@
+defaults:
+  - /test/policy/base_dist@
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - /experiment/config/monty/motor_system/informed_no_trans_step_s20@config.monty_config.motor_system_config
+
+config:
+  monty_config:
+    motor_system_config:
+      motor_system_args:
+        policy:
+          action_sampler:
+            actions:
+              - ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}

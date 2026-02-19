@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -8,11 +8,10 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import quaternion as qt
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
@@ -27,33 +26,33 @@ from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
 from tbp.monty.frameworks.models.states import GoalState, State
 from tbp.monty.frameworks.sensors import SensorID
 
+__all__ = ["HabitatSalienceSM"]
+
 
 class HabitatSalienceSM(SensorModule):
     def __init__(
         self,
-        rng,
         sensor_module_id: str,
         save_raw_obs: bool = False,
-        salience_strategy_class: type[SalienceStrategy] = UniformSalienceStrategy,
-        salience_strategy_args: dict[str, Any] | None = None,
-        return_inhibitor_class: type[ReturnInhibitor] = ReturnInhibitor,
-        return_inhibitor_args: dict[str, Any] | None = None,
-        snapshot_telemetry_class: type[SnapshotTelemetry] = SnapshotTelemetry,
+        salience_strategy: SalienceStrategy | None = None,
+        return_inhibitor: ReturnInhibitor | None = None,
+        snapshot_telemetry: SnapshotTelemetry | None = None,
     ) -> None:
-        self._rng = rng
         self._sensor_module_id = sensor_module_id
         self._save_raw_obs = save_raw_obs
-        salience_strategy_args = (
-            dict(salience_strategy_args) if salience_strategy_args else {}
+        self._salience_strategy = (
+            UniformSalienceStrategy()
+            if salience_strategy is None
+            else salience_strategy
         )
-        self._salience_strategy = salience_strategy_class(**salience_strategy_args)
+        self._return_inhibitor = (
+            ReturnInhibitor() if return_inhibitor is None else return_inhibitor
+        )
+        self._snapshot_telemetry = (
+            SnapshotTelemetry() if snapshot_telemetry is None else snapshot_telemetry
+        )
 
-        return_inhibitor_args = (
-            dict(return_inhibitor_args) if return_inhibitor_args else {}
-        )
-        self._return_inhibitor = return_inhibitor_class(**return_inhibitor_args)
         self._goals: list[GoalState] = []
-        self._snapshot_telemetry = snapshot_telemetry_class()
         # TODO: Goes away once experiment code is extracted
         self.is_exploring = False
 
@@ -65,8 +64,8 @@ class HabitatSalienceSM(SensorModule):
         return self._snapshot_telemetry.state_dict()
 
     def update_state(self, agent: AgentState):
-        """Update information about the sensors location and rotation."""
-        sensor = agent.sensors[SensorID(self.sensor_module_id + ".rgba")]
+        """Update information about the sensor's location and rotation."""
+        sensor = agent.sensors[SensorID(self.sensor_module_id)]
         self.state = SensorState(
             position=agent.position
             + qt.rotate_vectors(agent.rotation, sensor.position),
@@ -74,10 +73,11 @@ class HabitatSalienceSM(SensorModule):
         )
         self.motor_only_step = agent.motor_only_step
 
-    def step(self, data) -> State | None:
+    def step(self, ctx: RuntimeContext, data) -> State | None:
         """Generate goal states for the current step.
 
         Args:
+            ctx: The runtime context.
             data: Raw sensor observations
 
         Returns:
@@ -94,7 +94,7 @@ class HabitatSalienceSM(SensorModule):
         ior_weights = self._return_inhibitor(
             on_object.center_location, on_object.locations
         )
-        salience = self._weight_salience(on_object.salience, ior_weights)
+        salience = self._weight_salience(ctx, on_object.salience, ior_weights)
 
         self._goals = [
             GoalState(
@@ -114,12 +114,13 @@ class HabitatSalienceSM(SensorModule):
 
     def _weight_salience(
         self,
+        ctx: RuntimeContext,
         salience: np.ndarray,
         ior_weights: np.ndarray,
     ) -> np.ndarray:
         weighted_salience = self._decay_salience(salience, ior_weights)
 
-        weighted_salience = self._randomize_salience(weighted_salience)
+        weighted_salience = self._randomize_salience(ctx, weighted_salience)
 
         return self._normalize_salience(weighted_salience)
 
@@ -129,9 +130,11 @@ class HabitatSalienceSM(SensorModule):
         decay_factor = 0.75
         return salience - decay_factor * ior_weights
 
-    def _randomize_salience(self, weighted_salience: np.ndarray) -> np.ndarray:
+    def _randomize_salience(
+        self, ctx: RuntimeContext, weighted_salience: np.ndarray
+    ) -> np.ndarray:
         randomness_factor = 0.05
-        weighted_salience += self._rng.normal(
+        weighted_salience += ctx.rng.normal(
             loc=0, scale=randomness_factor, size=weighted_salience.shape[0]
         )
         return weighted_salience
@@ -148,7 +151,7 @@ class HabitatSalienceSM(SensorModule):
 
         return (weighted_salience - min_) / scale
 
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         """This method is called before each episode."""
         self._goals.clear()
         self._return_inhibitor.reset()
