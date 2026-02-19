@@ -8,6 +8,7 @@ output-type: prototype, PR, monty-feature, publication
 skills: python, research, monty
 contributor: ramyamounir
 status: completed
+hidden: true
 ---
 
 The current Monty system initializes a fixed hypothesis space at the start of each episode and maintains it until the episode completes.

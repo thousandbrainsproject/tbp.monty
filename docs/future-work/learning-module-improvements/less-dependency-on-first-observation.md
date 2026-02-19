@@ -8,6 +8,7 @@ output-type: prototype, monty-feature, PR, analysis
 skills: python, research, monty
 contributor: ramyamounir
 status: completed
+hidden: true
 ---
 
 In the current implementation, Monty initializes its entire hypothesis space during the first step of an episode.

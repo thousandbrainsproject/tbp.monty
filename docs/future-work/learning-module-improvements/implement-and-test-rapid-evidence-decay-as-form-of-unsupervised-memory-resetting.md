@@ -7,6 +7,7 @@ output-type: experiments, analysis
 skills: python, research, monty
 contributor: vkakerbeck, ramyamounir
 status: completed
+hidden: true
 ---
 
 In a natural, unsupervised setting, the object that a Monty system is observing will change from time to time. Currently, Monty's internal representations of objects is only explicitly reset by the experimenter, for example at the start of an episode of training.

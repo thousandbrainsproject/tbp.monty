@@ -8,6 +8,7 @@ output-type: PR
 skills: python, refactoring
 contributor: annark
 status: completed
+hidden: true
 ---
 
 For more details see [this Discourse thread](https://thousandbrains.discourse.group/t/combine-dataloader-and-dataset-class-into-environmentinterface/751).
