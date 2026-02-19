@@ -337,6 +337,7 @@ class PredefinedPolicy(MotorPolicy):
     ) -> Action | None:
         actions = [self.action_list[self.episode_step % len(self.action_list)]]
         return MotorPolicyResult(
+            success=True,
             terminated=True,
             actions=actions,
         )
