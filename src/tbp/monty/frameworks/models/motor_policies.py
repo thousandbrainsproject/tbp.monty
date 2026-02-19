@@ -216,7 +216,7 @@ class BasePolicy(MotorPolicy):
         ctx: RuntimeContext,
         state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> MotorPolicyResult:
-        """Return a motor policy result containing a 1-length list of random actions.
+        """Return a motor policy result containing a random action.
 
         The MotorSystemState is ignored.
 
