@@ -553,7 +553,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         yet clear to me what to do for actions that do not support undo.
         """
         if self.actions:
-            assert len(self.actions) == 1, "Expected 1 action, got multiple"
+            assert len(self.actions) == 1, "Expected one action"
             last_action = self.actions[0]
         else:
             return None
