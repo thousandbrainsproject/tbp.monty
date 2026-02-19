@@ -235,10 +235,10 @@ class BasePolicy(MotorPolicy):
         )
 
     def post_actions(
-        self, 
-        actions: list[Action], 
-        state: MotorSystemState | None = None  # noqa: ARG002
-) -> None:
+        self,
+        actions: list[Action],
+        state: MotorSystemState | None = None,  # noqa: ARG002
+    ) -> None:
         self.episode_step += 1
         self.action_sequence.append([actions])
 
@@ -513,7 +513,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             success=False,
             terminated=True,
             actions=[self.fixme_undo_last_action()],
-)
+        )
 
     def fixme_undo_last_action(
         self,
