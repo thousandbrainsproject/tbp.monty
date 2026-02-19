@@ -265,9 +265,6 @@ class BasePolicy(MotorPolicy):
     def load_state_dict(self, state_dict):
         self.episode_step = state_dict["episode_step"]
 
-    def set_experiment_mode(self, mode: ExperimentMode) -> None:
-        pass
-
 
 class PredefinedPolicy(MotorPolicy):
     """Policy that follows an action sequence read from file.
