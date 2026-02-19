@@ -115,12 +115,6 @@ More specifically, these experiments are run purely in evaluation mode (i.e., pr
 
 !table[../../benchmarks/ycb_unsupervised_inference.csv]
 
-> [!WARNING]
-> 
-> These benchmark experiments track the progress on [RFC 9: Hypotheses resampling](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0009_hypotheses_resampling.md).
-> 
-> We do not expect these experiments to have good performance until the RFC is implemented and [issue #214](https://github.com/thousandbrainsproject/tbp.monty/issues/214) is resolved.
-
 These experiments are currently run without multiprocessing (using `run.py`).
 
 # Compositional Datasets
