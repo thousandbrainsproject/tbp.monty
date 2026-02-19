@@ -15,6 +15,7 @@ import logging
 import time
 from typing import Any, Callable, ClassVar
 
+import magnum
 import numpy as np
 import numpy.typing as npt
 import quaternion as qt
@@ -740,3 +741,4 @@ BufferEncoder.register(qt.quaternion, lambda obj: qt.as_float_array(obj))
 BufferEncoder.register(Action, ActionJSONEncoder)
 BufferEncoder.register(DictConfig, lambda obj: OmegaConf.to_object(obj))
 BufferEncoder.register(ListConfig, lambda obj: OmegaConf.to_object(obj))
+BufferEncoder.register(magnum.Vector3, lambda obj: [obj.x, obj.y, obj.z])

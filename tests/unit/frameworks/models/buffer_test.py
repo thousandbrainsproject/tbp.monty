@@ -12,6 +12,7 @@ import json
 import unittest
 from unittest.mock import Mock
 
+import magnum
 import numpy as np
 import numpy.typing as npt
 import quaternion as qt
@@ -432,6 +433,13 @@ class BufferEncoderTest(unittest.TestCase):
         self.assertEqual(
             json.loads(json.dumps(quat, cls=BufferEncoder)),
             qt.as_float_array(quat).tolist(),
+        )
+
+    def test_buffer_encoder_encodes_magnum_vector3_by_default(self):
+        vec = magnum.Vector3([1.0, 2.0, 3.0])
+        self.assertEqual(
+            json.loads(json.dumps(vec, cls=BufferEncoder)),
+            [1.0, 2.0, 3.0],
         )
 
     def test_buffer_encoder_encodes_actions_by_default(self):
