@@ -149,7 +149,7 @@ class ObservationProcessor:
         weight_curvature=True,
         is_surface_sm=False,
     ) -> None:
-        """Initializes the HabitatObservationProcessor.
+        """Initializes the ObservationProcessor.
 
         Args:
             features: List of features to extract.
