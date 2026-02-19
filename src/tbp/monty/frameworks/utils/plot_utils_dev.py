@@ -156,9 +156,9 @@ def get_action_name(
     if not actions:
         return "None"
 
-    action_names = []
+    action_strings = []
     for action in actions:
-        a = cast("Action", action[0])
+        a = cast("Action", action)
         d = dict(a)
         del d["action"]  # don't duplicate action in "params"
         del d["agent_id"]  # don't duplicate agent_id in "params"
@@ -166,9 +166,13 @@ def get_action_name(
             f"{k}:{v.tolist()}" if isinstance(v, np.ndarray) else f"{k}:{v}"
             for k, v in d.items()
         ]
-        action_names.append(f"{a.name} - {','.join(params)}")
+        action_strings.append(f"{a.name} - {','.join(params)}")
 
-    return "[" + ", ".join(action_names) + "]"
+    return (
+        action_strings[0]
+        if len(action_strings) == 1
+        else "[" + ", ".join(action_strings) + "]"
+    )
 
 
 def set_target_text(ax, target, num_objects):
