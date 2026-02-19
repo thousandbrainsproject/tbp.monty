@@ -251,7 +251,7 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
         returned_actions: list[Action] = []
         for _ in range(2 * cycle_length):
             result = policy.dynamic_call(ctx)
-            assert len(result.actions) == 1, "Expected 1 action, got multiple"
+            assert len(result.actions) == 1, "Expected one action"
             returned_actions.append(result.actions[0])
             policy.post_actions(result.actions, state)
 
