@@ -42,7 +42,6 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.positioning_procedures import (
     PositioningProcedure,
 )
-from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.sensors import SensorID
@@ -118,15 +117,6 @@ class MotorPolicy(abc.ABC):
 
         Returns:
             The action to take.
-        """
-        pass
-
-    @abc.abstractmethod
-    def set_experiment_mode(self, mode: ExperimentMode) -> None:
-        """Sets the experiment mode.
-
-        Args:
-            mode: The experiment mode to set.
         """
         pass
 
@@ -297,9 +287,6 @@ class BasePolicy(MotorPolicy):
     def load_state_dict(self, state_dict):
         self.timestep = state_dict["timestep"]
         self.episode_step = state_dict["episode_step"]
-
-    def set_experiment_mode(self, mode: ExperimentMode) -> None:
-        pass
 
 
 class JumpToGoalStateMixin:

@@ -329,7 +329,6 @@ class MontyBase(Monty):
 
     def set_experiment_mode(self, mode: ExperimentMode) -> None:
         self.experiment_mode = mode
-        self.motor_system.set_experiment_mode(mode)
         self.step_type = "matching_step"
         for lm in self.learning_modules:
             lm.set_experiment_mode(mode)
