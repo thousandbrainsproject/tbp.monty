@@ -52,9 +52,7 @@ class SensorConfig:
         """Return a list of Habitat sensor specs to pass to `habitat-sim`."""
         return []
 
-    def process_observations(
-        self, sensor_obs: SensorObservation
-    ) -> SensorObservation:
+    def process_observations(self, sensor_obs: SensorObservation) -> SensorObservation:
         """Callback used to process Habitat raw sensor observations.
 
         Args:
