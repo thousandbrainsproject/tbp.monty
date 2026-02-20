@@ -32,11 +32,11 @@ __all__ = [
     "Observations",
     "RuntimeContext",
     "SensorModule",
-    "SensorObservations",
+    "SensorObservation",
 ]
 
 
-class SensorObservations(TypedDict, total=False):
+class SensorObservation(TypedDict, total=False):
     """Observations from a sensor."""
 
     rgba: npt.NDArray[np.int_]  # TODO: Verify specific type
@@ -49,7 +49,7 @@ class SensorObservations(TypedDict, total=False):
     raw: npt.NDArray[np.uint8]
 
 
-class AgentObservations(Dict[SensorID, SensorObservations]):
+class AgentObservations(Dict[SensorID, SensorObservation]):
     """Observations from an agent."""
 
     pass

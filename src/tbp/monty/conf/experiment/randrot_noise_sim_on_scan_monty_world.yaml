@@ -28,6 +28,11 @@ config:
   monty_config:
     monty_args:
       min_eval_steps: ${benchmarks.min_eval_steps}
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          hypotheses_updater_args:
+            deletion_trigger_slope: 0.2
     sensor_module_configs:
       sensor_module_1:
         sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}

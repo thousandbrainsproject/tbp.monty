@@ -53,14 +53,6 @@ class MotorSystem:
         self._policy.pre_episode()
         self._action_sequence = []
 
-    def set_experiment_mode(self, mode: ExperimentMode) -> None:
-        """Sets the experiment mode.
-
-        Args:
-            mode: The experiment mode.
-        """
-        self._policy.set_experiment_mode(mode)
-
     def __call__(self, ctx: RuntimeContext) -> list[Action]:
         """Defines the structure for __call__.
 

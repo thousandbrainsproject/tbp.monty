@@ -23,7 +23,7 @@ from tbp.monty.frameworks.environment_utils.transforms import (
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Observations,
-    SensorObservations,
+    SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
@@ -39,7 +39,7 @@ TEST_OBS = Observations(
     {
         AGENT_ID: AgentObservations(
             {
-                SENSOR_ID: SensorObservations(
+                SENSOR_ID: SensorObservation(
                     {
                         "semantic": np.array(
                             [

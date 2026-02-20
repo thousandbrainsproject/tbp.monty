@@ -36,7 +36,7 @@ from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Observations,
-    SensorObservations,
+    SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -87,7 +87,7 @@ class FakeEnvironmentRel(SimulatedObjectEnvironment):
             {
                 AGENT_ID: AgentObservations(
                     {
-                        SENSOR_ID: SensorObservations(
+                        SENSOR_ID: SensorObservation(
                             {"raw": EXPECTED_STATES[self._current_state]}
                         )
                     }
@@ -105,7 +105,7 @@ class FakeEnvironmentRel(SimulatedObjectEnvironment):
             {
                 AGENT_ID: AgentObservations(
                     {
-                        SENSOR_ID: SensorObservations(
+                        SENSOR_ID: SensorObservation(
                             {"raw": EXPECTED_STATES[self._current_state]}
                         )
                     }
@@ -131,7 +131,7 @@ class FakeEnvironmentAbs(SimulatedObjectEnvironment):
             {
                 AGENT_ID: AgentObservations(
                     {
-                        SENSOR_ID: SensorObservations(
+                        SENSOR_ID: SensorObservation(
                             {"raw": EXPECTED_STATES[self._current_state]}
                         )
                     }
@@ -149,7 +149,7 @@ class FakeEnvironmentAbs(SimulatedObjectEnvironment):
             {
                 AGENT_ID: AgentObservations(
                     {
-                        SENSOR_ID: SensorObservations(
+                        SENSOR_ID: SensorObservation(
                             {"raw": EXPECTED_STATES[self._current_state]}
                         )
                     }
