@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, ClassVar, Protocol, TypedDict
+from typing import Any, ClassVar, Protocol
 
 import numpy as np
 import quaternion as qt
@@ -19,7 +19,10 @@ from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    SensorModule,
+    SensorObservation,
+)
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     SensorState,
@@ -37,13 +40,12 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 
 __all__ = [
+    "CameraSM",
     "DefaultMessageNoise",
     "FeatureChangeFilter",
-    "HabitatObservation",
-    "HabitatObservationProcessor",
-    "HabitatSM",
     "MessageNoise",
     "NoMessageNoise",
+    "ObservationProcessor",
     "PassthroughStateFilter",
     "Probe",
     "SnapshotTelemetry",
@@ -97,14 +99,6 @@ class SnapshotTelemetry:
         return dict(raw_observations=self.raw_observations, sm_properties=self.poses)
 
 
-class HabitatObservation(TypedDict):
-    semantic_3d: np.ndarray
-    sensor_frame_data: np.ndarray
-    world_camera: np.ndarray
-    rgba: np.ndarray
-    depth: np.ndarray
-
-
 class SurfaceNormalMethod(Enum):
     TLS = "TLS"
     """Total Least-Squares"""
@@ -114,8 +108,8 @@ class SurfaceNormalMethod(Enum):
     """Naive"""
 
 
-class HabitatObservationProcessor:
-    """Processes Habitat observations into a Cortical Message."""
+class ObservationProcessor:
+    """Processes SensorObservations into Cortical Messages."""
 
     CURVATURE_FEATURES: ClassVar[list[str]] = [
         "principal_curvatures",
@@ -155,7 +149,7 @@ class HabitatObservationProcessor:
         weight_curvature=True,
         is_surface_sm=False,
     ) -> None:
-        """Initializes the HabitatObservationProcessor.
+        """Initializes the ObservationProcessor.
 
         Args:
             features: List of features to extract.
@@ -182,7 +176,7 @@ class HabitatObservationProcessor:
         self._surface_normal_method = surface_normal_method
         self._weight_curvature = weight_curvature
 
-    def process(self, observation: HabitatObservation) -> State:
+    def process(self, observation: SensorObservation) -> State:
         """Processes observation.
 
         Args:
@@ -539,8 +533,8 @@ class DefaultMessageNoise(MessageNoise):
         return new_feat_val
 
 
-class HabitatSM(SensorModule):
-    """Sensor Module that turns Habitat camera obs into features at locations.
+class CameraSM(SensorModule):
+    """Sensor Module that turns RGBD camera observations into features at locations.
 
     Takes in camera rgba and depth input and calculates locations from this.
     It also extracts features which are currently: on_object, rgba, surface_normal,
@@ -585,14 +579,14 @@ class HabitatSM(SensorModule):
             gaussian_curvature and mean_curvature should be used together to preserve
             the same information contained in principal_curvatures.
         """
-        self._habitat_observation_processor = HabitatObservationProcessor(
+        self._observation_processor = ObservationProcessor(
             features=features,
             sensor_module_id=sensor_module_id,
             pc1_is_pc2_threshold=pc1_is_pc2_threshold,
             is_surface_sm=is_surface_sm,
         )
         # TODO: With DefaultMessageNoise not getting RNG on init anymore,
-        #       then we can initialize HabitatSM with MessageNoise, instead
+        #       then we can initialize CameraSM with MessageNoise, instead
         #       of noise_params.
         if noise_params:
             self._message_noise: MessageNoise = DefaultMessageNoise(
@@ -653,7 +647,7 @@ class HabitatSM(SensorModule):
                 data, self.state.rotation, self.state.position
             )
 
-        observed_state = self._habitat_observation_processor.process(data)
+        observed_state = self._observation_processor.process(data)
 
         if observed_state.use_state:
             observed_state = self._message_noise(observed_state, rng=ctx.rng)

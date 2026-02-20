@@ -26,7 +26,7 @@ from tbp.monty.frameworks.environments.environment import SimulatedEnvironment
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Observations,
-    SensorObservations,
+    SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
@@ -118,14 +118,14 @@ class OmniglotEnvironment(SimulatedEnvironment):
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
-                        SensorID("patch"): SensorObservations(
+                        SensorID("patch"): SensorObservation(
                             {
                                 "depth": depth,
                                 "semantic": np.array(~patch, dtype=int),
                                 "rgba": np.stack([depth, depth, depth], axis=2),
                             }
                         ),
-                        SensorID("view_finder"): SensorObservations(
+                        SensorID("view_finder"): SensorObservation(
                             {
                                 "depth": self.current_image,
                                 "semantic": np.array(~patch, dtype=int),
@@ -175,14 +175,14 @@ class OmniglotEnvironment(SimulatedEnvironment):
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
-                        SensorID("patch"): SensorObservations(
+                        SensorID("patch"): SensorObservation(
                             {
                                 "depth": depth,
                                 "semantic": np.array(~patch, dtype=int),
                                 "rgba": np.stack([depth, depth, depth], axis=2),
                             }
                         ),
-                        SensorID("view_finder"): SensorObservations(
+                        SensorID("view_finder"): SensorObservation(
                             {
                                 "depth": self.current_image,
                                 "semantic": np.array(~patch, dtype=int),
@@ -336,7 +336,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
-                        SensorID("patch"): SensorObservations(
+                        SensorID("patch"): SensorObservation(
                             {
                                 "depth": depth_patch,
                                 "rgba": rgb_patch,
@@ -347,7 +347,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                                 "pixel_loc": self.current_loc,
                             }
                         ),
-                        SensorID("view_finder"): SensorObservations(
+                        SensorID("view_finder"): SensorObservation(
                             {
                                 "depth": self.current_depth_image,
                                 "rgba": self.current_rgb_image,
@@ -421,7 +421,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
-                        SensorID("patch"): SensorObservations(
+                        SensorID("patch"): SensorObservation(
                             {
                                 "depth": depth_patch,
                                 "rgba": rgb_patch,
@@ -431,7 +431,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                                 "pixel_loc": np.array(self.current_loc),
                             }
                         ),
-                        SensorID("view_finder"): SensorObservations(
+                        SensorID("view_finder"): SensorObservation(
                             {
                                 "depth": self.current_depth_image,
                                 "rgba": self.current_rgb_image,
@@ -524,7 +524,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         obs = Observations(
             {
                 agent_id: AgentObservations(
-                    {sensor_id: SensorObservations({"depth": self.current_depth_image})}
+                    {sensor_id: SensorObservation({"depth": self.current_depth_image})}
                 )
             }
         )
