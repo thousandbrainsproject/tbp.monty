@@ -8,6 +8,7 @@ output-type: prototype, experiments, analysis, PR
 skills: python, monty, research
 contributor: ramyamounir
 status: completed
+hidden: true
 ---
 
 > [!NOTE]
