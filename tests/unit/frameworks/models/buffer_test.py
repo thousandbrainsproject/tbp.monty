@@ -439,7 +439,7 @@ class BufferEncoderTest(unittest.TestCase):
         vec = magnum.Vector3([1.0, 2.0, 3.0])
         self.assertEqual(
             json.loads(json.dumps(vec, cls=BufferEncoder)),
-            [1.0, 2.0, 3.0],
+            list(vec),
         )
 
     def test_buffer_encoder_encodes_actions_by_default(self):
