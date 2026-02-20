@@ -75,6 +75,7 @@ class PolicyStatus(Enum):
 @dataclass
 class MotorPolicyResult:
     """Result of a motor policy."""
+
     actions: list[Action] = field(default_factory=list)
     status: PolicyStatus = PolicyStatus.READY
 
