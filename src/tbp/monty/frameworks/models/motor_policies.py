@@ -903,7 +903,7 @@ class SurfacePolicy(InformedPolicy):
         actions = [] if next_action is None else [next_action]
         return MotorPolicyResult(
             actions=actions,
-            status=PolicyStatus.PolicyStatus.BUSY,
+            status=PolicyStatus.BUSY,
         )
 
     def post_actions(self, actions: list[Action]) -> None:
