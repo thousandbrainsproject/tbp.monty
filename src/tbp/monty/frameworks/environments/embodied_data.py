@@ -710,11 +710,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
         # TODO refactor so that the whole of the hypothesis driven jumps
         # makes cleaner use of self.motor_system()
-        # Call post_action (normally taken care of __call__ within
+        # Call post_actions (normally taken care of __call__ within
         # self.motor_system._policy())
-        self.motor_system._policy.post_action(
-            self.motor_system._policy.action, self.motor_system._state
-        )
+        self.motor_system._policy.post_actions(self.motor_system._policy.actions)
 
         return self._observation
 
@@ -733,11 +731,13 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             # Results in us seamlessly transitioning into the typical
             # corrective movements (forward or orientation) of the surface-agent
             # policy
-            self.motor_system._policy.action = MoveTangentially(
-                agent_id=self.motor_system._policy.agent_id,
-                distance=0.0,
-                direction=(0, 0, 0),
-            )
+            self.motor_system._policy.actions = [
+                MoveTangentially(
+                    agent_id=self.motor_system._policy.agent_id,
+                    distance=0.0,
+                    direction=(0, 0, 0),
+                )
+            ]
 
             # TODO clean up where this is performed, and make variable names more
             #   general
