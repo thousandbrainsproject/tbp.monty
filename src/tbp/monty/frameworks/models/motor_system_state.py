@@ -11,8 +11,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict
 
-import numpy as np
-
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.sensors import SensorID
 
@@ -68,32 +66,3 @@ class MotorSystemState(Dict[AgentID, AgentState]):
           MotorSystemState is that, as well as any state that the motor system
           needs for operation.
     """
-
-    def convert_motor_state(self) -> dict[AgentID, Any]:
-        """Convert the motor state into something that can be pickled/saved to JSON.
-
-        i.e. substitute vector and quaternion objects; note e.g. copy.deepcopy does not
-        work.
-
-        Returns:
-            Copy of the motor state.
-        """
-        state_copy: dict[AgentID, Any] = {}
-        for agent_id in self:
-            agent_state = self[agent_id]
-            sensors = {}
-            for sensor_id in agent_state.sensors:
-                sensor_state = agent_state.sensors[sensor_id]
-                sensors[sensor_id] = {
-                    "position": np.array(list(sensor_state.position)),
-                    "rotation": [sensor_state.rotation.real]
-                    + list(sensor_state.rotation.imag),
-                }
-            state_copy[agent_id] = {
-                "position": np.array(list(agent_state.position)),
-                "rotation": [agent_state.rotation.real]
-                + list(agent_state.rotation.imag),
-                "sensors": sensors,
-            }
-
-        return state_copy
