@@ -16,6 +16,7 @@ import json
 import logging
 import math
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -66,22 +67,16 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
+class PolicyStatus(Enum):
+    READY = "ready"
+    BUSY = "busy"
+
+
 @dataclass
 class MotorPolicyResult:
-    """Result of a motor policy.
-
-    For more on the terminated/truncated terminology, see https://farama.org/Gymnasium-Terminated-Truncated-Step-API.
-    """
-
+    """Result of a motor policy."""
     actions: list[Action] = field(default_factory=list)
-    """Actions to take."""
-    success: bool = False
-    """Whether the policy succeeded in its goal."""
-    terminated: bool = False
-    """Whether the policy reached a terminal state with success or failure."""
-    truncated: bool = False
-    """Whether the policy was truncated due to a limit on the number of attempts or
-    other criteria."""
+    status: PolicyStatus = PolicyStatus.READY
 
 
 class MotorPolicy(abc.ABC):
@@ -220,9 +215,8 @@ class BasePolicy(MotorPolicy):
             A MotorPolicyResult that contains a random action.
         """
         return MotorPolicyResult(
-            success=True,
-            terminated=True,
             actions=[self.action_sampler.sample(self.agent_id, ctx.rng)],
+            status=PolicyStatus.READY,
         )
 
     def post_actions(
@@ -324,9 +318,8 @@ class PredefinedPolicy(MotorPolicy):
     ) -> MotorPolicyResult:
         actions = [self.action_list[self.episode_step % len(self.action_list)]]
         return MotorPolicyResult(
-            success=True,
-            terminated=True,
             actions=actions,
+            status=PolicyStatus.BUSY,
         )
 
     def get_agent_state(self, state: MotorSystemState) -> AgentState:
@@ -494,9 +487,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             return super().dynamic_call(ctx, state)
 
         return MotorPolicyResult(
-            success=False,
-            terminated=True,
             actions=[self.fixme_undo_last_action()],
+            status=PolicyStatus.BUSY,
         )
 
     def fixme_undo_last_action(
@@ -654,7 +646,7 @@ class NaiveScanPolicy(InformedPolicy):
         self.step_on_action += 1
         return MotorPolicyResult(
             actions=[self._naive_scan_actions[self.current_action_id]],
-            terminated=True,
+            status=PolicyStatus.BUSY,
         )
 
     def pre_episode(self) -> None:
@@ -926,6 +918,7 @@ class SurfacePolicy(InformedPolicy):
         actions = [] if next_action is None else [next_action]
         return MotorPolicyResult(
             actions=actions,
+            status=PolicyStatus.PolicyStatus.BUSY,
         )
 
     def post_actions(self, actions: list[Action]) -> None:
