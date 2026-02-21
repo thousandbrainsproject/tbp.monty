@@ -77,6 +77,7 @@ class MotorPolicyResult:
 
     actions: list[Action] = field(default_factory=list)
     status: PolicyStatus = PolicyStatus.READY
+    motor_only_step: bool = False
 
 
 class MotorPolicy(abc.ABC):
