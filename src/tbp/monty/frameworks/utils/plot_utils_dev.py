@@ -147,27 +147,32 @@ def get_action_name(
         "None".
     """
     if is_match_step:
-        if obs_on_object:
-            action_name = "updating possible matches"
-        else:
-            action_name = "patch not on object"
-    elif step == 0:
-        action_name = "not moved yet"
-    else:
-        action = action_stats[step - 1]
-        if action[0] is not None:
-            a = cast("Action", action[0])
-            d = dict(a)
-            del d["action"]  # don't duplicate action in "params"
-            del d["agent_id"]  # don't duplicate agent_id in "params"
-            params = [
-                f"{k}:{v.tolist()}" if isinstance(v, np.ndarray) else f"{k}:{v}"
-                for k, v in d.items()
-            ]
-            action_name = f"{a.name} - {','.join(params)}"
-        else:
-            action_name = "None"
-    return action_name
+        return "updating possible matches" if obs_on_object else "patch not on object"
+
+    if step == 0:
+        return "not moved yet"
+
+    actions = action_stats[step - 1][0]
+    if not actions:
+        return "None"
+
+    action_strings = []
+    for action in actions:
+        a = cast("Action", action)
+        d = dict(a)
+        del d["action"]  # don't duplicate action in "params"
+        del d["agent_id"]  # don't duplicate agent_id in "params"
+        params = [
+            f"{k}:{v.tolist()}" if isinstance(v, np.ndarray) else f"{k}:{v}"
+            for k, v in d.items()
+        ]
+        action_strings.append(f"{a.name} - {','.join(params)}")
+
+    return (
+        action_strings[0]
+        if len(action_strings) == 1
+        else "[" + ", ".join(action_strings) + "]"
+    )
 
 
 def set_target_text(ax, target, num_objects):
@@ -867,16 +872,14 @@ class PolicyPlot:
         # movements)
         self.tangential_steps_mask = []
         if self.agent_type == "surface":
-            for current_action in self.detailed_stats[str(self.episode)][
+            for actions_state_pair in self.detailed_stats[str(self.episode)][
                 "motor_system"
             ]["action_sequence"]:
-                if current_action[0] is not None:
-                    self.tangential_steps_mask.append(
-                        "move_tangentially" in current_action[0]
-                    )
-                else:
-                    # First movement is associated with [None, None]
-                    self.tangential_steps_mask.append(False)
+                actions = actions_state_pair[0]
+                is_tangential_step = any(
+                    "move_tangentially" in action["name"] for action in actions
+                )
+                self.tangential_steps_mask.append(is_tangential_step)
             self.tangential_steps_mask = np.array(self.tangential_steps_mask)
         elif self.agent_type == "distant":
             # For distant-agent, we count any steps that were on the object as

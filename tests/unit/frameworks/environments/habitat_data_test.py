@@ -92,7 +92,9 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_dist = mock_agent_class.return_value
         mock_agent_dist.agent_config = self.camera_dist.get_spec()
         mock_agent_dist.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            translation=mn.Vector3.zero_init(),
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_dist = mock_simulator_class.return_value
         mock_sim_dist.agents = [mock_agent_dist]
@@ -149,7 +151,9 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_abs = mock_agent_class.return_value
         mock_agent_abs.agent_config = self.camera_abs.get_spec()
         mock_agent_abs.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            translation=mn.Vector3.zero_init(),
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_abs = mock_simulator_class.return_value
         mock_sim_abs.agents = [mock_agent_abs]
@@ -205,7 +209,9 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_surf = mock_agent_class.return_value
         mock_agent_surf.agent_config = self.camera_surf.get_spec()
         mock_agent_surf.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            translation=mn.Vector3.zero_init(),
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_surf = mock_simulator_class.return_value
         mock_sim_surf.agents = [mock_agent_surf]
@@ -263,7 +269,9 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_dist = mock_agent_class.return_value
         mock_agent_dist.agent_config = self.camera_dist.get_spec()
         mock_agent_dist.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            translation=mn.Vector3.zero_init(),
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_dist = mock_simulator_class.return_value
         mock_sim_dist.agents = [mock_agent_dist]
@@ -308,7 +316,9 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_abs = mock_agent_class.return_value
         mock_agent_abs.agent_config = self.camera_abs.get_spec()
         mock_agent_abs.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            translation=mn.Vector3.zero_init(),
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_abs = mock_simulator_class.return_value
         mock_sim_abs.agents = [mock_agent_abs]
@@ -351,7 +361,9 @@ class HabitatDataTest(unittest.TestCase):
         mock_agent_surf = mock_agent_class.return_value
         mock_agent_surf.agent_config = self.camera_surf.get_spec()
         mock_agent_surf.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            translation=mn.Vector3.zero_init(),
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_surf = mock_simulator_class.return_value
         mock_sim_surf.agents = [mock_agent_surf]
