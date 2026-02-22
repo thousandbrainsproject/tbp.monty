@@ -65,5 +65,5 @@ class MotorSystem:
         """
         policy_result = self._policy(ctx, self._state)
         state_copy = self._state.convert_motor_state() if self._state else None
-        self._action_sequence.append([policy_result.actions, state_copy])
+        self._action_sequence.append((policy_result.actions, state_copy))
         return policy_result.actions
