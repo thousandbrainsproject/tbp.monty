@@ -43,6 +43,7 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.positioning_procedures import (
     PositioningProcedure,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.sensors import SensorID
@@ -85,12 +86,16 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def dynamic_call(
-        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        state: MotorSystemState | None = None,
     ) -> MotorPolicyResult:
         """Use this method when actions are not predefined.
 
         Args:
             ctx: The runtime context.
+            observations: Raw observations.
             state: The current state of the motor system.
                 Defaults to None.
 
@@ -153,19 +158,23 @@ class MotorPolicy(abc.ABC):
         pass
 
     def __call__(
-        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        state: MotorSystemState | None = None,
     ) -> MotorPolicyResult:
         """Select either dynamic or predefined call.
 
         Args:
             ctx: The runtime context.
+            observations: Raw observations.
             state: The current state of the motor system.
                 Defaults to None.
 
         Returns:
             The actions to take.
         """
-        result = self.dynamic_call(ctx, state)
+        result = self.dynamic_call(ctx, observations, state)
         self.post_actions(result.actions)
         return result
 
@@ -192,6 +201,7 @@ class BasePolicy(MotorPolicy):
     def dynamic_call(
         self,
         ctx: RuntimeContext,
+        observations: Observations,  # noqa: ARG002
         state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return a motor policy result containing a random action.
@@ -200,6 +210,7 @@ class BasePolicy(MotorPolicy):
 
         Args:
             ctx: The runtime context.
+            observations: Raw observations.
             state: The current state of the motor system.
                 Defaults to None. Unused.
 
@@ -303,6 +314,7 @@ class PredefinedPolicy(MotorPolicy):
     def dynamic_call(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
+        observations: Observations,  # noqa: ARG002
         state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> MotorPolicyResult:
         actions = [self.action_list[self.episode_step % len(self.action_list)]]
@@ -453,7 +465,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     ###
 
     def dynamic_call(
-        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        state: MotorSystemState | None = None,
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
 
@@ -463,6 +478,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         Args:
             ctx: The runtime context.
+            observations: Raw observations.
             state: The current state of the motor system.
                 Defaults to None.
 
@@ -470,7 +486,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             A MotorPolicyResult that contains the actions to take.
         """
         if self.processed_observations.get_on_object():
-            return super().dynamic_call(ctx, state)
+            return super().dynamic_call(ctx, observations, state)
 
         return MotorPolicyResult(
             actions=[self.fixme_undo_last_action()],
@@ -602,6 +618,7 @@ class NaiveScanPolicy(InformedPolicy):
     def dynamic_call(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
+        observations: Observations,  # noqa: ARG002
         state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions in the spiral.
@@ -610,6 +627,7 @@ class NaiveScanPolicy(InformedPolicy):
 
         Args:
             ctx: The runtime context.
+            observations: Raw observations.
             state: The current state of the motor system.
                 Defaults to None. Unused.
 
@@ -844,7 +862,10 @@ class SurfacePolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
     def dynamic_call(
-        self, ctx: RuntimeContext, state: MotorSystemState | None = None
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,  # noqa: ARG002
+        state: MotorSystemState | None = None,
     ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Return a motor policy result containing the next actions to take.
 
@@ -854,6 +875,7 @@ class SurfacePolicy(InformedPolicy):
 
         Args:
             ctx: The runtime context.
+            observations: Raw observations.
             state: The current state of the motor system.
                 Defaults to None.
 
