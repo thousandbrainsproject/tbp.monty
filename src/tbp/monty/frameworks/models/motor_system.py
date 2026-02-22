@@ -15,7 +15,7 @@ from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
-from tbp.monty.frameworks.models.motor_policies import MotorPolicy
+from tbp.monty.frameworks.models.motor_policies import MotorPolicy, MotorPolicyResult
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 
 __all__ = ["MotorSystem"]
@@ -53,7 +53,9 @@ class MotorSystem:
         self._policy.pre_episode()
         self._action_sequence = []
 
-    def __call__(self, ctx: RuntimeContext, observations: Observations) -> list[Action]:
+    def __call__(
+        self, ctx: RuntimeContext, observations: Observations
+    ) -> MotorPolicyResult:
         """Defines the structure for __call__.
 
         Delegates to the motor policy.
@@ -63,9 +65,9 @@ class MotorSystem:
             observations: Raw observations.
 
         Returns:
-            The action to take.
+            The motor policy result.
         """
         policy_result = self._policy(ctx, observations, self._state)
         state_copy = self._state.convert_motor_state() if self._state else None
-        self._action_sequence.append([policy_result.actions, state_copy])
-        return policy_result.actions
+        self._action_sequence.append((policy_result.actions, state_copy))
+        return policy_result

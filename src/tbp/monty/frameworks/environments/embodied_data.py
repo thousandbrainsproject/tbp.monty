@@ -46,6 +46,7 @@ from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
     InformedPolicy,
+    MotorPolicyResult,
     ObjectNotVisible,
     SurfacePolicy,
 )
@@ -162,9 +163,12 @@ class EnvironmentInterface:
             # Return first observation after 'reset' before any action is applied
             return self._observation
 
-        actions = self.motor_system(ctx, self._observation)
-        self._observation, proprioceptive_state = self._step(actions)
+        policy_result = self.motor_system(ctx, self._observation)
+        self._observation, proprioceptive_state = self._step(policy_result.actions)
         self.motor_system._state = MotorSystemState(proprioceptive_state)
+        update_motor_system_state_from_policy_result(
+            policy_result, self.motor_system._state
+        )
         return self._observation
 
     def _step(
@@ -198,6 +202,26 @@ class EnvironmentInterface:
 
     def post_epoch(self):
         pass
+
+
+def update_motor_system_state_from_policy_result(
+    policy_result: MotorPolicyResult,
+    motor_system_state: MotorSystemState,
+) -> None:
+    """Update a motor system state with the policy's motor-only step decision.
+
+    Whether Monty should perform a motor-only step is embedded into the
+    MotorSystemState object returned by the environment interface. The
+    decision as to whether the following step should be a motor-only step is being
+    transferred from the environment interface to motor policies. Here, we update
+    the motor system state with the policy's decision.
+
+    Args:
+        policy_result: The policy result.
+        motor_system_state: The motor system state.
+    """
+    for agent_state in motor_system_state.values():
+        agent_state.motor_only_step = policy_result.motor_only_step
 
 
 class EnvironmentInterfacePerObject(EnvironmentInterface):
@@ -476,9 +500,11 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
         # NOTE: terminal conditions are now handled in experiment.run_episode loop
         attempting_to_find_object = False
+        policy_result: MotorPolicyResult | None = None
         actions = []
         try:
-            actions = self.motor_system(ctx, self._observation)
+            policy_result = self.motor_system(ctx, self._observation)
+            actions = policy_result.actions
         except ObjectNotVisible:
             # Note: Only SurfacePolicy raises ObjectNotVisible.
             attempting_to_find_object = True
@@ -501,6 +527,10 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
         self._observation, proprioceptive_state = self._step(actions)
         motor_system_state = MotorSystemState(proprioceptive_state)
+        if policy_result:
+            update_motor_system_state_from_policy_result(
+                policy_result, motor_system_state
+            )
 
         # TODO: Refactor this so that all of this is contained within the
         #       SurfacePolicy and/or positioning procedure.
