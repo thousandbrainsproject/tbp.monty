@@ -144,3 +144,7 @@ Session.vim
 
 # hydra
 outputs/
+
+# Local data and results
+data/
+results/

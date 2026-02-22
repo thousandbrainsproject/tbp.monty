@@ -13,16 +13,13 @@ import logging
 from enum import Enum
 from typing import Any, ClassVar, Protocol
 
+from matplotlib import transforms
 import numpy as np
 import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.models.abstract_monty_classes import (
-    SensorModule,
-    SensorObservation,
-)
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule, SensorObservations, AgentObservations
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     SensorState,
@@ -38,6 +35,9 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     surface_normal_total_least_squares,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
+from tbp.monty.psu.transform_middleware_test import TEST_OBS
+from tbp.monty.frameworks.environment_utils.transform_handlers import TransformPipeline, TransformContext
+from tbp.monty.psu.introspection_utils import print_dict_structure
 
 __all__ = [
     "CameraSM",
@@ -545,6 +545,7 @@ class CameraSM(SensorModule):
         self,
         sensor_module_id: str,
         features: list[str],
+        transform_pipeline: TransformPipeline | None = None,
         save_raw_obs: bool = False,
         pc1_is_pc2_threshold: int = 10,
         noise_params: dict[str, Any] | None = None,
@@ -608,6 +609,7 @@ class CameraSM(SensorModule):
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
+        self.transform_pipeline = transform_pipeline
 
     def pre_episode(self) -> None:
         self._snapshot_telemetry.reset()
@@ -624,6 +626,9 @@ class CameraSM(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
+        #START
+        self.agent_state = agent
+        #END
         self.motor_only_step = agent.motor_only_step
 
     def state_dict(self):
@@ -647,7 +652,14 @@ class CameraSM(SensorModule):
                 data, self.state.rotation, self.state.position
             )
 
-        observed_state = self._observation_processor.process(data)
+        print("IN SENSOR MODULE STEP METHOD")
+        # RAL Change the call
+        print_dict_structure(data)
+        tf_context = TransformContext(None, self.agent_state)
+        self.transform_pipeline(data, tf_context)
+
+
+        observed_state = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
             observed_state = self._message_noise(observed_state, rng=ctx.rng)
@@ -669,6 +681,7 @@ class CameraSM(SensorModule):
 class StateFilter(Protocol):
     def __call__(self, state: State) -> State: ...
     def reset(self) -> None: ...
+
 
 
 class PassthroughStateFilter(StateFilter):

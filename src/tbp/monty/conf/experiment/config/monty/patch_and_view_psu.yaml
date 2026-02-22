@@ -1,0 +1,67 @@
+defaults:
+  - motor_system/informed_no_trans@motor_system_config
+  - args/defaults@monty_args
+
+monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
+learning_module_configs:
+  learning_module_0:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+    learning_module_args:
+      k: 5
+      match_attribute: displacement
+sensor_module_configs:
+  sensor_module_0:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch
+      features:
+        # morphological features (necessary)
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        # non-morphological features (optional)
+        - object_coverage
+        - rgba
+        - hsv
+        - principal_curvatures
+        - principal_curvatures_log
+        - gaussian_curvature
+        - mean_curvature
+        - gaussian_curvature_sc
+        - mean_curvature_sc
+      save_raw_obs: true
+      transform_pipeline:
+        _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformPipeline
+        transforms:
+          - _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformMiddleware
+            transform: ${monty.class:tbp.monty.frameworks.environment_utils.transform_handlers.DepthTo3DLocations}
+            agent_id: ${monty.agent_id:agent_id_0}
+            sensor_ids: # env_init_args[agents][0].agent_args.sensor_ids
+            - patch
+            - view_finder
+            resolutions: [64, 64] # env_init_args[agents][0].agent_args.resolutions
+            world_coord: true
+            zooms: 10.0 # env_init_args[agents][0].agent_args.zooms
+            get_all_points: true
+            use_semantic_sensor: false
+            is_depth_clip_sensors: true
+
+          - _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformMiddleware
+            transform: ${monty.class:tbp.monty.frameworks.environment_utils.transform_handlers.MissingToMaxDepth}
+            agent_id: ${monty.agent_id:agent_id_0}
+            max_depth: 1
+
+            
+  sensor_module_1:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+    sensor_module_args:
+      sensor_module_id: view_finder
+      save_raw_obs: true
+
+sm_to_agent_dict:
+  patch: ${monty.agent_id:agent_id_0}
+  view_finder: ${monty.agent_id:agent_id_0}
+sm_to_lm_matrix:
+  - [0]
+lm_to_lm_matrix: null
+lm_to_lm_vote_matrix: null
