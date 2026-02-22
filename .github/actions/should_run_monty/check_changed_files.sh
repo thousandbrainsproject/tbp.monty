@@ -4,6 +4,9 @@ while IFS= read -r changed_file
 do
   echo $changed_file
   if [[ $changed_file != .github/ISSUE_TEMPLATE/* ]] &&
+     [[ $changed_file != .github/workflows/cla.yml ]] &&
+     [[ $changed_file != .github/workflows/monty_publish.yml ]] &&
+     [[ $changed_file != .github/workflows/triage.yml ]] &&
      [[ $changed_file != .rsyncignore ]] &&
      [[ $changed_file != .vale/* ]] &&
      [[ $changed_file != .vscode/* ]] &&

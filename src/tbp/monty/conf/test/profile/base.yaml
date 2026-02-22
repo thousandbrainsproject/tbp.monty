@@ -6,7 +6,7 @@ defaults:
   - /experiment/config/environment_interface/per_object_train@config.train_env_interface_args
   - /experiment/config/environment_interface/per_object_eval@config.eval_env_interface_args
 
-_target_: tests.unit.profile_experiment_mixin_test.ProfiledExperiment
+_target_: tests.integration.frameworks.experiments.profile_experiment_mixin_test.ProfiledExperiment
 config:
   env_interface_config:
     env_init_args:

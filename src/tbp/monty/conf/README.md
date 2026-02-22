@@ -8,7 +8,7 @@ The `experiment` folder contains Monty experiment configurations. Most of these 
 
 ### Pretraining models
 
-The pretraining configurations are used for running supervised pretraining experiments to generate the models used for follow-on benchmark evaluation experiments. These only need to be rerun if a functional change to the way a learning module learns is introduced. We keep track of version numbers for these, e.g., `ycb_pretrained_v11`.
+The pretraining configurations are used for running supervised pretraining experiments to generate the models used for follow-on benchmark evaluation experiments. These only need to be rerun if a functional change to the way a learning module learns is introduced. We keep track of version numbers for these, e.g., `ycb_pretrained_v12`.
 
 Note that instead of running pretraining, you can also download our pretrained models as outlined in our [getting started guide](https://thousandbrainsproject.readme.io/docs/getting-started#42-download-pretrained-models).
 
@@ -46,7 +46,7 @@ To generate models for the objects with logos experiments, run the following pre
 - `python run_parallel.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo`
 - `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl1_monolithic_models`
 - `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models`
-- `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling`
+- `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling`
 
 ##### Phase 4
 

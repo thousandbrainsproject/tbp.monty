@@ -50,7 +50,7 @@ config:
   monty_config:
     sensor_module_configs:
       sensor_module_0:
-        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
         sensor_module_args:
           sensor_module_id: patch
           # Features that will be extracted and sent to LM
@@ -66,7 +66,7 @@ config:
             - principal_curvatures
             - principal_curvatures_log
           save_raw_obs: false
-          # HabitatSM will only send an observation to the LM if features or location
+          # CameraSM will only send an observation to the LM if features or location
           # changed more than these amounts.
           delta_thresholds:
             on_object: 0
@@ -91,7 +91,7 @@ config:
           save_raw_obs: false
 ```
 
-There are two main differences between this config and the pretraining sensor module config. First, we are adding some noise to the sensor patch, so we define noise parameters and add them to `sensor_module_0`'s dictionary. Second, we're using `delta_threshold` parameters to only send an observation to the learning module if the features have changed significantly. Note that `HabitatSM` can be used as either a surface or distant agent, for which `is_surface_sm` should be appropriately set.
+There are two main differences between this config and the pretraining sensor module config. First, we are adding some noise to the sensor patch, so we define noise parameters and add them to `sensor_module_0`'s dictionary. Second, we're using `delta_threshold` parameters to only send an observation to the learning module if the features have changed significantly. Note that `CameraSM` can be used as either a surface or distant agent, for which `is_surface_sm` should be appropriately set.
 
 For the learning module, we specify
 
@@ -123,8 +123,8 @@ config:
           evidence_threshold_config: 80%
           # Config for goal state generator of LM which is used for model-based action
           # suggestions, such as hypothesis-testing actions.
-          gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
-          gsg_args:
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
             # Tolerance(s) when determining goal-state success
             goal_tolerances:
               location: 0.015 # distance in meters
@@ -172,7 +172,7 @@ config:
       min_eval_steps: 20
     sensor_module_configs:
       sensor_module_0:
-        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
         sensor_module_args:
           sensor_module_id: patch
           # Features that will be extracted and sent to LM
@@ -188,7 +188,7 @@ config:
             - principal_curvatures
             - principal_curvatures_log
           save_raw_obs: false
-          # HabitatSM will only send an observation to the LM if features or location
+          # CameraSM will only send an observation to the LM if features or location
           # changed more than these amounts.
           delta_thresholds:
             on_object: 0
@@ -236,8 +236,8 @@ config:
           evidence_threshold_config: 80%
           # Config for goal state generator of LM which is used for model-based action
           # suggestions, such as hypothesis-testing actions.
-          gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
-          gsg_args:
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
             # Tolerance(s) when determining goal-state success
             goal_tolerances:
               location: 0.015 # distance in meters

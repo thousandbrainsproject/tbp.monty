@@ -62,7 +62,7 @@ config:
 
 ```
 
-If you've read the previous tutorials, much of this should look familiar. As in our [pretraining](./pretraining-a-model.md) tutorial, we've configured a `MontySupervisedObjectPretrainingExperiment` with a `src/tbp/monty/conf/experiment/config/logging/pretrain` logging configuration. However, we are now using a built-in Monty model configuration called `src/tbp/monty/conf/experiment/config/monty/five_lm` that specifies everything we need to have five `HabitatSM` sensor modules that each connect to exactly one of five `DisplacementGraphLM` learning modules. `src/tbp/monty/conf/experiment/config/monty/five_lm` also specifies that each learning module connects to every other learning module through lateral voting connections. Note that `GraphLM` learning modules used in previous tutorials would work fine here, but we're going with the default `DisplacementGraphLM` for convenience (this is a graph-based LM that also stores displacements between points, although these are generally not used during inference at present). To see how this is done, we can take a closer look at the `src/tbp/monty/conf/experiment/config/monty/five_lm` configuration which contains the following lines:
+If you've read the previous tutorials, much of this should look familiar. As in our [pretraining](./pretraining-a-model.md) tutorial, we've configured a `MontySupervisedObjectPretrainingExperiment` with a `src/tbp/monty/conf/experiment/config/logging/pretrain` logging configuration. However, we are now using a built-in Monty model configuration called `src/tbp/monty/conf/experiment/config/monty/five_lm` that specifies everything we need to have five `CameraSM` sensor modules that each connect to exactly one of five `DisplacementGraphLM` learning modules. `src/tbp/monty/conf/experiment/config/monty/five_lm` also specifies that each learning module connects to every other learning module through lateral voting connections. Note that `GraphLM` learning modules used in previous tutorials would work fine here, but we're going with the default `DisplacementGraphLM` for convenience (this is a graph-based LM that also stores displacements between points, although these are generally not used during inference at present). To see how this is done, we can take a closer look at the `src/tbp/monty/conf/experiment/config/monty/five_lm` configuration which contains the following lines:
 
 ```yaml
 sm_to_lm_matrix:
@@ -89,7 +89,7 @@ lm_to_lm_vote_matrix:
 
 We have also specified that we want to use a `src/tbp/monty/conf/experiment/config/monty/motor_system/naive_scan_spiral` for the motor system. This is a *learning-focused* motor policy that directs the agent to look across the object surface in a spiraling motion. That way, we can ensure efficient coverage of the entire object (of what is visible from the current perspective) during learning.
 
-Finally, we have also set the `env_interface_config` to `src/tbp/monty/conf/experiment/config/environment/five_lm_mount_habitat`. This specifies that we have five `HabitatSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see `src/tbp/monty/conf/experiment/config/environment/init_args/five_lm_mount`.
+Finally, we have also set the `env_interface_config` to `src/tbp/monty/conf/experiment/config/environment/five_lm_mount_habitat`. This specifies that we have five `CameraSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see `src/tbp/monty/conf/experiment/config/environment/init_args/five_lm_mount`.
 
 To run this experiment, call the `run.py` script like so:
 ```bash
@@ -168,8 +168,8 @@ learning_module_args:
   # Use this to update all hypotheses > 80% of the max hypothesis evidence
   evidence_threshold_config: 80%
   x_percent_threshold: 20
-  gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
-  gsg_args:
+  gsg:
+    _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
     # Tolerance(s) when determining goal-state success
     goal_tolerances:
       location: 0.015 # distance in meters

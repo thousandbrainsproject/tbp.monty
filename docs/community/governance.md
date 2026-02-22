@@ -37,6 +37,10 @@ The current **Maintainers** are listed in the [MAINTAINERS file](https://github.
 - Propose disposition of [RFCs](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc) (e.g., merge or close).
 - Approve or abstain from the disposition of [RFCs](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc).
 
+## Alumni Maintainers
+
+- Former **Maintainers** who are no longer active.
+
 ## Adding Maintainers
 
 - Any **Maintainer** can nominate a new **Maintainer** by starting a private email thread amongst all the current **Maintainers** with the nomination and proposing that the nominee be invited to join.

@@ -1,9 +1,16 @@
 defaults:
   - evidence_lm/evidence@
-  - /experiment/config/monty/motor_system/informed_no_trans@config.monty_config.motor_system_config
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
 
 config:
   monty_config:
     monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
     monty_args:
       num_exploratory_steps: 10
+    motor_system_config:
+      motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+      motor_system_args:
+        policy:
+          _target_: tbp.monty.frameworks.models.motor_policies.PredefinedPolicy
+          agent_id: ${monty.agent_id:agent_id_0}
+          file_name: ${path.tests:unit/resources/fixed_test_actions.jsonl}

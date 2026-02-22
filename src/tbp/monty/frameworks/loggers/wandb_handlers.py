@@ -16,6 +16,7 @@ import pandas as pd
 import wandb
 from typing_extensions import override
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.monty_handlers import MontyHandler
 from tbp.monty.frameworks.utils.logging_utils import (
     format_columns_for_wandb,
@@ -58,7 +59,14 @@ class WandbWrapper(MontyHandler):
         )
         self.wandb_handlers = [wandb_handler() for wandb_handler in wandb_handlers]
 
-    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+    def report_episode(
+        self,
+        data,
+        output_dir,
+        episode,
+        mode: ExperimentMode = ExperimentMode.TRAIN,
+        **kwargs,
+    ):
         for handler in self.wandb_handlers:
             handler.report_episode(data, output_dir, episode, mode=mode, **kwargs)
 
@@ -98,7 +106,9 @@ class WandbHandler(MontyHandler):
     def log_level(cls):
         return ""
 
-    def report_episode(self, data, output_dir, mode="train", **kwargs):
+    def report_episode(
+        self, data, output_dir, mode: ExperimentMode = ExperimentMode.TRAIN, **kwargs
+    ):
         pass
 
     def close(self):
@@ -113,7 +123,14 @@ class BasicWandbTableStatsHandler(WandbHandler):
         return "BASIC"
 
     @override
-    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+    def report_episode(
+        self,
+        data,
+        output_dir,
+        episode,
+        mode: ExperimentMode = ExperimentMode.TRAIN,
+        **kwargs,
+    ):
         ###
         # Log basic statistics
         # Ignore the episode value
@@ -162,7 +179,14 @@ class DetailedWandbTableStatsHandler(BasicWandbTableStatsHandler):
     def log_level(cls):
         return "DETAILED"
 
-    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+    def report_episode(
+        self,
+        data,
+        output_dir,
+        episode,
+        mode: ExperimentMode = ExperimentMode.TRAIN,
+        **kwargs,
+    ):
         super().report_episode(data, output_dir, episode, mode, **kwargs)
         basic_logs = data["BASIC"]
         # Get actions depending on mode (train or eval)
@@ -174,7 +198,7 @@ class DetailedWandbTableStatsHandler(BasicWandbTableStatsHandler):
         # for episode in action_data.keys():
         # TODO: is table the best format for this?
 
-        episode = list(action_data.keys())[0]
+        episode = next(iter(action_data.keys()))
         table_name = f"{mode}_actions/episode_{episode}_table"
         actions = action_data[episode]
         for i, action in enumerate(actions):
@@ -204,7 +228,14 @@ class BasicWandbChartStatsHandler(WandbHandler):
         return "BASIC"
 
     @override
-    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+    def report_episode(
+        self,
+        data,
+        output_dir,
+        episode,
+        mode: ExperimentMode = ExperimentMode.TRAIN,
+        **kwargs,
+    ):
         basic_logs = data["BASIC"]
         mode_key = f"{mode}_overall_stats"
         stats = basic_logs.get(mode_key, {})
@@ -244,7 +275,7 @@ class DetailedWandbHandler(WandbHandler):
 
     def get_episode_frames(self, episode_stats):
         frames_per_sm = {}
-        sm_ids = [sm for sm in episode_stats.keys() if sm.startswith("SM_")]
+        sm_ids = [sm for sm in episode_stats if sm.startswith("SM_")]
         for sm in sm_ids:
             observations = episode_stats[sm]["raw_observations"]
             frames_per_sm[sm] = get_rgba_frames_single_sm(observations)
@@ -252,7 +283,14 @@ class DetailedWandbHandler(WandbHandler):
         return frames_per_sm
 
     @override
-    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+    def report_episode(
+        self,
+        data,
+        output_dir,
+        episode,
+        mode: ExperimentMode = ExperimentMode.TRAIN,
+        **kwargs,
+    ):
         # mode is ignored when reporting this episode
 
         detailed_stats = data["DETAILED"]

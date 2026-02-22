@@ -35,7 +35,7 @@ def episode_seed(seed: int, mode: ExperimentMode, episode: int) -> int:
     """
     return (
         int(
-            hashlib.sha256(f"{seed}-{mode.value}-{episode}".encode()).hexdigest(),
+            hashlib.sha256(f"{seed}-{mode}-{episode}".encode()).hexdigest(),
             16,
         )
         % 2**32

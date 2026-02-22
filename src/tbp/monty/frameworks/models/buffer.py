@@ -81,10 +81,10 @@ class FeatureAtLocationBuffer:
             The features observed at time step idx.
         """
         features_at_idx = {}
-        for input_channel in self.features.keys():
+        for input_channel in self.features:
             features_at_idx[input_channel] = {
                 attribute: self.features[input_channel][attribute][idx]
-                for attribute in self.features[input_channel].keys()
+                for attribute in self.features[input_channel]
             }
         return features_at_idx
 
@@ -94,7 +94,7 @@ class FeatureAtLocationBuffer:
 
     def get_buffer_len_by_channel(self, input_channel):
         """Return the number of observations stored for that input channel."""
-        if input_channel not in self.locations.keys():
+        if input_channel not in self.locations:
             return 0
         return np.count_nonzero(~np.isnan(self.locations[input_channel][:, 0]))
 
@@ -112,18 +112,18 @@ class FeatureAtLocationBuffer:
             self.channel_sender_types[input_channel] = state.sender_type
 
             self._add_loc_to_location_buffer(input_channel, state.location)
-            if input_channel not in self.features.keys():
+            if input_channel not in self.features:
                 self.features[input_channel] = {}
-            for attr in state.morphological_features.keys():
+            for attr in state.morphological_features:
                 attr_val = state.morphological_features[attr]
                 self._add_attr_to_feature_buffer(input_channel, attr, attr_val)
             # TODO S: separate non-morphological features from morphological features?
             # May cause problems with graph.x array representation. Could be added when
             # using separate models for features and morphology
-            for attr in state.non_morphological_features.keys():
+            for attr in state.non_morphological_features:
                 attr_val = state.non_morphological_features[attr]
                 self._add_attr_to_feature_buffer(input_channel, attr, attr_val)
-            for attr in state.displacement.keys():
+            for attr in state.displacement:
                 attr_val = state.displacement[attr]
                 self._add_disp_to_displacement_buffer(input_channel, attr, attr_val)
             on_obj = state.get_on_object()
@@ -137,8 +137,8 @@ class FeatureAtLocationBuffer:
 
     def update_stats(self, stats, update_time=True, append=True, init_list=True):
         """Update statistics for this step in the episode."""
-        for stat in stats.keys():
-            if stat in self.stats.keys() and append:
+        for stat in stats:
+            if stat in self.stats and append:
                 self.stats[stat].append(copy.deepcopy(stats[stat]))
             elif init_list:
                 self.stats[stat] = [copy.deepcopy(stats[stat])]
@@ -153,8 +153,8 @@ class FeatureAtLocationBuffer:
 
     def update_last_stats_entry(self, stats):
         """Use this to overwrite last entry (for example after voting)."""
-        for stat in stats.keys():
-            if stat in self.stats.keys():
+        for stat in stats:
+            if stat in self.stats:
                 self.stats[stat][-1] = copy.deepcopy(stats[stat])
 
     def reset(self):
@@ -185,7 +185,7 @@ class FeatureAtLocationBuffer:
             The current features.
         """
         current_features = {}
-        for input_channel in self.features.keys():
+        for input_channel in self.features:
             current_features[input_channel] = {}
             for key in keys:
                 current_features[input_channel][key] = self.features[input_channel][
@@ -244,7 +244,7 @@ class FeatureAtLocationBuffer:
             # Also filter locations by global on_object.
             global_on_object_ids = self._global_on_object_ids()
             result = {}
-            for channel in self.locations.keys():
+            for channel in self.locations:
                 channel_locs = self._pad_to_target_length(self.locations[channel])
                 result[channel] = channel_locs[global_on_object_ids]
             return result
@@ -299,7 +299,7 @@ class FeatureAtLocationBuffer:
         """
         return {
             channel: self.get_current_displacement(channel)
-            for channel in self.displacements.keys()
+            for channel in self.displacements
         }
 
     def get_current_ppf(self, input_channel):
@@ -322,7 +322,7 @@ class FeatureAtLocationBuffer:
         """
         if input_channel == "first":
             input_channel = self.get_first_sensory_input_channel()
-        if "ppf" in self.displacements[input_channel].keys():
+        if "ppf" in self.displacements[input_channel]:
             return self.displacements[input_channel]["ppf"][1][0]
         return np.linalg.norm(self.displacements[input_channel]["displacement"][1])
 
@@ -350,8 +350,8 @@ class FeatureAtLocationBuffer:
             f"Observed {np.array(self.locations).shape} locations, "
             f"{len(global_on_object_ids)} global on object"
         )
-        for input_channel in self.features.keys():
-            # Here we want to make sure the input specific obs was on the object
+        for input_channel in self.features:
+            # Here we want to make sure the input-specific observation was on the object
             channel_off_object_ids = np.where(
                 self.features[input_channel]["on_object"] is False
             )[0]
@@ -362,7 +362,7 @@ class FeatureAtLocationBuffer:
             )
 
             channel_features_on_object = {}
-            for feature in self.features[input_channel].keys():
+            for feature in self.features[input_channel]:
                 # Pad end of array with nans if last steps of episode were off object
                 # for this channel
                 padded_feature = self._pad_to_target_length(
@@ -402,7 +402,7 @@ class FeatureAtLocationBuffer:
     def get_num_goal_states_generated(self):
         """Return number of goal states generated by the LM's GSG since episode start.
 
-        Note use of length not sum.
+        Note: use the length, not the sum.
         """
         return len(self.stats["goal_state_achieved"])
 
@@ -431,7 +431,7 @@ class FeatureAtLocationBuffer:
         )
 
     def get_infos_for_graph_update(self):
-        """Return all stored infos require to update a graph in memory."""
+        """Return all stored infos required to update a graph in memory."""
         return dict(
             locations=self.get_all_locations_on_object(),
             features=self.get_all_features_on_object(),
@@ -501,7 +501,7 @@ class FeatureAtLocationBuffer:
                 attr_value = attr_value.flatten()
             attr_shape = len(attr_value)
 
-        if attr_name not in self.features[input_channel].keys():
+        if attr_name not in self.features[input_channel]:
             # If the feature is not stored in buffer yet (i.e. when
             # an LM sends an object ID to a higher level LM for the first
             # time) we fill the array for this feature with nans up to
@@ -527,7 +527,7 @@ class FeatureAtLocationBuffer:
             input_channel: Input channel from which the location was received.
             location: Location to add to buffer.
         """
-        if input_channel not in self.locations.keys():
+        if input_channel not in self.locations:
             self.locations[input_channel] = np.empty((0, 0))
 
         padded_locs = self._pad_to_target_length(
@@ -546,9 +546,9 @@ class FeatureAtLocationBuffer:
             disp_name: Name of the displacement. Currently in ["displacement", "ppf"]
             disp_val: Value of the displacement.
         """
-        if input_channel not in self.displacements.keys():
+        if input_channel not in self.displacements:
             self.displacements[input_channel] = {}
-        if disp_name not in self.displacements[input_channel].keys():
+        if disp_name not in self.displacements[input_channel]:
             self.displacements[input_channel][disp_name] = np.full(
                 (len(self.locations), len(disp_val)), np.nan
             )

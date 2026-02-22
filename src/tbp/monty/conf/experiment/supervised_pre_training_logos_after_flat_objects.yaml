@@ -19,7 +19,7 @@ defaults:
 config:
   n_train_epochs: 3 # len(LOGO_POSITIONS) * len(LOGO_ROTATIONS)
   supervised_lm_ids: ["learning_module_0"]
-  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11/supervised_pre_training_flat_objects_wo_logos/pretrained/}
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12/supervised_pre_training_flat_objects_wo_logos/pretrained/}
   logging:
     run_name: supervised_pre_training_logos_after_flat_objects
   monty_config:
@@ -27,9 +27,8 @@ config:
       num_exploratory_steps: 1000
     motor_system_config:
       motor_system_args:
-        policy_args:
+        policy:
           fixed_amount: 1
   train_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-

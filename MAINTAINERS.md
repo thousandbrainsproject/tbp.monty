@@ -7,8 +7,11 @@
 - [@vkakerbeck](https://github.com/vkakerbeck)
 - [@nielsleadholm](https://github.com/nielsleadholm)
 - [@tristanls-tbp](https://github.com/tristanls-tbp)
-- [@codeallthethingz](https://github.com/codeallthethingz)
 - [@scottcanoe](https://github.com/scottcanoe)
 - [@hlee9212](https://github.com/hlee9212)
 - [@ramyamounir](https://github.com/ramyamounir)
 - [@jeremyshoemaker](https://github.com/jeremyshoemaker)
+
+## Alumni Maintainers
+
+- [@codeallthethingz](https://github.com/codeallthethingz)

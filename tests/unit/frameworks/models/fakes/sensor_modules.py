@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
 from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.models.states import State
@@ -21,11 +23,7 @@ __all__ = ["FakeSensorModule"]
 class FakeSensorModule(SensorModule):
     """Dummy placeholder class used only for tests."""
 
-    def __init__(
-        self,
-        rng,  # noqa: ARG002
-        sensor_module_id: str,
-    ):
+    def __init__(self, sensor_module_id: str):
         super().__init__()
         self.sensor_module_id = sensor_module_id
 
@@ -35,16 +33,20 @@ class FakeSensorModule(SensorModule):
     def update_state(self, agent: AgentState):
         pass
 
-    def pre_episode(self, rng: np.random.RandomState) -> None:
+    def pre_episode(self) -> None:
         pass
 
     def post_episode(self):
         pass
 
-    def set_experiment_mode(self, mode: str):
+    def set_experiment_mode(self, mode: ExperimentMode):
         pass
 
-    def step(self, data):
+    def step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        data,
+    ):
         """Returns a dummy/placeholder state."""
         return State(
             location=np.zeros(3),

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -23,11 +23,11 @@ class State:
     components and makes sure we can easily set up arbitrary configurations of them.
     This class makes it easier to define the CMP in one place and defines the content
     and structure of messages passed between Monty components. It also contains some
-    helper funtions to access and modify the message content.
+    helper functions to access and modify the message content.
 
     States are represented in this format but can be interpreted by the receiver in
     different ways:
-       Observed states: states output py sensor modules
+       Observed states: states output by sensor modules
        Hypothesized states: states output by learning modules
        Goal states: motor output of learning modules
 
@@ -122,9 +122,9 @@ class State:
             self.displacement["ppf"] = ppf
 
     def get_feature_by_name(self, feature_name):
-        if feature_name in self.morphological_features.keys():
+        if feature_name in self.morphological_features:
             feature_val = self.morphological_features[feature_name]
-        elif feature_name in self.non_morphological_features.keys():
+        elif feature_name in self.non_morphological_features:
             feature_val = self.non_morphological_features[feature_name]
         else:
             raise ValueError(f"Feature {feature_name} not found in state.")
@@ -171,7 +171,7 @@ class State:
 
         This is currently used in the policy to stay on the object.
         """
-        if "on_object" in self.morphological_features.keys():
+        if "on_object" in self.morphological_features:
             return self.morphological_features["on_object"]
 
         # TODO: Use depth values to estimate on_object (either threshold or large
@@ -179,7 +179,7 @@ class State:
         return True
 
     def _check_all_attributes(self):
-        assert "pose_vectors" in self.morphological_features.keys(), (
+        assert "pose_vectors" in self.morphological_features, (
             "pose_vectors should be in morphological_features but keys are "
         )
         f"{self.morphological_features.keys()}"
@@ -189,7 +189,7 @@ class State:
             3,
         ), "pose should be defined by three orthonormal unit vectors but pose_vectors "
         f"shape is {self.morphological_features['pose_vectors'].shape}"
-        assert "pose_fully_defined" in self.morphological_features.keys()
+        assert "pose_fully_defined" in self.morphological_features
         assert isinstance(self.morphological_features["pose_fully_defined"], bool), (
             "pose_fully_defined must be a boolean but type is "
         )
@@ -288,7 +288,7 @@ class GoalState(State):
     def _check_all_attributes(self):
         """Overwrite base attribute check to also allow for None values."""
         if self.morphological_features is not None:
-            assert "pose_vectors" in self.morphological_features.keys(), (
+            assert "pose_vectors" in self.morphological_features, (
                 "pose_vectors should be in morphological_features but keys are "
             )
             f"{self.morphological_features.keys()}"
@@ -302,7 +302,7 @@ class GoalState(State):
                 "vectors but pose_vectors shape is "
                 f"{self.morphological_features['pose_vectors'].shape}"
             )
-            assert "pose_fully_defined" in self.morphological_features.keys()
+            assert "pose_fully_defined" in self.morphological_features
             assert (
                 isinstance(self.morphological_features["pose_fully_defined"], bool)
             ) or self.morphological_features["pose_fully_defined"] is None, (
