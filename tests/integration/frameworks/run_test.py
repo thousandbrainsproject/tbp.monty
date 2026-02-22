@@ -79,7 +79,9 @@ class MontyRunTest(unittest.TestCase):
         self.mock_agent = mock_agent_class.return_value
         self.mock_agent.agent_config = camera.get_spec()
         self.mock_agent.scene_node = mock.Mock(
-            rotation=mn.Quaternion.zero_init(), node_sensors={}
+            translation=mn.Vector3.zero_init(),
+            rotation=mn.Quaternion.zero_init(),
+            node_sensors={},
         )
         mock_sim_class = sim_patch.start()
         self.mock_sim = mock_sim_class.return_value
