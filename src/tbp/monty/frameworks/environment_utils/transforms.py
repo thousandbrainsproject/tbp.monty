@@ -436,6 +436,8 @@ class DepthTo3DLocations(Transform):
                     when `self.get_all_points` is `True`.
         """
         for i, sensor_id in enumerate(self.sensor_ids):
+            print(sensor_id)
+            print(observations[self.agent_id][sensor_id].keys())
             agent_obs = observations[self.agent_id][sensor_id]
             depth_patch = agent_obs["depth"]
 

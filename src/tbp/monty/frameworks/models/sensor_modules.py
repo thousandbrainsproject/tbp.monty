@@ -19,7 +19,7 @@ import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule, SensorObservations, AgentObservations
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule, SensorObservation, AgentObservations
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     SensorState,
@@ -656,10 +656,11 @@ class CameraSM(SensorModule):
         # RAL Change the call
         print_dict_structure(data)
         tf_context = TransformContext(None, self.agent_state)
+
         self.transform_pipeline(data, tf_context)
 
 
-        observed_state = self._habitat_observation_processor.process(data)
+        observed_state = self._observation_processor.process(data)
 
         if observed_state.use_state:
             observed_state = self._message_noise(observed_state, rng=ctx.rng)

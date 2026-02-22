@@ -18,7 +18,7 @@ from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Observations,
-    SensorObservations,
+    SensorObservation,
 )
 import numpy as np
 
@@ -37,7 +37,7 @@ TEST_OBS = Observations(
     {
         AGENT_ID: AgentObservations(
             {
-                SENSOR_ID: SensorObservations(
+                SENSOR_ID: SensorObservation(
                     {
                         "semantic": np.array(
                             [
