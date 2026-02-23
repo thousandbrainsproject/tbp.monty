@@ -39,7 +39,7 @@ jobs:
         run: |
           if [ ! -d ~/miniconda ]
           then
-            wget https://repo.anaconda.com/miniconda/Miniconda3-py312_25.3.1-1-Linux-x86_64.sh -O ~/miniconda.sh
+            wget https://repo.anaconda.com/miniconda/Miniconda3-py312_25.5.1-0-Linux-x86_64.sh -O ~/miniconda.sh
             bash ~/miniconda.sh -b -p ~/miniconda
             rm ~/miniconda.sh
           fi
@@ -62,7 +62,7 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          conda build recipe --debug
+          conda build recipe
       - name: Upload conda package
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         working-directory: tbp.monty
@@ -98,7 +98,7 @@ jobs:
         run: |
           if [ ! -d ~/miniconda ]
           then
-            wget https://repo.anaconda.com/miniconda/Miniconda3-py312_25.3.1-1-MacOSX-arm64.sh -O ~/miniconda.sh
+            wget https://repo.anaconda.com/miniconda/Miniconda3-py312_25.5.1-0-MacOSX-arm64.sh -O ~/miniconda.sh
             bash ~/miniconda.sh -b -p ~/miniconda
             rm ~/miniconda.sh
           fi
