@@ -11,7 +11,7 @@ Be aware that in Numpy, and in the saved CSV result files, quaternions follow th
 
 ## XYZ Conventions
 
-Note that in Habitat (and therefore the Monty code-base), the "z" direction is positive in the direction coming out of the screen, while "y" is the "up" direction. "x" is positive pointing to the right, again if you are facing the screen.
+Note that in Habitat (and therefore the Monty code-base), the "z" direction is positive in the direction coming out of the screen, while "y" is the "up" direction. "x" is positive pointing to the right, again if you are facing the screen. See our [conventions](../how-monty-works/monty/conventions.md) page for further explanation.
 
 ## Environment vs. Monty's Internal Rotation
 

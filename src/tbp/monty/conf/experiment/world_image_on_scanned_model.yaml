@@ -14,7 +14,7 @@ defaults:
   - config/environment/world_image@config.env_interface_config
   - config/environment/init_args/clear_env_init_args@config.env_interface_config
   - config/environment/init_args/monty_world_standard_scenes@config.env_interface_config.env_init_args
-  - config/environment_interface/clear_eval_env_interface_args@config.eval_env_interface_args
+  - config/environment_interface/clear_eval_env_interface_args@config
   - config/environment_interface/world_image@config.eval_env_interface_args
 
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
@@ -29,6 +29,11 @@ config:
   monty_config:
     monty_args:
       min_eval_steps: ${benchmarks.min_eval_steps}
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          hypotheses_updater_args:
+            deletion_trigger_slope: 0.2
   eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageEnvironmentInterface}
   eval_env_interface_args:
     # list(np.repeat(range(12), 4))

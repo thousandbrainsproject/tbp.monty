@@ -13,7 +13,7 @@ benchmarks:
   - hsv
   - principal_curvatures_log
   min_eval_steps: 20
-  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11}
+  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
   rotations_all_count: 14
   rotations_all:
   - - 0
@@ -101,12 +101,9 @@ experiment:
       motor_system_config:
         motor_system_args:
           policy:
-            file_name: null
-            good_view_percentage: 0.5
-            desired_object_distance: 0.025
             use_goal_state_driven_actions: false
-            min_perc_on_obj: 0.25
             agent_id: ${monty.agent_id:agent_id_0}
+            desired_object_distance: 0.025
             alpha: 0.1
             action_sampler:
               actions:
@@ -155,7 +152,7 @@ experiment:
               max_nneighbors: 5
       sensor_module_configs:
         sensor_module_0:
-          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
           sensor_module_args:
             is_surface_sm: true
             sensor_module_id: patch

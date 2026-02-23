@@ -1,6 +1,7 @@
 defaults:
   - /test/graph_learning/fixed_actions_feat@
   - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
 
 config:
   n_train_epochs: 2
@@ -8,6 +9,13 @@ config:
   max_train_steps: 50
   max_total_steps: 200
   monty_config:
+    motor_system_config:
+      motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+      motor_system_args:
+        policy:
+          _target_: tbp.monty.frameworks.models.motor_policies.PredefinedPolicy
+          agent_id: ${monty.agent_id:agent_id_0}
+          file_name: ${path.tests:unit/resources/fixed_test_actions_off_object.jsonl}
     monty_args:
       num_exploratory_steps: 20
       min_train_steps: 12
