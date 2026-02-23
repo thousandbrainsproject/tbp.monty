@@ -1,0 +1,11 @@
+defaults:
+  - policy/base@motor_system_args.policy
+  - action_space/distant_agent@motor_system_args.policy.action_sampler
+
+motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+motor_system_args:
+  policy:
+    _target_: tbp.monty.frameworks.models.motor_policies.BasePolicy
+    action_sampler:
+      _target_: tbp.monty.frameworks.actions.action_samplers.UniformlyDistributedSampler
+    agent_id: ${monty.agent_id:agent_id_0}

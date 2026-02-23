@@ -17,10 +17,9 @@ import numpy as np
 import quaternion as qt
 from typing_extensions import Self
 
-from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import (
     Action,
-    LookUp,
     MoveTangentially,
     OrientVertical,
     SetAgentPose,
@@ -33,6 +32,10 @@ from tbp.monty.frameworks.environments.environment import (
     SemanticID,
     SimulatedObjectEnvironment,
 )
+from tbp.monty.frameworks.environments.positioning_procedures import (
+    GetGoodView,
+    PositioningProcedure,
+)
 from tbp.monty.frameworks.environments.two_d_data import (
     OmniglotEnvironment,
     SaccadeOnImageEnvironment,
@@ -41,10 +44,8 @@ from tbp.monty.frameworks.environments.two_d_data import (
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
-    GetGoodView,
     InformedPolicy,
     ObjectNotVisible,
-    PositioningProcedure,
     SurfacePolicy,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -52,6 +53,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
+from tbp.monty.frameworks.sensors import SensorID
 
 __all__ = [
     "EnvironmentInterface",
@@ -135,7 +137,8 @@ class EnvironmentInterface:
             self._counter += 1
             return self._observation
 
-        actions = self.motor_system()
+        ctx = RuntimeContext(rng=self.rng)
+        actions = self.motor_system(ctx)
         self._observation, proprioceptive_state = self.step(actions)
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -169,7 +172,7 @@ class EnvironmentInterface:
         return observation, state
 
     def pre_episode(self, rng: np.random.RandomState):
-        self.motor_system.pre_episode(rng)
+        self.motor_system.pre_episode()
 
         # Reset the environment interface state.
         self._observation, proprioceptive_state = self.reset(rng)
@@ -342,7 +345,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         # Specify config for the primary target object and then add it
         init_params = self.object_params.copy()
         init_params.pop("euler_rotation")
-        if "quat_rotation" in init_params.keys():
+        if "quat_rotation" in init_params:
             init_params.pop("quat_rotation")
         init_params["semantic_id"] = self.semantic_label_to_id[self.object_names[idx]]
 
@@ -454,13 +457,15 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # NOTE: terminal conditions are now handled in experiment.run_episode loop
         attempting_to_find_object = False
         actions = []
+        ctx = RuntimeContext(self.rng)
         try:
-            actions = self.motor_system()
+            actions = self.motor_system(ctx)
         except ObjectNotVisible:
             # Note: Only SurfacePolicy raises ObjectNotVisible.
             attempting_to_find_object = True
             actions = [
                 self.motor_system._policy.touch_object(
+                    ctx,
                     self._observation,
                     view_sensor_id="view_finder",
                     state=self.motor_system._state,
@@ -544,7 +549,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
     def get_good_view(
         self,
-        sensor_id: str,
+        sensor_id: SensorID,
         allow_translation: bool = True,
         max_orientation_attempts: int = 1,
     ) -> bool:
@@ -571,32 +576,15 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             target_semantic_id=self.primary_target["semantic_id"],
             allow_translation=allow_translation,
             max_orientation_attempts=max_orientation_attempts,
-            # TODO: Remaining arguments are unused but required by BasePolicy.
-            #       These will be removed when PositioningProcedure is split from
-            #       BasePolicy
-            #
-            # Note that if we use rng=self.rng below, then the following test will
-            # fail:
-            #   tests/unit/evidence_lm_test.py::EvidenceLMTest::test_two_lm_heterarchy_experiment  # noqa: E501
-            # The test result seems to be coupled to the random seed and the
-            # specific sequence of rng calls (rng is called once on GetGoodView
-            # initialization).
-            rng=np.random.RandomState(),
-            action_sampler_args=dict(actions=[LookUp]),
-            action_sampler_class=UniformlyDistributedSampler,
         )
-        result = positioning_procedure.positioning_call(
-            self._observation, self.motor_system._state
-        )
+        result = positioning_procedure(self._observation, self.motor_system._state)
         while not result.terminated and not result.truncated:
             self._observation, proprio_state = self.step(result.actions)
             self.motor_system._state = (
                 MotorSystemState(proprio_state) if proprio_state else None
             )
 
-            result = positioning_procedure.positioning_call(
-                self._observation, self.motor_system._state
-            )
+            result = positioning_procedure(self._observation, self.motor_system._state)
 
         return result.success
 
@@ -610,15 +598,12 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         "patch" or "patch_0") to ensure that the patch's central pixel is on-object.
         Up to 3 reorientation attempts are performed using the central patch.
 
-        Also currently used by the distant agent after a "jump" has been initialized
-        by a model-based policy.
-
         Returns:
             Whether the sensor is on the object.
 
         """
-        self.get_good_view("view_finder")
-        for patch_id in ("patch", "patch_0"):
+        self.get_good_view(SensorID("view_finder"))
+        for patch_id in (SensorID("patch"), SensorID("patch_0")):
             if patch_id in self._observation[AgentID("agent_id_0")]:
                 on_target_object = self.get_good_view(
                     patch_id,
@@ -753,9 +738,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             self.motor_system._policy.action_details["pc_heading"].append("jump")
             self.motor_system._policy.action_details["avoidance_heading"].append(False)
             self.motor_system._policy.action_details["z_defined_pc"].append(None)
-
-        else:
-            self.get_good_view_with_patch_refinement()
 
     def handle_failed_jump(self, pre_jump_state, first_sensor):
         """Deal with the results of a failed hypothesis-testing jump.

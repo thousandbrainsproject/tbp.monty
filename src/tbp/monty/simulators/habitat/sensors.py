@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -33,15 +33,15 @@ Size = Tuple[int, int]
 class SensorConfig:
     """Sensor configuration.
 
-    Every habitat sensor will inherit from this class.
+    Every Habitat sensor will inherit from this class.
 
     Attributes:
-        sensor_id: Optional sensorID unique within the sensor module.
-            If given then observations made by this sensor will be
-            prefixed by this id. i.e. "`sensor_id`.data"
+        sensor_id: Optional sensor ID unique within the sensor module.
+            If given, then observations made by this sensor will be
+            prefixed by this ID, i.e. "`sensor_id`.data"
         position: Sensor position relative to :class:`HabitatAgent`.
-            Default (0, 0, 0)
-        rotation: Sensor rotation quaternion. Default (1, 0, 0, 0)
+            Defaults to (0, 0, 0).
+        rotation: Sensor rotation quaternion. Defaults to (1, 0, 0, 0).
     """
 
     sensor_id: str = field(default_factory=lambda: uuid.uuid4().hex)
@@ -49,16 +49,16 @@ class SensorConfig:
     rotation: Quaternion = (1.0, 0.0, 0.0, 0.0)
 
     def get_specs(self) -> list[SensorSpec]:
-        """Returns List of Habitat sensor specs to be passed to `habitat-sim`."""
+        """Return a list of Habitat sensor specs to pass to `habitat-sim`."""
         return []
 
     def process_observations(
         self, sensor_obs: SensorObservations
     ) -> SensorObservations:
-        """Callback used to process habitat raw sensor observations.
+        """Callback used to process Habitat raw sensor observations.
 
         Args:
-            sensor_obs: Sensor raw habitat-sim observations
+            sensor_obs: Raw habitat-sim observations from this sensor
 
         Returns:
             The processed observations grouped by agent_id
@@ -68,7 +68,7 @@ class SensorConfig:
 
 @dataclass(frozen=True)
 class RGBDSensorConfig(SensorConfig):
-    """RGBD Camera sensor configuration.
+    """RGBD camera sensor configuration.
 
     Use this class to configure two different Habitat sensors simultaneously,
     one for RGBA observations and another for depth. Both sensors will use the
@@ -76,21 +76,22 @@ class RGBDSensorConfig(SensorConfig):
     "rgba", depth observations are named "depth".
 
     Attributes:
-        sensor_id: Sensor ID unique within the sensor module. If given then
-            observations made by this sensor will be prefixed by this id.
+        sensor_id: Sensor ID unique within the sensor module. If given, then
+            observations made by this sensor will be prefixed by this ID.
             i.e. "`sensor_id`.rgba"
-        resolution: Camera resolution (width, height). Default (64, 64)
-        position: Sensor position relative to :class:`HabitatAgent`. Default (0, 0, 0)
-        rotation: Sensor rotation quaternion. Default (1, 0, 0, 0)
-        zoom: Camera zoom multiplier. Use >1 to increase, 0<factor<1 to decrease.
-            Default 1.0, no zoom
+        resolution: Camera resolution (width, height). Defaults to (64, 64).
+        position: Sensor position relative to :class:`HabitatAgent`.
+            Defaults to (0, 0, 0).
+        rotation: Sensor rotation quaternion. Defaults to (1, 0, 0, 0).
+        zoom: Camera zoom multiplier. Use >1 to increase and 0 < factor < 1 to decrease.
+            Defaults to 1.0 (no zoom).
     """
 
     resolution: Size = (64, 64)
     zoom: float = 1.0
 
     def get_specs(self) -> list[SensorSpec]:
-        """Returns List of Habitat sensor specs to be passed to `habitat-sim`."""
+        """Return a list of Habitat sensor specs to pass to `habitat-sim`."""
         orientation = qt.as_rotation_vector(qt.quaternion(*self.rotation))
 
         # Configure RGBA camera
@@ -123,25 +124,26 @@ class SemanticSensorConfig(SensorConfig):
     """Semantic object sensor configuration.
 
     Use this class to configure a sensor to observe known objects in the
-    scene returning their semantic IDs (ground truth) at each XY position.
+    scene, returning their semantic IDs (ground truth) at each XY position.
     Semantic observations are named "semantic".
 
     Attributes:
-        sensor_id: Optional sensor ID unique within the sensor module. If given then
-            observations made by this sensor will be prefixed by this id.
-            i.e."`sensor_id`.semantic"
-        resolution: Camera resolution (width, height). Default (64, 64)
-        position: Sensor position relative to :class:`HabitatAgent`. Default (0, 0, 0)
-        rotation: Sensor rotation quaternion. Default (1, 0, 0, 0)
-        zoom: Camera zoom multiplier. Use >1 to increase, 0<factor<1 to decrease.
-            Default 1.0, no zoom
+        sensor_id: Optional sensor ID unique within the sensor module. If given, then
+            observations made by this sensor will be prefixed by this ID.
+            i.e. "`sensor_id`.semantic"
+        resolution: Camera resolution (width, height). Defaults to (64, 64).
+        position: Sensor position relative to :class:`HabitatAgent`.
+            Defaults to (0, 0, 0).
+        rotation: Sensor rotation quaternion. Defaults to (1, 0, 0, 0).
+        zoom: Camera zoom multiplier. Use >1 to increase and 0 < factor < 1 to decrease.
+            Defaults to 1.0 (no zoom).
     """
 
     resolution: Size = (64, 64)
     zoom: float = 1.0
 
     def get_specs(self) -> list[SensorSpec]:
-        """Returns List of Habitat sensor specs to be passed to `habitat-sim`."""
+        """Return a list of Habitat sensor specs to pass to `habitat-sim`."""
         orientation = qt.as_rotation_vector(qt.quaternion(*self.rotation))
 
         # Configure semantic camera

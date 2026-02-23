@@ -27,7 +27,7 @@ def hydra_config(
 
     Args:
         test_name: The name of the test to run. Must be a present in the
-            conf/experiment/test directory.
+            src/tbp/monty/conf/experiment/test directory.
         output_dir: The directory to store the output.
         fixed_actions_path: The path to the fixed actions file.
         model_name_or_path: The path to the model to load.
@@ -43,7 +43,7 @@ def hydra_config(
     if fixed_actions_path:
         overrides.append(
             "+experiment.config.monty_config.motor_system_config"
-            f".motor_system_args.policy_args.file_name={fixed_actions_path}",
+            f".motor_system_args.policy.file_name={fixed_actions_path}",
         )
     if model_name_or_path:
         overrides.append(

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -177,7 +177,7 @@ class GraphObjectModel(ObjectModel):
         """Combine new observations with those already stored in a graph.
 
         Combines datapoints from an existing graph and new points collected in the
-        buffer using the detected pose. This is a util function for extend_graph.
+        buffer using the detected pose. This is a utility function for extend_graph.
 
         Args:
             locations: new observed locations (x,y,z)
@@ -195,11 +195,11 @@ class GraphObjectModel(ObjectModel):
         # Iterate through the different feature types, stacking on (i.e. appending)
         # those features associated w/ candidate new points to the old-graph point
         # features
-        for feature in features.keys():
+        for feature in features:
             new_feat = np.array(features[feature])
             if len(new_feat.shape) == 1:
                 new_feat = new_feat.reshape((new_feat.shape[0], 1))
-            if feature in feature_mapping.keys():
+            if feature in feature_mapping:
                 feature_idx = feature_mapping[feature]
                 old_feat = np.array(self.x)[:, feature_idx[0] : feature_idx[1]]
             else:
@@ -219,7 +219,7 @@ class GraphObjectModel(ObjectModel):
             all_features[feature] = both_feat
 
             for graph_feature in self.feature_ids_in_graph:
-                if graph_feature not in features.keys() and graph_feature != "node_ids":
+                if graph_feature not in features and graph_feature != "node_ids":
                     raise NotImplementedError(
                         f"{graph_feature} is represented in graph but",
                         " was not observed at this step. Implement padding with nan.",
@@ -263,7 +263,7 @@ class GraphObjectModel(ObjectModel):
         feature_mapping = {}
         feature_mapping["node_ids"] = [0, 1]
 
-        for feature_id in features.keys():
+        for feature_id in features:
             # Get only the features-at-points that were not removed as close/
             # redundant points
             feats = np.array([features[feature_id][i] for i in clean_ids])
@@ -327,7 +327,7 @@ class GridObjectModel(GraphObjectModel):
 
     This model has the same basic functionality as the NumpyGraph models used in older
     LM versions. On top of that we now have a grid representation of the object that
-    constraints the model size and resultion. Additionally, this model class implements
+    constrains the model size and resolution. Additionally, this model class implements
     a lot of functionality that was previously implemented in the graph_utils.py file.
 
     TODO: General cleanups that require more changes in other code
@@ -342,9 +342,9 @@ class GridObjectModel(GraphObjectModel):
             object_id: id of the object
             max_nodes: maximum number of nodes in the graph. Will be k in k winner
                 voxels with highest observation count.
-            max_size: maximum size of the object in meters. Defines size of obejcts
+            max_size: maximum size of the object in meters. Defines size of objects
                 that can be represented and how locations are mapped into voxels.
-            num_voxels_per_dim: number of voxels per dimension in the models grids.
+            num_voxels_per_dim: number of voxels per dimension in the model's grids.
                 Defines the resolution of the model.
         """
         logger.info(f"init object model with id {object_id}")
@@ -357,7 +357,8 @@ class GridObjectModel(GraphObjectModel):
         # number of observations in each voxel
         self._observation_count = None
         # Average features in each voxel with observations
-        # The first 3 dims are the 3d voxel indices, the forth dimensions are features
+        # The first three dims are the 3D voxel indices; the fourth dimension
+        # stores features
         self._feature_grid = None
         # Average location in each voxel with observations
         # The first 3 dims are the 3d voxel indices, xyz in the fourth dimension is
@@ -710,7 +711,7 @@ class GridObjectModel(GraphObjectModel):
         """
         feature_mapping = {}
         feature_array = None
-        for feature in feature_dict.keys():
+        for feature in feature_dict:
             feats = feature_dict[feature]
 
             if len(feats.shape) == 1:
@@ -773,9 +774,7 @@ class GridObjectModel(GraphObjectModel):
             New average features for a voxel.
         """
         new_feature_avg = np.zeros(target_feat_dim)
-        if ("pose_vectors" in obs_fm.keys()) and (
-            "pose_fully_defined" in obs_fm.keys()
-        ):
+        if ("pose_vectors" in obs_fm) and ("pose_fully_defined" in obs_fm):
             # TODO: deal with case where not all of those keys are present
             pv_ids = obs_fm["pose_vectors"]
             pdefined_ids = obs_fm["pose_fully_defined"]
@@ -814,13 +813,12 @@ class GridObjectModel(GraphObjectModel):
                         avg_feat = previous_average
                     elif use_cds_to_update is False:
                         avg_feat[3:] = previous_average[3:]
-                elif feature == "object_id":
+                elif feature == "object_id" and avg_feat != previous_average:
                     # TODO: Figure out a more nuanced way to take into account past obs
-                    if avg_feat != previous_average:
-                        if num_old_obs > num_new_obs:
-                            avg_feat = previous_average
-                        else:
-                            previous_average = avg_feat
+                    if num_old_obs > num_new_obs:
+                        avg_feat = previous_average
+                    else:
+                        previous_average = avg_feat
                 # NOTE: could weight these
                 avg_feat = (avg_feat + previous_average) / 2
             target_ids = target_fm[feature]

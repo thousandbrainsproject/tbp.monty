@@ -10,7 +10,7 @@ This tutorial is a follow-up of our tutorial on [pretraining a model](pretrainin
 > The [first part](pretraining-a-model.md) of this tutorial must be completed for the code in this tutorial to run.
 >
 # Setting up the Experiment Config for Inference
-To follow along, open the `conf/experiment/tutorial/surf_agent_2obj_eval.yaml` file. Let's highlight the various aspects of an evaluation experiment configuration.
+To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_eval.yaml` file. Let's highlight the various aspects of an evaluation experiment configuration.
 
 ```yaml
 # Basic setup
@@ -123,8 +123,8 @@ config:
           evidence_threshold_config: 80%
           # Config for goal state generator of LM which is used for model-based action
           # suggestions, such as hypothesis-testing actions.
-          gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
-          gsg_args:
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
             # Tolerance(s) when determining goal-state success
             goal_tolerances:
               location: 0.015 # distance in meters
@@ -236,8 +236,8 @@ config:
           evidence_threshold_config: 80%
           # Config for goal state generator of LM which is used for model-based action
           # suggestions, such as hypothesis-testing actions.
-          gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
-          gsg_args:
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
             # Tolerance(s) when determining goal-state success
             goal_tolerances:
               location: 0.015 # distance in meters

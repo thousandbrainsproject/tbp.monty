@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests import HYDRA_ROOT
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -41,7 +43,7 @@ class RunParallelTest(unittest.TestCase):
                 "num_parallel=1",
                 f"++experiment.config.logging.output_dir={output_dir}",
                 "+experiment.config.monty_config.motor_system_config"
-                ".motor_system_args.policy_args.file_name="
+                ".motor_system_args.policy.file_name="
                 f"{Path(__file__).parent / 'resources/fixed_test_actions.jsonl'}",
             ]
             if model_name_or_path:
@@ -50,7 +52,7 @@ class RunParallelTest(unittest.TestCase):
                 )
             return hydra.compose(config_name="experiment", overrides=overrides)
 
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.supervised_pre_training_cfg = hydra_config(
                 "supervised_pre_training", self.output_dir
             )
