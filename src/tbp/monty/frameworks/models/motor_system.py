@@ -40,7 +40,7 @@ class MotorSystem:
         self._action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]] = []
 
     @property
-    def action_sequence(self) -> list[tuple[list[Action], MotorSystemState | None]]:
+    def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
 
     def post_episode(self) -> None:
