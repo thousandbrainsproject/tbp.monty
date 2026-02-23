@@ -74,11 +74,14 @@ for step in range(steps): # steps - number of interaction steps
         s_plan = s_real
         for depth in range(depth_max): 
             # In a loop, we move depth-first and breadth-first.
+            The prefrontal cortex (PFC) generates multiple candidates.
             To select actions during planning, we determine the possible actions in the current state. We use all actions that have ever been encountered from this state s in the world model. If the model doesn't yet know any actions, we can't plan yet.
             We use the metrics N(s), N(s,a) — the number of visits and executions of an action from a state.
             For the planning iteration, we take unused actions and select the top_k most promising ones according to the heuristic metric adv(s). For example, adv(s) could be the absolute value of the inverse distance from the grabber to the target. 
             2) For each child, there is a separate rollout and backup.
+            The hippocampus "plays out" outcomes.
             for _, a_child, s2_child in top_k:
+                The orbitofrontal cortex (OFC) and ventromedial PFC (vmPFC) transform information about action options into "subjective value".
                 r_child = reward_model(s, a_child, s2_child)
                 # We are moving towards a state according to the model with greater adv(s)
                 G_tail = rollout_value(s2_child) 
@@ -96,6 +99,7 @@ for step in range(steps): # steps - number of interaction steps
                 This is analogous to backpropagation in neural networks.
                 
             3) Select the best action in state (s) taking into account backups according to the world model
+                The basal ganglia (BG) decide which plan to proceed with, when to slow down/stop, and how to adapt future choices based on rewards and errors.
                 for a in acts:
                     s2 = transition_model_step(s, a)
                     Selection criteria:
@@ -115,6 +119,7 @@ for step in range(steps): # steps - number of interaction steps
             We go through all the steps of the leaves in depth. 
             
         6) Completing the planning iteration
+        Dopamine (VTA) changes the weights in corticostriatal synapses so that the desired response is strengthened in the appropriate context.
         Rollout from the last leaf and backup along the entire path
         G_tail = rollout_value(s_plan)
         G_ret = G_tail
@@ -127,11 +132,13 @@ for step in range(steps): # steps - number of interaction steps
             
 
     7) After preliminary planning, selecting the action based on the Policy model with the maximum value Q(s, a)
+    The basal ganglia (BG) decide which plan to proceed with, when to slow down/stop, and how to adapt future choices based on rewards and errors.
     
     8) Performing an action in a real environment, an example from MuJoCo
     obs, r, terminated, truncated, info = env.step(a)
     
     9) After the action in the real environment we execute:
+    Dopamine (VTA) changes the weights in corticostriatal synapses so that the desired response is strengthened in the appropriate context.
     # One-step TD update
     target = r
     nxt_acts = available_actions(s2)
@@ -143,6 +150,7 @@ for step in range(steps): # steps - number of interaction steps
     push_replay(abs(delta), s, a)
 
     # Prioritized backups of predecessors according to the current World model
+    Also, during sleep, the brain “replays” (reactivates) recent experiences and, due to this, strengthens the necessary connections.
     cnt = 0
     while replay_pq and cnt < limit:
         negp, (s, a) = heapq.heappop(replay_pq)
