@@ -66,18 +66,11 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-class PolicyStatus(Enum):
-    READY = "ready"
-    BUSY = "busy"
-
-
 @dataclass
 class MotorPolicyResult:
     """Result of a motor policy."""
 
     actions: list[Action] = field(default_factory=list)
-    status: PolicyStatus = PolicyStatus.READY
-    motor_only_step: bool = False
 
 
 class MotorPolicy(abc.ABC):
@@ -206,10 +199,7 @@ class BasePolicy(MotorPolicy):
         Returns:
             A MotorPolicyResult that contains a random action.
         """
-        return MotorPolicyResult(
-            actions=[self.action_sampler.sample(self.agent_id, ctx.rng)],
-            status=PolicyStatus.READY,
-        )
+        return MotorPolicyResult([self.action_sampler.sample(self.agent_id, ctx.rng)])
 
     def post_actions(
         self,
@@ -306,10 +296,7 @@ class PredefinedPolicy(MotorPolicy):
         state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> MotorPolicyResult:
         actions = [self.action_list[self.episode_step % len(self.action_list)]]
-        return MotorPolicyResult(
-            actions=actions,
-            status=PolicyStatus.BUSY,
-        )
+        return MotorPolicyResult(actions)
 
     def get_agent_state(self, state: MotorSystemState) -> AgentState:
         return state[self.agent_id]
@@ -472,10 +459,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         if self.processed_observations.get_on_object():
             return super().dynamic_call(ctx, state)
 
-        return MotorPolicyResult(
-            actions=[self.fixme_undo_last_action()],
-            status=PolicyStatus.BUSY,
-        )
+        return MotorPolicyResult([self.fixme_undo_last_action()])
 
     def fixme_undo_last_action(
         self,
@@ -630,10 +614,7 @@ class NaiveScanPolicy(InformedPolicy):
 
         self.check_cycle_action()
         self.step_on_action += 1
-        return MotorPolicyResult(
-            actions=[self._naive_scan_actions[self.current_action_id]],
-            status=PolicyStatus.BUSY,
-        )
+        return MotorPolicyResult([self._naive_scan_actions[self.current_action_id]])
 
     def pre_episode(self) -> None:
         super().pre_episode()
@@ -902,10 +883,7 @@ class SurfacePolicy(InformedPolicy):
 
         next_action = self.get_next_action(ctx, state)
         actions = [] if next_action is None else [next_action]
-        return MotorPolicyResult(
-            actions=actions,
-            status=PolicyStatus.BUSY,
-        )
+        return MotorPolicyResult(actions)
 
     def post_actions(self, actions: list[Action]) -> None:
         """Temporary SurfacePolicy post_actions to distinguish types of last action.
