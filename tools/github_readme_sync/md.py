@@ -18,8 +18,7 @@ def process_markdown(body: str, slug: str) -> dict:
         raise ValueError("No frontmatter found in the document")
     doc["title"] = frontmatter.get("title", "")
     doc["hidden"] = (
-        frontmatter.get("hidden", False)
-        or frontmatter.get("status") == "completed"
+        frontmatter.get("hidden", False) or frontmatter.get("status") == "completed"
     )
     if "description" in frontmatter:
         doc["description"] = frontmatter.get("description", "")
