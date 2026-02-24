@@ -191,7 +191,7 @@ class EnvironmentInterface:
         self.motor_system._state = MotorSystemState(proprioceptive_state)
 
     def post_episode(self):
-        self.motor_system.post_episode()
+        pass
 
     def pre_epoch(self):
         pass
@@ -865,7 +865,6 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         )
 
     def post_episode(self):
-        self.motor_system.post_episode()
         self.cycle_object()
         self.episodes += 1
 
@@ -960,7 +959,6 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         )
 
     def post_episode(self):
-        self.motor_system.post_episode()
         self.cycle_object()
         self.episodes += 1
 
@@ -1050,7 +1048,6 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self.change_scene_by_idx(0)
 
     def post_episode(self):
-        self.motor_system.post_episode()
         self.cycle_scene()
         self.episodes += 1
 

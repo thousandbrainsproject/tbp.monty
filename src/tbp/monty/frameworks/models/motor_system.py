@@ -44,10 +44,6 @@ class MotorSystem:
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
 
-    def post_episode(self) -> None:
-        """Post episode hook."""
-        self._policy.post_episode()
-
     def pre_episode(self) -> None:
         """Pre episode hook."""
         self._policy.pre_episode()
