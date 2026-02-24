@@ -136,11 +136,6 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def post_episode(self) -> None:
-        """Post episode hook."""
-        pass
-
-    @abc.abstractmethod
     def pre_episode(self) -> None:
         """Pre episode hook."""
         pass
@@ -188,9 +183,6 @@ class BasePolicy(MotorPolicy):
         self.agent_id = agent_id
         self.action_sampler = action_sampler
 
-        self.episode_step = 0
-        self.episode_count = 0
-
     def dynamic_call(
         self,
         ctx: RuntimeContext,
@@ -212,17 +204,11 @@ class BasePolicy(MotorPolicy):
         """
         return MotorPolicyResult([self.action_sampler.sample(self.agent_id, ctx.rng)])
 
-    def post_actions(
-        self,
-        actions: list[Action],  # noqa: ARG002
-    ) -> None:
-        self.episode_step += 1
+    def post_actions(self, actions: list[Action]) -> None:
+        pass
 
     def pre_episode(self) -> None:
-        self.episode_step = 0
-
-    def post_episode(self):
-        self.episode_count += 1
+        pass
 
     ###
     # Other required abstract methods, methods called by Monty or Environment Interface
@@ -259,10 +245,10 @@ class BasePolicy(MotorPolicy):
         return agent_state.motor_only_step
 
     def state_dict(self):
-        return {"episode_step": self.episode_step}
+        return {}
 
-    def load_state_dict(self, state_dict):
-        self.episode_step = state_dict["episode_step"]
+    def load_state_dict(self, state_dict: dict[str, Any]):
+        pass
 
 
 class PredefinedPolicy(MotorPolicy):
@@ -298,7 +284,6 @@ class PredefinedPolicy(MotorPolicy):
         self.agent_id = agent_id
         self.action_list: list[Action] = PredefinedPolicy.read_action_file(file_name)
         self.episode_step = 0
-        self.episode_count = 0
         self.use_goal_state_driven_actions = False
 
     def dynamic_call(
@@ -325,9 +310,6 @@ class PredefinedPolicy(MotorPolicy):
 
     def pre_episode(self) -> None:
         self.episode_step = 0
-
-    def post_episode(self):
-        self.episode_count += 1
 
     def state_dict(self) -> dict[str, Any]:
         return {"episode_step": self.episode_step}
@@ -567,7 +549,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         actions: list[Action],
     ) -> None:
         self.actions = actions
-        self.episode_step += 1
 
 
 class NaiveScanPolicy(InformedPolicy):
