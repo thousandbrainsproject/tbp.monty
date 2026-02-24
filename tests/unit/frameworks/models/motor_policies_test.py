@@ -28,6 +28,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
     BasePolicy,
     PredefinedPolicy,
@@ -247,9 +248,10 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
         )
         cycle_length = len(policy.action_list)
         ctx = RuntimeContext(rng=np.random.RandomState(42))
+        observations = Observations()
         returned_actions: list[Action] = []
         for _ in range(2 * cycle_length):
-            result = policy.dynamic_call(ctx)
+            result = policy.dynamic_call(ctx, observations)
             assert len(result.actions) == 1, "Expected one action"
             returned_actions.append(result.actions[0])
             policy.post_actions(result.actions)

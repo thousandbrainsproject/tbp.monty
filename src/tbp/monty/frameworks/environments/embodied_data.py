@@ -162,7 +162,7 @@ class EnvironmentInterface:
             # Return first observation after 'reset' before any action is applied
             return self._observation
 
-        actions = self.motor_system(ctx)
+        actions = self.motor_system(ctx, self._observation)
         self._observation, proprioceptive_state = self._step(actions)
         self.motor_system._state = MotorSystemState(proprioceptive_state)
         return self._observation
@@ -478,7 +478,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         attempting_to_find_object = False
         actions = []
         try:
-            actions = self.motor_system(ctx)
+            actions = self.motor_system(ctx, self._observation)
         except ObjectNotVisible:
             # Note: Only SurfacePolicy raises ObjectNotVisible.
             attempting_to_find_object = True
