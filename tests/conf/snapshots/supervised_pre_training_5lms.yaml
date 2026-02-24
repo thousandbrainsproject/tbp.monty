@@ -400,7 +400,6 @@ experiment:
         - 1.0
         get_all_points: true
         use_semantic_sensor: false
-      rng: null
       env_interface_config: null
     train_env_interface_args:
       parent_to_child_mapping: null
