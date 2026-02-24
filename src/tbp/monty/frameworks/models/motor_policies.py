@@ -442,6 +442,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
     def pre_episode(self) -> None:
         self._processed_observations = None
+        self._undo_action = None
         if self.use_goal_state_driven_actions:
             JumpToGoalStateMixin.pre_episode(self)
 
@@ -454,8 +455,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     def dynamic_call(
         self,
         ctx: RuntimeContext,
-        observations: Observations,
-        state: MotorSystemState | None = None,
+        observations: Observations,  # noqa: ARG002
+        state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
 
