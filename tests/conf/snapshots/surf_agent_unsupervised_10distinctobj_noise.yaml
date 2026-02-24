@@ -171,7 +171,7 @@ experiment:
               distance: 0.01
             is_surface_sm: true
             noise_params: ${benchmarks.default_all_noise_params}
-          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
         sensor_module_1:
           sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
           sensor_module_args:

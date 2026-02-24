@@ -9,8 +9,12 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 
@@ -32,6 +36,13 @@ class MotorSystem:
         """
         self._policy = policy
         self._state = state
+        # For each step, we store the actions produced by the policy and the current
+        # motor system state as a (actions, state) tuple.
+        self._action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]] = []
+
+    @property
+    def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
+        return self._action_sequence
 
     def post_episode(self) -> None:
         """Post episode hook."""
@@ -40,16 +51,27 @@ class MotorSystem:
     def pre_episode(self) -> None:
         """Pre episode hook."""
         self._policy.pre_episode()
+        self._action_sequence = []
 
-    def __call__(self, ctx: RuntimeContext) -> list[Action]:
+    def __call__(self, ctx: RuntimeContext, observations: Observations) -> list[Action]:
         """Defines the structure for __call__.
 
         Delegates to the motor policy.
 
         Args:
             ctx: The runtime context.
+            observations: The observations from the environment.
 
         Returns:
             The action to take.
         """
-        return self._policy(ctx, self._state)
+        policy_result = self._policy(ctx, observations, self._state)
+
+        # TODO: Must change when we have multiple agents.
+        if self._state is not None:
+            agent_id = self._policy.agent_id
+            self._state[agent_id].motor_only_step = policy_result.motor_only_step
+
+        state_copy = self._state.convert_motor_state() if self._state else None
+        self._action_sequence.append((policy_result.actions, state_copy))
+        return policy_result.actions

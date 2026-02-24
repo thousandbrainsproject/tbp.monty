@@ -40,9 +40,9 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 
 __all__ = [
+    "CameraSM",
     "DefaultMessageNoise",
     "FeatureChangeFilter",
-    "HabitatSM",
     "MessageNoise",
     "NoMessageNoise",
     "ObservationProcessor",
@@ -533,8 +533,8 @@ class DefaultMessageNoise(MessageNoise):
         return new_feat_val
 
 
-class HabitatSM(SensorModule):
-    """Sensor Module that turns Habitat camera obs into features at locations.
+class CameraSM(SensorModule):
+    """Sensor Module that turns RGBD camera observations into features at locations.
 
     Takes in camera rgba and depth input and calculates locations from this.
     It also extracts features which are currently: on_object, rgba, surface_normal,
@@ -586,7 +586,7 @@ class HabitatSM(SensorModule):
             is_surface_sm=is_surface_sm,
         )
         # TODO: With DefaultMessageNoise not getting RNG on init anymore,
-        #       then we can initialize HabitatSM with MessageNoise, instead
+        #       then we can initialize CameraSM with MessageNoise, instead
         #       of noise_params.
         if noise_params:
             self._message_noise: MessageNoise = DefaultMessageNoise(

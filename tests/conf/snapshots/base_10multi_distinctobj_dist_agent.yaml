@@ -153,7 +153,7 @@ experiment:
           learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
       sensor_module_configs:
         sensor_module_0:
-          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
           sensor_module_args:
             sensor_module_id: patch
             features:

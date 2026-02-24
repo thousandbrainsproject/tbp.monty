@@ -184,10 +184,13 @@ class EvidenceLMTest(BaseGraphTest):
             [0, 0, 0],
             "Should have rotation 0, 0, 0 as a possible pose.",
         )
-        self.assertListEqual(
-            list(graph_lm.get_possible_poses()["new_object0"][-1]),
-            [180.0, 0.0, 180.0],
-            "Since have symmtry here 180, 0, 180 should also be a possible pose.",
+        symmetry_pose = np.mod(
+            np.array(graph_lm.get_possible_poses()["new_object0"][-1], dtype=float),
+            360.0,
+        )
+        self.assertTrue(
+            np.allclose(symmetry_pose, np.array([180.0, 0.0, 180.0])),
+            "Since we have symmetry here, 180, 0, 180 should also be a possible pose.",
         )
 
     def test_same_sequence_recognition_elm(self):
