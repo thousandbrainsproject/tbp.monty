@@ -16,6 +16,7 @@ from typing import Tuple
 import habitat_sim
 import quaternion as qt
 from habitat_sim.agent import ActionSpec, ActuationSpec, AgentConfiguration, AgentState
+from habitat_sim.sensor import SensorType
 from typing_extensions import Literal
 
 from tbp.monty.frameworks.agents import AgentID
@@ -73,6 +74,7 @@ class HabitatAgent:
         self.height = height
         self.sensors: list[SensorConfig] = []
         self.habitat_to_monty_sensor_id_map: dict[str, str] = {}
+        self.habitat_sensor_to_monty_modality_map: dict[str, str] = {}
 
     def get_spec(self) -> AgentConfiguration:
         """Return a habitat-sim agent configuration.
@@ -83,12 +85,20 @@ class HabitatAgent:
         spec = AgentConfiguration()
         spec.height = self.height
         self.habitat_to_monty_sensor_id_map.clear()
+        self.habitat_sensor_to_monty_modality_map.clear()
+        sensor_type_to_modality_map = {
+            SensorType.COLOR: "rgba",
+            SensorType.DEPTH: "depth",
+            SensorType.SEMANTIC: "semantic",
+        }
         for sensor in self.sensors:
             sensor_specs = sensor.get_specs()
             for sensor_spec in sensor_specs:
                 habitat_id = sensor_spec.uuid
                 monty_id = sensor.sensor_id
+                modality_id = sensor_type_to_modality_map[sensor_spec.sensor_type]
                 self.habitat_to_monty_sensor_id_map[habitat_id] = monty_id
+                self.habitat_sensor_to_monty_modality_map[habitat_id] = modality_id
             spec.sensor_specifications.extend(sensor_specs)
         return spec
 
@@ -125,8 +135,9 @@ class HabitatAgent:
         # grouping habitat raw observations by sensor_id and sensor_type.
         obs_by_sensor: AgentObservations = defaultdict(dict)
         for sensor_key, data in agent_obs.items():
-            sensor_id, sensor_type = sensor_key.split(".")
-            obs_by_sensor[SensorID(sensor_id)][sensor_type] = data
+            sensor_id = self.habitat_to_monty_sensor_id_map[sensor_key]
+            modality = self.habitat_sensor_to_monty_modality_map[sensor_key]
+            obs_by_sensor[SensorID(sensor_id)][modality] = data
 
         # Call each sensor to post-process the observation data
         for sensor in self.sensors:

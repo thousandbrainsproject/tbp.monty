@@ -55,7 +55,7 @@ class FakeHabitat(HabitatActuator):
         return None
 
 
-class HabitatAcutatorTest(unittest.TestCase):
+class HabitatActuatorTest(unittest.TestCase):
     def test_action_name_concatenates_agent_id_and_name_with_period(self) -> None:
         actuator = FakeHabitat()
         action = FakeAction(agent_id=AgentID("agent1"))
