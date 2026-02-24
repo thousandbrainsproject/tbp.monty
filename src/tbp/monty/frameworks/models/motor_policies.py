@@ -71,6 +71,7 @@ class MotorPolicyResult:
     """Result of a motor policy."""
 
     actions: list[Action] = field(default_factory=list)
+    motor_only_step: bool = False
 
 
 class MotorPolicy(abc.ABC):
