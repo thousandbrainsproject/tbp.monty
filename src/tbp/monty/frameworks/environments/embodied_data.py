@@ -706,7 +706,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
         self.motor_system._state[
             self.motor_system._policy.agent_id
-        ].motor_only_step = True
+        ].motor_only_step = False
 
         # TODO refactor so that the whole of the hypothesis driven jumps
         # makes cleaner use of self.motor_system()
