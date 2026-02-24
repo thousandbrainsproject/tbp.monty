@@ -463,7 +463,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         if self._undo_action is not None:
             action = self._undo_action
-            self._undo_action = None
+            self._undo_action = self.fixme_undo_last_action(action)
             return MotorPolicyResult([action])
 
         return MotorPolicyResult([])
