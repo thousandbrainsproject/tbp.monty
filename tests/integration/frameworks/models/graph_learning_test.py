@@ -278,15 +278,8 @@ class GraphLearningTest(BaseGraphTest):
         train_stats = pd.read_csv(output_dir / "train_stats.csv")
         self.check_train_results(train_stats)
 
-        eval_stats_path = output_dir / "eval_stats.csv"
-        if self.fixed_actions_ppf_cfg.test.config.do_eval:
-            eval_stats = pd.read_csv(eval_stats_path)
-            self.check_eval_results(eval_stats)
-        else:
-            self.assertFalse(
-                eval_stats_path.exists(),
-                "PPF config has do_eval=False; eval_stats.csv should not exist.",
-            )
+        eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
+        self.check_eval_results(eval_stats)
 
     def test_fixed_actions_feat(self):
         """Like test_fixed_actions_disp but using point pair features for matching."""
