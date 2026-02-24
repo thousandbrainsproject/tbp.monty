@@ -66,6 +66,12 @@ class MotorSystem:
             The action to take.
         """
         policy_result = self._policy(ctx, observations, self._state)
+
+        # TODO: Must change when we have multiple agents.
+        if self._state is not None:
+            agent_id = self._policy.agent_id
+            self._state[agent_id].motor_only_step = policy_result.motor_only_step
+
         state_copy = self._state.convert_motor_state() if self._state else None
         self._action_sequence.append((policy_result.actions, state_copy))
         return policy_result.actions

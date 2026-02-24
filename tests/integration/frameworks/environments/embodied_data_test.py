@@ -13,8 +13,10 @@ import unittest
 from pathlib import Path
 
 import hydra
+import magnum
 import numpy as np
 import numpy.typing as npt
+import quaternion as qt
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.agents import AgentID
@@ -41,6 +43,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
     MotorSystemState,
     ProprioceptiveState,
 )
@@ -94,7 +97,16 @@ class FakeEnvironmentRel(SimulatedObjectEnvironment):
                 )
             }
         )
-        return obs, ProprioceptiveState({})
+        proprioceptive_state = ProprioceptiveState(
+            {
+                AGENT_ID: AgentState(
+                    sensors={},
+                    position=magnum.Vector3(0, 0, 0),
+                    rotation=qt.quaternion(1, 0, 0, 0),
+                )
+            }
+        )
+        return obs, proprioceptive_state
 
     def remove_all_objects(self):
         pass
@@ -112,7 +124,16 @@ class FakeEnvironmentRel(SimulatedObjectEnvironment):
                 )
             }
         )
-        return obs, ProprioceptiveState({})
+        proprioceptive_state = ProprioceptiveState(
+            {
+                AGENT_ID: AgentState(
+                    sensors={},
+                    position=magnum.Vector3(0, 0, 0),
+                    rotation=qt.quaternion(1, 0, 0, 0),
+                )
+            }
+        )
+        return obs, proprioceptive_state
 
     def close(self):
         self._current_state = None
@@ -138,7 +159,16 @@ class FakeEnvironmentAbs(SimulatedObjectEnvironment):
                 )
             }
         )
-        return obs, ProprioceptiveState({})
+        proprioceptive_state = ProprioceptiveState(
+            {
+                AGENT_ID: AgentState(
+                    sensors={},
+                    position=magnum.Vector3(0, 0, 0),
+                    rotation=qt.quaternion(1, 0, 0, 0),
+                )
+            }
+        )
+        return obs, proprioceptive_state
 
     def remove_all_objects(self):
         pass
@@ -156,7 +186,16 @@ class FakeEnvironmentAbs(SimulatedObjectEnvironment):
                 )
             }
         )
-        return obs, ProprioceptiveState({})
+        proprioceptive_state = ProprioceptiveState(
+            {
+                AGENT_ID: AgentState(
+                    sensors={},
+                    position=magnum.Vector3(0, 0, 0),
+                    rotation=qt.quaternion(1, 0, 0, 0),
+                )
+            }
+        )
+        return obs, proprioceptive_state
 
     def close(self):
         self._current_state = None
