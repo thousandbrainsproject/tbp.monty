@@ -313,7 +313,11 @@ class PolicyTest(unittest.TestCase):
                 observations = exp.env_interface.step(ctx, first=(step == 0))
                 exp.model.step(ctx, observations)
 
-                last_action = exp.model.motor_system._policy.action
+                actions = exp.model.motor_system._policy.actions
+                if len(actions):
+                    last_action = actions[0]
+                else:
+                    last_action = None
 
                 if step == 3:
                     stored_action = last_action
