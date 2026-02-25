@@ -10,17 +10,18 @@
 from __future__ import annotations
 
 import uuid
-from collections import defaultdict
 from typing import Tuple
 
 import habitat_sim
 import quaternion as qt
 from habitat_sim.agent import ActionSpec, ActuationSpec, AgentConfiguration, AgentState
+from habitat_sim.sensor import SensorType
 from typing_extensions import Literal
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
+    SensorObservation,
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.simulators.habitat.sensors import (
@@ -72,7 +73,14 @@ class HabitatAgent:
         self.rotation = rotation
         self.height = height
         self.sensors: list[SensorConfig] = []
-        self.habitat_to_monty_sensor_id_map: dict[str, str] = {}
+        self.habitat_sensor_to_monty_id_modality_map: dict[
+            str, tuple[SensorID, str]  # {HabitatID: (SensorID, Modality)}
+        ] = {}
+        self.sensor_type_to_modality_map = {
+            SensorType.COLOR: "rgba",
+            SensorType.DEPTH: "depth",
+            SensorType.SEMANTIC: "semantic",
+        }
 
     def get_spec(self) -> AgentConfiguration:
         """Return a habitat-sim agent configuration.
@@ -82,13 +90,17 @@ class HabitatAgent:
         """
         spec = AgentConfiguration()
         spec.height = self.height
-        self.habitat_to_monty_sensor_id_map.clear()
+        self.habitat_sensor_to_monty_id_modality_map.clear()
         for sensor in self.sensors:
             sensor_specs = sensor.get_specs()
             for sensor_spec in sensor_specs:
                 habitat_id = sensor_spec.uuid
-                monty_id = sensor.sensor_id
-                self.habitat_to_monty_sensor_id_map[habitat_id] = monty_id
+                monty_id = SensorID(sensor.sensor_id)
+                modality_id = self.sensor_type_to_modality_map[sensor_spec.sensor_type]
+                self.habitat_sensor_to_monty_id_modality_map[habitat_id] = (
+                    monty_id,
+                    modality_id,
+                )
             spec.sensor_specifications.extend(sensor_specs)
         return spec
 
@@ -123,10 +135,12 @@ class HabitatAgent:
         # Habitat raw sensor observations are flat, where the observation key is
         # composed of the `sensor_id.sensor_type`. The default agent starts by
         # grouping habitat raw observations by sensor_id and sensor_type.
-        obs_by_sensor: AgentObservations = defaultdict(dict)
+        obs_by_sensor = AgentObservations()
         for sensor_key, data in agent_obs.items():
-            sensor_id, sensor_type = sensor_key.split(".")
-            obs_by_sensor[SensorID(sensor_id)][sensor_type] = data
+            sensor_id, modality = self.habitat_sensor_to_monty_id_modality_map[
+                sensor_key
+            ]
+            obs_by_sensor.setdefault(sensor_id, SensorObservation())[modality] = data
 
         # Call each sensor to post-process the observation data
         for sensor in self.sensors:

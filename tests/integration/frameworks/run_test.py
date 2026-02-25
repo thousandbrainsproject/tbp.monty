@@ -90,10 +90,10 @@ class MontyRunTest(unittest.TestCase):
             self.mock_agent if agent_idx == 0 else None
         )
         self.mock_sim.reset.return_value = {
-            0: {"agent_id_0.depth": np.random.rand(64, 64, 1)}
+            0: {"sensor_id_0.depth": np.random.rand(64, 64, 1)}
         }
         self.mock_sim.get_sensor_observations.side_effect = [
-            {0: {"agent_id_0.depth": obs}} for obs in FAKE_OBS
+            {0: {"sensor_id_0.depth": obs}} for obs in FAKE_OBS
         ]
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
