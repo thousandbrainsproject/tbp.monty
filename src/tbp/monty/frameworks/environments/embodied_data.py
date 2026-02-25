@@ -708,13 +708,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             self.motor_system._policy.agent_id
         ].motor_only_step = True
 
-        # TODO refactor so that the whole of the hypothesis driven jumps
-        # makes cleaner use of self.motor_system()
-        # Call post_actions (normally taken care of __call__ within
-        # self.motor_system._policy())
-        # TODO: Should be a no-op by now. Remove soon.
-        self.motor_system._policy.post_actions(self.motor_system._policy.actions)
-
         return self._observation
 
     def handle_successful_jump(self):
