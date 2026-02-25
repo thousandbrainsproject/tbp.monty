@@ -162,7 +162,7 @@ class EnvironmentInterface:
             # Return first observation after 'reset' before any action is applied
             return self._observation
 
-        actions = self.motor_system(ctx)
+        actions = self.motor_system(ctx, self._observation)
         self._observation, proprioceptive_state = self._step(actions)
         self.motor_system._state = MotorSystemState(proprioceptive_state)
         return self._observation
@@ -191,7 +191,7 @@ class EnvironmentInterface:
         self.motor_system._state = MotorSystemState(proprioceptive_state)
 
     def post_episode(self):
-        self.motor_system.post_episode()
+        pass
 
     def pre_epoch(self):
         pass
@@ -478,7 +478,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         attempting_to_find_object = False
         actions = []
         try:
-            actions = self.motor_system(ctx)
+            actions = self.motor_system(ctx, self._observation)
         except ObjectNotVisible:
             # Note: Only SurfacePolicy raises ObjectNotVisible.
             attempting_to_find_object = True
@@ -865,7 +865,6 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         )
 
     def post_episode(self):
-        self.motor_system.post_episode()
         self.cycle_object()
         self.episodes += 1
 
@@ -960,7 +959,6 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         )
 
     def post_episode(self):
-        self.motor_system.post_episode()
         self.cycle_object()
         self.episodes += 1
 
@@ -1050,7 +1048,6 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self.change_scene_by_idx(0)
 
     def post_episode(self):
-        self.motor_system.post_episode()
         self.cycle_scene()
         self.episodes += 1
 

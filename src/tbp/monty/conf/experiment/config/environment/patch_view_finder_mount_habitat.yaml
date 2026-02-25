@@ -17,4 +17,3 @@ transform:
     zooms: [10.0, 1.0] # env_init_args[agents][0].agent_args.zooms
     get_all_points: true
     use_semantic_sensor: false
-rng: null
