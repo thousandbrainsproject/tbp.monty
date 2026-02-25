@@ -1353,9 +1353,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         if self.last_surface_policy_action is None:
             return
 
-        last_action = self.last_surface_policy_action
-
-        if last_action.name == "orient_vertical":
+        if self.last_surface_policy_action.name == "orient_vertical":
             # Only append locations associated with performing a tangential
             # action, rather than some form of corrective movement; these
             # movements are performed immediately after "orient_vertical"
