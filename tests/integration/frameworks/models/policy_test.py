@@ -313,6 +313,7 @@ class PolicyTest(unittest.TestCase):
                 observations = exp.env_interface.step(ctx, first=(step == 0))
                 exp.model.step(ctx, observations)
 
+                # TODO: This should use motor system action_sequence instead.
                 actions = exp.model.motor_system._policy.actions
                 if len(actions):
                     last_action = actions[0]

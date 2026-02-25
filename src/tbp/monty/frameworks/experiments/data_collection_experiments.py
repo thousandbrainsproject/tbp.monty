@@ -72,6 +72,8 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         self.model.sensor_modules[0].processed_obs[-1]["object"] = (
             self.env_interface.primary_target["object"]
         )
+        # TODO: _policy.actions don't have anything anymore
+        #       This should probably come from motor system action_sequence.
         action_strings = [
             f"{action.agent_id}.{action.name}"
             for action in self.model.motor_system._policy.actions
