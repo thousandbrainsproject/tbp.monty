@@ -881,9 +881,10 @@ class SurfacePolicy(InformedPolicy):
             # In this case, we are on the first action, but the object view is already
             # good; therefore initialize the cycle of actions as if we had just
             # moved forward (e.g. to get a good view)
-            self.last_surface_policy_action = self.action_sampler.sample_move_forward(
-                self.agent_id, ctx.rng
-            )
+            self.actions = [
+                self.action_sampler.sample_move_forward(self.agent_id, ctx.rng),
+            ]
+            self.last_surface_policy_action = self.actions[0]
 
         next_action = self.get_next_action(ctx, state)
         actions: list[Action] = [] if next_action is None else [next_action]
@@ -1350,10 +1351,11 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         if percept is None:
             return
 
-        if self.last_surface_policy_action is None:
+        if self.actions:
+            assert len(self.actions) == 1, "Expected one action"
+            last_action = self.actions[0]
+        else:
             return
-
-        last_action = self.last_surface_policy_action
 
         if last_action.name == "orient_vertical":
             # Only append locations associated with performing a tangential
