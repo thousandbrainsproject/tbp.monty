@@ -72,18 +72,15 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         self.model.sensor_modules[0].processed_obs[-1]["object"] = (
             self.env_interface.primary_target["object"]
         )
-        # TODO: _policy.actions don't have anything anymore
-        #       This should probably come from motor system action_sequence.
-        action_strings = [
-            f"{action.agent_id}.{action.name}"
-            for action in self.model.motor_system._policy.actions
-        ]
+        action_strings = []
+        if self.model.motor_system.action_sequence:
+            actions = self.model.motor_system.action_sequence[-1][0]
+            action_strings = [f"{action.agent_id}.{action.name}" for action in actions]
+            actions_0_not_move_tangentially = actions[0].name != "move_tangentially"
+
         self.model.sensor_modules[0].processed_obs[-1]["actions"] = action_strings
         # Only include observations coming right before a move_tangentially action
-        if step > 0 and (
-            not self.model.motor_system._policy.actions
-            or self.model.motor_system._policy.actions[0].name != "move_tangentially"
-        ):
+        if step > 0 and (not action_strings or actions_0_not_move_tangentially):
             del self.model.sensor_modules[0].processed_obs[-2]
 
     def pre_episode(self):
