@@ -270,7 +270,7 @@ class GraphLearningTest(BaseGraphTest):
 
     def test_fixed_actions_ppf(self):
         """Like test_fixed_actions_disp but using point pair features for matching."""
-        exp = hydra.utils.instantiate(self.fixed_actions_disp_cfg.test)
+        exp = hydra.utils.instantiate(self.fixed_actions_ppf_cfg.test)
         with exp:
             exp.run()
 

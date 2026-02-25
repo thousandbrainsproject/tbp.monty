@@ -237,7 +237,6 @@ experiment:
         depth_clip_sensors:
         - 0
         clip_value: 0.05
-      rng: null
     train_env_interface_args:
       parent_to_child_mapping: null
       object_names:
