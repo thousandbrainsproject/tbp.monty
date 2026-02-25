@@ -161,14 +161,12 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
     def test_assign_to_processed_observations_appends_to_tangent_locs_and_tangent_norms_if_last_action_is_orient_vertical(  # noqa: E501
         self,
     ):
-        self.policy.actions = [
-            OrientVertical(
-                agent_id=self.agent_id,
-                rotation_degrees=90,
-                down_distance=1,
-                forward_distance=1,
-            )
-        ]
+        self.policy.last_surface_policy_action = OrientVertical(
+            agent_id=self.agent_id,
+            rotation_degrees=90,
+            down_distance=1,
+            forward_distance=1,
+        )
 
         self.policy.processed_observations = self.state
 
@@ -181,14 +179,13 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
         self,
     ):
         del self.state.morphological_features["pose_vectors"]
-        self.policy.actions = [
-            OrientVertical(
-                agent_id=self.agent_id,
-                rotation_degrees=90,
-                down_distance=1,
-                forward_distance=1,
-            )
-        ]
+        self.policy.last_surface_policy_action = OrientVertical(
+            agent_id=self.agent_id,
+            rotation_degrees=90,
+            down_distance=1,
+            forward_distance=1,
+        )
+
 
         self.policy.processed_observations = self.state
 
