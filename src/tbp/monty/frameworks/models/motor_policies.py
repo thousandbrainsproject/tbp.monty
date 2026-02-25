@@ -742,7 +742,10 @@ class SurfacePolicy(InformedPolicy):
 
             self.attempting_to_find_object = False
 
-            return MoveForward(agent_id=self.agent_id, distance=distance)
+            self.last_surface_policy_action = MoveForward(
+                agent_id=self.agent_id, distance=distance
+            )
+            return self.last_surface_policy_action
 
         logger.debug("Surface policy searching for object...")
 
@@ -881,14 +884,13 @@ class SurfacePolicy(InformedPolicy):
             # In this case, we are on the first action, but the object view is already
             # good; therefore initialize the cycle of actions as if we had just
             # moved forward (e.g. to get a good view)
-            self.actions = [
+            self.last_surface_policy_action = (
                 self.action_sampler.sample_move_forward(self.agent_id, ctx.rng),
-            ]
-            self.last_surface_policy_action = self.actions[0]
+            )
 
-        next_action = self.get_next_action(ctx, state)
-        actions: list[Action] = [] if next_action is None else [next_action]
-        return MotorPolicyResult(actions)
+        action = self.get_next_action(ctx, state, self.last_surface_policy_action)
+        self.last_surface_policy_action = action
+        return MotorPolicyResult([action])
 
     def post_actions(self, actions: list[Action]) -> None:
         """Temporary SurfacePolicy post_actions to distinguish types of last action.
@@ -921,11 +923,7 @@ class SurfacePolicy(InformedPolicy):
             return
 
         super().post_actions(actions)
-        if actions:
-            assert len(actions) == 1, "Expected one action"
-            self.last_surface_policy_action = actions[0]
-        else:
-            self.last_surface_policy_action = None
+
 
     def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
         """Orient the agent horizontally.
@@ -1014,8 +1012,11 @@ class SurfacePolicy(InformedPolicy):
         )
 
     def get_next_action(
-        self, ctx: RuntimeContext, state: MotorSystemState
-    ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
+        self,
+        ctx: RuntimeContext,
+        state: MotorSystemState,
+        last_action: Action,
+    ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward:
         """Retrieve next action from a cycle of four actions.
 
         First move forward to touch the object at the right distance
@@ -1030,10 +1031,12 @@ class SurfacePolicy(InformedPolicy):
 
         Returns:
             Next action in the cycle.
+
+        Raises:
+            ValueError: If the last action is not a valid action.
         """
         # TODO: Revert to last_action = self.actions once TouchObject positioning
         #       procedure is implemented
-        last_action = self.last_surface_policy_action
 
         if isinstance(last_action, MoveForward):
             return self._orient_horizontal(state)
@@ -1052,7 +1055,7 @@ class SurfacePolicy(InformedPolicy):
             # move to the desired_object_distance if it is in view
             return self._move_forward()
 
-        return None
+        raise ValueError(f"Invalid last action: {last_action}")
 
     def tangential_direction(
         self, ctx: RuntimeContext, state: MotorSystemState
