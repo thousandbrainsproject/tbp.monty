@@ -712,6 +712,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # makes cleaner use of self.motor_system()
         # Call post_actions (normally taken care of __call__ within
         # self.motor_system._policy())
+        # TODO: Should be a no-op by now. Remove soon.
         self.motor_system._policy.post_actions(self.motor_system._policy.actions)
 
         return self._observation
@@ -731,13 +732,11 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             # Results in us seamlessly transitioning into the typical
             # corrective movements (forward or orientation) of the surface-agent
             # policy
-            self.motor_system._policy.actions = [
-                MoveTangentially(
-                    agent_id=self.motor_system._policy.agent_id,
-                    distance=0.0,
-                    direction=(0, 0, 0),
-                )
-            ]
+            self.motor_system._policy.last_surface_policy_action = MoveTangentially(
+                agent_id=self.motor_system._policy.agent_id,
+                distance=0.0,
+                direction=(0, 0, 0),
+            )
 
             # TODO clean up where this is performed, and make variable names more
             #   general
