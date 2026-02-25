@@ -920,12 +920,11 @@ class SurfacePolicy(InformedPolicy):
         # TODO: Remove this once TouchObject positioning procedure is implemented
         """
         # if self.attempting_to_find_object:
-            # When the TouchObject positioning procedure is separated, there
-            # will be no post_action calls when attempting to find the object.
+        # When the TouchObject positioning procedure is separated, there
+        # will be no post_action calls when attempting to find the object.
         # return
 
         super().post_actions(actions)
-
 
     def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
         """Orient the agent horizontally.
@@ -1030,12 +1029,14 @@ class SurfacePolicy(InformedPolicy):
         Args:
             ctx: The runtime context.
             state: The current state of the motor system.
+            last_action: The last surface policy action taken.
 
         Returns:
             Next action in the cycle.
 
         Raises:
-            ValueError: If the last action is not a valid action.
+            ValueError: If the last surface policy action is not one of the action
+            types used in the cycle.
         """
         # TODO: Revert to last_action = self.actions once TouchObject positioning
         #       procedure is implemented

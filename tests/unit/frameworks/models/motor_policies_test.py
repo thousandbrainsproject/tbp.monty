@@ -186,7 +186,6 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
             forward_distance=1,
         )
 
-
         self.policy.processed_observations = self.state
 
         self.assertEqual(len(self.policy.tangent_locs), 1)
