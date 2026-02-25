@@ -742,10 +742,12 @@ class SurfacePolicy(InformedPolicy):
 
             self.attempting_to_find_object = False
 
-            self.last_surface_policy_action = MoveForward(
-                agent_id=self.agent_id, distance=distance
-            )
-            return self.last_surface_policy_action
+            # Reset action cycle state if not first time through.
+            if self.last_surface_policy_action:
+                self.last_surface_policy_action = (
+                    self.action_sampler.sample_move_tangentially(self.agent_id, ctx.rng)
+                )
+            return MoveForward(agent_id=self.agent_id, distance=distance)
 
         logger.debug("Surface policy searching for object...")
 
@@ -884,8 +886,8 @@ class SurfacePolicy(InformedPolicy):
             # In this case, we are on the first action, but the object view is already
             # good; therefore initialize the cycle of actions as if we had just
             # moved forward (e.g. to get a good view)
-            self.last_surface_policy_action = (
-                self.action_sampler.sample_move_forward(self.agent_id, ctx.rng),
+            self.last_surface_policy_action = self.action_sampler.sample_move_forward(
+                self.agent_id, ctx.rng
             )
 
         action = self.get_next_action(ctx, state, self.last_surface_policy_action)
@@ -917,10 +919,10 @@ class SurfacePolicy(InformedPolicy):
 
         # TODO: Remove this once TouchObject positioning procedure is implemented
         """
-        if self.attempting_to_find_object:
+        # if self.attempting_to_find_object:
             # When the TouchObject positioning procedure is separated, there
             # will be no post_action calls when attempting to find the object.
-            return
+        # return
 
         super().post_actions(actions)
 
@@ -1354,25 +1356,22 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         if percept is None:
             return
 
-        if self.actions:
-            assert len(self.actions) == 1, "Expected one action"
-            last_action = self.actions[0]
-        else:
+        if not (
+            self.last_surface_policy_action
+            and self.last_surface_policy_action.name == "orient_vertical"
+        ):
             return
 
-        if last_action.name == "orient_vertical":
-            # Only append locations associated with performing a tangential
-            # action, rather than some form of corrective movement; these
-            # movements are performed immediately after "orient_vertical"
-            self.tangent_locs.append(
-                percept.location,
-            )
-            if "pose_vectors" in percept.morphological_features:
-                self.tangent_norms.append(
-                    percept.morphological_features["pose_vectors"][0]
-                )
-            else:
-                self.tangent_norms.append(None)
+        # Only append locations associated with performing a tangential
+        # action, rather than some form of corrective movement; these
+        # movements are performed immediately after "orient_vertical"
+        self.tangent_locs.append(
+            percept.location,
+        )
+        if "pose_vectors" in percept.morphological_features:
+            self.tangent_norms.append(percept.morphological_features["pose_vectors"][0])
+        else:
+            self.tangent_norms.append(None)
 
     def update_action_details(self):
         """Store informaton for later logging.
