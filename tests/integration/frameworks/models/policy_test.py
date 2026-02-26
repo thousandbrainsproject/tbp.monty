@@ -434,18 +434,18 @@ class PolicyTest(unittest.TestCase):
 
                 #  Step | Action           | Motor-only? | Obs processed? | Source
                 # ------|------------------|-------------|----------------|-------------
-                #  1    | MoveForward      | True        | False          | dynamic_call
-                #  2    | OrientHorizontal | True        | False          | dynamic_call
-                #  3    | OrientVertical   | False       | True           | dynamic_call
-                #  4    | MoveTangentially | True        | False          | dynamic_call
-                #  5    | MoveForward      | True        | False          | dynamic_call
-                #  6    | OrientHorizontal | True        | False          | dynamic_call
-                #  7    | OrientVertical   | False       | True           | dynamic_call
-                #  8    | MoveTangentially | True        | False          | dynamic_call
-                #  9    | MoveForward      | True        | False          | dynamic_call
-                #  10   | OrientHorizontal | True        | False          | dynamic_call
-                #  11   | OrientVertical   | False       | True           | dynamic_call
-                #  12   | MoveTangentially | True        | False          | dynamic_call
+                #  1    | MoveForward      | True        | False          | __call__
+                #  2    | OrientHorizontal | True        | False          | __call__
+                #  3    | OrientVertical   | False       | True           | __call__
+                #  4    | MoveTangentially | True        | False          | __call__
+                #  5    | MoveForward      | True        | False          | __call__
+                #  6    | OrientHorizontal | True        | False          | __call__
+                #  7    | OrientVertical   | False       | True           | __call__
+                #  8    | MoveTangentially | True        | False          | __call__
+                #  9    | MoveForward      | True        | False          | __call__
+                #  10   | OrientHorizontal | True        | False          | __call__
+                #  11   | OrientVertical   | False       | True           | __call__
+                #  12   | MoveTangentially | True        | False          | __call__
                 # falls off object
                 #  13   | OrientHorizontal | True        | False          | touch_object
                 #  14   | OrientHorizontal | True        | False          | touch_object
@@ -462,10 +462,10 @@ class PolicyTest(unittest.TestCase):
                 #  25   | OrientVertical   | True        | False          | touch_object
                 #  26   | MoveForward      | True        | False          | touch_object
                 # back on object
-                #  27   | MoveForward      | True        | False          | dynamic_call
-                #  28   | OrientHorizontal | True        | False          | dynamic_call
-                #  29   | OrientVertical   | False       | True           | dynamic_call
-                #  30   | MoveTangentially | True        | False          | dynamic_call
+                #  27   | MoveForward      | True        | False          | __call__
+                #  28   | OrientHorizontal | True        | False          | __call__
+                #  29   | OrientVertical   | False       | True           | __call__
+                #  30   | MoveTangentially | True        | False          | __call__
                 # falls off object
                 #  31   | OrientHorizontal | True        | False          | touch_object
                 #  32   | OrientHorizontal | True        | False          | touch_object
@@ -482,10 +482,10 @@ class PolicyTest(unittest.TestCase):
                 #  43   | OrientVertical   | True        | False          | touch_object
                 #  44   | MoveForward      | True        | False          | touch_object
                 # back on object
-                #  45   | MoveForward      | True        | False          | dynamic_call
-                #  46   | OrientHorizontal | True        | False          | dynamic_call
-                #  47   | OrientVertical   | False       | True           | dynamic_call
-                #  48   | MoveTangentially | True        | False          | dynamic_call
+                #  45   | MoveForward      | True        | False          | __call__
+                #  46   | OrientHorizontal | True        | False          | __call__
+                #  47   | OrientVertical   | False       | True           | __call__
+                #  48   | MoveTangentially | True        | False          | __call__
                 # falls off object
                 #  49   | OrientHorizontal | True        | False          | touch_object
                 #  50   | OrientHorizontal | True        | False          | touch_object
@@ -501,10 +501,10 @@ class PolicyTest(unittest.TestCase):
                 #  61   | OrientVertical   | True        | False          | touch_object
                 #  62   | MoveForward      | True        | False          | touch_object
                 # back on object
-                #  63   | MoveForward      | True        | False          | dynamic_call
-                #  64   | OrientHorizontal | True        | False          | dynamic_call
-                #  65   | OrientVertical   | False       | True           | dynamic_call
-                #  66   | MoveTangentially | True        | False          | dynamic_call
+                #  63   | MoveForward      | True        | False          | __call__
+                #  64   | OrientHorizontal | True        | False          | __call__
+                #  65   | OrientVertical   | False       | True           | __call__
+                #  66   | MoveTangentially | True        | False          | __call__
                 # falls off object
                 #  67   | OrientHorizontal | True        | False          | touch_object
 

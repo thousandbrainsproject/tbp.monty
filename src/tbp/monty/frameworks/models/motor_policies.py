@@ -78,26 +78,6 @@ class MotorPolicy(abc.ABC):
     """The abstract scaffold for motor policies."""
 
     @abc.abstractmethod
-    def dynamic_call(
-        self,
-        ctx: RuntimeContext,
-        observations: Observations,
-        state: MotorSystemState | None = None,
-    ) -> MotorPolicyResult:
-        """Use this method when actions are not predefined.
-
-        Args:
-            ctx: The runtime context.
-            observations: The observations from the environment.
-            state: The current state of the motor system.
-                Defaults to None.
-
-        Returns:
-            The motor policy result.
-        """
-        pass
-
-    @abc.abstractmethod
     def get_agent_state(self, state: MotorSystemState) -> AgentState:
         """Get agent state.
 
@@ -136,13 +116,14 @@ class MotorPolicy(abc.ABC):
         """Return a serializable dict with everything needed to save/load policy."""
         pass
 
+    @abc.abstractmethod
     def __call__(
         self,
         ctx: RuntimeContext,
         observations: Observations,
         state: MotorSystemState | None = None,
     ) -> MotorPolicyResult:
-        """Select either dynamic or predefined call.
+        """Invoke motor policy to determine the next actions to take.
 
         Args:
             ctx: The runtime context.
@@ -151,9 +132,9 @@ class MotorPolicy(abc.ABC):
                 Defaults to None.
 
         Returns:
-            The actions to take.
+            The motor policy result.
         """
-        return self.dynamic_call(ctx, observations, state)
+        pass
 
 
 class BasePolicy(MotorPolicy):
@@ -172,7 +153,7 @@ class BasePolicy(MotorPolicy):
         self.agent_id = agent_id
         self.action_sampler = action_sampler
 
-    def dynamic_call(
+    def __call__(
         self,
         ctx: RuntimeContext,
         observations: Observations,  # noqa: ARG002
@@ -272,7 +253,7 @@ class PredefinedPolicy(MotorPolicy):
         self.episode_step = 0
         self.use_goal_state_driven_actions = False
 
-    def dynamic_call(
+    def __call__(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
         observations: Observations,  # noqa: ARG002
@@ -411,11 +392,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         return super().pre_episode()
 
-    ###
-    # Methods that define behavior of __call__
-    ###
-
-    def dynamic_call(
+    def __call__(
         self,
         ctx: RuntimeContext,
         observations: Observations,  # noqa: ARG002
@@ -454,10 +431,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     ) -> LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially:
         """Returns an action that undoes last action for supported actions.
 
-        Previous InformedPolicy.dynamic_call() implementation when not on object:
-
-            action, amount = (last_action, -last_amount)
-
         This implementation duplicates the functionality and the implicit
         assumption in the code and configurations that InformedPolicy is working
         with one of the following actions:
@@ -465,14 +438,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         - LookDown
         - TurnLeft
         - TurnRight
-
-        Additionally, this implementation adds support for:
         - MoveForward
         - MoveTangentially
-
-        Additional support for the above two actions is due to `-last_amount`
-        working for these actions as well. This maintains the same code functionality
-        during this refactoring.
 
         For other actions, raise ValueError explicitly.
 
@@ -552,11 +519,7 @@ class NaiveScanPolicy(InformedPolicy):
         self.current_action_id = 0
         self.step_on_action = 0
 
-    ###
-    # Methods that define behavior of __call__
-    ###
-
-    def dynamic_call(
+    def __call__(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
         observations: Observations,  # noqa: ARG002
@@ -795,10 +758,7 @@ class SurfacePolicy(InformedPolicy):
             )
         )
 
-    ###
-    # Methods that define behavior of __call__
-    ###
-    def dynamic_call(
+    def __call__(
         self,
         ctx: RuntimeContext,
         observations: Observations,  # noqa: ARG002

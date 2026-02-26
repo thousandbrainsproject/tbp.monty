@@ -517,10 +517,10 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
                 and actions[0].name != OrientVertical.action_name()
             ):
                 # We are not attempting to find the object, which means that we
-                # are executing the SurfacePolicy.dynamic_call action cycle.
+                # are executing the SurfacePolicy action cycle.
                 # Out of the four actions in the
                 # MoveForward->OrientHorizontal->OrientVertical->MoveTangentially
-                # "subroutine" defined in SurfacePolicy.dynamic_call, we only
+                # "subroutine" defined in SurfacePolicy.__call__, we only
                 # want to send data to the learning module after taking the
                 # OrientVertical action. The other three actions in the cycle
                 # are motor-only to keep the surface agent on the object.
