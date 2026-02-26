@@ -6,8 +6,8 @@ estimated-scope: medium
 improved-metric: dynamic
 output-type: PR, monty-feature
 skills: python, monty
-contributor: 
-status: open
+contributor: dlizarazoestrada
+status: in-progress
 ---
 
 This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/object-behaviors.md#implementation-in-monty).
