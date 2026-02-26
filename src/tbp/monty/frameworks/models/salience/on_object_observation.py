@@ -12,6 +12,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
+
 
 @dataclass
 class OnObjectObservation:
@@ -21,7 +23,7 @@ class OnObjectObservation:
 
 
 def on_object_observation(
-    raw_observation: dict,
+    observation: SensorObservation,
     salience_map: np.ndarray,
 ) -> OnObjectObservation:
     """Convert all raw observation data into image format.
@@ -31,16 +33,16 @@ def on_object_observation(
     the semantic_3d array into 3D locations and an on-object/surface indicator array.
 
     Args:
-        raw_observation: A sensor's raw observations dictionary.
+        observation: A sensor observation.
         salience_map: A salience map.
 
     Returns:
         The grid/matrix formatted (unraveled) on-object salience and location data,
         along with the location corresponding to the central pixel.
     """
-    rgba = raw_observation["rgba"]
+    rgba = observation["rgba"]
     grid_shape = rgba.shape[:2]
-    semantic_3d = raw_observation["semantic_3d"]
+    semantic_3d = observation["semantic_3d"]
     locations = semantic_3d[:, 0:3].reshape(grid_shape + (3,))
     on_object = semantic_3d[:, 3].reshape(grid_shape).astype(int) > 0
 

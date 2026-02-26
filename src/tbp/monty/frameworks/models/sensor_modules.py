@@ -59,9 +59,9 @@ logger = logging.getLogger(__name__)
 class SnapshotTelemetry:
     """Keeps track of raw observation snapshot telemetry."""
 
-    def __init__(self):
-        self.poses = []
-        self.raw_observations = []
+    def __init__(self) -> None:
+        self.poses: list[dict[str, np.ndarray]] = []
+        self.raw_observations: list[SensorObservation] = []
 
     def reset(self):
         """Reset the snapshot telemetry."""
@@ -69,7 +69,10 @@ class SnapshotTelemetry:
         self.poses = []
 
     def raw_observation(
-        self, raw_observation, rotation: qt.quaternion, position: np.ndarray
+        self,
+        raw_observation: SensorObservation,
+        rotation: qt.quaternion,
+        position: np.ndarray,
     ):
         """Record a snapshot of a raw observation and its pose information.
 
@@ -86,7 +89,9 @@ class SnapshotTelemetry:
             )
         )
 
-    def state_dict(self) -> dict[str, list[np.ndarray]]:
+    def state_dict(
+        self,
+    ) -> dict[str, list[SensorObservation] | list[dict[str, np.ndarray]]]:
         """Returns recorded raw observation snapshots.
 
         Returns:
@@ -400,7 +405,7 @@ class Probe(SensorModule):
 
         self.is_exploring = False
         self.sensor_module_id = sensor_module_id
-        self.state = None
+        self.state: SensorState | None = None
         self.save_raw_obs = save_raw_obs
 
         self._snapshot_telemetry = SnapshotTelemetry()
@@ -420,11 +425,12 @@ class Probe(SensorModule):
     def step(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
-        data,
+        observation: SensorObservation,
+        motor_only_step: bool = False,  # noqa: ARG002
     ) -> State | None:
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data, self.state.rotation, self.state.position
+                observation, self.state.rotation, self.state.position
             )
 
         return None
@@ -629,12 +635,18 @@ class CameraSM(SensorModule):
         state_dict.update(processed_observations=self.processed_obs)
         return state_dict
 
-    def step(self, ctx: RuntimeContext, data) -> State | None:
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observation: SensorObservation,
+        motor_only_step: bool = False,
+    ) -> State | None:
         """Turn raw observations into dict of features at location.
 
         Args:
             ctx: The runtime context.
-            data: Raw observations.
+            observation: Raw sensor observation.
+            motor_only_step: Whether the current step is a motor-only step.
 
         Returns:
             State with features and morphological features. Noise may be added.
@@ -642,13 +654,16 @@ class CameraSM(SensorModule):
         """
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data, self.state.rotation, self.state.position
+                observation, self.state.rotation, self.state.position
             )
 
-        observed_state = self._observation_processor.process(data)
+        observed_state = self._observation_processor.process(observation)
 
         if observed_state.use_state:
             observed_state = self._message_noise(observed_state, rng=ctx.rng)
+
+        if motor_only_step:
+            observed_state.use_state = False
 
         observed_state = self._state_filter(observed_state)
 

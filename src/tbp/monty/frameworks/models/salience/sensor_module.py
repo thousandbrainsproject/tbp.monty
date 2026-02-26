@@ -12,7 +12,10 @@ import numpy as np
 import quaternion as qt
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    SensorModule,
+    SensorObservation,
+)
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
     on_object_observation,
@@ -72,24 +75,32 @@ class HabitatSalienceSM(SensorModule):
             rotation=agent.rotation * sensor.rotation,
         )
 
-    def step(self, ctx: RuntimeContext, data) -> State | None:
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observation: SensorObservation,
+        motor_only_step: bool = False,  # noqa: ARG002
+    ) -> State | None:
         """Generate goal states for the current step.
 
         Args:
             ctx: The runtime context.
-            data: Raw sensor observations
+            observation: Sensor observation.
+            motor_only_step: Whether the current step is a motor-only step.
 
         Returns:
             A Percept, if one is generated.
         """
         if self._save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data, self.state.rotation, self.state.position
+                observation, self.state.rotation, self.state.position
             )
 
-        salience_map = self._salience_strategy(rgba=data["rgba"], depth=data["depth"])
+        salience_map = self._salience_strategy(
+            rgba=observation["rgba"], depth=observation["depth"]
+        )
 
-        on_object = on_object_observation(data, salience_map)
+        on_object = on_object_observation(observation, salience_map)
         ior_weights = self._return_inhibitor(
             on_object.center_location, on_object.locations
         )
