@@ -22,7 +22,6 @@ from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import (
     Action,
     MoveTangentially,
-    OrientVertical,
     SetAgentPose,
     SetSensorRotation,
 )
@@ -46,7 +45,6 @@ from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
     InformedPolicy,
-    ObjectNotVisible,
     SurfacePolicy,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
