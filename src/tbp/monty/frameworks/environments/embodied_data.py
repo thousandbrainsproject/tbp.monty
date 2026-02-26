@@ -498,7 +498,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             self.motor_system._policy.touch_search_amount = 0
 
         self._observation, proprioceptive_state = self._step(actions)
-        motor_system_state = MotorSystemState(proprioceptive_state)
+        self.motor_system._state = MotorSystemState(proprioceptive_state)
 
         # TODO: Refactor this so that all of this is contained within the
         #       SurfacePolicy and/or positioning procedure.
@@ -521,8 +521,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
                 # OrientVertical action. The other three actions in the cycle
                 # are motor-only to keep the surface agent on the object.
                 self.motor_system.motor_only_step = True
-
-        self.motor_system._state = motor_system_state
 
         return self._observation
 
