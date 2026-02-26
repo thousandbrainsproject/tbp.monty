@@ -39,9 +39,9 @@ class MotorSystem:
         # For each step, we store the actions produced by the policy and the current
         # motor system state as a (actions, state) tuple.
         self._action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]] = []
-        # TODO: When the motor system is encapsulated within Monty, then this attribute
-        #       should be moved to Monty itself instead.
 
+        # TODO: When the motor system is encapsulated within Monty, then motor_only_step
+        #       attribute should be moved to Monty itself instead.
         self.motor_only_step = False
 
     @property
