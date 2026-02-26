@@ -416,7 +416,6 @@ class Probe(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
-        self.motor_only_step = agent.motor_only_step
 
     def step(
         self,
@@ -624,7 +623,6 @@ class CameraSM(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
-        self.motor_only_step = agent.motor_only_step
 
     def state_dict(self):
         state_dict = self._snapshot_telemetry.state_dict()
@@ -651,11 +649,6 @@ class CameraSM(SensorModule):
 
         if observed_state.use_state:
             observed_state = self._message_noise(observed_state, rng=ctx.rng)
-
-        if self.motor_only_step:
-            # Set interesting-features flag to False, as should not be passed to
-            # LM, even in e.g. pre-training experiments that might otherwise do so
-            observed_state.use_state = False
 
         observed_state = self._state_filter(observed_state)
 

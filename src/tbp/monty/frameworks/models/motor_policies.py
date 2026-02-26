@@ -90,18 +90,6 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def is_motor_only_step(self, state: MotorSystemState) -> bool:
-        """Check if the current step is a motor-only step.
-
-        Args:
-            state: The current state of the motor system.
-
-        Returns:
-            True if the current step is a motor-only step, False otherwise.
-        """
-        pass
-
-    @abc.abstractmethod
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
         """Take a state dict as an argument and set state for policy."""
         pass
@@ -195,22 +183,6 @@ class BasePolicy(MotorPolicy):
         """
         return state[self.agent_id]
 
-    def is_motor_only_step(self, state: MotorSystemState) -> bool:
-        """Check if the current step is a motor-only step.
-
-        TODO: This information is currently stored in motor system state, but
-        should be stored in the policy state instead as it is tracking policy
-        state, not motor system state. This will remove MotorSystemState param.
-
-        Args:
-            state: The current state of the motor system.
-
-        Returns:
-            True if the current step is a motor-only step, False otherwise.
-        """
-        agent_state = self.get_agent_state(state)
-        return agent_state.motor_only_step
-
     def state_dict(self):
         return {}
 
@@ -265,10 +237,6 @@ class PredefinedPolicy(MotorPolicy):
 
     def get_agent_state(self, state: MotorSystemState) -> AgentState:
         return state[self.agent_id]
-
-    def is_motor_only_step(self, state: MotorSystemState) -> bool:
-        agent_state = self.get_agent_state(state)
-        return agent_state.motor_only_step
 
     def pre_episode(self) -> None:
         self.episode_step = 0

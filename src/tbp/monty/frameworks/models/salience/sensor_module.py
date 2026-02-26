@@ -71,7 +71,6 @@ class HabitatSalienceSM(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
-        self.motor_only_step = agent.motor_only_step
 
     def step(self, ctx: RuntimeContext, data) -> State | None:
         """Generate goal states for the current step.
