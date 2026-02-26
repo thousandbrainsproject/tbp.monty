@@ -127,15 +127,6 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def post_actions(self, actions: list[Action]) -> None:
-        """This post actions hook will automatically be called at the end of __call__.
-
-        Args:
-            actions: The actions to process the hook for.
-        """
-        pass
-
-    @abc.abstractmethod
     def pre_episode(self) -> None:
         """Pre episode hook."""
         pass
@@ -162,9 +153,7 @@ class MotorPolicy(abc.ABC):
         Returns:
             The actions to take.
         """
-        result = self.dynamic_call(ctx, observations, state)
-        self.post_actions(result.actions)
-        return result
+        return self.dynamic_call(ctx, observations, state)
 
 
 class BasePolicy(MotorPolicy):
@@ -203,9 +192,6 @@ class BasePolicy(MotorPolicy):
             A MotorPolicyResult that contains a random action.
         """
         return MotorPolicyResult([self.action_sampler.sample(self.agent_id, ctx.rng)])
-
-    def post_actions(self, actions: list[Action]) -> None:
-        pass
 
     def pre_episode(self) -> None:
         pass
@@ -293,6 +279,7 @@ class PredefinedPolicy(MotorPolicy):
         state: MotorSystemState | None = None,  # noqa: ARG002
     ) -> MotorPolicyResult:
         actions = [self.action_list[self.episode_step % len(self.action_list)]]
+        self.episode_step += 1
         return MotorPolicyResult(actions)
 
     def get_agent_state(self, state: MotorSystemState) -> AgentState:
@@ -301,12 +288,6 @@ class PredefinedPolicy(MotorPolicy):
     def is_motor_only_step(self, state: MotorSystemState) -> bool:
         agent_state = self.get_agent_state(state)
         return agent_state.motor_only_step
-
-    def post_actions(
-        self,
-        actions: list[Action],  # noqa: ARG002
-    ) -> None:
-        self.episode_step += 1
 
     def pre_episode(self) -> None:
         self.episode_step = 0
@@ -405,7 +386,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
-        self.actions: list[Action] = []
         self.use_goal_state_driven_actions = use_goal_state_driven_actions
         if self.use_goal_state_driven_actions:
             JumpToGoalStateMixin.__init__(self)
@@ -546,12 +526,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         raise TypeError(f"Invalid action: {last_action}")
 
-    def post_actions(
-        self,
-        actions: list[Action],
-    ) -> None:
-        self.actions = actions
-
 
 class NaiveScanPolicy(InformedPolicy):
     """Policy that just moves left and right along the object."""
@@ -684,7 +658,6 @@ class SurfacePolicy(InformedPolicy):
 
     def pre_episode(self) -> None:
         self.tangential_angle = 0
-        self.actions = []
         self.touch_search_amount = 0  # Track how many rotations the agent has made
         # along the horizontal plane searching for an object; when this reaches 360,
         # try searching along the vertical plane, or for 720, performing a random
@@ -886,45 +859,9 @@ class SurfacePolicy(InformedPolicy):
             )
 
         next_action = self.get_next_action(ctx, state)
+        self.last_surface_policy_action = next_action
         actions: list[Action] = [] if next_action is None else [next_action]
         return MotorPolicyResult(actions)
-
-    def post_actions(self, actions: list[Action]) -> None:
-        """Temporary SurfacePolicy post_actions to distinguish types of last action.
-
-        Once TouchObject positioning procedure exists, it will not run through the
-        Monty step loop and will not register any touch object actions as last action.
-
-        Currently, when SurfacePolicy.dynamic_call resumes, it sees the last action
-        of a touch object, which is always MoveForward. As such, the SurfacePolicy
-        resumes by always taking the OrientHorizontal action.
-
-        When the TouchObject positioning procedure is complete, the SurfacePolicy
-        will never see the TouchObject actions, so when it resumes, the last action
-        will be whatever the last action the SurfacePolicy took.
-
-        For now, we specifically track only the SurfacePolicy actions in the
-        last_surface_policy_action attribute, in order to prepare the code
-        for TouchObject positioning procedure.
-
-        Args:
-            actions: The actions that were just taken.
-            state: The current state of the motor system.
-                Defaults to None.
-
-        # TODO: Remove this once TouchObject positioning procedure is implemented
-        """
-        if self.attempting_to_find_object:
-            # When the TouchObject positioning procedure is separated, there
-            # will be no post_action calls when attempting to find the object.
-            return
-
-        super().post_actions(actions)
-        if actions:
-            assert len(actions) == 1, "Expected one action"
-            self.last_surface_policy_action = actions[0]
-        else:
-            self.last_surface_policy_action = None
 
     def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
         """Orient the agent horizontally.
@@ -1030,8 +967,6 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             Next action in the cycle.
         """
-        # TODO: Revert to last_action = self.actions once TouchObject positioning
-        #       procedure is implemented
         last_action = self.last_surface_policy_action
 
         if isinstance(last_action, MoveForward):

@@ -252,7 +252,6 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
             result = policy.dynamic_call(ctx, observations)
             assert len(result.actions) == 1, "Expected one action"
             returned_actions.append(result.actions[0])
-            policy.post_actions(result.actions)
 
         for i in range(cycle_length):
             first_occurrence = returned_actions[i]
