@@ -490,7 +490,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             self._is_undoing_jump = True
             return MotorPolicyResult(self._undo_jump_actions)
 
-        self._handle_successful_jump()
+        logger.debug(
+            "Object visible, maintaining new pose for hypothesis-testing action"
+        )
         self._reset_jump_state()
         return None
 
@@ -662,15 +664,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         if should_undo:
             logger.debug("No object visible from hypothesis jump, or inside object!")
         return should_undo
-
-    def _handle_successful_jump(self):
-        """Deal with the results of a successful hypothesis-testing jump.
-
-        A successful jump is "on-object", i.e. the object is perceived by the sensor.
-        """
-        logger.debug(
-            "Object visible, maintaining new pose for hypothesis-testing action"
-        )
 
     def _assert_undo_jump_was_successful(self, state: MotorSystemState) -> None:
         assert self._pre_jump_state is not None, "Pre-jump state is not set"
