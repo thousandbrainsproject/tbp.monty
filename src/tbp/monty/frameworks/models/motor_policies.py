@@ -597,7 +597,7 @@ class SurfacePolicy(InformedPolicy):
 
         return super().pre_episode()
 
-    def touch_object(
+    def _touch_object(
         self,
         ctx: RuntimeContext,
         observations: Observations,
@@ -761,7 +761,7 @@ class SurfacePolicy(InformedPolicy):
             logger.debug("Initiating attempts to touch object")
 
             assert state is not None
-            action = self.touch_object(
+            action = self._touch_object(
                 ctx,
                 observations,
                 # TODO: Eliminate this hardcoded sensor ID

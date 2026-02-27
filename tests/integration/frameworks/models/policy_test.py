@@ -434,7 +434,9 @@ class PolicyTest(unittest.TestCase):
 
                 #  Step | Action           | Motor-only? | Processed? | Source
                 # ------|------------------|-------------|------------|-------------
-                #  1    | MoveForward      | True        | False      | get_next_action
+                # start too close to object (MoveForward negative distance)
+                #  1    | MoveForward      | True        | False      | touch_object
+                # correct distance to object
                 #  2    | OrientHorizontal | True        | False      | get_next_action
                 #  3    | OrientVertical   | False       | True       | get_next_action
                 #  4    | MoveTangentially | True        | False      | get_next_action
