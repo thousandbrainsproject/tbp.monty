@@ -379,6 +379,11 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self._processed_observations = None
         self._undo_action: Action | None = None
 
+        self._is_jumping: bool = False
+        self._is_undoing_jump: bool = False
+        self._pre_jump_state: AgentState | None = None
+        self._undo_jump_actions: list[Action] = []
+
     @property
     def processed_observations(self) -> State | None:
         return self._processed_observations
@@ -417,22 +422,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             A MotorPolicyResult that contains the actions to take.
         """
         if self.use_goal_state_driven_actions:
-            if self._is_undoing_jump:
-                self._assert_undo_jump_was_successful(state)
-                self._reset_jump_state()
-
-            if self._is_jumping:
-                if self._should_undo_jump(observations):
-                    self._handle_failed_jump()
-                    self._is_undoing_jump = True
-                    return MotorPolicyResult(self._undo_jump_actions)
-                self._handle_successful_jump()
-                self._reset_jump_state()
-
-            if self.driving_goal_state:
-                self._init_jump(state)
-                self._is_jumping = True
-                return MotorPolicyResult(self._jump_actions)
+            assert state is not None
+            result = self._goal_driven_actions(observations, state)
+            if result is not None:
+                return result
 
         if self.processed_observations.get_on_object():
             action = self.action_sampler.sample(self.agent_id, ctx.rng)
@@ -445,6 +438,61 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             return MotorPolicyResult([action])
 
         return MotorPolicyResult([])
+
+    def _goal_driven_actions(
+        self, observations: Observations, state: MotorSystemState
+    ) -> MotorPolicyResult | None:
+        """Handle Goal-driven processing and maybe return actions to take.
+
+        Args:
+            observations: The observations from the environment.
+            state: The current state of the motor system.
+
+        Returns:
+            Either a `MotorPolicyResult`, which should be immediately returned by
+            the caller, or `None` which allows the caller to continue execution.
+        """
+        if self._is_jumping:
+            result = self._jump_outcome(observations, state)
+            if result is not None:
+                return result
+
+        if self.driving_goal_state:
+            actions = self._jump(state)
+            return MotorPolicyResult(actions)
+
+        return None
+
+    def _jump_outcome(
+        self,
+        observations: Observations,
+        state: MotorSystemState,
+    ) -> MotorPolicyResult | None:
+        """Handle the outcome of a jump.
+
+        Args:
+            observations: The observations from the environment.
+            state: The current state of the motor system.
+
+        Returns:
+            Either a `MotorPolicyResult`, which should be immediately returned by
+            the caller, or `None` which allows the caller to continue execution.
+        """
+        if self._is_undoing_jump:
+            # TODO: We can stop storing self._pre_jump_state if we give up on this
+            #       assertion.
+            self._assert_undo_jump_was_successful(state)
+            self._reset_jump_state()
+            return None
+
+        if self._should_undo_jump(observations):
+            logger.debug("Returning to previous position")
+            self._is_undoing_jump = True
+            return MotorPolicyResult(self._undo_jump_actions)
+
+        self._handle_successful_jump()
+        self._reset_jump_state()
+        return None
 
     def fixme_undo_last_action(
         self,
@@ -519,11 +567,19 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self._is_jumping = False
         self._is_undoing_jump = False
         self._pre_jump_state = None
-        self._jump_actions = []
         self._undo_jump_actions = []
 
-    def _init_jump(self, state: MotorSystemState) -> None:
-        """Create the jump actions."""
+    def _jump(self, state: MotorSystemState) -> list[Action]:
+        """Compute the jump and undo jump actions.
+
+        The undo jump actions are stored in `self._undo_jump_actions`.
+
+        Args:
+            state: The current state of the motor system.
+
+        Returns:
+            A list of jump actions to take.
+        """
         logger.debug(
             "Attempting a 'jump' like movement to evaluate an object hypothesis"
         )
@@ -552,13 +608,15 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         (target_loc, target_np_quat) = self.derive_habitat_goal_state()
 
+        self._is_jumping = True
+
         # Update observations and motor system-state based on new pose, accounting
         # for resetting both the agent, as well as the poses of its coupled sensors.
         # This is necessary for the distant agent, which pivots the camera around
         # like a ball-and-socket joint; note the surface agent does not
         # modify this from the unit quaternion and [0, 0, 0] position
         # anyways; further note this is globally applied to all sensors.
-        self._jump_actions = [
+        actions = [
             SetAgentPose(
                 agent_id=self.agent_id,
                 location=target_loc,
@@ -574,7 +632,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # All sensors are updated globally by actions, and are therefore identical.
         self._undo_jump_actions = [
             SetAgentPose(
-                agent_id=self.motor_system._policy.agent_id,
+                agent_id=self.agent_id,
                 location=self._pre_jump_state.position,
                 rotation_quat=self._pre_jump_state.rotation,
             ),
@@ -583,6 +641,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 rotation_quat=self._pre_jump_state.sensors[first_sensor].rotation,
             ),
         ]
+
+        return actions
 
     def _should_undo_jump(self, observations: Observations) -> bool:
         """Check if the jump should be undone.
@@ -598,7 +658,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             observation=observations,
             sensor_id="view_finder",
         )
-        return depth_at_center >= 1.0
+        should_undo = depth_at_center >= 1.0
+        if should_undo:
+            logger.debug("No object visible from hypothesis jump, or inside object!")
+        return should_undo
 
     def _handle_successful_jump(self):
         """Deal with the results of a successful hypothesis-testing jump.
@@ -609,15 +672,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             "Object visible, maintaining new pose for hypothesis-testing action"
         )
 
-    def _handle_failed_jump(self):
-        """Deal with the results of a failed hypothesis-testing jump.
+    def _assert_undo_jump_was_successful(self, state: MotorSystemState) -> None:
+        assert self._pre_jump_state is not None, "Pre-jump state is not set"
 
-        A failed jump is "off-object", i.e. the object is not perceived by the sensor.
-        """
-        logger.debug("No object visible from hypothesis jump, or inside object!")
-        logger.debug("Returning to previous position")
-
-    def _assert_undo_jump_was_successful(self, state: MotorSystemState) -> bool:
         """Check if the undo jump was successful."""
         assert np.all(state[self.agent_id].position == self._pre_jump_state.position), (
             "Failed to return agent to location"
@@ -900,7 +957,7 @@ class SurfacePolicy(InformedPolicy):
     def __call__(
         self,
         ctx: RuntimeContext,
-        observations: Observations,  # noqa: ARG002
+        observations: Observations,
         state: MotorSystemState | None = None,
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
@@ -922,22 +979,10 @@ class SurfacePolicy(InformedPolicy):
             ObjectNotVisible: If the object is not visible.
         """
         if self.use_goal_state_driven_actions:
-            if self._is_undoing_jump:
-                self._assert_undo_jump_was_successful(state)
-                self._reset_jump_state()
-
-            if self._is_jumping:
-                if self._should_undo_jump(observations):
-                    self._handle_failed_jump()
-                    self._is_undoing_jump = True
-                    return MotorPolicyResult(self._undo_jump_actions)
-                self._handle_successful_jump()
-                self._reset_jump_state()
-
-            if self.driving_goal_state:
-                self._init_jump(state)
-                self._is_jumping = True
-                return MotorPolicyResult(self._jump_actions)
+            assert state is not None
+            result = self._goal_driven_actions(observations, state)
+            if result is not None:
+                return result
 
         # Check if we have poor visualization of the object
         if (
