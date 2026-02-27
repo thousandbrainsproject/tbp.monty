@@ -419,7 +419,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             if result is not None:
                 return result
 
-        if self.driving_goal_state:
+        if self.driving_goal_state is not None:
             actions = self._jump(state)
             return MotorPolicyResult(actions)
 
