@@ -976,6 +976,7 @@ class SurfacePolicy(InformedPolicy):
             result = self._goal_driven_actions(observations, state)
             if result is not None:
                 return result
+            self._reset_get_next_action_state()
 
         # Check if we have poor visualization of the object
         if (
@@ -1279,22 +1280,15 @@ class SurfacePolicy(InformedPolicy):
         if orienting == "vertical":
             return -np.degrees(np.arctan(y / z)) if z != 0 else -np.sign(y) * 90.0
 
-    def handle_successful_jump(self):
-        """Deal with the results of a successful hypothesis-testing jump.
+    def _reset_get_next_action_state(self) -> None:
+        """Resets the get_next_action state of the surface policy.
 
-        A successful jump is "on-object", i.e. the object is perceived by the sensor.
+        For the surface-agent policy, update last action as if we have just moved
+        tangentially. This results in a seamless transition into the typical
+        corrective movements (forward or orientation) of the surface-agent policy.
         """
-        logger.debug(
-            "Object visible, maintaining new pose for hypothesis-testing action"
-        )
-
-        # For the surface-agent policy, update last action as if we have
-        # just moved tangentially
-        # Results in us seamlessly transitioning into the typical
-        # corrective movements (forward or orientation) of the surface-agent
-        # policy
         self.last_surface_policy_action = MoveTangentially(
-            agent_id=self.motor_system._policy.agent_id,
+            agent_id=self.agent_id,
             distance=0.0,
             direction=(0, 0, 0),
         )
