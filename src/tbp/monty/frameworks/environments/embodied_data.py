@@ -648,9 +648,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         else:
             self.handle_failed_jump(pre_jump_state, first_sensor)
 
-        self.motor_system._state[
-            self.motor_system._policy.agent_id
-        ].motor_only_step = False
+        self.motor_system.motor_only_step = False
 
         return self._observation
 
