@@ -134,6 +134,8 @@ class Monty(metaclass=abc.ABCMeta):
     def _set_step_type_and_check_if_done(self):
         """Check terminal conditions and decide if to change the step type.
 
+        Update step counters.
+
         Update what self.is_done returns to the experiment.
         """
         pass
