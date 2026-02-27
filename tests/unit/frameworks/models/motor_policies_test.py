@@ -83,46 +83,6 @@ class BasePolicyTest(unittest.TestCase):
         )
         self.assertEqual(self.policy.get_agent_state(state), expected_state)
 
-    def test_is_motor_only_step_returns_false_if_motor_only_step_is_not_in_agent_state(
-        self,
-    ):
-        state = MotorSystemState(
-            {
-                self.agent_id: self.default_agent_state,
-            }
-        )
-        self.assertFalse(self.policy.is_motor_only_step(state))
-
-    def test_is_motor_only_step_returns_true_if_motor_only_step_is_true_in_agent_state(
-        self,
-    ):
-        state = MotorSystemState(
-            {
-                self.agent_id: AgentState(
-                    sensors=self.default_agent_state.sensors,
-                    position=self.default_agent_state.position,
-                    rotation=self.default_agent_state.rotation,
-                    motor_only_step=True,
-                ),
-            }
-        )
-        self.assertTrue(self.policy.is_motor_only_step(state))
-
-    def test_is_motor_only_step_returns_false_if_motor_only_step_is_false_in_agent_state(  # noqa: E501
-        self,
-    ):
-        state = MotorSystemState(
-            {
-                self.agent_id: AgentState(
-                    sensors=self.default_agent_state.sensors,
-                    position=self.default_agent_state.position,
-                    rotation=self.default_agent_state.rotation,
-                    motor_only_step=False,
-                ),
-            }
-        )
-        self.assertFalse(self.policy.is_motor_only_step(state))
-
 
 class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
     def setUp(self) -> None:

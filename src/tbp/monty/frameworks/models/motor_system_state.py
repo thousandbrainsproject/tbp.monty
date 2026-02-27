@@ -41,12 +41,6 @@ class AgentState:
     """The agent's position."""
     rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
     """The agent's rotation."""
-    motor_only_step: bool = False
-    """Control flow parameter. Processing will bypass the learning module if True.
-
-    TODO: Remove once we refactor Monty main processing loop to no longer need
-    control flow parameters in motor system state.
-    """
 
 
 class ProprioceptiveState(Dict[AgentID, AgentState]):

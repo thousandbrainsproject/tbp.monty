@@ -150,7 +150,7 @@ class MontyBase(Monty):
         for sensor_module in self.sensor_modules:
             raw_obs = self.get_observations(observation, sensor_module.sensor_module_id)
             sensor_module.update_state(self.get_agent_state())
-            sm_output = sensor_module.step(ctx, raw_obs)
+            sm_output = sensor_module.step(ctx, raw_obs, self.is_motor_only_step)
             sensor_module_outputs.append(sm_output)
         # Aggregate LM outputs here to be input to higher level LM at next step
         learning_module_outputs = []
@@ -433,7 +433,7 @@ class MontyBase(Monty):
 
     @property
     def is_motor_only_step(self):
-        return self.motor_system._policy.is_motor_only_step(self.motor_system._state)
+        return self.motor_system.motor_only_step
 
     @property
     def is_done(self):

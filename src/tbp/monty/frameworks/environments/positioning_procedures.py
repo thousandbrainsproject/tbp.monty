@@ -21,6 +21,7 @@ from typing_extensions import Protocol
 from tbp.monty.frameworks.actions.actions import Action, LookDown, MoveForward, TurnLeft
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.environment import SemanticID
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 from tbp.monty.frameworks.sensors import SensorID
 
@@ -59,12 +60,14 @@ class PositioningProcedure(Protocol):
     """
 
     @staticmethod
-    def depth_at_center(agent_id: AgentID, observation: Any, sensor_id: str) -> float:
+    def depth_at_center(
+        agent_id: AgentID, observations: Observations, sensor_id: SensorID
+    ) -> float:
         """Determine the depth of the central pixel for the sensor.
 
         Args:
             agent_id: The ID of the agent to use.
-            observation: The observation to use.
+            observations: The observations to use.
             sensor_id: The ID of the sensor to use.
 
         Returns:
@@ -72,8 +75,8 @@ class PositioningProcedure(Protocol):
         """
         # TODO: A lot of assumptions are made here about the shape of the observation.
         #       This should be made robust.
-        observation_shape = observation[agent_id][sensor_id]["depth"].shape
-        return observation[agent_id][sensor_id]["depth"][
+        observation_shape = observations[agent_id][sensor_id]["depth"].shape
+        return observations[agent_id][sensor_id]["depth"][
             observation_shape[0] // 2, observation_shape[1] // 2
         ]
 

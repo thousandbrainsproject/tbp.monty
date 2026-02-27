@@ -356,12 +356,18 @@ class SensorModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def step(self, ctx: RuntimeContext, data):
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observation: SensorObservation,
+        motor_only_step: bool = False,
+    ):
         """Called on each step.
 
         Args:
             ctx: The runtime context.
-            data: Sensor observations
+            observation: Sensor observation.
+            motor_only_step: Whether the current step is a motor-only step.
         """
         pass
 

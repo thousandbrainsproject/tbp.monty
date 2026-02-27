@@ -90,18 +90,6 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def is_motor_only_step(self, state: MotorSystemState) -> bool:
-        """Check if the current step is a motor-only step.
-
-        Args:
-            state: The current state of the motor system.
-
-        Returns:
-            True if the current step is a motor-only step, False otherwise.
-        """
-        pass
-
-    @abc.abstractmethod
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
         """Take a state dict as an argument and set state for policy."""
         pass
@@ -195,22 +183,6 @@ class BasePolicy(MotorPolicy):
         """
         return state[self.agent_id]
 
-    def is_motor_only_step(self, state: MotorSystemState) -> bool:
-        """Check if the current step is a motor-only step.
-
-        TODO: This information is currently stored in motor system state, but
-        should be stored in the policy state instead as it is tracking policy
-        state, not motor system state. This will remove MotorSystemState param.
-
-        Args:
-            state: The current state of the motor system.
-
-        Returns:
-            True if the current step is a motor-only step, False otherwise.
-        """
-        agent_state = self.get_agent_state(state)
-        return agent_state.motor_only_step
-
     def state_dict(self):
         return {}
 
@@ -265,10 +237,6 @@ class PredefinedPolicy(MotorPolicy):
 
     def get_agent_state(self, state: MotorSystemState) -> AgentState:
         return state[self.agent_id]
-
-    def is_motor_only_step(self, state: MotorSystemState) -> bool:
-        agent_state = self.get_agent_state(state)
-        return agent_state.motor_only_step
 
     def pre_episode(self) -> None:
         self.episode_step = 0
@@ -600,7 +568,7 @@ class SurfacePolicy(InformedPolicy):
         alpha,
         desired_object_distance=0.025,
         **kwargs,
-    ):
+    ) -> None:
         """Initialize policy.
 
         Args:
@@ -615,7 +583,6 @@ class SurfacePolicy(InformedPolicy):
         self.alpha = alpha
         self.desired_object_distance = desired_object_distance
 
-        # TODO: Remove these once TouchObject positioning procedure is implemented
         self.attempting_to_find_object: bool = False
         self.last_surface_policy_action: Action | None = None
 
@@ -630,11 +597,11 @@ class SurfacePolicy(InformedPolicy):
 
         return super().pre_episode()
 
-    def touch_object(
+    def _touch_object(
         self,
         ctx: RuntimeContext,
-        raw_observation,
-        view_sensor_id: str,
+        observations: Observations,
+        view_sensor_id: SensorID,
         state: MotorSystemState,
     ) -> MoveForward | OrientHorizontal | OrientVertical:
         """The surface agent's policy for moving onto an object for sensing it.
@@ -644,7 +611,7 @@ class SurfacePolicy(InformedPolicy):
         model-based policy. In addition, it can be called when the surface agent
         cannot sense the object, e.g. because it has fallen off its surface.
 
-        Currently uses the raw observations returned from the viewfinder via the
+        Currently uses the observations returned from the viewfinder via the
         environment interface, and not the extracted features from the sensor module.
         TODO M refactor this so that all sensory processing is done in the sensor
         module.
@@ -655,7 +622,7 @@ class SurfacePolicy(InformedPolicy):
 
         Args:
             ctx: The runtime context.
-            raw_observation: The raw observation from the simulator.
+            observations: The observations from the environment.
             view_sensor_id: The ID of the viewfinder sensor.
             state: The current state of the motor system.
 
@@ -665,14 +632,14 @@ class SurfacePolicy(InformedPolicy):
         # If the viewfinder sees the object within range, then move to it
         depth_at_center = PositioningProcedure.depth_at_center(
             agent_id=self.agent_id,
-            observation=raw_observation,
+            observations=observations,
             sensor_id=view_sensor_id,
         )
         if depth_at_center < 1.0:
             distance = (
                 depth_at_center
                 - self.desired_object_distance
-                - state[self.agent_id].sensors[SensorID(view_sensor_id)].position[2]
+                - state[self.agent_id].sensors[view_sensor_id].position[2]
             )
             logger.debug(f"Move to touch visible object, forward by {distance}")
 
@@ -761,7 +728,7 @@ class SurfacePolicy(InformedPolicy):
     def __call__(
         self,
         ctx: RuntimeContext,
-        observations: Observations,  # noqa: ARG002
+        observations: Observations,
         state: MotorSystemState | None = None,
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
@@ -778,9 +745,6 @@ class SurfacePolicy(InformedPolicy):
 
         Returns:
             A MotorPolicyResult that contains the actions to take.
-
-        Raises:
-            ObjectNotVisible: If the object is not visible.
         """
         # Check if we have poor visualization of the object
         if (
@@ -796,12 +760,19 @@ class SurfacePolicy(InformedPolicy):
             logger.debug(f"Attempting to find object: {self.attempting_to_find_object}")
             logger.debug("Initiating attempts to touch object")
 
-            # Set attempting_to_find_object to True here so that post_action will
-            # not interfere with self.last_surface_policy_action
-            self.attempting_to_find_object = True
-            raise ObjectNotVisible  # Will result in moving to try to find the object
-            # This is determined by some logic in embodied_data.py, in particular
-            # the next method of InformedEnvironmentInterface
+            assert state is not None
+            action = self._touch_object(
+                ctx,
+                observations,
+                # TODO: Eliminate this hardcoded sensor ID
+                view_sensor_id=SensorID("view_finder"),
+                state=state,
+            )
+            return MotorPolicyResult(actions=[action], motor_only_step=True)
+
+        # Reset touch_object search state so that the next time we fall off the object,
+        # we will try to find the object using its full repertoire of actions.
+        self.touch_search_amount = 0
 
         if self.last_surface_policy_action is None:
             logger.debug(
@@ -819,9 +790,18 @@ class SurfacePolicy(InformedPolicy):
             )
 
         next_action = self.get_next_action(ctx, state)
+
+        # Out of the four actions in the
+        # MoveForward->OrientHorizontal->OrientVertical->MoveTangentially "subroutine"
+        # of self.get_next_action(...), we only want to send data to the learning module
+        # after taking the OrientVertical action. The other three actions in the cycle
+        # are motor-only to keep the surface agent on the object.
+        motor_only_step = (
+            next_action is not None and next_action.name != OrientVertical.action_name()
+        )
         self.last_surface_policy_action = next_action
         actions: list[Action] = [] if next_action is None else [next_action]
-        return MotorPolicyResult(actions)
+        return MotorPolicyResult(actions, motor_only_step=motor_only_step)
 
     def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
         """Orient the agent horizontally.

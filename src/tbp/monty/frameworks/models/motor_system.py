@@ -40,6 +40,10 @@ class MotorSystem:
         # motor system state as a (actions, state) tuple.
         self._action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]] = []
 
+        # TODO: When the motor system is encapsulated within Monty, then motor_only_step
+        #       attribute should be moved to Monty itself instead.
+        self.motor_only_step = False
+
     @property
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
@@ -62,11 +66,7 @@ class MotorSystem:
             The action to take.
         """
         policy_result = self._policy(ctx, observations, self._state)
-
-        # TODO: Must change when we have multiple agents.
-        if self._state is not None:
-            agent_id = self._policy.agent_id
-            self._state[agent_id].motor_only_step = policy_result.motor_only_step
+        self.motor_only_step = policy_result.motor_only_step
 
         state_copy = self._state.convert_motor_state() if self._state else None
         self._action_sequence.append((policy_result.actions, state_copy))
