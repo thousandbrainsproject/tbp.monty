@@ -1,0 +1,5 @@
+defaults:
+  - per_object
+
+object_init_sampler:
+  _target_: tbp.monty.frameworks.environments.object_init_samplers.Default

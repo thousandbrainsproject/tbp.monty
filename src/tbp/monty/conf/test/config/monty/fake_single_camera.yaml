@@ -1,0 +1,20 @@
+defaults:
+  - /experiment/config/monty/args/defaults@monty_args
+  - /experiment/config/monty/motor_system/defaults@motor_system_config
+
+monty_class: ${monty.class:tbp.monty.frameworks.models.monty_base.MontyBase}
+learning_module_configs:
+  learning_module_0:
+    learning_module_class: ${monty.class:tests.unit.frameworks.models.fakes.learning_modules.FakeLearningModule}
+    learning_module_args: {}
+sensor_module_configs:
+  sensor_module_0:
+    sensor_module_class: ${monty.class:tests.unit.frameworks.models.fakes.sensor_modules.FakeSensorModule}
+    sensor_module_args:
+      sensor_module_id: sensor_id_0
+sm_to_agent_dict:
+  sensor_id_0: ${monty.agent_id:agent_id_0}
+sm_to_lm_matrix:
+  - [0]
+lm_to_lm_matrix: null
+lm_to_lm_vote_matrix: null

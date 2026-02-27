@@ -1,0 +1,17 @@
+do_train: true
+do_eval: true
+show_sensor_output: false
+max_train_steps: 1000
+max_eval_steps: 500
+# Total number of
+# episode steps that can be taken before timing out, regardless of e.g. whether LMs
+# receive sensory information and therefore perform a true matching step (due to
+# e.g. being off the object)
+# heuristic is 4 * (max_train_steps + max_eval_steps)
+max_total_steps: 6000
+n_train_epochs: 3
+n_eval_epochs: 3
+model_name_or_path: ""
+min_lms_match: 1
+seed: 42
+supervised_lm_ids: []

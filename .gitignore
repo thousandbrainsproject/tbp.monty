@@ -1,3 +1,6 @@
+# wandb local configs
+wandb/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -98,6 +101,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.envrc
 env/
 venv/
 ENV/
@@ -137,3 +141,6 @@ Session.vim
 
 # rsync
 .rsyncignore.local
+
+# hydra
+outputs/

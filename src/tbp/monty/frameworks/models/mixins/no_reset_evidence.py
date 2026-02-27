@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -7,12 +7,56 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Dict
+from __future__ import annotations
 
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, cast
+
+import numpy as np
+import numpy.typing as npt
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
-from tbp.monty.frameworks.utils.logging_utils import compute_pose_error
+from tbp.monty.frameworks.models.buffer import BufferEncoder
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM,
+)
+from tbp.monty.frameworks.utils.logging_utils import (
+    compute_pose_error,
+    compute_pose_errors,
+)
+
+
+@dataclass
+class HypothesesUpdaterChannelTelemetry:
+    """Telemetry from HypothesesUpdater for a single input channel."""
+
+    hypotheses_updater: dict[str, Any]
+    """Any telemetry from the hypotheses updater."""
+
+    evidence: npt.NDArray[np.float64]
+    """The hypotheses evidence scores."""
+
+    rotations: npt.NDArray[np.float64]
+    """Rotations of the hypotheses."""
+
+    locations: npt.NDArray[np.float64]
+    """Locations of the hypotheses."""
+
+    pose_errors: npt.NDArray[np.float64]
+    """Rotation errors relative to the target pose."""
+
+
+BufferEncoder.register(
+    HypothesesUpdaterChannelTelemetry,
+    lambda telemetry: asdict(telemetry),
+)
+
+
+HypothesesUpdaterGraphTelemetry = Dict[str, HypothesesUpdaterChannelTelemetry]
+"""HypothesesUpdaterChannelTelemetry indexed by input channel."""
+
+HypothesesUpdaterTelemetry = Dict[str, HypothesesUpdaterGraphTelemetry]
+"""HypothesesUpdaterGraphTelemetry indexed by graph ID."""
 
 
 class TheoreticalLimitLMLoggingMixin:
@@ -38,31 +82,97 @@ class TheoreticalLimitLMLoggingMixin:
             TypeError: If the mixin is used with a non-compatible learning module.
         """
         super().__init_subclass__(**kwargs)
-        if not any([issubclass(b, (EvidenceGraphLM)) for b in cls.__bases__]):
+        if not any(issubclass(b, (EvidenceGraphLM)) for b in cls.__bases__):
             raise TypeError(
                 "TheoreticalLimitLMLoggingMixin must be mixed in with a subclass of "
                 f"EvidenceGraphLM, got {cls.__bases__}"
             )
 
-    def _add_detailed_stats(self, stats: Dict[str, Any]) -> Dict[str, Any]:
+    def _add_detailed_stats(self, stats: dict[str, Any]) -> dict[str, Any]:
         """Add detailed statistics to the logging dictionary.
 
         This includes metrics like the max evidence score per object, the theoretical
         limit of Monty (i.e., pose error of Monty's best potential hypothesis on the
-        target object) , and the pose error of the MLH hypothesis on the target object.
+        target object), and the pose error of the MLH hypothesis on the target object.
 
         Args:
-            stats (Dict[str, Any]): The existing statistics dictionary to augment.
+            stats: The existing statistics dictionary to augment.
 
         Returns:
-            Dict[str, Any]: Updated statistics dictionary.
+            Updated statistics dictionary.
         """
-        stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items()}
+        assert isinstance(self, EvidenceGraphLM)
+
+        stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items() if len(v)}
         stats["target_object_theoretical_limit"] = (
             self._theoretical_limit_target_object_pose_error()
         )
         stats["target_object_pose_error"] = self._mlh_target_object_pose_error()
+        hypotheses_updater_telemetry = self._hypotheses_updater_telemetry()
+        if hypotheses_updater_telemetry:
+            stats["hypotheses_updater_telemetry"] = hypotheses_updater_telemetry
         return stats
+
+    def _hypotheses_updater_telemetry(self) -> HypothesesUpdaterTelemetry:
+        """Returns HypothesesUpdaterTelemetry for all objects and input channels."""
+        assert isinstance(self, EvidenceGraphLM)
+
+        stats: HypothesesUpdaterTelemetry = {}
+        for graph_id, graph_telemetry in self.hypotheses_updater_telemetry.items():
+            stats[graph_id] = {
+                input_channel: self._channel_telemetry(
+                    graph_id, input_channel, channel_telemetry
+                )
+                for input_channel, channel_telemetry in graph_telemetry.items()
+            }
+        return stats
+
+    def _channel_telemetry(
+        self, graph_id: str, input_channel: str, channel_telemetry: dict[str, Any]
+    ) -> HypothesesUpdaterChannelTelemetry:
+        """Assemble channel telemetry for specific graph ID and input channel.
+
+        Args:
+            graph_id: The graph ID.
+            input_channel: The input channel.
+            channel_telemetry: Telemetry for the specific input channel.
+
+        Returns:
+            HypothesesUpdaterChannelTelemetry for the given graph ID and input channel.
+        """
+        assert isinstance(self, EvidenceGraphLM)
+
+        mapper = self.channel_hypothesis_mapping[graph_id]
+
+        if input_channel not in mapper.channels:
+            return HypothesesUpdaterChannelTelemetry(
+                hypotheses_updater=channel_telemetry.copy(),
+                evidence=np.empty(shape=(0,), dtype=np.float64),
+                rotations=np.empty(shape=(0, 3), dtype=np.float64),
+                locations=np.empty(shape=(0, 3), dtype=np.float64),
+                pose_errors=np.empty(shape=(0,), dtype=np.float64),
+            )
+
+        channel_rotations = mapper.extract(self.possible_poses[graph_id], input_channel)
+        channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
+        channel_evidence = mapper.extract(self.evidence[graph_id], input_channel)
+        channel_locations = mapper.extract(
+            self.possible_locations[graph_id], input_channel
+        )
+
+        return HypothesesUpdaterChannelTelemetry(
+            hypotheses_updater=channel_telemetry.copy(),
+            evidence=channel_evidence,
+            rotations=channel_rotations_inv.as_euler("xyz", degrees=True),
+            locations=channel_locations,
+            pose_errors=cast(
+                "npt.NDArray[np.float64]",
+                compute_pose_errors(
+                    channel_rotations_inv,
+                    Rotation.from_quat(self.primary_target_rotation_quat),
+                ),
+            ),
+        )
 
     def _theoretical_limit_target_object_pose_error(self) -> float:
         """Compute the theoretical minimum rotation error on the target object.
@@ -73,21 +183,24 @@ class TheoreticalLimitLMLoggingMixin:
         likely hypothesis (MLH).
 
         Note that having a low pose error for the theoretical limit may not be
-        sufficient for deciding on the quality of the hypothesis. Despite good
-        hypotheses being generally correlated with good theoretical limit, it is
-        possible for rotation error to be small (i.e., low geodesic distance to
-        ground-truth rotation), while the hypothesis is on a different location
-        of the object.
+        sufficient to decide on the quality of the hypothesis. Although good
+        hypotheses generally correlate with a good theoretical limit, the rotation
+        error can be small (i.e., low geodesic distance to the ground-truth
+        rotation) while the hypothesis is at a different location of the object.
 
         Returns:
-            float: The minimum achievable rotation error (in radians).
+            The minimum achievable rotation error (in radians).
         """
-        hyp_rotations = Rotation.from_matrix(
-            self.possible_poses[self.primary_target]
-        ).inv()
+        assert isinstance(self, EvidenceGraphLM)
+
+        object_possible_poses = self.possible_poses[self.primary_target]
+        if not len(object_possible_poses):
+            return -1
+
+        hyp_rotations = Rotation.from_matrix(object_possible_poses).inv()
+
         target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
-        error = compute_pose_error(hyp_rotations, target_rotation)
-        return error
+        return compute_pose_error(hyp_rotations, target_rotation)
 
     def _mlh_target_object_pose_error(self) -> float:
         """Compute the actual rotation error between predicted and target pose.
@@ -96,9 +209,10 @@ class TheoreticalLimitLMLoggingMixin:
         object with the ground truth rotation of the target object.
 
         Returns:
-            float: The rotation error (in radians).
+            The rotation error (in radians).
         """
+        assert isinstance(self, EvidenceGraphLM)
+
         obj_rotation = self.get_mlh_for_object(self.primary_target)["rotation"].inv()
         target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
-        error = compute_pose_error(obj_rotation, target_rotation)
-        return error
+        return compute_pose_error(obj_rotation, target_rotation)

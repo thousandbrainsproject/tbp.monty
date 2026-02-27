@@ -1,0 +1,14 @@
+defaults:
+  - feature_weights/defaults@learning_module_args.feature_weights
+  - tolerances/defaults@learning_module_args.tolerances
+
+learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+learning_module_args:
+  # Need to set max_match_distance low here to avoid
+  # recognizing the cube as a sphere during learning.
+  # The current implementation isn't optimized for few,
+  # incomplete models in memory. In this case the slightly
+  # curved surface of the sphere is too similar to the flat
+  # surface of the cube to lead to negative evidence and the
+  # sphere is not excluded from possible matches.
+  max_match_distance: 0.001

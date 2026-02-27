@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -7,8 +7,9 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 
@@ -22,11 +23,11 @@ class State:
     components and makes sure we can easily set up arbitrary configurations of them.
     This class makes it easier to define the CMP in one place and defines the content
     and structure of messages passed between Monty components. It also contains some
-    helper funtions to access and modify the message content.
+    helper functions to access and modify the message content.
 
     States are represented in this format but can be interpreted by the receiver in
     different ways:
-       Observed states: states output py sensor modules
+       Observed states: states output by sensor modules
        Hypothesized states: states output by learning modules
        Goal states: motor output of learning modules
 
@@ -68,7 +69,7 @@ class State:
         """Return a string representation of the object."""
         repr_string = (
             f"State from {self.sender_id}:\n"
-            f"   Location: {np.round(self.location,3)}.\n"
+            f"   Location: {np.round(self.location, 3)}.\n"
             f"   Morphological Features: \n"
         )
         if self.morphological_features is not None:
@@ -82,7 +83,7 @@ class State:
                         repr_string += f"           {vector}\n"
                 else:
                     repr_string += f"       {feature}: {feat_val}\n"
-        repr_string += f"   Non-Morphological Features: \n"
+        repr_string += "   Non-Morphological Features: \n"
         if self.non_morphological_features is not None:
             for feature in self.non_morphological_features:
                 feat_val = self.non_morphological_features[feature]
@@ -121,9 +122,9 @@ class State:
             self.displacement["ppf"] = ppf
 
     def get_feature_by_name(self, feature_name):
-        if feature_name in self.morphological_features.keys():
+        if feature_name in self.morphological_features:
             feature_val = self.morphological_features[feature_name]
-        elif feature_name in self.non_morphological_features.keys():
+        elif feature_name in self.non_morphological_features:
             feature_val = self.non_morphological_features[feature_name]
         else:
             raise ValueError(f"Feature {feature_name} not found in state.")
@@ -132,23 +133,23 @@ class State:
     def get_nth_pose_vector(self, pose_vector_index):
         """Return the nth pose vector.
 
-        When self.sender_type == "SM", the first pose vector is the point normal and the
-        second and third are the curvature directions. When self.sender_type == "LM",
-        the pose vectors correspond to the rotation of the object relative to the model
-        learned of it.
+        When self.sender_type == "SM", the first pose vector is the surface normal and
+        the second and third are the curvature directions.
+        When self.sender_type == "LM", the pose vectors correspond to the rotation of
+        the object relative to the model learned of it.
         """
         return self.morphological_features["pose_vectors"][pose_vector_index]
 
-    def get_point_normal(self):
-        """Return the point normal vector.
+    def get_surface_normal(self):
+        """Return the surface normal vector.
 
         Raises:
             ValueError: If `self.sender_type` is not SM
         """
         if self.sender_type == "SM":
             return self.get_nth_pose_vector(0)
-        else:
-            raise ValueError("Sender type must be SM to get point normal.")
+
+        raise ValueError("Sender type must be SM to get surface normal.")
 
     def get_pose_vectors(self):
         """Return the pose vectors."""
@@ -162,25 +163,25 @@ class State:
         """
         if self.sender_type == "SM":
             return self.get_nth_pose_vector(1), self.get_nth_pose_vector(2)
-        else:
-            raise ValueError("Sender type must be SM to get curvature directions.")
+
+        raise ValueError("Sender type must be SM to get curvature directions.")
 
     def get_on_object(self):
         """Return whether we think we are on the object or not.
 
         This is currently used in the policy to stay on the object.
         """
-        if "on_object" in self.morphological_features.keys():
+        if "on_object" in self.morphological_features:
             return self.morphological_features["on_object"]
-        else:
-            # TODO: Use depth values to estimate on_object (either threshold or large
-            # displacement)
-            return True
+
+        # TODO: Use depth values to estimate on_object (either threshold or large
+        # displacement)
+        return True
 
     def _check_all_attributes(self):
-        assert (
-            "pose_vectors" in self.morphological_features.keys()
-        ), "pose_vectors should be in morphological_features but keys are "
+        assert "pose_vectors" in self.morphological_features, (
+            "pose_vectors should be in morphological_features but keys are "
+        )
         f"{self.morphological_features.keys()}"
         # TODO S: may want to test length and angle between vectors as well
         assert self.morphological_features["pose_vectors"].shape == (
@@ -188,27 +189,26 @@ class State:
             3,
         ), "pose should be defined by three orthonormal unit vectors but pose_vectors "
         f"shape is {self.morphological_features['pose_vectors'].shape}"
-        assert "pose_fully_defined" in self.morphological_features.keys()
+        assert "pose_fully_defined" in self.morphological_features
         assert isinstance(self.morphological_features["pose_fully_defined"], bool), (
             "pose_fully_defined must be a boolean but type is "
         )
         f"{type(self.morphological_features['pose_fully_defined'])}"
-        assert self.location.shape == (
-            3,
-        ), f"Location must be a 3D vector but shape is {self.location.shape}"
-        assert (
-            self.confidence >= 0 and self.confidence <= 1
-        ), f"Confidence must be in [0,1] but is {self.confidence}"
+        assert self.location.shape == (3,), (
+            f"Location must be a 3D vector but shape is {self.location.shape}"
+        )
+        assert self.confidence >= 0 and self.confidence <= 1, (
+            f"Confidence must be in [0,1] but is {self.confidence}"
+        )
         assert isinstance(self.use_state, bool), (
             f"use_state must be a boolean but is {type(self.use_state)}"
         )
         assert isinstance(self.sender_id, str), (
             f"sender_id must be string but is {type(self.sender_id)}"
         )
-        assert (
-            self.sender_type in self.allowable_sender_types
-        ), f"sender_type must be SM or LM but is\
-            {self.sender_type}"
+        assert self.sender_type in self.allowable_sender_types, (
+            f"sender_type must be SM or LM but is {self.sender_type}"
+        )
 
 
 class GoalState(State):
@@ -234,15 +234,15 @@ class GoalState(State):
 
     def __init__(
         self,
-        location: Optional[np.ndarray],
-        morphological_features: Optional[Dict[str, Any]],
-        non_morphological_features: Optional[Dict[str, Any]],
+        location: np.ndarray | None,
+        morphological_features: dict[str, Any] | None,
+        non_morphological_features: dict[str, Any] | None,
         confidence: float,
         use_state: bool,
         sender_id: str,
         sender_type: str,
-        goal_tolerances: Optional[Dict[str, Any]],
-        info: Optional[Dict[str, Any]] = None,
+        goal_tolerances: dict[str, Any] | None,
+        info: dict[str, Any] | None = None,
     ):
         """Initialize a goal state.
 
@@ -283,24 +283,26 @@ class GoalState(State):
 
     def _set_allowable_sender_types(self):
         """Set the allowable sender types of this State class."""
-        self.allowable_sender_types = "GSG"
+        self.allowable_sender_types = ("GSG", "SM")
 
     def _check_all_attributes(self):
         """Overwrite base attribute check to also allow for None values."""
         if self.morphological_features is not None:
-            assert (
-                "pose_vectors" in self.morphological_features.keys()
-            ), "pose_vectors should be in morphological_features but keys are "
+            assert "pose_vectors" in self.morphological_features, (
+                "pose_vectors should be in morphological_features but keys are "
+            )
             f"{self.morphological_features.keys()}"
             assert np.any(
-                self.morphological_features["pose_vectors"] == np.nan
+                np.isnan(self.morphological_features["pose_vectors"])
             ) or self.morphological_features["pose_vectors"].shape == (
                 3,
                 3,
-            ), f"pose should be undefined, or defined by three orthonormal unit vectors\
-                but pose_vectors shape is\
-                    {self.morphological_features['pose_vectors'].shape}"
-            assert "pose_fully_defined" in self.morphological_features.keys()
+            ), (
+                "pose should be undefined, or defined by three orthonormal unit "
+                "vectors but pose_vectors shape is "
+                f"{self.morphological_features['pose_vectors'].shape}"
+            )
+            assert "pose_fully_defined" in self.morphological_features
             assert (
                 isinstance(self.morphological_features["pose_fully_defined"], bool)
             ) or self.morphological_features["pose_fully_defined"] is None, (
@@ -308,28 +310,28 @@ class GoalState(State):
             )
             f"{type(self.morphological_features['pose_fully_defined'])}"
         if self.location is not None:
-            assert self.location.shape == (
-                3,
-            ), f"Location must be a 3D vector but shape is {self.location.shape}"
+            assert self.location.shape == (3,), (
+                f"Location must be a 3D vector but shape is {self.location.shape}"
+            )
 
-        assert (
-            self.confidence >= 0 and self.confidence <= 1
-        ), f"Confidence must be in [0,1] but is {self.confidence}"
+        assert self.confidence >= 0 and self.confidence <= 1, (
+            f"Confidence must be in [0,1] but is {self.confidence}"
+        )
         assert isinstance(self.use_state, bool), (
             f"use_state must be a boolean but is {type(self.use_state)}"
         )
         assert isinstance(self.sender_id, str), (
             f"sender_id must be string but is {type(self.sender_id)}"
         )
-        # Note *only* GSGs should create GoalState objects
-        assert (
-            self.sender_type in self.allowable_sender_types
-        ), f"sender_type must be GSG but is {self.sender_type}"
+        assert self.sender_type in self.allowable_sender_types, (
+            f"sender_type must be in {self.allowable_sender_types} but is "
+            f"{self.sender_type}"
+        )
         # info is optional, but it must be a dictionary.
         assert isinstance(self.info, dict), "info must be a dictionary"
 
 
-def encode_goal_state(goal_state: GoalState) -> Dict[str, Any]:
+def encode_goal_state(goal_state: GoalState) -> dict[str, Any]:
     """Encode a goal state into a dictionary.
 
     Args:

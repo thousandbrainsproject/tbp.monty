@@ -16,6 +16,9 @@ Lastly, each LM can send motor outputs directly to the motor system. Contrary to
 
 Due to those reasons we call Monty a heterarchical system instead of a hierarchical system. Despite that, we often use terminology as if we did have a conventional hierarchical organization, such as top-down and bottom-up input and lower-level and higher-level LMs.
 
+> [!NOTE]
+> For the neuroscience theory and evidence behind this, see our recent pre-print ["Hierarchy or Heterarchy? A Theory of Long-Range Connections for the Sensorimotor Brain"](https://thousandbrains.org/hierarchy-or-heterarchy-a-theory-of-long-range-connections-for-the-sensorimotor-brain-a-plain-language-explainer/)
+
 # Bottom-Up Connections
 
 Connection we refer to as bottom-up connections are connections from SMs to LMs and connections between LMs that communicate an LMs output (the current most likely object ID and pose) to the main input channel of another LM (the current sensed feature and pose). **The output object ID of the sending LM then becomes a feature in the models learned in the receiving LM.** For example, the sending LM might be modeling a tire. When the tire model is recognized, it outputs this and the recognized location and orientation of the tire relative to the body. The receiving LM would not get any information about the 3D structure of the tire from the sending LM. It would only receive the object ID (as a feature) and its pose. This LM could then model a car, composed of different parts. Each part, like the tire, is modeled in detail in a lower-level LM and then becomes a feature in the higher-level LMs' model of the car.

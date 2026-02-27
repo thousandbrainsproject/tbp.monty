@@ -1,0 +1,9 @@
+defaults:
+  - defaults
+
+agents:
+  agent_type: ${monty.class:tbp.monty.simulators.habitat.agents.SingleSensorAgent}
+  agent_args:
+    agent_id: ${monty.agent_id:agent_id_0}
+    sensor_id: sensor_id_0
+    resolution: [320, 240]

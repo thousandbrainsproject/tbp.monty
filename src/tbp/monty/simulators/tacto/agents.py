@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -8,11 +8,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import uuid
 from typing import Tuple
 
 from habitat_sim.agent import ActionSpec, ActuationSpec
 
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.simulators.habitat import HabitatAgent
 
 from .config import DIGIT, TactoSensorSpec
@@ -36,19 +37,19 @@ class TactoFingerAgent(HabitatAgent):
         - "turn_right": Turn finger right using `rotation_step`
 
     Attributes:
-        agent_id: Unique ID used to identify this agent actions and observations
-        position: Agent initial position in meters. Default (0, 0, 0)
-        rotation: Agent initial rotation quaternion. Default (1, 0, 0, 0)
-        height: Agent height in meters. Default 0.1 (10 cm)
-        rotation_step: Rotation step in degrees for the "turn" actions
-        translation_step: Translation step in meters for the "move" actions
-        config: Tacto sensor configuration ('OMNITACT', 'DIGIT'). Default 'DIGIT'
+        agent_id: Unique ID used to identify this agent's actions and observations.
+        position: Agent initial position in meters. Default (0, 0, 0).
+        rotation: Agent initial rotation quaternion. Default (1, 0, 0, 0).
+        height: Agent height in meters. Default 0.1 (10 cm).
+        rotation_step: Rotation step in degrees for the "turn" actions.
+        translation_step: Translation step in meters for the "move" actions.
+        config: Tacto sensor configuration ('OMNITACT', 'DIGIT'). Default 'DIGIT'.
     """
 
     def __init__(
         self,
-        agent_id: str,
-        sensor_id: str,
+        agent_id: AgentID,
+        sensor_id: SensorID,
         position: Vector3 = (0.0, 0.0, 0.0),
         rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),
         height: float = 1.5,
@@ -59,8 +60,6 @@ class TactoFingerAgent(HabitatAgent):
     ):
         super().__init__(agent_id, position, rotation, height)
 
-        if sensor_id is None:
-            sensor_id = uuid.uuid4().hex
         self.sensor_id = sensor_id
         self.resolution = resolution
         self.rotation_step = rotation_step

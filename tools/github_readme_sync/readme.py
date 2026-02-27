@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import csv
 import html
@@ -16,17 +17,20 @@ import os
 import re
 from collections import OrderedDict
 from copy import deepcopy
-from typing import Any, List, Tuple
-from urllib.parse import parse_qs
+from pathlib import Path
+from typing import Any
+from urllib.parse import parse_qs, quote
 
 import nh3
 import yaml
 
 from tools.github_readme_sync.colors import GRAY, GREEN, RESET
 from tools.github_readme_sync.constants import (
+    IGNORE_CLOUDINARY,
     IGNORE_DOCS,
     IGNORE_IMAGES,
     IGNORE_TABLES,
+    IGNORE_YOUTUBE,
     REGEX_CSV_TABLE,
 )
 from tools.github_readme_sync.req import delete, get, post, put
@@ -38,10 +42,14 @@ regex_images = re.compile(r"!\[(.*?)\]\((.*?)\)")
 regex_image_path = re.compile(
     r"(\.\./){1,5}figures/((.+)\.(png|jpg|jpeg|gif|svg|webp))"
 )
-regex_markdown_path = re.compile(r"\(([\./]*)([\w\-/]+)\.md(#.*)?\)")
+regex_markdown_path = re.compile(r"\(([\./]*)([\w\-/]+)\.md(#.*?)?\)")
 regex_cloudinary_video = re.compile(
-    r"\[(.*?)\]\((https://res\.cloudinary\.com/([^/]+)/video/upload/v(\d+)/([^/]+\.mp4))\)",
-    re.IGNORECASE,
+    r"^\s*\[(.*?)\]\((https://res\.cloudinary\.com/([^/]+)/video/upload/v(\d+)/([^/]+\.mp4))\)\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+regex_youtube_link = re.compile(
+    r"^\s*\[(.*?)\]\((?:https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})(?:[&?][^\)]*)?)\)\s*$",
+    re.IGNORECASE | re.MULTILINE,
 )
 regex_markdown_snippet = re.compile(r"!snippet\[(.*?)\]")
 
@@ -64,13 +72,13 @@ class ReadMe:
     def __init__(self, version: str):
         self.version = version
 
-    def get_categories(self) -> List[Any]:
+    def get_categories(self) -> list[Any]:
         categories = get(f"{PREFIX}/categories", {"x-readme-version": self.version})
         if not categories:
             return []
         return sorted(categories, key=lambda x: x["order"])
 
-    def get_category_docs(self, category: Any) -> List[Any]:
+    def get_category_docs(self, category: Any) -> list[Any]:
         response = get(
             f"{PREFIX}/categories/{category['slug']}/docs",
             {"x-readme-version": self.version},
@@ -83,7 +91,7 @@ class ReadMe:
         response = get(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
 
         if not response:
-            raise Exception(f"Failed to fetch document: {response}")
+            raise DocumentNotFound(f"Document {slug} not found")
 
         front_matter = OrderedDict()
         front_matter["title"] = response.get("title")
@@ -169,7 +177,7 @@ class ReadMe:
                 f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
             )
 
-    def create_category_if_not_exists(self, slug: str, title: str) -> Tuple[str, bool]:
+    def create_category_if_not_exists(self, slug: str, title: str) -> tuple[str, bool]:
         category = get(
             f"{PREFIX}/categories/{slug}", {"x-readme-version": self.version}
         )
@@ -195,21 +203,21 @@ class ReadMe:
             file_path: The path to the current document being processed
 
         Returns:
-            str: The document body with CSV tables converted to HTML format
+            The document body with CSV tables converted to HTML format.
         """
 
         def replace_match(match):
-            csv_path = match.group(1)
-            table_name = os.path.basename(csv_path)
+            csv_path = Path(match.group(1))
+            table_name = csv_path.name
             if table_name in IGNORE_TABLES:
                 return match.group(0)
 
             # Get absolute path of CSV relative to current document
-            csv_path = os.path.join(file_path, csv_path)
-            csv_path = os.path.normpath(csv_path)
+            csv_path = Path(file_path) / csv_path
+            csv_path = csv_path.resolve()
 
             try:
-                with open(csv_path, "r") as f:
+                with csv_path.open() as f:
                     reader = csv.reader(f)
                     headers = next(reader)
                     rows = list(reader)
@@ -266,7 +274,7 @@ class ReadMe:
 
     def create_or_update_doc(
         self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str
-    ) -> Tuple[str, bool]:
+    ) -> tuple[str, bool]:
         markdown = self.process_markdown(doc["body"], file_path, doc["slug"])
 
         create_doc_request = {
@@ -311,7 +319,7 @@ class ReadMe:
         body = self.convert_note_tags(body)
         body = self.parse_images(body)
         body = self.convert_cloudinary_videos(body)
-        return body
+        return self.convert_youtube_videos(body)
 
     def sanitize_html(self, body: str) -> str:
         allowed_attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
@@ -342,11 +350,10 @@ class ReadMe:
         relative_path = relative_path + "snippets/edit-this-page.md"
         body = body + f"\n\n!snippet[{relative_path}]"
         body = self.insert_markdown_snippet(body, file_path)
-        body = body.replace(
+        return body.replace(
             "!!LINK!!",
             f"https://github.com/thousandbrainsproject/tbp.monty/edit/main/{file_path}/{filename}.md",
         )
-        return body
 
     def correct_image_locations(self, body: str) -> str:
         repo = os.getenv("IMAGE_PATH")
@@ -377,8 +384,7 @@ class ReadMe:
                         new_body = new_body.replace(img_tag, new_img_tag)
 
         # Process regular markdown images
-        new_body = re.sub(regex_image_path, replace_image_path, new_body)
-        return new_body
+        return re.sub(regex_image_path, replace_image_path, new_body)
 
     def correct_file_locations(self, body: str) -> str:
         def replace_path(match):
@@ -467,10 +473,17 @@ class ReadMe:
         delete(f"{PREFIX}/version/v{self.version}")
         logging.info(f"{GREEN}Successfully deleted version {self.version}{RESET}")
 
+    def _should_ignore_video(self, identifier: str, ignore_list: list[str]) -> bool:
+        return identifier in ignore_list
+
+    def _create_video_block(self, block_type: str, block_data: dict[str, Any]) -> str:
+        return f"[block:{block_type}]\n{json.dumps(block_data, indent=2)}\n[/block]"
+
     def convert_cloudinary_videos(self, markdown_text: str) -> str:
         def replace_video(match):
-            title, full_url, cloud_id, version, filename = match.groups()
-            # Replace the cloud ID with the environment variable
+            _, _, cloud_id, version, filename = match.groups()
+            if self._should_ignore_video(filename, IGNORE_CLOUDINARY):
+                return match.group(0)
             new_url = f"https://res.cloudinary.com/{cloud_id}/video/upload/v{version}/{filename}"
             block = {
                 "html": (
@@ -482,9 +495,44 @@ class ReadMe:
                     f"Your browser does not support the video tag.</video></div>"
                 )
             }
-            return f"[block:html]\n{json.dumps(block, indent=2)}\n[/block]"
+            return self._create_video_block("html", block)
 
         return regex_cloudinary_video.sub(replace_video, markdown_text)
+
+    def convert_youtube_videos(self, markdown_text: str) -> str:
+        def replace_youtube(match):
+            title, video_id = match.groups()
+            if self._should_ignore_video(video_id, IGNORE_YOUTUBE):
+                return match.group(0)
+            youtube_url = f"https://www.youtube.com/watch?v={video_id}"
+            embed_url = f"https://www.youtube.com/embed/{video_id}?feature=oembed"
+            thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
+            block = {
+                "html": (
+                    f'<iframe class="embedly-embed" '
+                    f'src="//cdn.embedly.com/widgets/media.html?'
+                    f"src={quote(embed_url, safe='')}&"
+                    f"display_name=YouTube&"
+                    f"url={quote(youtube_url, safe='')}&"
+                    f"image={quote(thumbnail_url, safe='')}&"
+                    f'type=text%2Fhtml&schema=youtube" '
+                    f'width="854" height="480" scrolling="no" '
+                    f'title="YouTube embed" frameborder="0" '
+                    f'allow="autoplay; fullscreen; encrypted-media; '
+                    f'picture-in-picture;" '
+                    f'allowfullscreen="true"></iframe>'
+                ),
+                "url": youtube_url,
+                "title": title,
+                "favicon": "https://www.youtube.com/favicon.ico",
+                "image": thumbnail_url,
+                "provider": "https://www.youtube.com/",
+                "href": youtube_url,
+                "typeOfEmbed": "youtube",
+            }
+            return self._create_video_block("embed", block)
+
+        return regex_youtube_link.sub(replace_youtube, markdown_text)
 
     def insert_markdown_snippet(self, body: str, file_path: str) -> str:
         """Insert markdown snippets from referenced files.
@@ -494,15 +542,15 @@ class ReadMe:
             file_path: The path to the current document being processed
 
         Returns:
-            str: The document body with snippets inserted
+            The document body with snippets inserted.
         """
 
         def replace_match(match):
-            snippet_path = os.path.join(file_path, match.group(1))
-            snippet_path = os.path.normpath(snippet_path)
+            snippet_path = Path(file_path) / match.group(1)
+            snippet_path = snippet_path.resolve()
 
             try:
-                with open(snippet_path, "r") as f:
+                with snippet_path.open() as f:
                     unsafe_content = f.read()
                     return self.sanitize_html(unsafe_content)
 
@@ -510,3 +558,9 @@ class ReadMe:
                 return f"[File not found or could not be read: {snippet_path}]"
 
         return regex_markdown_snippet.sub(replace_match, body)
+
+
+class DocumentNotFound(RuntimeError):
+    """Raised when a document is not found."""
+
+    pass

@@ -6,6 +6,8 @@ Welcome, and thank you for your interest in contributing to Monty!
 
 We appreciate all of your contributions. Below, you will find a list of ways to get involved and help create AI based on principles of the neocortex.
 
+# Help with Items on our Roadmap
+We have a collection of items that we think will be important in the near-term to improve Monty's capabilities, platform usability, or the project as a whole. These items can be found in our [future work table](../future-work/project-roadmap.md). You can filter this table by your interests, background, and time availability. If an item sounds interesting, you can click on the title and read a more detailed description. 
 
 # Contribute To Our Code
 
@@ -57,13 +59,29 @@ We love seeing how you use Monty. If you created something interesting with it, 
 - **Write a Blog Post**: Share your experience and insights by writing a blog post. Please share your post with the community on our [Discourse server](https://thousandbrains.discourse.group/).
 - **Publish a Paper**: If you use our Monty implementation or ideas from the Thousand Brains Theory in your next publication, we would like to feature you on our [TBP-based papers](../community/tbp-based-papers.md) list and increase the visibility of your research.
 - **Present at Community Events**: We host regular webinars and community meetups. If you are interested in presenting your project or research, please get in touch with us at [info@thousandbrains.org](mailto:info@thousandbrains.org).
-- **Social Media**: Share your creations on social media using the hashtag `#1000brainsproject`. Follow us on [X](https://x.com/1000brainsproj), [Bluesky](https://bsky.app/profile/1000brainsproj.bsky.social) or [LinkedIn](https://www.linkedin.com/company/thousand-brains-project/), and subscribe to our [YouTube Channel](https://www.youtube.com/@thousandbrainsproject), or our [email list](https://thousandbrains.org/#newsletter).
+- **Social Media**: Share your creations on social media using the hashtag `#1000brainsproject`. Follow us on [X](https://x.com/1000brainsproj), [Bluesky](https://bsky.app/profile/thousandbrains.org) or [LinkedIn](https://www.linkedin.com/company/thousand-brains-project/), and subscribe to our [YouTube Channel](https://www.youtube.com/@thousandbrainsproject), or our [email list](https://thousandbrains.org/#newsletter).
 
 # Promote Monty
 
 Thank you for being a member of our community. By using Monty, you are already promoting Monty and the Thousand Brains Project. If you like our project, we are happy to see you mention us in your social media posts or privately to friends and colleagues.
 
+## Share Interesting Content
+
+Help the community discover relevant research by sharing interesting content related to neuroscience, reinforcement learning, SLAM, sparsity in neural networks, world models, sensorimotor AI, and computational neuroscience (grid cells, neocortex theories, hippocampus-thalamus-entorhinal cortex connections). Tag us on [Twitter/X](https://x.com/1000brainsproj) or [Bluesky](https://bsky.app/profile/thousandbrains.org), or post on our [forum](https://thousandbrains.discourse.group/) to bring relevant findings to our attention.
+
 If you want to discuss further opportunities, such as mentioning us in a blog post or newspaper article or recording an interview with us, don't hesitate to contact [info@thousandbrains.org](mailto:info@thousandbrains.org).
+
+# Connect Us with Opportunities
+
+If you know of speaking opportunities, academic institutions, research groups, or other venues where the Thousand Brains Project and Monty would be of interest, we'd love your help making connections.
+
+Whether it's a university department, conference, meetup group, or research lab, please feel free to:
+
+- Forward speaking opportunities to us
+- Make introductions
+- Connect us with relevant contacts in your network
+
+Please reach out to [info@thousandbrains.org](mailto:info@thousandbrains.org) with any opportunities or introductions.
 
 # Partner With Us
 

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,12 +9,14 @@
 # https://opensource.org/licenses/MIT.
 
 import cProfile
-import os
+from pathlib import Path
 
 import pandas as pd
 import wandb
 
-from tbp.monty.frameworks.experiments import MontyExperiment
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
+
+__all__ = ["ProfileExperimentMixin"]
 
 
 def make_stats_df(stats):
@@ -31,8 +33,7 @@ def make_stats_df(stats):
         columns=["func", "ncalls", "ccalls", "tottime", "cumtime", "callers"],
     )
 
-    df = df.sort_values("cumtime", ascending=False)
-    return df
+    return df.sort_values("cumtime", ascending=False)
 
 
 class ProfileExperimentMixin:
@@ -53,8 +54,8 @@ class ProfileExperimentMixin:
         We want to ensure that the mixin is always the leftmost class listed in
         the base classes when used so that the methods defined here override the ones
         defined in MontyExperiment or its subclasses. We also want to ensure that
-        any subclasses are actually extending MontyExperiment. This ensures that by
-        raising an error if it is not.
+        any subclasses actually extend MontyExperiment. This is enforced by raising
+        an error if that is not the case.
 
         Raises:
             TypeError: when the mixin isn't the leftmost base class of the subclass
@@ -64,13 +65,15 @@ class ProfileExperimentMixin:
         super().__init_subclass__(**kwargs)
         if cls.__bases__[0] is not ProfileExperimentMixin:
             raise TypeError("ProfileExperimentMixin must be leftmost base class.")
-        if not any([issubclass(b, MontyExperiment) for b in cls.__bases__]):
-            raise TypeError("ProfileExperimentMixin must be mixed in with a subclass "
-                            "of MontyExperiment.")
+        if not any(issubclass(b, MontyExperiment) for b in cls.__bases__):
+            raise TypeError(
+                "ProfileExperimentMixin must be mixed in with a subclass "
+                "of MontyExperiment."
+            )
 
     def make_profile_dir(self):
-        self.profile_dir = os.path.join(self.output_dir, "profile")
-        os.makedirs(self.profile_dir, exist_ok=True)
+        self.profile_dir = Path(self.output_dir) / "profile"
+        self.profile_dir.mkdir(exist_ok=True, parents=True)
 
     def setup_experiment(self, config):
         filename = "profile-setup_experiment.csv"
@@ -81,8 +84,7 @@ class ProfileExperimentMixin:
 
         self.make_profile_dir()
         df = make_stats_df(pr)
-        filepath = os.path.join(self.profile_dir, filename)
-        df.to_csv(filepath)
+        df.to_csv(self.profile_dir / filename)
 
     def run_episode(self):
         mode, epoch, episode = self.get_epoch_state()
@@ -92,8 +94,7 @@ class ProfileExperimentMixin:
         super().run_episode()
         pr.disable()
         df = make_stats_df(pr)
-        filepath = os.path.join(self.profile_dir, filename)
-        df.to_csv(filepath)
+        df.to_csv(self.profile_dir / filename)
 
     def train(self):
         filename = "profile-train.csv"
@@ -102,8 +103,7 @@ class ProfileExperimentMixin:
         super().train()
         pr.disable()
         df = make_stats_df(pr)
-        filepath = os.path.join(self.profile_dir, filename)
-        df.to_csv(filepath)
+        df.to_csv(self.profile_dir / filename)
 
     def evaluate(self):
         filename = "profile-evaluate.csv"
@@ -112,21 +112,15 @@ class ProfileExperimentMixin:
         super().evaluate()
         pr.disable()
         df = make_stats_df(pr)
-        filepath = os.path.join(self.profile_dir, filename)
-        df.to_csv(filepath)
+        df.to_csv(self.profile_dir / filename)
 
     def close(self):
         # If wandb is in use, send tables to wandb
         if len(self.wandb_handlers) > 0:
-            profile_files = os.listdir(self.profile_dir)
-            profile_paths = [
-                os.path.join(self.profile_dir, file) for file in profile_files
-            ]
-            csv_files = [i for i in profile_paths if i.endswith(".csv")]
-
-            for csv in csv_files:
+            profile_path = Path(self.profile_dir)
+            for csv in profile_path.glob("*.csv"):
                 df = pd.read_csv(csv)
-                basename = os.path.basename(csv)
+                basename = csv.name
                 table = wandb.Table(dataframe=df)
                 wandb.log({basename: table})
 

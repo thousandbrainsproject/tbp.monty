@@ -1,0 +1,41 @@
+defaults:
+  - /test/evidence_lm/base@
+  - /experiment/config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
+
+config:
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 20
+    motor_system_config:
+      motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+      motor_system_args:
+        policy:
+          _target_: tbp.monty.frameworks.models.motor_policies.PredefinedPolicy
+          agent_id: ${monty.agent_id:agent_id_0}
+          file_name: ${path.tests:unit/resources/fixed_test_actions.jsonl}
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
+        sensor_module_args:
+          sensor_module_id: patch
+          features:
+            - on_object
+            - hsv
+            - pose_vectors
+            - principal_curvatures_log
+            - pose_fully_defined
+          save_raw_obs: true
+          noise_params:
+            features:
+              hsv: 0.1
+              principal_curvatures_log: 0.1
+              pose_fully_defined: 0.01
+              pose_vectors: 2
+              curvature_directions: 2
+            location: 0.002
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: "view_finder"
+          save_raw_obs: true

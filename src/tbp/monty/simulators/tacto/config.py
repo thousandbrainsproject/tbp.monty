@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -14,8 +14,11 @@ See Also:
     https://github.com/facebookresearch/tacto
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import List, Mapping, Optional
+from pathlib import Path
+from typing import Mapping
 
 import yaml
 from importlib_resources import files
@@ -23,9 +26,9 @@ from importlib_resources import files
 from tbp.monty.simulators.resources import tacto
 
 __all__ = [
-    "TactoSensorSpec",
     "DIGIT",
     "OMNITACT",
+    "TactoSensorSpec",
 ]
 
 
@@ -44,14 +47,14 @@ class Gel:
         mesh: Gel mesh
     """
 
-    origin: List[float]
+    origin: list[float]
     width: float
     height: float
     curvature: bool
-    curvatureMax: Optional[float] = 0.005  # noqa: N815 - Original YAML name
-    R: Optional[float] = 0.1
-    countW: Optional[int] = 100  # noqa: N815 - Original YAML name
-    mesh: Optional[str] = None
+    curvatureMax: float | None = 0.005  # noqa: N815 - Original YAML name
+    R: float | None = 0.1
+    countW: int | None = 100  # noqa: N815 - Original YAML name
+    mesh: str | None = None
 
 
 @dataclass
@@ -66,11 +69,11 @@ class Camera:
         lightIDList: Select light ID list for rendering
     """
 
-    position: List[float]
-    orientation: List[float]
+    position: list[float]
+    orientation: list[float]
     yfov: float
     znear: float
-    lightIDList: List[int]  # noqa: N815 - Original YAML name
+    lightIDList: list[int]  # noqa: N815 - Original YAML name
 
 
 @dataclass
@@ -89,16 +92,16 @@ class Lights:
         intensities: List of light intensities
     """
 
-    origin: List[float]
+    origin: list[float]
     polar: bool
-    colors: List[float]
-    intensities: List[float]
-    spot: Optional[bool] = False
-    shadow: Optional[bool] = False
-    coords: Optional[List[float]] = None
-    xs: Optional[List[float]] = None
-    rs: Optional[List[float]] = None
-    thetas: Optional[List[float]] = None
+    colors: list[float]
+    intensities: list[float]
+    spot: bool | None = False
+    shadow: bool | None = False
+    coords: list[float] | None = None
+    xs: list[float] | None = None
+    rs: list[float] | None = None
+    thetas: list[float] | None = None
 
     def __post_init__(self):
         if self.spot:
@@ -124,13 +127,13 @@ class Force:
 
     Attributes:
         enable: Whether or not to enable force feedback
-        range_force: Dynamic range of forces used to simulate the elastometer
+        range_force: Dynamic range of forces used to simulate the elastomer
             deformations [0-100]
         max_deformation: Max pose depth adjustment, in meters
     """
 
     enable: bool
-    range_force: List[int]
+    range_force: list[int]
     max_deformation: float
 
 
@@ -143,7 +146,7 @@ class TactoSensorSpec:
         camera: Camera specifications. One camera for DIGIT, five for OmniTact
         gel: Sensor elastomer gel configuration
         lights: Sensor LED light configuration
-        noise: Gausian noise calibration
+        noise: Gaussian noise calibration
         force: Elastomer force feedback specification
 
     .. _Tacto:
@@ -154,8 +157,8 @@ class TactoSensorSpec:
     camera: Mapping[str, Camera]
     gel: Gel
     lights: Lights
-    noise: Optional[Noise] = None
-    force: Optional[Force] = None
+    noise: Noise | None = None
+    force: Force | None = None
 
     def __post_init__(self):
         for k, v in self.camera.items():
@@ -172,7 +175,7 @@ class TactoSensorSpec:
 
     @classmethod
     def from_yaml(cls, yaml_file):
-        with open(yaml_file, "r") as f:
+        with Path(yaml_file).open() as f:
             config = yaml.safe_load(f)["sensor"]
         return cls(**config)
 

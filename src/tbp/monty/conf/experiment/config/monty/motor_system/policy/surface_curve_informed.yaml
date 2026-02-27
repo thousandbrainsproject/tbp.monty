@@ -1,0 +1,8 @@
+defaults:
+  - surface
+
+desired_object_distance: 0.025
+pc_alpha: 0.5
+max_pc_bias_steps: 32
+min_general_steps: 8
+min_heading_steps: 12

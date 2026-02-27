@@ -27,6 +27,7 @@ The documentation is broken into six main sections:
 | ⚙️&nbsp;[How&nbsp;Monty&nbsp;Works](../how-monty-works/implementation-overview.md) | Dive deep into the concrete algorithms that make Monty work and understand how the different components function together. |
 | 🤝&nbsp;[Contributing](../contributing/why-contribute.md) | Discover the many ways you can contribute to the project - from code and documentation to testing and ideas. |
 | 👥&nbsp;[Community](../community/code-of-conduct.md) | Join our welcoming community! Learn about our guidelines, code of conduct, and how to participate effectively. |
+| 🧠&nbsp;[Theory](../theory/theory-overview.md) | The neuroscience theory behind the project and our recent conceptual progress. |
 | 🔮&nbsp;[Future&nbsp;Work](../future-work/project-roadmap.md) | Explore exciting opportunities to help shape Monty's future by contributing to planned features and improvements. |
 
 
@@ -45,11 +46,13 @@ We are excited to have you here!  Our intention for making the project open-sour
 | <a href="https://thousandbrains.discourse.group/" style="display: flex; align-items: center;"><img src="../figures/overview/discourse.png" alt="Forum" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Community&nbsp;Forum</a> | Discuss ideas, ask questions and connect with other community members |
 | <a href="https://thousandbrains.org/" style="display: flex; align-items: center;"><img src="../figures/overview/website.png" alt="Website" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Official&nbsp;Website</a> | Learn about our mission, team and the science behind the project |
 | <a href="https://www.youtube.com/@thousandbrainsproject" style="display: flex; align-items: center;"><img src="../figures/overview/youtube.png" alt="YouTube" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;YouTube&nbsp;Channel</a> | Watch tutorials, technical deep-dives and project updates |
-| <a href="https://bsky.app/profile/1000brainsproj.bsky.social" style="display: flex; align-items: center;"><img src="../figures/overview/bluesky.png" alt="Bluesky" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Bluesky</a> <a href="https://x.com/1000brainsproj" style="display: flex; align-items: center;"><img src="../figures/overview/twitter.png" alt="X/Twitter" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;X/Twitter</a> | Get the latest news and announcements, and engage with our community |
+| <a href="https://bsky.app/profile/thousandbrains.org" style="display: flex; align-items: center;"><img src="../figures/overview/bluesky.png" alt="Bluesky" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Bluesky</a> <a href="https://x.com/1000brainsproj" style="display: flex; align-items: center;"><img src="../figures/overview/twitter.png" alt="X/Twitter" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;X/Twitter</a> | Get the latest news and announcements, and engage with our community |
 | <a href="https://www.linkedin.com/company/thousand-brains-project" style="display: flex; align-items: center;"><img src="../figures/overview/linkedin.png" alt="LinkedIn" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;LinkedIn&nbsp;Page</a> | Get the latest news and announcements |
 
 # Citing This Project
-If you're writing a publication that references the Thousand Brains Project, please cite our TBP white paper:
+If you're writing a publication that references the Thousand Brains Project or Monty, please cite our papers as appropriate
+
+[Thousand Brains Project white paper](https://arxiv.org/abs/2412.18354):
 ```
 @misc{thousandbrainsproject2024,
       title={The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence},
@@ -59,5 +62,31 @@ If you're writing a publication that references the Thousand Brains Project, ple
       archivePrefix={arXiv},
       primaryClass={cs.AI},
       url={https://arxiv.org/abs/2412.18354},
+}
+```
+
+[Hierarchy or Heterarchy? A Theory of Long-Range Connections for the Sensorimotor Brain](https://arxiv.org/abs/2507.05888):
+```
+@misc{hawkins2025hierarchyheterarchytheorylongrange,
+      title={Hierarchy or Heterarchy? A Theory of Long-Range Connections for the Sensorimotor Brain},
+      author={Jeff Hawkins and Niels Leadholm and Viviane Clay},
+      year={2025},
+      eprint={2507.05888},
+      archivePrefix={arXiv},
+      primaryClass={q-bio.NC},
+      url={https://arxiv.org/abs/2507.05888},
+}
+```
+
+[Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://arxiv.org/abs/2507.04494):
+```
+@misc{leadholm2025thousandbrainssystemssensorimotorintelligence,
+      title={Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference}, 
+      author={Niels Leadholm and Viviane Clay and Scott Knudstrup and Hojae Lee and Jeff Hawkins},
+      year={2025},
+      eprint={2507.04494},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2507.04494}, 
 }
 ```

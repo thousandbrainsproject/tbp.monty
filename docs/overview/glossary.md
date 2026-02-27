@@ -35,7 +35,7 @@ A computational unit that takes features at poses as input and uses this informa
 
 # Model
 
-In Monty, a model (sometimes referred to as [Object Model](../how-monty-works/how-learning-modules-work.md#object-models)), is a representation of an object stored entirely within the boundaries of a learning module. The notion of a model in Monty differs from the concept of a deep learning neural network model in several ways:
+In Monty, a model (sometimes referred to as [Object Model](../how-monty-works/learning-module/object-models.md#object-models)), is a representation of an object stored entirely within the boundaries of a learning module. The notion of a model in Monty differs from the concept of a deep learning neural network model in several ways:
 
 - A single learning module **stores multiple object models** in memory, simultaneously.
 - The Monty system may have **multiple models of the same object** if there are multiple learning modules - this is a desired behavior.
@@ -62,6 +62,8 @@ An object's location and orientation (in a given reference frame). The location 
 # Reference Frame
 
 A specific coordinate system within which locations and rotations can be represented. For instance, a location may be represented relative to the body (body/ego-centric reference frame) or relative to some point in the world (world/allo-centric reference frame) or relative to an object's center (object-centric reference frame).
+There is no requirement for a specific origin (for example grid cells in the brain don't represent an origin). The important thing is that locations are represented relative to each other in a consistent metric space with path integration properties.
+For more information, see [our documentation on reference frames in Monty (and transforms between them)](../how-monty-works/monty/reference-frame-transformations.md).
 
 # Rigid Body Transformation
 

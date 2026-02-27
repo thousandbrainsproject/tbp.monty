@@ -1,0 +1,23 @@
+# two sensor patches at the same location with different receptive field sizes
+# Used for basic test with heterarchy.
+agent_id: ${monty.agent_id:agent_id_0}
+sensor_ids:
+  - patch_0
+  - patch_1
+  - view_finder
+height: 0.0
+position: [0.0, 1.5, 0.2]
+resolutions:
+  - [64, 64]
+  - [64, 64]
+  - [64, 64]
+positions:
+  - [0.0, 0.0, 0.0]
+  - [0.0, 0.0, 0.0]
+  - [0.0, 0.0, 0.0]
+rotations:
+  - [1.0, 0.0, 0.0, 0.0]
+  - [1.0, 0.0, 0.0, 0.0]
+  - [1.0, 0.0, 0.0, 0.0]
+semantics: [false, false, false]
+zooms: [10.0, 5.0, 1.0]

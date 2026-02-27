@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -8,8 +8,10 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import os
-import pickle
+import json
+from pathlib import Path
+
+from typing_extensions import override
 
 """
 Based on https://github.com/huggingface/transformers/blob/1438c487df5ce38a7b2ae30877b3074b96a423dd/src/transformers/trainer_callback.py
@@ -17,15 +19,15 @@ Based on https://github.com/huggingface/transformers/blob/1438c487df5ce38a7b2ae3
 
 
 class LoggingCallbackHandler:
-    """Calls a list of loggers on an event (eg post_train).
+    """Calls a list of loggers on an event (e.g., post_train).
 
     Each logger receives:
     logger_args: dict with time stamps (steps, epochs, etc.) and
-        dataloader.primary_target which contains object id and pose
+        env_interface.primary_target which contains object id and pose
     output_dir: Full path of the directory to store log files
 
     Note:
-        This logger handler is intended primarily for logging
+        This logger handler is intended primarily for logging.
     """
 
     def __init__(self, loggers, model, output_dir):
@@ -84,6 +86,7 @@ class BaseMontyLogger:
 
     def __init__(self, handlers):
         self.handlers = handlers
+        self.use_parallel_wandb_logging = False
 
     def flush(self):
         pass
@@ -118,6 +121,7 @@ class BaseMontyLogger:
     def post_eval(self, logger_args, output_dir, model):
         pass
 
+    @override
     def close(self, logger_args, output_dir, model):
         for handler in self.handlers:
             handler.close()
@@ -127,36 +131,47 @@ class TestLogger(BaseMontyLogger):
     def __init__(self, handlers):
         self.handlers = handlers
         self.log = []
+        self.use_parallel_wandb_logging = False
 
+    @override
     def pre_episode(self, logger_args, output_dir, model):
         self.log.append("pre_episode")
 
+    @override
     def post_episode(self, logger_args, output_dir, model):
         self.log.append("post_episode")
 
+    @override
     def pre_epoch(self, logger_args, output_dir, model):
         self.log.append("pre_epoch")
 
+    @override
     def post_epoch(self, logger_args, output_dir, model):
         self.log.append("post_epoch")
 
+    @override
     def pre_train(self, logger_args, output_dir, model):
         self.log.append("pre_train")
 
+    @override
     def post_train(self, logger_args, output_dir, model):
         self.log.append("post_train")
 
+    @override
     def pre_eval(self, logger_args, output_dir, model):
         self.log.append("pre_eval")
 
+    @override
     def post_eval(self, logger_args, output_dir, model):
         self.log.append("post_eval")
 
+    @override
     def close(self, logger_args, output_dir, model):
-        with open(os.path.join(output_dir, "fake_log.pkl"), "wb") as f:
-            pickle.dump(self.log, f)
+        outfile = Path(output_dir) / "fake_log.json"
+        with outfile.open("w") as f:
+            json.dump(self.log, f)
 
     def __deepcopy__(self, memo):
-        # Do not create new copy of loggers. They are create by the tests outside
+        # Do not create a new copy of the loggers; they are created by the tests outside
         # the experiment
         return self

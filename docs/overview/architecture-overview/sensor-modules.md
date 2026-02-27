@@ -8,3 +8,5 @@ The sensor module contains a sensor and associates the input to the sensor with 
 A general principle of the system is that **any processing specific to a modality happens in the sensor module**. The output of the sensor module is not modality-specific anymore and can be processed by any learning module. A crucial requirement here is that each sensor module knows the pose of the feature relative to the sensor. This means that sensors need to be able to detect features and poses of features. The system can work with any type of sensor (vision, touch, radar, LiDAR,...) and integrate information from multiple sensory modalities without effort. For this to work, sensors need to communicate sensory information in a common language.
 
 ![Sensor modules receive and process the raw sensory input. This is then communicated via a common messaging protocol to a learning module which uses this to learn and recognize models of anything in the environment.](../../figures/overview/sm_and_lm.png#width=400px)
+
+See our [implementation documentation](../../how-monty-works/observations-transforms-sensor-modules.md) for details on how we implement sensor modules in Monty.

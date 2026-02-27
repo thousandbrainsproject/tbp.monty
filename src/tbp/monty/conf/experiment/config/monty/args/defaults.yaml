@@ -1,0 +1,13 @@
+# Number of steps allowed for exploration.
+num_exploratory_steps: 1_000
+
+# Minimum number of evaluation steps.
+min_eval_steps: 3
+
+# Minimum number of training steps.
+min_train_steps: 3
+
+# Maximum total episode steps before timeout,
+# regardless of whether LMs receive sensory
+# information and perform a true matching step.
+max_total_steps: 2_500

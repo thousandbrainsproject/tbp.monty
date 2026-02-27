@@ -10,11 +10,16 @@ description: How to get the code running.
 > [!WARNING]
 > This guide will not work on Windows or non-`x86_64/amd64` Linux.
 >
+> A guide for Windows Subsystem for Linux is available here: [Getting Started on Windows via WSL](getting-started/getting-started-on-windows-via-wsl.md)
+>
 > You can follow these GitHub issues for updates:
-> - [Windows](https://github.com/thousandbrainsproject/tbp.monty/issues/52)
+> - [Windows native](https://github.com/thousandbrainsproject/tbp.monty/issues/52)
 > - [Raspberry Pi](https://github.com/thousandbrainsproject/tbp.monty/issues/85)
 >
 > If you run into problems, please let us know by [opening a GitHub issue](https://github.com/thousandbrainsproject/tbp.monty/issues/new/choose) or [posting in the Monty Code section of our forum](https://thousandbrains.discourse.group/c/monty-code/6).
+
+> [!WARNING]
+> While the repository contains a `uv.lock` file, this is currently experimental and not supported. In the future this will change, but for now, avoid trying to use `uv` with this project.
 
 # 1. Get the Code
 
@@ -40,7 +45,7 @@ To make sure your fork is up to date with our repository you need to click on `S
 ![](../figures/how-to-use-monty/update_branch.png)
 
 
-You can also update your code using the terminal by calling `git fetch upstream; git merge upstream/main` in the terminal. If you have not linked the upstream repository yet, you may first need to call `git remote add upstream upstream_repository_path.git`
+You can also update your code using the terminal by calling `git fetch upstream; git merge upstream/main`. If you have not linked the upstream repository yet, you may first need to call `git remote add upstream upstream_repository_path.git`
 
 # 2. Set up Your Environment
 
@@ -103,11 +108,11 @@ Note that by the time you read that, there may be more or less unit tests in the
 
 # 4. Run an Experiment
 
-In your usual interaction with this code base, you will most likely run experiments, not just unit tests. You can find experiment configs in the `benchmarks/configs/` folder.
+In your usual interaction with this code base, you will most likely run experiments, not just unit tests. You can find experiment configs in the `src/tbp/monty/conf/experiment` folder.
 
 ## 4.1 Download the YCB Dataset
 
-A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, run 
+A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, run
 
 ```
 python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
@@ -117,8 +122,8 @@ python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/
 
 | Models | Archive Format | Download Link |
 | --- | --- | --- |
-| pretrained_ycb_v10 | tgz |  [pretrained_ycb_v10.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.tgz) |
-| pretrained_ycb_v10 | zip |  [pretrained_ycb_v10.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.zip) |
+| pretrained_ycb_v12 | tgz |  [pretrained_ycb_v12.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.tgz) |
+| pretrained_ycb_v12 | zip |  [pretrained_ycb_v12.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.zip) |
 
 Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 
@@ -127,16 +132,16 @@ mkdir -p ~/tbp/results/monty/pretrained_models/
 
 cd ~/tbp/results/monty/pretrained_models/
 
-curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.tgz | tar -xzf -
+curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.tgz | tar -xzf -
 ```
 ```plaintext zip
 mkdir -p ~/tbp/results/monty/pretrained_models/
 
 cd ~/tbp/results/monty/pretrained_models/
 
-curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.zip
+curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.zip
 
-unzip pretrained_ycb_v10.zip
+unzip pretrained_ycb_v12.zip
 ```
 
 
@@ -144,7 +149,7 @@ The folder should then have the following structure:
 
 ```
 ~/tbp/results/monty/pretrained_models/
-|-- pretrained_ycb_v10/
+|-- pretrained_ycb_v12/
 |   |-- supervised_pre_training_5lms
 |   |-- supervised_pre_training_5lms_all_objects
 |   |-- ...
@@ -154,8 +159,8 @@ The folder should then have the following structure:
 > To unpack an archive you should be able to double click on it.
 >
 > To unpack via the command line, copy the archive into the `~/tbp/results/monty/pretrained_models/` folder and inside that folder run:
-> - for a `tgz` archive, `tar -xzf pretrained_ycb_v10.tgz`.
-> - for a `zip` archive, `unzip pretrained_ycb_v10.zip`.
+> - for a `tgz` archive, `tar -xzf pretrained_ycb_v12.tgz`.
+> - for a `zip` archive, `unzip pretrained_ycb_v12.zip`.
 
 ## [Optional] Set Environment Variables
 
@@ -167,7 +172,7 @@ If you did not save the pre-trained models in the `~/tbp/results/monty/pretraine
 export MONTY_MODELS=/path/to/your/pretrained/models/dir
 ```
 
-This path should point to the `pretrained_models` folder that contains the`pretrained_ycb_v10`folders.
+This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v12` folders.
 
 
 ### MONTY_DATA
@@ -201,13 +206,22 @@ export WANDB_DIR=${MONTY_LOGS}/wandb
 Now you can finally run an experiment! To do this, simply use this command:
 
 ```shell
-python benchmarks/run.py -e my_experiment
+python run.py experiment=my_experiment
 ```
 
-Replace `my_experiment` with the name of one of the experiment configs in `benchmarks/configs/`. For example, a good one to start with could be `randrot_noise_10distinctobj_surf_agent`.
+Replace `my_experiment` with the name of one of the experiment configs in `src/tbp/monty/conf/experiment`. For example, a good one to start with could be `randrot_noise_10distinctobj_surf_agent`.
 
 If you want to run an experiment with parallel processing to make use of multiple CPUs, simply use the `run_parallel.py` script instead of the `run.py` script like this:
 
 ```shell
-python benchmarks/run_parallel.py -e my_experiment
+python run_parallel.py experiment=my_experiment
 ```
+
+# 5. What Next?
+A good next step to get more familiar with our approach and the Monty code base is to go through our [tutorials](./tutorials.md). They include follow-along code and detailed explanations on how Monty experiments are structured, how Monty can be configured in different ways, and what happens when you run a Monty experiment.
+
+If you would like to contribute to the project, you can have a look at the many potential [ways to contribute](../contributing/contributing.md), particularly [ways to contribute code](../contributing/ways-to-contribute-to-code.md).
+
+You can also have a look at the [capabilities of Monty](../overview/vision-of-the-thousand-brains-project/capabilities-of-the-system.md) and our [project roadmap](../future-work/project-roadmap.md) to get an idea of what Monty is currently capable of and what features our team is actively working on.
+
+If you run into any issues or questions, please head over to our [Discourse forum](https://thousandbrains.discourse.group/) or [open an Issue](../contributing/contributing.md#report-an-issue). We are always happy to help!

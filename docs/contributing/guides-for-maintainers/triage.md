@@ -23,23 +23,21 @@ The desired cadence for Issue Triage is at least once per business day.
 
 A **Maintainer** will check the Issue for validity.
 
-Do not assign priority or severity to Issues (see: [RFC 2 PR and Issue Review](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0002_pr_and_issue_review.md#issue)).
-
-Do not assign **Maintainers** to Issues. Issues remain unassigned so that anyone can work on them (see: [RFC 2 PR and Issue Review](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0002_pr_and_issue_review.md#feature-requests-1)).
-
 Do not reproduce or fix bugs during triage.
 
-## Title
+## Evaluation Criteria
+
+### Title
 
 A short descriptive title.
 
-## Description
+### Description
 
 Ideally, the Issue creator followed the instructions in the Issue templates.
 
 If not, and more information is needed, _do not close the Issue_. Instead, proceed with triage, request more information by commenting on the Issue, and add a `needs discussion` label to indicate that additional information is required. Remember to add the `triaged` label to indicate that the Issue was triaged after you applied any additional labels.
 
-## Validity
+### Validity
 
 A valid Issue is on-topic, well-formatted, contains expected information, and does not violate the code of conduct.
 
@@ -54,6 +52,16 @@ Multiple labels can be assigned to an Issue.
 - `invalid`: Apply this label if you are rejecting the Issue for validity.
 - `needs discussion`: Apply this label if the Issue is missing information to determine what to do with it.
 - `triaged`: At a minimum, apply this label if the Issue is valid and you have triaged it.
+
+## Priority & Severity
+
+Do not assign priority or severity to Issues (see: [RFC 2 PR and Issue Review](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0002_pr_and_issue_review.md#issue)).
+
+## Assignment & Mentions
+
+Do not assign **Maintainers** to Issues. Issues remain unassigned so that anyone can work on them (see: [RFC 2 PR and Issue Review](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0002_pr_and_issue_review.md#feature-requests-1)).
+
+If you feel that someone should be notified of the Issue, make a comment and mention them in the comment.
 
 # Pull Request Triage
 
@@ -87,11 +95,59 @@ A valid Pull Request is on-topic, well-formatted, contains expected information,
 
 A Draft Pull Request is ignored and not triaged.
 
-## Title
+## Evaluation Criteria
 
-A short descriptive title.
+### Title
 
-## Description
+The title should be short and descriptive. Because our commit messages use the pull request title, the title should be prefixed with a label based on the [Conventional Commits 1.0.0 Standard](https://www.conventionalcommits.org/en/v1.0.0/).
+
+A breaking change is communicated by appending `!` after the label. This correlates with `MAJOR` in [RFC 7 - Monty versioning][monty-versioning].
+
+Here are some examples of titles that meet these guidelines.
+
+```
+docs: remove obsolete MotorSystemConfig references
+refactor!: Use TypedDict for SensorObservations
+fix: OmniglotEnvironment includes view_finder ProprioceptiveState
+chore: version 0.18.0
+ci: tidy ci and prepare for turning on merge queue
+fix: run_parallel no longer hands on mac
+refactor: Address mypyp issues
+test: Make hierarchy test less brittle
+```
+
+`tbp.monty` code adopts the following label `<type>`s:
+
+- `fix`: Fix to a bug in the **src/tbp/monty** codebase. This correlates with `PATCH` in [RFC 7 - Monty versioning][monty-versioning].
+- `feat`: Introduction of a new feature to the **scr/tbp/monty** codebase. This correlates with `MINOR` in [RFC 7 - Monty versioning][monty-versioning].
+- `build`: Change to the build system or external dependencies.
+- `ci`: Change to our GitHub Actions configuration files and scripts.
+- `docs`: Documentation only update.
+- `perf`: Performance improvement.
+- `refactor`: A **src/tbp/monty** code change that neither fixes a bug nor adds a feature.
+- `style`: Change that does not affect the meaning of the code (white-space, formatting, etc.).
+- `test`: Adding or correcting tests.
+- `chore`: The commit is a catch all for work outside of the types identified above. For example, the commit affects infrastructure, tooling, development, or other non-Monty framework code.
+- `rfc`: RFC proposal.
+- `revert`: Commit that reverts a previous commit.
+
+Even with the above guidance, sometimes there might be doubt or disagreement on what type to use. If it seems like multiple types are appropriate, maybe there should be multiple pull requests. Otherwise, discuss in the pull request and select a best-fit type.
+
+[monty-versioning]: https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0007_monty_versioning.md
+
+> [!NOTE]
+> `fix`, `feat`, and `refactor` types refer only to the **src/tbp/monty** codebase. Adding a new tool is not a feature. Fixing a tool is not a feature. Refactoring a tool is not a refactor of `src/tbp/monty`.
+>
+> By restricting these types to **src/tbp/monty**, it enables us to rapidly distinguish when we need to increment the `tbp.monty` version for publishing. Only `fix`, `feat`, `refactor` commits will be relevant to determine whether a `MINOR` or `MAJOR` version increment is required.
+>
+> By default, a version increment is `PATCH`. If there is a `feat` commit present, then the version increment is `MINOR`. If there is a breaking change commit present: `fix!`, `feat!`, `refactor!`, then the version increment is `MINOR` if and only if `MAJOR == 0`, and it is `MAJOR` otherwise.
+
+> [!NOTE]
+> In `tbp.monty`, we do not use the `BREAKING CHANGE` optional footer to indicate a breaking change.
+
+See [RFC 10 - Conventional Commits](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0010_conventional_commits.md) for more details.
+
+### Description
 
 If the Pull Request claims to resolve an Issue, that Issue is linked and valid.
 
@@ -99,7 +155,7 @@ If the Pull Request is standalone, it clearly and concisely describes what is be
 
 If the Pull Request is related to a previous RFC process, the RFC document is referenced.
 
-## Commit History
+### Commit History
 
 Pull Request branches from a recent `main` commit.
 
@@ -121,3 +177,15 @@ Multiple labels can be assigned to a Pull Request. For example, an `enhancement`
 - `invalid`: Apply this label if you are rejecting the Pull Request for validity.
 - `rfc:proposal`: Apply this label if the Pull Request is a [Request For Comments (RFC)](../request-for-comments-rfc.md).
 - `triaged`: At a minimum, apply this label if the Pull Request is valid, you triaged it, and it should continue the [Pull Request Flow](../pull-requests/pull-request-flow.md).
+
+## Priority & Severity
+
+Do not assign priority or severity to Pull Requests.
+
+## Assignment
+
+Use your judgement to assign the Pull Request to one or more **Maintainers** for review (this is the [GitHub Assignees feature](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/assigning-issues-and-pull-requests-to-other-github-users)). If you are the author, you _may not_ assign the Pull Request to yourself. Note that for RFCs, the meaning of the Assignees list is different (see [Request For Comments (RFC)](../request-for-comments-rfc.md)).
+
+Use your judgement to request a review for the Pull Request from one or more people (this is the [GitHub Reviewers feature](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/requesting-a-pull-request-review)).
+
+If you feel that someone should be notified of the Issue, make a comment and mention them in the comment.

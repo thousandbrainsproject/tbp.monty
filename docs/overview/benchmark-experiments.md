@@ -2,6 +2,15 @@
 title: Benchmark Experiments
 description: Performance of current implementation on our benchmark test suite.
 ---
+# General Notes
+These benchmark experiments are not common benchmarks from the AI field. There are a **set of experiments we have defined for ourselves to track our research progress**. They specifically evaluate capabilities that we have added or plan to add to Monty. 
+
+You can find Monty experiment configs for all the following experiments in the [benchmarks](https://github.com/thousandbrainsproject/tbp.monty/tree/main/benchmarks) folder. Note that the experiment parameters are not overly optimized for accuracy. **The parameters used here aim to strike a good balance between speed and accuracy** to allow our researchers to iterate quickly and evaluate algorithm changes regularly. If a particular use case requires higher accuracy or faster learning or inference, this can be achieved by adjusting learning module parameters.
+
+The runtimes reported in the tables below reflect the **total experiment runtime**, which includes overhead such as environment setup (e.g., Habitat initialization), logging, and telemetry. The isolated Monty runtime (i.e., the time spent on learning or inference) is typically less than the reported values. In Wandb logs, this corresponds to the column labeled `RUNTIME`.
+
+If you want to evaluate Monty on external benchmarks, please have a look at our [application criteria](./application-criteria.md) and [challenging preconceptions](./vision-of-the-thousand-brains-project/challenging-preconceptions.md) pages first. Particularly, note that Monty is a sensorimotor system made to efficiently learn and infer by interacting with an environment. It is not designed for large, static datasets.
+
 # Object and Pose Recognition on the YCB Dataset
 
 ## What Do We Test?
@@ -34,14 +43,14 @@ Configs with `base` in their name test each object in the 14 orientations in whi
 
 Configs with `randrot` in their name test each object in 10 random, new rotations (different rotations for each object).
 
-Configs with `noise` in their name test with noisy sensor modules where we add Gaussian noise to the sensed locations (0.002), point-normals (2), curvature directions (2), log curvatures (0.1), pose_fully_defined (0.01), and hue (0.1). Numbers in brackets are the standard deviations used for sampling the noisy observations. Note that the learned models were acquired without sensor noise. The image below should visualize how much location noise we get during inference but the LM still contains the noiseless models shown above.
+Configs with `noise` in their name test with noisy sensor modules where we add Gaussian noise to the sensed locations (0.002), surface normals (2), curvature directions (2), log curvatures (0.1), pose_fully_defined (0.01), and hue (0.1). Numbers in brackets are the standard deviations used for sampling the noisy observations. Note that the learned models were acquired without sensor noise. The image below should visualize how much location noise we get during inference but the LM still contains the noiseless models shown above.
 
 ![](../figures/overview/graph_noise_002.png#width=400px)
 
 
-Configs with `rawnoise` in the name test with noisy raw sensor input where Gaussian noise is applied directly to the depth image which is used for location, point normal, and curvature estimation. Here we use a standard deviation of 0.001. This allows us to test the noise robustness of the sensor module compared to testing the noise robustness of the learning module in the `noise` experiments.
+Configs with `rawnoise` in the name test with noisy raw sensor input where Gaussian noise is applied directly to the depth image which is used for location, surface normal, and curvature estimation. Here we use a standard deviation of 0.001. This allows us to test the noise robustness of the sensor module compared to testing the noise robustness of the learning module in the `noise` experiments.
 
-Note that all benchmark experiments were performed with the total least-squares regression implementation for computing the point-normals, and the distance-weighted quadratic regression for the principal curvatures (with their default parameters).
+Note that all benchmark experiments were performed with the total least-squares regression implementation for computing the surface normals, and the distance-weighted quadratic regression for the principal curvatures (with their default parameters).
 
 ## Shorter Experiments with 10 Objects
 
@@ -49,7 +58,7 @@ The following results are obtained from experiments using the 10-object subsets 
 
 ### Results
 
-!table[../../benchmarks/results/ycb_10objs.csv]
+!table[../../benchmarks/ycb_10objs.csv]
 
 ## Longer Experiments With all 77 YCB Objects
 
@@ -60,7 +69,7 @@ The following results are obtained from experiments on the entire YCB dataset (7
 
 ### Results
 
-!table[../../benchmarks/results/ycb_77objs.csv]
+!table[../../benchmarks/ycb_77objs.csv]
 
 ### Explanation of Some of the Results
 
@@ -74,7 +83,7 @@ The following results are obtained from experiments on the entire YCB dataset (7
   Since we need to be able to deal with noise, it can happen that objects that are similar to each other get confused. In particular, objects that only differ in some specific locations (like the fork and the spoon) can be difficult to distinguish if the policy doesn't efficiently move to the distinguishable features and if there is noise.
 
 - **Why is raw sensor noise so much worse than the standard noise condition?**
-  This is not related to the capabilities of the learning module but to the sensor module. Currently, our point normal and principal curvature estimates are not implemented to be very robust to sensor noise such that noise in the depth image can distort the point normal by more than 70 degrees. We don't want our learning module to be robust to this much noise in the point normals but instead want the sensor module to communicate better features. We already added some improvements on our point normal estimates which helped a lot on the raw noise experiment.
+  This is not related to the capabilities of the learning module but to the sensor module. Currently, our surface normal and principal curvature estimates are not implemented to be very robust to sensor noise such that noise in the depth image can distort the surface normal by more than 70 degrees. We don't want our learning module to be robust to this much noise in the surface normals but instead want the sensor module to communicate better features. We already added some improvements on our surface normal estimates which helped a lot on the raw noise experiment.
 
 - **Why do the distant agent experiments take longer and have more episodes where the most likely hypothesis is used?**
   Since the distant agent policy is less efficient in how it explores a given view (random walk of tilting the camera), we take more steps to converge with the distant agent or sometimes do not resolve the object at all (this is when we reach a time-out and use the MLH). If we have to take more steps for each episode, the runtime also increases.
@@ -88,11 +97,11 @@ In general, we want to be able to dynamically learn and infer instead of having 
 
 An object is classified as detected correctly if the detected object ID is in the list of objects used for building the graph. This means, if a model was built from multiple objects, there are multiple correct classifications for this model. For example, if we learned a graph from a tomato can and later merge points from a peach can into the same graph, then this graph would be the correct label for tomato and peach cans in the future. This is also why the experiment with similar objects reaches a higher accuracy after the first epoch. Since in the first epoch we build fewer graphs than we saw objects (representing similar objects in the same model) it makes it easier later to recognize these combined models since, for this accuracy measure, we do not need to distinguish the similar objects anymore if they are represented in the same graph. In the most extreme case, if during the first epoch, all objects were merged into a single graph, then the following epochs would get 100% accuracy. As such, future work emphasizing unsupervised learning will also require more fine-grained metrics, such as a dataset with hierarchical labels that appropriately distinguish specific instances (peach-can vs tomato-can), from general ones (cans or even just "cylindrical objects").
 
-## Results
+### Results
 
-!table[../../benchmarks/results/ycb_unsupervised.csv]
+!table[../../benchmarks/ycb_unsupervised.csv]
 
-To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning can, by definition, not be parallelized across epochs. Therefore these experiments were run without multiprocessing on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
+To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning, by definition, cannot be parallelized across epochs. Therefore these experiments were run without multiprocessing (using `run.py`).
 
 ## Unsupervised Inference
 
@@ -102,19 +111,83 @@ To simulate such a scenario, we designed an experimental setup that **swaps the 
 
 More specifically, these experiments are run purely in evaluation mode (i.e., pre-trained object graphs are loaded before the experiment begins) with no training or graph updates taking place. Monty stays in the matching phase, continuously updating its internal hypotheses based on sensory observations. For each object, the model performs a fixed number of matching steps before the object is swapped. At the end of each segment, we evaluate whether Monty’s most likely hypothesis correctly identifies the current object. All experiments are performed on 10 distinct objects from the YCB dataset and 10 random rotations for each object. Random noise is added to sensory observations.
 
-## Results
+### Results
 
-!table[../../benchmarks/results/ycb_unsupervised_inference.csv]
+!table[../../benchmarks/ycb_unsupervised_inference.csv]
+
+These experiments are currently run without multiprocessing (using `run.py`).
+
+# Compositional Datasets
+
+## Logos on Objects
+
+The following experiments evaluate Monty's ability to learn and infer compositional objects, where these consist of simple 3D objects (a disk, a cube, a cylinder, a sphere, and a mug) with 2D logos on their surface. The logos are either the [TBP](https://thousandbrains.org/) logo or the [Numenta](https://www.numenta.com/) logo. In the dataset, the logos can be in a standard orientation on the object, or oriented vertically. Finally, there is an instance of the mug with the TBP logo bent half-way along the logo at 45 degrees.
+
+![](../figures/overview/comp_logo_dataset_examples.png)
+
+We want to determine the ability of a Monty system with a hierarchy of LMs (here, a single low-level LM sending input to a single high-level LM) to build compositional models of these kinds of objects. To enable learning such models, we provide some amount of supervision to the LMs. The low and high-level LMs begin by learning the 3D objects and logos in isolation, as standalone objects. These are referred to as object "parts" in the configs. We then present Monty the compositional objects, while the low-level LM is set to perform unsupervised inference. Any object IDs it detects to the high level LM. The high level LM continues learning, and is provided with a supervised label for the compositional object (e.g. `024_mug_tbp_horz`).
+
+To measure performance, we introduced two new metrics:
+
+* `consistent_child_obj`, which measures when a learning module detects an object within the set of plausible children objects. For example, the consistent child objects for `mug_tbp_horz` would be `mug` and `tbp_logo`. We use this since the lower level LM doesn't have the compositional model and we have no ability, e.g. a semantic sensor, to know which part it was sensing.
+* `mlh_prediction_error`, which measures how closely the prediction of the most likely hypothesis matches the current input.
+
+### Results
+
+!table[../../benchmarks/logos_on_objects.csv]
 
 > [!WARNING]
+>
+> These benchmarks are not currently expected to have good performance and are used to track our research progress for compositional datasets.
+
+Note: To obtain these results, pretraining was run without parallelization across episodes, inference was run with parallelization.
+
+> [!NOTE]
+> You can download the data here:
+>
+> | Dataset | Archive Format | Download Link |
+> | --- | --- | --- |
+> | compositional_objects | tgz | [compositional_objects.tgz]((https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.tgz)) |
+> | compositional_objects | zip | [compositional_objects.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.zip) |
 > 
-> These benchmark experiments track the progress on [RFC 9: Hypotheses resampling](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0009_hypotheses_resampling.md).
+> Unpack the archive in the `~/tbp/data/` folder. For example:
+>
+> ```plaintext tgz
+> mkdir -p ~/tbp/data/
+>
+> cd ~/tbp/data/
+>
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.tgz | tar -xzf -
+> ```
+> ```plaintext zip
+> mkdir -p ~/tbp/data/
 > 
-> We do not expect these experiments to have good performance until the RFC is implemented and [issue #214](https://github.com/thousandbrainsproject/tbp.monty/issues/214) is resolved.
+> cd ~/tbp/data/
+> 
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.zip
+> 
+> unzip compositional_objects.zip
+> ```
+>
+> To generate the pretrained models, run the following experiments in order:
+> ```
+> python run.py experiment=supervised_pre_training_flat_objects_wo_logos
+> python run.py experiment=supervised_pre_training_logos_after_flat_objects
+> python run.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_monolithic_models
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl2_comp_models
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl3_comp_models
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl4_comp_models
+> ```
+
 
 # Monty-Meets-World
 
-The following experiments evaluate a Monty model on real-world images derived from the RGBD camera of an iPad/iPhone device. The models that the Monty system leverages are based on photogrammetry scans of the same objects in the real world, and Monty learns on these in the simulated Habitat environment; this approach is taken because currently, we cannot track the movements of the iPad through space, and so Monty cannot leverage its typical sensorimotor learning to build the internal models.
+The following experiments evaluate a Monty model on real-world images derived from the RGBD camera of an iPad/iPhone device. The models that the Monty system leverages are based on photogrammetry scans of the same objects in the real world, and Monty learns on these in the simulated Habitat environment; this approach is taken because currently, we cannot track the movements of the iPad through space, and so Monty cannot leverage its typical sensorimotor learning to build the internal models. 
+
+For a really cool video of the first time Monty was tested in the real world, see the recording linked on our [project showcase page](../community/project-showcase.md#monty-for-object-detection-with-the-ipad-camera).
 
 These experiments have been designed to evaluate Monty's robustness to real-world data, and in this particular case, its ability to generalize from simulation to the real-world. In the world_image experiments, the model is evaluated on the aforementioned iPad extracted images, while in the randrot_noise_sim_on_scan_monty_world experiment, we evaluate the model in simulation at inference time, albeit with some noise added and with the distant agent fixed to a single location (i.e., no hypothesis-testing policy). This enables a reasonable evaluation of the sim-to-real change in performance. Furthermore, the world_image experiments are intended to capture a variety of possible adversarial settings.
 
@@ -181,9 +254,9 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 ### Results
 
-!table[../../benchmarks/results/montymeetsworld.csv]
+!table[../../benchmarks/montymeetsworld.csv]
 
-**Note that rotation errors are meaningless since no ground truth rotation is provided**
+**Rotation errors are excluded because they are meaningless, since no ground truth rotation is provided**
 
 ### Explanation of Some of the Results
 

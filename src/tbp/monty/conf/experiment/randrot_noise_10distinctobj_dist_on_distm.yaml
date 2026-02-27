@@ -1,0 +1,9 @@
+# NOTE: This experiment can reach a higher accuracy when using a 10% TH.
+defaults:
+  - randrot_noise_10distinctobj_dist_agent
+
+config:
+  model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_base/pretrained/
+  n_eval_epochs: 10
+  logging:
+    run_name: randrot_noise_10distinctobj_dist_on_distm

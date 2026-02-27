@@ -10,10 +10,10 @@
 
 import concurrent.futures
 import logging
-import os
 import re
 import sys
 import timeit
+from pathlib import Path
 
 import requests
 
@@ -25,6 +25,7 @@ from tools.github_readme_sync.constants import (
     IGNORE_TABLES,
     REGEX_CSV_TABLE,
 )
+from tools.github_readme_sync.file import find_markdown_files, read_file_content
 
 HIERARCHY_FILE = "hierarchy.md"
 CATEGORY_PREFIX = "# "
@@ -36,7 +37,8 @@ README_URL = "https://thousandbrainsproject.readme.io"
 
 
 def create_hierarchy_file(output_dir, hierarchy):
-    with open(os.path.join(output_dir, HIERARCHY_FILE), "w") as f:
+    output_dir = Path(output_dir)
+    with (output_dir / HIERARCHY_FILE).open("w") as f:
         for category in hierarchy:
             write_category(f, category, 0)
     logging.info(f"{GREEN}Export complete{RESET}")
@@ -67,13 +69,15 @@ def write_document(file, parent_slug, doc, indent_level):
 
 
 def check_hierarchy_file(folder: str):
+    folder = Path(folder)
     hierarchy = []
 
-    if not os.path.exists(os.path.join(folder, HIERARCHY_FILE)):
-        logging.error(f"File {os.path.join(folder, HIERARCHY_FILE)} does not exist")
+    hierarchy_file = folder / HIERARCHY_FILE
+    if not hierarchy_file.exists():
+        logging.error(f"File {hierarchy_file} does not exist")
         sys.exit(1)
 
-    with open(os.path.join(folder, HIERARCHY_FILE), "r") as f:
+    with hierarchy_file.open() as f:
         content = f.read()
         content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
         lines = content.splitlines()
@@ -109,10 +113,8 @@ def check_hierarchy_file(folder: str):
             parent_stack[-1]["children"].append(new_doc)
             parent_stack.append(new_doc)
 
-            full_path = (
-                os.path.join(folder, *(el["slug"] for el in parent_stack)) + ".md"
-            )
-            errors = sanity_check(full_path)
+            slug_path = folder.joinpath(*[el["slug"] for el in parent_stack])
+            errors = sanity_check(slug_path.with_suffix(".md"))
             if errors:
                 link_check_errors.extend(errors)
 
@@ -132,16 +134,17 @@ def extract_slug(line: str):
 
 
 def sanity_check(path):
-    if not os.path.exists(path):
+    if not path.exists():
         return [f"File {path} does not exist"]
 
     return check_links(path)
 
 
 def check_links(path):
-    with open(path, "r") as f:
+    path = Path(path)
+    with path.open() as f:
         content = f.read()
-    file_name = path.split("/")[-1]
+    file_name = path.name
 
     regex_md_links = r"\[([^\]]*)\]\(([^)]+\.md(?:#[^)]*)?)\)"
     md_link_matches = re.findall(regex_md_links, content)
@@ -159,38 +162,35 @@ def check_links(path):
         f"{YELLOW} {len(table_matches)} tables{RESET}"
     )
 
-    current_dir = os.path.dirname(path)
+    current_dir = path.resolve().parent
     errors = []
 
     for match in table_matches:
-        table_name = os.path.basename(match)
+        table_name = Path(match).name
         if table_name in IGNORE_TABLES:
             continue
 
-        path_to_check = os.path.join(current_dir, match)
-        path_to_check = os.path.normpath(path_to_check)
-        if not os.path.exists(path_to_check):
+        path_to_check = current_dir / match
+        if not path_to_check.exists():
             errors.append(f"  CSV {match} does not exist")
 
     for match in md_link_matches:
         if match[1].startswith(("http://", "https://", "mailto:")):
             continue
 
-        path_to_check = os.path.join(current_dir, match[1].split("#")[0])
-        path_to_check = os.path.normpath(path_to_check)
+        path_to_check = current_dir / match[1].split("#")[0]
         if any(placeholder in match[1] for placeholder in IGNORE_DOCS):
             continue
-        logging.debug(f"{GREEN}  {path_to_check.split('/')[-1]}{RESET}")
-        if not os.path.exists(path_to_check):
+        logging.debug(f"{GREEN}  {path_to_check.name}{RESET}")
+        if not path_to_check.exists():
             errors.append(f"  Linked {match[1]} does not exist")
 
     for match in image_link_matches:
-        path_to_check = os.path.join(current_dir, match.split("#")[0])
-        path_to_check = os.path.normpath(path_to_check)
+        path_to_check = current_dir / match.split("#")[0]
         if any(placeholder in match for placeholder in IGNORE_IMAGES):
             continue
-        logging.debug(f"{CYAN}  {path_to_check.split('/')[-1]}{RESET}")
-        if not os.path.exists(path_to_check):
+        logging.debug(f"{CYAN}  {path_to_check.name}{RESET}")
+        if not path_to_check.exists():
             errors.append(f"  Image {path_to_check} does not exist")
 
     if errors:
@@ -203,17 +203,10 @@ def check_links(path):
 
 def check_external(folder, ignore_dirs, rdme):
     errors = {}
-    ignore_dirs.extend([".pytest_cache", ".github", ".git"])
     total_links_checked = 0
     url_cache = {}  # Cache to store URL check results
 
-    md_files = []
-    for root, _, files in os.walk(folder):
-        if any(ignore_dir in root for ignore_dir in ignore_dirs):
-            continue
-        md_files.extend(
-            [os.path.join(root, file) for file in files if file.endswith(".md")]
-        )
+    md_files = find_markdown_files(folder, ignore_dirs=ignore_dirs)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_file = {
@@ -263,11 +256,6 @@ def process_file(file_path, rdme, url_cache):
     return file_errors, links_checked
 
 
-def read_file_content(file_path):
-    with open(file_path, "r", encoding="utf-8") as f:
-        return f.read()
-
-
 def extract_external_links(content):
     return (
         re.findall(r"\[[^\]]*\]\(([^)]+)\)", content)
@@ -304,7 +292,7 @@ def check_readme_link(url, rdme):
         if not response:
             return [f"  broken link: {url} (Not found)"]
     except Exception as e:  # noqa: BLE001
-        return [f"  {url}: {str(e)}"]
+        return [f"  {url}: {e}"]
 
     return []
 
@@ -327,12 +315,12 @@ def check_external_link(url):
         if response.status_code < 200 or response.status_code > 299:
             return [f"  broken link: {url} ({response.status_code})"]
     except requests.RequestException as e:
-        return [f"  {url}: {str(e)}"]
+        return [f"  {url}: {e}"]
 
     return []
 
 
-def check_url(url):
+def check_url(url) -> requests.Response:
     """Check if the URL exists.
 
     The cache-control was just in-case.
@@ -342,7 +330,7 @@ def check_url(url):
     was a bit more future proof.
 
     Returns:
-        requests.Response: The response from the URL request.
+        The response from the URL request.
     """
     headers = request_headers()
 
@@ -359,7 +347,7 @@ def check_url(url):
     return response
 
 
-def request_headers():
+def request_headers() -> dict:
     """Populate the headers for the request.
 
     The cache-control was just in-case.
@@ -369,7 +357,7 @@ def request_headers():
     was a bit more future proof.
 
     Returns:
-        dict: A dictionary containing the request headers.
+        A dictionary containing the request headers.
     """
     return {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "

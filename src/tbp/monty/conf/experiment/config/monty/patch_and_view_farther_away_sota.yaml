@@ -1,0 +1,4 @@
+defaults:
+  - patch_and_view_sota
+  - motor_system/clear_motor_system_config@
+  - motor_system/informed_goal_state_driven_farther_away@motor_system_config

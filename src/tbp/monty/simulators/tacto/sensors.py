@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -14,8 +14,9 @@ See Also:
     https://github.com/facebookresearch/tacto
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Dict, List
 
 import numpy as np
 from habitat_sim.sensor import CameraSensorSpec, SensorSpec, SensorType
@@ -31,22 +32,22 @@ class TactoSensor(SensorConfig):
     """Base class common for all tacto sensors.
 
     Each specific sensor implementation should inherit this class and pass the
-    appropriated configuration file ('digit' or 'omnitact')
+    appropriate configuration file ('digit' or 'omnitact').
 
     Attributes:
         sensor_id: Sensor ID unique within the sensor module.
             The observations made by this sensor will be prefixed by
-            this id. i.e. "`sensor_id`.cam0"
-        resolution: Camera resolution (width, height). Default (32, 48)
+            this id, i.e. "`sensor_id`.cam0"
+        resolution: Camera resolution (width, height). Default (32, 48).
         position: Sensor position relative to :class:`HabitatAgent`.
-            Default (0, 0, 0)
-        rotation: Sensor rotation quaternion. Default (1, 0, 0, 0)
+            Default (0, 0, 0).
+        rotation: Sensor rotation quaternion. Default (1, 0, 0, 0).
         config: Tacto Sensor specification (DIGIT, OMNITACT)
     """
 
-    resolution: List[float] = field(default_factory=lambda: [32.0, 48.0])
+    resolution: list[float] = field(default_factory=lambda: [32.0, 48.0])
     config: TactoSensorSpec = DIGIT
-    _depths: Dict = field(default_factory=dict, init=False)
+    _depths: dict = field(default_factory=dict, init=False)
 
     def __post_init__(self):
         # Curved gel surface
@@ -68,7 +69,7 @@ class TactoSensor(SensorConfig):
         for name in self.config.camera:
             self._depths[name] = depth
 
-    def get_specs(self) -> List[SensorSpec]:
+    def get_specs(self) -> list[SensorSpec]:
         # rotation = Rotation.from_quat(self.rotation)
         # origin = np.array(self.position)
         specs = []

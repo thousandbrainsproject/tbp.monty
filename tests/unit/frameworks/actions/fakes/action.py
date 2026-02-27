@@ -8,9 +8,22 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from tbp.monty.frameworks.actions.action_samplers import ActionSampler
+from __future__ import annotations
+
+from typing_extensions import Protocol
+
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.actions.actuator import Actuator
+from tbp.monty.frameworks.agents import AgentID
+
+__all__ = ["FakeAction", "FakeActionActionSampler", "FakeActionActuator"]
+
+
+class FakeActionActionSampler(Protocol):
+    def sample_fake_action(self, agent_id: AgentID) -> FakeAction: ...
+
+
+class FakeActionActuator(Protocol):
+    def actuate_fake_action(self, action: FakeAction) -> None: ...
 
 
 class FakeAction(Action):
@@ -20,11 +33,12 @@ class FakeAction(Action):
     without considering specific action implementation details.
     """
 
-    def __init__(self, agent_id: str) -> None:
+    @classmethod
+    def sample(cls, agent_id: AgentID, sampler: FakeActionActionSampler) -> FakeAction:
+        return sampler.sample_fake_action(agent_id)
+
+    def __init__(self, agent_id: AgentID) -> None:
         super().__init__(agent_id=agent_id)
 
-    def act(self, _: Actuator) -> None:
-        pass
-
-    def sample(self, agent_id: str, _: ActionSampler) -> Action:
+    def act(self, _: FakeActionActuator) -> None:
         pass

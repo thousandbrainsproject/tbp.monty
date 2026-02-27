@@ -116,7 +116,7 @@ class TestReadme(unittest.TestCase):
         self.assertEqual(len(docs), 2)
         self.assertEqual(docs[0]["name"], "Doc 1")
         mock_get.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/categories/example-category/docs",
+            "https://dash.readme.com/api/v1/categories/example-category/docs",
             {"x-readme-version": self.version},
         )
 
@@ -138,7 +138,7 @@ class TestReadme(unittest.TestCase):
         self.assertIn("title: Test Document", doc)
         self.assertIn("This is a test document.", doc)
         mock_get.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/docs/test-doc",
+            "https://dash.readme.com/api/v1/docs/test-doc",
             {"x-readme-version": self.version},
         )
 
@@ -159,7 +159,7 @@ hidden: true
 This is a test document.""",
         )
         mock_get.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/docs/test-doc",
+            "https://dash.readme.com/api/v1/docs/test-doc",
             {"x-readme-version": self.version},
         )
 
@@ -176,7 +176,7 @@ This is a test document.""",
         doc_id = self.readme.get_doc_id("test-doc")
         self.assertEqual(doc_id, "123")
         mock_get.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/docs/test-doc",
+            "https://dash.readme.com/api/v1/docs/test-doc",
             {"x-readme-version": self.version},
         )
 
@@ -257,7 +257,7 @@ This is a test document.""",
     def test_delete_category(self, mock_delete):
         self.readme.delete_category("category-1")
         mock_delete.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/categories/category-1",
+            "https://dash.readme.com/api/v1/categories/category-1",
             {"x-readme-version": self.version},
         )
 
@@ -265,7 +265,7 @@ This is a test document.""",
     def test_delete_doc(self, mock_delete):
         self.readme.delete_doc("doc-1")
         mock_delete.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/docs/doc-1",
+            "https://dash.readme.com/api/v1/docs/doc-1",
             {"x-readme-version": self.version},
         )
 
@@ -280,7 +280,7 @@ This is a test document.""",
         self.assertTrue(created)
         self.assertEqual(category_id, "new-category-id")
         mock_get.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/categories/new-category",
+            "https://dash.readme.com/api/v1/categories/new-category",
             {"x-readme-version": self.version},
         )
         mock_post.assert_called_once_with(
@@ -325,12 +325,9 @@ This is a test document.""",
         mock_put.assert_not_called()
 
     @patch("tools.github_readme_sync.readme.get")
-    @patch("tools.github_readme_sync.readme.put")
     @patch("tools.github_readme_sync.readme.post")
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo"})
-    def test_description_field_is_sent_to_readme_as_excerpt(
-        self, mock_post, mock_put, mock_get
-    ):
+    def test_description_field_is_sent_to_readme_as_excerpt(self, mock_post, mock_get):
         mock_get.return_value = None  # Doc does not exist
         mock_post.return_value = json.dumps({"_id": "glossary-id"})
 
@@ -342,7 +339,7 @@ This is a test document.""",
             "description": "A collection of terms",
         }
 
-        doc_id, created = self.readme.create_or_update_doc(
+        self.readme.create_or_update_doc(
             order=1,
             category_id="category-id",
             doc=doc_with_description,
@@ -408,14 +405,28 @@ This is a test document.""",
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo"})
     def test_correct_file_locations_markdown(self):
         """Test file location correction for Markdown file paths."""
-        base_expected = f"[File 1](/docs/slug#sub-heading)"
+        base_expected = (
+            "[File 1](/docs/slug#sub-heading) and [File 2](/docs/slug2#sub-heading)"
+        )
 
         # Test cases for Markdown file paths
         markdown_paths_with_deep_link = [
-            "[File 1](slug.md#sub-heading)",
-            "[File 1](contibuting/slug.md#sub-heading)",
-            "[File 1](../contibuting/slug.md#sub-heading)",
-            "[File 1](../../contibuting/slug.md#sub-heading)",
+            (
+                "[File 1](slug.md#sub-heading) and "  # fmt: skip noqa: RUF028
+                "[File 2](slug2.md#sub-heading)"
+            ),
+            (
+                "[File 1](contibuting/slug.md#sub-heading) and "
+                "[File 2](contibuting/slug2.md#sub-heading)"
+            ),
+            (
+                "[File 1](../contibuting/slug.md#sub-heading) and "
+                "[File 2](../contibuting/slug2.md#sub-heading)"
+            ),
+            (
+                "[File 1](../../contibuting/slug.md#sub-heading) and "
+                "[File 2](../../contibuting/slug2.md#sub-heading)"
+            ),
         ]
 
         markdown_paths_without_deep_link = [
@@ -437,7 +448,7 @@ This is a test document.""",
 
         for path in markdown_paths_without_deep_link:
             self.assertEqual(
-                self.readme.correct_file_locations(path), f"[File 1](/docs/slug)"
+                self.readme.correct_file_locations(path), "[File 1](/docs/slug)"
             )
 
         for path in markdown_paths_that_should_not_change:
@@ -548,10 +559,105 @@ This is a test document.""",
 
         result = self.readme.convert_cloudinary_videos(input_text)
 
-        # Check that each expected block appears in the result
         for block in expected_blocks:
-            block_str = f"[block:html]\n{json.dumps(block, indent=2)}\n[/block]"
-            self.assertIn(block_str, result)
+            json_str = json.dumps(block, indent=2)
+            self.assertIn(json_str, result)
+
+        self.assertIn("[block:html]", result)
+        self.assertIn("[/block]", result)
+
+    def test_convert_cloudinary_videos_ignores_example_filename(self):
+        input_text = """
+        [Example Video](https://res.cloudinary.com/demo-cloud/video/upload/v12345/example-video.mp4)
+        """
+
+        expected_output = (
+            "\n"
+            "        [Example Video](https://res.cloudinary.com/demo-cloud/"
+            "video/upload/v12345/example-video.mp4)\n"
+            "        "
+        )
+
+        result = self.readme.convert_cloudinary_videos(input_text)
+
+        self.assertEqual(result, expected_output)
+
+    def test_convert_youtube_videos(self):
+        input_text = """
+        [First YouTube Video](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+        """
+
+        expected_html = (
+            '<iframe class=\\"embedly-embed\\" src=\\"//cdn.embedly.com/'
+            "widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%"
+            "2FdQw4w9WgXcQ%3Ffeature%3Doembed&display_name=YouTube&"
+            "url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ&"
+            "image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FdQw4w9WgXcQ%2F"
+            'hqdefault.jpg&type=text%2Fhtml&schema=youtube\\" '
+            'width=\\"854\\" height=\\"480\\" scrolling=\\"no\\" '
+            'title=\\"YouTube embed\\" frameborder=\\"0\\" '
+            'allow=\\"autoplay; fullscreen; encrypted-media; '
+            'picture-in-picture;\\" allowfullscreen=\\"true\\"></iframe>'
+        )
+
+        expected_output = (
+            "[block:embed]\n"
+            "{\n"
+            f'  "html": "{expected_html}",\n'
+            '  "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",\n'
+            '  "title": "First YouTube Video",\n'
+            '  "favicon": "https://www.youtube.com/favicon.ico",\n'
+            '  "image": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",\n'
+            '  "provider": "https://www.youtube.com/",\n'
+            '  "href": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",\n'
+            '  "typeOfEmbed": "youtube"\n'
+            "}\n"
+            "[/block]"
+        )
+
+        result = self.readme.convert_youtube_videos(input_text)
+
+        self.assertEqual(result, expected_output)
+
+    def test_convert_youtube_videos_ignores_example_video_id(self):
+        input_text = """
+        [Example Video](https://youtu.be/example-video-id)
+        [Real Video](https://youtu.be/dQw4w9WgXcQ)
+        """
+
+        expected_html = (
+            '<iframe class=\\"embedly-embed\\" src=\\"//cdn.embedly.com/'
+            "widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%"
+            "2FdQw4w9WgXcQ%3Ffeature%3Doembed&display_name=YouTube&"
+            "url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ&"
+            "image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FdQw4w9WgXcQ%2F"
+            'hqdefault.jpg&type=text%2Fhtml&schema=youtube\\" '
+            'width=\\"854\\" height=\\"480\\" scrolling=\\"no\\" '
+            'title=\\"YouTube embed\\" frameborder=\\"0\\" '
+            'allow=\\"autoplay; fullscreen; encrypted-media; '
+            'picture-in-picture;\\" allowfullscreen=\\"true\\"></iframe>'
+        )
+
+        expected_output = (
+            "\n"
+            "        [Example Video](https://youtu.be/example-video-id)\n"
+            "[block:embed]\n"
+            "{\n"
+            f'  "html": "{expected_html}",\n'
+            '  "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",\n'
+            '  "title": "Real Video",\n'
+            '  "favicon": "https://www.youtube.com/favicon.ico",\n'
+            '  "image": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",\n'
+            '  "provider": "https://www.youtube.com/",\n'
+            '  "href": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",\n'
+            '  "typeOfEmbed": "youtube"\n'
+            "}\n"
+            "[/block]"
+        )
+
+        result = self.readme.convert_youtube_videos(input_text)
+
+        self.assertEqual(result, expected_output)
 
     def test_caption_markdown_images_multiple_per_line(self):
         input_text = (
@@ -637,26 +743,28 @@ This is a test document.""",
 
     def test_convert_csv_to_html_table_relative_path(self):
         # Create a temporary directory structure
-        with tempfile.TemporaryDirectory() as tmp_dir:
+        with tempfile.TemporaryDirectory() as tmp_dir_str:
+            tmp_dir = Path(tmp_dir_str)
+
             # Create subdirectories
-            data_dir = os.path.join(tmp_dir, "data")
-            docs_dir = os.path.join(tmp_dir, "docs")
-            os.makedirs(data_dir)
-            os.makedirs(docs_dir)
+            data_dir = tmp_dir / "data"
+            docs_dir = tmp_dir / "docs"
+            data_dir.mkdir(parents=True)
+            docs_dir.mkdir(parents=True)
 
             # Create a CSV file in the data directory
-            csv_path = os.path.join(data_dir, "test.csv")
-            with open(csv_path, "w") as f:
+            csv_path = data_dir / "test.csv"
+            with csv_path.open("w") as f:
                 writer = csv.writer(f)
                 writer.writerow(["Header 1", "Header 2"])
                 writer.writerow(["Value 1", "Value 2"])
 
             # Create a mock markdown file path in the docs directory
-            doc_path = os.path.join(docs_dir, "doc.md")
+            doc_path = docs_dir / "doc.md"
 
             # Test relative path from doc to csv
             result = self.readme.convert_csv_to_html_table(
-                f"!table[../../data/test.csv]", doc_path
+                "!table[../../data/test.csv]", doc_path
             )
 
             # Check the table structure
@@ -670,18 +778,19 @@ This is a test document.""",
             self.assertIn("</table></div>", result)
 
     def test_insert_markdown_snippet(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            docs_dir = os.path.join(tmp_dir, "docs")
-            other_dir = os.path.join(tmp_dir, "other")
-            os.makedirs(docs_dir)
-            os.makedirs(other_dir)
+        with tempfile.TemporaryDirectory() as tmp_dir_str:
+            tmp_dir = Path(tmp_dir_str)
+            docs_dir = tmp_dir / "docs"
+            other_dir = tmp_dir / "other"
+            docs_dir.mkdir(parents=True)
+            other_dir.mkdir(parents=True)
 
-            source_md = os.path.join(other_dir, "source.md")
-            with open(source_md, "w") as f:
+            source_md = other_dir / "source.md"
+            with source_md.open("w") as f:
                 f.write(
                     "# Test Header\nThis is test content\n* List item 1\n* List item 2"
                 )
-            doc_path = os.path.join(docs_dir, "doc.md")
+            doc_path = docs_dir / "doc.md"
 
             result = self.readme.insert_markdown_snippet(
                 "!snippet[../../other/source.md]", doc_path

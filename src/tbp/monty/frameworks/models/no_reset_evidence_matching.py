@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -6,19 +6,25 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-
-from typing import List
+from __future__ import annotations
 
 import numpy as np
 
-from tbp.monty.frameworks.models.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
+    BurstSamplingHypothesesUpdater,
+)
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
 )
 from tbp.monty.frameworks.models.states import State
+
+__all__ = ["MontyForNoResetEvidenceGraphMatching", "NoResetEvidenceGraphLM"]
 
 
 class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
@@ -47,7 +53,7 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         # There are two separate issues this helps avoid:
         #
         # 1. Some internal variables in SMs and LMs (e.g., `stepwise_targets_list`,
-        #    `terminal_state`, `is_exploring`, `visited_locs`) are not initialized
+        #    `terminal_state`, `is_exploring`) are not initialized
         #    in `__init__`, but only inside `pre_episode`. Ideally, these should be
         #    initialized once in `__init__` and reset in `pre_episode`, but fixing
         #    this would require changes across multiple classes.
@@ -63,7 +69,7 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         # TODO: Remove initialization logic from `pre_episode`
         self.init_pre_episode = False
 
-    def pre_episode(self, primary_target, semantic_id_to_label=None):
+    def pre_episode(self, primary_target, semantic_id_to_label=None) -> None:
         if not self.init_pre_episode:
             self.init_pre_episode = True
             return super().pre_episode(primary_target, semantic_id_to_label)
@@ -72,6 +78,7 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         self._is_done = False
         self.reset_episode_steps()
         self.switch_to_matching_step()
+        self._reset_terminal_states()
 
         # keep target up-to-date for logging
         self.primary_target = primary_target
@@ -83,31 +90,38 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         # reset LMs and SMs buffers to save memory
         self._reset_modules_buffers()
 
+    def _reset_terminal_states(self):
+        for lm in self.learning_modules:
+            lm.set_individual_ts(None)
+
     def _reset_modules_buffers(self):
         """Resets buffers for LMs and SMs."""
         for lm in self.learning_modules:
             lm.buffer.reset()
         for sm in self.sensor_modules:
-            sm.raw_observations = []
-            sm.sm_properties = []
             sm.processed_obs = []
+            sm._snapshot_telemetry.reset()
 
 
 class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
     def __init__(self, *args, **kwargs):
+        # Use BurstSamplingHypothesesUpdater by default.
+        if not hasattr(kwargs, "hypotheses_updater_class"):
+            kwargs["hypotheses_updater_class"] = BurstSamplingHypothesesUpdater
         super().__init__(*args, **kwargs)
         self.last_location = {}
 
         # it does not make sense for the wait factor to exponentially
         # grow when objects are swapped without any supervisory signal.
-        self.gsg.wait_growth_multiplier = 1
+        if self.gsg is not None:
+            self.gsg.wait_growth_multiplier = 1
 
     def reset(self) -> None:
         super().reset()
         self.evidence = {}
         self.last_location = {}
 
-    def _add_displacements(self, obs: List[State]) -> List[State]:
+    def _add_displacements(self, obs: list[State]) -> list[State]:
         """Add displacements to the current observation.
 
         For each input channel, this function computes the displacement vector by
@@ -119,15 +133,14 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         at the beginning of the first episode when the last location is not set.
 
         Args:
-            obs (List[State]): A list of observations to which displacements will be
+            obs: A list of observations to which displacements will be
                 added.
 
         Returns:
-            obs (List[State]): The list of observations, each updated with a
-                displacement vector.
+            The list of observations, each updated with a displacement vector.
         """
         for o in obs:
-            if o.sender_id in self.last_location.keys():
+            if o.sender_id in self.last_location:
                 displacement = o.location - self.last_location[o.sender_id]
             else:
                 displacement = np.zeros(3)
@@ -142,6 +155,6 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         episode only. If a `last_location` exists, then first movement has occurred.
 
         Returns:
-            - Whether the agent has moved since the last reset.
+            Whether the agent has moved since the last reset.
         """
         return len(self.last_location) > 0

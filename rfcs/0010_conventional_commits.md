@@ -84,25 +84,25 @@ This is the usual one-line message summarizing the commit.
 ### Commit message with `!` to draw attention to breaking change
 
 ```
-refactor!: motor policies are an attribute of MotorSystem
+refactor!: motor policies are an attribute of MotorSystem (#123)
 ```
 
 ### Commit message introducing a new non-breaking feature
 
 ```
-feat: logging GoalState objects
+feat: logging GoalState objects (#124)
 ```
 
 ### Commit message incrementing Monty version
 
 ```
-chore: version 0.3.0
+chore: version 0.3.0 (#125)
 ```
 
 ### Commit message fixing a bug in a non-breaking manner
 
 ```
-fix: Omniglot environment
+fix: Omniglot environment (#126)
 ```
 
 ### Commit message with scope
@@ -111,7 +111,7 @@ fix: Omniglot environment
 > We do not use scopes.
 
 ```
-feat(motor_sys): add MotorModule
+feat(motor_sys): add MotorModule (#127)
 ```
 
 ### Commit message with scope and `!` to draw attention to breaking change
@@ -120,7 +120,7 @@ feat(motor_sys): add MotorModule
 > We do not use scopes.
 
 ```
-feat(api)!: on the wire CMP
+feat(api)!: on the wire CMP (#128)
 ```
 
 ### Commit message with multi-paragraph body and multiple footers
@@ -129,7 +129,7 @@ feat(api)!: on the wire CMP
 > We typically don't use these types of commits.
 
 ```
-fix: prevent racing of requests
+fix: prevent racing of requests (#129)
 
 Introduce a request id and a reference to latest request. Dismiss
 incoming responses other than from latest request.
@@ -138,7 +138,7 @@ Remove timeouts which were used to mitigate the racing issue but are
 obsolete now.
 
 Reviewed-by: Z
-Refs: #123
+Refs: #129
 ```
 
 ## Pull Requests

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2021-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -7,24 +7,29 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import copy
 import datetime
-import importlib
 import logging
-import os
 import pprint
+from pathlib import Path
+from typing import Any, Literal
 
 import numpy as np
 import torch
+from omegaconf import DictConfig
+from typing_extensions import Self
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentDataLoader,
-    EnvironmentDataLoaderPerObject,
-    EnvironmentDataset,
-    SaccadeOnImageDataLoader,
-    SaccadeOnImageFromStreamDataLoader,
+    EnvironmentInterface,
+    EnvironmentInterfacePerObject,
+    SaccadeOnImageEnvironmentInterface,
+    SaccadeOnImageFromStreamEnvironmentInterface,
 )
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.loggers.exp_logger import (
     BaseMontyLogger,
     LoggingCallbackHandler,
@@ -35,66 +40,94 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
 )
 from tbp.monty.frameworks.models.monty_base import MontyBase
-from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import (
-    config_to_dict,
     get_subset_of_args,
 )
+from tbp.monty.frameworks.utils.live_plotter import LivePlotter
 
-__all__ = {"MontyExperiment"}
+__all__ = ["MontyExperiment"]
+
+logger = logging.getLogger("tbp.monty")
 
 
 class MontyExperiment:
     """General Monty experiment class used to run sensorimotor experiments.
 
-    This class implements the framework for setting up a dataloader and Monty model,
-    the outermost loops for training and evaluating (including run epoch and episode)
+    This class implements the framework for setting up an environment interface and
+    Monty model, the outermost loops for training and evaluating (including run epoch
+    and episode).
     """
 
-    def __init__(self, config):
+    def __init__(self, config: DictConfig) -> None:
         """Initialize the experiment based on the provided configuration.
 
         Args:
             config: config specifying variables of the experiment.
         """
-        # Copy the config and store it so we can modify it freely
-        config = copy.deepcopy(config)
-        config = config_to_dict(config)
         self.config = config
 
-        self.unpack_experiment_args(config["experiment_args"])
+        self.rng = np.random.RandomState(config["seed"])
 
-    def setup_experiment(self, config):
+        self.do_train = config["do_train"]
+        self.do_eval = config["do_eval"]
+        self.experiment_mode = ExperimentMode.TRAIN
+        self.max_eval_steps = config["max_eval_steps"]
+        self.max_train_steps = config["max_train_steps"]
+        self.max_total_steps = config["max_total_steps"]
+        self.n_eval_epochs = config["n_eval_epochs"]
+        self.n_train_epochs = config["n_train_epochs"]
+        if config["model_name_or_path"]:
+            self.model_path = Path(config["model_name_or_path"])
+        else:
+            self.model_path = None
+        self.min_lms_match = config["min_lms_match"]
+        self.show_sensor_output = config["show_sensor_output"]
+        self.supervised_lm_ids = config["supervised_lm_ids"]
+        if self.supervised_lm_ids == "all":
+            self.supervised_lm_ids = list(
+                self.config["monty_config"]["learning_module_configs"].keys()
+            )
+
+        if self.show_sensor_output:
+            self.live_plotter = LivePlotter()
+
+        self.train_episodes = config.get("episode", 0)
+        self.eval_episodes = config.get("episode", 0)
+
+        self._rng_seed_history: list[int] = []
+
+    def reset_episode_rng(self):
+        """Resets the random number generator using episode-specific seed."""
+        episodes = (
+            self.train_episodes
+            if self.model.experiment_mode is ExperimentMode.TRAIN
+            else self.eval_episodes
+        )
+        seed = episode_seed(self.config["seed"], self.model.experiment_mode, episodes)
+
+        if seed in self._rng_seed_history:
+            logger.warning(f"RNG seed {seed} was used in a previous episode")
+        self._rng_seed_history.append(seed)
+
+        logger.info(f"resetting RNG to seed {seed}")
+        self.rng = np.random.RandomState(seed)
+
+    def setup_experiment(self, config: dict[str, Any]) -> None:
         """Set up the basic elements of a Monty experiment and initialize counters.
 
         Args:
             config: config specifying variables of the experiment.
         """
-        self.model = self.init_model(
+        self.init_loggers(self.config["logging"])
+        logger.info(self.config)
+        self.model: MontyBase = self.init_model(
             monty_config=config["monty_config"],
             model_path=self.model_path,
         )
-        self.load_dataset_and_dataloaders(config)
-        self.init_loggers(self.config["logging_config"])
+        self.load_environment_interfaces(config)
+        self.init_monty_data_loggers(self.config["logging"])
         self.init_counters()
-
-    ####
-    # Methods for setting up an experiment
-    ####
-
-    def unpack_experiment_args(self, experiment_args):
-        self.do_train = experiment_args["do_train"]
-        self.do_eval = experiment_args["do_eval"]
-        self.max_eval_steps = experiment_args["max_eval_steps"]
-        self.max_train_steps = experiment_args["max_train_steps"]
-        self.max_total_steps = experiment_args["max_total_steps"]
-        self.n_eval_epochs = experiment_args["n_eval_epochs"]
-        self.n_train_epochs = experiment_args["n_train_epochs"]
-        self.model_path = experiment_args["model_name_or_path"]
-        self.min_lms_match = experiment_args["min_lms_match"]
-        self.rng = np.random.RandomState(experiment_args["seed"])
-        self.show_sensor_output = experiment_args["show_sensor_output"]
 
     def init_model(self, monty_config, model_path=None):
         """Initialize the Monty model.
@@ -108,10 +141,11 @@ class MontyExperiment:
             Monty class instance
 
         Raises:
-            ValueError: If `motor_system_class` is not a subclass of `MotorSystem` or
+            TypeError: If `motor_system_class` is not a subclass of `MotorSystem` or
                 `policy_class` is not a subclass of `MotorPolicy`.
         """
-        monty_config = copy.deepcopy(monty_config)
+        # Make monty_config a dict from a DictConfig, so we can edit it.
+        monty_config = dict(copy.deepcopy(monty_config))
 
         # Create learning modules
         learning_module_configs = monty_config.pop("learning_module_configs")
@@ -121,7 +155,6 @@ class MontyExperiment:
             lm_args = lm_cfg["learning_module_args"]
             assert issubclass(lm_class, LearningModule)
             learning_modules[lm_id] = lm_class(**lm_args)
-            learning_modules[lm_id].rng = self.rng
             learning_modules[lm_id].learning_module_id = lm_id
 
         # Create sensor modules
@@ -132,25 +165,17 @@ class MontyExperiment:
             sm_args = sm_cfg["sensor_module_args"]
             assert issubclass(sm_class, SensorModule)
             sensor_modules[sm_id] = sm_class(**sm_args)
-            sensor_modules[sm_id].rng = self.rng
 
         # Create motor system
         motor_system_config = monty_config.pop("motor_system_config")
         motor_system_class = motor_system_config["motor_system_class"]
         motor_system_args = motor_system_config["motor_system_args"]
         if not issubclass(motor_system_class, MotorSystem):
-            raise ValueError(
+            raise TypeError(
                 "motor_system_class must be a subclass of MotorSystem, got "
                 f"{motor_system_class}"
             )
-        policy_class = motor_system_args["policy_class"]
-        policy_args = motor_system_args["policy_args"]
-        if not issubclass(policy_class, MotorPolicy):
-            raise ValueError(
-                f"policy_class must be a subclass of MotorPolicy, got {policy_class}"
-            )
-        policy = policy_class(rng=self.rng, **policy_args)
-        motor_system = motor_system_class(policy=policy)
+        motor_system = motor_system_class(**motor_system_args)
 
         # Get mapping between sensor modules, learning modules and agents
         lm_len = len(learning_modules)
@@ -188,101 +213,92 @@ class MontyExperiment:
 
         # Load from checkpoint
         if model_path:
-            if "model.pt" not in model_path:
-                model_path = os.path.join(model_path, "model.pt")
+            if "model.pt" not in model_path.parts:
+                model_path = model_path / "model.pt"
             state_dict = torch.load(model_path)
             model.load_state_dict(state_dict)
 
         return model
 
-    def load_dataset_and_dataloaders(self, config):
-        # Initialize everything needed for dataloader
-        dataset_class = config["dataset_class"]
-        dataset_args = config["dataset_args"]
-        self.dataset = self.load_dataset(dataset_class, dataset_args)
+    def init_env(self, env_init_func, env_init_args):
+        self.env = env_init_func(**env_init_args)
 
-        # Initialize train dataloaders if needed
-        if config["experiment_args"]["do_train"]:
-            dataloader_class = config["train_dataloader_class"]
-            dataloader_args = config["train_dataloader_args"]
-            self.train_dataloader = self.create_data_loader(
-                dataloader_class, dataloader_args
-            )
-        else:
-            self.train_dataloader = None
-
-        # Initialize eval dataloaders if needed
-        if config["experiment_args"]["do_eval"]:
-            dataloader_class = config["eval_dataloader_class"]
-            dataloader_args = config["eval_dataloader_args"]
-            self.eval_dataloader = self.create_data_loader(
-                dataloader_class, dataloader_args
-            )
-        else:
-            self.eval_dataloader = None
-
-    def load_dataset(self, dataset_class, dataset_args):
-        """Instantiate a dataset.
-
-        Possible splits include train and val for now, though this could change later
-        based on how we implement validation for monty.
-
-        Args:
-            dataset_class: The class of the dataset.
-            dataset_args: The arguments for the dataset.
-
-        Returns:
-            The instantiated dataset.
-
-        Raises:
-            TypeError: If `dataset_class` is not a subclass of `EnvironmentDataset`
-        """
-        # Require dataset_class to be EnvironmentDataset now, generalize later
-        if not issubclass(dataset_class, EnvironmentDataset):
-            raise TypeError("dataset class must be EnvironmentDataset (for now)")
-
-        dataset_args["rng"] = self.rng
-        dataset = dataset_class(**dataset_args)
-        return dataset
-
-    def create_data_loader(self, dataloader_class, dataloader_args):
-        """Dataloader used to collect data by sampling from dataset.
-
-        Args:
-            dataloader_class: The class of the dataloader.
-            dataloader_args: The arguments for the dataloader.
-
-        Returns:
-            The instantiated dataloader.
-
-        Raises:
-            TypeError: If `dataloader_class` is not a subclass of
-                `EnvironmentDataLoader`
-        """
-        # lump dataset and motor system into dataloader args
-        # assume fixed dataset, training and validation are just different loaders
-        if not issubclass(dataloader_class, EnvironmentDataLoader):
-            raise TypeError("dataset class must be EnvironmentDataLoader (for now)")
-
-        dataloader = dataloader_class(
-            **dataloader_args,
-            dataset=self.dataset,
-            motor_system=self.model.motor_system,
-            rng=self.rng,
+    def load_environment_interfaces(self, config):
+        # Initialize everything needed for environment interface
+        env_interface_config = config["env_interface_config"]
+        self.init_env(
+            env_interface_config["env_init_func"], env_interface_config["env_init_args"]
         )
 
-        assert dataloader.motor_system is self.model.motor_system
-        return dataloader
+        # Initialize train environment interface if needed
+        if config["do_train"]:
+            env_interface_class = config["train_env_interface_class"]
+            env_interface_args = dict(
+                env=self.env,
+                transform=env_interface_config["transform"],
+                experiment_mode=ExperimentMode.TRAIN,
+                **config["train_env_interface_args"],
+            )
+
+            self.train_env_interface = self.create_env_interface(
+                env_interface_class, env_interface_args
+            )
+        else:
+            self.train_env_interface = None
+
+        # Initialize eval environment interfaces if needed
+        if config["do_eval"]:
+            env_interface_class = config["eval_env_interface_class"]
+            env_interface_args = dict(
+                env=self.env,
+                transform=env_interface_config["transform"],
+                experiment_mode=ExperimentMode.EVAL,
+                **config["eval_env_interface_args"],
+            )
+
+            self.eval_env_interface = self.create_env_interface(
+                env_interface_class, env_interface_args
+            )
+        else:
+            self.eval_env_interface = None
+
+    def create_env_interface(self, env_interface_class, env_interface_args):
+        """Environment interface used to collect data from environment observations.
+
+        Args:
+            env_interface_class: The class of the environment interface.
+            env_interface_args: The arguments for the environment interface.
+
+        Returns:
+            The instantiated environment interface.
+
+        Raises:
+            TypeError: If `env_interface_class` is not a subclass of
+                `EnvironmentInterface`
+        """
+        # training and validation are just different environment interfaces
+        if not issubclass(env_interface_class, EnvironmentInterface):
+            raise TypeError(
+                "env_interface_class must be EnvironmentInterface (for now)"
+            )
+
+        env_interface = env_interface_class(
+            **env_interface_args,
+            motor_system=self.model.motor_system,
+            rng=self.rng,
+            seed=self.config["seed"],
+        )
+
+        assert env_interface.motor_system is self.model.motor_system
+        return env_interface
 
     def init_counters(self):
         # Initialize time stamp variables for logging
         self.total_train_steps = 0
-        self.train_episodes = 0
-        self.train_epochs = 0
         self.total_eval_steps = 0
-        self.eval_episodes = 0
+        self.env_interface = None
         self.eval_epochs = 0
-        self.dataloader = None
+        self.train_epochs = 0
 
     ####
     # Logging
@@ -293,8 +309,13 @@ class MontyExperiment:
         """Get current status of counters for the logger.
 
         Returns:
-            dict with current expirent state.
+            The current experiment state.
         """
+        current_rng_seed = (
+            self._rng_seed_history[-1]
+            if self._rng_seed_history
+            else self.config["seed"]
+        )
         args = dict(
             total_train_steps=self.total_train_steps,
             train_episodes=self.train_episodes,
@@ -302,52 +323,71 @@ class MontyExperiment:
             total_eval_steps=self.total_eval_steps,
             eval_episodes=self.eval_episodes,
             eval_epochs=self.eval_epochs,
+            episode_seed=current_rng_seed,
         )
-        # FIXME: 'target' attribute is specific to `EnvironmentDataLoaderPerObject`
-        if isinstance(self.dataloader, EnvironmentDataLoaderPerObject):
-            args.update(target=self.dataloader.primary_target)
+        # FIXME: 'target' attribute is specific to `EnvironmentInterfacePerObject`
+        if isinstance(self.env_interface, EnvironmentInterfacePerObject):
+            target = self.env_interface.primary_target
+            if target is not None:
+                target.update(
+                    consistent_child_objects=self.env_interface.consistent_child_objects
+                )
+            args.update(target=target)
         return args
 
-    def init_loggers(self, logging_config):
-        """Initialize logger with specified log level."""
-        # Add experiment config so config can be passed to wandb
-        all_logging_args = logging_config
-        # all_logging_args.update(config=self.config)
+    def init_loggers(self, logging_config: dict[str, Any]) -> None:
+        """Initialize logger with specified log level.
 
+        Args:
+            logging_config: Logging configuration.
+        """
         # Unpack individual logging arguments
-        self.monty_log_level = all_logging_args["monty_log_level"]
-        self.monty_handlers = all_logging_args["monty_handlers"]
-        self.wandb_handlers = all_logging_args["wandb_handlers"]
-        self.python_log_level = all_logging_args["python_log_level"]
-        self.log_to_file = all_logging_args["python_log_to_file"]
-        self.log_to_stdout = all_logging_args["python_log_to_stdout"]
-        self.output_dir = all_logging_args["output_dir"]
-        self.run_name = all_logging_args["run_name"]
+        self.python_log_level = logging_config["python_log_level"]
+        self.log_to_file = logging_config["python_log_to_file"]
+        self.log_to_stderr = logging_config["python_log_to_stderr"]
+        self.output_dir = Path(logging_config["output_dir"])
+        self.run_name = logging_config["run_name"]
 
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
+        self.output_dir.mkdir(exist_ok=True, parents=True)
 
-        # If basic config has been set by a previous experiment, ipython, code editor,
-        # or anything else, the config will not be properly set. importlib.reload gets
-        # around this and ensures
-        importlib.reload(logging)
+        # Treat as root logger
+        logger.propagate = False
+
+        # Clear any existing tpb.monty logger handlers
+        for handler in logger.handlers:
+            logger.removeHandler(handler)
 
         # Create basic python logging handlers
-        python_logging_handlers = []
+        python_logging_handlers: list[logging.Handler] = []
         if self.log_to_file:
             python_logging_handlers.append(
-                logging.FileHandler(os.path.join(self.output_dir, "log.txt"), mode="w")
+                logging.FileHandler(self.output_dir / "log.txt", mode="w")
             )
-        if self.log_to_stdout:
-            python_logging_handlers.append(logging.StreamHandler())
+        if self.log_to_stderr:
+            handler = logging.StreamHandler()
+            handler.setFormatter(
+                logging.Formatter(
+                    fmt="%(levelname)s:%(name)s:%(funcName)s:%(lineno)d:%(message)s"
+                )
+            )
+            python_logging_handlers.append(handler)
 
-        # Configure basic python logging
-        logging.basicConfig(
-            level=self.python_log_level,
-            handlers=python_logging_handlers,
-        )
-        logging.info(f"Logger initialized at {datetime.datetime.now()}")
-        logging.debug(pprint.pformat(self.config))
+        logger.setLevel(self.python_log_level)
+        for handler in python_logging_handlers:
+            logger.addHandler(handler)
+
+        logger.info("logger initialized")
+        logger.debug(pprint.pformat(self.config))
+
+    def init_monty_data_loggers(self, logging_config: dict[str, Any]) -> None:
+        """Initialize Monty data loggers.
+
+        Args:
+            logging_config: Logging configuration.
+        """
+        self.monty_log_level = logging_config["monty_log_level"]
+        self.monty_handlers = logging_config["monty_handlers"]
+        self.wandb_handlers = logging_config["wandb_handlers"]
 
         # Configure Monty logging
         monty_handlers = []
@@ -355,15 +395,15 @@ class MontyExperiment:
         for handler in self.monty_handlers:
             if handler.log_level() == "DETAILED":
                 has_detailed_logger = True
-            handler_args = get_subset_of_args(all_logging_args, handler.__init__)
+            handler_args = get_subset_of_args(logging_config, handler.__init__)
             monty_handler = handler(**handler_args)
             monty_handlers.append(monty_handler)
 
         # Configure wandb logging
         if len(self.wandb_handlers) > 0:
-            wandb_args = get_subset_of_args(all_logging_args, WandbWrapper.__init__)
+            wandb_args = get_subset_of_args(logging_config, WandbWrapper.__init__)
             wandb_args.update(
-                config=self.config,
+                config=dict(self.config),
                 run_name=wandb_args["run_name"] + "_" + wandb_args["wandb_id"],
             )
             monty_handlers.append(WandbWrapper(**wandb_args))
@@ -372,7 +412,7 @@ class MontyExperiment:
                     has_detailed_logger = True
 
         if has_detailed_logger and self.monty_log_level != "DETAILED":
-            logging.warning(
+            logger.warning(
                 f"Log level is set to {self.monty_log_level} but you "
                 "specified a detailed logging handler. Setting log level "
                 "to detailed."
@@ -380,44 +420,41 @@ class MontyExperiment:
             self.monty_log_level = "DETAILED"
 
         if self.monty_log_level == "DETAILED" and not has_detailed_logger:
-            logging.warning(
-                "You are setting the monty logging level to DETAILED, but all your"
-                "handlers are BASIC. Consider setting the level to BASIC, or adding a"
+            logger.warning(
+                "You are setting the monty logging level to DETAILED, but all your "
+                "handlers are BASIC. Consider setting the level to BASIC, or adding a "
                 "DETAILED handler"
             )
 
         for lm in self.model.learning_modules:
             lm.has_detailed_logger = has_detailed_logger
 
-        if has_detailed_logger or self.show_sensor_output:
-            # If we log detailed stats we want to save sm raw obs by default.
+        if has_detailed_logger:
             for sm in self.model.sensor_modules:
-                sm.save_raw_obs = True
+                if hasattr(sm, "save_raw_obs") and not sm.save_raw_obs:
+                    logger.warning(
+                        "You are using a DETAILED logger with sensor module "
+                        f"{sm.sensor_module_id} but 'save_raw_obs' is False. "
+                        "Consider setting 'save_raw_obs' to True to log and visualize "
+                        "the SM RGB raw values."
+                    )
 
         # monty_log_level determines if we used Basic or Detailed logger
         # TODO: only defined for MontyForGraphMatching right now, need to add TM later
         # NOTE: later, more levels that Basic or Detailed could be added
 
-        if isinstance(self.model, MontyBase):
-            if self.monty_log_level in self.model.LOGGING_REGISTRY:
-                logger_class = self.model.LOGGING_REGISTRY[self.monty_log_level]
-                self.monty_logger = logger_class(handlers=monty_handlers)
-
-            else:
-                logging.warning(
-                    "Unable to match monty logger to log level"
-                    "An empty logger will be used as a placeholder"
-                )
-                self.monty_logger = BaseMontyLogger(handlers=[])
+        if self.monty_log_level in self.model.LOGGING_REGISTRY:
+            logger_class = self.model.LOGGING_REGISTRY[self.monty_log_level]
+            self.monty_logger = logger_class(handlers=monty_handlers)
         else:
-            raise (
-                NotImplementedError,
-                "Please implement a mapping from monty_log_level to a logger class"
-                f"for models of type {type(self.model)}",
+            logger.warning(
+                "Unable to match monty logger to log level. "
+                "An empty logger will be used as a placeholder"
             )
+            self.monty_logger = BaseMontyLogger(handlers=[])
 
-        if "log_parallel_wandb" in all_logging_args.keys():
-            self.monty_logger.use_parallel_wandb_logging = all_logging_args[
+        if "log_parallel_wandb" in logging_config:
+            self.monty_logger.use_parallel_wandb_logging = logging_config[
                 "log_parallel_wandb"
             ]
         # Instantiate logging callback handler for custom monty loggers
@@ -426,50 +463,81 @@ class MontyExperiment:
         )
 
     def get_epoch_state(self):
-        mode = self.model.experiment_mode
-
-        if mode == "train":
+        if self.experiment_mode is ExperimentMode.TRAIN:
             epoch = self.train_epochs
             episode = self.train_episodes
         else:
             epoch = self.eval_epochs
             episode = self.eval_episodes
 
-        return mode, epoch, episode
+        return self.experiment_mode, epoch, episode
 
     ####
     # Methods for running the experiment
     ####
 
-    def pre_step(self, step, observation):
+    def pre_step(self, _step, _observation):
         """Hook for anything you want to do before a step."""
         self.logger_handler.pre_step(self.logger_args)
 
-    def post_step(self, step, observation):
+    def post_step(self, _step, _observation):
         """Hook for anything you want to do after a step."""
         self.logger_handler.post_step(self.logger_args)
 
     def run_episode(self):
         """Run one episode until model.is_done."""
         self.pre_episode()
-        for step, observation in enumerate(self.dataloader):
-            self.pre_step(step, observation)
-            self.model.step(observation)
-            self.post_step(step, observation)
+        step = 0
+        ctx = RuntimeContext(rng=self.rng)
+        while True:
+            try:
+                observations = self.env_interface.step(ctx, first=(step == 0))
+            except StopIteration:
+                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
+                #       episode termination. This is a holdover from when we used
+                #       iterators. However, this also abdicates control of the
+                #       experiment to the policy. We should find a better way to handle
+                #       this, so that the experiment can control the episode termination
+                #       fully. For example, we know how many steps the policy will take,
+                #       so the experiment can set max steps based on that knowledge
+                #       alone.
+                break
+
+            self.pre_step(step, observations)
+            self.model.step(ctx, observations)
+            self.post_step(step, observations)
             if self.model.is_done or step >= self.max_steps:
                 break
+            step += 1
+
         self.post_episode(step)
 
     def pre_episode(self):
         """Call pre_episode on elements in experiment and set mode."""
+        if self.experiment_mode is ExperimentMode.TRAIN:
+            logger.info(
+                f"running train epoch {self.train_epochs} "
+                f"train episode {self.train_episodes}"
+            )
+        else:
+            logger.info(
+                f"running eval epoch {self.eval_epochs} "
+                f"eval episode {self.eval_episodes}"
+            )
+
+        self.reset_episode_rng()
+
         self.model.pre_episode()
-        self.dataloader.pre_episode()
+        self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps
-        if not self.model.experiment_mode == "train":
+        if self.experiment_mode is not ExperimentMode.TRAIN:
             self.max_steps = self.max_eval_steps
 
         self.logger_handler.pre_episode(self.logger_args)
+
+        if self.show_sensor_output:
+            self.live_plotter.initialize_online_plotting()
 
     def post_episode(self, steps):
         """Call post_episode on elements in experiment and increment counters.
@@ -478,7 +546,7 @@ class MontyExperiment:
             logger_handler.post_episode
             model.post_episode
             increment counters
-            dataloader.post_episode
+            env_interface.post_episode
         If the logger_handler is called later it will not log the correct
         episode ID and target object. If model.post_episode is called before the
         logger we have already updated the target to graph mapping and will never
@@ -487,77 +555,91 @@ class MontyExperiment:
         self.logger_handler.post_episode(self.logger_args)
         self.model.post_episode()
 
-        if self.model.experiment_mode == "train":
+        if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_episodes += 1
             self.total_train_steps += steps
         else:
             self.eval_episodes += 1
             self.total_eval_steps += steps
 
-        # move down here, otherwise dataloader.primary_target is already changed
-        self.dataloader.post_episode()
+        # move down here, otherwise env_interface.primary_target is already changed
+        self.env_interface.post_episode()
 
     def run_epoch(self):
         """Run epoch -> Run one episode for each object."""
         self.pre_epoch()
-        if isinstance(self.dataloader, SaccadeOnImageFromStreamDataLoader):
+        if isinstance(self.env_interface, SaccadeOnImageFromStreamEnvironmentInterface):
             try:
                 while True:
                     self.run_episode()
             except KeyboardInterrupt:
-                logging.info("Data streaming interupted. Stopping experiment.")
-        elif isinstance(self.dataloader, SaccadeOnImageDataLoader):
-            num_episodes = len(self.dataloader.scenes)
+                logger.info("Data streaming interrupted. Stopping experiment.")
+        elif isinstance(self.env_interface, SaccadeOnImageEnvironmentInterface):
+            num_episodes = len(self.env_interface.scenes)
             for _ in range(num_episodes):
                 self.run_episode()
-        elif isinstance(self.dataloader, EnvironmentDataLoaderPerObject):
-            for object_name in self.dataloader.object_names:
-                logging.info(f"Running a simulation to model object: {object_name}")
+        elif isinstance(self.env_interface, EnvironmentInterfacePerObject):
+            for object_name in self.env_interface.object_names:
+                logger.info(f"Running a simulation to model object: {object_name}")
                 self.run_episode()
         else:
-            logging.info("Running single episode")
+            logger.info("Running single episode")
             self.run_episode()
 
         self.post_epoch()
 
     def pre_epoch(self):
-        """Set dataloader and call sub pre_epoch functions."""
-        self.dataloader = self.train_dataloader
-        if not self.model.experiment_mode == "train":
-            self.dataloader = self.eval_dataloader
+        """Set environment interface and call sub pre_epoch functions."""
+        if self.experiment_mode is ExperimentMode.TRAIN:
+            logger.info(f"running train epoch {self.train_epochs}")
+        else:
+            logger.info(f"running eval epoch {self.eval_epochs}")
+        self.env_interface = self.train_env_interface
+        if self.experiment_mode is not ExperimentMode.TRAIN:
+            self.env_interface = self.eval_env_interface
 
-        self.dataloader.pre_epoch()
+        self.env_interface.pre_epoch()
         self.logger_handler.pre_epoch(self.logger_args)
 
     def post_epoch(self):
         """Call sub post_epoch functions and save state dict."""
         # NOTE: maybe an option not to save everything every epoch?
-        self.save_state_dict(
-            output_dir=os.path.join(self.output_dir, f"{self.train_epochs}")
-        )
+        self.save_state_dict(output_dir=self.output_dir / f"{self.train_epochs}")
         self.logger_handler.post_epoch(self.logger_args)
 
-        if self.model.experiment_mode == "train":
+        if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_epochs += 1
-            self.train_dataloader.post_epoch()
+            self.train_env_interface.post_epoch()
         else:
             self.eval_epochs += 1
-            self.eval_dataloader.post_epoch()
+            self.eval_env_interface.post_epoch()
+
+    def run(self):
+        """Run the experiment."""
+        if self.do_train:
+            self.train()
+
+        if self.do_eval:
+            self.evaluate()
 
     def train(self):
         """Run n_train_epochs."""
+        logger.info(f"running {self.n_train_epochs} train epochs")
+        self.experiment_mode = ExperimentMode.TRAIN
         self.logger_handler.pre_train(self.logger_args)
-        self.model.set_experiment_mode("train")
+        self.model.set_experiment_mode(self.experiment_mode)
         for _ in range(self.n_train_epochs):
             self.run_epoch()
         self.logger_handler.post_train(self.logger_args)
 
     def evaluate(self):
         """Run n_eval_epochs."""
+        logger.info(f"running {self.n_eval_epochs} eval epochs")
+        self.experiment_mode = ExperimentMode.EVAL
         # TODO: check that number of eval epochs is at least as many as length
-        # of dataloader number of rotations
+        # of environment interface number of rotations
         self.logger_handler.pre_eval(self.logger_args)
-        self.model.set_experiment_mode("eval")
+        self.model.set_experiment_mode(self.experiment_mode)
         for _ in range(self.n_eval_epochs):
             self.run_epoch()
         self.logger_handler.post_eval(self.logger_args)
@@ -579,7 +661,7 @@ class MontyExperiment:
         model_state_dict = self.model.state_dict()
         exp_state_dict = self.state_dict()
         output_dir = output_dir if output_dir is not None else self.output_dir
-        os.makedirs(output_dir, exist_ok=True)
+        output_dir.mkdir(exist_ok=True, parents=True)
         # When performing evaluation with parallel runs on a remote server
         # (assumed if we are using parallel wandb logging), then don't save models;
         # these can fill a huge amount of hard-disk memory before they are cleaned up
@@ -588,21 +670,22 @@ class MontyExperiment:
         # TODO can consider a save frequency for training as well; e.g. currently
         # with training from scratch, we save +++ data
         if (
-            self.model.experiment_mode == "eval"
+            self.experiment_mode is ExperimentMode.EVAL
             and self.monty_logger.use_parallel_wandb_logging
         ):
             pass
         else:
-            logging.info(f"saving model to {output_dir}")
-            torch.save(model_state_dict, os.path.join(output_dir, "model.pt"))
-            torch.save(exp_state_dict, os.path.join(output_dir, "exp_state_dict.pt"))
-            torch.save(self.config, os.path.join(output_dir, "config.pt"))
+            logger.info(f"saving model to {output_dir}")
+            torch.save(model_state_dict, output_dir / "model.pt")
+            torch.save(exp_state_dict, output_dir / "exp_state_dict.pt")
+            torch.save(self.config, output_dir / "config.pt")
 
     def load_state_dict(self, load_dir):
         """Load state_dict of previous experiment."""
-        model_state_dict = torch.load(os.path.join(load_dir, "model.pt"))
-        exp_state_dict = torch.load(os.path.join(load_dir, "exp_state_dict.pt"))
-        config = torch.load(os.path.join(load_dir, "config.pt"))
+        load_dir = Path(load_dir)
+        model_state_dict = torch.load(load_dir / "model.pt")
+        exp_state_dict = torch.load(load_dir / "exp_state_dict.pt")
+        config = torch.load(load_dir / "config.pt")
         state_dict_keys = self.state_dict().keys()
 
         self.model.load_state_dict(model_state_dict)
@@ -611,20 +694,21 @@ class MontyExperiment:
             setattr(self, k, exp_state_dict[k])
 
     def close(self):
-        if isinstance(self.dataset, EnvironmentDataset):
-            self.dataset.close()
+        env = getattr(self, "env", None)
+        if env is not None:
+            env.close()
+            self.env = None
 
         # Close monty logging
         self.logger_handler.close(self.logger_args)
 
         # Close python logging
-        python_logger = logging.getLogger()
-        for handler in python_logger.handlers:
-            logging.debug(f"Removing and closing python log handler: {handler}")
-            python_logger.removeHandler(handler)
+        for handler in logger.handlers:
+            logger.debug(f"Removing and closing python log handler: {handler}")
+            logger.removeHandler(handler)
             handler.close()
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         """Context manager entry method.
 
         Returns:
@@ -633,13 +717,13 @@ class MontyExperiment:
         self.setup_experiment(self.config)
         return self
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def __exit__(self, exc_type, exc_value, exc_traceback) -> Literal[False]:
         """Context manager exit method.
 
         Ensure that we always close the environment if necessary.
 
         Returns:
-            bool to indicate whether to supress any exceptions that were raised.
+            Whether to suppress any exceptions that were raised.
         """
         self.close()
         return False  # don't silence exceptions inside the with block

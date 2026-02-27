@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -18,6 +18,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_right_hand_angle,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class NumpyGraph:
     """Alternative way to represent graphs without using torch.
@@ -31,7 +33,7 @@ class NumpyGraph:
 
 
 def torch_graph_to_numpy(torch_graph):
-    """Turn torch geometric data structure into dict with numpy arrays.
+    """Turn a torch geometric data structure into a dict with numpy arrays.
 
     Args:
         torch_graph: Torch geometric data structure.
@@ -39,7 +41,7 @@ def torch_graph_to_numpy(torch_graph):
     Returns:
         NumpyGraph.
     """
-    numpy_graph = dict()
+    numpy_graph = {}
     for key in list(torch_graph.keys):
         if isinstance(torch_graph[key], torch.Tensor):
             numpy_graph[key] = np.array(torch_graph[key])
@@ -50,7 +52,7 @@ def torch_graph_to_numpy(torch_graph):
 
 def already_in_list(
     existing_points, new_point, features, clean_ids, query_id, graph_delta_thresholds
-):
+) -> bool:
     """Check if a given point is already in a list of points.
 
     Args:
@@ -65,7 +67,7 @@ def already_in_list(
             the graph
 
     Returns:
-        bool: Whether the point is already in the list
+        Whether the point is already in the list
     """
     in_list = False
 
@@ -75,9 +77,9 @@ def already_in_list(
         < graph_delta_thresholds["distance"]
     )
 
-    assert (
-        "on_object" not in graph_delta_thresholds.keys()
-    ), "Don't pass feature-change SM delta_thresholds for graph_delta_thresholds"
+    assert "on_object" not in graph_delta_thresholds, (
+        "Don't pass feature-change SM delta_thresholds for graph_delta_thresholds"
+    )
 
     # Iterate through old graph points that do match distance-wise, performing
     # additional checks
@@ -94,16 +96,16 @@ def already_in_list(
         # TODO: What to do when a feature is received that is not in
         # graph_delta_thresholds? Currently it will not be considered when looking at
         # redundancy of the point.
-        for feature in graph_delta_thresholds.keys():
-            if feature in features.keys():
+        for feature in graph_delta_thresholds:
+            if feature in features:
                 if feature == "hsv":
                     # Only consider hue, not saturation and lightness at this point
                     match_hue = features[feature][feature_idx][0]
                     current_hue = features[feature][query_id][0]
 
-                    assert np.all(
-                        np.array(graph_delta_thresholds[feature][1:]) == 1
-                    ), "Only considering hue"
+                    assert np.all(np.array(graph_delta_thresholds[feature][1:]) == 1), (
+                        "Only considering hue"
+                    )
 
                     hue_d = min(
                         abs(current_hue - match_hue),
@@ -111,13 +113,13 @@ def already_in_list(
                     )  # Use circular difference to reflect angular nature of hue
 
                     if hue_d > graph_delta_thresholds[feature][0]:
-                        logging.debug(
+                        logger.debug(
                             f"Interesting point because of {feature} : {hue_d}"
                         )
                         redundant_point = False
                         break
                 elif feature == "pose_vectors":
-                    # TODO S: currently just looking at first pose vector (pn)
+                    # TODO S: currently just looking at first pose vector (sn)
                     angle_between = get_angle(
                         features["pose_vectors"][feature_idx][:3],
                         features["pose_vectors"][query_id][:3],
@@ -137,19 +139,17 @@ def already_in_list(
                     if len(delta_change.shape) > 0:
                         for i, dc in enumerate(delta_change):
                             if dc > graph_delta_thresholds[feature][i]:
-                                logging.debug(
+                                logger.debug(
                                     f"Interesting point because of {feature} : {dc}"
                                 )
                                 redundant_point = False
                                 break
-                    else:
-                        if delta_change > graph_delta_thresholds[feature]:
-                            logging.debug(
-                                "Interesting point because of "
-                                f"{feature} : {delta_change}"
-                            )
-                            redundant_point = False
-                            break
+                    elif delta_change > graph_delta_thresholds[feature]:
+                        logger.debug(
+                            f"Interesting point because of {feature} : {delta_change}"
+                        )
+                        redundant_point = False
+                        break
 
         if redundant_point:
             # Considered in the list if all features above (incl. distance) are
@@ -192,13 +192,13 @@ def remove_close_points(point_cloud, features, graph_delta_thresholds, old_graph
     new_points = list(point_cloud[:old_graph_index])
 
     if graph_delta_thresholds is None:
-        # Asign mutable default value
+        # Assign mutable default value
         graph_delta_thresholds = dict(
             distance=0.001,
         )
-    if "pose_vectors" not in graph_delta_thresholds.keys():
+    if "pose_vectors" not in graph_delta_thresholds:
         # By default, we will still consider a nearby point as new if the difference
-        # in point-normals suggests it is on the other side of an object
+        # in surface normals suggests it is on the other side of an object
         # NOTE: currently not looking at curvature directions/second pose vector
         graph_delta_thresholds["pose_vectors"] = [np.pi / 2, np.pi * 2, np.pi * 2]
 
@@ -238,8 +238,7 @@ def increment_sparse_tensor_by_count(old_tensor, indices):
         new_indices, new_values, old_tensor.shape
     ).coalesce()
     # Add the new sparse tensor to the old one
-    new_tensor = old_tensor + new_sparse_tensor
-    return new_tensor
+    return old_tensor + new_sparse_tensor
 
 
 def get_values_from_dense_last_dim(tensor, index_3d):
@@ -254,18 +253,17 @@ def get_values_from_dense_last_dim(tensor, index_3d):
         List of values.
     """
     last_dim_size = tensor.shape[-1]
-    values = [
+    return [
         float(tensor[index_3d[0], index_3d[1], index_3d[2], n])
         for n in range(last_dim_size)
     ]
-    return values
 
 
 def expand_index_dims(indices_3d, last_dim_size):
     """Expand 3d indices to 4d indices by adding a 4th dimension with size.
 
     Args:
-        indices_3d: 3d indices that should be comverted to 4d
+        indices_3d: 3d indices that should be converted to 4d
         last_dim_size: desired size of the 4th dimension (will be filled with
             arange indices from 0 to last_dim_size-1)
 
@@ -307,35 +305,39 @@ def get_cubic_patches(arr_shape, centers, size):
 def pose_vector_mean(pose_vecs, pose_fully_defined):
     """Calculate mean of pose vectors.
 
-    This takes into account that point normals may contain observations from two
+    This takes into account that surface normals may contain observations from two
     surface sides and curvature directions have an ambiguous direction. It also
     enforces them to stay orthogonal.
 
-    If not pose_fully_defined, the curvature directions are meaningless and we just
-    return the first observation. Theoretically this shouldn't matter but it can save
+    If not pose_fully_defined, the curvature directions are meaningless, and we just
+    return the first observation. Theoretically this shouldn't matter, but it can save
     some computation time.
 
     Returns:
-        ?
+        Tuple containing the representative pose vector mean and a bool
+        indicating whether we used curvature directions to update it.
     """
-    # Check the angle between all point normals relative to the first curvature
+    # Check the angle between all surface normals relative to the first curvature
     # directions. Then look at how many are positive vs. negative and use the ones
-    # that make up the majority. So if 5 pns point one way and 10 in the opposite,
-    # we will use the 10 and discard the rest. This avoids averaging over pns that
-    # are from opposite sides of an objects surface.
+    # that make up the majority. So if 5 surface normals point one way and 10 in the
+    # opposite, we will use the 10 and discard the rest. This avoids averaging over sns
+    # that are from opposite sides of an objects surface.
     valid_pose_vecs = np.where(np.any(pose_vecs, axis=1))[0]
     if len(valid_pose_vecs) == 0:
-        logging.debug(f"no valid pose vecs: {pose_vecs}")
+        logger.debug(f"no valid pose vecs: {pose_vecs}")
         return None, False
     # TODO: more generic names
-    pns = pose_vecs[valid_pose_vecs, :3]
+    surface_normals = pose_vecs[valid_pose_vecs, :3]
     cds1 = pose_vecs[valid_pose_vecs, 3:6]
     cds2 = pose_vecs[valid_pose_vecs, 6:9]
-    pns_to_use = get_right_hand_angle(pns, cds1[0], cds2[0]) > 0
-    if (sum(pns_to_use) < len(pns_to_use) // 2) or (sum(pns_to_use) == 0):
-        pns_to_use = np.logical_not(pns_to_use)
-    # Take the mean of all pns pointing in the same half sphere spanned by the cds.
-    norm_mean = np.mean(pns[pns_to_use], axis=0)
+    surface_normals_to_use = get_right_hand_angle(surface_normals, cds1[0], cds2[0]) > 0
+    if (sum(surface_normals_to_use) < len(surface_normals_to_use) // 2) or (
+        sum(surface_normals_to_use) == 0
+    ):
+        surface_normals_to_use = np.logical_not(surface_normals_to_use)
+    # Take the mean of all surface normals pointing in the same half sphere spanned by
+    # the cds.
+    norm_mean = np.mean(surface_normals[surface_normals_to_use], axis=0)
     # Make sure the mean vector still has unit length.
     normed_norm_mean = norm_mean / np.linalg.norm(norm_mean)
 
@@ -355,7 +357,7 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
         cds1[cd1_dirs] = -cds1[cd1_dirs]
         cd1_mean = np.mean(cds1, axis=0)
         normed_cd1_mean = cd1_mean / np.linalg.norm(cd1_mean)
-        # Get the second cd by calculating a vector orthogonal to cd1 and pn.
+        # Get the second cd by calculating a vector orthogonal to cd1 and surface normal
         cd2_mean = np.cross(normed_norm_mean, normed_cd1_mean)
         normed_cd2_mean = cd2_mean / np.linalg.norm(cd2_mean)
         if get_right_hand_angle(normed_cd1_mean, cd2_mean, normed_norm_mean) < 0:
@@ -379,12 +381,20 @@ def get_most_common_bool(booleans):
             "with more than 1 bool value. Current bool shape: "
             f"{np.array(booleans).shape} D={np.ndim(booleans)}"
         )
-    else:
-        booleans = np.array(booleans).flatten()
-    if sum(booleans) >= sum(np.logical_not(booleans)):
-        return True
-    else:
-        return False
+
+    booleans = np.array(booleans).flatten()
+
+    return sum(booleans) >= sum(np.logical_not(booleans))
+
+
+def get_most_common_value(values):
+    """Get most common value out of a list of values (i.e., the mode).
+
+    Returns:
+        Most common value.
+    """
+    values = np.array(values, dtype=int).flatten()
+    return np.argmax(np.bincount(values))
 
 
 def circular_mean(values):
@@ -401,8 +411,7 @@ def circular_mean(values):
     if mean_angle < 0:
         mean_angle += 2 * np.pi
     # convert back to [0, 1] range
-    mean = mean_angle / (2 * np.pi)
-    return mean
+    return mean_angle / (2 * np.pi)
 
 
 def build_point_cloud_graph(locations, features, feature_mapping):
@@ -416,6 +425,4 @@ def build_point_cloud_graph(locations, features, feature_mapping):
     Returns:
         A NumpyGraph containing the observed features at locations.
     """
-    graph = NumpyGraph(dict(x=features, pos=locations, feature_mapping=feature_mapping))
-
-    return graph
+    return NumpyGraph(dict(x=features, pos=locations, feature_mapping=feature_mapping))

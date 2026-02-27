@@ -1,5 +1,13 @@
 ---
 title: Detect Local and Global Flow
+description: Add capability to SM to detect flow (direction & velocity) within its receptive field.
+rfc: optional
+estimated-scope: medium
+improved-metric: dynamic, real-world
+output-type: monty-feature, PR
+skills: python, research, computer-vision
+contributor: 
+status: open
 ---
 
 Our general view is that there are two sources of flow processed by cortical columns. These should correspond to:

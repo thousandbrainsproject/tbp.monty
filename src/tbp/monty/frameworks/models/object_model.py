@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -27,6 +27,7 @@ from tbp.monty.frameworks.utils.object_model_utils import (
     circular_mean,
     expand_index_dims,
     get_most_common_bool,
+    get_most_common_value,
     get_values_from_dense_last_dim,
     increment_sparse_tensor_by_count,
     pose_vector_mean,
@@ -34,6 +35,8 @@ from tbp.monty.frameworks.utils.object_model_utils import (
     torch_graph_to_numpy,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import apply_rf_transform_to_points
+
+logger = logging.getLogger(__name__)
 
 
 class GraphObjectModel(ObjectModel):
@@ -45,7 +48,7 @@ class GraphObjectModel(ObjectModel):
         Args:
             object_id: id of the object
         """
-        logging.info(f"init object model with id {object_id}")
+        logger.info(f"init object model with id {object_id}")
         self.object_id = object_id
         self._graph = None
         self.has_ppf = False
@@ -64,7 +67,7 @@ class GraphObjectModel(ObjectModel):
         self.k_n = k_n
         self.graph_delta_thresholds = graph_delta_thresholds
         self.set_graph(graph)
-        logging.info(f"built graph {self._graph}")
+        logger.info(f"built graph {self._graph}")
 
     def update_model(
         self,
@@ -73,7 +76,6 @@ class GraphObjectModel(ObjectModel):
         location_rel_model,
         object_location_rel_body,
         object_rotation,
-        object_scale=1,
     ):
         """Add new locations and features into grids and rebuild graph."""
         rf_locations, rf_features = apply_rf_transform_to_points(
@@ -89,7 +91,7 @@ class GraphObjectModel(ObjectModel):
             rf_features,
         )
 
-        logging.info("building graph")
+        logger.info("building graph")
         new_graph = self._build_adjacency_graph(
             all_locations,
             all_features,
@@ -161,8 +163,8 @@ class GraphObjectModel(ObjectModel):
         """Return a string representation of the object."""
         if self._graph is not None:
             return self._graph.__repr__()
-        else:
-            return f"Model for {self.object_id}:\n   No graph stored yet."
+
+        return f"Model for {self.object_id}:\n   No graph stored yet."
 
     # ======================= Private ==========================
     # ------------------- Main Algorithm -----------------------
@@ -175,29 +177,29 @@ class GraphObjectModel(ObjectModel):
         """Combine new observations with those already stored in a graph.
 
         Combines datapoints from an existing graph and new points collected in the
-        buffer using the detected pose. This is a util function for extend_graph.
+        buffer using the detected pose. This is a utility function for extend_graph.
 
         Args:
             locations: new observed locations (x,y,z)
             features: new observed features (dict)
 
         Returns:
-            combines features at locations with new locations transformed into
-                the graphs reference frame.
+            Combines features at locations with new locations transformed into the
+            graph's reference frame.
         """
         old_points = self.pos
         feature_mapping = self.feature_mapping
 
-        all_features = dict()
+        all_features = {}
 
         # Iterate through the different feature types, stacking on (i.e. appending)
         # those features associated w/ candidate new points to the old-graph point
         # features
-        for feature in features.keys():
+        for feature in features:
             new_feat = np.array(features[feature])
             if len(new_feat.shape) == 1:
                 new_feat = new_feat.reshape((new_feat.shape[0], 1))
-            if feature in feature_mapping.keys():
+            if feature in feature_mapping:
                 feature_idx = feature_mapping[feature]
                 old_feat = np.array(self.x)[:, feature_idx[0] : feature_idx[1]]
             else:
@@ -217,7 +219,7 @@ class GraphObjectModel(ObjectModel):
             all_features[feature] = both_feat
 
             for graph_feature in self.feature_ids_in_graph:
-                if graph_feature not in features.keys() and graph_feature != "node_ids":
+                if graph_feature not in features and graph_feature != "node_ids":
                     raise NotImplementedError(
                         f"{graph_feature} is represented in graph but",
                         " was not observed at this step. Implement padding with nan.",
@@ -251,17 +253,17 @@ class GraphObjectModel(ObjectModel):
 
         Returns:
             A torch_geometric.data graph containing the observed features at
-                locations, with edges betweed the k_n nearest neighbors.
+            locations, with edges between the k_n nearest neighbors.
         """
         locations_reduced, clean_ids = remove_close_points(
             np.array(locations), features, graph_delta_thresholds, old_graph_index
         )
         num_nodes = locations_reduced.shape[0]
         node_features = np.linspace(0, num_nodes - 1, num_nodes).reshape((num_nodes, 1))
-        feature_mapping = dict()
+        feature_mapping = {}
         feature_mapping["node_ids"] = [0, 1]
 
-        for feature_id in features.keys():
+        for feature_id in features:
             # Get only the features-at-points that were not removed as close/
             # redundant points
             feats = np.array([features[feature_id][i] for i in clean_ids])
@@ -325,7 +327,7 @@ class GridObjectModel(GraphObjectModel):
 
     This model has the same basic functionality as the NumpyGraph models used in older
     LM versions. On top of that we now have a grid representation of the object that
-    constraints the model size and resultion. Additionally, this model class implements
+    constrains the model size and resolution. Additionally, this model class implements
     a lot of functionality that was previously implemented in the graph_utils.py file.
 
     TODO: General cleanups that require more changes in other code
@@ -340,12 +342,12 @@ class GridObjectModel(GraphObjectModel):
             object_id: id of the object
             max_nodes: maximum number of nodes in the graph. Will be k in k winner
                 voxels with highest observation count.
-            max_size: maximum size of the object in meters. Defines size of obejcts
+            max_size: maximum size of the object in meters. Defines size of objects
                 that can be represented and how locations are mapped into voxels.
-            num_voxels_per_dim: number of voxels per dimension in the models grids.
+            num_voxels_per_dim: number of voxels per dimension in the model's grids.
                 Defines the resolution of the model.
         """
-        logging.info(f"init object model with id {object_id}")
+        logger.info(f"init object model with id {object_id}")
         self.object_id = object_id
         self._graph = None
         self._max_nodes = max_nodes
@@ -355,7 +357,8 @@ class GridObjectModel(GraphObjectModel):
         # number of observations in each voxel
         self._observation_count = None
         # Average features in each voxel with observations
-        # The first 3 dims are the 3d voxel indices, the forth dimensions are features
+        # The first three dims are the 3D voxel indices; the fourth dimension
+        # stores features
         self._feature_grid = None
         # Average location in each voxel with observations
         # The first 3 dims are the 3d voxel indices, xyz in the fourth dimension is
@@ -376,14 +379,14 @@ class GridObjectModel(GraphObjectModel):
             observation_feature_mapping,
         ) = self._extract_feature_array(features)
         # TODO: part of init method?
-        logging.info(f"building graph from {locations.shape[0]} observations")
+        logger.info(f"building graph from {locations.shape[0]} observations")
         self._initialize_and_fill_grid(
             locations=locations,
             features=feature_array,
             observation_feature_mapping=observation_feature_mapping,
         )
         self._graph = self._build_graph_from_grids()
-        logging.info(f"built graph {self._graph}")
+        logger.info(f"built graph {self._graph}")
 
     def update_model(
         self,
@@ -405,7 +408,7 @@ class GridObjectModel(GraphObjectModel):
             feature_array,
             observation_feature_mapping,
         ) = self._extract_feature_array(rf_features)
-        logging.info(f"adding {locations.shape[0]} observations")
+        logger.info(f"adding {locations.shape[0]} observations")
         self._update_grids(
             locations=rf_locations,
             features=feature_array,
@@ -444,7 +447,7 @@ class GridObjectModel(GraphObjectModel):
         (distances, nearest_node_ids) = self._location_tree.query(
             search_locations,
             k=num_neighbors,
-            p=2,  # eucledian distance
+            p=2,  # euclidean distance
             workers=1,  # using more than 1 worker slows down run on lambda.
         )
         # else:
@@ -459,15 +462,15 @@ class GridObjectModel(GraphObjectModel):
 
         if return_distance:
             return distances
-        else:
-            return nearest_node_ids
+
+        return nearest_node_ids
 
     # ------------------ Getters & Setters ---------------------
     def set_graph(self, graph):
         """Set self._graph property and convert input graph to right format."""
         if type(graph) is not NumpyGraph:
             # could also check if is type torch_geometric.data.data.Data
-            logging.debug(f"turning graph of type {type(graph)} into numpy graph")
+            logger.debug(f"turning graph of type {type(graph)} into numpy graph")
             graph = torch_graph_to_numpy(graph)
         if self.use_original_graph:
             # Just use pretrained graph. Do not use grids to constrain nodes.
@@ -532,7 +535,8 @@ class GridObjectModel(GraphObjectModel):
         # The offset is set such that the first observed location starts at the
         # center of the grid. To preserve the relative locations, the offset is
         # applied to all following locations.
-        self._initialize_location_mapping(start_location=locations[0])
+        start_location = locations[0]
+        self._initialize_location_mapping(start_location=start_location)
         # initialize self._feature_grid with feat_dim calculated from features
         feat_dim = features.shape[-1]
         self._feature_grid = self._generate_empty_grid(
@@ -561,9 +565,9 @@ class GridObjectModel(GraphObjectModel):
         )
         percent_in_bounds = sum(locations_in_bounds) / len(locations_in_bounds)
         if percent_in_bounds < 0.9:
-            logging.info(
+            logger.info(
                 "Too many observations outside of grid "
-                f"({np.round(percent_in_bounds*100,2)}%). Skipping update of grids."
+                f"({np.round(percent_in_bounds * 100, 2)}%). Skipping update of grids."
             )
             raise GridTooSmallError
         voxel_ids_of_new_obs = location_grid_ids[locations_in_bounds]
@@ -705,9 +709,9 @@ class GridObjectModel(GraphObjectModel):
             feature_mapping: Dictionary with feature names as keys and their
                 corresponding indices in feature_array as values.
         """
-        feature_mapping = dict()
+        feature_mapping = {}
         feature_array = None
-        for feature in feature_dict.keys():
+        for feature in feature_dict:
             feats = feature_dict[feature]
 
             if len(feats.shape) == 1:
@@ -770,9 +774,7 @@ class GridObjectModel(GraphObjectModel):
             New average features for a voxel.
         """
         new_feature_avg = np.zeros(target_feat_dim)
-        if ("pose_vectors" in obs_fm.keys()) and (
-            "pose_fully_defined" in obs_fm.keys()
-        ):
+        if ("pose_vectors" in obs_fm) and ("pose_fully_defined" in obs_fm):
             # TODO: deal with case where not all of those keys are present
             pv_ids = obs_fm["pose_vectors"]
             pdefined_ids = obs_fm["pose_fully_defined"]
@@ -792,20 +794,31 @@ class GridObjectModel(GraphObjectModel):
                 avg_feat = get_most_common_bool(feats)
                 # NOTE: object_id may need its own most common function until
                 # IDs actually represent similarities
+            elif feature == "object_id":
+                avg_feat = get_most_common_value(feats)
             else:
                 avg_feat = np.mean(feats, axis=0)
             # Only take average if there was a feature stored here before.
             # since self._observation_count already includes the new obs
             # this needs to be > the number of new feature obs in the voxel.
-            if self._observation_count[voxel[0], voxel[1], voxel[2], 0] > len(feats):
+            num_obs_in_voxel = self._observation_count[voxel[0], voxel[1], voxel[2], 0]
+            num_new_obs = len(feats)
+            if num_obs_in_voxel > num_new_obs:
                 old_ids = self.feature_mapping[feature]
                 previous_average = previous_feat_in_voxel[old_ids[0] : old_ids[1],]
+                num_old_obs = num_obs_in_voxel - num_new_obs
 
                 if feature == "pose_vectors":
                     if avg_feat is None:
                         avg_feat = previous_average
                     elif use_cds_to_update is False:
                         avg_feat[3:] = previous_average[3:]
+                elif feature == "object_id" and avg_feat != previous_average:
+                    # TODO: Figure out a more nuanced way to take into account past obs
+                    if num_old_obs > num_new_obs:
+                        avg_feat = previous_average
+                    else:
+                        previous_average = avg_feat
                 # NOTE: could weight these
                 avg_feat = (avg_feat + previous_average) / 2
             target_ids = target_fm[feature]
@@ -848,8 +861,7 @@ class GridObjectModel(GraphObjectModel):
         else:
             k = self._max_nodes
         _counts, top_k_indices = self._observation_count.values().topk(k)
-        indices_3d = self._observation_count.indices()[:3, top_k_indices]
-        return indices_3d
+        return self._observation_count.indices()[:3, top_k_indices]
 
     def _locations_to_grid_ids(self, locations):
         """Convert locations to grid ids using scale_factor and location_offset.
@@ -857,11 +869,10 @@ class GridObjectModel(GraphObjectModel):
         Returns:
             Grid ids for the locations.
         """
-        location_grid_ids = np.array(
+        return np.array(
             np.round(locations * self._location_scale_factor) + self._location_offset,
             dtype=int,
         )
-        return location_grid_ids
 
     def _old_new_lists_to_sparse_tensors(
         self, indices, new_values, old_values, target_mat_shape

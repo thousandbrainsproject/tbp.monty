@@ -1,0 +1,21 @@
+defaults:
+  - /experiment/config/debug@config
+  - /experiment/config/logging/defaults@config.logging
+  - /test/config/monty/fake_single_camera@config.monty_config
+  - /experiment/config/environment/single_ptz_habitat@config.env_interface_config
+  - /experiment/config/environment/init_args/clear_env_init_args@config.env_interface_config
+  - /experiment/config/environment/init_args/single_ptz@config.env_interface_config.env_init_args
+  - /experiment/config/environment_interface/per_object_train@config.train_env_interface_args
+  - /experiment/config/environment_interface/habitat/train_object_list@config.train_env_interface_args
+  - /experiment/config/environment_interface/per_object_eval@config.eval_env_interface_args
+  - /experiment/config/environment_interface/habitat/eval_object_list@config.eval_env_interface_args
+
+_target_: tbp.monty.frameworks.experiments.monty_experiment.MontyExperiment
+config:
+  logging:
+    python_log_level: DEBUG
+  env_interface_config:
+    env_init_args:
+      data_path: null
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}

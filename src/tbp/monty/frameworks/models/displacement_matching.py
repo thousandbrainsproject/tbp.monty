@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -14,11 +14,16 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environment_utils.graph_utils import get_edge_index
 from tbp.monty.frameworks.models.graph_matching import GraphLM, GraphMemory
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import is_in_ranges
 from tbp.monty.frameworks.utils.sensor_processing import point_pair_features
+
+__all__ = ["DisplacementGraphLM", "DisplacementGraphMemory"]
+
+logger = logging.getLogger(__name__)
 
 
 class DisplacementGraphLM(GraphLM):
@@ -39,17 +44,17 @@ class DisplacementGraphLM(GraphLM):
             match_attribute: Which displacement to use for matching.
                 Should be in ['displacement', 'PPF'].
             tolerance: How close does an observed displacement have to be to a
-                stored displacement to be considered a match,. defaults to 0.001
+                stored displacement to be considered a match. Defaults to 0.001
             use_relative_len: Whether to scale the displacements to achieve scale
                 invariance. Only possible when using PPF.
             graph_delta_thresholds: Thresholds used to compare nodes in the graphs
                 being learned, and thereby whether to include a new point or not. By
                 default, we only consider the distance between points, using a threshold
                 of 0.001 (determined in remove_close_points). Can also specify
-                thresholds based on e.g. point-normal angle difference, or principal
+                thresholds based on e.g. surface normal angle difference, or principal
                 curvature magnitude difference.
         """
-        super(DisplacementGraphLM, self).__init__()
+        super().__init__()
         self.graph_memory = DisplacementGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
             k=k,
@@ -134,7 +139,7 @@ class DisplacementGraphLM(GraphLM):
                     "detected_scale": scale,
                 }
                 self.buffer.add_overall_stats(lm_episode_stats)
-                logging.debug(f"(location, rotation, scale): {pose_and_scale}")
+                logger.debug(f"(location, rotation, scale): {pose_and_scale}")
 
         return pose_and_scale
 
@@ -156,13 +161,9 @@ class DisplacementGraphLM(GraphLM):
         """
         try:
             if get_reverse_r:
-                r, msr = Rotation.align_vectors(
-                    sensed_displacements, model_displacements
-                )
+                r, _ = Rotation.align_vectors(sensed_displacements, model_displacements)
             else:
-                r, msr = Rotation.align_vectors(
-                    model_displacements, sensed_displacements
-                )
+                r, _ = Rotation.align_vectors(model_displacements, sensed_displacements)
         except UserWarning:
             # This can happen if the displacements that were sampled lie in one plane
             # such that we can not determine the rotation along all three axes.
@@ -179,25 +180,27 @@ class DisplacementGraphLM(GraphLM):
         Returns:
             The scale of the object.
         """
-        scale = np.linalg.norm(sensed_displacement) / np.linalg.norm(model_displacement)
-        return scale
+        return np.linalg.norm(sensed_displacement) / np.linalg.norm(model_displacement)
 
     # ------------------ Logging & Saving ----------------------
 
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
-    def _compute_possible_matches(self, observation, first_movement_detected=True):
-        """Use the current observation to narrown down the possible matches.
+    def _compute_possible_matches(
+        self, ctx: RuntimeContext, observation, first_movement_detected=True
+    ):
+        """Use the current observation to narrow down the possible matches.
 
         This is framed as a prediction problem. We take the current observation
         as a query and try to predict whether after the displacement we will still be
         on the object. In a next step we could also predict the feature that we sense
-        next. The prediction is then compared with he actual observation (currently
+        next. The prediction is then compared with the actual observation (currently
         just whether we sensed on_object or not). If there is a prediction error, then
         we remove the object from the possible matches.
 
         Args:
+            ctx: The runtime context.
             observation: The current observation.
             first_movement_detected: Whether the agent has moved yet. False on the first
                 step.
@@ -209,7 +212,7 @@ class DisplacementGraphLM(GraphLM):
         elif self.match_attribute == "PPF":
             query = self.buffer.get_current_ppf(input_channel="first")
         else:
-            logging.error("match_attribute not defined")
+            logger.error("match_attribute not defined")
 
         # This is just whether we are on the object or not here.
         target = self._select_features_to_use(observation)
@@ -219,17 +222,24 @@ class DisplacementGraphLM(GraphLM):
                 input_channel="first"
             )
 
-        logging.debug(f"query: {query}")
+        logger.debug(f"query: {query}")
 
-        self._update_possible_matches(query=query, target=target)
+        self._update_possible_matches(ctx, query=query, target=target)
 
-    def _update_possible_matches(self, query, target, threshold=0):
+    def _update_possible_matches(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        query,
+        target,
+        threshold=0,
+    ):
         """Update the list of possible matches.
 
         This is done by excluding objects that had a prediction
         error > threshold.
 
         Args:
+            ctx: The runtime context.
             query: Incoming displacement.
             target: Whether we expect to be on the object of not after the given
                 displacement.
@@ -248,7 +258,7 @@ class DisplacementGraphLM(GraphLM):
             if prediction_error[graph_id] > threshold:
                 self.possible_matches.pop(graph_id)
 
-    def _make_predictions(self, query, use_relative_len):
+    def _make_predictions(self, query, use_relative_len) -> dict:
         """Predict whether we will still be on the object given a displacement.
 
         Args:
@@ -260,8 +270,8 @@ class DisplacementGraphLM(GraphLM):
                 of absolute. This may help with scale invariance.
 
         Returns:
-            dict: Binary predictions for each graph in possible_matches whether
-                the object will be at the new location.
+            Binary predictions for each graph in possible_matches whether the object
+            will be at the new location.
 
         """
         predictions = {}
@@ -277,7 +287,7 @@ class DisplacementGraphLM(GraphLM):
         displacement,
         graph_id,
         use_relative_len,
-    ):
+    ) -> int:
         """Predict whether we will still be on the object given a displacement.
 
         Takes a displacement as input (the last action that was performed) and checks
@@ -296,13 +306,13 @@ class DisplacementGraphLM(GraphLM):
                 of absolute. This may help with scale invariance.
 
         Returns:
-            int: Whether the displacement is on the object. 0 if not, 1 if it is.
+            Whether the displacement is on the object. 0 if not, 1 if it is.
         """
-        # TODO: Due to the use of node IDs as paths start IDs it a bit tricky to use
-        # multiple input channels & I am not sure if it is worth the time investment atm
-        # since we don't actively use this LM. So for now we just take the first input
-        # channel here.
-        first_input_channel = list(self.possible_matches[graph_id].keys())[0]
+        # TODO: Due to the use of node IDs as path start IDs, it's a bit tricky to use
+        # multiple input channels, and I am not sure if it is worth the time investment
+        # at the moment since we don't actively use this LM. So for now we just take
+        # the first input channel here.
+        first_input_channel = next(iter(self.possible_matches[graph_id]))
         displacement_plus_tolerance = np.stack(
             [displacement - self.tolerance, displacement + self.tolerance],
             axis=1,
@@ -351,13 +361,13 @@ class DisplacementGraphLM(GraphLM):
         self.possible_paths[graph_id] = current_possible_paths
         self.next_possible_paths[graph_id] = new_possible_paths
         self.scale_factors[graph_id] = path_scale_factors
-        # logging.info(
+        # logger.info(
         #     "possible paths for "
         #     + graph_id
         #     + ": "
         #     + str(self.possible_paths[graph_id])
         # )
-        # logging.info(
+        # logger.info(
         #     "next possible paths for "
         #     + graph_id
         #     + ": "
@@ -366,8 +376,8 @@ class DisplacementGraphLM(GraphLM):
 
         if len(self.possible_paths[graph_id]) == 0:
             return 0
-        else:
-            return 1
+
+        return 1
 
     def _get_prediction_error(self, predictions, target):
         """Calculate the prediction error (binary if not using features).
@@ -378,8 +388,7 @@ class DisplacementGraphLM(GraphLM):
             target: The actual sensation at the new location (also binary)
 
         Returns:
-            prediction_error: Binary prediction error for each graph:
-                int(target != prediction)
+            Binary prediction error for each graph: int(target != prediction)
         """
         prediction_error = {}
         for graph_id in predictions:
@@ -393,7 +402,7 @@ class DisplacementGraphLM(GraphLM):
         The observation consists of features at a location. To get the displacement we
         have to look at the previous observation stored in the buffer.
 
-        TODO: Should we move this and a (short term) buffer to the sensor module?
+        TODO: Should we move this and a (short-term) buffer to the sensor module?
 
         Returns:
             The observations with displacements added.
@@ -415,7 +424,7 @@ class DisplacementGraphLM(GraphLM):
             )
             pos2 = torch.tensor(obs_to_use.location)
             norm1 = torch.tensor(
-                # element 0 of current pose is location, element 1 is point normal
+                # element 0 of current pose is location, element 1 is surface normal
                 self.buffer.get_current_pose(input_channel=obs_to_use.sender_id)[1],
                 dtype=torch.float64,
             )
@@ -428,11 +437,11 @@ class DisplacementGraphLM(GraphLM):
             o.set_displacement(displacement=displacement, ppf=ppf)
         return obs
 
-    def _select_features_to_use(self, states):
+    def _select_features_to_use(self, states) -> int:
         """Extract on_object from observed features to use as target.
 
         Returns:
-            int: Whether we are on the object or not.
+            Whether we are on the object or not as integer.
         """
         morph_features = states[0].morphological_features
         # TODO S: decide if we want to store on_object in state
@@ -453,7 +462,7 @@ class DisplacementGraphMemory(GraphMemory):
 
     def __init__(self, match_attribute, *args, **kwargs):
         """Initialize Graph memory."""
-        super(DisplacementGraphMemory, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.match_attribute = match_attribute
 
     # =============== Public Interface Functions ===============
@@ -489,13 +498,12 @@ class DisplacementGraphMemory(GraphMemory):
             scale_factors,
         )
 
-    # ------------------ Getters & Setters ---------------------
     # ------------------ Logging & Saving ----------------------
     def load_state_dict(self, state_dict):
         """Load graphs into memory from a state_dict and add point pair features."""
-        logging.info("loading models")
+        logger.info("loading models")
         for obj_name, model in state_dict.items():
-            logging.debug(f"loading {obj_name}: {model}")
+            logger.debug(f"loading {obj_name}: {model}")
             for input_channel in model:
                 if (self.match_attribute == "PPF") and (
                     model[input_channel].has_ppf is False
@@ -518,7 +526,7 @@ class DisplacementGraphMemory(GraphMemory):
             graph_id: Name of the object.
             input_channel: ?
         """
-        logging.info(f"Adding a new graph to memory.")
+        logger.info("Adding a new graph to memory.")
 
         model = GraphObjectModel(
             object_id=graph_id,
@@ -537,9 +545,6 @@ class DisplacementGraphMemory(GraphMemory):
         if self.match_attribute == "PPF":
             model.add_ppf_to_graph()
         if graph_id not in self.models_in_memory:
-            self.models_in_memory[graph_id] = dict()
+            self.models_in_memory[graph_id] = {}
         self.models_in_memory[graph_id][input_channel] = model
-        logging.info(f"Added new graph with id {graph_id} to memory.")
-
-    # ------------------------ Helper --------------------------
-    # ----------------------- Logging --------------------------
+        logger.info(f"Added new graph with id {graph_id} to memory.")

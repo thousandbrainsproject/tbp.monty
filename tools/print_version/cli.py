@@ -10,15 +10,14 @@
 
 import argparse
 import importlib.util
-import os
+from pathlib import Path
 
 import semver
 
 
 def get_version():
-    version_module_path = os.path.join(
-        os.path.dirname(__file__), "../../src/tbp/monty/__init__.py"
-    )
+    project_root = Path(__file__).resolve().parent.parent.parent
+    version_module_path = project_root / "src" / "tbp" / "monty" / "__init__.py"
 
     spec = importlib.util.spec_from_file_location("tbp.monty", version_module_path)
     module = importlib.util.module_from_spec(spec)
@@ -30,16 +29,19 @@ def get_version():
 def parse_version(version, part):
     parsed_version = semver.VersionInfo.parse(version)
 
-    if part == "full" or part == "":
+    if part in {"full", ""}:
         return str(parsed_version)
-    elif part == "major":
+
+    if part == "major":
         return str(parsed_version.major)
-    elif part == "minor":
+
+    if part == "minor":
         return f"{parsed_version.major}.{parsed_version.minor}"
-    elif part == "patch":
+
+    if part == "patch":
         return f"{parsed_version.major}.{parsed_version.minor}.{parsed_version.patch}"
-    else:
-        raise ValueError(f"Unknown version part: {part}")
+
+    raise ValueError(f"Unknown version part: {part}")
 
 
 def main():

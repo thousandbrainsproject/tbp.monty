@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -14,32 +14,67 @@ See Also:
     https://github.com/facebookresearch/habitat-sim
 """
 
+from __future__ import annotations
+
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Sequence
 
 import habitat_sim
 import magnum as mn
 import numpy as np
+import quaternion as qt
+from habitat_sim.simulator import ObservationDict
 from habitat_sim.utils import common as sim_utils
 from importlib_resources import files
 
-import tbp.monty.simulators.resources as resources
-from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.actions.actions import (
+    Action,
+    LookDown,
+    LookUp,
+    MoveForward,
+    MoveTangentially,
+    OrientHorizontal,
+    OrientVertical,
+    SetAgentPitch,
+    SetAgentPose,
+    SetSensorPitch,
+    SetSensorPose,
+    SetSensorRotation,
+    SetYaw,
+    TurnLeft,
+    TurnRight,
+)
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    ProprioceptiveState,
+    SensorState,
+)
+from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.simulators import resources
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
-from tbp.monty.simulators.habitat.environment_utils import get_bounding_corners
-
-from .agents import HabitatAgent
+from tbp.monty.simulators.habitat.agents import HabitatAgent
 
 __all__ = [
-    "HabitatSim",
     "PRIMITIVE_OBJECT_TYPES",
+    "HabitatSim",
 ]
+
+from tbp.monty.frameworks.environments.environment import (
+    ObjectID,
+    ObjectInfo,
+    QuaternionWXYZ,
+    SemanticID,
+    VectorXYZ,
+)
+from tbp.monty.simulators.simulator import Simulator
 
 DEFAULT_SCENE = "NONE"
 DEFAULT_PHYSICS_CONFIG = str(files(resources) / "default.physics_config.json")
 
-#: Maps habitat-sim pre-configure primitive object types to semantic IDs
+#: Maps habitat-sim pre-configured primitive object types to semantic IDs
 PRIMITIVE_OBJECT_TYPES = {
     "capsule3DSolid": 101,
     "coneSolid": 102,
@@ -50,55 +85,48 @@ PRIMITIVE_OBJECT_TYPES = {
 }
 
 
-Vector3 = Tuple[float, float, float]
-Quaternion = Tuple[float, float, float, float]
-
-
-class HabitatSim(HabitatActuator):
-    """Habitat-sim interface for tbp.monty.
+class HabitatSim(HabitatActuator, Simulator):
+    """habitat-sim interface for tbp.monty.
 
     This class wraps `habitat-sim <https://aihabitat.org/docs/habitat-sim>`_
-    simulator for tbp.monty. It aims to hide habitat-sim internals simplifying
-    experiments configuration within the tbp.monty framework.
+    simulator for tbp.monty. It aims to hide habitat-sim internals, simplifying
+    experiment configuration within the tbp.monty framework.
 
     Example::
 
         camera = SingleSensorAgent(
-            agent_id="camera",
+            agent_id=AgentID("camera"),
             sensor_id="camera_id",
             resolution=(64, 64),
         )
         with HabitatSim(agents=[camera]) as sim:
             sim.add_object(name="coneSolid", position=(0.0, 1.5, -0.2))
-            obs = sim.get_observations()
+            obs = sim.observations
 
         plot_image(obs["camera"]["camera_id"]["rgba"])
         plot_image(obs["camera"]["camera_id"]["depth"])
 
     Attributes:
-        agents: List of :class:`HabitatAgents` to place in the simulator
+        agents: List of :class:`HabitatAgent` instances to place in the simulator.
         data_path: Habitat data path location, usually the same path used by
-            :class:`habitat_sim.utils.environments_download`
+            :class:`habitat_sim.utils.environments_download`.
         scene_id: Scene to use or None for empty environment.
-        seed: Simulator seed to use
-        enable_physics: Whether or not to enable the physics engine. Default False
+        seed: Simulator seed to use.
     """
 
     def __init__(
         self,
-        agents: List[HabitatAgent],
-        data_path: Optional[str] = None,
-        scene_id: Optional[str] = None,
+        agents: list[HabitatAgent],
+        data_path: str | Path | None = None,
+        scene_id: str | None = None,
         seed: int = 42,
-        enable_physics: bool = True,  # Physics is now standard
     ):
         backend_config = habitat_sim.SimulatorConfiguration()
         backend_config.physics_config_file = DEFAULT_PHYSICS_CONFIG
-        # NOTE that currently we do not have gravity, although this can be adjusted in
+        # NOTE: Currently we do not have gravity, although this can be adjusted in
         # the above config by setting "gravity": [0, -9.8, 0]
 
-        self.sim_enable_physics = enable_physics
-        backend_config.enable_physics = self.sim_enable_physics
+        backend_config.enable_physics = True
         backend_config.scene_id = scene_id or DEFAULT_SCENE
         backend_config.random_seed = seed
 
@@ -107,9 +135,11 @@ class HabitatSim(HabitatActuator):
         agent_configs = []
         self._agents = agents
         self._action_space = set()
-        self._agent_id_to_index = dict()
+        self._agent_id_to_index: dict[AgentID, int] = {}
 
-        self._object_counter = 0  # Track the number of objects added to an environment
+        self._objects: dict[ObjectID, Any] = {}
+        """Map from object ID to object handle.
+        `Any` is a stand-in for the internal HabitatSim data structure."""
 
         for index, agent in enumerate(self._agents):
             config = agent.get_spec()
@@ -139,16 +169,16 @@ class HabitatSim(HabitatActuator):
                 objects_path = absolute_data_path
             else:
                 # Objects downloaded with `habitat_sim.utils.environments_download` are
-                # stored in the sub-dir called "objects" for older versions of YCB (eg.
-                # 1.0)
+                # stored in the sub-dir called "objects" for older versions of YCB
+                # (e.g. 1.0)
                 objects_path = absolute_data_path / "objects"
                 # The appended /objects is also key to triggering the below -else-
-                # "dataset downloaded some other way" in unit tests
+                # "dataset downloaded some other way" path in unit tests
 
             if objects_path.is_dir():
                 # Search "objects" dir for habitat objects.
                 # Habitat dataset objects are stored in a directory containing
-                # json files with the attribures of each object in the dataset.
+                # json files with the attributes of each object in the dataset.
                 # The json file name is in this format:
                 # "{object_name}.object_config.json".
                 # See https://aihabitat.org/docs/habitat-sim/attributesJSON.html#objectattributes # noqa: E501
@@ -163,7 +193,7 @@ class HabitatSim(HabitatActuator):
             # Add each object data path to the simulator
             objects_added = False
             for path in objects_data_path:
-                valid_objs = obj_mgr.load_configs(str(path), True)
+                valid_objs = obj_mgr.load_configs(str(path), save_as_defaults=True)
                 if valid_objs:
                     objects_added = True
 
@@ -174,56 +204,50 @@ class HabitatSim(HabitatActuator):
         for agent in self._agents:
             agent.initialize(self)
 
-    def initialize_agent(self, agent_id, agent_state):
-        """Update agent runtime state.
+    def initialize_agent(self, agent_id: AgentID, agent_state) -> None:
+        """Update the agent's runtime state.
 
-        Usually called first thing to update agent initial pose.
+        Usually called first thing to update the agent's initial pose.
 
         Args:
-            agent_id: Agent id of the agent to be updated
-            agent_state: Agent state to update to
+            agent_id: Agent ID of the agent to be updated.
+            agent_state: Agent state to update to.
         """
         agent_index = self._agent_id_to_index[agent_id]
         self._sim.initialize_agent(agent_index, agent_state)
 
-    def remove_all_objects(self):
-        """Remove all objects from simulated environment."""
+    def remove_all_objects(self) -> None:
+        """Remove all objects from the simulated environment."""
         rigid_mgr = self._sim.get_rigid_object_manager()
         rigid_mgr.remove_all_objects()
-        self._object_counter = 0
+        self._objects = {}
 
     def add_object(
         self,
         name: str,
-        position: Vector3 = (0.0, 0.0, 0.0),
-        rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),
-        scale: Vector3 = (1.0, 1.0, 1.0),
-        semantic_id: Optional[str] = None,
-        enable_physics: Optional[bool] = False,
-        object_to_avoid=False,
-        primary_target_bb=None,
-    ):
+        position: VectorXYZ = (0.0, 0.0, 0.0),
+        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
+        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        semantic_id: SemanticID | None = None,
+        primary_target_object: ObjectID | None = None,
+    ) -> ObjectInfo:
         """Add new object to simulated environment.
 
         Args:
-            name: Registered object name. It could be any of habitat-sim primitive
-                objects or any configured habitat object. For a list of primitive
-                objects see :const:`PRIMITIVE_OBJECT_TYPES`
-            position: Object initial absolute position
-            rotation: Object rotation quaternion. Default (1, 0, 0, 0)
-            scale: Object scale. Default (1, 1, 1)
-            semantic_id: Optional override object semantic ID
-            enable_physics: Whether or not to enable physics on this objects
-            object_to_avoid: If True, run collision checks to ensure the object is not
-                colliding with any other objects in the scene, and otherwise move it
-            primary_target_bb: If not None, the bounding box of the primary target
-                object; passed when we're adding multiple objects, such that we ensure
-                that the added object does not obscure the initial view of the primary
-                target object (which avoiding collision alone cannot guarantee); defined
-                by a list of the min and max corners
+            name: Registered object name. It can be any habitat-sim primitive
+                object or any configured habitat object. See
+                :const:`PRIMITIVE_OBJECT_TYPES` for a list of primitive objects.
+            position: Object initial absolute position.
+            rotation: Object rotation quaternion. Defaults to (1, 0, 0, 0).
+            scale: Object scale. Defaults to (1, 1, 1).
+            semantic_id: Optional override object semantic ID. Defaults to None.
+            primary_target_object: ID of the primary target object. If not None, the
+                added object will be positioned so that it does not obscure the initial
+                view of the primary target object (which avoiding collision alone cannot
+                guarantee). Used when adding multiple objects. Defaults to None.
 
         Returns:
-            RigidObject: The newly added object
+            The added object's information.
         """
         obj_mgr = self._sim.get_object_template_manager()
         rigid_mgr = self._sim.get_rigid_object_manager()
@@ -251,13 +275,16 @@ class HabitatSim(HabitatActuator):
         # Update pose
         obj.translation = position
         if isinstance(rotation, (list, tuple)):
-            rotation = np.quaternion(*rotation)
+            rotation = qt.quaternion(*rotation)
         obj.rotation = sim_utils.quat_to_magnum(rotation)
 
-        if object_to_avoid:
-            assert (
-                self.sim_enable_physics
-            ), "Sim-level physics must be enabled to support collision detection"
+        # Need to store the reference to the object here so that we can use it in the
+        # _bounding_corners function.
+        obj_id = ObjectID(obj.object_id)
+        self._objects[obj_id] = obj
+
+        if primary_target_object is not None:
+            primary_target_bb = self._bounding_corners(primary_target_object)
             # Temporarily enable *object* physics for collision detection
             obj.motion_type = habitat_sim.physics.MotionType.DYNAMIC
             obj = self.find_non_colliding_positions(
@@ -267,16 +294,11 @@ class HabitatSim(HabitatActuator):
                 primary_obj_bb=primary_target_bb,
             )
 
-        # Update object-specific physics
-        # This physics setting will persist into the environment e.g. during inference
-        if enable_physics:
-            obj.motion_type = habitat_sim.physics.MotionType.DYNAMIC
-        else:
-            # Set the motion-type to kinematic
-            # (i.e. only a user-specified force/motion will affect the object), rather
-            # than dynamic (i.e. object subject to forces like gravity, friction, and
-            # collision detection according to physics simulations)
-            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+        # Set the motion-type to kinematic
+        # (i.e. only a user-specified force/motion will affect the object), rather
+        # than dynamic (i.e. object subject to forces like gravity, friction, and
+        # collision detection according to physics simulations)
+        obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
 
         # Update semantic id
         if semantic_id is not None:
@@ -290,26 +312,63 @@ class HabitatSim(HabitatActuator):
             obj.semantic_id = PRIMITIVE_OBJECT_TYPES[obj_handle]
 
         # Compare the intended number of objects added (counter) vs the number
-        # instantiated in the Habitat environmnet
-        self._object_counter += 1
-        num_objects_added = self.get_num_objects()
+        # instantiated in the Habitat environment
+        num_objects_added = self.num_objects
         if isinstance(num_objects_added, int):
             # In some units tests (e.g. MontyRunTest.test_main_with_single_experiment),
-            # a simulator mock object is used, and so self.get_num_objects does not
+            # a simulator mock object is used, and so self.num_objects does not
             # return a meaningful int, but instead another mock object
             # TODO make this test more robust and move to its own unit test
-            assert self._object_counter == num_objects_added, "Not all objects added"
+            assert len(self._objects) == num_objects_added, "Not all objects added"
 
-        return obj
+        semantic_id = SemanticID(obj.semantic_id) if obj.semantic_id != 0 else None
+        return ObjectInfo(
+            object_id=obj_id,
+            semantic_id=semantic_id,
+        )
 
-    def non_conflicting_vector(self):
+    def _bounding_corners(self, object_id: ObjectID) -> tuple[np.ndarray, np.ndarray]:
+        """Determine and return the bounding box of a Habitat object.
+
+        Determines and returns the bounding box (defined by a "max" and "min" corner) of
+        a Habitat object (such as a mug), given in world coordinates.
+
+        Specifically uses the "axis-aligned bounding box" (AABB) available in Habitat;
+        this bounding box is aligned with the axes of the coordinate system, which
+        tends to be computationally efficient to retrieve.
+
+        Args:
+            object_id: The ID of the object to get the bounding corners of.
+
+        Returns:
+            min_corner and max_corner, the defining corners of the bounding box.
+        """
+        object_ref = self._objects[object_id]
+        object_aabb = object_ref.collision_shape_aabb
+
+        # The bounding box will be in the coordinate frame of the object, and so needs
+        # to be transformed (rotated and translated) based on the pose of the object in
+        # the environment
+        # The matrix returned by object_ref.transformation can apply this transformation
+        # pointwise to the min and max corner points below
+        object_t_mat = object_ref.transformation
+
+        min_corner = object_aabb.min
+        max_corner = object_aabb.max
+
+        min_corner = np.array(object_t_mat.transform_point(min_corner))
+        max_corner = np.array(object_t_mat.transform_point(max_corner))
+
+        return min_corner, max_corner
+
+    def non_conflicting_vector(self) -> np.ndarray:
         """Find a non-conflicting vector.
 
         A non-conflicting vector avoids sampling directions that will be just in front
         of or behind a target object.
 
         Returns:
-            np.array: The non-conflicting vector
+            The non-conflicting vector
         """
         angle_ranges = [
             (0, 30),
@@ -333,7 +392,7 @@ class HabitatSim(HabitatActuator):
         primary_obj_bb,
         new_obj_bb,
         overlap_threshold=0.75,
-    ):
+    ) -> bool:
         """Check if the object being added overlaps in the x-axis with target.
 
         The object overlapping the primary target object risks obstructing the initial
@@ -341,16 +400,16 @@ class HabitatSim(HabitatActuator):
 
         Recall that +z is out of the page, where the agent starts facing in the -z
         direction at the beginning of the episode; +y is the up vector, and +x is the
-        right-ward direction
+        right-ward direction.
 
         Args:
             primary_obj_bb: the bounding box of the primary target in the scene
-            new_obj_bb: the bounding box fo the new object being added
+            new_obj_bb: the bounding box of the new object being added
             overlap_threshold: The threshold for overlap. Defaults to 0.75.
 
         Returns:
-            bool: True if the overlap is greater than overlap_threshold; 1.0 corresponds
-                to total overlap (the primary target is potentially not visible)
+            True if the overlap is greater than overlap_threshold; 1.0 corresponds
+            to total overlap (the primary target is potentially not visible)
         """
         primary_start, primary_end = primary_obj_bb[0][0], primary_obj_bb[1][0]
         new_start, new_end = new_obj_bb[0][0], new_obj_bb[1][0]
@@ -380,9 +439,9 @@ class HabitatSim(HabitatActuator):
         """Find a position for the object being added.
 
         The criteria are such that the object does not:
-        i) have a physical collision with other objects (i.e. collision meshes
+        i) have a physical collision with other objects (i.e., collision meshes
         intersect)
-        ii) "collide" with the initial view of the primary target object, i.e. obscure
+        ii) "collide" with the initial view of the primary target object, i.e., obscure
         the ability of the agent to start on the primary target at the beginning of an
         experiment
 
@@ -410,7 +469,9 @@ class HabitatSim(HabitatActuator):
             new_object.translation = obj_pos
 
             # Extract updated bounding box of new object being added
-            min_corner, max_corner = get_bounding_corners(new_object)
+            min_corner, max_corner = self._bounding_corners(
+                ObjectID(new_object.object_id)
+            )
 
             # Step the physics simulation to allow objects to settle and compute
             # collisions
@@ -433,152 +494,147 @@ class HabitatSim(HabitatActuator):
 
         raise RuntimeError("Failed to find non-colliding positions")
 
-    def get_num_objects(self):
+    @property
+    def num_objects(self):
         """Return the number of instantiated objects."""
         rigid_mgr = self._sim.get_rigid_object_manager()
         return rigid_mgr.get_num_objects()
 
-    def get_action_space(self):
-        """Returns a set with all available actions.
+    @property
+    def action_space(self) -> set[str]:
+        """Return the action space."""
+        return self._action_space
 
-        All available actions are those registered by all agents in the
-        environment.
-        """
-        return set(self._action_space)
-
-    def get_agent(self, agent_id):
+    def get_agent(self, agent_id: AgentID) -> habitat_sim.Agent:
         """Return habitat agent instance."""
         agent_index = self._agent_id_to_index[agent_id]
         return self._sim.get_agent(agent_index)
 
-    def apply_action(self, action: Action) -> Dict[str, Dict]:
-        """Execute given action in the environment.
+    def step(
+        self, actions: Sequence[Action]
+    ) -> tuple[Observations, ProprioceptiveState]:
+        """Execute given actions in the environment.
 
         Args:
-            action: The action to execute
+            actions: The actions to execute
 
         Returns:
-            A dictionary with the observations grouped by agent_id
+            The observations and proprioceptive state.
 
         Raises:
+            TypeError: If the action type is invalid
             ValueError: If the action name is invalid
         """
-        action_name = self.action_name(action)
-        if action_name not in self._action_space:
-            raise ValueError(f"Invalid action name: {action_name}")
+        for action in actions:
+            action_name = self.action_name(action)
+            if action_name not in self._action_space:
+                raise ValueError(f"Invalid action name: {action_name}")
 
-        action.act(self)
+            # TODO: This is for the purpose of type checking, but would be better
+            #       handled using the action space check above, once those are
+            #       integrated into the type system.
+            if not isinstance(
+                action,
+                (
+                    LookDown,
+                    LookUp,
+                    MoveForward,
+                    MoveTangentially,
+                    OrientHorizontal,
+                    OrientVertical,
+                    SetAgentPitch,
+                    SetAgentPose,
+                    SetSensorPitch,
+                    SetSensorPose,
+                    SetSensorRotation,
+                    SetYaw,
+                    TurnLeft,
+                    TurnRight,
+                ),
+            ):
+                raise TypeError(f"Invalid action type: {type(action)}")
 
-        observations = self.get_observations()
-        return observations
+            action.act(self)
 
-    def get_observations(self):
-        """Get sensor observations.
+        return self.observations, self.states
+
+    @property
+    def observations(self) -> Observations:
+        """Retrieve and process observations from the simulator.
 
         Returns:
-            dict: A dictionary with all sensor observations grouped by sensor module.
-                For example:
-                    {
-                        "agent1": {
-                            "sensor1": {
-                                "rgba": [....],
-                                "depth": [....],
-                            :
-                        },
-                        "agent2": {
-                            "sensor2":
-                                "rgba": [....],
-                                "depth": [....],
-                            :
-                        }
-                    }
+            All observations.
         """
         agent_indices = range(len(self._agents))
         obs = self._sim.get_sensor_observations(agent_ids=agent_indices)
-        obs = self.process_observations(obs)
-        return obs
+        return self.process_observations(obs)
 
-    def process_observations(self, obs):
+    def process_observations(
+        self,
+        habitat_obs: dict[int, ObservationDict],
+    ) -> Observations:
         """Habitat returns observations grouped by agent_index.
 
         Initially, we group observations by agent_id instead and call all agents
         to further process the observations.
 
         Args:
-            obs: The observations to process
+            habitat_obs: The observations from HabitatSim to process.
 
         Returns:
-            dict: The processed observations grouped by agent_id
+            Observations grouped by agent_id.
         """
-        processed_obs = defaultdict(dict)
-        for agent_index, agent_obs in obs.items():
+        obs: Observations = defaultdict(dict)
+        for agent_index, agent_obs in habitat_obs.items():
             agent = self._agents[agent_index]
             agent_id = self._agents[agent_index].agent_id
-            processed_obs[agent_id] = agent.process_observations(agent_obs)
+            obs[agent_id] = agent.process_observations(agent_obs)
 
-        return processed_obs
+        return obs
 
-    def get_states(self):
-        """Get agent and sensor states (position, rotation, etc..).
+    @property
+    def states(self) -> ProprioceptiveState:
+        """Returns proprioceptive state of the agents and sensors.
 
-        Returns:
-            dict: A dictionary with the agent pose in world coordinates and any other
-                agent specific state as well as every sensor pose relative to the agent
-                as well as any sensor specific state that is not returned by
-                :meth:`get_observations`.
-
-                For example:
-                    {
-                        "camera": {
-                            "position": [2.125, 1.5, -5.278],
-                            "rotation": [0.707107, 0.0, 0.0.707107, 0.0],
-                            "sensors" : {
-                                "rgba": {
-                                    "position": [0.0, 1.5, 0.0],
-                                    "rotation": [1.0, 0.0, 0.0, 0.0],
-                                },
-                                "depth": {
-                                    "position": [0.0, 1.5, 0.0],
-                                    "rotation": [1.0, 0.0, 0.0, 0.0],
-                                },
-                                :
-                            }
-                        },
-                        :
-                    }
+        Note: A Monty RGBD sensor is represented by separate RGBA and depth sensors in
+        Habitat (and a separate semantic sensor, if enabled). Their positions and
+        rotations are identical (they belong to the same body), so we arbitrarily
+        return the position and rotation from whichever sensor we see first.
         """
-        result = {}
+        result = ProprioceptiveState()
         for agent_index, sim_agent in enumerate(self._sim.agents):
             # Get agent and sensor poses from simulator
             agent_node = sim_agent.scene_node
-
-            sensors = {}
+            agent = self._agents[agent_index]
+            sensors: dict[SensorID, SensorState] = {}
             for sensor_id, sensor in agent_node.node_sensors.items():
+                monty_id, _ = agent.habitat_sensor_to_monty_id_modality_map[sensor_id]
+                if monty_id in sensors:
+                    continue
                 rotation = sim_utils.quat_from_magnum(sensor.node.rotation)
-                sensors[sensor_id] = {
-                    "position": sensor.node.translation,
-                    "rotation": rotation,
-                }
+                sensors[monty_id] = SensorState(
+                    position=sensor.node.translation,
+                    rotation=rotation,
+                )
 
             # Update agent/module state
-            agent_id = self._agents[agent_index].agent_id
             rotation = sim_utils.quat_from_magnum(agent_node.rotation)
-            result[agent_id] = {
-                "position": agent_node.translation,
-                "rotation": rotation,
-                "sensors": sensors,
-            }
+            result[agent.agent_id] = AgentState(
+                position=agent_node.translation,
+                rotation=rotation,
+                sensors=sensors,
+            )
 
         return result
 
-    def reset(self):
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         # All agents managed by this simulator
         agent_indices = range(len(self._agents))
         obs = self._sim.reset(agent_ids=agent_indices)
         obs = self.process_observations(obs)
-        return obs
+        return obs, self.states
 
-    def close(self):
+    def close(self) -> None:
         """Close simulator and release resources."""
         sim = getattr(self, "_sim", None)
         if sim is not None:

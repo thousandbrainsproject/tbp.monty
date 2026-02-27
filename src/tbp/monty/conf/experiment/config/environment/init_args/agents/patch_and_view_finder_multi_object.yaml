@@ -1,0 +1,4 @@
+defaults:
+  - patch_and_view_finder
+
+semantics: [true, true]

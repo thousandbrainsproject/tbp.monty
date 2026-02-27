@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,13 +9,23 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
-import os
 import shutil
+from pathlib import Path
 
 import numpy as np
 from tqdm import tqdm
 
-from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
+from tbp.monty.frameworks.models.evidence_matching.feature_evidence.sdr_calculator import (  # noqa: E501
+    SDRFeatureEvidenceCalculator,
+)
+from tbp.monty.frameworks.models.evidence_matching.features_for_matching.all_selector import (  # noqa: E501
+    AllFeaturesForMatchingSelector,
+)
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class LoggerSDR:
@@ -33,15 +43,15 @@ class LoggerSDR:
     # of Monty loggers. Fix issue #328 first.
     def __init__(self, path):
         if path is None:
-            logging.warning("EvidenceSDR log path is set to None.")
+            logger.warning("EvidenceSDR log path is set to None.")
             return
 
-        path = os.path.expanduser(path)
+        path = Path(path).expanduser()
 
         # overwrite existing logs
-        if os.path.exists(path):
+        if path.exists():
             shutil.rmtree(path)
-        os.makedirs(path)
+        path.mkdir(parents=True)
 
         self.path = path
         self.episode = 0
@@ -65,7 +75,7 @@ class LoggerSDR:
         """
         if hasattr(self, "path"):
             np.save(
-                os.path.join(self.path, f"episode_{str(self.episode).zfill(3)}.npy"),
+                self.path / f"episode_{self.episode:03d}.npy",
                 data,
             )
             self.episode += 1
@@ -107,8 +117,8 @@ class EncoderSDR:
         log_flag=False,
     ):
         if sdr_on_bits >= sdr_length or sdr_on_bits <= 0:
-            logging.warning(
-                f"Invalid sparsity: sdr_on_bits set to 2% ({round(sdr_length*0.02)})"
+            logger.warning(
+                f"Invalid sparsity: sdr_on_bits set to 2% ({round(sdr_length * 0.02)})"
             )
             sdr_on_bits = round(sdr_length * 0.02)
 
@@ -118,7 +128,7 @@ class EncoderSDR:
         self.stability = stability
         if self.stability > 1.0 or self.stability < 0.0:
             self.stability = np.clip(self.stability, 0.0, 1.0)
-            logging.warning(
+            logger.warning(
                 f"Invalid stability parameter: stability clamped to {self.stability}"
             )
         self.log_flag = log_flag
@@ -166,7 +176,7 @@ class EncoderSDR:
         Note:
             A vectorized version of the algorithm is provided below, although it
             would need to be modified to avoid repeated creation of arrays in order to
-            be more efficient. Leaving for now as this algorithm is not a bottle-neck
+            be more efficient. Leaving for now as this algorithm is not a bottleneck
             (circa 10-20 seconds to learn 60 object SDRs).:
 
             # Initialize gradients
@@ -283,7 +293,7 @@ class EncoderSDR:
         Consider two dense representations, A_dense and B_dense. We apply top-k
         operation on both to convert them to A_sdr and B_sdr, then calculate their
         overlaps. If the overlap is less than the target overlap, we move dense
-        representations (A_dense and B_dense) closer to eachother with strength
+        representations (A_dense and B_dense) closer to each other with strength
         proportional to the error in overlaps. We move them apart if they have more
         overlap than the target.
 
@@ -304,13 +314,13 @@ class EncoderSDR:
         # return if no target provided
         stats = {}
         if np.all(np.isnan(target_overlaps)):
-            logging.warning("Empty overlap targets. No training needed.")
+            logger.warning("Empty overlap targets. No training needed.")
             return stats
 
         if np.all(np.array(target_overlaps.shape) > self.n_objects):
-            logging.warning(
-                "Overlap targets have larger size than "
-                + f"{(self.n_objects, self.n_objects)}"
+            logger.warning(
+                f"Overlap targets have larger size than "
+                f"{(self.n_objects, self.n_objects)}"
             )
             target_overlaps = target_overlaps[: self.n_objects, : self.n_objects]
 
@@ -415,7 +425,7 @@ class EvidenceSDRTargetOverlaps:
         return np.round(self._overlaps)
 
     def add_objects(self, new_size):
-        """Expands the overlaps and the counts 2D tensors to accomodate new objects."""
+        """Expands the overlaps and the counts 2D tensors to accommodate new objects."""
         # expand the overlaps tensor to the new size
         new_overlaps = np.full((new_size, new_size), np.nan)
         new_overlaps[: self._overlaps.shape[0], : self._overlaps.shape[0]] = (
@@ -524,6 +534,12 @@ class EvidenceSDRLMMixin:
     See the `monty_lab` repo for reference. Specifically,
     `experiments/configs/evidence_sdr_evaluation.py`
 
+    TODO: This mixin adds state to the instance it is being mixed with. As such, it
+    is attempting to reuse some common functionality of EvidenceGraphLM while being
+    a different thing. The likely refactor is to extract the reusable EvidenceGraphLM
+    functionality into a component (since it probably requires its own state), use
+    that component as the default in EvidenceGraphLM, and then reuse that component in
+    a new EvidenceSDRGraphLM class instead of inheriting from EvidenceGraphLM.
     """
 
     def __init__(self, *args, **kwargs):
@@ -534,6 +550,16 @@ class EvidenceSDRLMMixin:
 
         """
         self.sdr_args = kwargs.pop("sdr_args")
+        # Configure the evidence updater with SDRFeatureEvidenceCalculator and
+        # AllFeaturesForMatchingSelector by default.
+        updater_args = kwargs.get("hypotheses_updater_args", {})
+        if not hasattr(updater_args, "feature_evidence_calculator"):
+            updater_args["feature_evidence_calculator"] = SDRFeatureEvidenceCalculator
+        if not hasattr(updater_args, "features_for_matching_selector"):
+            updater_args["features_for_matching_selector"] = (
+                AllFeaturesForMatchingSelector
+            )
+        kwargs["hypotheses_updater_args"] = updater_args
         super().__init__(*args, **kwargs)
 
         # keeps track of the Graph objects and their ids
@@ -572,7 +598,7 @@ class EvidenceSDRLMMixin:
                 Refer to `EvidenceSDRTargetOverlaps` for more details.
 
         **Note:** We sort the ids in step 2 because the overlap values are
-        suppossed to be symmetric (e.g., "2,5" = "5,2"). This way the target
+        supposed to be symmetric (e.g., "2,5" = "5,2"). This way the target
         overlaps for the ids "x,y" and "y,x" will be averaged together in the
         `EvidenceSDRTargetOverlaps` class.
 
@@ -600,7 +626,7 @@ class EvidenceSDRLMMixin:
         mlh_evidence = np.max(self.evidence[mlh_object])
 
         relative_evidences = np.full_like(self.target_overlaps.overlaps, np.nan)
-        for obj in self.evidence.keys():
+        for obj in self.evidence:
             ids = sorted([mlh_object_id, self.obj2id[obj]])
             ev = np.max(self.evidence[obj]) - mlh_evidence
             relative_evidences[ids[0], ids[1]] = ev
@@ -633,26 +659,6 @@ class EvidenceSDRLMMixin:
             )
             self.tmp_logger.log_episode(stats)
 
-    def _check_use_features_for_matching(self):
-        """Check if features should be used for matching.
-
-        EvidenceGraphLM bypasses comparing object ID by checking the number
-        of features on the input channel. In this Mixin we want to use all
-        features for matching.
-
-        Returns:
-            A dictionary indicating whether to use features for each input channel.
-        """
-        use_features = dict()
-        for input_channel in self.tolerances.keys():
-            if input_channel not in self.feature_weights.keys():
-                use_features[input_channel] = False
-            elif self.feature_evidence_increment <= 0:
-                use_features[input_channel] = False
-            else:
-                use_features[input_channel] = True
-        return use_features
-
     def _object_id_to_features(self, object_id):
         """Retrieves the trained SDR corresponding to the object ID.
 
@@ -661,74 +667,8 @@ class EvidenceSDRLMMixin:
         """
         if object_id in self.obj2id:
             return self.sdr_encoder.get_sdr(self.obj2id[object_id])
-        else:
-            return np.zeros(self.sdr_args["sdr_length"])
 
-    def _calculate_feature_evidence_sdr_for_all_nodes(
-        self, query_features, input_channel, graph_id
-    ):
-        """Calculate overlap between stored and query SDR features.
-
-        Calculates the overlap between the SDR features stored at every location in
-        the graph and the query SDR feature. This overlap is then compared to the
-        tolerance value and the result is used for adjusting the evidence score.
-
-        We use the tolerance (in overlap bits) for generalization. If two objects are
-        close enough, their overlap in bits should be higher that the set tolerance
-        value.
-
-        The tolerance sets the lowest overlap for adding evidence, the range
-        [tolerance, sdr_on_bits] is mapped to [0,1] evidence points. Any overlap less
-        then tolerance will not add any evidence. These evidence scores are then
-        multiplied by the feature weight of object_ids which scales all of the
-        evidence points to the range [0, feature_weights[input_channel]["object_id"]].
-
-        The below variables have the following shapes:
-            - feature_array: (n, sdr_length)
-            - query_features[input_channel]["object_id"]: (sdr_length)
-            - query_feat: (sdr_length, 1)
-            - np.matmul(feature_array, query_feat): (n, 1)
-            - overlaps: (n)
-
-        Returns:
-            The normalized overlaps.
-        """
-        feature_array = self.graph_memory.get_feature_array(graph_id)[input_channel]
-
-        query_feat = np.expand_dims(query_features[input_channel]["object_id"], 1)
-        tolerance = self.tolerances[input_channel]["object_id"]
-        sdr_on_bits = query_feat.sum(axis=0)
-
-        overlaps = feature_array @ query_feat.squeeze(-1)
-        normalized_overlaps = (overlaps - tolerance) / (sdr_on_bits - tolerance)
-        normalized_overlaps[normalized_overlaps < 0] = 0.0
-
-        normalized_overlaps *= self.feature_weights[input_channel]["object_id"]
-        return normalized_overlaps
-
-    def _calculate_feature_evidence_for_all_nodes(
-        self, query_features, input_channel, graph_id
-    ):
-        """Calculates feature evidence for all nodes stored in a graph.
-
-        This override method tests if the input_channel is a learning_module. If so,
-        a different function is used for feature comparison.
-
-        Note: This assumes that learning modules always outputs 1 feature, object_id.
-        If the learning modules output more than object_id features, we need to
-        compare these according to their weights.
-
-        Returns:
-            The feature evidence for all nodes.
-        """
-        if input_channel.startswith("learning_module"):
-            return self._calculate_feature_evidence_sdr_for_all_nodes(
-                query_features, input_channel, graph_id
-            )
-
-        return super()._calculate_feature_evidence_for_all_nodes(
-            query_features, input_channel, graph_id
-        )
+        return np.zeros(self.sdr_args["sdr_length"])
 
 
 class EvidenceSDRGraphLM(EvidenceSDRLMMixin, EvidenceGraphLM):

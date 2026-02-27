@@ -1,5 +1,13 @@
 ---
 title: Learn Policy using RL and Simplified Action Space
+description: Test using reinforcement learning to learn policies.
+rfc: required
+estimated-scope: large
+improved-metric: numsteps, goal-policy
+output-type: prototype, monty-feature, PR, RFC, experiments, analysis, publication
+skills: python, monty, research, reinforcement-learning
+contributor: 
+status: open
 ---
 
 Learning policies through rewards will become important when we begin implementing complex policies that change the state of the world. However, these could also be relevant for inference and learning, for example by learning when to switch policies instead of adhering to a single heuristic like in the curvature following policy.
