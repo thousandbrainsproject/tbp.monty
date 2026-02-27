@@ -335,7 +335,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self.use_goal_state_driven_actions = use_goal_state_driven_actions
         if self.use_goal_state_driven_actions:
             JumpToGoalStateMixin.__init__(self)
-        self._reset_jump_state()
 
         # Observations after passing through sensor modules.
         # Are updated in Monty step method.
