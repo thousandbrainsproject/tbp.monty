@@ -76,7 +76,6 @@ class Monty(metaclass=abc.ABCMeta):
         self._pass_goal_states()
         self._pass_infos_to_motor_system()
         self._set_step_type_and_check_if_done()
-        self._post_step()
 
     def _exploratory_step(self, ctx: RuntimeContext, observation):
         """Step format for adding data to an existing model.
@@ -88,7 +87,6 @@ class Monty(metaclass=abc.ABCMeta):
         self._pass_goal_states()
         self._pass_infos_to_motor_system()
         self._set_step_type_and_check_if_done()
-        self._post_step()
 
     @abc.abstractmethod
     def step(self, ctx: RuntimeContext, observation):
@@ -136,13 +134,10 @@ class Monty(metaclass=abc.ABCMeta):
     def _set_step_type_and_check_if_done(self):
         """Check terminal conditions and decide if to change the step type.
 
+        Update step counters.
+
         Update what self.is_done returns to the experiment.
         """
-        pass
-
-    @abc.abstractmethod
-    def _post_step(self):
-        """Hook for doing things like updating counters."""
         pass
 
     ###
