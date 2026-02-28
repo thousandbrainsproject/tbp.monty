@@ -21,9 +21,6 @@ import quaternion as qt
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import (
     Action,
-    MoveTangentially,
-    SetAgentPose,
-    SetSensorRotation,
 )
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import TransformContext
@@ -34,7 +31,6 @@ from tbp.monty.frameworks.environments.environment import (
 )
 from tbp.monty.frameworks.environments.positioning_procedures import (
     GetGoodView,
-    PositioningProcedure,
 )
 from tbp.monty.frameworks.environments.two_d_data import (
     OmniglotEnvironment,
@@ -44,7 +40,6 @@ from tbp.monty.frameworks.environments.two_d_data import (
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
-    InformedPolicy,
     SurfacePolicy,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -460,16 +455,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
     def step(self, ctx: RuntimeContext, first: bool = False) -> Observations:
         if first:
             return self.first_step()
-
-        # Check if any LM's have output a goal-state (such as hypothesis-testing
-        # goal-state)
-        if (
-            isinstance(self.motor_system._policy, InformedPolicy)
-            and self.motor_system._policy.use_goal_state_driven_actions
-            and self.motor_system._policy.driving_goal_state is not None
-        ):
-            return self.execute_jump_attempt()
-
         actions = self.motor_system(ctx, self._observation)
         self._observation, proprioceptive_state = self._step(actions)
         self.motor_system._state = MotorSystemState(proprioceptive_state)
@@ -571,167 +556,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
                 )
                 break
         return on_target_object
-
-    def execute_jump_attempt(self):
-        """Attempt a hypothesis-testing "jump" onto a location of the object.
-
-        Delegates to motor policy directly to determine specific jump actions.
-
-        Returns:
-            The observation from the jump attempt.
-        """
-        logger.debug(
-            "Attempting a 'jump' like movement to evaluate an object hypothesis"
-        )
-
-        # Store the current location and orientation of the agent.
-        # If the hypothesis-guided jump is unsuccessful (e.g. to empty space
-        # or inside an object), we return here.
-        pre_jump_state = self.motor_system._state[self.motor_system._policy.agent_id]
-
-        # Check that all sensors have identical rotations - this is because actions
-        # currently update them all together; if this changes, the code needs
-        # to be updated; TODO make this its own method
-        for ii, current_sensor in enumerate(pre_jump_state.sensors):
-            if ii == 0:
-                first_sensor = current_sensor
-            assert np.all(
-                pre_jump_state.sensors[current_sensor].rotation
-                == pre_jump_state.sensors[first_sensor].rotation
-            ), "Sensors are not identical in pose"
-
-        # TODO In general what would be best/cleanest way of routing information,
-        # e.g. perhaps the learning module should just pass a *displacement* (in
-        # internal coordinates, and a target surface normal)
-        # Could also consider making use of decide_location_for_movement (or
-        # decide_location_for_movement_matching)
-
-        (target_loc, target_np_quat) = (
-            self.motor_system._policy.derive_habitat_goal_state()
-        )
-
-        # Update observations and motor system-state based on new pose, accounting
-        # for resetting both the agent, as well as the poses of its coupled sensors.
-        # This is necessary for the distant agent, which pivots the camera around
-        # like a ball-and-socket joint; note the surface agent does not
-        # modify this from the unit quaternion and [0, 0, 0] position
-        # anyways; further note this is globally applied to all sensors.
-        set_agent_pose = SetAgentPose(
-            agent_id=self.motor_system._policy.agent_id,
-            location=target_loc,
-            rotation_quat=target_np_quat,
-        )
-        set_sensor_rotation = SetSensorRotation(
-            agent_id=self.motor_system._policy.agent_id,
-            rotation_quat=qt.one,
-        )
-        self._observation, proprioceptive_state = self._step(
-            [set_agent_pose, set_sensor_rotation]
-        )
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-        )
-
-        # Check depth-at-center to see if the object is in front of us.
-        depth_at_center = PositioningProcedure.depth_at_center(
-            agent_id=self.motor_system._policy.agent_id,
-            observations=self._observation,
-            # TODO: Eliminate this hardcoded sensor ID
-            sensor_id=SensorID("view_finder"),
-        )
-
-        # If depth_at_center < 1.0, there is a visible element within 1 meter of the
-        # view-finder's central pixel.
-        if depth_at_center < 1.0:
-            self.handle_successful_jump()
-
-        else:
-            self.handle_failed_jump(pre_jump_state, first_sensor)
-
-        self.motor_system.motor_only_step = False
-
-        return self._observation
-
-    def handle_successful_jump(self):
-        """Deal with the results of a successful hypothesis-testing jump.
-
-        A successful jump is "on-object", i.e. the object is perceived by the sensor.
-        """
-        logger.debug(
-            "Object visible, maintaining new pose for hypothesis-testing action"
-        )
-
-        if isinstance(self.motor_system._policy, SurfacePolicy):
-            # For the surface-agent policy, update last action as if we have
-            # just moved tangentially
-            # Results in us seamlessly transitioning into the typical
-            # corrective movements (forward or orientation) of the surface-agent
-            # policy
-            self.motor_system._policy.last_surface_policy_action = MoveTangentially(
-                agent_id=self.motor_system._policy.agent_id,
-                distance=0.0,
-                direction=(0, 0, 0),
-            )
-
-            # TODO clean up where this is performed, and make variable names more
-            #   general
-            # TODO also only log this when we are doing detailed logging
-            # TODO M clean up these action details loggings; this may need to remain
-            # local to a "motor-system buffer" given that these are model-free
-            # actions that have nothing to do with the LMs
-            # Store logging information about jump success
-            self.motor_system._policy.action_details["pc_heading"].append("jump")
-            self.motor_system._policy.action_details["avoidance_heading"].append(False)
-            self.motor_system._policy.action_details["z_defined_pc"].append(None)
-
-    def handle_failed_jump(self, pre_jump_state, first_sensor):
-        """Deal with the results of a failed hypothesis-testing jump.
-
-        A failed jump is "off-object", i.e. the object is not perceived by the sensor.
-        """
-        logger.debug("No object visible from hypothesis jump, or inside object!")
-        logger.debug("Returning to previous position")
-
-        set_agent_pose = SetAgentPose(
-            agent_id=self.motor_system._policy.agent_id,
-            location=pre_jump_state.position,
-            rotation_quat=pre_jump_state.rotation,
-        )
-        # All sensors are updated globally by actions, and are therefore
-        # identical
-        set_sensor_rotation = SetSensorRotation(
-            agent_id=self.motor_system._policy.agent_id,
-            rotation_quat=pre_jump_state.sensors[first_sensor].rotation,
-        )
-        self._observation, proprioceptive_state = self._step(
-            [set_agent_pose, set_sensor_rotation]
-        )
-
-        assert np.all(
-            proprioceptive_state[self.motor_system._policy.agent_id].position
-            == pre_jump_state.position
-        ), "Failed to return agent to location"
-        assert np.all(
-            proprioceptive_state[self.motor_system._policy.agent_id].rotation
-            == pre_jump_state.rotation
-        ), "Failed to return agent to orientation"
-
-        for current_sensor in proprioceptive_state[
-            self.motor_system._policy.agent_id
-        ].sensors:
-            assert np.all(
-                proprioceptive_state[self.motor_system._policy.agent_id]
-                .sensors[current_sensor]
-                .rotation
-                == pre_jump_state.sensors[current_sensor].rotation
-            ), "Failed to return sensor to orientation"
-
-        self.motor_system._state = MotorSystemState(proprioceptive_state)
-
-        # TODO explore reverting to an attempt with touch_object here,
-        # only moving back to our starting location if this is unsuccessful
-        # after e.g. 16 glances around where we arrived; NB however that
-        # if we're inside the object, then we don't want to do this
 
 
 class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
