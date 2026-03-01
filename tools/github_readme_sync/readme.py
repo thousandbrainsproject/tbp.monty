@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -34,6 +34,8 @@ from tools.github_readme_sync.constants import (
     REGEX_CSV_TABLE,
 )
 from tools.github_readme_sync.req import delete, get, post, put
+
+logger = logging.getLogger(__name__)
 
 PREFIX = "https://dash.readme.com/api/v1"
 GITHUB_RAW = "https://raw.githubusercontent.com"
@@ -128,7 +130,7 @@ class ReadMe:
     def make_version_stable(self):
         if self.version_has_suffix():
             return
-        logging.info(f"{GREEN}Setting version {self.version} to stable{RESET}")
+        logger.info(f"{GREEN}Setting version {self.version} to stable{RESET}")
         if not put(
             f"{PREFIX}/version/{self.version}", {"is_stable": True, "is_hidden": False}
         ):
@@ -140,7 +142,7 @@ class ReadMe:
     def create_version_if_not_exists(self) -> bool:
         if get(f"{PREFIX}/version/{self.version}") is None:
             stable_version = self.get_stable_version()
-            logging.info(
+            logger.info(
                 f"{GRAY}Creating version: {self.version} "
                 f"forked from {stable_version}{RESET}"
             )
@@ -158,17 +160,17 @@ class ReadMe:
         return False
 
     def delete_categories(self):
-        logging.info(f"{GRAY}Deleting categories for version {self.version}{RESET}")
+        logger.info(f"{GRAY}Deleting categories for version {self.version}{RESET}")
         categories = self.get_categories()
         for category in categories:
             self.delete_category(category["slug"])
 
     def delete_category(self, slug: str):
-        logging.info(f"{GRAY}Deleting category {slug}{RESET}")
+        logger.info(f"{GRAY}Deleting category {slug}{RESET}")
         delete(f"{PREFIX}/categories/{slug}", {"x-readme-version": self.version})
 
     def delete_doc(self, slug: str):
-        logging.info(f"{GRAY}Deleting doc {slug}{RESET}")
+        logger.info(f"{GRAY}Deleting doc {slug}{RESET}")
         delete(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
 
     def validate_csv_align_param(self, align_value: str) -> None:
@@ -446,7 +448,7 @@ class ReadMe:
                             safe_value = nh3.clean(values[0])
                             allowed_styles.append(f"{safe_key}: {safe_value}")
                         else:
-                            logging.warning(f"Ignoring disallowed CSS property '{key}'")
+                            logger.warning(f"Ignoring disallowed CSS property '{key}'")
                     if allowed_styles:
                         style = f"{style} " + "; ".join(allowed_styles)
                 except (ValueError, ImportError):
@@ -471,7 +473,7 @@ class ReadMe:
 
     def delete_version(self):
         delete(f"{PREFIX}/version/v{self.version}")
-        logging.info(f"{GREEN}Successfully deleted version {self.version}{RESET}")
+        logger.info(f"{GREEN}Successfully deleted version {self.version}{RESET}")
 
     def _should_ignore_video(self, identifier: str, ignore_list: list[str]) -> bool:
         return identifier in ignore_list

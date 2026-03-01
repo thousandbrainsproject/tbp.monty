@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -16,10 +16,12 @@ from tools.github_readme_sync.hierarchy import INDENTATION_UNIT
 from tools.github_readme_sync.md import process_markdown
 from tools.github_readme_sync.readme import ReadMe
 
+logger = logging.getLogger(__name__)
+
 
 def upload(new_hierarchy, file_path: str, rdme: ReadMe):
-    logging.info(f"Uploading export folder: {file_path}")
-    logging.info(f"URL: https://thousandbrainsproject.readme.io/v{rdme.version}/docs")
+    logger.info(f"Uploading export folder: {file_path}")
+    logger.info(f"URL: https://thousandbrainsproject.readme.io/v{rdme.version}/docs")
     rdme.create_version_if_not_exists()
     to_be_deleted = get_all_categories_docs(rdme)
 
@@ -27,7 +29,7 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
         cat_id, created = rdme.create_category_if_not_exists(
             category["slug"], category["title"]
         )
-        logging.info(
+        logger.info(
             f"\n{BLUE}{category['title'].upper()}{GRAY}{created * ' [created]'}{RESET}"
         )
 
@@ -42,7 +44,7 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
             to_be_deleted=to_be_deleted,
         )
 
-    logging.info("")
+    logger.info("")
     rdme.make_version_stable()
 
     if len(to_be_deleted) > 0:
@@ -117,7 +119,7 @@ def print_child(level: int, doc: dict, created: bool):
     color = CYAN if level else BLUE
     indent = INDENTATION_UNIT * level
     suffix = f"{GRAY}[created]{RESET}" if created else f"{GRAY}[updated]{RESET}"
-    logging.info(
+    logger.info(
         f"{color}{indent}{doc['title']} {WHITE}/{doc['slug']} {GRAY}{suffix}{RESET}"
     )
 
