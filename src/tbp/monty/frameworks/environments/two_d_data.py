@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import time
+from pathlib import Path
 from typing import Sequence
 
 import matplotlib.pyplot as plt
@@ -48,7 +49,7 @@ __all__ = [
 class OmniglotEnvironment(SimulatedEnvironment):
     """Environment for Omniglot dataset."""
 
-    def __init__(self, patch_size=10, data_path=None):
+    def __init__(self, patch_size: int = 10, data_path: str | Path | None = None):
         """Initialize environment.
 
         Args:
@@ -159,7 +160,12 @@ class OmniglotEnvironment(SimulatedEnvironment):
             }
         )
 
-    def switch_to_object(self, alphabet_id, character_id, version_id):
+    def switch_to_object(
+        self,
+        alphabet_id: int,
+        character_id: int,
+        version_id: int,
+    ):
         self.current_alphabet = self.alphabet_names[alphabet_id]
         self.character_id = character_id
         self.character_version = version_id
@@ -227,7 +233,12 @@ class OmniglotEnvironment(SimulatedEnvironment):
         self.max_steps = len(locations) - 1
         return current_image, locations
 
-    def get_image_patch(self, img, loc, patch_size):
+    def get_image_patch(
+        self,
+        img: np.ndarray,
+        loc: Sequence[int] | np.ndarray,
+        patch_size: int,
+    ):
         loc = np.array(loc, dtype=int)
         startx = loc[1] - patch_size // 2
         stopx = loc[1] + patch_size // 2
@@ -235,7 +246,7 @@ class OmniglotEnvironment(SimulatedEnvironment):
         stopy = loc[0] + patch_size // 2
         return img[startx:stopx, starty:stopy]
 
-    def motor_to_locations(self, motor):
+    def motor_to_locations(self, motor: Sequence[np.ndarray]):
         motor = [d[:, 0:2] for d in motor]
         motor = [space_motor_to_img(d) for d in motor]
         locations = np.zeros(2)
@@ -253,7 +264,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
     Images should be stored in .png format for rgb and .data format for depth.
     """
 
-    def __init__(self, patch_size=64, data_path=None):
+    def __init__(self, patch_size: int = 64, data_path: str | Path | None = None):
         """Initialize environment.
 
         Args:
@@ -384,7 +395,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             }
         )
 
-    def switch_to_object(self, scene_id, scene_version_id):
+    def switch_to_object(self, scene_id: int, scene_version_id: int):
         """Load new image to be used as environment."""
         self.current_scene = self.scene_names[scene_id]
         self.scene_version = scene_version_id
@@ -471,7 +482,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         start_location = [obs_shape[0] // 2, obs_shape[1] // 2]
         return current_depth_image, current_rgb_image, start_location
 
-    def load_depth_data(self, depth_path, height, width):
+    def load_depth_data(self, depth_path: Path, height: int, width: int):
         """Load depth image from .data file.
 
         Returns:
@@ -479,7 +490,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         """
         return np.fromfile(depth_path, np.float32).reshape(height, width)
 
-    def process_depth_data(self, depth):
+    def process_depth_data(self, depth: np.ndarray):
         """Process depth data by reshaping, clipping and flipping.
 
         Returns:
@@ -498,7 +509,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         # sensor orientation (TODO).
         return depth_clipped  # np.flipud(depth_clipped)
 
-    def load_rgb_data(self, rgb_path):
+    def load_rgb_data(self, rgb_path: Path):
         """Load RGB image and put into np array.
 
         Returns:
@@ -577,7 +588,10 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         self.world_camera = obs_3d[agent_id][sensor_id]["world_camera"]
         return current_scene_point_cloud, current_sf_scene_point_cloud
 
-    def get_3d_coordinates_from_pixel_indices(self, pixel_idx):
+    def get_3d_coordinates_from_pixel_indices(
+        self,
+        pixel_idx: Sequence[int] | np.ndarray,
+    ):
         """Retrieve 3D coordinates of a pixel.
 
         Returns:
@@ -601,7 +615,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             ]
         )
 
-    def get_next_loc(self, action_name, amount):
+    def get_next_loc(self, action_name: str, amount: int):
         """Calculate next location in pixel space given the current action.
 
         Returns:
@@ -629,7 +643,10 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             new_loc[1] = self.move_area[1][1]
         return new_loc
 
-    def get_image_patch(self, loc):
+    def get_image_patch(
+        self,
+        loc: Sequence[int] | np.ndarray,
+    ):
         """Extract 2D image patch from a location in pixel space.
 
         Returns:
@@ -670,7 +687,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
 class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
     """Environment for moving over a 2D streamed image with depth channel."""
 
-    def __init__(self, patch_size=64, data_path=None):
+    def __init__(self, patch_size: int = 64, data_path: str | Path | None = None):
         """Initialize environment.
 
         Args:
@@ -715,7 +732,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         #      don't call super().__init__ while inheriting
         self._valid_actions = ["look_up", "look_down", "turn_left", "turn_right"]
 
-    def switch_to_scene(self, scene_id):
+    def switch_to_scene(self, scene_id: int):
         self.current_scene = scene_id
         (
             self.current_depth_image,
@@ -775,12 +792,12 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
 
 # Functions from omniglot/python.demo.py
 # TODO: integrate better and maybe rewrite
-def load_img(fn):
+def load_img(fn: Path):
     img = plt.imread(fn)
     return np.array(img, dtype=bool)
 
 
-def load_motor(fn):
+def load_motor(fn: Path):
     motor = []
     with fn.open() as fid:
         lines = fid.readlines()
@@ -798,6 +815,6 @@ def load_motor(fn):
     return motor
 
 
-def space_motor_to_img(pt):
+def space_motor_to_img(pt: np.ndarray):
     pt[:, 1] = -pt[:, 1]
     return pt
