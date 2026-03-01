@@ -9,8 +9,17 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Protocol
 
-def get_edge_index(graph, previous_node, new_node) -> int | None:
+if TYPE_CHECKING:
+    from torch import Tensor
+
+
+class GraphLike(Protocol):
+    edge_index: Tensor
+
+
+def get_edge_index(graph: GraphLike, previous_node: int, new_node: int) -> int | None:
     """Return the edge index between two nodes in a graph.
 
     Args:
