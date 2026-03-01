@@ -6,12 +6,14 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 from contextlib import contextmanager
 from http.server import HTTPServer
 from pathlib import Path
 from tempfile import TemporaryDirectory as TempDir
 from threading import Thread
+from typing import Mapping
 
 import pytest
 import requests
@@ -20,7 +22,7 @@ from tbp.monty.frameworks.environment_utils.server import MontyRequestHandler
 
 
 @contextmanager
-def serve_request(server):
+def serve_request(server: HTTPServer):
     server_thread = Thread(target=server.handle_request, daemon=True)
     server_thread.start()
     try:
@@ -31,7 +33,10 @@ def serve_request(server):
 
 @pytest.mark.parametrize("type_and_suffix", [("rgb", "png"), ("depth", "data")])
 @pytest.mark.parametrize("query_params", [None, {"future": "proof"}])
-def test_monty_request_handler(type_and_suffix, query_params):
+def test_monty_request_handler(
+    type_and_suffix: tuple[str, str],
+    query_params: Mapping[str, str] | None,
+):
     data_type, suffix = type_and_suffix
 
     inert_server = HTTPServer(("localhost", 0), MontyRequestHandler)

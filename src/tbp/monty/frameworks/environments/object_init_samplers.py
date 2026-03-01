@@ -7,6 +7,10 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
+from typing import Sequence
+
 import numpy as np
 from scipy.spatial.transform import Rotation
 
@@ -29,7 +33,7 @@ class Default:
             scale=[1.0, 1.0, 1.0],
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: object):
         return self.__dict__ == other.__dict__
 
     def __hash__(self):
@@ -38,7 +42,11 @@ class Default:
 
 class Predefined(Default):
     def __init__(
-        self, positions=None, rotations=None, scales=None, change_every_episode=None
+        self,
+        positions: Sequence[Sequence[float]] | None = None,
+        rotations: Sequence[Sequence[float]] | None = None,
+        scales: Sequence[Sequence[float]] | None = None,
+        change_every_episode: bool | None = None,
     ):
         # NOTE: added param change_every_episode. This is so if I want to run an
         # experiment and specify an exact list of objects, with specific poses per
@@ -83,7 +91,11 @@ class Predefined(Default):
 
 
 class RandomRotation(Default):
-    def __init__(self, position=None, scale=None):
+    def __init__(
+        self,
+        position: Sequence[float] | None = None,
+        scale: Sequence[float] | None = None,
+    ):
         if position is not None:
             self.position = position
         else:
