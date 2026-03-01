@@ -32,6 +32,8 @@ from tools.github_readme_sync.index import generate_index  # noqa: E402
 from tools.github_readme_sync.readme import ReadMe  # noqa: E402
 from tools.github_readme_sync.upload import upload  # noqa: E402
 
+logger = logging.getLogger(__name__)
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -126,20 +128,20 @@ def main():
     elif args.command == "generate-index":
         output_file = args.output_file.strip()
         if not output_file:
-            logging.error(f"{RED}Output file path cannot be empty{RESET}")
+            logger.error(f"{RED}Output file path cannot be empty{RESET}")
             sys.exit(1)
         generate_index(args.folder, Path(output_file))
 
 
 def check_readme_api_key():
     if not os.getenv("README_API_KEY"):
-        logging.error(f"{RED}README_API_KEY environment variable not set{RESET}")
+        logger.error(f"{RED}README_API_KEY environment variable not set{RESET}")
         sys.exit(1)
 
 
 def check_image_path():
     if not os.getenv("IMAGE_PATH"):
-        logging.error(f"{RED}IMAGE_PATH environment variable not set{RESET}")
+        logger.error(f"{RED}IMAGE_PATH environment variable not set{RESET}")
         sys.exit(1)
 
 

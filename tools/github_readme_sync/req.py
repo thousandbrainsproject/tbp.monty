@@ -14,17 +14,18 @@ import os
 import requests
 
 REQUEST_TIMEOUT_SECONDS = 60
+logger = logging.getLogger(__name__)
 
 
 def get(url: str, headers=None):
     headers = headers or {}
     headers["Authorization"] = f"Basic {os.getenv('README_API_KEY')}"
     response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS)
-    logging.debug("get %s %s", url, response.status_code)
+    logger.debug("get %s %s", url, response.status_code)
     if response.status_code == 404:
         return None
     if response.status_code < 200 or response.status_code >= 300:
-        logging.error(f"Failed to get {url} {response.text}")
+        logger.error(f"Failed to get {url} {response.text}")
         return None
     return response.json()
 
@@ -35,9 +36,9 @@ def post(url: str, data: dict, headers=None):
     response = requests.post(
         url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
     )
-    logging.debug("post %s %s", url, response.status_code)
+    logger.debug("post %s %s", url, response.status_code)
     if response.status_code < 200 or response.status_code >= 300:
-        logging.error(f"Failed to post {url} {response.text}")
+        logger.error(f"Failed to post {url} {response.text}")
         return None
     return response.text
 
@@ -48,9 +49,9 @@ def put(url: str, data: dict, headers=None):
     response = requests.put(
         url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
     )
-    logging.debug("put %s %s", url, response.status_code)
+    logger.debug("put %s %s", url, response.status_code)
     if response.status_code < 200 or response.status_code >= 300:
-        logging.error(f"Failed to put {url} {response.text}")
+        logger.error(f"Failed to put {url} {response.text}")
         return False
     return True
 
@@ -59,5 +60,5 @@ def delete(url: str, headers=None):
     headers = headers or {}
     headers["Authorization"] = f"Basic {os.getenv('README_API_KEY')}"
     response = requests.delete(url, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS)
-    logging.debug("delete %s %s", url, response.status_code)
+    logger.debug("delete %s %s", url, response.status_code)
     return 200 <= response.status_code < 300
