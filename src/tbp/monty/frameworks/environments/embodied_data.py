@@ -26,7 +26,10 @@ from tbp.monty.frameworks.actions.actions import (
     SetSensorRotation,
 )
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environment_utils.transforms import Transform, TransformContext
+from tbp.monty.frameworks.environment_utils.transforms import (
+    Transform,
+    TransformContext,
+)
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     SemanticID,
