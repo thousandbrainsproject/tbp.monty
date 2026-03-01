@@ -13,7 +13,7 @@ from __future__ import annotations
 import copy
 import logging
 from pprint import pformat
-from typing import Iterable, Mapping, Sequence
+from typing import Any, Callable, Dict, Iterable, Mapping, Sequence, Union
 
 import numpy as np
 import quaternion as qt
@@ -26,7 +26,7 @@ from tbp.monty.frameworks.actions.actions import (
     SetSensorRotation,
 )
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environment_utils.transforms import TransformContext
+from tbp.monty.frameworks.environment_utils.transforms import Transform, TransformContext
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     SemanticID,
@@ -49,6 +49,7 @@ from tbp.monty.frameworks.models.motor_policies import (
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
     MotorSystemState,
     ProprioceptiveState,
 )
@@ -64,6 +65,10 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+
+TransformPipeline = Union[Transform, Sequence[Transform]]
+ObjectInitParams = Dict[str, Any]
+ObjectInitSampler = Callable[[int, ExperimentMode, int, int], ObjectInitParams]
 
 
 class EnvironmentInterface:
@@ -101,10 +106,10 @@ class EnvironmentInterface:
         self,
         env: SimulatedObjectEnvironment,
         motor_system: MotorSystem,
-        rng,
+        rng: np.random.RandomState,
         seed: int,
         experiment_mode: ExperimentMode,
-        transform=None,
+        transform: TransformPipeline | None = None,
     ):
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
@@ -128,7 +133,10 @@ class EnvironmentInterface:
         return observation, state
 
     def apply_transform(
-        self, transform, observation: Observations, state: ProprioceptiveState
+        self,
+        transform: TransformPipeline,
+        observation: Observations,
+        state: ProprioceptiveState,
     ) -> Observations:
         ctx = TransformContext(rng=self.rng, state=state)
         if isinstance(transform, Iterable):
@@ -215,9 +223,9 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
     def __init__(
         self,
-        object_names,
-        object_init_sampler,
-        parent_to_child_mapping=None,
+        object_names: Sequence[str] | Mapping[str, Any],
+        object_init_sampler: ObjectInitSampler,
+        parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         *args,
         **kwargs,
     ):
@@ -332,7 +340,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         )
         self.change_object_by_idx(next_object)
 
-    def change_object_by_idx(self, idx):
+    def change_object_by_idx(self, idx: int):
         """Update the primary target object in the scene based on the given index.
 
         The given `idx` is the index of the object in the `self.object_names` list,
@@ -388,8 +396,8 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
     def add_distractor_objects(
         self,
         primary_target_obj: ObjectID,
-        init_params,
-        primary_target_name,
+        init_params: ObjectInitParams,
+        primary_target_name: str,
     ):
         """Add arbitrarily many "distractor" objects to the environment.
 
@@ -684,7 +692,11 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             self.motor_system._policy.action_details["avoidance_heading"].append(False)
             self.motor_system._policy.action_details["z_defined_pc"].append(None)
 
-    def handle_failed_jump(self, pre_jump_state, first_sensor):
+    def handle_failed_jump(
+        self,
+        pre_jump_state: AgentState,
+        first_sensor: SensorID,
+    ):
         """Deal with the results of a failed hypothesis-testing jump.
 
         A failed jump is "off-object", i.e. the object is not perceived by the sensor.
@@ -739,14 +751,14 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
 
     def __init__(
         self,
-        alphabets,
-        characters,
-        versions,
+        alphabets: Sequence[int],
+        characters: Sequence[int],
+        versions: Sequence[int],
         env: OmniglotEnvironment,
         motor_system: MotorSystem,
-        rng,
-        transform=None,
-        parent_to_child_mapping=None,
+        rng: np.random.RandomState,
+        transform: TransformPipeline | None = None,
+        parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         *_args,
         **_kwargs,
     ):
@@ -813,7 +825,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         )
         self.change_object_by_idx(next_object)
 
-    def change_object_by_idx(self, idx):
+    def change_object_by_idx(self, idx: int):
         """Update the object in the scene given the idx of it in the object params.
 
         Args:
@@ -839,13 +851,13 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
 
     def __init__(
         self,
-        scenes,
-        versions,
+        scenes: Sequence[int],
+        versions: Sequence[int],
         env: SaccadeOnImageEnvironment,
         motor_system: MotorSystem,
-        rng,
-        transform=None,
-        parent_to_child_mapping=None,
+        rng: np.random.RandomState,
+        transform: TransformPipeline | None = None,
+        parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         *_args,
         **_kwargs,
     ):
@@ -908,7 +920,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         )
         self.change_object_by_idx(next_scene)
 
-    def change_object_by_idx(self, idx):
+    def change_object_by_idx(self, idx: int):
         """Update the object in the scene given the idx of it in the object params.
 
         Args:
@@ -942,8 +954,8 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self,
         env: SaccadeOnImageFromStreamEnvironment,
         motor_system: MotorSystem,
-        rng,
-        transform=None,
+        rng: np.random.RandomState,
+        transform: TransformPipeline | None = None,
         *_args,
         **_kwargs,
     ):
@@ -995,7 +1007,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         # TODO: Do we need a separate method for this ?
         self.change_scene_by_idx(next_scene)
 
-    def change_scene_by_idx(self, idx):
+    def change_scene_by_idx(self, idx: int):
         """Update the object in the scene given the idx of it in the object params.
 
         Args:
