@@ -49,6 +49,7 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
+    Position3D,
     ProprioceptiveState,
     SensorState,
 )
@@ -611,16 +612,18 @@ class HabitatSim(HabitatActuator, Simulator):
                 monty_id, _ = agent.habitat_sensor_to_monty_id_modality_map[sensor_id]
                 if monty_id in sensors:
                     continue
+                position = Position3D(np.array(list(sensor.node.translation)))
                 rotation = sim_utils.quat_from_magnum(sensor.node.rotation)
                 sensors[monty_id] = SensorState(
-                    position=sensor.node.translation,
+                    position=position,
                     rotation=rotation,
                 )
 
             # Update agent/module state
+            position = Position3D(np.array(list(agent_node.translation)))
             rotation = sim_utils.quat_from_magnum(agent_node.rotation)
             result[agent.agent_id] = AgentState(
-                position=agent_node.translation,
+                position=position,
                 rotation=rotation,
                 sensors=sensors,
             )

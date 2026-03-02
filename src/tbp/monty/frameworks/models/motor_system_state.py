@@ -9,19 +9,24 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Dict
 
 import numpy as np
+from numpy.typing import NDArray
+from typing_extensions import Any, NewType
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.sensors import SensorID
+
+Position3D = NewType("Position3D", NDArray[np.float32])
+"""A NumPy array representing a 3d position."""
 
 
 @dataclass
 class SensorState:
     """The proprioceptive state of a sensor."""
 
-    position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
+    position: Position3D
     """The sensor's position."""
     rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
     """The sensor's rotation."""
@@ -37,7 +42,7 @@ class AgentState:
     When part of an AgentState, the SensorState's position and rotation are relative to
     the agent's position and rotation.
     """
-    position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
+    position: Position3D
     """The agent's position."""
     rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
     """The agent's rotation."""
@@ -79,12 +84,12 @@ class MotorSystemState(Dict[AgentID, AgentState]):
             for sensor_id in agent_state.sensors:
                 sensor_state = agent_state.sensors[sensor_id]
                 sensors[sensor_id] = {
-                    "position": np.array(list(sensor_state.position)),
+                    "position": Position3D(np.array(list(sensor_state.position))),
                     "rotation": [sensor_state.rotation.real]
                     + list(sensor_state.rotation.imag),
                 }
             state_copy[agent_id] = {
-                "position": np.array(list(agent_state.position)),
+                "position": Position3D(np.array(list(agent_state.position))),
                 "rotation": [agent_state.rotation.real]
                 + list(agent_state.rotation.imag),
                 "sensors": sensors,
