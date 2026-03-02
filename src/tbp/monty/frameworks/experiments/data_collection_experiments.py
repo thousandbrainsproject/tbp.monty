@@ -18,6 +18,7 @@ from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.object_recognition_experiments import (
     MontyObjectRecognitionExperiment,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +64,10 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
 
         self.post_episode()
 
-    def pass_features_to_motor_system(self, ctx: RuntimeContext, observation, step):
-        self.model.aggregate_sensory_inputs(ctx, observation)
+    def pass_features_to_motor_system(
+        self, ctx: RuntimeContext, observations: Observations, step: int
+    ):
+        self.model.aggregate_sensory_inputs(ctx, observations)
         self.model.motor_system._policy.processed_observations = (
             self.model.sensor_module_outputs[0]
         )
@@ -106,7 +109,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
 
     def post_episode(
         self,
-        steps,  # noqa: ARG002
+        steps: int,  # noqa: ARG002
     ):
         torch.save(
             self.model.sensor_modules[0].processed_obs[:-1],

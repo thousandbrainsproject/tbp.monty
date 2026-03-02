@@ -10,6 +10,7 @@
 
 import logging
 from pathlib import Path
+from typing import Any, Mapping
 
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
@@ -51,7 +52,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         self.first_epoch_object_location = {}
         super().__init__(config)
 
-    def setup_experiment(self, config):
+    def setup_experiment(self, config: Mapping[str, Any]):
         super().setup_experiment(config)
         if "agents" in config["env_interface_config"]["env_init_args"]:
             self.sensor_pos = np.array(

@@ -10,6 +10,7 @@
 
 import cProfile
 from pathlib import Path
+from typing import Any, Mapping
 
 import pandas as pd
 import wandb
@@ -19,7 +20,7 @@ from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 __all__ = ["ProfileExperimentMixin"]
 
 
-def make_stats_df(stats):
+def make_stats_df(stats: cProfile.Profile):
     """Convert cProfile.Profile() stats to dataframe.
 
     Take a cProfile.Profile() object, gather stats, put in dataframe, sort by
@@ -75,7 +76,7 @@ class ProfileExperimentMixin:
         self.profile_dir = Path(self.output_dir) / "profile"
         self.profile_dir.mkdir(exist_ok=True, parents=True)
 
-    def setup_experiment(self, config):
+    def setup_experiment(self, config: Mapping[str, Any]):
         filename = "profile-setup_experiment.csv"
         pr = cProfile.Profile()
         pr.enable()
