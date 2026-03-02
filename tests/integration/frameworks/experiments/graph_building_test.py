@@ -81,9 +81,7 @@ class GraphBuildingTest(unittest.TestCase):
         """Code that gets executed after every test."""
         shutil.rmtree(self.output_dir)
 
-    def check_graph_formatting(
-        self, graph: Data, features_to_check: Sequence[str]
-    ):
+    def check_graph_formatting(self, graph: Data, features_to_check: Sequence[str]):
         """Makes sure graph contains right feature at location information."""
         self.assertIsNot(
             graph.pos,
