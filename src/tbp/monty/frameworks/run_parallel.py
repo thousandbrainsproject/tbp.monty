@@ -278,7 +278,7 @@ def generate_parallel_eval_configs(
     # Try to mimic the exact workflow instead of guessing
     while epoch_count < n_epochs:
         for obj in object_names:
-            # TODO(TimothyAlexisVass): Replace this with a concrete typed config contract.
+            # TODO(TimothyAlexisVass): Replace with concrete typed config contract.
             new_experiment: Mapping = OmegaConf.to_object(experiment)  # type: ignore[assignment]
 
             # No training
@@ -350,7 +350,7 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
     new_experiments = []
 
     for obj in object_names:
-        # TODO(TimothyAlexisVass): Replace this with a concrete typed config contract.
+        # TODO(TimothyAlexisVass): Replace with concrete typed config contract.
         new_experiment: Mapping = OmegaConf.to_object(experiment)  # type: ignore[assignment]
 
         # No eval
