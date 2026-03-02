@@ -564,7 +564,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         # Check that all sensors have identical rotations - this is because actions
         # currently update them all together; if this changes, the code needs
-        # to be updated; TODO make this its own method
+        # to be updated;
         for ii, current_sensor in enumerate(self._pre_jump_state.sensors):
             if ii == 0:
                 first_sensor = current_sensor
@@ -572,12 +572,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 self._pre_jump_state.sensors[current_sensor].rotation
                 == self._pre_jump_state.sensors[first_sensor].rotation
             ), "Sensors are not identical in pose"
-
-        # TODO In general what would be best/cleanest way of routing information,
-        # e.g. perhaps the learning module should just pass a *displacement* (in
-        # internal coordinates, and a target surface normal)
-        # Could also consider making use of decide_location_for_movement (or
-        # decide_location_for_movement_matching)
 
         (target_loc, target_np_quat) = self.derive_habitat_goal_state()
 
