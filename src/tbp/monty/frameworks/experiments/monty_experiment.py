@@ -14,7 +14,7 @@ import datetime
 import logging
 import pprint
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal, Mapping
 
 import numpy as np
 import torch
@@ -37,6 +37,7 @@ from tbp.monty.frameworks.loggers.exp_logger import (
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
+    Observations,
     SensorModule,
 )
 from tbp.monty.frameworks.models.monty_base import MontyBase
@@ -45,6 +46,9 @@ from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
+
+if TYPE_CHECKING:
+    from types import TracebackType
 
 __all__ = ["MontyExperiment"]
 
@@ -59,7 +63,7 @@ class MontyExperiment:
     and episode).
     """
 
-    def __init__(self, config: DictConfig) -> None:
+    def __init__(self, config: DictConfig | Mapping[str, Any]) -> None:
         """Initialize the experiment based on the provided configuration.
 
         Args:
@@ -113,7 +117,7 @@ class MontyExperiment:
         logger.info(f"resetting RNG to seed {seed}")
         self.rng = np.random.RandomState(seed)
 
-    def setup_experiment(self, config: dict[str, Any]) -> None:
+    def setup_experiment(self, config: Mapping[str, Any]) -> None:
         """Set up the basic elements of a Monty experiment and initialize counters.
 
         Args:
@@ -129,7 +133,11 @@ class MontyExperiment:
         self.init_monty_data_loggers(self.config["logging"])
         self.init_counters()
 
-    def init_model(self, monty_config, model_path=None):
+    def init_model(
+        self,
+        monty_config: DictConfig | Mapping[str, Any],
+        model_path: Path | None = None,
+    ):
         """Initialize the Monty model.
 
         Args:
@@ -220,10 +228,12 @@ class MontyExperiment:
 
         return model
 
-    def init_env(self, env_init_func, env_init_args):
+    def init_env(
+        self, env_init_func: Callable[..., Any], env_init_args: Mapping[str, Any]
+    ):
         self.env = env_init_func(**env_init_args)
 
-    def load_environment_interfaces(self, config):
+    def load_environment_interfaces(self, config: Mapping[str, Any]):
         # Initialize everything needed for environment interface
         env_interface_config = config["env_interface_config"]
         self.init_env(
@@ -262,7 +272,11 @@ class MontyExperiment:
         else:
             self.eval_env_interface = None
 
-    def create_env_interface(self, env_interface_class, env_interface_args):
+    def create_env_interface(
+        self,
+        env_interface_class: type[EnvironmentInterface],
+        env_interface_args: Mapping[str, Any],
+    ):
         """Environment interface used to collect data from environment observations.
 
         Args:
@@ -335,7 +349,7 @@ class MontyExperiment:
             args.update(target=target)
         return args
 
-    def init_loggers(self, logging_config: dict[str, Any]) -> None:
+    def init_loggers(self, logging_config: Mapping[str, Any]) -> None:
         """Initialize logger with specified log level.
 
         Args:
@@ -379,7 +393,7 @@ class MontyExperiment:
         logger.info("logger initialized")
         logger.debug(pprint.pformat(self.config))
 
-    def init_monty_data_loggers(self, logging_config: dict[str, Any]) -> None:
+    def init_monty_data_loggers(self, logging_config: Mapping[str, Any]) -> None:
         """Initialize Monty data loggers.
 
         Args:
@@ -476,11 +490,11 @@ class MontyExperiment:
     # Methods for running the experiment
     ####
 
-    def pre_step(self, _step, _observation):
+    def pre_step(self, _step: int, _observation: Observations):
         """Hook for anything you want to do before a step."""
         self.logger_handler.pre_step(self.logger_args)
 
-    def post_step(self, _step, _observation):
+    def post_step(self, _step: int, _observation: Observations):
         """Hook for anything you want to do after a step."""
         self.logger_handler.post_step(self.logger_args)
 
@@ -539,7 +553,7 @@ class MontyExperiment:
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-    def post_episode(self, steps):
+    def post_episode(self, steps: int):
         """Call post_episode on elements in experiment and increment counters.
 
         General order of post episode should be:
@@ -656,7 +670,7 @@ class MontyExperiment:
             time_stamp=datetime.datetime.now(),
         )
 
-    def save_state_dict(self, output_dir=None):
+    def save_state_dict(self, output_dir: Path | None = None):
         """Save state_dict of experiment and model."""
         model_state_dict = self.model.state_dict()
         exp_state_dict = self.state_dict()
@@ -680,7 +694,7 @@ class MontyExperiment:
             torch.save(exp_state_dict, output_dir / "exp_state_dict.pt")
             torch.save(self.config, output_dir / "config.pt")
 
-    def load_state_dict(self, load_dir):
+    def load_state_dict(self, load_dir: str | Path):
         """Load state_dict of previous experiment."""
         load_dir = Path(load_dir)
         model_state_dict = torch.load(load_dir / "model.pt")
@@ -717,7 +731,12 @@ class MontyExperiment:
         self.setup_experiment(self.config)
         return self
 
-    def __exit__(self, exc_type, exc_value, exc_traceback) -> Literal[False]:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> Literal[False]:
         """Context manager exit method.
 
         Ensure that we always close the environment if necessary.
