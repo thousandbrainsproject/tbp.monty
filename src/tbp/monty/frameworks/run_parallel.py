@@ -15,7 +15,7 @@ import re
 import shutil
 import time
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 import hydra
 import numpy as np
@@ -32,6 +32,7 @@ from tbp.monty.frameworks.environments.object_init_samplers import (
     Predefined,
 )
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 from tbp.monty.frameworks.experiments.pretraining_experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
@@ -85,7 +86,7 @@ def cat_csv(filenames: Iterable[Path], outfile: Path):
     df.to_csv(outfile, index=False)
 
 
-def sample_params_to_init_args(params):
+def sample_params_to_init_args(params: Mapping[str, Any]):
     new_params = {}
     new_params["positions"] = [params["position"]]
     new_params["scales"] = [params["scale"]]
@@ -94,7 +95,11 @@ def sample_params_to_init_args(params):
     return new_params
 
 
-def post_parallel_log_cleanup(filenames: Iterable[Path], outfile: Path, cat_fn):
+def post_parallel_log_cleanup(
+    filenames: Iterable[Path],
+    outfile: Path,
+    cat_fn: Callable[[Iterable[Path], Path], None],
+):
     existing_files = [f for f in filenames if f.exists()]
     if len(existing_files) == 0:
         return
@@ -273,6 +278,7 @@ def generate_parallel_eval_configs(
     # Try to mimic the exact workflow instead of guessing
     while epoch_count < n_epochs:
         for obj in object_names:
+            # TODO(TimothyAlexisVass): Replace this with a concrete typed config contract.
             new_experiment: Mapping = OmegaConf.to_object(experiment)  # type: ignore[assignment]
 
             # No training
@@ -344,6 +350,7 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
     new_experiments = []
 
     for obj in object_names:
+        # TODO(TimothyAlexisVass): Replace this with a concrete typed config contract.
         new_experiment: Mapping = OmegaConf.to_object(experiment)  # type: ignore[assignment]
 
         # No eval
@@ -370,7 +377,7 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
     return new_experiments
 
 
-def single_train(experiment):
+def single_train(experiment: Mapping[str, Any]):
     output_dir = Path(experiment["config"]["logging"]["output_dir"])
     output_dir.mkdir(exist_ok=True, parents=True)
     exp = hydra.utils.instantiate(experiment)
@@ -379,7 +386,7 @@ def single_train(experiment):
         exp.run()
 
 
-def single_evaluate(experiment):
+def single_evaluate(experiment: Mapping[str, Any]):
     output_dir = Path(experiment["config"]["logging"]["output_dir"])
     output_dir.mkdir(exist_ok=True, parents=True)
     exp = hydra.utils.instantiate(experiment)
@@ -394,7 +401,9 @@ def single_evaluate(experiment):
             return get_episode_stats(exp, ExperimentMode.EVAL, exp.config.episode)
 
 
-def get_episode_stats(exp, mode: ExperimentMode, episode: int = 0):
+def get_episode_stats(
+    exp: MontyExperiment, mode: ExperimentMode, episode: int = 0
+):
     eval_stats = exp.monty_logger.get_formatted_overall_stats(mode, episode)
     exp.monty_logger.flush()
     # Remove overall stats field since they are only averaged over 1 episode
@@ -405,7 +414,9 @@ def get_episode_stats(exp, mode: ExperimentMode, episode: int = 0):
     return eval_stats
 
 
-def get_overall_stats(stats):
+def get_overall_stats(
+    stats: Mapping[str, Sequence[float | int | bool]],
+):
     overall_stats = {}
     # combines correct and correct_mlh
     overall_stats["overall/percent_correct"] = np.mean(stats["episode/correct"]) * 100
