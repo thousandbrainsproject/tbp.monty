@@ -18,7 +18,7 @@ import numpy.typing as npt
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.models.motor_system_state import AgentState
+from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.sensors import SensorID
 
@@ -91,7 +91,12 @@ class Monty(metaclass=abc.ABCMeta):
         self._post_step()
 
     @abc.abstractmethod
-    def step(self, ctx: RuntimeContext, observation):
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observation: Observations,
+        state: MotorSystemState,
+    ):
         """Take a matching, exploratory, or custom user-defined step.
 
         Step taken depends on the value of self.step_type.

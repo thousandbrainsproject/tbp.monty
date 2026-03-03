@@ -14,8 +14,13 @@ from typing import ClassVar
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
-from tbp.monty.frameworks.models.abstract_monty_classes import Monty, RuntimeContext
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    Monty,
+    Observations,
+    RuntimeContext,
+)
 from tbp.monty.frameworks.models.motor_system import MotorSystem
+from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
 
 __all__ = ["MontyBase"]
@@ -135,9 +140,12 @@ class MontyBase(Monty):
     # Basic methods that specify the algorithm
     ###
 
-    def step(self, ctx: RuntimeContext, observation):
+    def step(
+        self, ctx: RuntimeContext, observation: Observations, state: MotorSystemState
+    ):
         # For the base class, just use matching step. Note that matching_step and
         # exploratory_step are fully implemented by the abstract class.
+        self._motor_system._state = state  # temporary
         if self.step_type == "matching_step":
             self._matching_step(ctx, observation)
         elif self.step_type == "exploratory_step":
