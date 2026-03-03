@@ -95,18 +95,18 @@ class OmniglotEnvironment(SimulatedEnvironment):
         Returns:
             The observations and proprioceptive state.
         """
-        obs = self._observation()
+        obs = self._observations()
 
         for action in actions:
             amount = 1
             if hasattr(action, "rotation_degrees"):
                 amount = max(action.rotation_degrees, 1)
             self.step_num += int(amount)
-            obs = self._observation()
+            obs = self._observations()
 
         return obs
 
-    def _observation(self) -> Observations:
+    def _observations(self) -> Observations:
         query_loc = self.locations[self.step_num % self.max_steps]
         patch = self.get_image_patch(
             self.current_image,
@@ -308,7 +308,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         Returns:
             The observation and proprioceptive state.
         """
-        obs = self._observation()
+        obs = self._observations()
 
         for action in actions:
             if action.name in self._valid_actions:
@@ -321,11 +321,11 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             # Make sure amount is int since we are moving using pixel indices
             amount = int(amount)
             self.current_loc = self.get_next_loc(action.name, amount)
-            obs = self._observation()
+            obs = self._observations()
 
         return obs
 
-    def _observation(self) -> Observations:
+    def _observations(self) -> Observations:
         (
             depth_patch,
             rgb_patch,
