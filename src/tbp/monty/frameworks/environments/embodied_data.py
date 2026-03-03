@@ -134,12 +134,16 @@ class EnvironmentInterface:
         return observations
 
     def step(
-        self, ctx: RuntimeContext, first: bool = False
+        self,
+        ctx: RuntimeContext,
+        actions: Sequence[Action] | None = None,
+        first: bool = False,
     ) -> tuple[Observations, ProprioceptiveState]:
         """Request actions from the motor system and step the environment.
 
         Args:
             ctx: The runtime context.
+            actions: The actions to take in the environment.
             first: Whether this is the first step of the episode. If True, then
                 return the initial observations and proprioceptive state without
                 requesting actions from the motor system or stepping the environment.
@@ -154,6 +158,8 @@ class EnvironmentInterface:
         Returns:
             The observations and proprioceptive state.
         """
+        actions = [] if actions is None else actions
+
         if first:
             # Return first observations after 'reset' before any action is applied
             return self._observations, self._proprioceptive_state
@@ -456,10 +462,16 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         self._good_view_percentage = good_view_percentage
 
     def step(
-        self, ctx: RuntimeContext, first: bool = False
+        self,
+        ctx: RuntimeContext,
+        actions: Sequence[Action] | None = None,
+        first: bool = False,
     ) -> tuple[Observations, ProprioceptiveState]:
+        actions = [] if actions is None else actions
+
         if first:
             return self.first_step()
+
         actions = self.motor_system(ctx, self._observations)
         self._observations, self._proprioceptive_state = self._step(actions)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
