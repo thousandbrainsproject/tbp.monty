@@ -64,15 +64,12 @@ logger = logging.getLogger(__name__)
 class EnvironmentInterface:
     """Provides an interface to an embodied environment.
 
-    The observations are based on the actions returned by the `motor_system`.
-
-    The first values returned by this iterator are the observations of the
-    environment's initial state, subsequent observations are returned after the action
-    returned by `motor_system` is applied.
+    The first values returned by this iterator are the observations and motor system
+    state of the environment's initial state, subsequent observations are returned
+    after actions are applied.
 
     Attributes:
         env: An instance of a class that implements :class:`SimulatedObjectEnvironment`.
-        motor_system: :class:`MotorSystem`
         rng: Random number generator to use.
         seed: The configured random seed.
         experiment_mode: The experiment mode that this environment interface is used
@@ -88,56 +85,55 @@ class EnvironmentInterface:
     Note:
         This one on its own won't work.
 
-    Raises:
-        TypeError: If `motor_system` is not an instance of `MotorSystem`.
     """
 
     def __init__(
         self,
         env: SimulatedObjectEnvironment,
-        motor_system: MotorSystem,
         rng,
         seed: int,
         experiment_mode: ExperimentMode,
         transform=None,
     ):
-        if not isinstance(motor_system, MotorSystem):
-            raise TypeError(
-                f"motor_system must be an instance of MotorSystem, got {motor_system}"
-            )
         self.env = env
-        self.motor_system = motor_system
         self.rng = rng
         self.seed = seed
         self.transform = transform
-        self._observation, proprioceptive_state = self.reset(self.rng)
-        self.motor_system._state = MotorSystemState(proprioceptive_state)
+        self._observations, self._state = self.reset(self.rng)
         self.experiment_mode = experiment_mode
 
-    def reset(self, rng: np.random.RandomState):
+    def reset(
+        self, rng: np.random.RandomState
+    ) -> tuple[Observations, MotorSystemState]:
         self.rng = rng
-        observation, state = self.env.reset()
+        observations, proprioceptive_state = self.env.reset()
 
         if self.transform is not None:
-            observation = self.apply_transform(self.transform, observation, state)
-        return observation, state
+            observations = self.apply_transform(
+                self.transform, observations, proprioceptive_state
+            )
+        state = MotorSystemState(proprioceptive_state)
+        return observations, state
 
     def apply_transform(
-        self, transform, observation: Observations, state: ProprioceptiveState
+        self, transform, observations: Observations, state: ProprioceptiveState
     ) -> Observations:
         ctx = TransformContext(rng=self.rng, state=state)
         if isinstance(transform, Iterable):
             for t in transform:
-                observation = t(observation, ctx)
+                observations = t(observations, ctx)
         else:
-            observation = transform(observation, ctx)
-        return observation
+            observations = transform(observations, ctx)
+        return observations
 
-    def step(self, ctx: RuntimeContext, first: bool = False) -> Observations:
+    def step(
+        self, ctx: RuntimeContext, actions: Sequence[Action], first: bool = False
+    ) -> tuple[Observations, MotorSystemState]:
         """Request actions from the motor system and step the environment.
 
         Args:
             ctx: The runtime context.
+            actions: The actions to take.
             first: Whether this is the first step of the episode. If True, then
                 return the initial observation without requesting actions from the
                 motor system or stepping the environment.
@@ -153,35 +149,21 @@ class EnvironmentInterface:
         """
         if first:
             # Return first observation after 'reset' before any action is applied
-            return self._observation
+            return self._observations, self._state
 
-        actions = self.motor_system(ctx, self._observation)
-        self._observation, proprioceptive_state = self._step(actions)
-        self.motor_system._state = MotorSystemState(proprioceptive_state)
-        return self._observation
-
-    def _step(
-        self, actions: Sequence[Action]
-    ) -> tuple[Observations, ProprioceptiveState]:
-        """Take actions in the environment and apply the transform to the observations.
-
-        Args:
-            actions: The actions to take in the environment.
-
-        Returns:
-            The observations and proprioceptive state.
-        """
-        observations, state = self.env.step(actions)
+        observations, proprioceptive_state = self.env.step(actions)
         if self.transform is not None:
-            observations = self.apply_transform(self.transform, observations, state)
-        return observations, state
+            observations = self.apply_transform(
+                self.transform, observations, proprioceptive_state
+            )
+
+        self._observations = observations
+        self._state = MotorSystemState(proprioceptive_state)
+        return self._observations, self._state
 
     def pre_episode(self, rng: np.random.RandomState):
-        self.motor_system.pre_episode()
-
         # Reset the environment interface state.
-        self._observation, proprioceptive_state = self.reset(rng)
-        self.motor_system._state = MotorSystemState(proprioceptive_state)
+        self._observations, self._state = self.reset(rng)
 
     def post_episode(self):
         pass
@@ -452,15 +434,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         self._good_view_distance = good_view_distance
         self._good_view_percentage = good_view_percentage
 
-    def step(self, ctx: RuntimeContext, first: bool = False) -> Observations:
-        if first:
-            return self.first_step()
-        actions = self.motor_system(ctx, self._observation)
-        self._observation, proprioceptive_state = self._step(actions)
-        self.motor_system._state = MotorSystemState(proprioceptive_state)
-
-        return self._observation
-
     def pre_episode(self, rng: np.random.RandomState):
         super().pre_episode(rng)
         # TODO: self.env._agents is not part of SimulatedObjectEnvironment
@@ -523,12 +496,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         )
         result = positioning_procedure(self._observation, self.motor_system._state)
         while not result.terminated and not result.truncated:
-            self._observation, proprio_state = self._step(result.actions)
-            self.motor_system._state = (
-                MotorSystemState(proprio_state) if proprio_state else None
-            )
-
-            result = positioning_procedure(self._observation, self.motor_system._state)
+            result = positioning_procedure(self._observations, self._state)
 
         return result.success
 
