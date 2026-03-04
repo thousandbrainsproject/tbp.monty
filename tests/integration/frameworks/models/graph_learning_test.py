@@ -166,7 +166,7 @@ class GraphLearningTest(BaseGraphTest):
             ctx = RuntimeContext(rng=exp.rng)
             actions: list[Action] = []
             while True:
-                observations, _ = exp.env_interface.step(actions, first=(step == 0))
+                observations, _ = exp.env_interface.step(actions)
                 actions = exp.model.step(ctx, observations)
                 self.assertEqual(
                     step + 1,

@@ -493,7 +493,7 @@ class MontyExperiment:
         actions: list[Action] = []
         while True:
             try:
-                observations, _ = self.env_interface.step(actions, first=(step == 0))
+                observations, _ = self.env_interface.step(actions)
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used

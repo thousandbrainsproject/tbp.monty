@@ -135,33 +135,17 @@ class EnvironmentInterface:
     def step(
         self,
         actions: Sequence[Action] | None = None,
-        first: bool = False,
     ) -> tuple[Observations, ProprioceptiveState]:
         """Request actions from the motor system and step the environment.
 
         Args:
             ctx: The runtime context.
             actions: The actions to take in the environment.
-            first: Whether this is the first step of the episode. If True, then
-                return the initial observations and proprioceptive state without
-                requesting actions from the motor system or stepping the environment.
-                TODO: This is a hack to preserve the behavior that the first call
-                      to the environment interface returns the observations and
-                      proprioceptive state that are returned by the environment's
-                      reset method. Once the EnvironmentInterface stops invoking
-                      motor_system(ctx), this can be removed as the runtime/experiment
-                      will initialize the runtime loop by calling step(ctx, actions=[])
-                      instead.
 
         Returns:
             The observations and proprioceptive state.
         """
-        actions = [] if actions is None else actions
-
-        if first:
-            # Return first observations after 'reset' before any action is applied
-            return self._observations, self._proprioceptive_state
-
+        actions: list[Action] = [] if actions is None else actions
         self._observations, self._proprioceptive_state = self._step(actions)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
         return self._observations, self._proprioceptive_state
@@ -461,13 +445,8 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
     def step(
         self,
         actions: Sequence[Action] | None = None,
-        first: bool = False,
     ) -> tuple[Observations, ProprioceptiveState]:
-        actions = [] if actions is None else actions
-
-        if first:
-            return self.first_step()
-
+        actions: list[Action] = [] if actions is None else actions
         self._observations, self._proprioceptive_state = self._step(actions)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
         return self._observations, self._proprioceptive_state
@@ -482,25 +461,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
                 assert on_target_object, (
                     "Primary target must be visible at the start of the episode"
                 )
-
-    def first_step(self) -> tuple[Observations, ProprioceptiveState]:
-        """Carry out particular motor-system state updates required on the first step.
-
-        TODO: can get rid of this by appropriately initializing motor_only_step
-
-        Returns:
-            The observations and proprioceptive state from the first step.
-        """
-        # Return first observations after 'reset' before any action is applied
-
-        # For first step of surface-agent policy, always bypass LM processing
-        # For distant-agent policy, we still process the first sensation if it is
-        # on the object
-        self.motor_system.motor_only_step = isinstance(
-            self.motor_system._policy, SurfacePolicy
-        )
-
-        return self._observations, self._proprioceptive_state
 
     def get_good_view(
         self,
