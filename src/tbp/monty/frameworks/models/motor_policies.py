@@ -38,7 +38,6 @@ from tbp.monty.frameworks.actions.actions import (
     SetSensorRotation,
     TurnLeft,
     TurnRight,
-    VectorXYZ,
 )
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.positioning_procedures import (
@@ -50,6 +49,7 @@ from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
+from tbp.monty.math import VectorXYZ
 
 if TYPE_CHECKING:
     from os import PathLike
