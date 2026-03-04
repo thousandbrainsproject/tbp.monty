@@ -131,6 +131,8 @@ class MontyBase(Monty):
                 "sensor_module id; no more, no less!"
             )
 
+        self._actions = []
+
     ###
     # Basic methods that specify the algorithm
     ###
@@ -144,6 +146,7 @@ class MontyBase(Monty):
             self._exploratory_step(ctx, observation)
         else:
             raise ValueError(f"step type {self.step_type} not found in base monty")
+        return self._actions
 
     def aggregate_sensory_inputs(self, ctx: RuntimeContext, observation):
         sensor_module_outputs = []
@@ -161,7 +164,9 @@ class MontyBase(Monty):
         # TODO: Maybe combine the two?
         self.learning_module_outputs = learning_module_outputs
 
-    def pass_features_directly_to_motor_system(self, ctx: RuntimeContext, observation):
+    def pass_features_directly_to_motor_system(
+        self, ctx: RuntimeContext, observation
+    ) -> list[Action]:
         """Pass features directly to motor system without stepping LMs."""
         self.aggregate_sensory_inputs(ctx, observation)
         self._pass_input_obs_to_motor_system(  # TODO: not part of MontyBase
@@ -178,6 +183,7 @@ class MontyBase(Monty):
             self.learning_modules[ii].stepwise_targets_list.append(
                 self.learning_modules[ii].stepwise_target_object
             )
+        return self._actions
 
     def check_reached_max_matching_steps(self, max_steps):
         """Check if max_steps was reached and deal with time_out.
@@ -341,6 +347,8 @@ class MontyBase(Monty):
 
         for sm in self.sensor_modules:
             sm.pre_episode()
+
+        self._actions = []
 
     def post_episode(self):
         for lm in self.learning_modules:

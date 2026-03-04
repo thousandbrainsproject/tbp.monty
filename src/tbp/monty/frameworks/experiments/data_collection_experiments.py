@@ -58,12 +58,14 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
                     *self.live_plotter.hardcoded_assumptions(observations, self.model),
                     step,
                 )
-            self.pass_features_to_motor_system(ctx, observations, step)
+            self._actions = self.pass_features_to_motor_system(ctx, observations, step)
             step += 1
 
         self.post_episode()
 
-    def pass_features_to_motor_system(self, ctx: RuntimeContext, observation, step):
+    def pass_features_to_motor_system(
+        self, ctx: RuntimeContext, observation, step
+    ) -> list[Action]:
         self.model.aggregate_sensory_inputs(ctx, observation)
         self.model.motor_system._policy.processed_observations = (
             self.model.sensor_module_outputs[0]
@@ -82,6 +84,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         # Only include observations coming right before a move_tangentially action
         if step > 0 and (not action_strings or actions_0_not_move_tangentially):
             del self.model.sensor_modules[0].processed_obs[-2]
+        return self._actions
 
     def pre_episode(self):
         if self.experiment_mode is ExperimentMode.TRAIN:
@@ -103,6 +106,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         self.logger_handler.pre_episode(self.logger_args)
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
+        self._actions = []
 
     def post_episode(
         self,

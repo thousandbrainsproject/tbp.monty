@@ -78,6 +78,7 @@ class MontyForGraphMatching(MontyBase):
         logger.debug(
             f"Models in memory: {self.learning_modules[0].get_all_known_object_ids()}"
         )
+        self._actions = []
 
     def send_vote_to_lm(self, lm, lm_id, combined_votes):
         """Route correct votes to a given LM."""

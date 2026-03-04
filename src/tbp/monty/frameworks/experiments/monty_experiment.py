@@ -97,6 +97,9 @@ class MontyExperiment:
 
         self._rng_seed_history: list[int] = []
 
+        # Actions returned by the motor system.
+        self._actions = []
+
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
         episodes = (
@@ -491,7 +494,9 @@ class MontyExperiment:
         ctx = RuntimeContext(rng=self.rng)
         while True:
             try:
-                observations, _ = self.env_interface.step(ctx, first=(step == 0))
+                observations, _ = self.env_interface.step(
+                    ctx, self._actions, first=(step == 0)
+                )
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used
@@ -504,7 +509,7 @@ class MontyExperiment:
                 break
 
             self.pre_step(step, observations)
-            self.model.step(ctx, observations)
+            self._actions = self.model.step(ctx, observations)
             self.post_step(step, observations)
             if self.model.is_done or step >= self.max_steps:
                 break
@@ -538,6 +543,8 @@ class MontyExperiment:
 
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
+
+        self._actions = []
 
     def post_episode(self, steps):
         """Call post_episode on elements in experiment and increment counters.
