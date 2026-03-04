@@ -15,7 +15,6 @@ import torch
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.environment_utils.graph_utils import get_edge_index
 from tbp.monty.frameworks.models.graph_matching import GraphLM, GraphMemory
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import is_in_ranges
@@ -327,8 +326,9 @@ class DisplacementGraphLM(GraphLM):
             previous_node = path[-2]
             current_node = path[-1]
 
-            edge_id = get_edge_index(
-                self.possible_matches[graph_id][first_input_channel],
+            edge_id = self.possible_matches[graph_id][
+                first_input_channel
+            ].edge_index_between(
                 previous_node,
                 current_node,
             )

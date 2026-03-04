@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import copy
 import logging
@@ -107,6 +108,21 @@ class GraphObjectModel(ObjectModel):
         """Add point pair features to graph edges."""
         self._graph = T.PointPairFeatures(cat=False)(self._graph)
         self.has_ppf = True
+
+    def edge_index_between(self, previous_node: int, new_node: int) -> int | None:
+        """Return the edge index between two nodes in a graph.
+
+        Args:
+            previous_node: Node ID of the first node in the graph.
+            new_node: Node ID of the second node in the graph.
+
+        Returns:
+            Edge ID between the two nodes, or None if no such edge exists.
+        """
+        mask = (self.edge_index[0] == previous_node) & (self.edge_index[1] == new_node)
+        if mask.any():
+            return mask.nonzero().view(-1)[0].item()
+        return None
 
     # ------------------ Getters & Setters ---------------------
     # Keep original properties of graphs for backward compatibility.
