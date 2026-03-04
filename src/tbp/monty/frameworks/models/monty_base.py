@@ -165,17 +165,13 @@ class MontyBase(Monty):
         # TODO: Maybe combine the two?
         self.learning_module_outputs = learning_module_outputs
 
-    def pass_features_directly_to_motor_system(
-        self, ctx: RuntimeContext, observation
-    ) -> list[Action]:
+    def pass_features_directly_to_motor_system(self, ctx: RuntimeContext, observation):
         """Pass features directly to motor system without stepping LMs.
 
         Args:
             ctx: The runtime context.
             observation: The observation from the environment.
 
-        Returns:
-            The actions to take.
         """
         self.aggregate_sensory_inputs(ctx, observation)
         self._pass_input_obs_to_motor_system(  # TODO: not part of MontyBase
@@ -192,7 +188,6 @@ class MontyBase(Monty):
             self.learning_modules[ii].stepwise_targets_list.append(
                 self.learning_modules[ii].stepwise_target_object
             )
-        return self._actions
 
     def check_reached_max_matching_steps(self, max_steps):
         """Check if max_steps was reached and deal with time_out.

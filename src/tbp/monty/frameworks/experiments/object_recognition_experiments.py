@@ -146,9 +146,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 )
                 # On these sensations, we just want to pass information to the motor
                 # system, so bypass the main model step (i.e. updating of LMs)
-                actions = self.model.pass_features_directly_to_motor_system(
-                    ctx, observations
-                )
+                self.model.pass_features_directly_to_motor_system(ctx, observations)
             else:
                 actions = self.model.step(ctx, observations)
 
