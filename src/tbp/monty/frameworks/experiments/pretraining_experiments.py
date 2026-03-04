@@ -81,13 +81,13 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             self.model.switch_to_exploratory_step()
 
         ctx = RuntimeContext(rng=self.rng)
-
+        actions = []
         # Collect data about the object (exploratory steps)
         num_steps = 0
         while True:
             try:
                 observations, _ = self.env_interface.step(
-                    ctx, self._actions, first=(num_steps == 0)
+                    ctx, actions, first=(num_steps == 0)
                 )
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
@@ -110,7 +110,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                     num_steps,
                     is_saccade_on_image_env_interface,
                 )
-            self._actions = self.model.step(ctx, observations)
+            actions = self.model.step(ctx, observations)
             if self.model.is_done:
                 break
 
@@ -201,7 +201,6 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-        self._actions = []
 
     def post_epoch(self):
         """Post epoch without saving state_dict."""

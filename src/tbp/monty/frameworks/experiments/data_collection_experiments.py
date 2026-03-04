@@ -39,9 +39,12 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         self.pre_episode()
         step = 0
         ctx = RuntimeContext(rng=self.rng)
+        actions = []
         while True:
             try:
-                observations, _ = self.env_interface.step(ctx, first=(step == 0))
+                observations, _ = self.env_interface.step(
+                    ctx, actions, first=(step == 0)
+                )
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used
@@ -60,7 +63,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
                     *self.live_plotter.hardcoded_assumptions(observations, self.model),
                     step,
                 )
-            self._actions = self.pass_features_to_motor_system(ctx, observations, step)
+            actions = self.pass_features_to_motor_system(ctx, observations, step)
             step += 1
 
         self.post_episode()
@@ -86,7 +89,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         # Only include observations coming right before a move_tangentially action
         if step > 0 and (not action_strings or actions_0_not_move_tangentially):
             del self.model.sensor_modules[0].processed_obs[-2]
-        return self._actions
+        return self.model._actions  # TODO: is this right?
 
     def pre_episode(self):
         if self.experiment_mode is ExperimentMode.TRAIN:
@@ -108,7 +111,6 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         self.logger_handler.pre_episode(self.logger_args)
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
-        self._actions = []
 
     def post_episode(
         self,

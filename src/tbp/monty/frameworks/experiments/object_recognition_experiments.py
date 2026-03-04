@@ -87,8 +87,6 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-        self._actions = []
-
     def run_episode_steps(self):
         """Runs one episode of the experiment.
 
@@ -101,10 +99,11 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         """
         step = 0
         ctx = RuntimeContext(rng=self.rng)
+        actions = []
         while True:
             try:
                 observations, _ = self.env_interface.step(
-                    ctx, self._actions, first=(step == 0)
+                    ctx, actions, first=(step == 0)
                 )
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
@@ -147,11 +146,11 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 )
                 # On these sensations, we just want to pass information to the motor
                 # system, so bypass the main model step (i.e. updating of LMs)
-                self._actions = self.model.pass_features_directly_to_motor_system(
+                actions = self.model.pass_features_directly_to_motor_system(
                     ctx, observations
                 )
             else:
-                self._actions = self.model.step(ctx, observations)
+                actions = self.model.step(ctx, observations)
 
             if self.model.is_done:
                 # Check this right after step to avoid setting time out
