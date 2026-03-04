@@ -8,14 +8,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from __future__ import annotations
 
 import logging
 
 import torch
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.object_recognition_experiments import (
     MontyObjectRecognitionExperiment,
@@ -39,12 +37,9 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         self.pre_episode()
         step = 0
         ctx = RuntimeContext(rng=self.rng)
-        actions = []
         while True:
             try:
-                observations, _ = self.env_interface.step(
-                    ctx, actions, first=(step == 0)
-                )
+                observations, _ = self.env_interface.step(ctx, first=(step == 0))
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used
@@ -63,14 +58,12 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
                     *self.live_plotter.hardcoded_assumptions(observations, self.model),
                     step,
                 )
-            actions = self.pass_features_to_motor_system(ctx, observations, step)
+            self.pass_features_to_motor_system(ctx, observations, step)
             step += 1
 
         self.post_episode()
 
-    def pass_features_to_motor_system(
-        self, ctx: RuntimeContext, observation, step
-    ) -> list[Action]:
+    def pass_features_to_motor_system(self, ctx: RuntimeContext, observation, step):
         self.model.aggregate_sensory_inputs(ctx, observation)
         self.model.motor_system._policy.processed_observations = (
             self.model.sensor_module_outputs[0]
@@ -89,7 +82,6 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         # Only include observations coming right before a move_tangentially action
         if step > 0 and (not action_strings or actions_0_not_move_tangentially):
             del self.model.sensor_modules[0].processed_obs[-2]
-        return self.model._actions  # TODO: is this right?
 
     def pre_episode(self):
         if self.experiment_mode is ExperimentMode.TRAIN:
