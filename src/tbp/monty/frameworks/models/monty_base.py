@@ -12,7 +12,6 @@ from __future__ import annotations
 import logging
 from typing import ClassVar
 
-from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import Monty, RuntimeContext
