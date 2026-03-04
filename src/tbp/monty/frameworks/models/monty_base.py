@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 from typing import ClassVar
 
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import Monty, RuntimeContext
@@ -167,7 +168,15 @@ class MontyBase(Monty):
     def pass_features_directly_to_motor_system(
         self, ctx: RuntimeContext, observation
     ) -> list[Action]:
-        """Pass features directly to motor system without stepping LMs."""
+        """Pass features directly to motor system without stepping LMs.
+
+        Args:
+            ctx: The runtime context.
+            observation: The observation from the environment.
+
+        Returns:
+            The actions to take.
+        """
         self.aggregate_sensory_inputs(ctx, observation)
         self._pass_input_obs_to_motor_system(  # TODO: not part of MontyBase
             get_first_sensory_state(self.sensor_module_outputs)
