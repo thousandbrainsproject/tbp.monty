@@ -10,10 +10,10 @@
 
 import cProfile
 from pathlib import Path
-from typing import Any, Mapping
 
 import pandas as pd
 import wandb
+from omegaconf import DictConfig
 
 from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 
@@ -76,7 +76,7 @@ class ProfileExperimentMixin:
         self.profile_dir = Path(self.output_dir) / "profile"
         self.profile_dir.mkdir(exist_ok=True, parents=True)
 
-    def setup_experiment(self, config: Mapping[str, Any]):
+    def setup_experiment(self, config: DictConfig):
         filename = "profile-setup_experiment.csv"
         pr = cProfile.Profile()
         pr.enable()

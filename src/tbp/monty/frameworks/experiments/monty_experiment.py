@@ -63,7 +63,7 @@ class MontyExperiment:
     and episode).
     """
 
-    def __init__(self, config: DictConfig | Mapping[str, Any]) -> None:
+    def __init__(self, config: DictConfig) -> None:
         """Initialize the experiment based on the provided configuration.
 
         Args:
@@ -117,7 +117,7 @@ class MontyExperiment:
         logger.info(f"resetting RNG to seed {seed}")
         self.rng = np.random.RandomState(seed)
 
-    def setup_experiment(self, config: Mapping[str, Any]) -> None:
+    def setup_experiment(self, config: DictConfig) -> None:
         """Set up the basic elements of a Monty experiment and initialize counters.
 
         Args:
@@ -490,11 +490,11 @@ class MontyExperiment:
     # Methods for running the experiment
     ####
 
-    def pre_step(self, _step: int, _observations: Observations):
+    def pre_step(self, step: int, observations: Observations):  # noqa: ARG002
         """Hook for anything you want to do before a step."""
         self.logger_handler.pre_step(self.logger_args)
 
-    def post_step(self, _step: int, _observations: Observations):
+    def post_step(self, step: int, observations: Observations):  # noqa: ARG002
         """Hook for anything you want to do after a step."""
         self.logger_handler.post_step(self.logger_args)
 
