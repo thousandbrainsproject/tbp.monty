@@ -45,7 +45,7 @@ class Transform(Protocol):
     """A transform that can be applied to observations."""
 
     def __call__(
-        self, observations: SensorObservation, ctx: TransformContext
+        self, ctx: TransformContext, observations: SensorObservation
     ) -> SensorObservation:
         """Apply the transform to the observations.
 
@@ -60,7 +60,7 @@ class Transform(Protocol):
 
 
 def identity_transform(
-    observations: SensorObservation, ctx: TransformContext
+    ctx: TransformContext, observations: SensorObservation
 ) -> SensorObservation:
     return observations
 
@@ -73,10 +73,10 @@ class TransformPipeline(Transform):
         self._transform = transform
 
     def __call__(
-        self, observations: SensorObservation, ctx: TransformContext
+        self, ctx: TransformContext, observations: SensorObservation
     ) -> SensorObservation:
         print("TRANSFORM PIPELINE CALLED")
-        return self._transform(observations, ctx)
+        return self._transform(ctx, observations)
 
 
 class TransformMiddleware:
@@ -105,16 +105,16 @@ class MissingToMaxDepth(Transform):
             threshold: (optional) numeric, anything less than this is counted as
                 missing. Defaults to 0.
         """
-        self.next_transform = next_transform
-        self.agent_id = agent_id
-        self.max_depth = max_depth
-        self.threshold = threshold
+        self._next_transform = next_transform
+        self._agent_id = agent_id
+        self._max_depth = max_depth
+        self._threshold = threshold
 
     def __call__(
-        self, observations: SensorObservation, _ctx: TransformContext
+        self, ctx: TransformContext, observations: SensorObservation
     ) -> SensorObservation:
         observations = self.call(observations)
-        return self.next_transform(observations, _ctx)
+        return self._next_transform(ctx, observations)
 
     def call(self, observations: SensorObservation) -> SensorObservation:
         """Replace missing depth values with max_depth.
@@ -144,15 +144,15 @@ class AddNoiseToRawDepthImage(Transform):
                 Transform will be applied to all depth sensors of the agent.
             sigma: standard deviation of noise distribution.
         """
-        self.next_transform = next_transform
-        self.agent_id = agent_id
-        self.sigma = sigma
+        self._next_transform = next_transform
+        self._agent_id = agent_id
+        self._sigma = sigma
 
     def __call__(
-        self, observations: SensorObservation, ctx: TransformContext
+        self, ctx: TransformContext, observations: SensorObservation
     ) -> SensorObservation:
-        observations = self.call(observations, rng=ctx.rng)
-        return self.next_transform(observations, ctx)
+        observations = self.call(rng=ctx.rng, observations=observations)
+        return self._next_transform(ctx, observations)
 
     def call(
         self, observations: SensorObservation, rng: np.random.RandomState
@@ -202,18 +202,18 @@ class GaussianSmoothing(Transform):
             sigma: sigma of gaussian smoothing kernel. Default is 2.
             kernel_width: width of the smoothing kernel. Default is 3.
         """
-        self.next_transform = next_transform
-        self.agent_id = agent_id
-        self.sigma = sigma
-        self.kernel_width = kernel_width
-        self.pad_size = kernel_width // 2
-        self.kernel = self.create_kernel()
+        self._next_transform = next_transform
+        self._agent_id = agent_id
+        self._sigma = sigma
+        self._kernel_width = kernel_width
+        self._pad_size = kernel_width // 2
+        self._kernel = self.create_kernel()
 
     def __call__(
-        self, observations: SensorObservation, _ctx: TransformContext
+        self, ctx: TransformContext, observations: SensorObservation
     ) -> SensorObservation:
         observations = self.call(observations)
-        return self.next_transform(observations, _ctx)
+        return self._next_transform(ctx, observations)
 
     def call(self, observations: SensorObservation) -> SensorObservation:
         """Apply gaussian smoothing to depth images.
@@ -241,7 +241,7 @@ class GaussianSmoothing(Transform):
             )
         return observations
 
-    def create_kernel(self):
+    def create_kernel(self, pad_size, kernel_width, sigma):
         """Create a normalized gaussian kernel.
 
         Returns:
@@ -388,10 +388,10 @@ class DepthTo3DLocations(Transform):
         self.is_depth_clip_sensors = is_depth_clip_sensors
 
     def __call__(
-        self, observations: SensorObservation, ctx: TransformContext
+        self, ctx: TransformContext, observations: SensorObservation
     ) -> SensorObservation:
-        observations = self.call(observations, state=ctx.state)
-        return self.next_transform(observations, ctx)
+        observations = self.call(state=ctx.state, observations=observations)
+        return self.next_transform(ctx, observations)
 
     def call(
         self, observations: SensorObservation, state: ProprioceptiveState | None = None

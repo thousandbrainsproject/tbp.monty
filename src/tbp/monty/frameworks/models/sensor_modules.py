@@ -657,7 +657,7 @@ class CameraSM(SensorModule):
         print_dict_structure(data)
         tf_context = TransformContext(None, self.agent_state)
 
-        self.transform_pipeline(data, tf_context)
+        self.transform_pipeline(tf_context, data)
 
 
         observed_state = self._observation_processor.process(data)
