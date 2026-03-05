@@ -20,8 +20,11 @@ from tbp.monty.frameworks.environments.environment import (
     SemanticID,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
-from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.frameworks.models.motor_system_state import (
+    ProprioceptiveState,
+)
 from tbp.monty.math import QuaternionWXYZ, VectorXYZ
+from tbp.monty.simulators.mujoco import MultiSensorAgent
 from tbp.monty.simulators.simulator import Simulator
 
 
@@ -40,7 +43,13 @@ class MuJoCoSimulator(Simulator):
     recompile the model and data from whenever an object is added or removed.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        agents: Sequence[MultiSensorAgent],
+        **kwargs,  # noqa: ARG002
+    ) -> None:
+        self._agents = agents
+
         self.spec = MjSpec()
         self.model: MjModel = self.spec.compile()
         self.data = MjData(self.model)
@@ -134,10 +143,26 @@ class MuJoCoSimulator(Simulator):
     def step(
         self, actions: Sequence[Action]
     ) -> tuple[Observations, ProprioceptiveState]:
-        return Observations({}), ProprioceptiveState({})
+        return self.observations, self.states
+
+    @property
+    def observations(self) -> Observations:
+        obs = Observations()
+        for agent in self._agents:
+            obs[agent.id] = agent.observations
+
+        return obs
+
+    @property
+    def states(self) -> ProprioceptiveState:
+        states = ProprioceptiveState()
+        for agent in self._agents:
+            states[agent.id] = agent.state
+        return states
 
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
-        return Observations({}), ProprioceptiveState({})
+        # TODO: implement resetting
+        return self.observations, self.states
 
     def close(self) -> None:
         pass
