@@ -23,7 +23,7 @@ import pandas as pd
 import torch
 import torch.multiprocessing as mp
 import wandb
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, OmegaConf, open_dict
 
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterfacePerObject,
@@ -293,16 +293,16 @@ def generate_parallel_eval_configs(
             # Save results in parallel subdir of output_dir, update run_name
             output_dir = Path(new_experiment["config"]["logging"]["output_dir"])
             run_name = f"{name}-parallel_eval_episode_{episode_count}"
-            new_experiment["config"]["logging"]["run_name"] = run_name
-            new_experiment["config"]["logging"]["output_dir"] = (
-                output_dir / name / run_name
-            )
-            if len(new_experiment["config"]["logging"]["wandb_handlers"]) > 0:
-                new_experiment["config"]["logging"]["wandb_handlers"] = []
-                new_experiment["config"]["logging"]["log_parallel_wandb"] = True
-                new_experiment["config"]["logging"]["experiment_name"] = name
-            else:
-                new_experiment["config"]["logging"]["log_parallel_wandb"] = False
+            logging_cfg = new_experiment["config"]["logging"]
+            logging_cfg["run_name"] = run_name
+            logging_cfg["output_dir"] = output_dir / name / run_name
+            with open_dict(logging_cfg):
+                if len(logging_cfg["wandb_handlers"]) > 0:
+                    logging_cfg["wandb_handlers"] = []
+                    logging_cfg["log_parallel_wandb"] = True
+                    logging_cfg["experiment_name"] = name
+                else:
+                    logging_cfg["log_parallel_wandb"] = False
 
             new_experiment["config"]["eval_env_interface_args"].update(
                 object_names=[obj],
@@ -361,18 +361,22 @@ def generate_parallel_train_configs(
         # Save results in parallel subdir of output_dir, update run_name
         output_dir = Path(new_experiment["config"]["logging"]["output_dir"])
         run_name = f"{name}-parallel_train_episode_{obj}"
-        new_experiment["config"]["logging"]["run_name"] = run_name
-        new_experiment["config"]["logging"]["output_dir"] = output_dir / name / run_name
-        new_experiment["config"]["logging"]["wandb_handlers"] = []
-        new_experiment["config"]["logging"]["log_parallel_wandb"] = False
+        logging_cfg = new_experiment["config"]["logging"]
+        logging_cfg["run_name"] = run_name
+        logging_cfg["output_dir"] = output_dir / name / run_name
+        logging_cfg["wandb_handlers"] = []
+        with open_dict(logging_cfg):
+            logging_cfg["log_parallel_wandb"] = False
 
         # Object id, pose parameters for single episode
         new_experiment["config"]["train_env_interface_args"].update(
             object_names=[obj for _ in range(len(sampler))]
         )
-        new_experiment["config"]["train_env_interface_args"]["object_init_sampler"][
-            "change_every_episode"
-        ] = True
+        object_init_sampler_cfg = new_experiment["config"]["train_env_interface_args"][
+            "object_init_sampler"
+        ]
+        with open_dict(object_init_sampler_cfg):
+            object_init_sampler_cfg["change_every_episode"] = True
 
         new_experiments.append(new_experiment)
 
