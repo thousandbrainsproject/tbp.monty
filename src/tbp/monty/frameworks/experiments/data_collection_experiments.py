@@ -39,7 +39,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         ctx = RuntimeContext(rng=self.rng)
         while True:
             try:
-                observations = self.env_interface.step(ctx, first=(step == 0))
+                observations, _ = self.env_interface.step(ctx, first=(step == 0))
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used
