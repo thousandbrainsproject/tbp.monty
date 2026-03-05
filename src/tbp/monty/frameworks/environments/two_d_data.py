@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import PIL
 import quaternion as qt
 from scipy.ndimage import gaussian_filter
@@ -237,8 +238,8 @@ class OmniglotEnvironment(SimulatedEnvironment):
 
     def get_image_patch(
         self,
-        img: np.ndarray,
-        loc: Sequence[int] | np.ndarray,
+        img: npt.NDArray[np.bool_],
+        loc: npt.NDArray[np.float64],
         patch_size: int,
     ):
         loc = np.array(loc, dtype=int)
@@ -248,7 +249,7 @@ class OmniglotEnvironment(SimulatedEnvironment):
         stopy = loc[0] + patch_size // 2
         return img[startx:stopx, starty:stopy]
 
-    def motor_to_locations(self, motor: Sequence[np.ndarray]):
+    def motor_to_locations(self, motor: Sequence[npt.NDArray[np.float64]]):
         motor = [d[:, 0:2] for d in motor]
         motor = [space_motor_to_img(d) for d in motor]
         locations = np.zeros(2)
@@ -492,7 +493,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         """
         return np.fromfile(depth_path, np.float32).reshape(height, width)
 
-    def process_depth_data(self, depth: np.ndarray):
+    def process_depth_data(self, depth: npt.NDArray[np.float32]):
         """Process depth data by reshaping, clipping and flipping.
 
         Returns:
@@ -592,7 +593,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
 
     def get_3d_coordinates_from_pixel_indices(
         self,
-        pixel_idx: Sequence[int] | np.ndarray,
+        pixel_idx: npt.NDArray[np.int_],
     ):
         """Retrieve 3D coordinates of a pixel.
 
@@ -647,7 +648,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
 
     def get_image_patch(
         self,
-        loc: Sequence[int] | np.ndarray,
+        loc: npt.NDArray[np.int_],
     ):
         """Extract 2D image patch from a location in pixel space.
 
@@ -817,6 +818,6 @@ def load_motor(fn: Path):
     return motor
 
 
-def space_motor_to_img(pt: np.ndarray):
+def space_motor_to_img(pt: npt.NDArray[np.float64]):
     pt[:, 1] = -pt[:, 1]
     return pt
