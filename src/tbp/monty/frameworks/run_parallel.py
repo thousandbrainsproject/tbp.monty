@@ -280,7 +280,6 @@ def generate_parallel_eval_configs(
     # Try to mimic the exact workflow instead of guessing
     while epoch_count < n_epochs:
         for obj in object_names:
-            # TODO(TimothyAlexisVass): Replace with concrete typed config contract.
             new_experiment = OmegaConf.merge(experiment)
 
             # No training
@@ -354,7 +353,6 @@ def generate_parallel_train_configs(
     new_experiments: list[DictConfig] = []
 
     for obj in object_names:
-        # TODO(TimothyAlexisVass): Replace with concrete typed config contract.
         new_experiment = OmegaConf.merge(experiment)
 
         # No eval
