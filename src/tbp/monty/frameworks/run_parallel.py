@@ -234,7 +234,9 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> list[int]:
     return sorted(selected)
 
 
-def filter_episode_configs(configs: list[dict], episode_spec: str | None) -> list[dict]:
+def filter_episode_configs(
+    configs: list[DictConfig], episode_spec: str | None
+) -> list[DictConfig]:
     idxs = parse_episode_spec(episode_spec, len(configs))
     return [cfg for i, cfg in enumerate(configs) if i in idxs]
 
@@ -242,7 +244,7 @@ def filter_episode_configs(configs: list[dict], episode_spec: str | None) -> lis
 def generate_parallel_eval_configs(
     experiment: DictConfig,
     name: str,
-) -> list[Mapping]:
+) -> list[DictConfig]:
     """Generate configs for evaluation episodes in parallel.
 
     Create a config for each object and rotation in the experiment. Unlike with parallel
@@ -265,7 +267,7 @@ def generate_parallel_eval_configs(
     object_names = experiment.config["eval_env_interface_args"]["object_names"]
     # sampler_params = sampler.all_combinations_of_params()
 
-    new_experiments = []
+    new_experiments: list[DictConfig] = []
     epoch_count = 0
     episode_count = 0
     n_epochs = experiment.config["n_eval_epochs"]
@@ -279,7 +281,7 @@ def generate_parallel_eval_configs(
     while epoch_count < n_epochs:
         for obj in object_names:
             # TODO(TimothyAlexisVass): Replace with concrete typed config contract.
-            new_experiment: Mapping = OmegaConf.to_object(experiment)  # type: ignore[assignment]
+            new_experiment = OmegaConf.merge(experiment)
 
             # No training
             new_experiment["config"].update(
@@ -322,7 +324,9 @@ def generate_parallel_eval_configs(
     return new_experiments
 
 
-def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[Mapping]:
+def generate_parallel_train_configs(
+    experiment: DictConfig, name: str
+) -> list[DictConfig]:
     """Generate configs for training episodes in parallel.
 
     Create a config for each object in the experiment. Unlike with parallel eval
@@ -347,11 +351,11 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
         experiment.config["train_env_interface_args"]["object_init_sampler"]
     )
     object_names = experiment.config["train_env_interface_args"]["object_names"]
-    new_experiments = []
+    new_experiments: list[DictConfig] = []
 
     for obj in object_names:
         # TODO(TimothyAlexisVass): Replace with concrete typed config contract.
-        new_experiment: Mapping = OmegaConf.to_object(experiment)  # type: ignore[assignment]
+        new_experiment = OmegaConf.merge(experiment)
 
         # No eval
         new_experiment["config"].update(do_eval=False, do_train=True, n_train_epochs=1)
@@ -377,7 +381,7 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
     return new_experiments
 
 
-def single_train(experiment: Mapping[str, Any]):
+def single_train(experiment: DictConfig):
     output_dir = Path(experiment["config"]["logging"]["output_dir"])
     output_dir.mkdir(exist_ok=True, parents=True)
     exp = hydra.utils.instantiate(experiment)
@@ -386,7 +390,7 @@ def single_train(experiment: Mapping[str, Any]):
         exp.run()
 
 
-def single_evaluate(experiment: Mapping[str, Any]):
+def single_evaluate(experiment: DictConfig):
     output_dir = Path(experiment["config"]["logging"]["output_dir"])
     output_dir.mkdir(exist_ok=True, parents=True)
     exp = hydra.utils.instantiate(experiment)
@@ -472,7 +476,7 @@ def collect_detailed_episodes_names(parallel_dirs: Iterable[Path]) -> list[Path]
     return filenames
 
 
-def post_parallel_eval(experiments: list[Mapping], base_dir: Path) -> None:
+def post_parallel_eval(experiments: list[DictConfig], base_dir: Path) -> None:
     """Post-execution cleanup after running evaluation in parallel.
 
     Logs are consolidated across parallel runs and saved to disk.
@@ -527,7 +531,7 @@ def post_parallel_eval(experiments: list[Mapping], base_dir: Path) -> None:
         shutil.rmtree(pdir)
 
 
-def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
+def post_parallel_train(experiments: list[DictConfig], base_dir: Path) -> None:
     """Post-execution cleanup after running training in parallel.
 
     Object models are consolidated across parallel runs and saved to disk.
@@ -602,7 +606,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
 
 
 def run_episodes_parallel(
-    experiments: list[Mapping],
+    experiments: list[DictConfig],
     num_parallel: int,
     experiment_name: str,
     train: bool = True,
