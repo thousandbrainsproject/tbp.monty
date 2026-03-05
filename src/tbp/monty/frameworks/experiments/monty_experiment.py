@@ -135,7 +135,7 @@ class MontyExperiment:
 
     def init_model(
         self,
-        monty_config: DictConfig | Mapping[str, Any],
+        monty_config: DictConfig,
         model_path: Path | None = None,
     ):
         """Initialize the Monty model.
@@ -233,7 +233,7 @@ class MontyExperiment:
     ):
         self.env = env_init_func(**env_init_args)
 
-    def load_environment_interfaces(self, config: Mapping[str, Any]):
+    def load_environment_interfaces(self, config: DictConfig):
         # Initialize everything needed for environment interface
         env_interface_config = config["env_interface_config"]
         self.init_env(
@@ -349,7 +349,7 @@ class MontyExperiment:
             args.update(target=target)
         return args
 
-    def init_loggers(self, logging_config: Mapping[str, Any]) -> None:
+    def init_loggers(self, logging_config: DictConfig) -> None:
         """Initialize logger with specified log level.
 
         Args:
@@ -393,7 +393,7 @@ class MontyExperiment:
         logger.info("logger initialized")
         logger.debug(pprint.pformat(self.config))
 
-    def init_monty_data_loggers(self, logging_config: Mapping[str, Any]) -> None:
+    def init_monty_data_loggers(self, logging_config: DictConfig) -> None:
         """Initialize Monty data loggers.
 
         Args:
