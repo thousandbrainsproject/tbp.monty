@@ -28,9 +28,6 @@ from omegaconf import DictConfig, OmegaConf, open_dict
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterfacePerObject,
 )
-from tbp.monty.frameworks.environments.object_init_samplers import (
-    Predefined,
-)
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 from tbp.monty.frameworks.experiments.pretraining_experiments import (
@@ -88,9 +85,10 @@ def cat_csv(filenames: Iterable[Path], outfile: Path):
 
 def sample_params_to_init_args(params: Mapping[str, Any]):
     new_params = {}
-    new_params["positions"] = [params["position"]]
-    new_params["scales"] = [params["scale"]]
-    new_params["rotations"] = [params["euler_rotation"]]
+    # Normalize values to primitive Python lists so they can live in DictConfig.
+    new_params["positions"] = [np.asarray(params["position"]).tolist()]
+    new_params["scales"] = [np.asarray(params["scale"]).tolist()]
+    new_params["rotations"] = [np.asarray(params["euler_rotation"]).tolist()]
 
     return new_params
 
@@ -283,12 +281,13 @@ def generate_parallel_eval_configs(
             new_experiment = OmegaConf.merge(experiment)
 
             # No training
-            new_experiment["config"].update(
-                do_eval=True,
-                do_train=False,
-                episode=episode_count,
-                n_eval_epochs=1,
-            )
+            with open_dict(new_experiment["config"]):
+                new_experiment["config"].update(
+                    do_eval=True,
+                    do_train=False,
+                    episode=episode_count,
+                    n_eval_epochs=1,
+                )
 
             # Save results in parallel subdir of output_dir, update run_name
             output_dir = Path(new_experiment["config"]["logging"]["output_dir"])
@@ -306,7 +305,13 @@ def generate_parallel_eval_configs(
 
             new_experiment["config"]["eval_env_interface_args"].update(
                 object_names=[obj],
-                object_init_sampler=Predefined(**params),
+                object_init_sampler={
+                    "_target_": (
+                        "tbp.monty.frameworks.environments.object_init_samplers."
+                        "Predefined"
+                    ),
+                    **params,
+                },
             )
 
             new_experiments.append(new_experiment)
