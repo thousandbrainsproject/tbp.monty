@@ -13,7 +13,7 @@ from __future__ import annotations
 import copy
 import logging
 from pprint import pformat
-from typing import Any, Callable, Dict, Iterable, Mapping, Sequence, Union
+from typing import Callable, Mapping, Sequence, TypedDict, Union
 
 import numpy as np
 import quaternion as qt
@@ -29,8 +29,10 @@ from tbp.monty.frameworks.environment_utils.transforms import (
 )
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
+    QuaternionWXYZ,
     SemanticID,
     SimulatedObjectEnvironment,
+    VectorXYZ,
 )
 from tbp.monty.frameworks.environments.positioning_procedures import (
     GetGoodView,
@@ -63,9 +65,44 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-TransformPipeline = Union[Transform, Sequence[Transform]]
-ObjectInitParams = Dict[str, Any]
+TransformInput = Union[Transform, Sequence[Transform]]
+RotationParam = Union[qt.quaternion, QuaternionWXYZ]
+
+
+class MultiObjectNames(TypedDict):
+    targets_list: Sequence[str]
+    source_object_list: Sequence[str]
+    num_distractors: int
+
+
+class BaseObjectInitParams(TypedDict):
+    position: VectorXYZ
+    rotation: RotationParam
+    scale: VectorXYZ
+
+
+class ObjectInitParams(BaseObjectInitParams, total=False):
+    euler_rotation: VectorXYZ
+    quat_rotation: QuaternionWXYZ
+    semantic_id: SemanticID
+
+
 ObjectInitSampler = Callable[[int, ExperimentMode, int, int], ObjectInitParams]
+
+
+def normalize_transforms(
+    transform: TransformInput | None,
+) -> tuple[Transform, ...]:
+    """Normalize transform configuration to a tuple of transforms.
+
+    Returns:
+        A tuple of transforms.
+    """
+    if transform is None:
+        return ()
+    if callable(transform):
+        return (transform,)
+    return tuple(transform)
 
 
 class EnvironmentInterface:
@@ -106,7 +143,7 @@ class EnvironmentInterface:
         rng: np.random.RandomState,
         seed: int,
         experiment_mode: ExperimentMode,
-        transform: TransformPipeline | None = None,
+        transform: TransformInput | None = None,
     ):
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
@@ -116,7 +153,7 @@ class EnvironmentInterface:
         self.motor_system = motor_system
         self.rng = rng
         self.seed = seed
-        self.transform = transform
+        self.transforms = normalize_transforms(transform)
         self._observations, self._proprioceptive_state = self.reset(self.rng)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
         self.experiment_mode = experiment_mode
@@ -125,21 +162,17 @@ class EnvironmentInterface:
         self.rng = rng
         observations, state = self.env.reset()
 
-        if self.transform is not None:
-            observations = self.apply_transform(self.transform, observations, state)
+        if self.transforms:
+            observations = self.apply_transform(observations, state)
         return observations, state
 
     def apply_transform(
         self,
-        transform: TransformPipeline,
         observations: Observations,
         state: ProprioceptiveState,
     ) -> Observations:
         ctx = TransformContext(rng=self.rng, state=state)
-        if isinstance(transform, Iterable):
-            for t in transform:
-                observations = t(observations, ctx)
-        else:
+        for transform in self.transforms:
             observations = transform(observations, ctx)
         return observations
 
@@ -191,8 +224,8 @@ class EnvironmentInterface:
             The observations and proprioceptive state.
         """
         observations, state = self.env.step(actions)
-        if self.transform is not None:
-            observations = self.apply_transform(self.transform, observations, state)
+        if self.transforms is not None:
+            observations = self.apply_transform(observations, state)
         return observations, state
 
     def pre_episode(self, rng: np.random.RandomState):
@@ -229,7 +262,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
     def __init__(
         self,
-        object_names: Sequence[str] | Mapping[str, Any],
+        object_names: Sequence[str] | MultiObjectNames,
         object_init_sampler: ObjectInitSampler,
         parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         *args,
@@ -257,12 +290,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             TypeError: If `object_names` is not a list or dictionary
         """
         super().__init__(*args, **kwargs)
-        if isinstance(object_names, Sequence):
-            self.object_names = object_names
-            # Return an (ordered) list of unique items:
-            self.source_object_list = list(dict.fromkeys(object_names))
-            self.num_distractors = 0
-        elif isinstance(object_names, Mapping):
+        if isinstance(object_names, Mapping):
             # TODO when we want more advanced multi-object experiments, update these
             # arguments along with the Object Initializers so that we can easily
             # specify a set of primary targets and distractors, i.e. random sampling
@@ -272,6 +300,13 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
                 dict.fromkeys(object_names["source_object_list"])
             )
             self.num_distractors = object_names["num_distractors"]
+        elif isinstance(object_names, Sequence) and not isinstance(
+            object_names, (str, bytes)
+        ):
+            self.object_names = object_names
+            # Return an (ordered) list of unique items:
+            self.source_object_list = list(dict.fromkeys(object_names))
+            self.num_distractors = 0
         else:
             raise TypeError("Object names should be a list or dictionary")
         self.create_semantic_mapping()
@@ -357,8 +392,12 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
         Args:
             idx: Index of the new object and its parameters in object_params
+
+        Raises:
+            IndexError: If idx is outside the range [0, self.n_objects).
         """
-        assert idx <= self.n_objects, "idx must be <= self.n_objects"
+        if not 0 <= idx < self.n_objects:
+            raise IndexError(f"idx must satisfy 0 <= idx < {self.n_objects}, got {idx}")
         self.env.remove_all_objects()
 
         # Specify config for the primary target object and then add it
@@ -597,7 +636,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         env: OmniglotEnvironment,
         motor_system: MotorSystem,
         rng: np.random.RandomState,
-        transform: TransformPipeline | None = None,
+        transform: TransformInput | None = None,
         parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         *_args,
         **_kwargs,
@@ -629,7 +668,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.env = env
         self.rng = rng
         self.motor_system = motor_system
-        self.transform = transform
+        self.transforms = normalize_transforms(transform)
         self._observations, self._proprioceptive_state = self.reset(self.rng)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
 
@@ -670,8 +709,12 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
 
         Args:
             idx: Index of the new object and ints parameters in object params
+
+        Raises:
+            IndexError: If idx is outside the range [0, self.n_objects).
         """
-        assert idx <= self.n_objects, "idx must be <= self.n_objects"
+        if not 0 <= idx < self.n_objects:
+            raise IndexError(f"idx must satisfy 0 <= idx < {self.n_objects}, got {idx}")
         self.env.switch_to_object(
             self.alphabets[idx], self.characters[idx], self.versions[idx]
         )
@@ -696,7 +739,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         env: SaccadeOnImageEnvironment,
         motor_system: MotorSystem,
         rng: np.random.RandomState,
-        transform: TransformPipeline | None = None,
+        transform: TransformInput | None = None,
         parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         *_args,
         **_kwargs,
@@ -727,7 +770,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self.env = env
         self.rng = rng
         self.motor_system = motor_system
-        self.transform = transform
+        self.transforms = normalize_transforms(transform)
         self._observations, self._proprioceptive_state = self.reset(self.rng)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
 
@@ -740,9 +783,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self.epochs = 0
         self.primary_target = None
         self.consistent_child_objects = None
-        self.parent_to_child_mapping = (
-            parent_to_child_mapping if parent_to_child_mapping else {}
-        )
+        self.parent_to_child_mapping = parent_to_child_mapping or {}
 
     def post_episode(self):
         self.cycle_object()
@@ -765,8 +806,14 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
 
         Args:
             idx: Index of the new object and ints parameters in object params
+
+        Raises:
+            IndexError: If idx is outside the range [0, self.n_versions).
         """
-        assert idx <= self.n_versions, "idx must be <= self.n_versions"
+        if not 0 <= idx < self.n_versions:
+            raise IndexError(
+                f"idx must satisfy 0 <= idx < {self.n_versions}, got {idx}"
+            )
         logger.info(
             f"changing to obj {idx} -> scene {self.scenes[idx]}, version "
             f"{self.versions[idx]}"
@@ -795,7 +842,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         env: SaccadeOnImageFromStreamEnvironment,
         motor_system: MotorSystem,
         rng: np.random.RandomState,
-        transform: TransformPipeline | None = None,
+        transform: TransformInput | None = None,
         *_args,
         **_kwargs,
     ):
@@ -821,7 +868,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self.env = env
         self.rng = rng
         self.motor_system = motor_system
-        self.transform = transform
+        self.transforms = normalize_transforms(transform)
         self._observations, self._proprioceptive_state = self.reset(self.rng)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
         self.current_scene = 0
