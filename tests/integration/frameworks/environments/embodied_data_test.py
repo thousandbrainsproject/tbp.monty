@@ -148,7 +148,10 @@ class FakeEnvironmentAbs(SimulatedObjectEnvironment):
     def add_object(self, *_, **__) -> ObjectID:
         return ObjectID(-1)
 
-    def step(self, _: Sequence[Action]) -> tuple[Observations, ProprioceptiveState]:
+    def step(
+        self,
+        actions: Sequence[Action],  # noqa: ARG002
+    ) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
         obs = Observations(
             {

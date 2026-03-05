@@ -36,9 +36,9 @@ from tbp.monty.frameworks.actions.actions import (
     OrientVertical,
     TurnLeft,
     TurnRight,
-    VectorXYZ,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environments.environment import VectorXYZ
 from tbp.monty.frameworks.environments.positioning_procedures import (
     PositioningProcedure,
 )

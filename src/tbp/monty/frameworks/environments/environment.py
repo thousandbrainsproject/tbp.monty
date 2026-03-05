@@ -10,11 +10,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import NewType, Protocol, Sequence, Tuple
+from typing import TYPE_CHECKING, NewType, Protocol, Sequence, Tuple
 
-from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.models.abstract_monty_classes import Observations
-from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+if TYPE_CHECKING:
+    from tbp.monty.frameworks.actions.actions import Action
+    from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+    from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 
 __all__ = [
     "Environment",

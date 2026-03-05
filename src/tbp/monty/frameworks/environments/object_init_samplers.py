@@ -14,6 +14,7 @@ from typing import Sequence
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.environments.environment import VectorXYZ
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
@@ -43,18 +44,18 @@ class Default:
 class Predefined(Default):
     def __init__(
         self,
-        positions: Sequence[Sequence[float]] | None = None,
-        rotations: Sequence[Sequence[float]] | None = None,
-        scales: Sequence[Sequence[float]] | None = None,
+        positions: Sequence[VectorXYZ] | None = None,
+        rotations: Sequence[VectorXYZ] | None = None,
+        scales: Sequence[VectorXYZ] | None = None,
         change_every_episode: bool | None = None,
     ):
         # NOTE: added param change_every_episode. This is so if I want to run an
         # experiment and specify an exact list of objects, with specific poses per
         # object, I can set this to True. Otherwise I have to loop over all objects
         # for every pose specified.
-        self.positions = positions or [[0.0, 1.5, 0.0]]
-        self.rotations = rotations or [[0.0, 0.0, 0.0], [45.0, 0.0, 0.0]]
-        self.scales = scales or [[1.0, 1.0, 1.0]]
+        self.positions = positions or [(0.0, 1.5, 0.0)]
+        self.rotations = rotations or [(0.0, 0.0, 0.0), (45.0, 0.0, 0.0)]
+        self.scales = scales or [(1.0, 1.0, 1.0)]
         self.change_every_episode = change_every_episode
 
     def __call__(self, seed: int, mode: ExperimentMode, epoch: int, episode: int):  # noqa: ARG002
@@ -93,17 +94,17 @@ class Predefined(Default):
 class RandomRotation(Default):
     def __init__(
         self,
-        position: Sequence[float] | None = None,
-        scale: Sequence[float] | None = None,
+        position: VectorXYZ | None = None,
+        scale: VectorXYZ | None = None,
     ):
         if position is not None:
             self.position = position
         else:
-            self.position = [0.0, 1.5, 0.0]
+            self.position = (0.0, 1.5, 0.0)
         if scale is not None:
             self.scale = scale
         else:
-            self.scale = [1.0, 1.0, 1.0]
+            self.scale = (1.0, 1.0, 1.0)
 
     def __call__(self, seed: int, mode: ExperimentMode, epoch: int, episode: int):  # noqa: ARG002
         seed = episode_seed(seed, mode, episode)

@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Literal, Protocol, Sequence
 
 import numpy as np
+import numpy.typing as npt
 import quaternion as qt
 import scipy
 
@@ -75,7 +76,7 @@ class MissingToMaxDepth(Transform):
             agent_id: agent id of the agent where the transform should be applied.
             max_depth: numeric that will replace missing
             threshold: (optional) numeric, anything less than this is counted as
-                missing. Defaults to 0.
+                missing. Defaults to 0.0.
         """
         self.agent_id = agent_id
         self.max_depth = max_depth
@@ -171,7 +172,7 @@ class GaussianSmoothing(Transform):
         Args:
             agent_id: agent id of the agent where the transform should be applied.
                 Transform will be applied to all depth sensors of the agent.
-            sigma: Sigma of Gaussian smoothing kernel. Default is 2.
+            sigma: Sigma of Gaussian smoothing kernel. Defaults to 2.0.
             kernel_width: width of the smoothing kernel. Default is 3.
         """
         self.agent_id = agent_id
@@ -229,7 +230,7 @@ class GaussianSmoothing(Transform):
 
     def get_padded_img(
         self,
-        img: np.ndarray,
+        img: npt.NDArray[np.float64],
         pad_type: Literal["edge", "empty"] = "edge",
     ):
         if pad_type == "edge":
@@ -243,7 +244,7 @@ class GaussianSmoothing(Transform):
             )
         return padded_img
 
-    def conv2d(self, img: np.ndarray, kernel_renorm: bool = False):
+    def conv2d(self, img: npt.NDArray[np.float64], kernel_renorm: bool = False):
         """Apply a 2D convolution to the image.
 
         Args:
