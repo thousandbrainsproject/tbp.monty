@@ -14,7 +14,7 @@ import datetime
 import logging
 import pprint
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Literal, Mapping
 
 import numpy as np
 import torch
@@ -49,6 +49,10 @@ from tbp.monty.frameworks.utils.live_plotter import LivePlotter
 
 if TYPE_CHECKING:
     from types import TracebackType
+
+    from tbp.monty.frameworks.environments.environment import (
+        SimulatedObjectEnvironment,
+    )
 
 __all__ = ["MontyExperiment"]
 
@@ -229,8 +233,10 @@ class MontyExperiment:
         return model
 
     def init_env(
-        self, env_init_func: Callable[..., Any], env_init_args: Mapping[str, Any]
-    ):
+        self,
+        env_init_func: type[SimulatedObjectEnvironment],
+        env_init_args: DictConfig,
+    ) -> None:
         self.env = env_init_func(**env_init_args)
 
     def load_environment_interfaces(self, config: DictConfig):
