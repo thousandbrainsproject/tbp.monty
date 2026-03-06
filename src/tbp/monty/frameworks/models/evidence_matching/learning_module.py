@@ -798,7 +798,7 @@ class EvidenceGraphLM(GraphLM):
             evidence_all_channels=self.evidence[graph_id],
         )
 
-        result, hypotheses_update_telemetry = (
+        hypotheses_update, hypotheses_update_telemetry = (
             self.hypotheses_updater.update_hypotheses(
                 hypotheses=Hypotheses(
                     evidence=self.evidence[graph_id],
@@ -816,11 +816,11 @@ class EvidenceGraphLM(GraphLM):
         if hypotheses_update_telemetry:
             self.hypotheses_updater_telemetry[graph_id] = hypotheses_update_telemetry
 
-        if result is not None:
-            self.evidence[graph_id] = result.evidence
-            self.possible_locations[graph_id] = result.locations
-            self.possible_poses[graph_id] = result.poses
-            self.possible_hyps[graph_id] = result.possible
+        if hypotheses_update is not None:
+            self.evidence[graph_id] = hypotheses_update.evidence
+            self.possible_locations[graph_id] = hypotheses_update.locations
+            self.possible_poses[graph_id] = hypotheses_update.poses
+            self.possible_hyps[graph_id] = hypotheses_update.possible
 
         end_time = time.time()
 

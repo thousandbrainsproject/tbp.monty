@@ -31,7 +31,6 @@ from unittest import TestCase
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.utils.evidence_matching import (
-    ChannelMapper,
     EvidenceSlopeTracker,
     HypothesesSelection,
     InvalidEvidenceThresholdConfig,
@@ -96,10 +95,14 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.zeros((channel_size, 3))
         )
+        self.mock_graph_memory.get_num_nodes_in_graph = Mock(
+            return_value=channel_size
+        )
 
         # Mock out the evidence_slope_trackers so we can control which values
         # are removed from the list of hypotheses
         tracker1 = Mock()
+        tracker1.total_size = Mock(return_value=channel_size)
         tracker1.select_hypotheses = Mock(
             return_value=HypothesesSelection(
                 maintain_mask=np.array([False, True, True, False, False])
@@ -107,18 +110,16 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         )
         self.updater.evidence_slope_trackers = {"object1": tracker1}
 
-        mapper = ChannelMapper(channel_sizes={"patch": channel_size})
-        channel_hyps, _ = self.updater.update_hypotheses(
+        result, _ = self.updater.update_hypotheses(
             hypotheses=hypotheses,
             features={"patch": {"pose_fully_defined": True}},
-            displacements={"patch": None},
+            displacements={"patch": np.zeros(3)},
             graph_id="object1",
-            mapper=mapper,
             evidence_update_threshold=0,
         )
 
-        assert_array_equal(channel_hyps[0].possible, np.array([True, False]))
-        assert_array_equal(channel_hyps[0].evidence, np.array([1, 2]))
+        assert_array_equal(result.possible, np.array([True, False]))
+        assert_array_equal(result.evidence, np.array([1, 2]))
 
     def test_burst_triggers_when_max_slope_at_or_below_threshold(self) -> None:
         """Test that burst triggers when max_slope <= burst_trigger_slope.
@@ -134,9 +135,9 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         # Set a low-slope tracker to trigger a burst.
         # max_slope (0.5) <= burst_trigger_slope (1.0)
         tracker = EvidenceSlopeTracker(min_age=0)
-        tracker.add_hyp(3, "patch")
-        tracker.update(np.array([0.0, 0.2, 0.1]), "patch")
-        tracker.update(np.array([0.25, 0.5, -0.1]), "patch")
+        tracker.add_hyp(3)
+        tracker.update(np.array([0.0, 0.2, 0.1]))
+        tracker.update(np.array([0.25, 0.5, -0.1]))
         self.updater.evidence_slope_trackers = {"object1": tracker}
 
         # We would have 3 slopes (0.25, 0.3, -0.2), of which the maximum
@@ -162,10 +163,10 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.updater.sampling_burst_steps = 0
 
         tracker = EvidenceSlopeTracker(min_age=0)
-        tracker.add_hyp(3, "patch")
+        tracker.add_hyp(3)
         # Initial evidence then high update produces high slope
-        tracker.update(np.array([0.0, 0.0, 0.0]), "patch")
-        tracker.update(np.array([2.0, 2.0, 2.0]), "patch")
+        tracker.update(np.array([0.0, 0.0, 0.0]))
+        tracker.update(np.array([2.0, 2.0, 2.0]))
         self.updater.evidence_slope_trackers = {"object1": tracker}
 
         # We would have 3 slopes (2.0, 2.0, 2.0), of which the maximum
@@ -187,9 +188,9 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.updater.sampling_burst_steps = 3  # Already in a burst
 
         tracker = EvidenceSlopeTracker(min_age=0)
-        tracker.add_hyp(3, "patch")
-        tracker.update(np.array([0.0, 0.0, 0.0]), "patch")
-        tracker.update(np.array([0.5, 0.5, 0.5]), "patch")
+        tracker.add_hyp(3)
+        tracker.update(np.array([0.0, 0.0, 0.0]))
+        tracker.update(np.array([0.5, 0.5, 0.5]))
         self.updater.evidence_slope_trackers = {"object1": tracker}
 
         # We would have 3 slopes (0.5, 0.5, 0.5), of which the maximum
@@ -224,9 +225,9 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
         # High-slope tracker to prevent a burst
         tracker = EvidenceSlopeTracker(min_age=0)
-        tracker.add_hyp(3, "patch")
-        tracker.update(np.array([0.0, 0.0, 0.0]), "patch")
-        tracker.update(np.array([2.0, 2.0, 2.0]), "patch")
+        tracker.add_hyp(3)
+        tracker.update(np.array([0.0, 0.0, 0.0]))
+        tracker.update(np.array([2.0, 2.0, 2.0]))
         self.updater.evidence_slope_trackers = {"object1": tracker}
 
         with self.updater:
@@ -260,18 +261,15 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             channel_features=channel_features
         )
 
-        self.mock_graph_memory.get_locations_in_graph = Mock(
-            return_value=np.zeros((graph_num_nodes, 3))
+        self.mock_graph_memory.get_num_nodes_in_graph = Mock(
+            return_value=graph_num_nodes
         )
 
         tracker = EvidenceSlopeTracker(min_age=0)
-        mapper = ChannelMapper()
 
         _, informed_count = self.updater._sample_count(
-            input_channel="patch",
-            channel_features=channel_features,
+            features={"patch": channel_features},
             graph_id="object1",
-            mapper=mapper,
             tracker=tracker,
         )
 
@@ -302,13 +300,10 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.updater.sampling_multiplier = sampling_multiplier
 
         tracker = EvidenceSlopeTracker(min_age=0)
-        mapper = ChannelMapper()
 
         _, informed_count = self.updater._sample_count(
-            input_channel="patch",
-            channel_features={"pose_fully_defined": pose_fully_defined},
+            features={"patch": {"pose_fully_defined": pose_fully_defined}},
             graph_id="object1",
-            mapper=mapper,
             tracker=tracker,
         )
 
@@ -328,9 +323,9 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
         # Low max_slope hypotheses to trigger a burst in the first iteration.
         tracker = EvidenceSlopeTracker(min_age=0)
-        tracker.add_hyp(3, "patch")
-        tracker.update(np.array([0.0, 0.0, 0.0]), "patch")
-        tracker.update(np.array([0.5, 0.5, 0.5]), "patch")
+        tracker.add_hyp(3)
+        tracker.update(np.array([0.0, 0.0, 0.0]))
+        tracker.update(np.array([0.5, 0.5, 0.5]))
         self.updater.evidence_slope_trackers = {"object1": tracker}
 
         burst_steps_history = []
@@ -412,18 +407,19 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.zeros((channel_size, 3))
         )
+        self.mock_graph_memory.get_num_nodes_in_graph = Mock(
+            return_value=channel_size
+        )
 
-        mapper = ChannelMapper(channel_sizes={"patch": channel_size})
         self.updater.evidence_slope_trackers = {}
 
-        # Create a pre-initialized tracker with the "patch" channel
-        # This will be used in the mocked call to `EvidenceSlopeTracker`
+        # Create a pre-initialized tracker
         new_tracker = EvidenceSlopeTracker()
-        new_tracker.add_hyp(channel_size, "patch")
-        new_tracker.update(np.array([1.0, 2.0, 3.0]), "patch")
+        new_tracker.add_hyp(channel_size)
+        new_tracker.update(np.array([1.0, 2.0, 3.0]))
 
         # Mock the EvidenceSlopeTracker to return our pre-initialized tracker
-        # with the correct channels and hypotheses
+        # with the correct hypotheses
         with patch(
             "tbp.monty.frameworks.models.evidence_matching."
             "burst_sampling.EvidenceSlopeTracker",
@@ -432,9 +428,8 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             self.updater.update_hypotheses(
                 hypotheses=hypotheses,
                 features={"patch": {"pose_fully_defined": True}},
-                displacements={"patch": None},
+                displacements={"patch": np.zeros(3)},
                 graph_id="new_object",
-                mapper=mapper,
                 evidence_update_threshold=0,
             )
 
@@ -446,11 +441,11 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         """Test that _sample_existing returns empty arrays when maintain_ids is empty.
 
         When HypothesesSelection has no hypotheses to maintain, _sample_existing
-        should clear the tracker and return empty ChannelHypotheses.
+        should clear the tracker and return empty Hypotheses.
         """
         tracker = EvidenceSlopeTracker(min_age=0)
-        tracker.add_hyp(3, "patch")
-        tracker.update(np.array([1.0, 2.0, 3.0]), "patch")
+        tracker.add_hyp(3)
+        tracker.update(np.array([1.0, 2.0, 3.0]))
 
         hypotheses = Hypotheses(
             evidence=np.array([1.0, 2.0, 3.0]),
@@ -464,65 +459,57 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             maintain_mask=np.array([False, False, False])
         )
 
-        mapper = ChannelMapper(channel_sizes={"patch": 3})
-
         result = self.updater._sample_existing(
             hypotheses_selection=hypotheses_selection,
             hypotheses=hypotheses,
-            input_channel="patch",
-            mapper=mapper,
             tracker=tracker,
         )
 
         # Verify empty arrays are returned
-        self.assertEqual(result.input_channel, "patch")
         self.assertEqual(result.locations.shape, (0, 3))
         self.assertEqual(result.poses.shape, (0, 3, 3))
         self.assertEqual(result.evidence.shape, (0,))
         self.assertEqual(result.possible.shape, (0,))
 
-        # Verify tracker was cleared for this channel
-        self.assertEqual(tracker.total_size("patch"), 0)
+        # Verify tracker was cleared
+        self.assertEqual(tracker.total_size(), 0)
 
-    def test_max_global_slope_skips_empty_channels(self) -> None:
-        """Test that _max_global_slope skips channels with zero total_size.
+    def test_max_global_slope_skips_empty_trackers(self) -> None:
+        """Test that _max_global_slope skips trackers with zero total_size.
 
-        When a tracker has a channel with total_size == 0, that channel
-        should be skipped and not affect the max slope calculation.
+        When a tracker has total_size == 0, it should be skipped and not
+        affect the max slope calculation.
         """
-        tracker = EvidenceSlopeTracker(min_age=0)
+        # Tracker with some evidence — max slope here is 1.0
+        tracker_with_data = EvidenceSlopeTracker(min_age=0)
+        tracker_with_data.add_hyp(3)
+        tracker_with_data.update(np.array([0.0, 0.0, 0.0]))
+        tracker_with_data.update(np.array([1.0, 1.0, 1.0]))
 
-        # Add hypotheses to "patch" channel with some evidence
-        # Max slope here is 1.0
-        tracker.add_hyp(3, "patch")
-        tracker.update(np.array([0.0, 0.0, 0.0]), "patch")
-        tracker.update(np.array([1.0, 1.0, 1.0]), "patch")
+        # Empty tracker (simulates cleared hypotheses)
+        empty_tracker = EvidenceSlopeTracker(min_age=0)
 
-        # Create an empty channel by adding and then clearing.
-        # This simulates what happens during episode pruning of hypotheses.
-        tracker.add_hyp(2, "empty_channel")
-        tracker.update(np.array([0.0, 0.0]), "empty_channel")
-        tracker.update(np.array([2.0, 2.0]), "empty_channel")
-        tracker.clear_hyp("empty_channel")
-
-        self.updater.evidence_slope_trackers = {"object1": tracker}
+        self.updater.evidence_slope_trackers = {
+            "object1": tracker_with_data,
+            "object2": empty_tracker,
+        }
 
         max_slope = self.updater._max_global_slope()
 
-        # Should return 1.0 from the "patch" channel, ignoring the empty channel.
+        # Should return 1.0, ignoring the empty tracker.
         self.assertEqual(max_slope, 1.0)
 
-    def test_max_global_slope_skips_channels_with_nan_slopes(self) -> None:
-        """Test that _max_global_slope handles channels where slopes.size == 0.
+    def test_max_global_slope_skips_trackers_with_nan_slopes(self) -> None:
+        """Test that _max_global_slope handles trackers where slopes are all nan.
 
-        When a channel has hypotheses but calculate_slopes returns an nan
+        When a tracker has hypotheses but calculate_slopes returns an nan
         array (e.g., due to min age requirements), it should be skipped.
         """
         tracker = EvidenceSlopeTracker(min_age=5)  # High min_age
 
         # Only one update, so slopes will be nan
-        tracker.add_hyp(3, "patch")
-        tracker.update(np.array([1.0, 2.0, 3.0]), "patch")
+        tracker.add_hyp(3)
+        tracker.update(np.array([1.0, 2.0, 3.0]))
 
         self.updater.evidence_slope_trackers = {"object1": tracker}
 
@@ -566,14 +553,13 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         tracker = EvidenceSlopeTracker()
 
         result = self.updater._sample_informed(
-            channel_features={"pose_fully_defined": pose_fully_defined},
+            features={"patch": {"pose_fully_defined": pose_fully_defined}},
             informed_count=0,
             graph_id="object1",
-            input_channel="patch",
+            input_channels=["patch"],
             tracker=tracker,
         )
 
-        self.assertEqual(result.input_channel, "patch")
         self.assertEqual(result.locations.shape, (0, 3))
         self.assertEqual(result.poses.shape, (0, 3, 3))
         self.assertEqual(result.evidence.shape, (0,))
@@ -594,7 +580,6 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         informed_count = num_nodes * num_hyps_per_node
 
         # Set up graph memory mocks
-        self.mock_graph_memory.get_num_nodes_in_graph = Mock(return_value=num_nodes)
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
         )
@@ -612,10 +597,10 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         tracker = EvidenceSlopeTracker()
 
         result = self.updater._sample_informed(
-            channel_features={"pose_fully_defined": True},
+            features={"patch": {"pose_fully_defined": True}},
             informed_count=informed_count,
             graph_id="object1",
-            input_channel="patch",
+            input_channels=["patch"],
             tracker=tracker,
         )
 
@@ -630,7 +615,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         assert_array_equal(result.possible, np.zeros(informed_count, dtype=np.bool_))
 
         # Tracker should have the new hypotheses added
-        self.assertEqual(tracker.total_size("patch"), informed_count)
+        self.assertEqual(tracker.total_size(), informed_count)
 
     def test_sample_informed_with_feature_matching(self) -> None:
         """Test _sample_informed when use_features_for_matching is True.
@@ -685,10 +670,10 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         ]
 
         result = updater._sample_informed(
-            channel_features={"pose_fully_defined": True},
+            features={"patch": {"pose_fully_defined": True}},
             informed_count=informed_count,
             graph_id="object1",
-            input_channel="patch",
+            input_channels=["patch"],
             tracker=EvidenceSlopeTracker(),
         )
 
@@ -715,7 +700,6 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.updater.use_features_for_matching = {"patch": False}
 
         # Set up graph memory mocks
-        self.mock_graph_memory.get_num_nodes_in_graph = Mock(return_value=num_nodes)
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
         )
@@ -727,13 +711,15 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         )
 
         result = self.updater._sample_informed(
-            channel_features={
-                "pose_fully_defined": True,
-                "pose_vectors": np.eye(3, dtype=np.float64),
+            features={
+                "patch": {
+                    "pose_fully_defined": True,
+                    "pose_vectors": np.eye(3, dtype=np.float64),
+                },
             },
             informed_count=informed_count,
             graph_id="object1",
-            input_channel="patch",
+            input_channels=["patch"],
             tracker=EvidenceSlopeTracker(),
         )
 
@@ -743,6 +729,88 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         # Should have 4 hypotheses, each pose is 3x3 rotation
         self.assertEqual(result.poses.shape[0], informed_count)
         self.assertEqual(result.poses.shape[1:], (3, 3))
+
+    def test_sample_informed_proportional_multi_channel(self) -> None:
+        """Test proportional sampling across two channels with different node counts.
+
+        When two channels have different node counts, _sample_informed should
+        allocate hypotheses proportionally based on each channel's node count.
+        """
+        # Channel A has 6 nodes, channel B has 4 nodes (60%/40% split)
+        ch_a_nodes = 6
+        ch_b_nodes = 4
+
+        self.mock_graph_memory.get_locations_in_graph = Mock(
+            side_effect=lambda _graph_id, ch: (
+                np.random.rand(ch_a_nodes, 3) if ch == "ch_a"
+                else np.random.rand(ch_b_nodes, 3)
+            )
+        )
+
+        # Use predefined poses: 2 poses per node
+        euler_angles = [[0, 0, 0], [0, 0, 180]]
+        self.updater.initial_possible_poses = [
+            Rotation.from_euler("xyz", pose, degrees=True).inv()
+            for pose in euler_angles
+        ]
+        self.updater.use_features_for_matching = {"ch_a": False, "ch_b": False}
+
+        # Total: 10 nodes, 2 hyps/node = 20 informed hypotheses
+        informed_count = 20
+
+        tracker = EvidenceSlopeTracker()
+
+        result = self.updater._sample_informed(
+            features={
+                "ch_a": {"pose_fully_defined": True},
+                "ch_b": {"pose_fully_defined": True},
+            },
+            informed_count=informed_count,
+            graph_id="object1",
+            input_channels=["ch_a", "ch_b"],
+            tracker=tracker,
+        )
+
+        # Channel A: round(20 * 6/10) = 12, Channel B: round(20 * 4/10) = 8
+        # Total = 12 + 8 = 20
+        self.assertEqual(result.evidence.shape[0], informed_count)
+        self.assertEqual(result.locations.shape[0], informed_count)
+        self.assertEqual(result.poses.shape[0], informed_count)
+
+    def test_sample_informed_single_channel_degeneracy(self) -> None:
+        """Test that single-channel _sample_informed produces expected results.
+
+        With one channel, all informed hypotheses should come from that channel.
+        """
+        num_nodes = 5
+        num_hyps_per_node = 2
+        informed_count = num_nodes * num_hyps_per_node
+
+        self.mock_graph_memory.get_locations_in_graph = Mock(
+            return_value=np.random.rand(num_nodes, 3)
+        )
+
+        euler_angles = [[0, 0, 0], [0, 0, 180]]
+        self.updater.initial_possible_poses = [
+            Rotation.from_euler("xyz", pose, degrees=True).inv()
+            for pose in euler_angles
+        ]
+        self.updater.use_features_for_matching = {"patch": False}
+
+        tracker = EvidenceSlopeTracker()
+
+        result = self.updater._sample_informed(
+            features={"patch": {"pose_fully_defined": True}},
+            informed_count=informed_count,
+            graph_id="object1",
+            input_channels=["patch"],
+            tracker=tracker,
+        )
+
+        self.assertEqual(result.evidence.shape[0], informed_count)
+        self.assertEqual(result.locations.shape[0], informed_count)
+        assert_array_equal(result.evidence, np.zeros(informed_count))
+        self.assertEqual(tracker.total_size(), informed_count)
 
     @given(
         num_nodes=st.integers(min_value=2, max_value=10),
@@ -760,7 +828,6 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         informed_count = num_selected_nodes * num_rotations
 
         # Set up graph memory mocks
-        self.mock_graph_memory.get_num_nodes_in_graph = Mock(return_value=num_nodes)
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
         )
@@ -774,10 +841,10 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.updater.use_features_for_matching = {"patch": False}
 
         result = self.updater._sample_informed(
-            channel_features={"pose_fully_defined": True},
+            features={"patch": {"pose_fully_defined": True}},
             informed_count=informed_count,
             graph_id="object1",
-            input_channel="patch",
+            input_channels=["patch"],
             tracker=EvidenceSlopeTracker(),
         )
 
