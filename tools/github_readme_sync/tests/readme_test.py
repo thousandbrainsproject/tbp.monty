@@ -741,6 +741,36 @@ This is a test document.""",
         finally:
             Path(tmp_path).unlink()
 
+    def test_hidden_column(self):
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as tmp:
+            writer = csv.writer(tmp)
+            writer.writerow(
+                [
+                    "Experiment",
+                    "Correct (%)|align right",
+                    "Num Episodes|align right|hidden",
+                ]
+            )
+            writer.writerow(["randrot_noise_10distinctobj_surf_agent", "100.00", "100"])
+            writer.writerow(["base_10simobj_surf_agent", "98.57", "140"])
+            tmp_path = tmp.name
+
+        try:
+            result = self.readme.convert_csv_to_html_table(f"!table[{tmp_path}]", "")
+
+            # Visible columns should be present
+            self.assertIn("<th>Experiment</th>", result)
+            self.assertIn("<th>Correct (%)</th>", result)
+            self.assertIn("<td>randrot_noise_10distinctobj_surf_agent</td>", result)
+            self.assertIn("<td>base_10simobj_surf_agent</td>", result)
+
+            # Hidden column should not appear
+            self.assertNotIn("Num Episodes", result)
+            self.assertNotIn("<td>100</td>", result)
+            self.assertNotIn("<td>140</td>", result)
+        finally:
+            Path(tmp_path).unlink()
+
     def test_convert_csv_to_html_table_relative_path(self):
         # Create a temporary directory structure
         with tempfile.TemporaryDirectory() as tmp_dir_str:
