@@ -22,7 +22,8 @@ from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator i
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
 )
-from tbp.monty.frameworks.models.evidence_matching.hypotheses import ChannelHypotheses
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
+from tbp.monty.frameworks.utils.evidence_matching import all_usable_input_channels
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_custom_distances,
     get_relevant_curvature,
@@ -41,33 +42,34 @@ class HypothesisDisplacerTelemetry:
 
 
 class HypothesesDisplacer(Protocol):
+    past_weight: float
+    present_weight: float
+
     def displace_hypotheses_and_compute_evidence(
         self,
-        channel_displacement: np.ndarray,
-        channel_features: dict,
+        displacement: np.ndarray,
+        features: dict[str, dict],
         evidence_update_threshold: float,
         graph_id: str,
-        possible_hypotheses: ChannelHypotheses,
+        possible_hypotheses: Hypotheses,
         total_hypotheses_count: int,
-    ) -> ChannelHypotheses:
+    ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
         """Updates evidence by comparing features after applying sensed displacement.
 
-        This function applies the sensor displacement to the existing hypothesis and
-        uses the result as search locations for comparing the sensed features. This
-        comparison is used to update the evidence scores of the existing hypotheses. The
-        hypotheses locations are updated to the new locations (i.e., after displacement)
+        Applies the sensor displacement to the existing hypotheses and uses the
+        result as search locations for comparing features from all available input
+        channels. Per-channel evidence is summed and applied as a weighted update.
 
         Args:
-            channel_displacement: Channel-specific sensor displacement.
-            channel_features: Channel-specific input features.
+            displacement: Unified sensor displacement.
+            features: All-channel input features, keyed by channel name.
             evidence_update_threshold: Evidence update threshold.
-            graph_id: The ID of the current graph
-            possible_hypotheses: Channel-specific possible
-                hypotheses.
+            graph_id: The ID of the current graph.
+            possible_hypotheses: Unified possible hypotheses.
             total_hypotheses_count: Total number of hypotheses in the graph.
 
         Returns:
-            Displaced hypotheses with computed evidence.
+            Displaced hypotheses with computed evidence and telemetry.
         """
         ...
 
@@ -136,15 +138,15 @@ class DefaultHypothesesDisplacer:
 
     def displace_hypotheses_and_compute_evidence(
         self,
-        channel_displacement: np.ndarray,
-        channel_features: dict,
+        displacement: np.ndarray,
+        features: dict[str, dict],
         evidence_update_threshold: float,
         graph_id: str,
-        possible_hypotheses: ChannelHypotheses,
+        possible_hypotheses: Hypotheses,
         total_hypotheses_count: int,
-    ) -> tuple[ChannelHypotheses, HypothesisDisplacerTelemetry]:
+    ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
         # Have to do this for all hypotheses so we don't lose the path information
-        rotated_displacements = possible_hypotheses.poses.dot(channel_displacement)
+        rotated_displacements = possible_hypotheses.poses.dot(displacement)
         search_locations = possible_hypotheses.locations + rotated_displacements
 
         # Get indices of hypotheses with evidence > threshold
@@ -159,26 +161,27 @@ class DefaultHypothesesDisplacer:
                 f"(evidence > {evidence_update_threshold})"
             )
 
-            # Get evidence update for all hypotheses with evidence > current
-            # _evidence_update_threshold
-            new_evidence = self._calculate_evidence_for_new_locations(
-                graph_id=graph_id,
-                input_channel=possible_hypotheses.input_channel,
-                search_locations=search_locations[hyp_ids_to_test],
-                channel_possible_poses=possible_hypotheses.poses[hyp_ids_to_test],
-                channel_features=channel_features,
+            # Loop over channels, sum evidence
+            input_channels = all_usable_input_channels(
+                features, self.graph_memory.get_input_channels_in_graph(graph_id)
             )
-            min_update = np.clip(np.min(new_evidence), 0, np.inf)
+            total_evidence_to_add = np.zeros_like(possible_hypotheses.evidence)
+            for ch in input_channels:
+                new_evidence = self._calculate_evidence_for_new_locations(
+                    graph_id=graph_id,
+                    input_channel=ch,
+                    search_locations=search_locations[hyp_ids_to_test],
+                    channel_possible_poses=possible_hypotheses.poses[hyp_ids_to_test],
+                    channel_features=features[ch],
+                )
+                min_update = np.clip(np.min(new_evidence), 0, np.inf)
+                ch_evidence = np.ones_like(possible_hypotheses.evidence) * min_update
+                ch_evidence[hyp_ids_to_test] = new_evidence
+                total_evidence_to_add += ch_evidence
 
-            # Alternatives (no update to other Hs or adding avg) left in
-            # here in case we want to revert back to those.
-            # avg_update = np.mean(new_evidence)
-            # evidence_to_add = np.zeros_like(channel_hypotheses_evidence)
-            evidence_to_add = np.ones_like(possible_hypotheses.evidence) * min_update
-            evidence_to_add[hyp_ids_to_test] = new_evidence
-
+            # Prediction error from summed evidence
             mlh_index = np.argmax(possible_hypotheses.evidence)
-            evidence_for_mlh = evidence_to_add[mlh_index]
+            evidence_for_mlh = total_evidence_to_add[mlh_index]
             # Mapping evidence values from range [-1, 2] to [0, 3], then dividing by 3
             # to get a value in range [0, 1].
             mlh_prediction_error = (-evidence_for_mlh + 2) / 3
@@ -188,15 +191,14 @@ class DefaultHypothesesDisplacer:
             # keeps growing.
             evidence = (
                 possible_hypotheses.evidence * self.past_weight
-                + evidence_to_add * self.present_weight
+                + total_evidence_to_add * self.present_weight
             )
         else:
             evidence = possible_hypotheses.evidence
             # If we haven't moved yet, there is no prediction, and thus no error
             mlh_prediction_error = None
 
-        return ChannelHypotheses(
-            input_channel=possible_hypotheses.input_channel,
+        return Hypotheses(
             evidence=evidence,
             locations=search_locations,
             poses=possible_hypotheses.poses,

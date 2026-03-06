@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Literal
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -28,24 +28,21 @@ from tbp.monty.frameworks.models.evidence_matching.features_for_matching.selecto
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
 )
-from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
-    ChannelHypotheses,
-    Hypotheses,
-)
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
     HypothesisDisplacerTelemetry,
 )
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
-    ChannelHypothesesUpdateTelemetry,
+    HypothesesUpdaterBaseTelemetry,
     HypothesesUpdateTelemetry,
-    all_usable_input_channels,
 )
 from tbp.monty.frameworks.utils.evidence_matching import (
-    ChannelMapper,
     EvidenceSlopeTracker,
     HypothesesSelection,
     InvalidEvidenceThresholdConfig,
+    all_usable_input_channels,
+    extract_unified_displacement,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_initial_possible_poses,
@@ -57,18 +54,16 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 
 
 @dataclass
-class ChannelHypothesesBurstSamplingTelemetry(ChannelHypothesesUpdateTelemetry):
-    """Hypotheses burst sampling telemetry for a channel.
+class BurstSamplingTelemetry(HypothesesUpdaterBaseTelemetry):
+    """Telemetry for burst sampling hypotheses updater.
 
-    For a given input channel, this class stores which hypotheses were removed or
-    added at the current step.
+    Stores which hypotheses were removed or added at the current step.
 
     Note:
         TODO: Additional description here regarding availability of hypotheses
         identified by `removed_ids`.
     """
 
-    channel_hypothesis_displacer_telemetry: HypothesisDisplacerTelemetry
     added_ids: npt.NDArray[np.int_]
     ages: npt.NDArray[np.int_]
     evidence_slopes: npt.NDArray[np.float64]
@@ -286,29 +281,26 @@ class BurstSamplingHypothesesUpdater:
         features: dict,
         displacements: dict | None,
         graph_id: str,
-        mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
+    ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Updates the existing hypothesis space or initializes a new hypothesis space
         if one does not exist (i.e., at the beginning of the episode). Updating the
         hypothesis space includes displacing the hypotheses' possible locations, as well
-        as updating their evidence scores. This process is repeated for each input
-        channel in the graph.
+        as updating their evidence scores. Evidence from all available input channels
+        is computed and summed by the displacer.
 
         Args:
-            hypotheses: Hypotheses for all input channels in the graph
-            features: Input features
-            displacements: Given displacements
-            graph_id: Identifier of the graph being updated
-            mapper: Mapper for the graph_id to extract data from
-                evidence, locations, and poses based on the input channel
+            hypotheses: Unified hypotheses for the graph.
+            features: Input features keyed by channel name.
+            displacements: Given displacements keyed by channel name.
+            graph_id: Identifier of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            A tuple containing the list of hypothesis updates to be applied to each
-            input channel and hypotheses update telemetry for analysis. The hypotheses
+            A tuple containing the updated unified hypotheses (or None if no channels
+            available) and hypotheses update telemetry for analysis. The hypotheses
             update telemetry is a dictionary containing:
                 - added_ids: IDs of hypotheses added during burst sampling at the
                     current timestep.
@@ -327,107 +319,92 @@ class BurstSamplingHypothesesUpdater:
             features, self.graph_memory.get_input_channels_in_graph(graph_id)
         )
 
-        hypotheses_updates = []
-        burst_sampling_telemetry: dict[str, Any] = {}
-        channel_hypothesis_displacer_telemetry: dict[
-            str, HypothesisDisplacerTelemetry
-        ] = {}
+        if len(input_channels_to_use) == 0:
+            return None, {}
 
-        for input_channel in input_channels_to_use:
-            # Calculate sample count for each type
-            hypotheses_selection, informed_count = self._sample_count(
-                input_channel=input_channel,
-                channel_features=features[input_channel],
-                graph_id=graph_id,
-                mapper=mapper,
-                tracker=tracker,
-            )
+        # Calculate sample count
+        hypotheses_selection, informed_count = self._sample_count(
+            features=features,
+            graph_id=graph_id,
+            tracker=tracker,
+        )
 
-            # Sample hypotheses based on their type
-            existing_hypotheses = self._sample_existing(
-                hypotheses_selection=hypotheses_selection,
-                hypotheses=hypotheses,
-                input_channel=input_channel,
-                mapper=mapper,
-                tracker=tracker,
-            )
-            informed_hypotheses = self._sample_informed(
-                channel_features=features[input_channel],
-                graph_id=graph_id,
-                informed_count=informed_count,
-                input_channel=input_channel,
-                tracker=tracker,
-            )
+        # Sample hypotheses based on their type
+        existing_hypotheses = self._sample_existing(
+            hypotheses_selection=hypotheses_selection,
+            hypotheses=hypotheses,
+            tracker=tracker,
+        )
+        informed_hypotheses = self._sample_informed(
+            features=features,
+            graph_id=graph_id,
+            informed_count=informed_count,
+            input_channels=input_channels_to_use,
+            tracker=tracker,
+        )
 
-            # We only displace existing hypotheses since the newly sampled hypotheses
-            # should not be affected by the displacement from the last sensory input.
-            if len(hypotheses_selection.maintain_ids):
-                existing_hypotheses, channel_hypothesis_displacer_telemetry = (
-                    self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
-                        channel_displacement=displacements[input_channel],
-                        channel_features=features[input_channel],
-                        evidence_update_threshold=evidence_update_threshold,
-                        graph_id=graph_id,
-                        possible_hypotheses=existing_hypotheses,
-                        total_hypotheses_count=hypotheses.evidence.shape[0],
-                    )
-                )
+        displacer_telemetry = HypothesisDisplacerTelemetry(mlh_prediction_error=None)
 
-            # Concatenate and rebuild channel hypotheses
-            channel_hypotheses = ChannelHypotheses(
-                input_channel=input_channel,
-                locations=np.vstack(
-                    [existing_hypotheses.locations, informed_hypotheses.locations]
-                ),
-                poses=np.vstack([existing_hypotheses.poses, informed_hypotheses.poses]),
-                evidence=np.hstack(
-                    [existing_hypotheses.evidence, informed_hypotheses.evidence]
-                ),
-                possible=np.hstack(
-                    [existing_hypotheses.possible, informed_hypotheses.possible]
-                ),
-            )
-            hypotheses_updates.append(channel_hypotheses)
-
-            # Update tracker evidence
-            tracker.update(channel_hypotheses.evidence, input_channel)
-
-            # Telemetry update
-            burst_sampling_telemetry[input_channel] = asdict(
-                ChannelHypothesesBurstSamplingTelemetry(
-                    channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry,
-                    added_ids=(
-                        np.arange(len(channel_hypotheses.evidence))[
-                            -len(informed_hypotheses.evidence) :
-                        ]
-                        if len(informed_hypotheses.evidence) > 0
-                        else np.array([], dtype=np.int_)
-                    ),
-                    ages=tracker.hyp_ages(input_channel),
-                    evidence_slopes=tracker.calculate_slopes(input_channel),
-                    removed_ids=hypotheses_selection.remove_ids,
-                    max_slope=self.max_slope,
+        # We only displace existing hypotheses since the newly sampled hypotheses
+        # should not be affected by the displacement from the last sensory input.
+        if len(hypotheses_selection.maintain_ids):
+            displacement = extract_unified_displacement(displacements)
+            existing_hypotheses, displacer_telemetry = (
+                self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
+                    displacement=displacement,
+                    features=features,
+                    evidence_update_threshold=evidence_update_threshold,
+                    graph_id=graph_id,
+                    possible_hypotheses=existing_hypotheses,
+                    total_hypotheses_count=hypotheses.evidence.shape[0],
                 )
             )
+
+        # Concatenate existing + informed into unified hypotheses
+        result = Hypotheses(
+            locations=np.vstack(
+                [existing_hypotheses.locations, informed_hypotheses.locations]
+            ),
+            poses=np.vstack([existing_hypotheses.poses, informed_hypotheses.poses]),
+            evidence=np.hstack(
+                [existing_hypotheses.evidence, informed_hypotheses.evidence]
+            ),
+            possible=np.hstack(
+                [existing_hypotheses.possible, informed_hypotheses.possible]
+            ),
+        )
+
+        # Update tracker evidence
+        tracker.update(result.evidence)
+
+        # Telemetry update
+        burst_sampling_telemetry = asdict(
+            BurstSamplingTelemetry(
+                displacer_telemetry=displacer_telemetry,
+                added_ids=(
+                    np.arange(len(result.evidence))[
+                        -len(informed_hypotheses.evidence) :
+                    ]
+                    if len(informed_hypotheses.evidence) > 0
+                    else np.array([], dtype=np.int_)
+                ),
+                ages=tracker.hyp_ages(),
+                evidence_slopes=tracker.calculate_slopes(),
+                removed_ids=hypotheses_selection.remove_ids,
+                max_slope=self.max_slope,
+            )
+        )
 
         # Still return prediction error.
         # TODO: make this nicer like dependent on log_level.
         if not self.include_telemetry:
-            updater_telemetry = {
-                k: asdict(
-                    ChannelHypothesesUpdateTelemetry(
-                        channel_hypothesis_displacer_telemetry=v[
-                            "channel_hypothesis_displacer_telemetry"
-                        ]
-                    )
-                )
-                for k, v in burst_sampling_telemetry.items()
+            telemetry = {
+                "mlh_prediction_error": displacer_telemetry.mlh_prediction_error,
             }
+        else:
+            telemetry = burst_sampling_telemetry
 
-        return (
-            hypotheses_updates,
-            burst_sampling_telemetry if self.include_telemetry else updater_telemetry,
-        )
+        return result, telemetry
 
     def _num_hyps_per_node(self, channel_features: dict) -> int:
         """Calculate the number of hypotheses per node.
@@ -449,20 +426,15 @@ class BurstSamplingHypothesesUpdater:
 
     def _sample_count(
         self,
-        input_channel: str,
-        channel_features: dict,
+        features: dict,
         graph_id: str,
-        mapper: ChannelMapper,
         tracker: EvidenceSlopeTracker,
     ) -> tuple[HypothesesSelection, int]:
         """Calculates the number of existing and informed hypotheses needed.
 
         Args:
-            input_channel: The channel for which to calculate hypothesis count.
-            channel_features: Input channel features containing pose information.
+            features: Input features keyed by channel name.
             graph_id: Identifier of the graph being queried.
-            mapper: Mapper for the graph_id to extract data from
-                evidence, locations, and poses based on the input channel
             tracker: Slope tracker for the evidence values of a
                 graph_id
 
@@ -483,17 +455,17 @@ class BurstSamplingHypothesesUpdater:
         """
         new_informed = 0
         if self.sampling_burst_steps > 0:
-            graph_num_points = self.graph_memory.get_locations_in_graph(
-                graph_id, input_channel
-            ).shape[0]
-            num_hyps_per_node = self._num_hyps_per_node(channel_features)
+            total_nodes = self.graph_memory.get_num_nodes_in_graph(graph_id)
+            # Use first channel's features for num_hyps_per_node calculation
+            first_ch = next(iter(features))
+            num_hyps_per_node = self._num_hyps_per_node(features[first_ch])
 
             # This makes sure that we do not request more than the available number of
             # informed hypotheses
             sampling_multiplier = min(self.sampling_multiplier, num_hyps_per_node)
 
             # Calculate the total number of informed hypotheses to be sampled
-            new_informed = round(graph_num_points * sampling_multiplier)
+            new_informed = round(total_nodes * sampling_multiplier)
 
             # Ensure the `new_informed` is divisible by `num_hyps_per_node`
             new_informed -= new_informed % num_hyps_per_node
@@ -501,9 +473,9 @@ class BurstSamplingHypothesesUpdater:
         # Returns a selection of hypotheses to maintain/delete
         hypotheses_selection = (
             tracker.select_hypotheses(
-                slope_threshold=self.deletion_trigger_slope, channel=input_channel
+                slope_threshold=self.deletion_trigger_slope,
             )
-            if input_channel in mapper.channels
+            if tracker.total_size() > 0
             else HypothesesSelection(maintain_mask=[])
         )
 
@@ -516,10 +488,8 @@ class BurstSamplingHypothesesUpdater:
         self,
         hypotheses_selection: HypothesesSelection,
         hypotheses: Hypotheses,
-        input_channel: str,
-        mapper: ChannelMapper,
         tracker: EvidenceSlopeTracker,
-    ) -> ChannelHypotheses:
+    ) -> Hypotheses:
         """Samples the specified number of existing hypotheses to retain.
 
         Note that we are not sampling the existing hypotheses in a probabilistic
@@ -529,10 +499,7 @@ class BurstSamplingHypothesesUpdater:
 
         Args:
             hypotheses_selection: The selection of hypotheses to maintain/remove.
-            hypotheses: Hypotheses for all input channels in the graph_id.
-            input_channel: The channel for which to sample existing hypotheses.
-            mapper: Mapper for the graph_id to extract data from
-                evidence, locations, and poses based on the input channel.
+            hypotheses: Unified hypotheses for the graph_id.
             tracker: Slope tracker for the evidence values of a
                 graph_id
 
@@ -543,11 +510,10 @@ class BurstSamplingHypothesesUpdater:
 
         # Return empty arrays for no hypotheses to sample
         if len(maintain_ids) == 0:
-            # Clear all channel hypotheses from the tracker
-            tracker.clear_hyp(input_channel)
+            # Clear all hypotheses from the tracker
+            tracker.clear_hyp()
 
-            return ChannelHypotheses(
-                input_channel=input_channel,
+            return Hypotheses(
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
                 evidence=np.zeros(0),
@@ -555,31 +521,28 @@ class BurstSamplingHypothesesUpdater:
             )
 
         # Update tracker by removing the remove_ids
-        tracker.remove_hyp(hypotheses_selection.remove_ids, input_channel)
+        tracker.remove_hyp(hypotheses_selection.remove_ids)
 
-        channel_hypotheses = mapper.extract_hypotheses(hypotheses, input_channel)
-        return ChannelHypotheses(
-            input_channel=channel_hypotheses.input_channel,
-            locations=channel_hypotheses.locations[maintain_ids],
-            poses=channel_hypotheses.poses[maintain_ids],
-            evidence=channel_hypotheses.evidence[maintain_ids],
-            possible=channel_hypotheses.possible[maintain_ids],
+        return Hypotheses(
+            locations=hypotheses.locations[maintain_ids],
+            poses=hypotheses.poses[maintain_ids],
+            evidence=hypotheses.evidence[maintain_ids],
+            possible=hypotheses.possible[maintain_ids],
         )
 
     def _sample_informed(
         self,
-        channel_features: dict,
+        features: dict,
         informed_count: int,
         graph_id: str,
-        input_channel: str,
+        input_channels: list[str],
         tracker: EvidenceSlopeTracker,
-    ) -> ChannelHypotheses:
+    ) -> Hypotheses:
         """Samples the specified number of fully informed hypotheses.
 
-        This method selects hypotheses that are most likely to be informative based on
-        feature evidence. Specifically, it identifies the top-k nodes with the highest
-        evidence scores and samples hypotheses only from those nodes, making the process
-        more efficient than uniformly sampling from all graph nodes.
+        Hypotheses are sampled proportionally from each channel's graph based on
+        node count. For each channel, the method identifies the top-k nodes with
+        the highest evidence scores and samples hypotheses only from those nodes.
 
         The sampling includes:
           - Selecting the top-k node indices based on evidence scores, where k is
@@ -596,10 +559,10 @@ class BurstSamplingHypothesesUpdater:
         at every step.
 
         Args:
-            channel_features: Input channel features.
+            features: Input features keyed by channel name.
             informed_count: Number of fully informed hypotheses to sample.
             graph_id: Identifier of the graph being queried.
-            input_channel: The channel for which to sample informed hypotheses.
+            input_channels: Usable input channels for this graph.
             tracker: Slope tracker for the evidence values of a
                 graph_id
 
@@ -609,15 +572,87 @@ class BurstSamplingHypothesesUpdater:
         """
         # Return empty arrays for no hypotheses to sample
         if informed_count == 0:
-            return ChannelHypotheses(
-                input_channel=input_channel,
+            return Hypotheses(
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
                 evidence=np.zeros(0),
                 possible=np.zeros(0, dtype=np.bool_),
             )
 
-        num_hyps_per_node = self._num_hyps_per_node(channel_features)
+        first_ch = next(iter(features))
+        num_hyps_per_node = self._num_hyps_per_node(features[first_ch])
+
+        # Proportional allocation across channels
+        ch_node_counts = {
+            ch: self.graph_memory.get_locations_in_graph(graph_id, ch).shape[0]
+            for ch in input_channels
+        }
+        total_nodes = sum(ch_node_counts.values())
+
+        all_locations = []
+        all_rotations = []
+        all_evidence = []
+        for ch in input_channels:
+            ch_count = round(informed_count * ch_node_counts[ch] / total_nodes)
+            ch_count -= ch_count % num_hyps_per_node
+            if ch_count == 0:
+                continue
+            ch_locs, ch_rots, ch_ev = self._sample_from_channel(
+                channel_features=features[ch],
+                ch_count=ch_count,
+                graph_id=graph_id,
+                input_channel=ch,
+                num_hyps_per_node=num_hyps_per_node,
+            )
+            all_locations.append(ch_locs)
+            all_rotations.append(ch_rots)
+            all_evidence.append(ch_ev)
+
+        if not all_locations:
+            return Hypotheses(
+                locations=np.zeros((0, 3)),
+                poses=np.zeros((0, 3, 3)),
+                evidence=np.zeros(0),
+                possible=np.zeros(0, dtype=np.bool_),
+            )
+
+        selected_locations = np.vstack(all_locations)
+        selected_rotations = np.vstack(all_rotations)
+        selected_feature_evidence = np.hstack(all_evidence)
+
+        # Newly sampled hypotheses cannot be marked as possible
+        possible_hyp = np.zeros_like(selected_feature_evidence, dtype=np.bool_)
+
+        # Add hypotheses to slope trackers
+        tracker.add_hyp(selected_feature_evidence.shape[0])
+
+        return Hypotheses(
+            locations=selected_locations,
+            poses=selected_rotations,
+            evidence=selected_feature_evidence,
+            possible=possible_hyp,
+        )
+
+    def _sample_from_channel(
+        self,
+        channel_features: dict,
+        ch_count: int,
+        graph_id: str,
+        input_channel: str,
+        num_hyps_per_node: int,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Sample informed hypotheses from a single channel's graph.
+
+        Args:
+            channel_features: Features for this input channel.
+            ch_count: Number of hypotheses to sample from this channel.
+            graph_id: Identifier of the graph being queried.
+            input_channel: The channel to sample from.
+            num_hyps_per_node: Number of hypotheses per graph node.
+
+        Returns:
+            Tuple of (locations, rotations, evidence) arrays.
+        """
         # === Calculate selected evidence by top-k indices === #
         if self.use_features_for_matching[input_channel]:
             node_feature_evidence = self.feature_evidence_calculator.calculate(
@@ -637,15 +672,17 @@ class BurstSamplingHypothesesUpdater:
             # the argsort array. We get the needed number of informed nodes not
             # the number of needed hypotheses.
             top_indices = np.argsort(node_feature_evidence)[
-                -int(informed_count // num_hyps_per_node) :
+                -int(ch_count // num_hyps_per_node) :
             ]
             node_feature_evidence_filtered = (
                 node_feature_evidence[top_indices] * self.feature_evidence_increment
             )
         else:
-            num_nodes = self.graph_memory.get_num_nodes_in_graph(graph_id)
+            num_nodes = self.graph_memory.get_locations_in_graph(
+                graph_id, input_channel
+            ).shape[0]
             top_indices = np.arange(num_nodes)[
-                : int(informed_count // num_hyps_per_node)
+                : int(ch_count // num_hyps_per_node)
             ]
             node_feature_evidence_filtered = np.zeros(len(top_indices))
 
@@ -692,36 +729,23 @@ class BurstSamplingHypothesesUpdater:
                 ]
             )
 
-        # Newly sampled hypotheses cannot be marked as possible
-        possible_hyp = np.zeros_like(selected_feature_evidence, dtype=np.bool_)
-
-        # Add hypotheses to slope trackers
-        tracker.add_hyp(selected_feature_evidence.shape[0], input_channel)
-
-        return ChannelHypotheses(
-            input_channel=input_channel,
-            locations=selected_locations,
-            poses=selected_rotations,
-            evidence=selected_feature_evidence,
-            possible=possible_hyp,
-        )
+        return selected_locations, selected_rotations, selected_feature_evidence
 
     def _max_global_slope(self) -> float:
-        """Compute the maximum slope over all objects and channels.
+        """Compute the maximum slope over all objects.
 
         Returns:
-            The maximum global slope if finite, otherwise float("nan")
+            The maximum global slope if finite, otherwise float("-inf")
         """
         max_slope = float("-inf")
 
         for tracker in self.evidence_slope_trackers.values():
-            for channel in tracker.evidence_buffer:
-                if tracker.total_size(channel) == 0:
-                    continue
+            if tracker.total_size() == 0:
+                continue
 
-                slopes = tracker.calculate_slopes(channel)
-                finite_slopes = slopes[np.isfinite(slopes)]
-                if finite_slopes.size:
-                    max_slope = max(max_slope, np.max(finite_slopes))
+            slopes = tracker.calculate_slopes()
+            finite_slopes = slopes[np.isfinite(slopes)]
+            if finite_slopes.size:
+                max_slope = max(max_slope, np.max(finite_slopes))
 
         return max_slope

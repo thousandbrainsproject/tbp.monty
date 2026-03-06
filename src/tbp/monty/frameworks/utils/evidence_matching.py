@@ -412,3 +412,22 @@ class InvalidEvidenceThresholdConfig(ValueError):
     """Raised when the evidence update threshold is invalid."""
 
     pass
+
+
+def all_usable_input_channels(
+    features: dict, all_input_channels: list[str]
+) -> list[str]:
+    """Determine all usable input channels.
+
+    NOTE: We might also want to check the confidence in the input-channel
+    features, but this information is currently not available here.
+    TODO S: Once we pull the observation class into the LM we could add this.
+
+    Args:
+        features: Input features.
+        all_input_channels: All input channels that are stored in the graph.
+
+    Returns:
+        All input channels that are usable for matching.
+    """
+    return [ic for ic in features if ic in all_input_channels]

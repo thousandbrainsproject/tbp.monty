@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import Any, ContextManager, Dict, Literal, Optional, Protocol
 
 import numpy as np
@@ -28,15 +28,15 @@ from tbp.monty.frameworks.models.evidence_matching.features_for_matching.selecto
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
 )
-from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
-    ChannelHypotheses,
-    Hypotheses,
-)
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
     HypothesisDisplacerTelemetry,
 )
-from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
+from tbp.monty.frameworks.utils.evidence_matching import (
+    all_usable_input_channels,
+    extract_unified_displacement,
+)
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_initial_possible_poses,
     possible_sensed_directions,
@@ -52,8 +52,10 @@ HypothesesUpdaterTelemetry = Dict[str, Any]
 
 
 @dataclass
-class ChannelHypothesesUpdateTelemetry:
-    channel_hypothesis_displacer_telemetry: HypothesisDisplacerTelemetry
+class HypothesesUpdaterBaseTelemetry:
+    """Base telemetry for hypotheses updaters."""
+
+    displacer_telemetry: HypothesisDisplacerTelemetry
 
 
 class HypothesesUpdater(ContextManager[Self], Protocol):
@@ -66,22 +68,20 @@ class HypothesesUpdater(ContextManager[Self], Protocol):
         features: dict,
         displacements: dict | None,
         graph_id: str,
-        mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
+    ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Args:
-            hypotheses: Hypotheses for all input channels in the graph
-            features: Input features
-            displacements: Given displacements
-            graph_id: ID of the graph being updated
-            mapper: Mapper for the graph_id to extract data from
-                evidence, locations, and poses based on the input channel
-            evidence_update_threshold: Evidence update threshold
+            hypotheses: Unified hypotheses for the graph.
+            features: Input features keyed by channel name.
+            displacements: Given displacements keyed by channel name.
+            graph_id: ID of the graph being updated.
+            evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            The list of `ChannelHypotheses` updates to be applied.
+            Updated unified hypotheses (or None if no channels available)
+            and telemetry.
         """
         ...
 
@@ -207,28 +207,26 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         features: dict,
         displacements: dict | None,
         graph_id: str,
-        mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
+    ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Updates the existing hypothesis space or initializes a new hypothesis space
         if one does not exist (i.e., at the beginning of the episode). Updating the
         hypothesis space includes displacing the hypotheses' possible locations, as well
-        as updating their evidence scores. This process is repeated for each input
-        channel in the graph.
+        as updating their evidence scores. Evidence from all available input channels
+        is computed and summed by the displacer.
 
         Args:
-            hypotheses: Hypotheses for all input channels in the graph
-            features: Input features
-            displacements: Given displacements
-            graph_id: Identifier of the graph being updated
-            mapper: Mapper for the graph_id to extract data from
-                evidence, locations, and poses based on the input channel
+            hypotheses: Unified hypotheses for the graph.
+            features: Input features keyed by channel name.
+            displacements: Given displacements keyed by channel name.
+            graph_id: Identifier of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            The list of hypothesis updates to be applied to each input channel.
+            Updated unified hypotheses (or None if no channels available)
+            and telemetry.
         """
         # Get all usable input channels
         # NOTE: We might also want to check the confidence in the input channel
@@ -243,56 +241,52 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 f"No input channels observed for {graph_id} that are stored in the "
                 "model. Not updating evidence."
             )
-            return [], {}
+            return None, {}
 
-        hypotheses_updates = []
-        telemetry: dict[str, Any] = {}
-        channel_hypothesis_displacer_telemetry: dict[
-            str, HypothesisDisplacerTelemetry
-        ] = {}
-
-        for input_channel in input_channels_to_use:
-            # Determine if the hypothesis space exists
-            initialize_hyp_space = bool(input_channel not in mapper.channels)
-
-            # Initialize a new hypothesis space using graph nodes
-            if initialize_hyp_space:
-                # TODO H: When initializing a hypothesis for a channel later on (if
-                # displacement is not None), include most likely existing hypothesis
-                # from other channels?
-                channel_possible_hypotheses = self._get_initial_hypothesis_space(
-                    channel_features=features[input_channel],
+        # INITIALIZATION (first step — empty hypotheses)
+        if hypotheses.evidence.shape[0] == 0:
+            # TODO H: When initializing a hypothesis for a channel later on (if
+            # displacement is not None), include most likely existing hypothesis
+            # from other channels?
+            all_evidence = []
+            all_locations = []
+            all_poses = []
+            all_possible = []
+            for ch in input_channels_to_use:
+                ch_hyps = self._get_initial_hypothesis_space(
+                    channel_features=features[ch],
                     graph_id=graph_id,
-                    input_channel=input_channel,
+                    input_channel=ch,
                 )
-            # Retrieve existing hypothesis space for a specific input channel
-            else:
-                channel_hypotheses = mapper.extract_hypotheses(
-                    hypotheses, input_channel
-                )
+                all_evidence.append(ch_hyps.evidence)
+                all_locations.append(ch_hyps.locations)
+                all_poses.append(ch_hyps.poses)
+                all_possible.append(ch_hyps.possible)
+            return Hypotheses(
+                evidence=np.hstack(all_evidence),
+                locations=np.vstack(all_locations),
+                poses=np.vstack(all_poses),
+                possible=np.hstack(all_possible),
+            ), {}
 
-                # We only displace existing hypotheses since the newly sampled
-                # hypotheses should not be affected by the displacement from the last
-                # sensory input.
-                channel_possible_hypotheses, channel_hypothesis_displacer_telemetry = (
-                    self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
-                        channel_displacement=displacements[input_channel],
-                        channel_features=features[input_channel],
-                        evidence_update_threshold=evidence_update_threshold,
-                        graph_id=graph_id,
-                        possible_hypotheses=channel_hypotheses,
-                        total_hypotheses_count=hypotheses.evidence.shape[0],
-                    )
-                )
-
-            hypotheses_updates.append(channel_possible_hypotheses)
-            telemetry[input_channel] = asdict(
-                ChannelHypothesesUpdateTelemetry(
-                    channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry
-                )
+        # UPDATE (subsequent steps)
+        # We only displace existing hypotheses since the newly sampled
+        # hypotheses should not be affected by the displacement from the last
+        # sensory input.
+        displacement = extract_unified_displacement(displacements)
+        result, telemetry_data = (
+            self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
+                displacement=displacement,
+                features=features,
+                evidence_update_threshold=evidence_update_threshold,
+                graph_id=graph_id,
+                possible_hypotheses=hypotheses,
+                total_hypotheses_count=hypotheses.evidence.shape[0],
             )
+        )
 
-        return hypotheses_updates, telemetry
+        telemetry = {"mlh_prediction_error": telemetry_data.mlh_prediction_error}
+        return result, telemetry
 
     def _get_all_informed_possible_poses(
         self, graph_id: str, sensed_channel_features: dict, input_channel: str
@@ -357,7 +351,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
 
     def _get_initial_hypothesis_space(
         self, channel_features: dict, graph_id: str, input_channel: str
-    ) -> ChannelHypotheses:
+    ) -> Hypotheses:
         if self.initial_possible_poses is None:
             # Get initial poses for all locations informed by pose features
             (
@@ -419,8 +413,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         # New hypotheses cannot be possible
         initial_possible_hyps = np.zeros_like(evidence, dtype=np.bool_)
 
-        return ChannelHypotheses(
-            input_channel=input_channel,
+        return Hypotheses(
             evidence=evidence,
             locations=initial_possible_channel_locations,
             poses=initial_possible_channel_rotations,
@@ -428,20 +421,3 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         )
 
 
-def all_usable_input_channels(
-    features: dict, all_input_channels: list[str]
-) -> list[str]:
-    """Determine all usable input channels.
-
-    Args:
-        features: Input features.
-        all_input_channels: All input channels that are stored in the graph.
-
-    Returns:
-        All input channels that are usable for matching.
-    """
-    # Get all usable input channels
-    # NOTE: We might also want to check the confidence in the input-channel
-    # features, but this information is currently not available here.
-    # TODO S: Once we pull the observation class into the LM we could add this.
-    return [ic for ic in features if ic in all_input_channels]
