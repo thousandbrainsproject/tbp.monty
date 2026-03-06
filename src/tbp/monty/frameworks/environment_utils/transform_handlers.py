@@ -247,11 +247,11 @@ class GaussianSmoothing(Transform):
         Returns:
             normalized gaussian kernel. Array of size (kernel_width, kernel_width).
         """
-        x = np.linspace(-self.pad_size, self.pad_size, self.kernel_width)
+        x = np.linspace(-pad_size, pad_size, kernel_width)
         kernel_1d = (
             1.0
-            / (np.sqrt(2 * np.pi) * self.sigma)
-            * np.exp(-np.square(x) / (2 * self.sigma**2))
+            / (np.sqrt(2 * np.pi) * sigma)
+            * np.exp(-np.square(x) / (2 * sigma**2))
         )
         kernel_2d = np.outer(kernel_1d, kernel_1d)
         return kernel_2d / np.sum(kernel_2d)
