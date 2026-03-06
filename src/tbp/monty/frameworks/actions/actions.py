@@ -21,7 +21,7 @@ from typing_extensions import (
 )
 
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environments.environment import QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 __all__ = [
     # Actions

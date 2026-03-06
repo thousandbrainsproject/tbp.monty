@@ -239,7 +239,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
         ctx = RuntimeContext(rng)
         for i in range(1, NUM_STEPS):
-            obs_dist = env_interface_dist.step(ctx)
+            obs_dist, _ = env_interface_dist.step(ctx)
             print(obs_dist)
             self.assertTrue(
                 np.all(obs_dist[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
@@ -249,7 +249,7 @@ class EmbodiedDataTest(unittest.TestCase):
         self.assertTrue(
             np.all(initial_obs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[0])
         )
-        obs_dist = env_interface_dist.step(ctx)
+        obs_dist, _ = env_interface_dist.step(ctx)
         self.assertFalse(
             np.all(
                 obs_dist[AGENT_ID][SENSOR_ID]["raw"]
@@ -276,7 +276,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
         ctx = RuntimeContext(rng)
         for i in range(1, NUM_STEPS):
-            obs_abs = env_interface_abs.step(ctx)
+            obs_abs, _ = env_interface_abs.step(ctx)
             self.assertTrue(
                 np.all(obs_abs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
             )
@@ -285,7 +285,7 @@ class EmbodiedDataTest(unittest.TestCase):
         self.assertTrue(
             np.all(initial_state[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[0])
         )
-        obs_abs = env_interface_abs.step(ctx)
+        obs_abs, _ = env_interface_abs.step(ctx)
         self.assertFalse(
             np.all(
                 obs_abs[AGENT_ID][SENSOR_ID]["raw"]
@@ -313,7 +313,7 @@ class EmbodiedDataTest(unittest.TestCase):
         i = 0
         ctx = RuntimeContext(rng)
         while True:
-            obs = env_interface_dist.step(ctx, first=(i == 0))
+            obs, _ = env_interface_dist.step(ctx, first=(i == 0))
             self.assertTrue(
                 np.all(obs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
             )
@@ -343,7 +343,7 @@ class EmbodiedDataTest(unittest.TestCase):
         i = 0
         ctx = RuntimeContext(rng)
         while True:
-            obs = env_interface_abs.step(ctx, first=(i == 0))
+            obs, _ = env_interface_abs.step(ctx, first=(i == 0))
             self.assertTrue(
                 np.all(obs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
             )
@@ -434,13 +434,13 @@ class EmbodiedDataTest(unittest.TestCase):
             versions=[0, 1],
         )
         env_interface_rel.pre_episode(rng)
-        initial_state = env_interface_rel.step(ctx)
+        initial_state, _ = env_interface_rel.step(ctx)
         sensed_data = initial_state[AGENT_ID][sensor_id]
         self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
 
         i = 0
         while True:
-            obs = env_interface_rel.step(ctx)
+            obs, _ = env_interface_rel.step(ctx)
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
             if i >= NUM_STEPS - 1:
@@ -457,7 +457,7 @@ class EmbodiedDataTest(unittest.TestCase):
         env_interface_rel.pre_episode(rng)
         i = 0
         while True:
-            obs = env_interface_rel.step(ctx)
+            obs, _ = env_interface_rel.step(ctx)
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
             if i >= NUM_STEPS - 1:
@@ -485,13 +485,13 @@ class EmbodiedDataTest(unittest.TestCase):
             env=env, rng=rng, motor_system=motor_system_rel
         )
         env_interface_rel.pre_episode(rng)
-        initial_state = env_interface_rel.step(ctx)
+        initial_state, _ = env_interface_rel.step(ctx)
         sensed_data = initial_state[AGENT_ID][sensor_id]
         self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
 
         i = 0
         while True:
-            obs = env_interface_rel.step(ctx)
+            obs, _ = env_interface_rel.step(ctx)
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
             if i >= NUM_STEPS - 1:
@@ -507,7 +507,7 @@ class EmbodiedDataTest(unittest.TestCase):
         )
         i = 0
         while True:
-            obs = env_interface_rel.step(ctx)
+            obs, _ = env_interface_rel.step(ctx)
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
             if i >= NUM_STEPS - 1:

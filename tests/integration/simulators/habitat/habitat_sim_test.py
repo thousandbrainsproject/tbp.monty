@@ -328,9 +328,9 @@ class HabitatSimTest(unittest.TestCase):
             states = sim.states
             agent_state = states[AgentID(agent_id)]
             sensor_state = agent_state.sensors[SensorID(sensor_id)]
-            self.assertEqual(agent_state.position, agent_pos)
+            np.testing.assert_array_almost_equal(agent_state.position, agent_pos)
             self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
-            self.assertEqual(sensor_state.position, sensor_pos)
+            np.testing.assert_array_almost_equal(sensor_state.position, sensor_pos)
             self.assertTrue(qt.isclose(sensor_state.rotation, sensor_rot, rtol=1e-4))
 
             # turn agent body left
@@ -344,9 +344,9 @@ class HabitatSimTest(unittest.TestCase):
             # Agent body position should stay unchanged
             # Agent body rotation should be offset by turn_left_quat
             # Sensor should stay unchanged
+            np.testing.assert_array_almost_equal(agent_state.position, agent_pos)
             self.assertTrue(qt.isclose(agent_state.rotation, expected_rot, rtol=1e-4))
-            self.assertEqual(agent_state.position, agent_pos)
-            self.assertEqual(sensor_state.position, sensor_pos)
+            np.testing.assert_array_almost_equal(sensor_state.position, sensor_pos)
             self.assertTrue(np.isclose(sensor_state.rotation, sensor_rot, rtol=1e-4))
 
             # Move sensor left
@@ -363,9 +363,9 @@ class HabitatSimTest(unittest.TestCase):
             # Agent body rotation should stay unchanged
             # Sensor location should stay unchanged
             # Sensor rotation should be offset by look_up_quat
-            self.assertEqual(agent_state.position, agent_pos)
+            np.testing.assert_array_almost_equal(agent_state.position, agent_pos)
             self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
-            self.assertEqual(sensor_state.position, sensor_pos)
+            np.testing.assert_array_almost_equal(sensor_state.position, sensor_pos)
             self.assertTrue(qt.isclose(sensor_state.rotation, expected_rot, rtol=1e-4))
 
             # Move agent forward
@@ -380,9 +380,11 @@ class HabitatSimTest(unittest.TestCase):
             # Agent body rotation should stay unchanged
             # Sensor location should stay unchanged
             # Sensor rotation should stay unchanged
-            self.assertEqual(agent_state.position, agent_pos + move_forward_offset)
+            np.testing.assert_array_almost_equal(
+                agent_state.position, agent_pos + move_forward_offset
+            )
             self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
-            self.assertEqual(sensor_state.position, sensor_pos)
+            np.testing.assert_array_almost_equal(sensor_state.position, sensor_pos)
             self.assertTrue(qt.isclose(sensor_state.rotation, sensor_rot, rtol=1e-4))
 
     def test_data_path(self):
@@ -449,8 +451,8 @@ class HabitatSimTest(unittest.TestCase):
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(sensor_id)]
-                self.assertEqual(agent_state.position, agent_pos)
-                self.assertEqual(sensor_state.position, sensor_pos)
+                np.testing.assert_array_almost_equal(agent_state.position, agent_pos)
+                np.testing.assert_array_almost_equal(sensor_state.position, sensor_pos)
                 self.assertTrue(
                     qt.isclose(sensor_state.rotation, sensor_rot, rtol=1e-4)
                 )
@@ -483,8 +485,8 @@ class HabitatSimTest(unittest.TestCase):
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(sensor_id)]
-                self.assertEqual(agent_state.position, agent_pos)
-                self.assertEqual(sensor_state.position, sensor_pos)
+                np.testing.assert_array_almost_equal(agent_state.position, agent_pos)
+                np.testing.assert_array_almost_equal(sensor_state.position, sensor_pos)
                 self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
                 self.assertTrue(qt.isclose(sensor_state.rotation, expected, rtol=1e-4))
 
@@ -517,8 +519,8 @@ class HabitatSimTest(unittest.TestCase):
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(sensor_id)]
-                self.assertEqual(agent_state.position, agent_pos)
-                self.assertEqual(sensor_state.position, sensor_pos)
+                np.testing.assert_array_almost_equal(agent_state.position, agent_pos)
+                np.testing.assert_array_almost_equal(sensor_state.position, sensor_pos)
                 self.assertTrue(qt.isclose(agent_state.rotation, expected, rtol=1e-4))
                 self.assertTrue(
                     qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4)
@@ -552,8 +554,8 @@ class HabitatSimTest(unittest.TestCase):
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(sensor_id)]
-                self.assertEqual(agent_state.position, agent_pos)
-                self.assertEqual(sensor_state.position, sensor_pos)
+                np.testing.assert_array_almost_equal(agent_state.position, agent_pos)
+                np.testing.assert_array_almost_equal(sensor_state.position, sensor_pos)
                 self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
                 self.assertTrue(
                     qt.isclose(sensor_state.rotation, expected_rot, rtol=1e-4)
@@ -589,8 +591,8 @@ class HabitatSimTest(unittest.TestCase):
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(sensor_id)]
-                self.assertEqual(agent_state.position, agent_pos)
-                self.assertEqual(sensor_state.position, sensor_pos)
+                np.testing.assert_array_almost_equal(agent_state.position, agent_pos)
+                np.testing.assert_array_almost_equal(sensor_state.position, sensor_pos)
                 self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
                 self.assertTrue(
                     qt.isclose(sensor_state.rotation, expected_rot, rtol=1e-4)
@@ -610,8 +612,10 @@ class HabitatSimTest(unittest.TestCase):
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(sensor_id)]
-                self.assertEqual(agent_state.position, agent_pos)
-                self.assertEqual(sensor_state.position, expected_pos)
+                np.testing.assert_array_almost_equal(agent_state.position, agent_pos)
+                np.testing.assert_array_almost_equal(
+                    sensor_state.position, expected_pos
+                )
                 self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
                 self.assertTrue(
                     qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4)
@@ -633,8 +637,10 @@ class HabitatSimTest(unittest.TestCase):
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(sensor_id)]
-                self.assertEqual(agent_state.position, agent_pos)
-                self.assertEqual(sensor_state.position, expected_pos)
+                np.testing.assert_array_almost_equal(agent_state.position, agent_pos)
+                np.testing.assert_array_almost_equal(
+                    sensor_state.position, expected_pos
+                )
                 self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
                 self.assertTrue(
                     qt.isclose(sensor_state.rotation, expected_rot, rtol=1e-4)
@@ -669,8 +675,8 @@ class HabitatSimTest(unittest.TestCase):
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(sensor_id)]
-                self.assertEqual(agent_state.position, agent_pos)
-                self.assertEqual(sensor_state.position, sensor_pos)
+                np.testing.assert_array_almost_equal(agent_state.position, agent_pos)
+                np.testing.assert_array_almost_equal(sensor_state.position, sensor_pos)
                 self.assertTrue(
                     qt.isclose(agent_state.rotation, expected_rot, rtol=1e-4)
                 )
@@ -692,8 +698,8 @@ class HabitatSimTest(unittest.TestCase):
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(sensor_id)]
-                self.assertEqual(agent_state.position, expected_pos)
-                self.assertEqual(sensor_state.position, sensor_pos)
+                np.testing.assert_array_almost_equal(agent_state.position, expected_pos)
+                np.testing.assert_array_almost_equal(sensor_state.position, sensor_pos)
                 self.assertTrue(qt.isclose(agent_state.rotation, agent_rot, rtol=1e-4))
                 self.assertTrue(
                     qt.isclose(sensor_state.rotation, sensor_rot_initial, rtol=1e-4)
@@ -715,8 +721,8 @@ class HabitatSimTest(unittest.TestCase):
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(sensor_id)]
-                self.assertEqual(agent_state.position, expected_pos)
-                self.assertEqual(sensor_state.position, sensor_pos)
+                np.testing.assert_array_almost_equal(agent_state.position, expected_pos)
+                np.testing.assert_array_almost_equal(sensor_state.position, sensor_pos)
                 self.assertTrue(
                     qt.isclose(agent_state.rotation, expected_rot, rtol=1e-4)
                 )

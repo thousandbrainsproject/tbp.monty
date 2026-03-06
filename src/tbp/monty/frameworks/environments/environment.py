@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, NewType, Protocol, Sequence, Tuple
+from typing import TYPE_CHECKING, NewType, Protocol, Sequence
 
 if TYPE_CHECKING:
     from tbp.monty.frameworks.actions.actions import Action
@@ -22,22 +22,19 @@ __all__ = [
     "ObjectEnvironment",
     "ObjectID",
     "ObjectInfo",
-    "QuaternionWXYZ",
     "ResettableEnvironment",
     "SemanticID",
     "SimulatedEnvironment",
     "SimulatedObjectEnvironment",
-    "VectorXYZ",
 ]
+
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 ObjectID = NewType("ObjectID", int)
 """Unique identifier for an object in the environment."""
 
 SemanticID = NewType("SemanticID", int)
 """Unique identifier for an object's semantic class."""
-
-VectorXYZ = Tuple[float, float, float]
-QuaternionWXYZ = Tuple[float, float, float, float]
 
 
 @dataclass

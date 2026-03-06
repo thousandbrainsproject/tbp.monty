@@ -131,7 +131,7 @@ class HabitatDataTest(unittest.TestCase):
         # Check if env interface is getting observations from simulator
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, NUM_STEPS):
-            obs_dist = env_interface_dist.step(ctx)
+            obs_dist, _ = env_interface_dist.step(ctx)
             camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_dist[MODALITY] == EXPECTED_STATES[i]))
 
@@ -142,7 +142,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if env interface actions affect simulator observations
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
-        obs_dist = env_interface_dist.step(ctx)
+        obs_dist, _ = env_interface_dist.step(ctx)
         camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_dist[MODALITY] == initial_camera_obs_dist[MODALITY])
@@ -193,7 +193,7 @@ class HabitatDataTest(unittest.TestCase):
         # Check if env interfaces are getting observations from simulator
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, NUM_STEPS):
-            obs_abs = env_interface_abs.step(ctx)
+            obs_abs, _ = env_interface_abs.step(ctx)
             camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_abs[MODALITY] == EXPECTED_STATES[i]))
 
@@ -204,7 +204,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if env interface actions affect simulator observations
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
-        obs_abs = env_interface_abs.step(ctx)
+        obs_abs, _ = env_interface_abs.step(ctx)
         camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_abs[MODALITY] == initial_camera_obs_abs[MODALITY])
@@ -257,7 +257,7 @@ class HabitatDataTest(unittest.TestCase):
         # Check if datasets are getting observations from simulator
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, NUM_STEPS):
-            obs_surf = env_interface_surf.step(ctx)
+            obs_surf, _ = env_interface_surf.step(ctx)
             camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_surf[MODALITY] == EXPECTED_STATES[i]))
 
@@ -268,7 +268,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if dataset actions affect simulator observations
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
-        obs_surf = env_interface_surf.step(ctx)
+        obs_surf, _ = env_interface_surf.step(ctx)
         camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_surf[MODALITY] == initial_camera_obs_surf[MODALITY])
@@ -317,7 +317,7 @@ class HabitatDataTest(unittest.TestCase):
         i = 0
         ctx = RuntimeContext(rng)
         while True:
-            obs = env_interface_dist.step(ctx, first=(i == 0))
+            obs, _ = env_interface_dist.step(ctx, first=(i == 0))
             camera_obs_dist = obs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_dist[MODALITY] == EXPECTED_STATES[i]))
             if i >= NUM_STEPS - 1:
@@ -366,7 +366,7 @@ class HabitatDataTest(unittest.TestCase):
         i = 0
         ctx = RuntimeContext(rng)
         while True:
-            obs = env_interface_abs.step(ctx, first=(i == 0))
+            obs, _ = env_interface_abs.step(ctx, first=(i == 0))
             camera_obs_abs = obs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_abs[MODALITY] == EXPECTED_STATES[i]))
             if i >= NUM_STEPS - 1:
@@ -418,7 +418,7 @@ class HabitatDataTest(unittest.TestCase):
         i = 0
         ctx = RuntimeContext(rng)
         while True:
-            obs = env_interface_surf.step(ctx, first=(i == 0))
+            obs, _ = env_interface_surf.step(ctx, first=(i == 0))
             camera_obs_surf = obs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_surf[MODALITY] == EXPECTED_STATES[i]))
             if i >= NUM_STEPS - 1:

@@ -33,13 +33,14 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
 )
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environments.environment import QuaternionWXYZ, VectorXYZ
 
 __all__ = [
     "ActionSampler",
     "ConstantSampler",
     "UniformlyDistributedSampler",
 ]
+
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 
 class ActionSampler:
