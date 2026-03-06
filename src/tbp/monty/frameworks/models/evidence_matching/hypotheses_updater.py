@@ -186,6 +186,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             tolerances=self.tolerances,
             use_features_for_matching=self.use_features_for_matching,
         )
+        self._initialized_channels: dict[str, set[str]] = {}
 
     def __enter__(self) -> Self:
         """Enter context manager, runs before updating the hypotheses.
@@ -200,6 +201,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
 
     def reset(self) -> None:
         """Resets updater at the beginning of an episode."""
+        self._initialized_channels = {}
 
     def update_hypotheses(
         self,
@@ -245,36 +247,35 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
 
         # INITIALIZATION (first step — empty hypotheses)
         if hypotheses.evidence.shape[0] == 0:
-            # TODO H: When initializing a hypothesis for a channel later on (if
-            # displacement is not None), include most likely existing hypothesis
-            # from other channels?
-            all_evidence = []
-            all_locations = []
-            all_poses = []
-            all_possible = []
-            for ch in input_channels_to_use:
-                ch_hyps = self._get_initial_hypothesis_space(
-                    channel_features=features[ch],
+            if graph_id not in self._initialized_channels:
+                self._initialized_channels[graph_id] = set()
+            all_hyps = []
+            for channel in input_channels_to_use:
+                channel_hyps = self._get_initial_hypothesis_space(
+                    channel_features=features[channel],
                     graph_id=graph_id,
-                    input_channel=ch,
+                    input_channel=channel,
                 )
-                all_evidence.append(ch_hyps.evidence)
-                all_locations.append(ch_hyps.locations)
-                all_poses.append(ch_hyps.poses)
-                all_possible.append(ch_hyps.possible)
-            return Hypotheses(
-                evidence=np.hstack(all_evidence),
-                locations=np.vstack(all_locations),
-                poses=np.vstack(all_poses),
-                possible=np.hstack(all_possible),
-            ), {}
+                all_hyps.append(channel_hyps)
+                self._initialized_channels[graph_id].add(channel)
+            return Hypotheses.concatenate(all_hyps), {}
+
+        # Initialize hypotheses for newly available channels. If a channel
+        # starts reporting after other channels have already accumulated
+        # evidence, add the current mean evidence to give the new hypotheses
+        # a fighting chance (otherwise they'd start at ~0 and be immediately
+        # pruned).
+        # TODO H: Test mean vs. median here.
+        hypotheses = self._initialize_new_channels(
+            hypotheses, features, input_channels_to_use, graph_id
+        )
 
         # UPDATE (subsequent steps)
         # We only displace existing hypotheses since the newly sampled
         # hypotheses should not be affected by the displacement from the last
         # sensory input.
         displacement = extract_unified_displacement(displacements)
-        result, telemetry_data = (
+        displaced_hypotheses, telemetry_data = (
             self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
                 displacement=displacement,
                 features=features,
@@ -286,7 +287,57 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         )
 
         telemetry = {"mlh_prediction_error": telemetry_data.mlh_prediction_error}
-        return result, telemetry
+        return displaced_hypotheses, telemetry
+
+    def _initialize_new_channels(
+        self,
+        hypotheses: Hypotheses,
+        features: dict,
+        input_channels_to_use: list[str],
+        graph_id: str,
+    ) -> Hypotheses:
+        """Initialize hypotheses for channels that haven't been seen before.
+
+        When a new channel starts reporting after other channels have already
+        accumulated evidence, the new channel's hypotheses are initialized with
+        the current mean evidence added to give them a fighting chance.
+
+        Args:
+            hypotheses: Current unified hypotheses.
+            features: Input features keyed by channel name.
+            input_channels_to_use: Channels available this step.
+            graph_id: Identifier of the graph being updated.
+
+        Returns:
+            Hypotheses with any new channel hypotheses appended.
+        """
+        initialized = self._initialized_channels.get(graph_id, set())
+        new_channels = [ch for ch in input_channels_to_use if ch not in initialized]
+        if not new_channels:
+            return hypotheses
+
+        current_mean_evidence = np.mean(hypotheses.evidence)
+        new_hyps = []
+        for channel in new_channels:
+            channel_hyps = self._get_initial_hypothesis_space(
+                channel_features=features[channel],
+                graph_id=graph_id,
+                input_channel=channel,
+            )
+            # Add current mean evidence to give the new hypotheses a fighting
+            # chance against existing hypotheses that have been accumulating
+            # evidence from other channels.
+            new_hyps.append(
+                Hypotheses(
+                    evidence=channel_hyps.evidence + current_mean_evidence,
+                    locations=channel_hyps.locations,
+                    poses=channel_hyps.poses,
+                    possible=channel_hyps.possible,
+                )
+            )
+            self._initialized_channels[graph_id].add(channel)
+
+        return Hypotheses.concatenate([hypotheses] + new_hyps)
 
     def _get_all_informed_possible_poses(
         self, graph_id: str, sensed_channel_features: dict, input_channel: str
@@ -419,5 +470,3 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             poses=initial_possible_channel_rotations,
             possible=initial_possible_hyps,
         )
-
-
