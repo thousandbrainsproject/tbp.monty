@@ -26,8 +26,3 @@ class Hypotheses:
     possible: npt.NDArray[np.bool_]
 
 
-@dataclass
-class ChannelHypotheses(Hypotheses):
-    """A set of hypotheses for a single input channel."""
-
-    input_channel: str
