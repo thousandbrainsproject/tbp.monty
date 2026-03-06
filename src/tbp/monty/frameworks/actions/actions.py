@@ -11,7 +11,7 @@
 from __future__ import annotations
 
 from json import JSONDecoder, JSONEncoder
-from typing import Any, Generator, Tuple
+from typing import Any, Generator
 
 from numpy.random import RandomState
 from pydantic.alias_generators import to_snake
@@ -21,8 +21,9 @@ from typing_extensions import (
 )
 
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
-__all__ = [  # noqa: RUF022
+__all__ = [
     # Actions
     "Action",
     "LookDown",
@@ -67,13 +68,7 @@ __all__ = [  # noqa: RUF022
     "TurnRight",
     "TurnRightActionSampler",
     "TurnRightActuator",
-    # Spatial representations
-    "QuaternionWXYZ",
-    "VectorXYZ",
 ]
-
-VectorXYZ = Tuple[float, float, float]
-QuaternionWXYZ = Tuple[float, float, float, float]
 
 
 @runtime_checkable

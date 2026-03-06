@@ -99,18 +99,18 @@ class OmniglotEnvironment(SimulatedEnvironment):
         Returns:
             The observations and proprioceptive state.
         """
-        obs = self._observation()
+        obs = self._observations()
 
         for action in actions:
             amount = 1
             if hasattr(action, "rotation_degrees"):
                 amount = max(action.rotation_degrees, 1)
             self.step_num += int(amount)
-            obs = self._observation()
+            obs = self._observations()
 
-        return obs
+        return obs, self.get_state()
 
-    def _observation(self) -> Observations:
+    def _observations(self) -> Observations:
         query_loc = self.locations[self.step_num % self.max_steps]
         patch = self.get_image_patch(
             self.current_image,
@@ -118,7 +118,7 @@ class OmniglotEnvironment(SimulatedEnvironment):
             self.patch_size,
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
-        obs = Observations(
+        return Observations(
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
@@ -139,7 +139,6 @@ class OmniglotEnvironment(SimulatedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
 
     def get_state(self) -> ProprioceptiveState:
         loc = self.locations[self.step_num % self.max_steps]
@@ -322,7 +321,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         Returns:
             The observation and proprioceptive state.
         """
-        obs = self._observation()
+        obs = self._observations()
 
         for action in actions:
             if action.name in self._valid_actions:
@@ -335,18 +334,18 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             # Make sure amount is int since we are moving using pixel indices
             amount = int(amount)
             self.current_loc = self.get_next_loc(action.name, amount)
-            obs = self._observation()
+            obs = self._observations()
 
-        return obs
+        return obs, self.get_state()
 
-    def _observation(self) -> Observations:
+    def _observations(self) -> Observations:
         (
             depth_patch,
             rgb_patch,
             depth3d_patch,
             sensor_frame_patch,
         ) = self.get_image_patch(self.current_loc)
-        obs = Observations(
+        return Observations(
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
@@ -371,7 +370,6 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
 
     def get_state(self) -> ProprioceptiveState:
         loc = self.current_loc
