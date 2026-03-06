@@ -14,7 +14,7 @@ import datetime
 import logging
 import pprint
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import torch
@@ -249,15 +249,14 @@ class MontyExperiment:
         # Initialize train environment interface if needed
         if config["do_train"]:
             env_interface_class = config["train_env_interface_class"]
-            env_interface_args = dict(
+            env_interface_args = config["train_env_interface_args"]
+
+            self.train_env_interface = self.create_env_interface(
+                env_interface_class=env_interface_class,
+                env_interface_args=env_interface_args,
                 env=self.env,
                 transform=env_interface_config["transform"],
                 experiment_mode=ExperimentMode.TRAIN,
-                **config["train_env_interface_args"],
-            )
-
-            self.train_env_interface = self.create_env_interface(
-                env_interface_class, env_interface_args
             )
         else:
             self.train_env_interface = None
@@ -265,15 +264,14 @@ class MontyExperiment:
         # Initialize eval environment interfaces if needed
         if config["do_eval"]:
             env_interface_class = config["eval_env_interface_class"]
-            env_interface_args = dict(
+            env_interface_args = config["eval_env_interface_args"]
+
+            self.eval_env_interface = self.create_env_interface(
+                env_interface_class=env_interface_class,
+                env_interface_args=env_interface_args,
                 env=self.env,
                 transform=env_interface_config["transform"],
                 experiment_mode=ExperimentMode.EVAL,
-                **config["eval_env_interface_args"],
-            )
-
-            self.eval_env_interface = self.create_env_interface(
-                env_interface_class, env_interface_args
             )
         else:
             self.eval_env_interface = None
@@ -281,13 +279,19 @@ class MontyExperiment:
     def create_env_interface(
         self,
         env_interface_class: type[EnvironmentInterface],
-        env_interface_args: Mapping[str, Any],
+        env_interface_args: DictConfig,
+        env: SimulatedObjectEnvironment,
+        transform: Any,
+        experiment_mode: ExperimentMode,
     ):
         """Environment interface used to collect data from environment observations.
 
         Args:
             env_interface_class: The class of the environment interface.
             env_interface_args: The arguments for the environment interface.
+            env: Environment instance used by the interface.
+            transform: Transform(s) applied to observations.
+            experiment_mode: The mode which the interface is initialized for.
 
         Returns:
             The instantiated environment interface.
@@ -304,6 +308,9 @@ class MontyExperiment:
 
         env_interface = env_interface_class(
             **env_interface_args,
+            env=env,
+            transform=transform,
+            experiment_mode=experiment_mode,
             motor_system=self.model.motor_system,
             rng=self.rng,
             seed=self.config["seed"],
