@@ -85,7 +85,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         num_steps = 0
         while True:
             try:
-                observations = self.env_interface.step(ctx, first=(num_steps == 0))
+                observations, _ = self.env_interface.step(ctx, first=(num_steps == 0))
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used

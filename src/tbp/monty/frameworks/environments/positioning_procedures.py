@@ -275,7 +275,7 @@ class GetGoodView(PositioningProcedure):
             idx_loc_to_look_at[0], idx_loc_to_look_at[1], :3
         ]
         camera_location = state[self._agent_id].sensors[self._sensor_id].position
-        agent_location = state[self._agent_id].position
+        agent_location = np.array(state[self._agent_id].position)
         # Get the location of the object relative to sensor.
         return location_to_look_at - (camera_location + agent_location)
 
