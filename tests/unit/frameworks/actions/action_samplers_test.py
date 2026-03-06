@@ -22,7 +22,7 @@ from tbp.monty.frameworks.actions.action_samplers import (
 )
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environments.environment import QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 AGENT_ID_1 = AgentID("agent1")
 AGENT_ID_2 = AgentID("agent2")

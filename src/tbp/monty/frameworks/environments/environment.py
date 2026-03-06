@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from tbp.monty.frameworks.actions.actions import Action
     from tbp.monty.frameworks.models.abstract_monty_classes import Observations
     from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+    from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 __all__ = [
     "Environment",
@@ -27,8 +28,6 @@ __all__ = [
     "SimulatedEnvironment",
     "SimulatedObjectEnvironment",
 ]
-
-from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 ObjectID = NewType("ObjectID", int)
 """Unique identifier for an object in the environment."""

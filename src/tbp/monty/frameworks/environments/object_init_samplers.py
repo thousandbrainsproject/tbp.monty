@@ -14,10 +14,10 @@ from typing import Sequence
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.environments.environment import VectorXYZ
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
+from tbp.monty.math import EulerAnglesXYZ, VectorXYZ
 
 
 class Default:
@@ -45,7 +45,7 @@ class Predefined(Default):
     def __init__(
         self,
         positions: Sequence[VectorXYZ] | None = None,
-        rotations: Sequence[VectorXYZ] | None = None,
+        rotations: Sequence[EulerAnglesXYZ] | None = None,
         scales: Sequence[VectorXYZ] | None = None,
         change_every_episode: bool | None = None,
     ):
