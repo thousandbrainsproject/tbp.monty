@@ -166,5 +166,6 @@ class DefaultHypothesesDisplacerTest(TestCase):
             )
 
         # MLH is index 0 (evidence 5.0), summed evidence at MLH = 1.5 + 0.5 = 2.0
-        # prediction_error = (-2.0 + 2) / 3 = 0.0
-        self.assertAlmostEqual(telemetry.mlh_prediction_error, 0.0)
+        # With 2 channels (C=2), range is [-C, 2C] = [-2, 4], mapped to [0, 1]:
+        # prediction_error = (-2.0 + 2*2) / (3*2) = 2/6 = 1/3
+        self.assertAlmostEqual(telemetry.mlh_prediction_error, 1 / 3)
