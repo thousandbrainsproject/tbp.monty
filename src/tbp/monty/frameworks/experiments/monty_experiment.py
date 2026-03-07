@@ -14,7 +14,7 @@ import datetime
 import logging
 import pprint
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Iterable, Literal
 
 import numpy as np
 import torch
@@ -22,6 +22,7 @@ from omegaconf import DictConfig
 from typing_extensions import Self
 
 from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.environment_utils.transforms import Transform
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterface,
     EnvironmentInterfacePerObject,
@@ -281,7 +282,7 @@ class MontyExperiment:
         env_interface_class: type[EnvironmentInterface],
         env_interface_args: DictConfig,
         env: SimulatedObjectEnvironment,
-        transform: Any,
+        transform: Transform | Iterable[Transform] | None,
         experiment_mode: ExperimentMode,
     ):
         """Environment interface used to collect data from environment observations.
