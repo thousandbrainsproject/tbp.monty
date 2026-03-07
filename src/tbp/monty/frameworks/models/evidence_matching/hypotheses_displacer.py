@@ -166,29 +166,42 @@ class DefaultHypothesesDisplacer:
                 features, self.graph_memory.get_input_channels_in_graph(graph_id)
             )
             total_evidence_to_add = np.zeros_like(possible_hypotheses.evidence)
-            for ch in input_channels:
+            for channel in input_channels:
                 new_evidence = self._calculate_evidence_for_new_locations(
                     graph_id=graph_id,
-                    input_channel=ch,
+                    input_channel=channel,
                     search_locations=search_locations[hyp_ids_to_test],
                     channel_possible_poses=possible_hypotheses.poses[hyp_ids_to_test],
-                    channel_features=features[ch],
+                    channel_features=features[channel],
                 )
                 min_update = np.clip(np.min(new_evidence), 0, np.inf)
-                ch_evidence = np.ones_like(possible_hypotheses.evidence) * min_update
-                ch_evidence[hyp_ids_to_test] = new_evidence
-                total_evidence_to_add += ch_evidence
+
+                # Alternatives (no update to other Hs or adding avg) left in
+                # here in case we want to revert back to those.
+                # avg_update = np.mean(new_evidence)
+                # channel_evidence = np.zeros_like(possible_hypotheses.evidence)
+                channel_evidence = (
+                    np.ones_like(possible_hypotheses.evidence) * min_update
+                )
+                channel_evidence[hyp_ids_to_test] = new_evidence
+                total_evidence_to_add += channel_evidence
 
             # Prediction error from summed evidence
             mlh_index = np.argmax(possible_hypotheses.evidence)
             evidence_for_mlh = total_evidence_to_add[mlh_index]
-            # Mapping evidence values from range [-1, 2] to [0, 3], then dividing by 3
-            # to get a value in range [0, 1].
-            mlh_prediction_error = (-evidence_for_mlh + 2) / 3
+
+            # Each channel contributes evidence in range [-1, 2]. With C
+            # channels the summed range is [-C, 2C]. We map to [0, 1] by
+            # shifting by 2C and dividing by 3C (for C=1 this is the original
+            # [-1, 2] → [0, 3] → [0, 1] mapping).
+            num_channels = len(input_channels)
+            mlh_prediction_error = (-evidence_for_mlh + 2 * num_channels) / (
+                3 * num_channels
+            )
 
             # If past and present weight add up to 1, equivalent to
-            # np.average and evidence will be bound to [-1, 2]. Otherwise it
-            # keeps growing.
+            # np.average and evidence will be bound to [-C, 2C] where C is the
+            # number of channels. Otherwise it keeps growing.
             evidence = (
                 possible_hypotheses.evidence * self.past_weight
                 + total_evidence_to_add * self.present_weight

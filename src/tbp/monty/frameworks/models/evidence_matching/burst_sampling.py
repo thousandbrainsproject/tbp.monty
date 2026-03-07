@@ -361,28 +361,19 @@ class BurstSamplingHypothesesUpdater:
             )
 
         # Concatenate existing + informed into unified hypotheses
-        result = Hypotheses(
-            locations=np.vstack(
-                [existing_hypotheses.locations, informed_hypotheses.locations]
-            ),
-            poses=np.vstack([existing_hypotheses.poses, informed_hypotheses.poses]),
-            evidence=np.hstack(
-                [existing_hypotheses.evidence, informed_hypotheses.evidence]
-            ),
-            possible=np.hstack(
-                [existing_hypotheses.possible, informed_hypotheses.possible]
-            ),
+        hypotheses_update = Hypotheses.concatenate(
+            [existing_hypotheses, informed_hypotheses]
         )
 
         # Update tracker evidence
-        tracker.update(result.evidence)
+        tracker.update(hypotheses_update.evidence)
 
         # Telemetry update
         burst_sampling_telemetry = asdict(
             BurstSamplingTelemetry(
                 displacer_telemetry=displacer_telemetry,
                 added_ids=(
-                    np.arange(len(result.evidence))[
+                    np.arange(len(hypotheses_update.evidence))[
                         -len(informed_hypotheses.evidence) :
                     ]
                     if len(informed_hypotheses.evidence) > 0
@@ -404,7 +395,7 @@ class BurstSamplingHypothesesUpdater:
         else:
             telemetry = burst_sampling_telemetry
 
-        return result, telemetry
+        return hypotheses_update, telemetry
 
     def _num_hyps_per_node(self, channel_features: dict) -> int:
         """Calculate the number of hypotheses per node.
@@ -455,20 +446,40 @@ class BurstSamplingHypothesesUpdater:
         """
         new_informed = 0
         if self.sampling_burst_steps > 0:
-            total_nodes = self.graph_memory.get_num_nodes_in_graph(graph_id)
-            # Use first channel's features for num_hyps_per_node calculation
-            first_ch = next(iter(features))
-            num_hyps_per_node = self._num_hyps_per_node(features[first_ch])
+            input_channels = all_usable_input_channels(
+                features,
+                self.graph_memory.get_input_channels_in_graph(graph_id),
+            )
 
-            # This makes sure that we do not request more than the available number of
-            # informed hypotheses
-            sampling_multiplier = min(self.sampling_multiplier, num_hyps_per_node)
+            # Calculate new_informed per channel based on each channel's
+            # num_hyps_per_node and node count, then sum them. Each channel
+            # may have a different num_hyps_per_node (e.g. due to
+            # pose_fully_defined), so we compute per-channel totals to ensure
+            # each is divisible by its own num_hyps_per_node.
+            for channel in input_channels:
+                channel_num_nodes = self.graph_memory.get_locations_in_graph(
+                    graph_id, channel
+                ).shape[0]
+                channel_num_hyps_per_node = self._num_hyps_per_node(
+                    features[channel]
+                )
 
-            # Calculate the total number of informed hypotheses to be sampled
-            new_informed = round(total_nodes * sampling_multiplier)
+                # This makes sure that we do not request more than the
+                # available number of informed hypotheses
+                channel_multiplier = min(
+                    self.sampling_multiplier, channel_num_hyps_per_node
+                )
 
-            # Ensure the `new_informed` is divisible by `num_hyps_per_node`
-            new_informed -= new_informed % num_hyps_per_node
+                # Calculate the number of informed hypotheses for this channel
+                channel_informed = round(
+                    channel_num_nodes * channel_multiplier
+                )
+
+                # Ensure divisible by this channel's num_hyps_per_node
+                channel_informed -= (
+                    channel_informed % channel_num_hyps_per_node
+                )
+                new_informed += channel_informed
 
         # Returns a selection of hypotheses to maintain/delete
         hypotheses_selection = (
