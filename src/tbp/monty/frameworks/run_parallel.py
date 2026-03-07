@@ -15,7 +15,7 @@ import re
 import shutil
 import time
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 import hydra
 import numpy as np
@@ -23,7 +23,7 @@ import pandas as pd
 import torch
 import torch.multiprocessing as mp
 import wandb
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, OmegaConf, flag_override, open_dict
 
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterfacePerObject,
@@ -32,6 +32,7 @@ from tbp.monty.frameworks.environments.object_init_samplers import (
     Predefined,
 )
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 from tbp.monty.frameworks.experiments.pretraining_experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
@@ -85,7 +86,7 @@ def cat_csv(filenames: Iterable[Path], outfile: Path):
     df.to_csv(outfile, index=False)
 
 
-def sample_params_to_init_args(params):
+def sample_params_to_init_args(params: Mapping[str, Any]):
     new_params = {}
     new_params["positions"] = [params["position"]]
     new_params["scales"] = [params["scale"]]
@@ -94,7 +95,11 @@ def sample_params_to_init_args(params):
     return new_params
 
 
-def post_parallel_log_cleanup(filenames: Iterable[Path], outfile: Path, cat_fn):
+def post_parallel_log_cleanup(
+    filenames: Iterable[Path],
+    outfile: Path,
+    cat_fn: Callable[[Iterable[Path], Path], None],
+):
     existing_files = [f for f in filenames if f.exists()]
     if len(existing_files) == 0:
         return
@@ -229,7 +234,9 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> list[int]:
     return sorted(selected)
 
 
-def filter_episode_configs(configs: list[dict], episode_spec: str | None) -> list[dict]:
+def filter_episode_configs(
+    configs: list[DictConfig], episode_spec: str | None
+) -> list[DictConfig]:
     idxs = parse_episode_spec(episode_spec, len(configs))
     return [cfg for i, cfg in enumerate(configs) if i in idxs]
 
@@ -237,7 +244,7 @@ def filter_episode_configs(configs: list[dict], episode_spec: str | None) -> lis
 def generate_parallel_eval_configs(
     experiment: DictConfig,
     name: str,
-) -> list[Mapping]:
+) -> list[DictConfig]:
     """Generate configs for evaluation episodes in parallel.
 
     Create a config for each object and rotation in the experiment. Unlike with parallel
@@ -260,7 +267,7 @@ def generate_parallel_eval_configs(
     object_names = experiment.config["eval_env_interface_args"]["object_names"]
     # sampler_params = sampler.all_combinations_of_params()
 
-    new_experiments = []
+    new_experiments: list[DictConfig] = []
     epoch_count = 0
     episode_count = 0
     n_epochs = experiment.config["n_eval_epochs"]
@@ -273,34 +280,39 @@ def generate_parallel_eval_configs(
     # Try to mimic the exact workflow instead of guessing
     while epoch_count < n_epochs:
         for obj in object_names:
-            new_experiment: Mapping = OmegaConf.to_object(experiment)  # type: ignore[assignment]
+            new_experiment = OmegaConf.merge(experiment)
 
             # No training
-            new_experiment["config"].update(
-                do_eval=True,
-                do_train=False,
-                episode=episode_count,
-                n_eval_epochs=1,
-            )
+            with open_dict(new_experiment["config"]):
+                new_experiment["config"].update(
+                    do_eval=True,
+                    do_train=False,
+                    episode=episode_count,
+                    n_eval_epochs=1,
+                )
 
             # Save results in parallel subdir of output_dir, update run_name
             output_dir = Path(new_experiment["config"]["logging"]["output_dir"])
             run_name = f"{name}-parallel_eval_episode_{episode_count}"
-            new_experiment["config"]["logging"]["run_name"] = run_name
-            new_experiment["config"]["logging"]["output_dir"] = (
-                output_dir / name / run_name
-            )
-            if len(new_experiment["config"]["logging"]["wandb_handlers"]) > 0:
-                new_experiment["config"]["logging"]["wandb_handlers"] = []
-                new_experiment["config"]["logging"]["log_parallel_wandb"] = True
-                new_experiment["config"]["logging"]["experiment_name"] = name
-            else:
-                new_experiment["config"]["logging"]["log_parallel_wandb"] = False
+            logging_cfg = new_experiment["config"]["logging"]
+            logging_cfg["run_name"] = run_name
+            logging_cfg["output_dir"] = output_dir / name / run_name
+            with open_dict(logging_cfg):
+                if len(logging_cfg["wandb_handlers"]) > 0:
+                    logging_cfg["wandb_handlers"] = []
+                    logging_cfg["log_parallel_wandb"] = True
+                    logging_cfg["experiment_name"] = name
+                else:
+                    logging_cfg["log_parallel_wandb"] = False
 
-            new_experiment["config"]["eval_env_interface_args"].update(
-                object_names=[obj],
-                object_init_sampler=Predefined(**params),
-            )
+            eval_env_interface_args = new_experiment["config"][
+                "eval_env_interface_args"
+            ]
+            with flag_override(eval_env_interface_args, "allow_objects", values=True):
+                eval_env_interface_args.update(
+                    object_names=[obj],
+                    object_init_sampler=Predefined(**params),
+                )
 
             new_experiments.append(new_experiment)
             episode_count += 1
@@ -316,7 +328,9 @@ def generate_parallel_eval_configs(
     return new_experiments
 
 
-def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[Mapping]:
+def generate_parallel_train_configs(
+    experiment: DictConfig, name: str
+) -> list[DictConfig]:
     """Generate configs for training episodes in parallel.
 
     Create a config for each object in the experiment. Unlike with parallel eval
@@ -341,10 +355,10 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
         experiment.config["train_env_interface_args"]["object_init_sampler"]
     )
     object_names = experiment.config["train_env_interface_args"]["object_names"]
-    new_experiments = []
+    new_experiments: list[DictConfig] = []
 
     for obj in object_names:
-        new_experiment: Mapping = OmegaConf.to_object(experiment)  # type: ignore[assignment]
+        new_experiment = OmegaConf.merge(experiment)
 
         # No eval
         new_experiment["config"].update(do_eval=False, do_train=True, n_train_epochs=1)
@@ -352,25 +366,29 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
         # Save results in parallel subdir of output_dir, update run_name
         output_dir = Path(new_experiment["config"]["logging"]["output_dir"])
         run_name = f"{name}-parallel_train_episode_{obj}"
-        new_experiment["config"]["logging"]["run_name"] = run_name
-        new_experiment["config"]["logging"]["output_dir"] = output_dir / name / run_name
-        new_experiment["config"]["logging"]["wandb_handlers"] = []
-        new_experiment["config"]["logging"]["log_parallel_wandb"] = False
+        logging_cfg = new_experiment["config"]["logging"]
+        logging_cfg["run_name"] = run_name
+        logging_cfg["output_dir"] = output_dir / name / run_name
+        logging_cfg["wandb_handlers"] = []
+        with open_dict(logging_cfg):
+            logging_cfg["log_parallel_wandb"] = False
 
         # Object id, pose parameters for single episode
         new_experiment["config"]["train_env_interface_args"].update(
             object_names=[obj for _ in range(len(sampler))]
         )
-        new_experiment["config"]["train_env_interface_args"]["object_init_sampler"][
-            "change_every_episode"
-        ] = True
+        object_init_sampler_cfg = new_experiment["config"]["train_env_interface_args"][
+            "object_init_sampler"
+        ]
+        with open_dict(object_init_sampler_cfg):
+            object_init_sampler_cfg["change_every_episode"] = True
 
         new_experiments.append(new_experiment)
 
     return new_experiments
 
 
-def single_train(experiment):
+def single_train(experiment: DictConfig):
     output_dir = Path(experiment["config"]["logging"]["output_dir"])
     output_dir.mkdir(exist_ok=True, parents=True)
     exp = hydra.utils.instantiate(experiment)
@@ -379,7 +397,7 @@ def single_train(experiment):
         exp.run()
 
 
-def single_evaluate(experiment):
+def single_evaluate(experiment: DictConfig):
     output_dir = Path(experiment["config"]["logging"]["output_dir"])
     output_dir.mkdir(exist_ok=True, parents=True)
     exp = hydra.utils.instantiate(experiment)
@@ -394,7 +412,7 @@ def single_evaluate(experiment):
             return get_episode_stats(exp, ExperimentMode.EVAL, exp.config.episode)
 
 
-def get_episode_stats(exp, mode: ExperimentMode, episode: int = 0):
+def get_episode_stats(exp: MontyExperiment, mode: ExperimentMode, episode: int = 0):
     eval_stats = exp.monty_logger.get_formatted_overall_stats(mode, episode)
     exp.monty_logger.flush()
     # Remove overall stats field since they are only averaged over 1 episode
@@ -405,7 +423,9 @@ def get_episode_stats(exp, mode: ExperimentMode, episode: int = 0):
     return eval_stats
 
 
-def get_overall_stats(stats):
+def get_overall_stats(
+    stats: Mapping[str, Sequence[float | int | bool]],
+):
     overall_stats = {}
     # combines correct and correct_mlh
     overall_stats["overall/percent_correct"] = np.mean(stats["episode/correct"]) * 100
@@ -463,7 +483,7 @@ def collect_detailed_episodes_names(parallel_dirs: Iterable[Path]) -> list[Path]
     return filenames
 
 
-def post_parallel_eval(experiments: list[Mapping], base_dir: Path) -> None:
+def post_parallel_eval(experiments: list[DictConfig], base_dir: Path) -> None:
     """Post-execution cleanup after running evaluation in parallel.
 
     Logs are consolidated across parallel runs and saved to disk.
@@ -518,7 +538,7 @@ def post_parallel_eval(experiments: list[Mapping], base_dir: Path) -> None:
         shutil.rmtree(pdir)
 
 
-def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
+def post_parallel_train(experiments: list[DictConfig], base_dir: Path) -> None:
     """Post-execution cleanup after running training in parallel.
 
     Object models are consolidated across parallel runs and saved to disk.
@@ -593,7 +613,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
 
 
 def run_episodes_parallel(
-    experiments: list[Mapping],
+    experiments: list[DictConfig],
     num_parallel: int,
     experiment_name: str,
     train: bool = True,
