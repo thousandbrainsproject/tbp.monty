@@ -87,7 +87,11 @@ class HabitatDataTest(unittest.TestCase):
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
-    def test_env_interface_dist(self, mock_simulator_class, mock_agent_class):
+    def test_env_interface_dist(
+        self,
+        mock_simulator_class: mock.MagicMock,
+        mock_agent_class: mock.MagicMock,
+    ):
         # Mock habitat_sim classes
         mock_agent_dist = mock_agent_class.return_value
         mock_agent_dist.agent_config = self.camera_dist.get_spec()
@@ -146,7 +150,11 @@ class HabitatDataTest(unittest.TestCase):
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
-    def test_env_interface_abs(self, mock_simulator_class, mock_agent_class):
+    def test_env_interface_abs(
+        self,
+        mock_simulator_class: mock.MagicMock,
+        mock_agent_class: mock.MagicMock,
+    ):
         # Mock habitat_sim classes
         mock_agent_abs = mock_agent_class.return_value
         mock_agent_abs.agent_config = self.camera_abs.get_spec()
@@ -204,7 +212,11 @@ class HabitatDataTest(unittest.TestCase):
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
-    def test_env_interface_surf(self, mock_simulator_class, mock_agent_class):
+    def test_env_interface_surf(
+        self,
+        mock_simulator_class: mock.MagicMock,
+        mock_agent_class: mock.MagicMock,
+    ):
         # Mock habitat_sim classes
         mock_agent_surf = mock_agent_class.return_value
         mock_agent_surf.agent_config = self.camera_surf.get_spec()
@@ -264,7 +276,11 @@ class HabitatDataTest(unittest.TestCase):
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
-    def test_env_interface_dist_states(self, mock_simulator_class, mock_agent_class):
+    def test_env_interface_dist_states(
+        self,
+        mock_simulator_class: mock.MagicMock,
+        mock_agent_class: mock.MagicMock,
+    ):
         # Mock habitat_sim classes
         mock_agent_dist = mock_agent_class.return_value
         mock_agent_dist.agent_config = self.camera_dist.get_spec()
@@ -311,7 +327,11 @@ class HabitatDataTest(unittest.TestCase):
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
-    def test_env_interface_abs_states(self, mock_simulator_class, mock_agent_class):
+    def test_env_interface_abs_states(
+        self,
+        mock_simulator_class: mock.MagicMock,
+        mock_agent_class: mock.MagicMock,
+    ):
         # Mock habitat_sim classes
         mock_agent_abs = mock_agent_class.return_value
         mock_agent_abs.agent_config = self.camera_abs.get_spec()
@@ -356,7 +376,11 @@ class HabitatDataTest(unittest.TestCase):
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
-    def test_env_interface_surf_states(self, mock_simulator_class, mock_agent_class):
+    def test_env_interface_surf_states(
+        self,
+        mock_simulator_class: mock.MagicMock,
+        mock_agent_class: mock.MagicMock,
+    ):
         # Mock habitat_sim classes
         mock_agent_surf = mock_agent_class.return_value
         mock_agent_surf.agent_config = self.camera_surf.get_spec()
