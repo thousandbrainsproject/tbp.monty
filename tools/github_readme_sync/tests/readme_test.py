@@ -741,7 +741,7 @@ This is a test document.""",
         finally:
             Path(tmp_path).unlink()
 
-    def test_hidden_column(self):
+    def test_convert_csv_to_html_table_hides_hidden_columns(self):
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as tmp:
             writer = csv.writer(tmp)
             writer.writerow(
@@ -758,16 +758,20 @@ This is a test document.""",
         try:
             result = self.readme.convert_csv_to_html_table(f"!table[{tmp_path}]", "")
 
-            # Visible columns should be present
-            self.assertIn("<th>Experiment</th>", result)
-            self.assertIn("<th>Correct (%)</th>", result)
-            self.assertIn("<td>randrot_noise_10distinctobj_surf_agent</td>", result)
-            self.assertIn("<td>base_10simobj_surf_agent</td>", result)
-
-            # Hidden column should not appear
-            self.assertNotIn("Num Episodes", result)
-            self.assertNotIn("<td>100</td>", result)
-            self.assertNotIn("<td>140</td>", result)
+            expected = (
+                '<div class="data-table"><table>\n'
+                "<thead>\n"
+                "<tr><th>Experiment</th><th>Correct (%)</th></tr>\n"
+                "</thead>\n"
+                "<tbody>\n"
+                "<tr><td>randrot_noise_10distinctobj_surf_agent</td>"
+                '<td style="text-align:right">100.00</td></tr>\n'
+                "<tr><td>base_10simobj_surf_agent</td>"
+                '<td style="text-align:right">98.57</td></tr>\n'
+                "</tbody>\n"
+                "</table></div>"
+            )
+            self.assertEqual(result, expected)
         finally:
             Path(tmp_path).unlink()
 
