@@ -14,4 +14,5 @@ from typing import Tuple
 #  these together into a unified concept for pose, perhaps using NumPy's
 #  custom array containers.
 VectorXYZ = Tuple[float, float, float]
+EulerAnglesXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]

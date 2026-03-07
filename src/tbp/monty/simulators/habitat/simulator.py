@@ -65,10 +65,9 @@ __all__ = [
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
-    QuaternionWXYZ,
     SemanticID,
-    VectorXYZ,
 )
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.simulator import Simulator
 
 DEFAULT_SCENE = "NONE"

@@ -17,12 +17,11 @@ from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
-    QuaternionWXYZ,
     SemanticID,
-    VectorXYZ,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.simulator import Simulator
 
 

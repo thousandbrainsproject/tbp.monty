@@ -374,7 +374,10 @@ class SetAgentPose(Action):
         return sampler.sample_set_agent_pose(agent_id, rng)
 
     def __init__(
-        self, agent_id: AgentID, location: VectorXYZ, rotation_quat: QuaternionWXYZ
+        self,
+        agent_id: AgentID,
+        location: VectorXYZ,
+        rotation_quat: QuaternionWXYZ,
     ) -> None:
         super().__init__(agent_id=agent_id)
         self.location = location
@@ -439,7 +442,10 @@ class SetSensorPose(Action):
         return sampler.sample_set_sensor_pose(agent_id, rng)
 
     def __init__(
-        self, agent_id: AgentID, location: VectorXYZ, rotation_quat: QuaternionWXYZ
+        self,
+        agent_id: AgentID,
+        location: VectorXYZ,
+        rotation_quat: QuaternionWXYZ,
     ) -> None:
         super().__init__(agent_id=agent_id)
         self.location = location
