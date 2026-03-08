@@ -13,7 +13,7 @@ from __future__ import annotations
 import copy
 import logging
 from pprint import pformat
-from typing import Callable, Mapping, Sequence, TypedDict, Union
+from typing import Callable, Mapping, Sequence, TypedDict
 
 import numpy as np
 import quaternion as qt
@@ -65,9 +65,6 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-TransformInput = Union[Transform, Sequence[Transform]]
-RotationParam = Union[qt.quaternion, QuaternionWXYZ]
-
 
 class MultiObjectNames(TypedDict):
     targets_list: Sequence[str]
@@ -77,7 +74,7 @@ class MultiObjectNames(TypedDict):
 
 class BaseObjectInitParams(TypedDict):
     position: VectorXYZ
-    rotation: RotationParam
+    rotation: qt.quaternion | QuaternionWXYZ
     scale: VectorXYZ
 
 
@@ -91,7 +88,7 @@ ObjectInitSampler = Callable[[int, ExperimentMode, int, int], ObjectInitParams]
 
 
 def normalize_transforms(
-    transform: TransformInput | None,
+    transform: Transform | Sequence[Transform] | None,
 ) -> tuple[Transform, ...]:
     """Normalize transform configuration to a tuple of transforms.
 
@@ -143,7 +140,7 @@ class EnvironmentInterface:
         rng: np.random.RandomState,
         seed: int,
         experiment_mode: ExperimentMode,
-        transform: TransformInput | None = None,
+        transform: Transform | Sequence[Transform] | None = None,
     ):
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
@@ -636,7 +633,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         env: OmniglotEnvironment,
         motor_system: MotorSystem,
         rng: np.random.RandomState,
-        transform: TransformInput | None = None,
+        transform: Transform | Sequence[Transform] | None = None,
         parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         *_args,
         **_kwargs,
@@ -739,7 +736,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         env: SaccadeOnImageEnvironment,
         motor_system: MotorSystem,
         rng: np.random.RandomState,
-        transform: TransformInput | None = None,
+        transform: Transform | Sequence[Transform] | None = None,
         parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         *_args,
         **_kwargs,
@@ -842,7 +839,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         env: SaccadeOnImageFromStreamEnvironment,
         motor_system: MotorSystem,
         rng: np.random.RandomState,
-        transform: TransformInput | None = None,
+        transform: Transform | Sequence[Transform] | None = None,
         *_args,
         **_kwargs,
     ):
