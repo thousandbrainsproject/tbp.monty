@@ -19,8 +19,6 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
 
 
 class DefaultHypothesesDisplacerTest(TestCase):
-    """Tests for the DefaultHypothesesDisplacer with unified hypothesis space."""
-
     def setUp(self) -> None:
         self.mock_graph_memory = Mock()
         self.mock_graph_memory.get_input_channels_in_graph = Mock(
@@ -44,7 +42,7 @@ class DefaultHypothesesDisplacerTest(TestCase):
         )
 
     def test_multi_channel_evidence_sums(self) -> None:
-        """Test that evidence from two channels is summed into unified hypotheses.
+        """Test that evidence from two channels is summed and added to hypotheses.
 
         Sets up two channels each returning known evidence arrays, and verifies
         the total evidence is the sum of per-channel contributions.

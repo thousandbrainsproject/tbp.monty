@@ -95,16 +95,12 @@ class BurstSamplingHypothesesUpdater:
 
     To reproduce the behavior of `DefaultHypothesesUpdater` sampling a fixed number of
     hypotheses only at the beginning of the episode, you can set:
-        - `sampling_multiplier=2` (or `umbilical_num_poses` if PC undefined)
+        - `sampling_multiplier=1`
         - `deletion_trigger_slope=-np.inf` (no deletion is allowed)
         - `sampling_burst_duration=1` (sample the full burst over a single step)
         - `burst_trigger_slope=-np.inf` (never trigger additional bursts)
 
     These parameters will trigger a single-step burst at the first step of the episode.
-    Note that if the PC of the first observation is undetermined,
-    `sampling_multiplier` should be set to the value of `umbilical_num_poses` to
-    reproduce the exact results of `DefaultHypothesesUpdater`. In practice, this is
-    difficult to predict because it relies on the first sampled observation.
     """
 
     def __init__(
@@ -291,16 +287,16 @@ class BurstSamplingHypothesesUpdater:
         is computed and summed by the displacer.
 
         Args:
-            hypotheses: Unified hypotheses for the graph.
+            hypotheses: Hypothesis space for the graph id.
             features: Input features keyed by channel name.
             displacements: Given displacements keyed by channel name.
             graph_id: Identifier of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            A tuple containing the updated unified hypotheses (or None if no channels
-            available) and hypotheses update telemetry for analysis. The hypotheses
-            update telemetry is a dictionary containing:
+            A tuple containing the updated hypotheses (or None if no channels available)
+            and hypotheses update telemetry for analysis. The hypotheses update
+            telemetry is a dictionary containing:
                 - added_ids: IDs of hypotheses added during burst sampling at the
                     current timestep.
                 - ages: The ages of hypotheses as tracked by the `EvidenceSlopeTracker`.
@@ -321,14 +317,12 @@ class BurstSamplingHypothesesUpdater:
         if len(input_channels_to_use) == 0:
             return None, {}
 
-        # Calculate sample count
         hypotheses_selection, informed_per_channel = self._sample_count(
             features=features,
             graph_id=graph_id,
             tracker=tracker,
         )
 
-        # Sample hypotheses based on their type
         existing_hypotheses = self._sample_existing(
             hypotheses_selection=hypotheses_selection,
             hypotheses=hypotheses,
@@ -359,12 +353,9 @@ class BurstSamplingHypothesesUpdater:
                 mlh_prediction_error=None
             )
 
-        # Concatenate existing + informed into unified hypotheses
         hypotheses_update = Hypotheses.concatenate(
             [existing_hypotheses, informed_hypotheses]
         )
-
-        # Update tracker evidence
         tracker.update(hypotheses_update.evidence)
 
         # Telemetry update
@@ -507,7 +498,7 @@ class BurstSamplingHypothesesUpdater:
 
         Args:
             hypotheses_selection: The selection of hypotheses to maintain/remove.
-            hypotheses: Unified hypotheses for the graph_id.
+            hypotheses: Hypothesis space for the graph_id.
             tracker: Slope tracker for the evidence values of a
                 graph_id
 

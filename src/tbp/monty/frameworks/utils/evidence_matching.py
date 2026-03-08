@@ -45,7 +45,7 @@ class EvidenceSlopeTracker:
     """Tracks the slopes of evidence streams over a sliding window.
 
     This tracker supports adding, updating, pruning, and analyzing hypotheses
-    in a unified (non-per-channel) hypothesis space.
+    in a hypothesis space.
 
     Note:
         - One optimization might be to treat the array of tracked values as a ring-like
@@ -183,9 +183,7 @@ class EvidenceSlopeTracker:
         if self.evidence_buffer is not None:
             self.remove_hyp(np.arange(self.total_size()))
 
-    def select_hypotheses(
-        self, slope_threshold: float
-    ) -> HypothesesSelection:
+    def select_hypotheses(self, slope_threshold: float) -> HypothesesSelection:
         """Returns a hypotheses selection given a slope threshold.
 
         A hypothesis is maintained if:

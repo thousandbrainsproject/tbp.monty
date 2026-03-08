@@ -65,12 +65,11 @@ class HypothesesDisplacer(Protocol):
 
         Args:
             displacements: Per-channel displacement vectors, keyed by channel
-                name. For colocated SMs these should all be equal; they are
-                unified internally.
+                name. For colocated SMs these should all be equal.
             features: All-channel input features, keyed by channel name.
             evidence_update_threshold: Evidence update threshold.
             graph_id: The ID of the current graph.
-            possible_hypotheses: Unified possible hypotheses.
+            possible_hypotheses: hypotheses to be modified.
             total_hypotheses_count: Total number of hypotheses in the graph.
 
         Returns:
