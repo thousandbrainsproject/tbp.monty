@@ -12,6 +12,7 @@ import copy
 import unittest
 
 import numpy as np
+import numpy.typing as npt
 import quaternion as qt
 from scipy.spatial.transform import Rotation
 
@@ -167,7 +168,11 @@ class HabitatTransformTest(unittest.TestCase):
         np.testing.assert_array_almost_equal(actual, EXPECTED_SEMANTIC_XY)
 
     def setup_test_data(
-        self, agent_position, agent_rotation, sensor_position, sensor_rotation
+        self,
+        agent_position: npt.NDArray[np.float64],
+        agent_rotation: qt.quaternion,
+        sensor_position: npt.NDArray[np.float64],
+        sensor_rotation: qt.quaternion,
     ):
         resolution = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"].shape
         md_transform = MissingToMaxDepth(agent_id=AGENT_ID, max_depth=100)
@@ -207,12 +212,12 @@ class HabitatTransformTest(unittest.TestCase):
 
     def compute_expected_semantic_3d(
         self,
-        md_obs,
-        semantic_obs,
-        agent_position,
-        agent_rotation,
-        sensor_position,
-        sensor_rotation,
+        md_obs: Observations,
+        semantic_obs: npt.NDArray[np.int_],
+        agent_position: npt.NDArray[np.float64],
+        agent_rotation: qt.quaternion,
+        sensor_position: npt.NDArray[np.float64],
+        sensor_rotation: qt.quaternion,
     ):
         expected_x = EXPECTED_SEMANTIC_XY[:, 0]
         expected_y = EXPECTED_SEMANTIC_XY[:, 1]

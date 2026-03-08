@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Mapping
 
 import numpy as np
+import numpy.typing as npt
 import quaternion as qt
 import scipy.ndimage
 from scipy.spatial.transform import Rotation as rot  # noqa: N813
@@ -99,7 +100,8 @@ class PositioningProcedure(Protocol):
 
 
 def get_perc_on_obj_semantic(
-    semantic_obs, semantic_id: SemanticID | Literal["any"] = "any"
+    semantic_obs: npt.NDArray[np.int_],
+    semantic_id: SemanticID | Literal["any"] = "any",
 ):
     """Get the percentage of pixels in the observation that land on the target object.
 
