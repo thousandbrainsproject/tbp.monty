@@ -13,7 +13,7 @@ from __future__ import annotations
 import copy
 import logging
 from pprint import pformat
-from typing import Callable, Mapping, Sequence, TypedDict
+from typing import Mapping, Sequence
 
 import numpy as np
 import quaternion as qt
@@ -31,6 +31,13 @@ from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     SemanticID,
     SimulatedObjectEnvironment,
+)
+from tbp.monty.frameworks.environments.object_init_samplers import (
+    Default,
+    MultiObjectNames,
+    ObjectInitParams,
+    Predefined,
+    RandomRotation,
 )
 from tbp.monty.frameworks.environments.positioning_procedures import (
     GetGoodView,
@@ -51,7 +58,6 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.frameworks.sensors import SensorID
-from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 __all__ = [
     "EnvironmentInterface",
@@ -63,27 +69,6 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
-
-
-class MultiObjectNames(TypedDict):
-    targets_list: Sequence[str]
-    source_object_list: Sequence[str]
-    num_distractors: int
-
-
-class BaseObjectInitParams(TypedDict):
-    position: VectorXYZ
-    rotation: qt.quaternion | QuaternionWXYZ
-    scale: VectorXYZ
-
-
-class ObjectInitParams(BaseObjectInitParams, total=False):
-    euler_rotation: VectorXYZ
-    quat_rotation: QuaternionWXYZ
-    semantic_id: SemanticID
-
-
-ObjectInitSampler = Callable[[int, ExperimentMode, int, int], ObjectInitParams]
 
 
 def normalize_transforms(
@@ -259,7 +244,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
     def __init__(
         self,
         object_names: Sequence[str] | MultiObjectNames,
-        object_init_sampler: ObjectInitSampler,
+        object_init_sampler: Default | Predefined | RandomRotation,
         parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         *args,
         **kwargs,
@@ -310,16 +295,14 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         self.episodes = 0
         self.epochs = 0
         self.object_init_sampler = object_init_sampler
-        self.object_params = self.object_init_sampler(
+        self.object_params: ObjectInitParams = self.object_init_sampler(
             self.seed, self.experiment_mode, self.epochs, self.episodes
         )
         self.current_object = 0
         self.n_objects = len(self.object_names)
         self.primary_target = None
         self.consistent_child_objects = None
-        self.parent_to_child_mapping = (
-            parent_to_child_mapping if parent_to_child_mapping else {}
-        )
+        self.parent_to_child_mapping = parent_to_child_mapping or {}
 
     def pre_episode(self, rng: np.random.RandomState):
         super().pre_episode(rng)
