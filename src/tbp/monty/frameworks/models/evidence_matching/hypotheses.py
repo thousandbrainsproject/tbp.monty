@@ -40,5 +40,3 @@ class Hypotheses:
             poses=np.vstack([h.poses for h in hyps]),
             possible=np.hstack([h.possible for h in hyps]),
         )
-
-

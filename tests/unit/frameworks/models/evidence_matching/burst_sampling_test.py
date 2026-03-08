@@ -380,7 +380,9 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
                 sampling_multiplier=-0.1,
             )
 
-        self.assertIn("sampling_multiplier should be in the range [0, 1]", str(context.exception))
+        self.assertIn(
+            "sampling_multiplier should be in the range [0, 1]", str(context.exception)
+        )
 
     def test_update_hypotheses_creates_tracker_for_new_graph_id(self) -> None:
         """Test that a new EvidenceSlopeTracker is created for unseen graph_id.
