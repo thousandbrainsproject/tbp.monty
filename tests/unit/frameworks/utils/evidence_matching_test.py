@@ -18,8 +18,6 @@ from tbp.monty.frameworks.utils.evidence_matching import (
 
 
 class ExtractUnifiedDisplacementTest(unittest.TestCase):
-    """Unit tests for the extract_unified_displacement utility."""
-
     def test_single_channel(self) -> None:
         d = {"SM_0": np.array([1.0, 2.0, 3.0])}
         result = extract_unified_displacement(d)

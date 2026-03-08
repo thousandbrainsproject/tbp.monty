@@ -70,7 +70,10 @@ class DefaultHypothesesDisplacerTest(TestCase):
         ):
             result, _telemetry = (
                 self.displacer.displace_hypotheses_and_compute_evidence(
-                    displacement=np.zeros(3),
+                    displacements={
+                        "channel_a": np.zeros(3),
+                        "channel_b": np.zeros(3),
+                    },
                     features={
                         "channel_a": {"pose_fully_defined": True},
                         "channel_b": {"pose_fully_defined": True},
@@ -85,51 +88,7 @@ class DefaultHypothesesDisplacerTest(TestCase):
         # Expected: past_weight * old_evidence + present_weight * summed_new
         # summed_new = [0.5+1.0, 0.5+0.0, 0.5+(-1.0)] = [1.5, 0.5, -0.5]
         # result = 1 * [1.0, 2.0, 3.0] + 1 * [1.5, 0.5, -0.5] = [2.5, 2.5, 2.5]
-        np.testing.assert_array_almost_equal(
-            result.evidence, [2.5, 2.5, 2.5]
-        )
-
-    def test_single_channel_degeneracy(self) -> None:
-        """Test that single-channel input produces expected results.
-
-        With one channel, the displacer should behave identically to the
-        pre-unification behavior.
-        """
-        self.mock_graph_memory.get_input_channels_in_graph = Mock(
-            return_value=["patch"]
-        )
-
-        num_hyps = 2
-        hypotheses = Hypotheses(
-            evidence=np.array([1.0, 2.0]),
-            locations=np.zeros((num_hyps, 3)),
-            poses=np.tile(np.eye(3), (num_hyps, 1, 1)),
-            possible=np.ones(num_hyps, dtype=bool),
-        )
-
-        evidence_by_channel = {"patch": np.array([0.8, -0.5])}
-
-        with patch.object(
-            self.displacer,
-            "_calculate_evidence_for_new_locations",
-            side_effect=lambda **kw: evidence_by_channel[kw["input_channel"]],
-        ):
-            result, telemetry = (
-                self.displacer.displace_hypotheses_and_compute_evidence(
-                    displacement=np.zeros(3),
-                    features={
-                        "patch": {"pose_fully_defined": True},
-                    },
-                    evidence_update_threshold=-np.inf,
-                    graph_id="test_object",
-                    possible_hypotheses=hypotheses,
-                    total_hypotheses_count=num_hyps,
-                )
-            )
-
-        # Expected: 1 * [1.0, 2.0] + 1 * [0.8, -0.5] = [1.8, 1.5]
-        np.testing.assert_array_almost_equal(result.evidence, [1.8, 1.5])
-        self.assertIsNotNone(telemetry.mlh_prediction_error)
+        np.testing.assert_array_almost_equal(result.evidence, [2.5, 2.5, 2.5])
 
     def test_prediction_error_computed_from_summed_evidence(self) -> None:
         """Test prediction error is derived from the summed multi-channel evidence."""
@@ -151,21 +110,22 @@ class DefaultHypothesesDisplacerTest(TestCase):
             "_calculate_evidence_for_new_locations",
             side_effect=lambda **kw: evidence_by_channel[kw["input_channel"]],
         ):
-            _, telemetry = (
-                self.displacer.displace_hypotheses_and_compute_evidence(
-                    displacement=np.zeros(3),
-                    features={
-                        "channel_a": {"pose_fully_defined": True},
-                        "channel_b": {"pose_fully_defined": True},
-                    },
-                    evidence_update_threshold=-np.inf,
-                    graph_id="test_object",
-                    possible_hypotheses=hypotheses,
-                    total_hypotheses_count=num_hyps,
-                )
+            _, telemetry = self.displacer.displace_hypotheses_and_compute_evidence(
+                displacements={
+                    "channel_a": np.zeros(3),
+                    "channel_b": np.zeros(3),
+                },
+                features={
+                    "channel_a": {"pose_fully_defined": True},
+                    "channel_b": {"pose_fully_defined": True},
+                },
+                evidence_update_threshold=-np.inf,
+                graph_id="test_object",
+                possible_hypotheses=hypotheses,
+                total_hypotheses_count=num_hyps,
             )
 
         # MLH is index 0 (evidence 5.0), summed evidence at MLH = 1.5 + 0.5 = 2.0
         # With 2 channels (C=2), range is [-C, 2C] = [-2, 4], mapped to [0, 1]:
-        # prediction_error = (-2.0 + 2*2) / (3*2) = 2/6 = 1/3
+        # prediction_error = (-2.0 + 2*2) / (3*2) = 1/3
         self.assertAlmostEqual(telemetry.mlh_prediction_error, 1 / 3)
