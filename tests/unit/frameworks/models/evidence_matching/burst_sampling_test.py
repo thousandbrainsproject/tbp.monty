@@ -234,7 +234,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.assertEqual(self.updater.sampling_burst_steps, 0)
 
     @given(
-        sampling_multiplier=st.floats(min_value=0.0, max_value=3.0),
+        sampling_multiplier=st.floats(min_value=0.0, max_value=1.0),
         graph_num_nodes=st.integers(min_value=1, max_value=100),
         pose_fully_defined=st.booleans(),
     )
@@ -245,10 +245,6 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
         When sampling_burst_steps > 0, _sample_count should calculate and
         return a positive informed_count based on graph nodes and sampling_multiplier.
-
-        The sampling_multiplier is capped at num_hyps_per_node:
-            - 2 for pose_fully_defined=True,
-            - umbilical_num_poses for pose_fully_defined=False
 
         Informed_count cannot exceed graph_num_nodes * num_hyps_per_node.
         """
@@ -283,12 +279,10 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.assertEqual(informed_count % num_hyps_per_node, 0)
 
         # Cannot exceed the available max number of hypotheses.
-        # Max is nodes * hyps_per_node * multiplier, where multiplier is
-        # capped at hyps_per_node, giving nodes * hyps_per_node * hyps_per_node .
-        self.assertLessEqual(informed_count, graph_num_nodes * num_hyps_per_node**2)
+        self.assertLessEqual(informed_count, graph_num_nodes * num_hyps_per_node)
 
     @given(
-        sampling_multiplier=st.floats(min_value=0.0, max_value=2.0),
+        sampling_multiplier=st.floats(min_value=0.0, max_value=1.0),
         pose_fully_defined=st.booleans(),
     )
     def test_sample_count_returns_zero_informed_count_when_not_in_burst(
@@ -386,7 +380,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
                 sampling_multiplier=-0.1,
             )
 
-        self.assertIn("sampling_multiplier should be >= 0", str(context.exception))
+        self.assertIn("sampling_multiplier should be in the range [0, 1]", str(context.exception))
 
     def test_update_hypotheses_creates_tracker_for_new_graph_id(self) -> None:
         """Test that a new EvidenceSlopeTracker is created for unseen graph_id.
