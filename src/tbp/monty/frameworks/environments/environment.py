@@ -10,23 +10,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import NewType, Protocol, Sequence, Tuple
+from typing import TYPE_CHECKING, NewType, Protocol, Sequence
 
-from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.models.abstract_monty_classes import Observations
-from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+if TYPE_CHECKING:
+    from tbp.monty.frameworks.actions.actions import Action
+    from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+    from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+    from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 __all__ = [
     "Environment",
     "ObjectEnvironment",
     "ObjectID",
     "ObjectInfo",
-    "QuaternionWXYZ",
     "ResettableEnvironment",
     "SemanticID",
     "SimulatedEnvironment",
     "SimulatedObjectEnvironment",
-    "VectorXYZ",
 ]
 
 ObjectID = NewType("ObjectID", int)
@@ -34,9 +34,6 @@ ObjectID = NewType("ObjectID", int)
 
 SemanticID = NewType("SemanticID", int)
 """Unique identifier for an object's semantic class."""
-
-VectorXYZ = Tuple[float, float, float]
-QuaternionWXYZ = Tuple[float, float, float, float]
 
 
 @dataclass

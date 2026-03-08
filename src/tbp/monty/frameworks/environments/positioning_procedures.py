@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Mapping
 
 import numpy as np
+import numpy.typing as npt
 import quaternion as qt
 import scipy.ndimage
 from scipy.spatial.transform import Rotation as rot  # noqa: N813
@@ -99,7 +100,8 @@ class PositioningProcedure(Protocol):
 
 
 def get_perc_on_obj_semantic(
-    semantic_obs, semantic_id: SemanticID | Literal["any"] = "any"
+    semantic_obs: npt.NDArray[np.int_],
+    semantic_id: SemanticID | Literal["any"] = "any",
 ):
     """Get the percentage of pixels in the observation that land on the target object.
 
@@ -275,7 +277,7 @@ class GetGoodView(PositioningProcedure):
             idx_loc_to_look_at[0], idx_loc_to_look_at[1], :3
         ]
         camera_location = state[self._agent_id].sensors[self._sensor_id].position
-        agent_location = state[self._agent_id].position
+        agent_location = np.array(state[self._agent_id].position)
         # Get the location of the object relative to sensor.
         return location_to_look_at - (camera_location + agent_location)
 
