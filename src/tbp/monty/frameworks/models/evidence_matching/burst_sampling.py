@@ -42,7 +42,6 @@ from tbp.monty.frameworks.utils.evidence_matching import (
     HypothesesSelection,
     InvalidEvidenceThresholdConfig,
     all_usable_input_channels,
-    extract_unified_displacement,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_initial_possible_poses,
@@ -323,7 +322,7 @@ class BurstSamplingHypothesesUpdater:
             return None, {}
 
         # Calculate sample count
-        hypotheses_selection, informed_count = self._sample_count(
+        hypotheses_selection, informed_per_channel = self._sample_count(
             features=features,
             graph_id=graph_id,
             tracker=tracker,
@@ -338,26 +337,26 @@ class BurstSamplingHypothesesUpdater:
         informed_hypotheses = self._sample_informed(
             features=features,
             graph_id=graph_id,
-            informed_count=informed_count,
-            input_channels=input_channels_to_use,
+            informed_per_channel=informed_per_channel,
             tracker=tracker,
         )
-
-        displacer_telemetry = HypothesisDisplacerTelemetry(mlh_prediction_error=None)
 
         # We only displace existing hypotheses since the newly sampled hypotheses
         # should not be affected by the displacement from the last sensory input.
         if len(hypotheses_selection.maintain_ids):
-            displacement = extract_unified_displacement(displacements)
             existing_hypotheses, displacer_telemetry = (
                 self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
-                    displacement=displacement,
+                    displacements=displacements,
                     features=features,
                     evidence_update_threshold=evidence_update_threshold,
                     graph_id=graph_id,
                     possible_hypotheses=existing_hypotheses,
                     total_hypotheses_count=hypotheses.evidence.shape[0],
                 )
+            )
+        else:
+            displacer_telemetry = HypothesisDisplacerTelemetry(
+                mlh_prediction_error=None
             )
 
         # Concatenate existing + informed into unified hypotheses
@@ -420,7 +419,7 @@ class BurstSamplingHypothesesUpdater:
         features: dict,
         graph_id: str,
         tracker: EvidenceSlopeTracker,
-    ) -> tuple[HypothesesSelection, int]:
+    ) -> tuple[HypothesesSelection, dict[str, int]]:
         """Calculates the number of existing and informed hypotheses needed.
 
         Args:
@@ -430,8 +429,9 @@ class BurstSamplingHypothesesUpdater:
                 graph_id
 
         Returns:
-            A tuple containing the hypotheses selection and count of new hypotheses
-            needed. Hypotheses selection are maintained from existing ones while new
+            A tuple containing the hypotheses selection and a dictionary mapping
+            each channel to the number of informed hypotheses to sample from it.
+            Hypotheses selection are maintained from existing ones while new
             hypotheses will be initialized, informed by pose sensory information.
 
         Notes:
@@ -444,25 +444,23 @@ class BurstSamplingHypothesesUpdater:
               - `sampling_burst_steps`: The remaining number of burst steps. This value
                 is decremented in the `post_step` function.
         """
-        new_informed = 0
+        informed_per_channel: dict[str, int] = {}
         if self.sampling_burst_steps > 0:
             input_channels = all_usable_input_channels(
                 features,
                 self.graph_memory.get_input_channels_in_graph(graph_id),
             )
 
-            # Calculate new_informed per channel based on each channel's
-            # num_hyps_per_node and node count, then sum them. Each channel
-            # may have a different num_hyps_per_node (e.g. due to
-            # pose_fully_defined), so we compute per-channel totals to ensure
-            # each is divisible by its own num_hyps_per_node.
+            # Calculate informed count per channel based on each channel's
+            # num_hyps_per_node and node count. Each channel may have a
+            # different num_hyps_per_node (e.g. due to pose_fully_defined),
+            # so we compute per-channel totals to ensure each is divisible
+            # by its own num_hyps_per_node.
             for channel in input_channels:
                 channel_num_nodes = self.graph_memory.get_locations_in_graph(
                     graph_id, channel
                 ).shape[0]
-                channel_num_hyps_per_node = self._num_hyps_per_node(
-                    features[channel]
-                )
+                channel_num_hyps_per_node = self._num_hyps_per_node(features[channel])
 
                 # This makes sure that we do not request more than the
                 # available number of informed hypotheses
@@ -472,14 +470,13 @@ class BurstSamplingHypothesesUpdater:
 
                 # Calculate the number of informed hypotheses for this channel
                 channel_informed = round(
-                    channel_num_nodes * channel_multiplier
+                    channel_num_nodes * channel_num_hyps_per_node * channel_multiplier
                 )
 
                 # Ensure divisible by this channel's num_hyps_per_node
-                channel_informed -= (
-                    channel_informed % channel_num_hyps_per_node
-                )
-                new_informed += channel_informed
+                channel_informed -= channel_informed % channel_num_hyps_per_node
+
+                informed_per_channel[channel] = channel_informed
 
         # Returns a selection of hypotheses to maintain/delete
         hypotheses_selection = (
@@ -492,7 +489,7 @@ class BurstSamplingHypothesesUpdater:
 
         return (
             hypotheses_selection,
-            new_informed,
+            informed_per_channel,
         )
 
     def _sample_existing(
@@ -544,20 +541,19 @@ class BurstSamplingHypothesesUpdater:
     def _sample_informed(
         self,
         features: dict,
-        informed_count: int,
         graph_id: str,
-        input_channels: list[str],
+        informed_per_channel: dict[str, int],
         tracker: EvidenceSlopeTracker,
     ) -> Hypotheses:
         """Samples the specified number of fully informed hypotheses.
 
-        Hypotheses are sampled proportionally from each channel's graph based on
-        node count. For each channel, the method identifies the top-k nodes with
-        the highest evidence scores and samples hypotheses only from those nodes.
+        For each channel, the method identifies the top-k nodes with the highest
+        evidence scores and samples hypotheses only from those nodes. The number
+        of hypotheses per channel is pre-computed by ``_sample_count``.
 
         The sampling includes:
           - Selecting the top-k node indices based on evidence scores, where k is
-             determined by the `informed_count` and the number of hypotheses per node.
+             determined by the channel's informed count and its num_hyps_per_node.
           - Fetching the 3D locations of only the selected top-k nodes.
           - Generating rotations for each hypothesis using one of two strategies:
             (a) If `initial_possible_poses` is set, rotations are uniformly sampled or
@@ -571,9 +567,10 @@ class BurstSamplingHypothesesUpdater:
 
         Args:
             features: Input features keyed by channel name.
-            informed_count: Number of fully informed hypotheses to sample.
             graph_id: Identifier of the graph being queried.
-            input_channels: Usable input channels for this graph.
+            informed_per_channel: Dictionary mapping each channel to the number
+                of informed hypotheses to sample from it, as computed by
+                ``_sample_count``.
             tracker: Slope tracker for the evidence values of a
                 graph_id
 
@@ -582,7 +579,7 @@ class BurstSamplingHypothesesUpdater:
 
         """
         # Return empty arrays for no hypotheses to sample
-        if informed_count == 0:
+        if sum(informed_per_channel.values()) == 0:
             return Hypotheses(
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
@@ -590,36 +587,20 @@ class BurstSamplingHypothesesUpdater:
                 possible=np.zeros(0, dtype=np.bool_),
             )
 
-        first_ch = next(iter(features))
-        num_hyps_per_node = self._num_hyps_per_node(features[first_ch])
-
-        # Proportional allocation across channels
-        ch_node_counts = {
-            ch: self.graph_memory.get_locations_in_graph(graph_id, ch).shape[0]
-            for ch in input_channels
-        }
-        total_nodes = sum(ch_node_counts.values())
-
-        all_locations = []
-        all_rotations = []
-        all_evidence = []
-        for ch in input_channels:
-            ch_count = round(informed_count * ch_node_counts[ch] / total_nodes)
-            ch_count -= ch_count % num_hyps_per_node
-            if ch_count == 0:
+        channel_hypotheses_list = []
+        for channel, channel_count in informed_per_channel.items():
+            if channel_count == 0:
                 continue
-            ch_locs, ch_rots, ch_ev = self._sample_from_channel(
-                channel_features=features[ch],
-                ch_count=ch_count,
-                graph_id=graph_id,
-                input_channel=ch,
-                num_hyps_per_node=num_hyps_per_node,
+            channel_hypotheses_list.append(
+                self._sample_from_channel(
+                    channel_features=features[channel],
+                    channel_count=channel_count,
+                    graph_id=graph_id,
+                    input_channel=channel,
+                )
             )
-            all_locations.append(ch_locs)
-            all_rotations.append(ch_rots)
-            all_evidence.append(ch_ev)
 
-        if not all_locations:
+        if not channel_hypotheses_list:
             return Hypotheses(
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
@@ -627,43 +608,32 @@ class BurstSamplingHypothesesUpdater:
                 possible=np.zeros(0, dtype=np.bool_),
             )
 
-        selected_locations = np.vstack(all_locations)
-        selected_rotations = np.vstack(all_rotations)
-        selected_feature_evidence = np.hstack(all_evidence)
-
-        # Newly sampled hypotheses cannot be marked as possible
-        possible_hyp = np.zeros_like(selected_feature_evidence, dtype=np.bool_)
+        hypotheses = Hypotheses.concatenate(channel_hypotheses_list)
 
         # Add hypotheses to slope trackers
-        tracker.add_hyp(selected_feature_evidence.shape[0])
+        tracker.add_hyp(hypotheses.evidence.shape[0])
 
-        return Hypotheses(
-            locations=selected_locations,
-            poses=selected_rotations,
-            evidence=selected_feature_evidence,
-            possible=possible_hyp,
-        )
+        return hypotheses
 
     def _sample_from_channel(
         self,
         channel_features: dict,
-        ch_count: int,
+        channel_count: int,
         graph_id: str,
         input_channel: str,
-        num_hyps_per_node: int,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Hypotheses:
         """Sample informed hypotheses from a single channel's graph.
 
         Args:
             channel_features: Features for this input channel.
-            ch_count: Number of hypotheses to sample from this channel.
+            channel_count: Number of hypotheses to sample from this channel.
             graph_id: Identifier of the graph being queried.
             input_channel: The channel to sample from.
-            num_hyps_per_node: Number of hypotheses per graph node.
 
         Returns:
-            Tuple of (locations, rotations, evidence) arrays.
+            Hypotheses sampled from this channel.
         """
+        num_hyps_per_node = self._num_hyps_per_node(channel_features)
         # === Calculate selected evidence by top-k indices === #
         if self.use_features_for_matching[input_channel]:
             node_feature_evidence = self.feature_evidence_calculator.calculate(
@@ -683,7 +653,7 @@ class BurstSamplingHypothesesUpdater:
             # the argsort array. We get the needed number of informed nodes not
             # the number of needed hypotheses.
             top_indices = np.argsort(node_feature_evidence)[
-                -int(ch_count // num_hyps_per_node) :
+                -int(channel_count // num_hyps_per_node) :
             ]
             node_feature_evidence_filtered = (
                 node_feature_evidence[top_indices] * self.feature_evidence_increment
@@ -693,7 +663,7 @@ class BurstSamplingHypothesesUpdater:
                 graph_id, input_channel
             ).shape[0]
             top_indices = np.arange(num_nodes)[
-                : int(ch_count // num_hyps_per_node)
+                : int(channel_count // num_hyps_per_node)
             ]
             node_feature_evidence_filtered = np.zeros(len(top_indices))
 
@@ -740,7 +710,15 @@ class BurstSamplingHypothesesUpdater:
                 ]
             )
 
-        return selected_locations, selected_rotations, selected_feature_evidence
+        # Newly sampled hypotheses cannot be marked as possible
+        possible = np.zeros_like(selected_feature_evidence, dtype=np.bool_)
+
+        return Hypotheses(
+            locations=selected_locations,
+            poses=selected_rotations,
+            evidence=selected_feature_evidence,
+            possible=possible,
+        )
 
     def _max_global_slope(self) -> float:
         """Compute the maximum slope over all objects.

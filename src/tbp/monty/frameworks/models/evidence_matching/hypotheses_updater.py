@@ -35,7 +35,6 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
 )
 from tbp.monty.frameworks.utils.evidence_matching import (
     all_usable_input_channels,
-    extract_unified_displacement,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_initial_possible_poses,
@@ -260,6 +259,21 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 self._initialized_channels[graph_id].add(channel)
             return Hypotheses.concatenate(all_hyps), {}
 
+        # UPDATE (subsequent steps)
+        # We only displace existing hypotheses since the newly sampled
+        # hypotheses should not be affected by the displacement from the last
+        # sensory input.
+        displaced_hypotheses, telemetry_data = (
+            self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
+                displacements=displacements,
+                features=features,
+                evidence_update_threshold=evidence_update_threshold,
+                graph_id=graph_id,
+                possible_hypotheses=hypotheses,
+                total_hypotheses_count=hypotheses.evidence.shape[0],
+            )
+        )
+
         # Initialize hypotheses for newly available channels. If a channel
         # starts reporting after other channels have already accumulated
         # evidence, add the current mean evidence to give the new hypotheses
@@ -268,22 +282,6 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         # TODO H: Test mean vs. median here.
         hypotheses = self._initialize_new_channels(
             hypotheses, features, input_channels_to_use, graph_id
-        )
-
-        # UPDATE (subsequent steps)
-        # We only displace existing hypotheses since the newly sampled
-        # hypotheses should not be affected by the displacement from the last
-        # sensory input.
-        displacement = extract_unified_displacement(displacements)
-        displaced_hypotheses, telemetry_data = (
-            self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
-                displacement=displacement,
-                features=features,
-                evidence_update_threshold=evidence_update_threshold,
-                graph_id=graph_id,
-                possible_hypotheses=hypotheses,
-                total_hypotheses_count=hypotheses.evidence.shape[0],
-            )
         )
 
         telemetry = {"mlh_prediction_error": telemetry_data.mlh_prediction_error}
