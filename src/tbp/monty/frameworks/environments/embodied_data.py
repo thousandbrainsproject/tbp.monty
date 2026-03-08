@@ -29,10 +29,8 @@ from tbp.monty.frameworks.environment_utils.transforms import (
 )
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
-    QuaternionWXYZ,
     SemanticID,
     SimulatedObjectEnvironment,
-    VectorXYZ,
 )
 from tbp.monty.frameworks.environments.positioning_procedures import (
     GetGoodView,
@@ -53,6 +51,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 __all__ = [
     "EnvironmentInterface",
