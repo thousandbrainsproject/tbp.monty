@@ -418,7 +418,6 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           set -e
-          export COVERAGE_FILE="$RUNNER_TEMP/.coverage.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
           mkdir -p test_results/pytest
           xvfb-run pytest --cov --cov-context=test --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
       - name: Store test results
