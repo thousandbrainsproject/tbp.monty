@@ -1,7 +1,9 @@
 defaults:
   - constants: defaults
   # Experiment name
-  - experiment: MISSING
+  - monty: defaults
+  - environment: defaults
+  - experiment: defaults
   - _self_
 
 # Which episodes to run (zero-based). Examples: "all" | "3" | "0,3,5:8" | "4:" | ":8".
