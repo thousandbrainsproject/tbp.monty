@@ -1,6 +1,5 @@
 defaults:
   - constants: defaults
-  # Experiment name
   - monty: defaults
   - environment: defaults
   - experiment: defaults
