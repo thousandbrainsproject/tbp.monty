@@ -1,0 +1,52 @@
+# @package experiment.config
+
+env_interface_config:
+  env_init_args:
+    objects:
+    - name: coneSolid
+      position:
+      - 0.0
+      - 1.5
+      - -0.1
+    scene_id: null
+    seed: 42
+    data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/ycb}
+    agents:
+      agent_args:
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_ids:
+        - patch
+        - view_finder
+        height: 0.0
+        position:
+        - 0.0
+        - 1.5
+        - 0.2
+        resolutions:
+        - - 64
+          - 64
+        - - 64
+          - 64
+        positions:
+        - - 0.0
+          - 0.0
+          - 0.0
+        - - 0.0
+          - 0.0
+          - 0.0
+        rotations:
+        - - 1.0
+          - 0.0
+          - 0.0
+          - 0.0
+        - - 1.0
+          - 0.0
+          - 0.0
+          - 0.0
+        semantics:
+        - false
+        - false
+        zooms:
+        - 10.0
+        - 1.0
+      agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
