@@ -1,5 +1,8 @@
 # @package experiment.config
 
+defaults:
+  - clear
+
 monty_config:
   motor_system_config:
     motor_system_args:

@@ -1,9 +1,15 @@
 defaults:
+  - _self_
   - constants: defaults
   - monty: defaults
   - environment: defaults
   - experiment: defaults
-  - _self_
+
+# Global defaults for the experiment config itself
+experiment:
+  config:
+    do_eval: false
+    do_train: false
 
 # Which episodes to run (zero-based). Examples: "all" | "3" | "0,3,5:8" | "4:" | ":8".
 episodes: all
