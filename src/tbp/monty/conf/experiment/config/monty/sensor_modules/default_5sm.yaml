@@ -1,9 +1,9 @@
 defaults:
-  - /benchmarks/default_all_noisy_sensor_module@sensor_module_0
-  - /benchmarks/default_all_noisy_sensor_module@sensor_module_1
-  - /benchmarks/default_all_noisy_sensor_module@sensor_module_2
-  - /benchmarks/default_all_noisy_sensor_module@sensor_module_3
-  - /benchmarks/default_all_noisy_sensor_module@sensor_module_4
+  - /constants/default_all_noisy_sensor_module@sensor_module_0
+  - /constants/default_all_noisy_sensor_module@sensor_module_1
+  - /constants/default_all_noisy_sensor_module@sensor_module_2
+  - /constants/default_all_noisy_sensor_module@sensor_module_3
+  - /constants/default_all_noisy_sensor_module@sensor_module_4
 
 sensor_module_0:
   sensor_module_args:

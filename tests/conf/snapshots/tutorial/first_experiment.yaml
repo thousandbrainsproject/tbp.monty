@@ -1,4 +1,4 @@
-benchmarks:
+constants:
   default_all_noise_params:
     features:
       pose_vectors: 2

@@ -1,4 +1,4 @@
-benchmarks:
+constants:
   default_all_noise_params:
     features:
       pose_vectors: 2
@@ -79,7 +79,7 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: 10
-    model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
@@ -156,12 +156,12 @@ experiment:
           sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
           sensor_module_args:
             sensor_module_id: patch
-            features: ${benchmarks.default_sensor_features}
+            features: ${constants.default_sensor_features}
             save_raw_obs: false
             delta_thresholds:
               on_object: 0
               distance: 0.01
-            noise_params: ${benchmarks.default_all_noise_params}
+            noise_params: ${constants.default_all_noise_params}
         sensor_module_1:
           sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
           sensor_module_args:

@@ -1,4 +1,4 @@
-benchmarks:
+constants:
   default_all_noise_params:
     features:
       pose_vectors: 2
@@ -77,7 +77,7 @@ experiment:
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
-    n_train_epochs: ${benchmarks.rotations_all_count}
+    n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3
     model_name_or_path: ''
     min_lms_match: 1
@@ -244,7 +244,7 @@ experiment:
       - banana
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-        rotations: ${benchmarks.rotations_all}
+        rotations: ${constants.rotations_all}
     train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 episodes: all

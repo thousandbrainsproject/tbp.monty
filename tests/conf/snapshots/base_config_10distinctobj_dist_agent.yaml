@@ -1,4 +1,4 @@
-benchmarks:
+constants:
   default_all_noise_params:
     features:
       pose_vectors: 2
@@ -78,8 +78,8 @@ experiment:
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: 3
-    n_eval_epochs: ${benchmarks.rotations_all_count}
-    model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+    n_eval_epochs: ${constants.rotations_all_count}
+    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
@@ -118,7 +118,7 @@ experiment:
         motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
       monty_args:
         num_exploratory_steps: 1000
-        min_eval_steps: ${benchmarks.min_eval_steps}
+        min_eval_steps: ${constants.min_eval_steps}
         min_train_steps: 3
         max_total_steps: 2500
       monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
@@ -274,7 +274,7 @@ experiment:
       - banana
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-        rotations: ${benchmarks.rotations_all}
+        rotations: ${constants.rotations_all}
     eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 episodes: all
