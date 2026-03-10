@@ -1,0 +1,9 @@
+# @package experiment.config.monty_config.motor_system
+
+defaults:
+  - action_sampler: constant
+
+policy:
+  _target_: tbp.monty.frameworks.models.motor_policies.InformedPolicy
+  use_goal_state_driven_actions: ??
+  agent_id: ${monty.agent_id:agent_id_0}
