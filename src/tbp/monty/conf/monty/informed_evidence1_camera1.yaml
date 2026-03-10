@@ -1,4 +1,4 @@
-# @package experiment.config
+# @package experiment.config.monty_config
 
 defaults:
   - motor_system: defaults
@@ -6,10 +6,9 @@ defaults:
   - sensor_module: camera
   - connectivity: defaults
 
-monty_config:
-  monty_args:
-    num_exploratory_steps: 1000
-    min_eval_steps: ${constants.min_eval_steps}
-    min_train_steps: 3
-    max_total_steps: 2500
-  monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
+monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
+monty_args:
+  num_exploratory_steps: 1000
+  min_eval_steps: ${constants.min_eval_steps}
+  min_train_steps: 3
+  max_total_steps: 2500

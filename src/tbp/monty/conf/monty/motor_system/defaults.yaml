@@ -1,7 +1,6 @@
-# @package experiment.config.monty_config
+# @package experiment.config.monty_config.motor_system
 
 defaults:
 - policy: informed
 
-motor_system:
-  _target_: tbp.monty.frameworks.models.motor_system.MotorSystem
+_target_: tbp.monty.frameworks.models.motor_system.MotorSystem
