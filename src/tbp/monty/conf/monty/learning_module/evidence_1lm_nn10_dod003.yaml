@@ -1,7 +1,7 @@
 # @package experiment.config.monty_config.learning_module_configs
 
 defaults:
-  - hypotheses_updater/burst_sampling_5nn@learning_module_0.learning_module_args
+  - hypotheses_updater/burst_sampling_10nn@learning_module_0.learning_module_args
 
 learning_module_0:
   learning_module_args:

@@ -1,14 +1,15 @@
 # @package _global_
 
 defaults:
-  - override /monty: ??
-  # motor system is default; policy is informed
-  # learning module is?
-  # sensor module is?
+  - /monty: ??
+  # motor system: informed
+  # learning module: evidence_1lm_nn10_dod003
+  # sensor module: camera_noise
   # connectivity is default
-  - override /env_interface: eval_random_rotation
-  - override /logging: basic
-  - override /environment: habitat_dist_agent
+  - /env_interface: eval_random_rotation
+  - /logging: basic
+  - /environment: habitat_dist_agent
+  - config: ??
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

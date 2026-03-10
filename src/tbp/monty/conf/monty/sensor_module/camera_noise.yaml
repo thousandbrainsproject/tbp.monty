@@ -9,22 +9,19 @@ sensor_module_configs:
       - pose_vectors
       - pose_fully_defined
       - on_object
-      - object_coverage
       - hsv
       - principal_curvatures_log
       delta_thresholds:
         on_object: 0
-        n_steps: 20
-        hsv:
-        - 0.1
-        - 0.1
-        - 0.1
-        pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
-        principal_curvatures_log:
-        - 2
-        - 2
         distance: 0.01
       save_raw_obs: false
+      noise_params:
+        features:
+          pose_vectors: 2 # rotate by random degrees along xyz
+          hsv: 0.1 # add gaussian noise with 0.1 std
+          principal_curvatures_log: 0.1
+          pose_fully_defined: 0.01 # flip bool in 1% of cases
+        location: 0.002 # add gaussian noise with 0.002 std
   sensor_module_1:
     sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
     sensor_module_args:
