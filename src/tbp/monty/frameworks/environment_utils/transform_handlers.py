@@ -95,7 +95,13 @@ class MissingToMaxDepth(Transform):
     https://github.com/facebookresearch/habitat-sim/issues/1157 for discussion.
     """
 
-    def __init__(self, next_transform: Transform, agent_id: AgentID, max_depth, threshold=0):
+    def __init__(
+        self,
+        next_transform: Transform,
+        agent_id: AgentID,
+        max_depth: float,
+        threshold: float = 0,
+    ) -> None:
         """Initialize the transform.
 
         Args:
@@ -127,15 +133,17 @@ class MissingToMaxDepth(Transform):
         """
         print("MISSING TO MAX DEPTH TRANSFORM CALLED")
         print_dict_structure(observations)
-        m = np.where(observations["depth"] <= self.threshold)
-        observations["depth"][m] = self.max_depth
+        m = np.where(observations["depth"] <= self._threshold)
+        observations["depth"][m] = self._max_depth
         return observations
 
 
 class AddNoiseToRawDepthImage(Transform):
     """Add gaussian noise to raw sensory input."""
 
-    def __init__(self, next_transform: Transform, agent_id: AgentID, sigma):
+    def __init__(
+        self, next_transform: Transform, agent_id: AgentID, sigma: float
+    ) -> None:
         """Initialize the transform.
 
         Args:
@@ -173,7 +181,7 @@ class AddNoiseToRawDepthImage(Transform):
         if "depth" in observations:
             noise = rng.normal(
                 0,
-                self.sigma,
+                self._sigma,
                 observations["depth"].shape,
             )
             observations["depth"] += noise
@@ -192,7 +200,13 @@ class GaussianSmoothing(Transform):
     in a real-world depth camera.
     """
 
-    def __init__(self, next_transform: Transform, agent_id: AgentID, sigma=2, kernel_width=3):
+    def __init__(
+        self,
+        next_transform: Transform,
+        agent_id: AgentID,
+        sigma: float = 2,
+        kernel_width: int = 3,
+    ) -> None:
         """Initialize the transform.
 
         Args:
@@ -207,7 +221,7 @@ class GaussianSmoothing(Transform):
         self._sigma = sigma
         self._kernel_width = kernel_width
         self._pad_size = kernel_width // 2
-        self._kernel = self.create_kernel()
+        self._kernel = self._create_kernel()
 
     def __call__(
         self, ctx: TransformContext, observations: SensorObservation
@@ -230,9 +244,9 @@ class GaussianSmoothing(Transform):
         # loop over sensor modules
         if "depth" in observations:
             depth_img = observations["depth"].copy()
-            padded_img = self.get_padded_img(depth_img, pad_type="edge")
+            padded_img = self._get_padded_img(depth_img, pad_type="edge")
             filtered_img = scipy.signal.convolve(
-                padded_img, self.kernel, mode="valid"
+                padded_img, self._kernel, mode="valid"
             )
             observations["depth"] = filtered_img
         else:
@@ -241,34 +255,34 @@ class GaussianSmoothing(Transform):
             )
         return observations
 
-    def create_kernel(self, pad_size, kernel_width, sigma):
+    def _create_kernel(self) -> np.ndarray:
         """Create a normalized gaussian kernel.
 
         Returns:
             normalized gaussian kernel. Array of size (kernel_width, kernel_width).
         """
-        x = np.linspace(-pad_size, pad_size, kernel_width)
+        x = np.linspace(-self._pad_size, self._pad_size, self._kernel_width)
         kernel_1d = (
             1.0
-            / (np.sqrt(2 * np.pi) * sigma)
-            * np.exp(-np.square(x) / (2 * sigma**2))
+            / (np.sqrt(2 * np.pi) * self._sigma)
+            * np.exp(-np.square(x) / (2 * self._sigma**2))
         )
         kernel_2d = np.outer(kernel_1d, kernel_1d)
         return kernel_2d / np.sum(kernel_2d)
 
-    def get_padded_img(self, img, pad_type="edge"):
+    def _get_padded_img(self, img: np.ndarray, pad_type: str = "edge") -> np.ndarray:
         if pad_type == "edge":
-            padded_img = np.pad(img.astype(float), pad_width=self.pad_size, mode="edge")
+            padded_img = np.pad(img.astype(float), pad_width=self._pad_size, mode="edge")
         elif pad_type == "empty":
             padded_img = np.pad(
                 img.astype(float),
-                pad_width=self.pad_size,
+                pad_width=self._pad_size,
                 mode="constant",
                 constant_values=np.nan,
             )
         return padded_img
 
-    def conv2d(self, img, kernel_renorm=False):
+    def _conv2d(self, img: np.ndarray, kernel_renorm: bool = False) -> np.ndarray:
         """Apply a 2D convolution to the image.
 
         Args:
@@ -281,19 +295,19 @@ class GaussianSmoothing(Transform):
         """
         [n_rows, n_cols] = img.shape
         filtered_img = img[
-            self.pad_size : (n_rows - self.pad_size),
-            self.pad_size : (n_cols - self.pad_size),
+            self._pad_size : (n_rows - self._pad_size),
+            self._pad_size : (n_cols - self._pad_size),
         ].copy()
         # TODO: Investigate vectorizing this
-        for i in range(n_rows - self.kernel_width + 1):
-            for j in range(n_cols - self.kernel_width + 1):
+        for i in range(n_rows - self._kernel_width + 1):
+            for j in range(n_cols - self._kernel_width + 1):
                 # Extracts image subset to be averaged out by the smoothing kernel.
                 # Identify indices of non-NaN values, and sum the corresponding kernel
                 # weights to get the normalization factor.
-                img_subset = img[i : i + self.kernel_width, j : j + self.kernel_width]
+                img_subset = img[i : i + self._kernel_width, j : j + self._kernel_width]
                 mask = ~np.isnan(img_subset)
-                norm_factor = np.sum(mask * self.kernel) if kernel_renorm else 1.0
-                normalized_kernel = self.kernel / norm_factor
+                norm_factor = np.sum(mask * self._kernel) if kernel_renorm else 1.0
+                normalized_kernel = self._kernel / norm_factor
                 filtered_img[i, j] = np.nansum(normalized_kernel * img_subset)
         return filtered_img
 
@@ -342,20 +356,20 @@ class DepthTo3DLocations(Transform):
         self,
         next_transform: Transform,
         agent_id: AgentID,
-        sensor_id,
-        resolutions,
-        zooms=1.0,
-        hfov=90.0,
-        clip_value=0.05,
+        sensor_id: SensorID,
+        resolutions: tuple[int, int],
+        zooms: float = 1.0,
+        hfov: float = 90.0,
+        clip_value: float = 0.05,
         is_depth_clip_sensors: bool = False,
-        world_coord=True,
-        get_all_points=False,
-        use_semantic_sensor=False,
-    ):
-        self.next_transform = next_transform
-        self.inv_k = 0
-        self.h = 0
-        self.w = 0
+        world_coord: bool = True,
+        get_all_points: bool = False,
+        use_semantic_sensor: bool = False,
+    ) -> None:
+        self._next_transform = next_transform
+        self._inv_k = 0
+        self._h = 0
+        self._w = 0
         print("IN DepthTo3DLocations INIT")
         # Pinhole camera, focal length fx = fy
         hfov = float(hfov * np.pi / 180.0)
@@ -363,10 +377,10 @@ class DepthTo3DLocations(Transform):
         fx = np.tan(hfov / 2.0) / zooms
         fy = fx
         # Adjust fy for aspect ratio
-        self.h = resolutions[0]
-        self.w = resolutions[1]
+        self._h = resolutions[0]
+        self._w = resolutions[1]
 
-        fy = fy * self.h / self.w
+        fy = fy * self._h / self._w
         # Intrinsic matrix, K
         # Assuming skew is 0 for pinhole camera and center at (0,0)
         k = np.array(
@@ -378,20 +392,20 @@ class DepthTo3DLocations(Transform):
             ]
         )
         # Inverse K
-        self.inv_k = (np.linalg.inv(k))
-        self.agent_id = agent_id
-        self.sensor_id = sensor_id
-        self.world_coord = world_coord
-        self.get_all_points = get_all_points
-        self.use_semantic_sensor = use_semantic_sensor
-        self.clip_value = clip_value
-        self.is_depth_clip_sensors = is_depth_clip_sensors
+        self._inv_k = np.linalg.inv(k)
+        self._agent_id = agent_id
+        self._sensor_id = sensor_id
+        self._world_coord = world_coord
+        self._get_all_points = get_all_points
+        self._use_semantic_sensor = use_semantic_sensor
+        self._clip_value = clip_value
+        self._is_depth_clip_sensors = is_depth_clip_sensors
 
     def __call__(
         self, ctx: TransformContext, observations: SensorObservation
     ) -> SensorObservation:
         observations = self.call(state=ctx.state, observations=observations)
-        return self.next_transform(ctx, observations)
+        return self._next_transform(ctx, observations)
 
     def call(
         self, observations: SensorObservation, state: ProprioceptiveState | None = None
@@ -467,11 +481,11 @@ class DepthTo3DLocations(Transform):
                     when `self.get_all_points` is `True`.
         """
         print("IN DEPTH TO 3D CALL")
-        state = ProprioceptiveState({self.agent_id: state})
+        state = ProprioceptiveState({self._agent_id: state})
         # for i, sensor_id in enumerate(self.sensor_ids):
         # print(sensor_id)
-        # print(observations[self.agent_id][sensor_id].keys())
-        # agent_obs = observations[self.agent_id][sensor_id]
+        # print(observations[self._agent_id][sensor_id].keys())
+        # agent_obs = observations[self._agent_id][sensor_id]
         depth_patch = observations["depth"]
 
         # We need a semantic map that masks off-object pixels. We can use the
@@ -488,11 +502,11 @@ class DepthTo3DLocations(Transform):
 
         # Apply depth clipping to the surface agent, and initialize the
         # surface-separation threshold for later use.
-        if self.is_depth_clip_sensors:
+        if self._is_depth_clip_sensors:
             # Surface agent: clip depth and semantic data (in place), and set
             # the default surface-separation threshold to be very short.
             self.clip(depth_patch, semantic_patch)
-            default_on_surface_th = self.clip_value
+            default_on_surface_th = self._clip_value
         else:
             # Distance agent: do not clip depth or semantic data, and set the
             # default surface-separation threshold to be very far away.
@@ -504,11 +518,11 @@ class DepthTo3DLocations(Transform):
         # surface agent and are using the semantic sensor, we may use the
         # (clipped) ground-truth semantic mask as a shortcut (though it doesn't
         # use surface estimation--just on-objectness).
-        if self.is_depth_clip_sensors and self.use_semantic_sensor:
-            # NOTE: this particular combination of self.depth_clip_sensors and
-            # self.use_semantic_sensor is not commonly used at present, if ever.
-            # self.depth_clip_sensors implies a surface agent, and
-            # self.use_semantic_sensor implies multi-object experiments.
+        if self._is_depth_clip_sensors and self._use_semantic_sensor:
+            # NOTE: this particular combination of self._is_depth_clip_sensors and
+            # self._use_semantic_sensor is not commonly used at present, if ever.
+            # self._is_depth_clip_sensors implies a surface agent, and
+            # self._use_semantic_sensor implies multi-object experiments.
             surface_patch = observations["semantic"]
         else:
             surface_patch = self.get_surface_from_depth(
@@ -519,22 +533,22 @@ class DepthTo3DLocations(Transform):
 
         # Approximate true world coordinates
         x, y = np.meshgrid(
-            np.linspace(-1, 1, self.w), np.linspace(1, -1, self.h)
+            np.linspace(-1, 1, self._w), np.linspace(1, -1, self._h)
         )
-        x = x.reshape(1, self.h, self.w)
-        y = y.reshape(1, self.h, self.w)
+        x = x.reshape(1, self._h, self._w)
+        y = y.reshape(1, self._h, self._w)
 
         # Unproject 2D camera coordinates into 3D coordinates relative to the agent
-        depth = depth_patch.reshape(1, self.h, self.w)
+        depth = depth_patch.reshape(1, self._h, self._w)
         xyz = np.vstack((x * depth, y * depth, -depth, np.ones(depth.shape)))
         xyz = xyz.reshape(4, -1)
-        xyz = np.matmul(self.inv_k, xyz)
+        xyz = np.matmul(self._inv_k, xyz)
         sensor_frame_data = xyz.T.copy()
 
-        if self.world_coord and state is not None:
+        if self._world_coord and state is not None:
             # Get agent and sensor states from state dictionary
-            agent_state = state[self.agent_id]
-            depth_state = agent_state.sensors[SensorID(self.sensor_id)]
+            agent_state = state[self._agent_id]
+            depth_state = agent_state.sensors[SensorID(self._sensor_id)]
             agent_rotation = agent_state.rotation
             agent_rotation_matrix = qt.as_rotation_matrix(agent_rotation)
             agent_position = agent_state.position
@@ -562,7 +576,7 @@ class DepthTo3DLocations(Transform):
 
         # Extract 3D coordinates of detected objects (semantic_id != 0)
         semantic = surface_patch.reshape(1, -1)
-        if self.get_all_points:
+        if self._get_all_points:
             semantic_3d = xyz.transpose(1, 0)
             semantic_3d[:, 3] = semantic[0]
             sensor_frame_data[:, 3] = semantic[0]
@@ -598,9 +612,9 @@ class DepthTo3DLocations(Transform):
             depth_patch: depth observations
             semantic_patch: binary mask indicating on-object locations
         """
-        semantic_patch[depth_patch >= self.clip_value] = 0
-        depth_patch[depth_patch > self.clip_value] = self.clip_value
-        depth_patch[depth_patch == 0] = self.clip_value
+        semantic_patch[depth_patch >= self._clip_value] = 0
+        depth_patch[depth_patch > self._clip_value] = self._clip_value
+        depth_patch[depth_patch == 0] = self._clip_value
 
     def get_on_surface_th(
         self,

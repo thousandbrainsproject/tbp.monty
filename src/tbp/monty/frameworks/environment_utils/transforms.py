@@ -77,7 +77,7 @@ class MissingToMaxDepth(Transform):
         self.threshold = threshold
 
     def __call__(
-        self, observations: Observations, _ctx: TransformContext
+        self, observations: Observations, ctx: TransformContext
     ) -> Observations:
         return self.call(observations)
 
@@ -131,7 +131,6 @@ class AddNoiseToRawDepthImage(Transform):
         Raises:
             NoDepthSensorPresent: If no depth sensor is present.
         """
-        # loop over sensor modules
         for sm in observations[self.agent_id]:
             if "depth" in observations[self.agent_id][sm]:
                 noise = rng.normal(
@@ -171,7 +170,7 @@ class GaussianSmoothing(Transform):
         self.kernel = self.create_kernel()
 
     def __call__(
-        self, observations: Observations, _ctx: TransformContext
+        self, observations: Observations, ctx: TransformContext
     ) -> Observations:
         return self.call(observations)
 
@@ -437,7 +436,7 @@ class DepthTo3DLocations(Transform):
         """
         for i, sensor_id in enumerate(self.sensor_ids):
             print(sensor_id)
-            print(observations[self.agent_id][sensor_id].keys())
+            print(observations[self.agent_id][sensor_id])
             agent_obs = observations[self.agent_id][sensor_id]
             depth_patch = agent_obs["depth"]
 
