@@ -3,6 +3,8 @@ defaults:
   - constants: defaults
   - monty: defaults
   - environment: defaults
+  - logging: defaults
+  - env_interface: train
   - experiment: defaults
 
 # Global defaults for the experiment config itself

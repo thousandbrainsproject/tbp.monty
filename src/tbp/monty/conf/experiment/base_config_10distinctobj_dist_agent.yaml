@@ -1,9 +1,9 @@
 # @package _global_
 
 defaults:
-  - env_interface: eval
-  - logging: basic
   - override /monty: informed_evidence1_camera1
+  - override /env_interface: eval
+  - override /logging: basic
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
