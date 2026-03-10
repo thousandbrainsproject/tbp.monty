@@ -6,6 +6,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+import argparse
 from pathlib import Path
 
 import hydra
@@ -105,6 +106,10 @@ def compare(
 if __name__ == "__main__":
     setup_env()
     register_resolvers()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("experiment", type=str)
+    args = parser.parse_args()
+
     compare_snapshots(
-        experiment="base_config_10distinctobj_dist_agent",
+        experiment=args.experiment,
     )
