@@ -1,0 +1,78 @@
+# Copyright 2026 Thousand Brains Project
+#
+# Copyright may exist in Contributors' modifications
+# and/or contributions to the work.
+#
+# Use of this source code is governed by the MIT
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+from pathlib import Path
+
+import hydra
+from omegaconf import OmegaConf
+import yaml
+
+from tbp.monty.frameworks.run_env import setup_env
+from tbp.monty.hydra import register_resolvers
+
+PROJECT_ROOT = Path(__file__).parents[4]
+
+def compare_snapshots(
+    experiment: str,
+    experiment_prefix: str = "",
+    snapshots_dir: Path = PROJECT_ROOT / "tests" / "conf" / "snapshots",
+) -> bool:
+    snapshot_path = snapshots_dir / f"{experiment}.yaml"
+    print(f"Comparing with snapshot: {snapshot_path}")
+    with snapshot_path.open("r") as f:
+        snapshot = yaml.load(f)
+
+        with hydra.initialize(version_base=None, config_path="."):
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=[f"experiment={experiment_prefix}{experiment}"],
+            )
+            # to_object ensures the config is resolved
+            experiment_conf = OmegaConf.to_object(config)
+            return (
+                compare(snapshot, experiment_conf)
+                and compare(experiment_conf, snapshot)
+            )
+
+def compare(snapshot, experiment, path: str = "") -> bool:
+    """Compare two configs hierarchically, ignoring key order at every level."""
+    if type(snapshot) is not type(experiment):
+        print(f"Types do not match: snapshot: {snapshot} != experiment: {experiment}")
+        return False
+    if isinstance(snapshot, dict):
+        for k in snapshot:
+            if k not in experiment:
+                print(f"Key {path}.{k} not in experiment")
+                return False
+            if not compare(snapshot[k], experiment[k], path=f"{path}.{k}"):
+                return False
+        return True
+    if isinstance(snapshot, list):
+        if len(snapshot) != len(experiment):
+            print(
+                f"Lengths do not match: "
+                f"snapshot: {snapshot} != experiment: {experiment}"
+            )
+            return False
+        snapshot.sort()
+        experiment.sort()
+        return all(compare(a, b, path=f"{path}.{i}") for i, (a, b) in enumerate(zip(snapshot, experiment)))
+    if snapshot != experiment:
+        print(
+            f"Values do not match {path}: "
+            f"snapshot: {snapshot} != experiment: {experiment}"
+        )
+        return False
+    return True
+
+if __name__ == "__main__":
+    setup_env()
+    register_resolvers()
+    compare_snapshots(
+        experiment="base_config_10distinctobj_dist_agent",
+    )
