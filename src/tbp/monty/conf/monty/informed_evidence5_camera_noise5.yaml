@@ -1,7 +1,7 @@
 # @package experiment.config.monty_config
 
 defaults:
-  - motor_system_config: informed
+  - motor_system_config: informed_5
   - learning_module: evidence_5lm_nn10_dod003
   - sensor_module: 5sm_camera_noise
   - connectivity: 5lm_5sm

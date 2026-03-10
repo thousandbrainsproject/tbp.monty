@@ -31,6 +31,7 @@ RUNS = [
     "randomrot_rawnoise_10distinctobj_surf_agent",
     "randrot_noise_10simobj_surf_agent",
     "base_77obj_dist_agent",
+    "base_10multi_distinctobj_dist_agent",
 ]
 
 

@@ -2,8 +2,8 @@
 
 defaults:
   - motor_system_config: informed_5
-  - learning_module: evidence_1lm_nn10_dod003
-  - sensor_module: camera_noise
+  - learning_module: evidence_1lm_nn5_dod003
+  - sensor_module: camera
   - connectivity: 1lm_1sm
 
 monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}

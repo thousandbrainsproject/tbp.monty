@@ -1,8 +1,8 @@
 # @package _global_
 
 defaults:
-  - /monty: informed_evidence1_camera1
-  - /environment: habitat_dist_agent
+  - /monty: informed_5_evidence1_camera1
+  - /environment: habitat_dist_agent_semantics0
   - /env_interface: eval_distinctobj_predefined_rotation
   - /logging: basic
   - config: eval_dist_epochall
