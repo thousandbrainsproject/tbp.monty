@@ -18,6 +18,12 @@ from tbp.monty.hydra import register_resolvers
 
 PROJECT_ROOT = Path(__file__).parents[4]
 
+RUNS = [
+    "base_config_10distinctobj_dist_agent",
+    "base_config_10distinctobj_surf_agent",
+    "randrot_noise_10distinctobj_dist_agent",
+]
+
 
 def compare_snapshots(
     experiment: str,
@@ -105,9 +111,15 @@ if __name__ == "__main__":
     setup_env()
     register_resolvers()
     parser = argparse.ArgumentParser()
-    parser.add_argument("experiment", type=str)
+    parser.add_argument("-e", "--experiment", type=str)
     args = parser.parse_args()
 
-    compare_snapshots(
-        experiment=args.experiment,
-    )
+    if args.experiment is None:
+        for run in RUNS:
+            compare_snapshots(
+                experiment=run,
+            )
+    else:
+        compare_snapshots(
+            experiment=args.experiment,
+        )
