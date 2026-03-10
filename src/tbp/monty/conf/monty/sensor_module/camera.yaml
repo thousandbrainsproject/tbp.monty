@@ -1,0 +1,32 @@
+# @package experiment.config.monty_config
+
+sensor_module_configs:
+  sensor_module_0:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
+    sensor_module_args:
+      sensor_module_id: patch
+      features:
+      - pose_vectors
+      - pose_fully_defined
+      - on_object
+      - object_coverage
+      - hsv
+      - principal_curvatures_log
+      delta_thresholds:
+        on_object: 0
+        n_steps: 20
+        hsv:
+        - 0.1
+        - 0.1
+        - 0.1
+        pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+        principal_curvatures_log:
+        - 2
+        - 2
+        distance: 0.01
+      save_raw_obs: false
+  sensor_module_1:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+    sensor_module_args:
+      sensor_module_id: view_finder
+      save_raw_obs: false
