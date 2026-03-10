@@ -11,7 +11,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Sequence
 
-from mujoco import MjData, MjModel, MjsBody, MjSpec, mj_forward, mjtGeom, mjtTexture
+from mujoco import (
+    MjData,
+    MjModel,
+    MjsBody,
+    MjSpec,
+    mj_forward,
+    mjtGeom,
+    mjtTexture,
+    mjtTextureRole,
+)
 from typing_extensions import override
 
 from tbp.monty.frameworks.actions.actions import Action
@@ -82,7 +91,6 @@ class MuJoCoSimulator(Simulator):
         mj_forward(self.model, self.data)
 
     def remove_all_objects(self) -> None:
-        # TODO: See https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/mjspec.ipynb#scrollTo=Model_re_compilation_with_state_preservation
         self.spec = MjSpec()
         self._create_agents()
         self._recompile()
@@ -110,13 +118,12 @@ class MuJoCoSimulator(Simulator):
             )
             mat = self.spec.add_material(
                 name="potted_meat_can_mat",
-                texuniform=True,
             )
-            mat.add_layer(texture="potted_meat_can_tex")
-
+            mat.textures[mjtTextureRole.mjTEXROLE_RGB] = "potted_meat_can_tex"
             self.spec.add_mesh(
                 name="potted_meat_can_mesh",
                 file=f"{path / 'textured.obj'}",
+                refquat=[0.5, 0.5, 0.0, 0.0],
             )
             self.spec.worldbody.add_geom(
                 type=mjtGeom.mjGEOM_MESH,
