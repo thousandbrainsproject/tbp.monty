@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Sequence
 
@@ -41,6 +42,16 @@ if TYPE_CHECKING:
     from os import PathLike
 
 
+# Map of names to MuJoCo primitive object types
+PRIMITIVE_OBJECT_TYPES = {
+    "box": mjtGeom.mjGEOM_BOX,
+    "capsule": mjtGeom.mjGEOM_CAPSULE,
+    "cylinder": mjtGeom.mjGEOM_CYLINDER,
+    "ellipsoid": mjtGeom.mjGEOM_ELLIPSOID,
+    "sphere": mjtGeom.mjGEOM_SPHERE,
+}
+
+
 class UnknownShapeType(RuntimeError):
     """Raised when an unknown shape is requested."""
 
@@ -60,6 +71,7 @@ class MuJoCoSimulator(Simulator):
         self,
         agent_configs: Sequence[AgentConfig],
         data_path: PathLike,
+        # TODO: remove after adding remaining arguments
         **kwargs,  # noqa: ARG002
     ) -> None:
         self.spec = MjSpec()
@@ -108,40 +120,75 @@ class MuJoCoSimulator(Simulator):
     ) -> ObjectInfo:
         obj_name = f"{name}_{self._object_count}"
 
-        # TODO: support arbitrary objects from a registry
-        if name == "potted_meat_can":
-            path = self.data_path / "potted_meat_can"
-            self.spec.add_texture(
-                name="potted_meat_can_tex",
-                type=mjtTexture.mjTEXTURE_2D,
-                file=f"{path / 'texture_map.png'}",
-            )
-            mat = self.spec.add_material(
-                name="potted_meat_can_mat",
-            )
-            mat.textures[mjtTextureRole.mjTEXROLE_RGB] = "potted_meat_can_tex"
-            self.spec.add_mesh(
-                name="potted_meat_can_mesh",
-                file=f"{path / 'textured.obj'}",
-                refquat=[0.5, 0.5, 0.0, 0.0],
-            )
-            self.spec.worldbody.add_geom(
-                type=mjtGeom.mjGEOM_MESH,
-                meshname="potted_meat_can_mesh",
-                material="potted_meat_can_mat",
-                size=scale,
-                pos=position,
-                quat=rotation,
-            )
-        else:
+        if name in PRIMITIVE_OBJECT_TYPES:
             self._add_primitive_object(obj_name, name, position, rotation, scale)
-            self._object_count += 1
+        else:
+            self._add_ycb_object(obj_name, name, position, rotation, scale)
+        self._object_count += 1
 
         self._recompile()
 
         return ObjectInfo(
             object_id=ObjectID(self._object_count),
             semantic_id=semantic_id,
+        )
+
+    def _add_ycb_object(
+        self,
+        obj_name: str,
+        shape_type: str,
+        position: VectorXYZ,
+        rotation: QuaternionWXYZ,
+        scale: VectorXYZ,
+    ):
+        """Adds an object from the YCB dataset.
+
+        This assumes that each object's files are stored in a directory in the
+        `data_path` matching their name, and containing 'textured.obj' and
+        'texture_map.png'.
+
+        Arguments:
+            obj_name: Identifier for the object in the scene, must be unique.
+            shape_type: Type of the object in the scene.
+            position: Position of the object in the scene.
+            rotation: Rotation of the object in the scene.
+            scale: Scale of the object in the scene.
+
+        Raises:
+            UnknownShapeType: when shape_type is unknown.
+        """
+        path = self.data_path / shape_type
+
+        if not path.exists():
+            raise UnknownShapeType(f"Unknown YCB object: {shape_type}")
+
+        self.spec.add_texture(
+            name=f"{shape_type}_tex",
+            type=mjtTexture.mjTEXTURE_2D,
+            file=f"{path / 'texture_map.png'}",
+        )
+        mat = self.spec.add_material(
+            name=f"{shape_type}_mat",
+        )
+        mat.textures[mjtTextureRole.mjTEXROLE_RGB] = f"{shape_type}_tex"
+
+        metadata_path = path / "metadata.json"
+        metadata = json.load(metadata_path.open())
+
+        self.spec.add_mesh(
+            name=f"{shape_type}_mesh",
+            file=f"{path / 'textured.obj'}",
+            refquat=metadata["refquat"],
+            refpos=metadata["refpos"],
+        )
+        self.spec.worldbody.add_geom(
+            name=obj_name,
+            type=mjtGeom.mjGEOM_MESH,
+            meshname=f"{shape_type}_mesh",
+            material=f"{shape_type}_mat",
+            size=scale,
+            pos=position,
+            quat=rotation,
         )
 
     def _add_primitive_object(
@@ -166,20 +213,11 @@ class MuJoCoSimulator(Simulator):
         """
         world_body: MjsBody = self.spec.worldbody
 
-        # TODO: should we encapsulate primitive objects into bodies?
-
-        if shape_type == "sphere":
-            geom_type = mjtGeom.mjGEOM_SPHERE
-        elif shape_type == "capsule":
-            geom_type = mjtGeom.mjGEOM_CAPSULE
-        elif shape_type == "ellipsoid":
-            geom_type = mjtGeom.mjGEOM_ELLIPSOID
-        elif shape_type == "cylinder":
-            geom_type = mjtGeom.mjGEOM_CYLINDER
-        elif shape_type == "box":
-            geom_type = mjtGeom.mjGEOM_BOX
-        else:
-            raise UnknownShapeType(f"Unknown MuJoCo primitive: {shape_type}")
+        # TODO: should we encapsulate primitive objects into bodies
+        try:
+            geom_type = PRIMITIVE_OBJECT_TYPES[shape_type]
+        except KeyError:
+            raise UnknownShapeType(f"Unknown MuJoCo primitive: {shape_type}") from None
 
         world_body.add_geom(
             name=obj_name,

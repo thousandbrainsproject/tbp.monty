@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence, TypedDict
+from typing import TYPE_CHECKING, Protocol, TypedDict
 
 import quaternion as qt
 from mujoco import Renderer
@@ -30,31 +30,48 @@ if TYPE_CHECKING:
 # TODO: Move elsewhere
 Size = tuple[int, int]
 
+# The default field of view value for zoom 1.0
+# Note: this value is the half-FOV rather than the full FOV
+DEFAULT_CAMERA_FOVY: float = 45.0
 
-class Agent:
+
+class SensorConfig(TypedDict):
+    position: VectorXYZ
+    rotation: QuaternionWXYZ
+    resolution: Size
+    zoom: float
+
+
+class AgentConfig(TypedDict):
+    agent_type: type[Agent]
+    agent_args: dict
+
+
+class Agent(Protocol):
+    @property
+    def observations(self) -> AgentObservations: ...
+
+    @property
+    def state(self) -> AgentState: ...
+
+
+class NoopAgent(Agent):
+    """A simple multi-sensor agent that doesn't respond to actions."""
+
     def __init__(
         self,
         simulator: MuJoCoSimulator,
         agent_id: AgentID,
-        sensor_ids: Sequence[SensorID],
+        sensor_configs: dict[SensorID, SensorConfig],
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
-        positions: Sequence[VectorXYZ] = ((0.0, 0.0, 0.0),),
-        rotations: Sequence[QuaternionWXYZ] = ((1.0, 0.0, 0.0, 0.0),),
-        resolutions: Sequence[Size] = ((64, 64),),
-        zooms: Sequence[float] = (1.0,),  # noqa: ARG002
-        **kwargs,  # noqa: ARG002
     ):
         self.id = agent_id
         self.sim = simulator
 
         self.position = position
         self.rotation = rotation
-        self.sensor_positions = positions
-        self.sensor_rotations = rotations
-        self.sensor_resolutions = resolutions
-
-        self._sensor_ids = sensor_ids
+        self._sensor_configs = sensor_configs
 
         # Create agent and sensors in MuJoCo
         self.agent_body = self.sim.spec.worldbody.add_body(
@@ -63,19 +80,20 @@ class Agent:
             quat=rotation,
         )
         # self.agent_body.add_joint(type=mjtJoint.mjJNT_FREE)
-        for idx, sensor_id in enumerate(self._sensor_ids):
+        for sensor_id, sensor_cfg in self._sensor_configs.items():
             self.agent_body.add_camera(
                 name=sensor_id,
-                pos=positions[idx],
-                quat=rotations[idx],
-                resolution=resolutions[idx],
+                pos=sensor_cfg["position"],
+                quat=sensor_cfg["rotation"],
+                resolution=sensor_cfg["resolution"],
+                fovy=DEFAULT_CAMERA_FOVY / sensor_cfg["zoom"],
             )
 
     @property
     def observations(self) -> AgentObservations:
         obs = AgentObservations()
-        for idx, sensor_id in enumerate(self._sensor_ids):
-            size = self.sensor_resolutions[idx]
+        for sensor_id, sensor_cfg in self._sensor_configs.items():
+            size = sensor_cfg["resolution"]
             with Renderer(self.sim.model, width=size[0], height=size[1]) as renderer:
                 renderer.update_scene(self.sim.data, camera=sensor_id)
                 rbga_data = renderer.render()
@@ -89,13 +107,13 @@ class Agent:
                     depth=depth_data,
                     rgba=rbga_data,
                 )
-
         return obs
 
     @property
     def state(self) -> AgentState:
+        # TODO: implement this
         sensor_states = {}
-        for sensor_id in self._sensor_ids:
+        for sensor_id in self._sensor_configs:
             sensor_states[sensor_id] = SensorState(
                 position=(0, 0, 0),
                 rotation=qt.quaternion(1, 0, 0, 0),
@@ -105,8 +123,3 @@ class Agent:
             rotation=qt.quaternion(1, 0, 0, 0),
             sensors=sensor_states,
         )
-
-
-class AgentConfig(TypedDict):
-    agent_type: type[Agent]
-    agent_args: dict
