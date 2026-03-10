@@ -2,7 +2,7 @@
 
 defaults:
   - /monty: informed_10_evidence1_camera1
-  - /env_interface: eval_distractors_predefined
+  - /env_interface: eval_distractors_predefined_rotation
   - /logging: basic
   - /environment: habitat_dist_agent_semantics1
   - config: eval_dist_epochall
