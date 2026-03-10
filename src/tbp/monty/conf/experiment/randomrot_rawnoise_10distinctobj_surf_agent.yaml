@@ -1,8 +1,14 @@
-defaults:
-  - randrot_noise_10distinctobj_surf_agent
-  - config/environment/clear_env_interface_config@config
-  - config/environment/noisy_surface_view_finder_mount_habitat@config.env_interface_config
+# @package _global_
 
-config:
-  logging:
-    run_name: randomrot_rawnoise_10distinctobj_surf_agent
+defaults:
+  - /monty: informed_nn10_evidence1_camera_surf_noise1
+  - /env_interface: eval_random_rotation
+  - /logging: basic
+  - /environment: habitat_surf_rawnoise_agent
+  - config: eval_surf_epoch10
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    logging:
+      run_name: randomrot_rawnoise_10distinctobj_surf_agent

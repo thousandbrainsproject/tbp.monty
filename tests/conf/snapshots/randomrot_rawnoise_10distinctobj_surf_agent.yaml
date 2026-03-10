@@ -175,7 +175,13 @@ experiment:
               on_object: 0
               distance: 0.01
             is_surface_sm: true
-            noise_params: ${constants.default_all_noise_params}
+            noise_params:
+              features:
+                pose_vectors: 2 # rotate by random degrees along xyz
+                hsv: 0.1 # add gaussian noise with 0.1 std
+                principal_curvatures_log: 0.1
+                pose_fully_defined: 0.01 # flip bool in 1% of cases
+              location: 0.002 # add gaussian noise with 0.002 std
           sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
         sensor_module_1:
           sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
