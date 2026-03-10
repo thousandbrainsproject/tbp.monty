@@ -9,13 +9,14 @@
 from pathlib import Path
 
 import hydra
-from omegaconf import OmegaConf
 import yaml
+from omegaconf import OmegaConf
 
 from tbp.monty.frameworks.run_env import setup_env
 from tbp.monty.hydra import register_resolvers
 
 PROJECT_ROOT = Path(__file__).parents[4]
+
 
 def compare_snapshots(
     experiment: str,
@@ -25,50 +26,81 @@ def compare_snapshots(
     snapshot_path = snapshots_dir / f"{experiment}.yaml"
     print(f"Comparing with snapshot: {snapshot_path}")
     with snapshot_path.open("r") as f:
-        snapshot = yaml.load(f)
+        snapshot = yaml.safe_load(f)
 
-        with hydra.initialize(version_base=None, config_path="."):
-            config = hydra.compose(
-                config_name="experiment",
-                overrides=[f"experiment={experiment_prefix}{experiment}"],
-            )
-            # to_object ensures the config is resolved
-            experiment_conf = OmegaConf.to_object(config)
-            return (
-                compare(snapshot, experiment_conf)
-                and compare(experiment_conf, snapshot)
-            )
+    with hydra.initialize(version_base=None, config_path="."):
+        config = hydra.compose(
+            config_name="experiment",
+            overrides=[f"experiment={experiment_prefix}{experiment}"],
+        )
+        # to_object ensures the config is resolved
+        experiment_conf = OmegaConf.to_yaml(config)
+        experiment_conf = yaml.safe_load(experiment_conf)
+        first = compare(snapshot, experiment_conf)
+        second = compare(
+            experiment_conf,
+            snapshot,
+            snapshot_label="experiment",
+            experiment_label="snapshot",
+        )
 
-def compare(snapshot, experiment, path: str = "") -> bool:
+        return first and second
+
+
+def compare(
+    snapshot,
+    experiment,
+    path: str = "",
+    snapshot_label="snapshot",
+    experiment_label="experiment",
+) -> bool:
     """Compare two configs hierarchically, ignoring key order at every level."""
     if type(snapshot) is not type(experiment):
-        print(f"Types do not match: snapshot: {snapshot} != experiment: {experiment}")
+        print(
+            f"Types do not match: {snapshot_label}: {snapshot} != {experiment_label}: {experiment}"
+        )
         return False
     if isinstance(snapshot, dict):
         for k in snapshot:
             if k not in experiment:
-                print(f"Key {path}.{k} not in experiment")
+                print(f"Key {path}.{k} not in {experiment_label}")
                 return False
-            if not compare(snapshot[k], experiment[k], path=f"{path}.{k}"):
+            if not compare(
+                snapshot[k],
+                experiment[k],
+                path=f"{path}.{k}",
+                snapshot_label=snapshot_label,
+                experiment_label=experiment_label,
+            ):
                 return False
         return True
     if isinstance(snapshot, list):
         if len(snapshot) != len(experiment):
             print(
                 f"Lengths do not match: "
-                f"snapshot: {snapshot} != experiment: {experiment}"
+                f"{snapshot_label}: {snapshot} != {experiment_label}: {experiment}"
             )
             return False
         snapshot.sort()
         experiment.sort()
-        return all(compare(a, b, path=f"{path}.{i}") for i, (a, b) in enumerate(zip(snapshot, experiment)))
+        return all(
+            compare(
+                a,
+                b,
+                path=f"{path}.{i}",
+                snapshot_label=snapshot_label,
+                experiment_label=experiment_label,
+            )
+            for i, (a, b) in enumerate(zip(snapshot, experiment))
+        )
     if snapshot != experiment:
         print(
             f"Values do not match {path}: "
-            f"snapshot: {snapshot} != experiment: {experiment}"
+            f"{snapshot_label}: {snapshot} != {experiment_label}: {experiment}"
         )
         return False
     return True
+
 
 if __name__ == "__main__":
     setup_env()
