@@ -1,15 +1,11 @@
+# @package _global_
+
 defaults:
-  - base_config_10distinctobj_dist_agent
-  - config/monty/clear_monty_config@config
-  - config/monty/surface_and_view_sota@config.monty_config
-  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
-  - config/monty/learning_modules/lower_max_nneighbors_surf_1lm@config.monty_config.learning_module_configs
-  - config/monty/motor_system/clear_motor_system_config@config.monty_config
-  - config/monty/motor_system/cur_informed_surface_goal_state_driven@config.monty_config.motor_system_config
-  - config/monty/args/clear_monty_args@config.monty_config
-  - config/monty/args/defaults@config.monty_config.monty_args
-  - config/environment/clear_env_interface_config@config
-  - config/environment/surface_view_finder_mount_habitat@config.env_interface_config
+  - override /environment: habitat_surf_agent
+  - override /logging: basic
+  # motor_system is default; use policy: surface_curvature_informed
+  # learning module is evidence yaml
+  # connectivity is defaults
 
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:
