@@ -82,7 +82,7 @@ class NoopAgent(Agent):
         # self.agent_body.add_joint(type=mjtJoint.mjJNT_FREE)
         for sensor_id, sensor_cfg in self._sensor_configs.items():
             self.agent_body.add_camera(
-                name=sensor_id,
+                name=f"{self.id}.{sensor_id}",
                 pos=sensor_cfg["position"],
                 quat=sensor_cfg["rotation"],
                 resolution=sensor_cfg["resolution"],
@@ -95,11 +95,11 @@ class NoopAgent(Agent):
         for sensor_id, sensor_cfg in self._sensor_configs.items():
             size = sensor_cfg["resolution"]
             with Renderer(self.sim.model, width=size[0], height=size[1]) as renderer:
-                renderer.update_scene(self.sim.data, camera=sensor_id)
+                renderer.update_scene(self.sim.data, camera=f"{self.id}.{sensor_id}")
                 rbga_data = renderer.render()
 
                 renderer.enable_depth_rendering()
-                renderer.update_scene(self.sim.data, camera=sensor_id)
+                renderer.update_scene(self.sim.data, camera=f"{self.id}.{sensor_id}")
                 depth_data = renderer.render()
                 renderer.disable_depth_rendering()
 
@@ -111,15 +111,16 @@ class NoopAgent(Agent):
 
     @property
     def state(self) -> AgentState:
-        # TODO: implement this
         sensor_states = {}
         for sensor_id in self._sensor_configs:
+            sensor = self.sim.model.camera(f"{self.id}.{sensor_id}")
             sensor_states[sensor_id] = SensorState(
-                position=(0, 0, 0),
-                rotation=qt.quaternion(1, 0, 0, 0),
+                position=sensor.pos,
+                rotation=qt.quaternion(*sensor.quat),
             )
+        agent_body = self.sim.model.body(self.id)
         return AgentState(
-            position=(0, 0, 0),
-            rotation=qt.quaternion(1, 0, 0, 0),
+            position=agent_body.pos,
+            rotation=qt.quaternion(*agent_body.quat),
             sensors=sensor_states,
         )
