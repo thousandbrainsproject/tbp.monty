@@ -1,9 +1,0 @@
-# @package experiment.config.monty_config.motor_system.policy
-
-action_sampler:
-  _target_: tbp.monty.frameworks.actions.action_samplers.ConstantSampler
-  actions:
-  - ${monty.class:tbp.monty.frameworks.actions.actions.MoveForward}
-  - ${monty.class:tbp.monty.frameworks.actions.actions.MoveTangentially}
-  - ${monty.class:tbp.monty.frameworks.actions.actions.OrientHorizontal}
-  - ${monty.class:tbp.monty.frameworks.actions.actions.OrientVertical}

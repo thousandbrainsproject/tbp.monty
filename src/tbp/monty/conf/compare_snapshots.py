@@ -82,8 +82,6 @@ def compare(
                 f"{snapshot_label}: {snapshot} != {experiment_label}: {experiment}"
             )
             return False
-        snapshot.sort()
-        experiment.sort()
         return all(
             compare(
                 a,
