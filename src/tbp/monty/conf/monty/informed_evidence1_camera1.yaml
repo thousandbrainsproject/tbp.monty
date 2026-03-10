@@ -4,9 +4,6 @@ defaults:
   - motor_system: defaults
 
 monty_config:
-  motor_system:
-    policy:
-      use_goal_state_driven_actions: true
   monty_args:
     num_exploratory_steps: 1000
     min_eval_steps: ${constants.min_eval_steps}
