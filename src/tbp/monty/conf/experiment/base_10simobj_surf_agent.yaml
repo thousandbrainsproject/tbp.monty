@@ -2,7 +2,7 @@
 
 defaults:
   - /monty: informed_evidence1_camera_surf1
-  - /env_interface: eval_simobj_predefined
+  - /env_interface: eval_simobj_predefined_rotation
   - /logging: basic
   - /environment: habitat_surf_agent
   - config: eval_surf_epochall_similarobj

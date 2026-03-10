@@ -2,7 +2,7 @@
 
 defaults:
   - /monty: informed_evidence1_camera_noise1
-  - /env_interface: eval_random_rotation
+  - /env_interface: eval_distinctobj_random_rotation
   - /logging: basic
   - /environment: habitat_dist_agent
   - config: eval_dist_pretrained_epoch10

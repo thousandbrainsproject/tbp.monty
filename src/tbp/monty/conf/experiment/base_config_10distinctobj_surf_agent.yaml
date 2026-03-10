@@ -3,7 +3,7 @@
 defaults:
   - /monty: informed_evidence1_camera_surf1
   - /environment: habitat_surf_agent
-  - /env_interface: eval_predefined
+  - /env_interface: eval_distinctobj_predefined_rotation
   - /logging: basic
   - config: eval_surf
 
