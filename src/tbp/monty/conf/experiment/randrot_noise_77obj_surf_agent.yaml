@@ -1,15 +1,14 @@
-defaults:
-  - randrot_noise_10distinctobj_surf_agent
-  - config/environment_interface/clear_eval_env_interface_args@config
-  - config/environment_interface/per_object@config.eval_env_interface_args
-  - config/environment_interface/ycb/shuffled_objects@config.eval_env_interface_args.object_names
+# @package _global_
 
-config:
-  model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_77obj/pretrained/
-  n_eval_epochs: ${constants.rotations_3_count}
-  max_total_steps: 5000
-  logging:
-    run_name: randrot_noise_77obj_surf_agent
-  eval_env_interface_args:
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
+defaults:
+  - /monty: informed_evidence1_camera_surf_noise1
+  - /env_interface: eval_77obj_random_rotation
+  - /logging: basic
+  - /environment: habitat_surf_agent
+  - config: eval_surf_epoch3_77obj
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    logging:
+      run_name: randrot_noise_77obj_surf_agent
