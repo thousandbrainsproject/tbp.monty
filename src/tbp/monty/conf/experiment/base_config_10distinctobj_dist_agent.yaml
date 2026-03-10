@@ -2,7 +2,7 @@
 
 defaults:
   - override /monty: informed_evidence1_camera1
-  - override /env_interface: eval
+  - override /env_interface: eval_predefined
   - override /logging: basic
 
 experiment:
