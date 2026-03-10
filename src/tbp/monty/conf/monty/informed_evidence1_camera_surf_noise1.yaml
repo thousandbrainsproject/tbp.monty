@@ -1,0 +1,14 @@
+# @package experiment.config.monty_config
+
+defaults:
+  - motor_system_config: surface_curvature_informed
+  - learning_module: evidence_1lm_nn10_dod0025
+  - sensor_module: camera_surf_noise
+  - connectivity: 1lm_1sm
+
+monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
+monty_args:
+  num_exploratory_steps: 1000
+  min_eval_steps: ${constants.min_eval_steps}
+  min_train_steps: 3
+  max_total_steps: 2500

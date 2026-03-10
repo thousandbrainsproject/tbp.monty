@@ -22,6 +22,7 @@ RUNS = [
     "base_config_10distinctobj_dist_agent",
     "base_config_10distinctobj_surf_agent",
     "randrot_noise_10distinctobj_dist_agent",
+    "randrot_noise_10distinctobj_surf_agent",
 ]
 
 
