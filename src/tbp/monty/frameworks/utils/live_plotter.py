@@ -165,9 +165,13 @@ class LivePlotter:
     def show_patch(self, first_sensor_depth):
         if self.depth_image:
             self.depth_image.remove()
+        vmin = 4
+        vmax = 6
         self.depth_image = self.ax[1].imshow(
             first_sensor_depth,
-            cmap="viridis_r",
+            cmap="gray_r",
+            vmin=vmin,
+            vmax=vmax,
         )
         # self.colorbar.update_normal(self.depth_image)
 

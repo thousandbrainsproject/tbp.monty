@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 import quaternion as qt
 
@@ -21,23 +21,23 @@ from tbp.monty.frameworks.environments.environment import (
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.math import QuaternionWXYZ, VectorXYZ
+from tbp.monty.simulators.mujoco import AgentConfig
 from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
+
+if TYPE_CHECKING:
+    from os import PathLike
 
 
 class MuJoCoEnvironment(SimulatedObjectEnvironment):
     def __init__(
         self,
-        agents: dict,
+        agents: AgentConfig,
+        data_path: PathLike,
         **kwargs,
     ) -> None:
         # TODO: Change the configuration to support multiple agents
         agent_configs = [agents]
-        agents = []
-        for config in agent_configs:
-            agent_type = config["agent_type"]
-            agents.append(agent_type(**config["agent_args"]))
-
-        self._sim = MuJoCoSimulator(agents, **kwargs)
+        self._sim = MuJoCoSimulator(agent_configs, data_path, **kwargs)
 
     def step(
         self, action: Sequence[Action]

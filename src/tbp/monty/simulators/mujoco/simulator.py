@@ -8,9 +8,10 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Sequence
+from pathlib import Path
+from typing import TYPE_CHECKING, Sequence
 
-from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
+from mujoco import MjData, MjModel, MjsBody, MjSpec, mj_forward, mjtGeom, mjtTexture
 from typing_extensions import override
 
 from tbp.monty.frameworks.actions.actions import Action
@@ -24,8 +25,11 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.math import QuaternionWXYZ, VectorXYZ
-from tbp.monty.simulators.mujoco import MultiSensorAgent
+from tbp.monty.simulators.mujoco import AgentConfig
 from tbp.monty.simulators.simulator import Simulator
+
+if TYPE_CHECKING:
+    from os import PathLike
 
 
 class UnknownShapeType(RuntimeError):
@@ -45,29 +49,44 @@ class MuJoCoSimulator(Simulator):
 
     def __init__(
         self,
-        agents: Sequence[MultiSensorAgent],
+        agent_configs: Sequence[AgentConfig],
+        data_path: PathLike,
         **kwargs,  # noqa: ARG002
     ) -> None:
-        self._agents = agents
-
         self.spec = MjSpec()
         self.model: MjModel = self.spec.compile()
         self.data = MjData(self.model)
+
+        self.data_path = Path(data_path)
+        self._agent_configs = agent_configs
+        self._agents = []
+        self._create_agents()
 
         # Track how many objects we add to the environment.
         # Note: We can't use the `model.ngeoms` for this since that will include parts
         # of the agents, especially when we start to add more structure to them.
         self._object_count = 0
 
+        self._recompile()
+
+    def _create_agents(self):
+        for agent_config in self._agent_configs:
+            agent_type = agent_config["agent_type"]
+            agent_args = agent_config["agent_args"]
+            agent = agent_type(simulator=self, **agent_args)
+            self._agents.append(agent)
+
     def _recompile(self) -> None:
         """Recompile the MuJoCo model while retaining any state data."""
         self.model, self.data = self.spec.recompile(self.model, self.data)
+        mj_forward(self.model, self.data)
 
     def remove_all_objects(self) -> None:
+        # TODO: See https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/mjspec.ipynb#scrollTo=Model_re_compilation_with_state_preservation
         self.spec = MjSpec()
+        self._create_agents()
         self._recompile()
         self._object_count = 0
-        # TODO - reinitialize agents since they will have been removed
 
     @override
     def add_object(
@@ -82,12 +101,36 @@ class MuJoCoSimulator(Simulator):
         obj_name = f"{name}_{self._object_count}"
 
         # TODO: support arbitrary objects from a registry
-        self._add_primitive_object(obj_name, name, position, rotation, scale)
-        self._object_count += 1
+        if name == "potted_meat_can":
+            path = self.data_path / "potted_meat_can"
+            self.spec.add_texture(
+                name="potted_meat_can_tex",
+                type=mjtTexture.mjTEXTURE_2D,
+                file=f"{path / 'texture_map.png'}",
+            )
+            mat = self.spec.add_material(
+                name="potted_meat_can_mat",
+                texuniform=True,
+            )
+            mat.add_layer(texture="potted_meat_can_tex")
+
+            self.spec.add_mesh(
+                name="potted_meat_can_mesh",
+                file=f"{path / 'textured.obj'}",
+            )
+            self.spec.worldbody.add_geom(
+                type=mjtGeom.mjGEOM_MESH,
+                meshname="potted_meat_can_mesh",
+                material="potted_meat_can_mat",
+                size=scale,
+                pos=position,
+                quat=rotation,
+            )
+        else:
+            self._add_primitive_object(obj_name, name, position, rotation, scale)
+            self._object_count += 1
 
         self._recompile()
-
-        # TODO: reinitialize agents?
 
         return ObjectInfo(
             object_id=ObjectID(self._object_count),
@@ -161,7 +204,7 @@ class MuJoCoSimulator(Simulator):
         return states
 
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
-        # TODO: implement resetting
+        # TODO: reset agents to their initial state
         return self.observations, self.states
 
     def close(self) -> None:
