@@ -2,7 +2,7 @@
 
 defaults:
   - motor_system: defaults
-  - learning_module: defaults
+  - learning_module: displacement
   - sensor_module: defaults
   - connectivity: defaults
 
