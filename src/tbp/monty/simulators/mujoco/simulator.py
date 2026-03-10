@@ -99,6 +99,7 @@ class MuJoCoSimulator(Simulator):
 
     def _recompile(self) -> None:
         """Recompile the MuJoCo model while retaining any state data."""
+        self.spec.option.gravity = (0.0, 0.0, 0.0)  # TODO: check if necessary.
         self.model, self.data = self.spec.recompile(self.model, self.data)
         mj_forward(self.model, self.data)
 

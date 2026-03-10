@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, TypedDict
 
+import mujoco
 import quaternion as qt
 from mujoco import Renderer
 
@@ -78,8 +79,11 @@ class NoopAgent(Agent):
             name=agent_id,
             pos=position,
             quat=rotation,
+            mass=1.0,
+            inertia=(1.0, 1.0, 1.0),
         )
-        # self.agent_body.add_joint(type=mjtJoint.mjJNT_FREE)
+        # self.agent_body.add_joint(type=mujoco.mjtJoint.mjJNT_FREE)
+        freejoint = self.agent_body.add_freejoint()
         for sensor_id, sensor_cfg in self._sensor_configs.items():
             self.agent_body.add_camera(
                 name=f"{self.id}.{sensor_id}",
