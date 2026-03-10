@@ -1,32 +1,14 @@
 # @package _global_
 
 defaults:
-  - /monty: ??
-  # motor system: informed
-  # learning module: evidence_1lm_nn10_dod003
-  # sensor module: camera_noise
-  # connectivity is default
+  - /monty: informed_evidence1_camera_noise1
   - /env_interface: eval_random_rotation
   - /logging: basic
   - /environment: habitat_dist_agent
-  - config: ??
+  - config: eval_dist_epoch10
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
-    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
-    n_eval_epochs: 10 # number of random rotations to test for each object
     logging:
       run_name: randrot_noise_10distinctobj_dist_agent
-    monty_config:
-      monty_args:
-        min_eval_steps: ${constants.min_eval_steps}
-      sensor_module_configs:
-        sensor_module_1:
-          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
-          sensor_module_args:
-            sensor_module_id: view_finder
-            save_raw_obs: true
-    eval_env_interface_args:
-      object_init_sampler:
-        _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation

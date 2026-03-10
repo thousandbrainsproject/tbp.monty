@@ -5,11 +5,10 @@ defaults:
   - /environment: habitat_dist_agent
   - /env_interface: eval_predefined
   - /logging: basic
-  - config: eval_dist
+  - config: eval_dist_epochall
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
     logging:
       run_name: base_config_10distinctobj_dist_agent
-
