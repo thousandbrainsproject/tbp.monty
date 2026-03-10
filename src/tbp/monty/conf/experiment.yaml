@@ -1,11 +1,7 @@
 defaults:
   - _self_
   - constants: defaults
-  - monty: defaults
-  - environment: habitat_dist_agent
-  - logging: defaults
-  - env_interface: train
-  - experiment: defaults
+  - experiment: ??
 
 # Global defaults for the experiment config itself
 experiment:

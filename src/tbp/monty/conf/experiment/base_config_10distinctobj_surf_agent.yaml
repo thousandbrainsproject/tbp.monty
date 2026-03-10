@@ -1,24 +1,14 @@
 # @package _global_
 
 defaults:
-  - override /monty: informed_evidence1_camera_surf1
-  - override /environment: habitat_surf_agent
-  - override /env_interface: eval_predefined
-  - override /logging: basic
+  - /monty: informed_evidence1_camera_surf1
+  - /environment: habitat_surf_agent
+  - /env_interface: eval_predefined
+  - /logging: basic
+  - config: eval_surf
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
-    show_sensor_output: false
-    max_train_steps: 1000
-    max_eval_steps: 500
-    max_total_steps: 5000 # x4 max_eval_steps for surface-policy, x2.5 for feature-change SM
-    n_train_epochs: 3 # unused but required
-    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
-    n_eval_epochs: ${constants.rotations_all_count}
-    min_lms_match: 1
-    seed: 42
-    supervised_lm_ids: []
-    python_log_level: DEBUG
     logging:
       run_name: base_config_10distinctobj_surf_agent
