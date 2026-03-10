@@ -35,6 +35,7 @@ RUNS = [
     "base_77obj_surf_agent",
     "randrot_noise_77obj_dist_agent",
     "randrot_noise_77obj_surf_agent",
+    "randrot_noise_77obj_5lms_dist_agent",
 ]
 
 
