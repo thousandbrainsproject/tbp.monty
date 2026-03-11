@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /monty: informed_evidence1_camera_surf_noise1
+  - /monty: surface_curvature_informed_evidence1_camera_surf_noise1
   - /env_interface: eval_simobj_random_rotation
   - /logging: basic
   - /environment: habitat_surf_agent
