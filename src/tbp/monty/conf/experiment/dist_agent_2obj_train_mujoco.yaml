@@ -3,7 +3,7 @@ config:
   do_eval: true
   show_sensor_output: false
   max_train_steps: 2
-  max_eval_steps: 20
+  max_eval_steps: 30
   max_total_steps: 20
   n_train_epochs: 1
   n_eval_epochs: 1
@@ -30,7 +30,7 @@ config:
     motor_system_config:
       motor_system_args:
         policy:
-          use_goal_state_driven_actions: true
+          use_goal_state_driven_actions: false
           agent_id: ${monty.agent_id:agent_id_0}
           action_sampler:
             actions:
@@ -44,9 +44,9 @@ config:
       motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
     monty_args:
       num_exploratory_steps: 2
-      min_eval_steps: 20
+      min_eval_steps: 30
       min_train_steps: 2
-      max_total_steps: 10
+      max_total_steps: 30
     monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
     learning_module_configs:
       learning_module_0:
