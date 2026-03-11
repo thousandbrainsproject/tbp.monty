@@ -38,7 +38,8 @@ RUNS = [
     "randrot_noise_77obj_5lms_dist_agent",
     "surf_agent_unsupervised_10distinctobj",
     "surf_agent_unsupervised_10distinctobj_noise",
-    "surf_agent_unsupervised_10simobj"
+    "surf_agent_unsupervised_10simobj",
+    "unsupervised_inference_distinctobj_dist_agent",
 ]
 
 
