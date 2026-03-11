@@ -43,6 +43,7 @@ RUNS = [
     "unsupervised_inference_distinctobj_surf_agent",
     "infer_comp_lvl1_with_monolithic_models",
     "infer_comp_lvl1_with_comp_models",
+    "infer_comp_lvl4_with_comp_models",
 ]
 
 
@@ -105,7 +106,7 @@ def compare(
     if isinstance(snapshot, list):
         if len(snapshot) != len(experiment):
             print(
-                f"Lengths do not match: "
+                f"{path} lengths do not match: "
                 f"{snapshot_label}: {snapshot} != {experiment_label}: {experiment}"
             )
             return False
