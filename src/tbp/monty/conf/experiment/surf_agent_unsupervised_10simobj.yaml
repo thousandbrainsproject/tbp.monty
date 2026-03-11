@@ -1,12 +1,14 @@
-defaults:
-  - surf_agent_unsupervised_10distinctobj
-  - config/environment_interface/clear_train_env_interface_args@config
-  - config/environment_interface/per_object@config.train_env_interface_args
-  - config/environment_interface/ycb/similar_objects@config.train_env_interface_args.object_names
+# @package _global_
 
-config:
-  logging:
-    run_name: surf_agent_unsupervised_10simobj
-  train_env_interface_args:
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
+defaults:
+  - /monty: surface_evidence1_camera_surf1
+  - /env_interface: train_simobj_random_rotation
+  - /logging: detailed
+  - /environment: habitat_surf_agent
+  - config: train_surf
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    logging:
+      run_name: surf_agent_unsupervised_10simobj
