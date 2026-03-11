@@ -4,7 +4,7 @@ defaults:
   - /monty: informed_20_evidence1_camera_dist_noise1
   - /env_interface: eval_montymeetsworld_random_rotation
   - /logging: basic_evidence_eval_runs
-  - /environment: habitat_dist_agent_numentalab_semantics0
+  - /environment: habitat_numentalab_dist_agent_semantics0
   - config: eval_dist_epoch10_numentalabobj
 
 experiment:

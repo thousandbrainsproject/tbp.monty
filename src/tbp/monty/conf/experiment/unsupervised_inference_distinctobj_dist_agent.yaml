@@ -4,7 +4,7 @@ defaults:
   - /monty: informed_noresetevidence1_camera_dist_noise1
   - /env_interface: eval_distinctobj_random_rotation
   - /logging: basic_monty_runs
-  - /environment: habitat_dist_agent_ycb_semantics0
+  - /environment: habitat_ycb_dist_agent_semantics0
   - config: eval_dist_maxeval100_epoch10_distinctobj
 
 experiment:
