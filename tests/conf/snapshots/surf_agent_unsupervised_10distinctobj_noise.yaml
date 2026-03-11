@@ -170,7 +170,13 @@ experiment:
               on_object: 0
               distance: 0.01
             is_surface_sm: true
-            noise_params: ${constants.default_all_noise_params}
+            noise_params:
+              features:
+                pose_vectors: 2 # rotate by random degrees along xyz
+                hsv: 0.1 # add gaussian noise with 0.1 std
+                principal_curvatures_log: 0.1
+                pose_fully_defined: 0.01 # flip bool in 1% of cases
+              location: 0.002 # add gaussian noise with 0.002 std
           sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
         sensor_module_1:
           sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
@@ -259,23 +265,6 @@ experiment:
         depth_clip_sensors:
         - 0
         clip_value: 0.05
-    eval_env_interface_args:
-      parent_to_child_mapping: null
-      object_names:
-      - mug
-      - bowl
-      - potted_meat_can
-      - spoon
-      - strawberry
-      - mustard_bottle
-      - dice
-      - golf_ball
-      - c_lego_duplo
-      - banana
-      object_init_sampler:
-        _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-        rotations: ${constants.rotations_all}
-    eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
     train_env_interface_args:
       parent_to_child_mapping: null
       object_names:
