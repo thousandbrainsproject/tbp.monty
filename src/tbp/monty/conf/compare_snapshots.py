@@ -44,6 +44,7 @@ RUNS = [
     "surf_agent_unsupervised_10simobj",
     "unsupervised_inference_distinctobj_dist_agent",
     "unsupervised_inference_distinctobj_surf_agent",
+    "infer_comp_lvl1_with_comp_models_and_burst_sampling",
     "infer_comp_lvl1_with_monolithic_models",
     "infer_comp_lvl1_with_comp_models",
     "infer_comp_lvl2_with_comp_models",
