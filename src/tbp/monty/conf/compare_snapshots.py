@@ -59,6 +59,7 @@ RUNS = [
     "only_surf_agent_training_10obj",
     "only_surf_agent_training_10simobj",
     "only_surf_agent_training_allobj",
+    "only_surf_agent_training_numenta_lab_obj",
 ]
 
 
