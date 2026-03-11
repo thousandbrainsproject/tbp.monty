@@ -179,18 +179,36 @@ class PosableAgent(NoopAgent):
         self.sim.data.qpos[qpos_addr : qpos_addr + 3] = new_xyz
 
     def actuate_turn_right(self, action: TurnRight):
-        pass
-        # radians = -np.deg2rad(action.rotation_degrees)
-        # joint = self.sim.model.joint(self.yaw_joint.id)
-        # qpos_addr = self.sim.model.jnt_qposadr[joint.id]
-        # self.sim.data.qpos[qpos_addr] += radians
+        body_quat = self.sim.data.body(self.id).xquat
+        xyzw = [body_quat[1], body_quat[2], body_quat[3], body_quat[0]]
+        rotation = Rotation.from_quat(xyzw)
+        cur_angles = rotation.as_euler("xyz", degrees=True)
+
+        delta_theta = -action.rotation_degrees
+        new_angles = cur_angles.copy()
+        new_angles[1] += delta_theta
+        new_rotation = Rotation.from_euler("xyz", new_angles, degrees=True)
+        new_quat = new_rotation.as_quat()
+        new_quat_wxyz = [new_quat[3], new_quat[0], new_quat[1], new_quat[2]]
+        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
+
+        self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7] = new_quat_wxyz
 
     def actuate_turn_left(self, action: TurnLeft):
-        pass
-        # radians = np.deg2rad(action.rotation_degrees)
-        # joint = self.sim.model.joint(self.yaw_joint.id)
-        # qpos_addr = self.sim.model.jnt_qposadr[joint.id]
-        # self.sim.data.qpos[qpos_addr] += radians
+        body_quat = self.sim.data.body(self.id).xquat
+        xyzw = [body_quat[1], body_quat[2], body_quat[3], body_quat[0]]
+        rotation = Rotation.from_quat(xyzw)
+        cur_angles = rotation.as_euler("xyz", degrees=True)
+
+        delta_theta = action.rotation_degrees
+        new_angles = cur_angles.copy()
+        new_angles[1] += delta_theta
+        new_rotation = Rotation.from_euler("xyz", new_angles, degrees=True)
+        new_quat = new_rotation.as_quat()
+        new_quat_wxyz = [new_quat[3], new_quat[0], new_quat[1], new_quat[2]]
+        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
+
+        self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7] = new_quat_wxyz
 
     def actuate_look_up(self, action: LookUp):
         delta_phi = np.deg2rad(action.rotation_degrees)
