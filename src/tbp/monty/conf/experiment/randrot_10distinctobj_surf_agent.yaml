@@ -5,7 +5,7 @@ defaults:
   - /env_interface: eval_distinctobj_random_rotation
   - /logging: basic_monty_runs
   - /environment: habitat_surf_agent
-  - config: eval_surf_epoch10_distinctobj
+  - config: eval_surf_maxeval500_epoch10_distinctobj
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
