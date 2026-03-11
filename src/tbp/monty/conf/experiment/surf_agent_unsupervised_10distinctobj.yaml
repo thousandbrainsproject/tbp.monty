@@ -5,7 +5,7 @@ defaults:
   - /env_interface: train_distinctobj_random_rotation
   - /logging: detailed
   - /environment: habitat_surf_agent
-  - config: train_surf
+  - config: train_surf_epoch10
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

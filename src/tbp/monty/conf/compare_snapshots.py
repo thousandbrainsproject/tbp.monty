@@ -56,6 +56,7 @@ RUNS = [
     "dark_world_image_on_scanned_model",
     "hand_intrusion_world_image_on_scanned_model",
     "multi_object_world_image_on_scanned_model",
+    "only_surf_agent_training_10obj",
 ]
 
 
