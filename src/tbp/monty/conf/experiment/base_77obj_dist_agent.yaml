@@ -4,7 +4,7 @@ defaults:
   - /monty: informed_5_evidence1_camera_dist1
   - /environment: habitat_dist_agent_semantics0
   - /env_interface: eval_77obj_predefined_rotation
-  - /logging: basic
+  - /logging: basic_monty_runs
   - config: eval_dist_epoch3_77obj
 
 experiment:

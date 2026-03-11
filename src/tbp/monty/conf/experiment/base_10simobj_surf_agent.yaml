@@ -3,7 +3,7 @@
 defaults:
   - /monty: surface_curvature_informed_evidence1_camera_surf_delta1
   - /env_interface: eval_simobj_predefined_rotation
-  - /logging: basic
+  - /logging: basic_monty_runs
   - /environment: habitat_surf_agent
   - config: eval_surf_epochall_similarobj
 
