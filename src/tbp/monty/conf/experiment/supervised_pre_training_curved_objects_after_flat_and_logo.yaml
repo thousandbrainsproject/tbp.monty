@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /monty: naive_scan_5_evidence2_camera_dist2
+  - /monty: naive_scan_5_evidence2_camera_dist2_mintrain3
   - /environment: habitat_dist_agent_sensors2
   - /env_interface: train_curvedobjs_predefined_rotation
   - /logging: silent_info_train
