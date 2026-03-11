@@ -1,9 +1,14 @@
-defaults:
-  - config/infer_comp
+# @package _global_
 
-_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
-config:
-  model_name_or_path: ${constants.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl1_monolithic_models/pretrained/
-  n_eval_epochs: ${constants.rotations_all_count}
-  logging:
-    run_name: infer_comp_lvl1_with_monolithic_models
+defaults:
+  - /monty: informed_5_evidence2_camera_dist2
+  - /env_interface: eval_compositional_predefined_rotation
+  - /logging: basic_evidence_eval_runs
+  - /environment: habitat_2lm_dist_agent
+  - config: eval_dist_pretrained_monolithic_epochall
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    logging:
+      run_name: infer_comp_lvl1_with_monolithic_models
