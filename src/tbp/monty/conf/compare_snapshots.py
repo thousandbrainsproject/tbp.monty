@@ -6,8 +6,11 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 import argparse
 from pathlib import Path
+from typing import Any
 
 import hydra
 import yaml
@@ -48,6 +51,9 @@ RUNS = [
     "infer_comp_lvl4_with_comp_models",
     "randrot_noise_sim_on_scan_monty_world",
     "world_image_on_scanned_model",
+    "bright_world_image_on_scanned_model",
+    "dark_world_image_on_scanned_model",
+    "hand_intrusion_world_image_on_scanned_model",
 ]
 
 
@@ -59,7 +65,7 @@ def compare_snapshots(
     snapshot_path = snapshots_dir / f"{experiment}.yaml"
     print(f"Comparing with snapshot: {snapshot_path}")
     with snapshot_path.open("r") as f:
-        snapshot = yaml.safe_load(f)
+        snapshot: dict[str, Any] = yaml.safe_load(f)
 
     with hydra.initialize(version_base=None, config_path="."):
         config = hydra.compose(
@@ -67,51 +73,69 @@ def compare_snapshots(
             overrides=[f"experiment={experiment_prefix}{experiment}"],
         )
         # to_object ensures the config is resolved
-        experiment_conf = OmegaConf.to_yaml(config)
-        experiment_conf = yaml.safe_load(experiment_conf)
-        first = compare(snapshot, experiment_conf)
+        experiment_yaml = OmegaConf.to_yaml(config)
+        experiment_conf: dict[str, Any] = yaml.safe_load(experiment_yaml)
+        first = compare(
+            snapshot, experiment_conf, left_label="snapshot", right_label="experiment"
+        )
         second = compare(
-            experiment_conf,
-            snapshot,
-            snapshot_label="experiment",
-            experiment_label="snapshot",
+            experiment_conf, snapshot, left_label="experiment", right_label="snapshot"
         )
 
         return first and second
 
 
 def compare(
-    snapshot,
-    experiment,
+    left: dict[str, Any] | list[Any] | Any,
+    right: dict[str, Any] | list[Any] | Any,
     path: str = "",
-    snapshot_label="snapshot",
-    experiment_label="experiment",
+    left_label: str = "snapshot",
+    right_label: str = "experiment",
 ) -> bool:
-    """Compare two configs hierarchically, ignoring key order at every level."""
-    if type(snapshot) is not type(experiment):
+    """Compare two configs hierarchically, ignoring key order at every level.
+
+    Prints to stdout details of the first mismatch and exits immediately.
+
+    Args:
+        left: The left configuration to compare.
+        right: The right configuration to compare.
+        path: The path to the value being compared within the configuration.
+        left_label: The label for the left config.
+        right_label: The label for the right config.
+
+    Returns:
+        True if the configs match, False otherwise.
+    """
+    if type(left) is not type(right):
         print(
-            f"{path} types do not match: {snapshot_label}: {snapshot} != {experiment_label}: {experiment}"
+            f"{path} types do not match: {left_label}: {left} != {right_label}: {right}"
         )
         return False
-    if isinstance(snapshot, dict):
-        for k in snapshot:
-            if k not in experiment:
-                print(f"Key {path}.{k} not in {experiment_label}")
+    if isinstance(left, dict):
+        if not isinstance(right, dict):
+            print(
+                f"{path} types do not match: "
+                f"{left_label}: {left} != {right_label}: {right}"
+            )
+            return False
+        for k in left:
+            if k not in right:
+                print(f"Key {path}.{k} not in {right_label}")
                 return False
             if not compare(
-                snapshot[k],
-                experiment[k],
+                left[k],
+                right[k],
                 path=f"{path}.{k}",
-                snapshot_label=snapshot_label,
-                experiment_label=experiment_label,
+                left_label=left_label,
+                right_label=right_label,
             ):
                 return False
         return True
-    if isinstance(snapshot, list):
-        if len(snapshot) != len(experiment):
+    if isinstance(left, list):
+        if len(left) != len(right):
             print(
                 f"{path} lengths do not match: "
-                f"{snapshot_label}: {snapshot} != {experiment_label}: {experiment}"
+                f"{left_label}: {left} != {right_label}: {right}"
             )
             return False
         return all(
@@ -119,15 +143,15 @@ def compare(
                 a,
                 b,
                 path=f"{path}.{i}",
-                snapshot_label=snapshot_label,
-                experiment_label=experiment_label,
+                left_label=left_label,
+                right_label=right_label,
             )
-            for i, (a, b) in enumerate(zip(snapshot, experiment))
+            for i, (a, b) in enumerate(zip(left, right))
         )
-    if snapshot != experiment:
+    if left != right:
         print(
             f"Values do not match {path}: "
-            f"{snapshot_label}: {snapshot} != {experiment_label}: {experiment}"
+            f"{left_label}: {left} != {right_label}: {right}"
         )
         return False
     return True
