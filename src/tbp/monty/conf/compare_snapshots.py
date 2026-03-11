@@ -68,6 +68,7 @@ RUNS = [
     "supervised_pre_training_curved_objects_after_flat_and_logo",
     "supervised_pre_training_objects_with_logos_lvl1_monolithic_models",
     "world_image_from_stream_on_scanned_model",
+    "supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling",
 ]
 
 
