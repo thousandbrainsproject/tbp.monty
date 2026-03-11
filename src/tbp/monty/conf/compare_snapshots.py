@@ -62,6 +62,7 @@ RUNS = [
     "only_surf_agent_training_numenta_lab_obj",
     "supervised_pre_training_base",
     "supervised_pre_training_5lms",
+    "supervised_pre_training_5lms_all_objects",
 ]
 
 
