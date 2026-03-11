@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Protocol, TypedDict
 import numpy as np
 import quaternion as qt
 from mujoco import Renderer, mjtJoint
+from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
     LookDown,
@@ -90,12 +91,7 @@ class NoopAgent(Agent):
             mass=1.0,
             inertia=(1.0, 1.0, 1.0),
         )
-        self.yaw_joint = self.agent_body.add_joint(
-            type=mjtJoint.mjJNT_HINGE, axis=(0, 1, 0)
-        )
-        self.z_slide_joint = self.agent_body.add_joint(
-            type=mjtJoint.mjJNT_SLIDE, axis=(0, 0, 1)
-        )
+        self.agent_joint = self.agent_body.add_freejoint()
         self.sensor_body = self.agent_body.add_body(
             name=f"{self.id}.sensor",
             pos=(0.0, 0.0, 0.0),
@@ -146,6 +142,11 @@ class NoopAgent(Agent):
                 rotation=qt.quaternion(*sensor.quat),
             )
         agent_body = self.sim.model.body(self.id)
+        # z_joint_id = self.sim.model.joint(self.z_slide_joint.id).id
+        # qpos_addr = self.sim.model.jnt_qposadr[z_joint_id]
+        # z_pos = self.sim.data.qpos[pos_addr]
+        body_pos = self.sim.data.body(self.id).xpos
+        body_quat = self.sim.data.body(self.id).xquat
         return AgentState(
             position=agent_body.pos,
             rotation=qt.quaternion(*agent_body.quat),
@@ -160,30 +161,43 @@ class PosableAgent(NoopAgent):
     """An agent that can be moved around the scene."""
 
     def actuate_move_forward(self, action: MoveForward):
-        joint = self.sim.model.joint(self.z_slide_joint.id)
-        qpos_addr = self.sim.model.jnt_qposadr[joint.id]
-        self.sim.data.qpos[qpos_addr] -= action.distance
+        body_pos = self.sim.data.body(self.id).xpos
+        body_quat = self.sim.data.body(self.id).xquat
+        xyzw = [body_quat[1], body_quat[2], body_quat[3], body_quat[0]]
+        rotation = Rotation.from_quat(xyzw)
+        rotation_matrix = rotation.as_matrix()
+        forward_vector = rotation_matrix[:, 2]
+        forward_vector = forward_vector / np.linalg.norm(
+            forward_vector
+        )  # necessary? lerarn moar math
+        forward_vector = forward_vector * action.distance
+
+        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
+        cur_xyz = self.sim.data.qpos[qpos_addr : qpos_addr + 3]
+
+        new_xyz = cur_xyz - forward_vector
+        self.sim.data.qpos[qpos_addr : qpos_addr + 3] = new_xyz
 
     def actuate_turn_right(self, action: TurnRight):
-        radians = -np.deg2rad(action.rotation_degrees)
-        joint = self.sim.model.joint(self.yaw_joint.id)
-        qpos_addr = self.sim.model.jnt_qposadr[joint.id]
-        self.sim.data.qpos[qpos_addr] += radians
+        pass
+        # radians = -np.deg2rad(action.rotation_degrees)
+        # joint = self.sim.model.joint(self.yaw_joint.id)
+        # qpos_addr = self.sim.model.jnt_qposadr[joint.id]
+        # self.sim.data.qpos[qpos_addr] += radians
 
     def actuate_turn_left(self, action: TurnLeft):
-        radians = np.deg2rad(action.rotation_degrees)
-        joint = self.sim.model.joint(self.yaw_joint.id)
-        qpos_addr = self.sim.model.jnt_qposadr[joint.id]
-        self.sim.data.qpos[qpos_addr] += radians
+        pass
+        # radians = np.deg2rad(action.rotation_degrees)
+        # joint = self.sim.model.joint(self.yaw_joint.id)
+        # qpos_addr = self.sim.model.jnt_qposadr[joint.id]
+        # self.sim.data.qpos[qpos_addr] += radians
 
     def actuate_look_up(self, action: LookUp):
-        radians = np.deg2rad(action.rotation_degrees)
-        joint = self.sim.model.joint(self.pitch_joint.id)
-        qpos_addr = self.sim.model.jnt_qposadr[joint.id]
-        self.sim.data.qpos[qpos_addr] += radians
+        delta_phi = np.deg2rad(action.rotation_degrees)
+        qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
+        self.sim.data.qpos[qpos_addr] += delta_phi
 
     def actuate_look_down(self, action: LookDown):
-        radians = -np.deg2rad(action.rotation_degrees)
-        joint = self.sim.model.joint(self.pitch_joint.id)
-        qpos_addr = self.sim.model.jnt_qposadr[joint.id]
-        self.sim.data.qpos[qpos_addr] += radians
+        delta_phi = -np.deg2rad(action.rotation_degrees)
+        qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
+        self.sim.data.qpos[qpos_addr] += delta_phi
