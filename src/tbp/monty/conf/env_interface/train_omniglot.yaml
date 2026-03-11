@@ -1,0 +1,26 @@
+# @package experiment.config
+
+do_train: true
+train_env_interface_args:
+  alphabets:
+  - 0
+  - 0
+  - 0
+  - 1
+  - 1
+  - 1
+  characters:
+  - 1
+  - 2
+  - 3
+  - 1
+  - 2
+  - 3
+  versions:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.OmniglotEnvironmentInterface}
