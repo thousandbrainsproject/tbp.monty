@@ -2,7 +2,7 @@
 
 defaults:
   - /monty: informed_5_evidence1_camera_dist1
-  - /environment: habitat_dist_agent_semantics0
+  - /environment: habitat_dist_agent_ycb_semantics0
   - /env_interface: eval_distinctobj_predefined_rotation
   - /logging: basic_monty_runs
   - config: eval_dist_epochall
