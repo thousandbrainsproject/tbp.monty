@@ -1,7 +1,11 @@
 # @package _global_
 
 defaults:
-  - /monty: informed_5_evidence1_camera_dist1
+  - /monty: evidencegraph_exp1000_e3_t3_tot2500
+  - /monty/motor_system_config: informed_5
+  - /monty/learning_module: evidence_1lm_nn5_dod003
+  - /monty/sensor_module: camera_dist_delta
+  - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_dist_agent_semantics0
   - /env_interface: eval_77obj_predefined_rotation
   - /logging: basic_monty_runs

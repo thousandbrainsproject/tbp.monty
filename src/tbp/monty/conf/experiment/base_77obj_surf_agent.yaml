@@ -1,7 +1,11 @@
 # @package _global_
 
 defaults:
-  - /monty: surface_curvature_informed_evidence1_camera_surf_delta1
+  - /monty: evidencegraph_exp1000_e3_t3_tot2500
+  - /monty/motor_system_config: surface_curvature_informed_goal1
+  - /monty/learning_module: evidence_1lm_nn5_dod0025
+  - /monty/sensor_module: camera_surf_delta
+  - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_surf_agent
   - /env_interface: eval_77obj_predefined_rotation
   - /logging: basic_monty_runs
