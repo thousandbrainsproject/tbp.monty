@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /monty: informed_evidence1_camera_surf_delta1
+  - /monty: surface_curvature_informed_evidence1_camera_surf_delta1
   - /environment: habitat_surf_agent
   - /env_interface: eval_distinctobj_predefined_rotation
   - /logging: basic
