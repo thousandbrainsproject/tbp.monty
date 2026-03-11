@@ -64,6 +64,7 @@ RUNS = [
     "supervised_pre_training_5lms",
     "supervised_pre_training_5lms_all_objects",
     "supervised_pre_training_flat_objects_wo_logos",
+    "supervised_pre_training_logos_after_flat_objects",
 ]
 
 
