@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, TypedDict
 
-import mujoco
 import quaternion as qt
 from mujoco import Renderer
 
+from tbp.monty.frameworks.actions.actions import LookDown, LookUp, TurnLeft, TurnRight
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
@@ -26,7 +26,6 @@ from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 if TYPE_CHECKING:
     from tbp.monty.simulators.mujoco import MuJoCoSimulator
 
-# TODO: Create a base Agent class?
 
 # TODO: Move elsewhere
 Size = tuple[int, int]
@@ -49,6 +48,8 @@ class AgentConfig(TypedDict):
 
 
 class Agent(Protocol):
+    id: AgentID
+
     @property
     def observations(self) -> AgentObservations: ...
 
@@ -83,7 +84,7 @@ class NoopAgent(Agent):
             inertia=(1.0, 1.0, 1.0),
         )
         # self.agent_body.add_joint(type=mujoco.mjtJoint.mjJNT_FREE)
-        freejoint = self.agent_body.add_freejoint()
+        self.agent_joint = self.agent_body.add_freejoint()
         for sensor_id, sensor_cfg in self._sensor_configs.items():
             self.agent_body.add_camera(
                 name=f"{self.id}.{sensor_id}",
@@ -128,3 +129,22 @@ class NoopAgent(Agent):
             rotation=qt.quaternion(*agent_body.quat),
             sensors=sensor_states,
         )
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(id={self.id})"
+
+
+class PosableAgent(NoopAgent):
+    """An agent that can be moved around the scene."""
+
+    def actuate_turn_right(self, action: TurnRight):
+        pass
+
+    def actuate_turn_left(self, action: TurnLeft):
+        pass
+
+    def actuate_look_up(self, action: LookUp):
+        pass
+
+    def actuate_look_down(self, action: LookDown):
+        pass

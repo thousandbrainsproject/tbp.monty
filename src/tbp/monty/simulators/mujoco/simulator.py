@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Sequence
 
@@ -25,6 +26,7 @@ from mujoco import (
 from typing_extensions import override
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
@@ -35,12 +37,14 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.math import QuaternionWXYZ, VectorXYZ
-from tbp.monty.simulators.mujoco import AgentConfig
+from tbp.monty.simulators.mujoco import Agent, AgentConfig
 from tbp.monty.simulators.simulator import Simulator
 
 if TYPE_CHECKING:
     from os import PathLike
 
+
+logger = logging.getLogger(__name__)
 
 # Map of names to MuJoCo primitive object types
 PRIMITIVE_OBJECT_TYPES = {
@@ -80,7 +84,7 @@ class MuJoCoSimulator(Simulator):
 
         self.data_path = Path(data_path)
         self._agent_configs = agent_configs
-        self._agents = []
+        self._agents: dict[AgentID, Agent] = {}
         self._create_agents()
 
         # Track how many objects we add to the environment.
@@ -95,7 +99,7 @@ class MuJoCoSimulator(Simulator):
             agent_type = agent_config["agent_type"]
             agent_args = agent_config["agent_args"]
             agent = agent_type(simulator=self, **agent_args)
-            self._agents.append(agent)
+            self._agents[agent.id] = agent
 
     def _recompile(self) -> None:
         """Recompile the MuJoCo model while retaining any state data."""
@@ -232,12 +236,20 @@ class MuJoCoSimulator(Simulator):
     def step(
         self, actions: Sequence[Action]
     ) -> tuple[Observations, ProprioceptiveState]:
+        for action in actions:
+            agent = self._agents[action.agent_id]
+            try:
+                action.act(agent)
+            except AttributeError:
+                logger.warning(f"{agent} does not understand {action}")
+                continue
+
         return self.observations, self.states
 
     @property
     def observations(self) -> Observations:
         obs = Observations()
-        for agent in self._agents:
+        for agent in self._agents.values():
             obs[agent.id] = agent.observations
 
         return obs
@@ -245,7 +257,7 @@ class MuJoCoSimulator(Simulator):
     @property
     def states(self) -> ProprioceptiveState:
         states = ProprioceptiveState()
-        for agent in self._agents:
+        for agent in self._agents.values():
             states[agent.id] = agent.state
         return states
 

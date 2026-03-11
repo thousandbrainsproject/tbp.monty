@@ -141,7 +141,7 @@ config:
               rotation: [1.0, 0.0, 0.0, 0.0]
               resolution: [256, 256]
               zoom: 1.0
-        agent_type: ${monty.class:tbp.monty.simulators.mujoco.NoopAgent}
+        agent_type: ${monty.class:tbp.monty.simulators.mujoco.PosableAgent}
     env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoEnvironment}
     transform:
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
