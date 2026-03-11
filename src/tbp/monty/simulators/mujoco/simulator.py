@@ -243,7 +243,7 @@ class MuJoCoSimulator(Simulator):
             except AttributeError:
                 logger.warning(f"{agent} does not understand {action}")
                 continue
-
+        mj_forward(self.model, self.data)
         return self.observations, self.states
 
     @property

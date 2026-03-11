@@ -10,10 +10,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, TypedDict
 
+import numpy as np
 import quaternion as qt
-from mujoco import Renderer
+from mujoco import Renderer, mjtJoint
 
-from tbp.monty.frameworks.actions.actions import LookDown, LookUp, TurnLeft, TurnRight
+from tbp.monty.frameworks.actions.actions import (
+    LookDown,
+    LookUp,
+    MoveForward,
+    TurnLeft,
+    TurnRight,
+)
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
@@ -83,10 +90,25 @@ class NoopAgent(Agent):
             mass=1.0,
             inertia=(1.0, 1.0, 1.0),
         )
-        # self.agent_body.add_joint(type=mujoco.mjtJoint.mjJNT_FREE)
-        self.agent_joint = self.agent_body.add_freejoint()
+        self.yaw_joint = self.agent_body.add_joint(
+            type=mjtJoint.mjJNT_HINGE, axis=(0, 1, 0)
+        )
+        self.z_slide_joint = self.agent_body.add_joint(
+            type=mjtJoint.mjJNT_SLIDE, axis=(0, 0, 1)
+        )
+        self.sensor_body = self.agent_body.add_body(
+            name=f"{self.id}.sensor",
+            pos=(0.0, 0.0, 0.0),
+            quat=(1.0, 0.0, 0.0, 0.0),
+            mass=1.0,
+            inertia=(1.0, 1.0, 1.0),
+        )
+        self.pitch_joint = self.sensor_body.add_joint(
+            type=mjtJoint.mjJNT_HINGE, axis=(1, 0, 0)
+        )
+
         for sensor_id, sensor_cfg in self._sensor_configs.items():
-            self.agent_body.add_camera(
+            self.sensor_body.add_camera(
                 name=f"{self.id}.{sensor_id}",
                 pos=sensor_cfg["position"],
                 quat=sensor_cfg["rotation"],
@@ -137,14 +159,31 @@ class NoopAgent(Agent):
 class PosableAgent(NoopAgent):
     """An agent that can be moved around the scene."""
 
+    def actuate_move_forward(self, action: MoveForward):
+        joint = self.sim.model.joint(self.z_slide_joint.id)
+        qpos_addr = self.sim.model.jnt_qposadr[joint.id]
+        self.sim.data.qpos[qpos_addr] -= action.distance
+
     def actuate_turn_right(self, action: TurnRight):
-        pass
+        radians = -np.deg2rad(action.rotation_degrees)
+        joint = self.sim.model.joint(self.yaw_joint.id)
+        qpos_addr = self.sim.model.jnt_qposadr[joint.id]
+        self.sim.data.qpos[qpos_addr] += radians
 
     def actuate_turn_left(self, action: TurnLeft):
-        pass
+        radians = np.deg2rad(action.rotation_degrees)
+        joint = self.sim.model.joint(self.yaw_joint.id)
+        qpos_addr = self.sim.model.jnt_qposadr[joint.id]
+        self.sim.data.qpos[qpos_addr] += radians
 
     def actuate_look_up(self, action: LookUp):
-        pass
+        radians = np.deg2rad(action.rotation_degrees)
+        joint = self.sim.model.joint(self.pitch_joint.id)
+        qpos_addr = self.sim.model.jnt_qposadr[joint.id]
+        self.sim.data.qpos[qpos_addr] += radians
 
     def actuate_look_down(self, action: LookDown):
-        pass
+        radians = -np.deg2rad(action.rotation_degrees)
+        joint = self.sim.model.joint(self.pitch_joint.id)
+        qpos_addr = self.sim.model.jnt_qposadr[joint.id]
+        self.sim.data.qpos[qpos_addr] += radians
