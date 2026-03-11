@@ -2,7 +2,7 @@
 
 defaults:
   - /monty: informed_5_evidence2_camera_dist2
-  - /env_interface: eval_compositional_predefined_rotation
+  - /env_interface: eval_compositional_lvl1_predefined_rotation
   - /logging: basic_evidence_eval_runs
   - /environment: habitat_2lm_dist_agent
   - config: eval_dist_pretrained_monolithic_epochall
