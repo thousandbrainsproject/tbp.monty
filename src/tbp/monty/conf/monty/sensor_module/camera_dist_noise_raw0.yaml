@@ -1,0 +1,29 @@
+# @package experiment.config.monty_config
+
+sensor_module_configs:
+  sensor_module_0:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
+    sensor_module_args:
+      sensor_module_id: patch
+      features:
+      - pose_vectors
+      - pose_fully_defined
+      - on_object
+      - hsv
+      - principal_curvatures_log
+      delta_thresholds:
+        on_object: 0
+        distance: 0.01
+      save_raw_obs: false
+      noise_params:
+        features:
+          pose_vectors: 2 # rotate by random degrees along xyz
+          hsv: 0.1 # add gaussian noise with 0.1 std
+          principal_curvatures_log: 0.1
+          pose_fully_defined: 0.01 # flip bool in 1% of cases
+        location: 0.002 # add gaussian noise with 0.002 std
+  sensor_module_1:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+    sensor_module_args:
+      sensor_module_id: view_finder
+      save_raw_obs: false

@@ -39,7 +39,9 @@ RUNS = [
     "surf_agent_unsupervised_10distinctobj",
     "surf_agent_unsupervised_10distinctobj_noise",
     "surf_agent_unsupervised_10simobj",
-    "infer_comp_lvl1_with_monolithic_models"
+    "unsupervised_inference_distinctobj_dist_agent",
+    "unsupervised_inference_distinctobj_surf_agent",
+    "infer_comp_lvl1_with_monolithic_models",
 ]
 
 
@@ -82,7 +84,7 @@ def compare(
     """Compare two configs hierarchically, ignoring key order at every level."""
     if type(snapshot) is not type(experiment):
         print(
-            f"Types do not match: {snapshot_label}: {snapshot} != {experiment_label}: {experiment}"
+            f"{path} types do not match: {snapshot_label}: {snapshot} != {experiment_label}: {experiment}"
         )
         return False
     if isinstance(snapshot, dict):

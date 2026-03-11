@@ -1,20 +1,14 @@
-defaults:
-  - randrot_noise_10distinctobj_dist_agent
+# @package _global_
 
-config:
-  max_eval_steps: 100
-  logging:
-    run_name: unsupervised_inference_distinctobj_dist_agent
-  monty_config:
-    learning_module_configs:
-      learning_module_0:
-        learning_module_class: ${monty.class:tbp.monty.frameworks.models.no_reset_evidence_matching.NoResetEvidenceGraphLM}
-        learning_module_args:
-          evidence_threshold_config: all
-    sensor_module_configs:
-      sensor_module_1:
-        sensor_module_args:
-          save_raw_obs: false
-    monty_class: ${monty.class:tbp.monty.frameworks.models.no_reset_evidence_matching.MontyForNoResetEvidenceGraphMatching}
-    monty_args:
-      min_eval_steps: 100
+defaults:
+  - /monty: informed_noresetevidence1_camera_dist_noise1
+  - /env_interface: eval_distinctobj_random_rotation
+  - /logging: basic_monty_runs
+  - /environment: habitat_dist_agent_semantics0
+  - config: eval_dist_maxeval100_epoch10_distinctobj
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    logging:
+      run_name: unsupervised_inference_distinctobj_dist_agent

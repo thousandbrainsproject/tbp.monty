@@ -156,12 +156,23 @@ experiment:
           sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
           sensor_module_args:
             sensor_module_id: patch
-            features: ${constants.default_sensor_features}
+            features:
+            - pose_vectors
+            - pose_fully_defined
+            - on_object
+            - hsv
+            - principal_curvatures_log
             save_raw_obs: false
             delta_thresholds:
               on_object: 0
               distance: 0.01
-            noise_params: ${constants.default_all_noise_params}
+            noise_params:
+              features:
+                pose_vectors: 2
+                hsv: 0.1
+                principal_curvatures_log: 0.1
+                pose_fully_defined: 0.01
+              location: 0.002
         sensor_module_1:
           sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
           sensor_module_args:
