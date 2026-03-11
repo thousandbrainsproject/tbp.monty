@@ -42,6 +42,7 @@ RUNS = [
     "unsupervised_inference_distinctobj_dist_agent",
     "unsupervised_inference_distinctobj_surf_agent",
     "infer_comp_lvl1_with_monolithic_models",
+    "infer_comp_lvl1_with_comp_models",
 ]
 
 
