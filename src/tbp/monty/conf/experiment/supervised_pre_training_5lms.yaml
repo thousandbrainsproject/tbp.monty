@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /monty: naive_scan_displacement5_camera5
+  - /monty: naive_scan_5_displacement5_camera5
   - /environment: habitat_ycb_dist_agent_sensors5_semantics0
   - /env_interface: train_distinctobj_predefined_rotation
   - /logging: silent_info_train
