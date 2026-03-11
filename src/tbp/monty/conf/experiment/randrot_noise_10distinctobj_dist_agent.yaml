@@ -5,7 +5,7 @@ defaults:
   - /env_interface: eval_distinctobj_random_rotation
   - /logging: basic
   - /environment: habitat_dist_agent_semantics0
-  - config: eval_dist_epoch10
+  - config: eval_dist_epoch10_distinctobj
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
