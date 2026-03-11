@@ -161,61 +161,58 @@ class PosableAgent(NoopAgent):
     """An agent that can be moved around the scene."""
 
     def actuate_move_forward(self, action: MoveForward):
-        body_pos = self.sim.data.body(self.id).xpos
         body_quat = self.sim.data.body(self.id).xquat
         xyzw = [body_quat[1], body_quat[2], body_quat[3], body_quat[0]]
         rotation = Rotation.from_quat(xyzw)
         rotation_matrix = rotation.as_matrix()
-        forward_vector = rotation_matrix[:, 2]
-        forward_vector = forward_vector / np.linalg.norm(
-            forward_vector
-        )  # necessary? lerarn moar math
-        forward_vector = forward_vector * action.distance
+        forward_vector = rotation_matrix[:, 2] * action.distance
 
         qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
         cur_xyz = self.sim.data.qpos[qpos_addr : qpos_addr + 3]
-
         new_xyz = cur_xyz - forward_vector
         self.sim.data.qpos[qpos_addr : qpos_addr + 3] = new_xyz
 
     def actuate_turn_right(self, action: TurnRight):
-        body_quat = self.sim.data.body(self.id).xquat
-        xyzw = [body_quat[1], body_quat[2], body_quat[3], body_quat[0]]
-        rotation = Rotation.from_quat(xyzw)
-        cur_angles = rotation.as_euler("xyz", degrees=True)
-
-        delta_theta = -action.rotation_degrees
-        new_angles = cur_angles.copy()
-        new_angles[1] += delta_theta
-        new_rotation = Rotation.from_euler("xyz", new_angles, degrees=True)
-        new_quat = new_rotation.as_quat()
-        new_quat_wxyz = [new_quat[3], new_quat[0], new_quat[1], new_quat[2]]
-        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
-
-        self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7] = new_quat_wxyz
+        self._actuate_yaw(-action.rotation_degrees)
 
     def actuate_turn_left(self, action: TurnLeft):
+        self._actuate_yaw(action.rotation_degrees)
+
+    def actuate_look_up(self, action: LookUp):
+        self._actuate_pitch(action.rotation_degrees)
+
+    def actuate_look_down(self, action: LookDown):
+        self._actuate_pitch(-action.rotation_degrees)
+
+    def _actuate_yaw(self, delta_theta: float):
+        """Yaw the agent body by a specified number of degrees.
+
+        Args:
+            delta_theta: The number of degrees to yaw the agent body.
+
+        TODO: Probably want to convert rotation amount to quaternion and then multiply
+          against current rotation (which is a quaternion) rather than convert the
+          current rotation to Euler angles and then add the rotation amount to it.
+        """
         body_quat = self.sim.data.body(self.id).xquat
         xyzw = [body_quat[1], body_quat[2], body_quat[3], body_quat[0]]
         rotation = Rotation.from_quat(xyzw)
-        cur_angles = rotation.as_euler("xyz", degrees=True)
-
-        delta_theta = action.rotation_degrees
-        new_angles = cur_angles.copy()
-        new_angles[1] += delta_theta
-        new_rotation = Rotation.from_euler("xyz", new_angles, degrees=True)
+        angles = rotation.as_euler("xyz", degrees=True)
+        angles[1] += delta_theta
+        new_rotation = Rotation.from_euler("xyz", angles, degrees=True)
         new_quat = new_rotation.as_quat()
         new_quat_wxyz = [new_quat[3], new_quat[0], new_quat[1], new_quat[2]]
         qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
-
         self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7] = new_quat_wxyz
 
-    def actuate_look_up(self, action: LookUp):
-        delta_phi = np.deg2rad(action.rotation_degrees)
+    def _actuate_pitch(self, delta_phi: float):
+        """Pitch the sensor body by a specified number of degrees.
+
+        Args:
+            delta_phi: The number of degrees to pitch the sensor body.
+
+        """
+        delta_phi = np.deg2rad(delta_phi)
         qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
         self.sim.data.qpos[qpos_addr] += delta_phi
 
-    def actuate_look_down(self, action: LookDown):
-        delta_phi = -np.deg2rad(action.rotation_degrees)
-        qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
-        self.sim.data.qpos[qpos_addr] += delta_phi
