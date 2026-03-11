@@ -5,7 +5,7 @@ defaults:
   - /env_interface: eval_compositional_lvl4_predefined_rotation
   - /logging: basic_evidence_eval_runs
   - /environment: habitat_2lm_dist_agent
-  - config: eval_dist_pretrained_lvl4_comp_epochall
+  - config: eval_dist_pretrained_lvl4_comp
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
