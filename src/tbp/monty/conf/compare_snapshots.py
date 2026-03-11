@@ -46,6 +46,7 @@ RUNS = [
     "infer_comp_lvl2_with_comp_models",
     "infer_comp_lvl3_with_comp_models",
     "infer_comp_lvl4_with_comp_models",
+    "randrot_noise_sim_on_scan_monty_world",
 ]
 
 
