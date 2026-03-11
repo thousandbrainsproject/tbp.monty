@@ -40,6 +40,7 @@ RUNS = [
     "surf_agent_unsupervised_10distinctobj_noise",
     "surf_agent_unsupervised_10simobj",
     "unsupervised_inference_distinctobj_dist_agent",
+    "unsupervised_inference_distinctobj_surf_agent",
 ]
 
 
@@ -82,7 +83,7 @@ def compare(
     """Compare two configs hierarchically, ignoring key order at every level."""
     if type(snapshot) is not type(experiment):
         print(
-            f"Types do not match: {snapshot_label}: {snapshot} != {experiment_label}: {experiment}"
+            f"{path} types do not match: {snapshot_label}: {snapshot} != {experiment_label}: {experiment}"
         )
         return False
     if isinstance(snapshot, dict):
