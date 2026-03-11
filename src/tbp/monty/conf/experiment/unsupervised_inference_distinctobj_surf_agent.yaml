@@ -1,7 +1,11 @@
 # @package _global_
 
 defaults:
-  - /monty: surface_curvature_informed_noresetevidence1_camera_surf_noise1
+  - /monty: noresetevidencegraph_exp1000_e100_t3_tot2500
+  - /monty/motor_system_config: surface_curvature_informed_goal1
+  - /monty/learning_module: noresetevidence_1lm_dod0025
+  - /monty/sensor_module: camera_surf_noise_raw0
+  - /monty/connectivity: 1lm_1sm
   - /env_interface: eval_distinctobj_random_rotation
   - /logging: basic_monty_runs
   - /environment: habitat_ycb_surf_agent

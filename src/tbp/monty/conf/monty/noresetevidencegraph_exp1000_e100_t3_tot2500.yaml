@@ -1,11 +1,5 @@
 # @package experiment.config.monty_config
 
-defaults:
-  - motor_system_config: informed_5
-  - learning_module: noresetevidence_1lm
-  - sensor_module: camera_dist_noise_raw0
-  - connectivity: 1lm_1sm
-
 monty_class: ${monty.class:tbp.monty.frameworks.models.no_reset_evidence_matching.MontyForNoResetEvidenceGraphMatching}
 monty_args:
   num_exploratory_steps: 1000

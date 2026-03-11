@@ -1,7 +1,11 @@
 # @package _global_
 
 defaults:
-  - /monty: informed_evidence5_camera_dist_noise5
+  - /monty: evidencegraph_exp1000_emin_t3_tot2500
+  - /monty/motor_system_config: informed_5
+  - /monty/learning_module: evidence_5lm_nn10_dod003
+  - /monty/sensor_module: 5sm_camera_dist_noise
+  - /monty/connectivity: 5lm_5sm
   - /env_interface: eval_distinctobj_random_rotation
   - /logging: basic_monty_runs
   - /environment: habitat_dist_agent_sensors5
