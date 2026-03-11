@@ -5,7 +5,7 @@ defaults:
   - /environment: habitat_dist_agent_sensors2
   - /env_interface: train_compositional_lvl1_predefined_rotation
   - /logging: silent_info_train
-  - config: train_dist_pretrained_logos_after_flat_objects
+  - config: train_dist_supervised_lm1_pretrained_logos_after_flat
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
