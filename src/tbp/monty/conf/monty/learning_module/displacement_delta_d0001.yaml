@@ -1,0 +1,19 @@
+# @package experiment.config.monty_config.learning_module_configs
+
+learning_module_0:
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+  learning_module_args:
+    k: 10
+    match_attribute: displacement
+    tolerance: ${np.array:[0.0001, 0.0001, 0.0001]}
+    graph_delta_thresholds:
+      patch:
+        distance: 0.001
+        pose_vectors: ${np.list_eval:[np.pi / 8, np.pi * 2, np.pi * 2]}
+        principal_curvatures_log:
+        - 1
+        - 1
+        hsv:
+        - 0.1
+        - 1
+        - 1
