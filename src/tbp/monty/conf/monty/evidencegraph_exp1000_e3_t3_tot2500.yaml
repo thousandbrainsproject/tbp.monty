@@ -3,6 +3,6 @@
 monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
 monty_args:
   num_exploratory_steps: 1000
-  min_eval_steps: ${constants.min_eval_steps}
+  min_eval_steps: 3
   min_train_steps: 3
   max_total_steps: 2500

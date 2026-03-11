@@ -1,11 +1,5 @@
 # @package experiment.config.monty_config
 
-defaults:
-  - motor_system_config: naive_scan_5
-  - learning_module: displacement_delta_d0001
-  - sensor_module: camera_dist
-  - connectivity: 1lm_1sm
-
 monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
 monty_args:
   num_exploratory_steps: 500

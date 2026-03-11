@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /monty: evidencegraph_exp1000_e3_t3_tot2500
+  - /monty: evidencegraph_exp1000_emin_t3_tot2500
   - /monty/motor_system_config: informed_5_goal1
   - /monty/learning_module: evidence_2lm_gsg
   - /monty/sensor_module: 2sm_camera_dist

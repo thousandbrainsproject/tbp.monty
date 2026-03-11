@@ -1,7 +1,11 @@
 # @package _global_
 
 defaults:
-  - /monty: surface_evidence1_camera_surf1
+  - /monty: graph_exp1000_e3_t100_tot2500
+  - /monty/motor_system_config: surface
+  - /monty/learning_module: evidence_1lm_nn5
+  - /monty/sensor_module: camera_surf
+  - /monty/connectivity: 1lm_1sm
   - /env_interface: train_simobj_random_rotation
   - /logging: detailed
   - /environment: habitat_ycb_surf_agent

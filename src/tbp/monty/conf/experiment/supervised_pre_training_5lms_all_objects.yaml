@@ -1,7 +1,11 @@
 # @package _global_
 
 defaults:
-  - /monty: naive_scan_5_displacement5_camera5
+  - /monty: graph_exp500_e3_t3_tot2500
+  - /monty/motor_system_config: naive_scan_5
+  - /monty/learning_module: displacement_5lm
+  - /monty/sensor_module: 5sm_camera
+  - /monty/connectivity: 5lm_5sm
   - /environment: habitat_ycb_dist_agent_sensors5_semantics0
   - /env_interface: train_allobj_predefined_rotation
   - /logging: silent_info_train
