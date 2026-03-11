@@ -4,7 +4,7 @@ defaults:
   - /monty: informed_20_evidence1_camera_dist1
   - /environment: two_d_data_multi_object
   - /env_interface: eval_worldimages
-  - /logging: basic_evidence_eval_runs
+  - /logging: basic_wandb_evidence_eval_runs
   - config: eval_dist_numenta_lab_obj
 
 experiment:

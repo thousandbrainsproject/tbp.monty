@@ -66,6 +66,7 @@ RUNS = [
     "supervised_pre_training_flat_objects_wo_logos",
     "supervised_pre_training_logos_after_flat_objects",
     "supervised_pre_training_curved_objects_after_flat_and_logo",
+    "world_image_from_stream_on_scanned_model",
 ]
 
 

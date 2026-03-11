@@ -3,7 +3,7 @@
 defaults:
   - /monty: informed_5_evidence2_camera_dist2
   - /env_interface: eval_compositional_lvl4_predefined_rotation
-  - /logging: basic_evidence_eval_runs
+  - /logging: basic_wandb_evidence_eval_runs
   - /environment: habitat_dist_agent_sensors2
   - config: eval_dist_pretrained_lvl4_comp
 

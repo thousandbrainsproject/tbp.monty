@@ -1,16 +1,14 @@
+# @package _global_
+
 defaults:
-  - world_image_on_scanned_model
-  - config/environment/clear_env_interface_config@config
-  - config/environment/world_image_from_stream@config.env_interface_config
-  - config/environment_interface/clear_eval_env_interface_args@config
-  - config/logging/clear_logging@config.logging
-  - config/logging/eval_evidence_lm@config.logging
+  - /monty: informed_20_evidence1_camera_dist1
+  - /environment: two_d_data_stream
+  - /env_interface: eval_stream
+  - /logging: basic_evidence_eval_runs
+  - config: eval_dist_numenta_lab_obj
 
-config:
-
-  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageFromStreamEnvironmentInterface}
-  eval_env_interface_args: {}
-  logging:
-    python_log_level: INFO
-    run_name: world_image_from_stream_on_scanned_model
-    wandb_handlers: []
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    logging:
+      run_name: world_image_from_stream_on_scanned_model
