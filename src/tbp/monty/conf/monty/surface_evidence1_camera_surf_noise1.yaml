@@ -3,10 +3,10 @@
 defaults:
   - motor_system_config: surface
   - learning_module: evidence_1lm_nn5
-  - sensor_module: camera_surf
+  - sensor_module: camera_surf_noise
   - connectivity: 1lm_1sm
 
-monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching} 
+monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
 monty_args:
   num_exploratory_steps: 1000
   min_eval_steps: 3
