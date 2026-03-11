@@ -58,6 +58,7 @@ RUNS = [
     "multi_object_world_image_on_scanned_model",
     "only_surf_agent_training_10obj",
     "only_surf_agent_training_10simobj",
+    "only_surf_agent_training_allobj",
 ]
 
 

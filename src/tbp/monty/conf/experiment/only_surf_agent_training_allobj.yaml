@@ -1,16 +1,14 @@
-defaults:
-  - only_surf_agent_training_10obj
-  - config/logging/clear_logging@config
-  - config/logging/pretrain@config.logging
-  - config/environment_interface/clear_train_env_interface_args@config
-  - config/environment_interface/per_object@config.train_env_interface_args
-  - config/environment_interface/ycb/shuffled_objects@config.train_env_interface_args.object_names
+# @package _global_
 
-config:
-  logging:
-    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
-    run_name: surf_agent_1lm_77obj
-  train_env_interface_args:
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations: ${constants.rotations_all}
+defaults:
+  - /monty: surface_curvature_informed_displacement1_camera_surf_rgba1
+  - /environment: habitat_surf_agent
+  - /env_interface: train_allobj_predefined_rotation
+  - /logging: silent_train
+  - config: train_surf_epochall
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+  config:
+    logging:
+      run_name: surf_agent_1lm_77obj
