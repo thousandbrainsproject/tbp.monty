@@ -53,6 +53,7 @@ RUNS = [
     "world_image_on_scanned_model",
     "bright_world_image_on_scanned_model",
     "dark_world_image_on_scanned_model",
+    "hand_intrusion_world_image_on_scanned_model",
 ]
 
 
