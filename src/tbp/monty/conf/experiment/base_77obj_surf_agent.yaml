@@ -2,7 +2,7 @@
 
 defaults:
   - /monty: surface_curvature_informed_evidence1_camera_surf_delta1
-  - /environment: habitat_surf_agent
+  - /environment: habitat_ycb_surf_agent
   - /env_interface: eval_77obj_predefined_rotation
   - /logging: basic_monty_runs
   - config: eval_surf_epoch3_77obj

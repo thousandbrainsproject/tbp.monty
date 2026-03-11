@@ -4,7 +4,7 @@ defaults:
   - /monty: surface_curvature_informed_noresetevidence1_camera_surf_noise1
   - /env_interface: eval_distinctobj_random_rotation
   - /logging: basic_monty_runs
-  - /environment: habitat_surf_agent
+  - /environment: habitat_ycb_surf_agent
   - config: eval_surf_maxeval100_epoch10_distinctobj
 
 experiment:

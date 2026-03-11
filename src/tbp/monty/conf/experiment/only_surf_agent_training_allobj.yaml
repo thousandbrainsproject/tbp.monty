@@ -2,7 +2,7 @@
 
 defaults:
   - /monty: surface_curvature_informed_displacement1_camera_surf_rgba1
-  - /environment: habitat_surf_agent
+  - /environment: habitat_ycb_surf_agent
   - /env_interface: train_allobj_predefined_rotation
   - /logging: silent_train
   - config: train_surf_epochall

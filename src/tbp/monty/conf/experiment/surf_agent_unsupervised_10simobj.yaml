@@ -4,7 +4,7 @@ defaults:
   - /monty: surface_evidence1_camera_surf1
   - /env_interface: train_simobj_random_rotation
   - /logging: detailed
-  - /environment: habitat_surf_agent
+  - /environment: habitat_ycb_surf_agent
   - config: train_surf_epoch10
 
 experiment:
