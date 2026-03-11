@@ -2,7 +2,7 @@
 
 defaults:
   - motor_system_config: informed_5
-  - learning_module: evidence_2lm
+  - learning_module: evidence_2lm_gsg
   - sensor_module: 2sm_camera_dist
   - connectivity: 2lm_2sm
 
