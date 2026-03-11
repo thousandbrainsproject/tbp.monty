@@ -72,12 +72,11 @@ def compare_snapshots(
         # to_object ensures the config is resolved
         experiment_yaml = OmegaConf.to_yaml(config)
         experiment_conf: dict[str, Any] = yaml.safe_load(experiment_yaml)
-        first = compare(snapshot, experiment_conf)
+        first = compare(
+            snapshot, experiment_conf, left_label="snapshot", right_label="experiment"
+        )
         second = compare(
-            experiment_conf,
-            snapshot,
-            left_label="experiment",
-            right_label="snapshot",
+            experiment_conf, snapshot, left_label="experiment", right_label="snapshot"
         )
 
         return first and second
