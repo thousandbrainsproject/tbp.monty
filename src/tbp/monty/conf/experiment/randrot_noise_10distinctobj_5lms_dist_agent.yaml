@@ -4,7 +4,7 @@ defaults:
   - /monty: informed_evidence5_camera_dist_noise5
   - /env_interface: eval_distinctobj_random_rotation
   - /logging: basic_monty_runs
-  - /environment: habitat_5lm_dist_agent
+  - /environment: habitat_dist_agent_sensors5
   - config: eval_dist_5lm_epoch10
 
 experiment:
