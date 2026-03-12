@@ -78,6 +78,7 @@ RUNS = [
     "tutorial/surf_agent_2obj_train",
     "tutorial/surf_agent_2obj_eval",
     "tutorial/surf_agent_2obj_unsupervised",
+    "tutorial/monty_meets_world_2dimage_inference",
 ]
 
 
