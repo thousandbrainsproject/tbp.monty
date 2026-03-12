@@ -1,19 +1,18 @@
-# @package experiment.config.monty_config
+# @package experiment.config.monty_config.sensor_module_configs
 
-sensor_module_configs:
-  sensor_module_0:
-    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
-    sensor_module_args:
-      sensor_module_id: patch
-      features:
-      - pose_vectors
-      - pose_fully_defined
-      - on_object
-      - principal_curvatures_log
-      save_raw_obs: false
-      pc1_is_pc2_threshold: 1
-  sensor_module_1:
-    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
-    sensor_module_args:
-      sensor_module_id: view_finder
-      save_raw_obs: false
+sensor_module_0:
+  sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
+  sensor_module_args:
+    sensor_module_id: patch
+    features:
+    - pose_vectors
+    - pose_fully_defined
+    - on_object
+    - principal_curvatures_log
+    save_raw_obs: false
+    pc1_is_pc2_threshold: 1
+sensor_module_1:
+  sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+  sensor_module_args:
+    sensor_module_id: view_finder
+    save_raw_obs: false
