@@ -128,7 +128,7 @@ config:
       agents:
         agent_args:
           agent_id: ${monty.agent_id:agent_id_0}
-          position: [0.0, 0.0, 0.4]
+          position: [0.0, 0.0, 0.16]
           rotation: [1.0, 0.0, 0.0, 0.0]
           sensor_configs:
             patch:
@@ -137,7 +137,7 @@ config:
               resolution: [64, 64]
               zoom: 10.0
             view_finder:
-              position: [0.0, 0.0, 0.0]
+              position: [0.0, 0.0, -0.03]
               rotation: [1.0, 0.0, 0.0, 0.0]
               resolution: [256, 256]
               zoom: 1.0

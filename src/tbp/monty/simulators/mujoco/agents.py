@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, TypedDict
+from typing import TYPE_CHECKING, Protocol, TypedDict, cast
 
 import numpy as np
 import quaternion as qt
@@ -146,19 +146,20 @@ class NoopAgent(Agent):
 
         # Get sensor position and rotation relative to the agent.
         # Note: The sensor body position is in world coordinates.
-        sensor_body_pos = self.sim.data.body(f"{self.id}.sensor").xpos
-        sensor_quat = self.sim.data.body(f"{self.id}.sensor").xquat
-        sensor_rotation_rel_world = rotation_from_quat(sensor_quat)
-        sensor_rotation = agent_rotation.inv() * sensor_rotation_rel_world
-
-        sensor_angles = sensor_rotation.as_euler("xyz", degrees=True)
+        pitch_body_rot = rotation_from_quat(
+            self.sim.data.body(f"{self.id}.sensor").xquat
+        )
+        pitch_body_rot_rel_agent = agent_rotation.inv() * pitch_body_rot
+        pitch_body_rot_quat = qt.quaternion(*rotation_as_quat(pitch_body_rot_rel_agent))
 
         sensor_states = {}
-        for sensor_id in self._sensor_configs:
-            sensor = self.sim.model.camera(f"{self.id}.{sensor_id}")
+        for sensor_id, sensor_config in self._sensor_configs.items():
+            sensor_pos_rel_agent = pitch_body_rot_rel_agent.apply(
+                sensor_config["position"]
+            )
             sensor_states[sensor_id] = SensorState(
-                position=sensor.pos,
-                rotation=qt.quaternion(*sensor.quat),
+                position=cast("VectorXYZ", tuple(sensor_pos_rel_agent)),
+                rotation=pitch_body_rot_quat,
             )
         return AgentState(
             position=agent_pos,
@@ -223,9 +224,7 @@ class PosableAgent(NoopAgent):
 
         Args:
             delta_phi: The number of degrees to pitch the sensor body.
-
         """
         delta_phi = np.deg2rad(delta_phi)
         qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
         self.sim.data.qpos[qpos_addr] += delta_phi
-
