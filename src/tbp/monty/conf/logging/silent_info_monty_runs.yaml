@@ -1,8 +1,7 @@
 # @package experiment.config.logging
 
-monty_log_level: BASIC
-monty_handlers:
-      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+monty_log_level: SILENT
+monty_handlers: []
 wandb_handlers: []
 python_log_level: INFO
 python_log_to_file: true

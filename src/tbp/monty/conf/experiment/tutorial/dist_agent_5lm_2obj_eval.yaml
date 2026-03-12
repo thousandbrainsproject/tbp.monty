@@ -8,7 +8,7 @@ defaults:
   - /monty/connectivity: 5lm_5sm
   - /environment: habitat_dist_agent_sensors5
   - /env_interface: tutorial_eval_2obj_predefined_r1
-  - /logging: detailed_info_monty_runs
+  - /logging: basic_info_monty_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

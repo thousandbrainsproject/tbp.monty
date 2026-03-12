@@ -105,7 +105,7 @@ experiment:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
     train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
     logging:
-      monty_log_level: DETAILED
+      monty_log_level: BASIC
       monty_handlers:
       - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
       wandb_handlers: []

@@ -105,6 +105,7 @@ RUNS = [
     "test/no_reset_evidence_lm/unsupervised",
     "test/frameworks/models/evidence_matching/burst_sampling",
     "test/sensor_module/base",
+    "test/graph_building/load_habitat_for_feat_eval",
 ]
 
 def compare_snapshots(
@@ -272,6 +273,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    success = True
     if args.compare_dirs:
         left, right = Path(args.compare_dirs[0]), Path(args.compare_dirs[1])
         match = compare_snapshot_dirs(left, right)
@@ -282,6 +284,9 @@ if __name__ == "__main__":
             sys.exit(1)
     elif args.experiment is None:
         for run in RUNS:
-            compare_snapshots(run=run)
-    else:
-        compare_snapshots(run=args.experiment)
+            if not compare_snapshots(run=run):
+                success = False
+    elif not compare_snapshots(run=args.experiment):
+        success = False
+    if not success:
+        sys.exit(1)

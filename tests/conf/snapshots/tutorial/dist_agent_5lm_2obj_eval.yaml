@@ -392,7 +392,7 @@ experiment:
         - ${np.array:[0, 15, 30]}
     eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
     logging:
-      monty_log_level: DETAILED
+      monty_log_level: BASIC
       monty_handlers:
       - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
       wandb_handlers: []
