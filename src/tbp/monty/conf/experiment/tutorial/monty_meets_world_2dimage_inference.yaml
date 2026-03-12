@@ -15,6 +15,6 @@ experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
     show_sensor_output: true
-    model_name_or_path: ${path.expanduser:${constants.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/}
+    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
     logging:
       run_name: monty_meets_world_2dimage_inference
