@@ -79,12 +79,8 @@ RUNS = [
     "tutorial/surf_agent_2obj_eval",
     "tutorial/surf_agent_2obj_unsupervised",
     "tutorial/monty_meets_world_2dimage_inference",
+    "test/base_config/base",
 ]
-
-TEST_RUNS = [
-    "base_config/base",
-]
-
 
 def compare_snapshots(
     run: str,
@@ -262,12 +258,5 @@ if __name__ == "__main__":
     elif args.experiment is None:
         for run in RUNS:
             compare_snapshots(run=run)
-        for run in TEST_RUNS:
-            compare_snapshots(
-                run=run,
-                config_name="test",
-                override_key="test",
-                snapshots_dir=PROJECT_ROOT / "tests" / "conf" / "snapshots" / "test",
-            )
     else:
         compare_snapshots(run=args.experiment)

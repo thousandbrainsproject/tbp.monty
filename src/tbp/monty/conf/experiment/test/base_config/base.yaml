@@ -1,0 +1,18 @@
+# @package _global_
+
+defaults:
+  - /monty: base_exp1000_e3_t3_tot2500
+  - /monty/motor_system_config: base
+  - /monty/learning_module: fake_single
+  - /monty/sensor_module: fake_single
+  - /monty/connectivity: 1lm_1sm_single_sensor
+  - /environment: habitat_test
+  - /env_interface: traineval
+  - /logging: detailed_debug
+  - config: test
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.monty_experiment.MontyExperiment
+  config:
+    logging:
+      run_name: ""
