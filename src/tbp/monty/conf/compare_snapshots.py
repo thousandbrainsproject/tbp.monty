@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -73,6 +74,8 @@ RUNS = [
     "supervised_pre_training_objects_with_logos_lvl3_comp_models",
     "supervised_pre_training_objects_with_logos_lvl4_comp_models",
     "world_image_from_stream_on_scanned_model",
+    "tutorial/dist_agent_5lm_2obj_train",
+    "tutorial/dist_agent_5lm_2obj_eval",
     "tutorial/first_experiment",
     "tutorial/omniglot_training",
     "tutorial/omniglot_inference",
@@ -258,7 +261,7 @@ if __name__ == "__main__":
             print("\nAll snapshots match.")
         else:
             print("\nSome snapshots differ.")
-            exit(1)
+            sys.exit(1)
     elif args.experiment is None:
         for run in RUNS:
             compare_snapshots(run=run)

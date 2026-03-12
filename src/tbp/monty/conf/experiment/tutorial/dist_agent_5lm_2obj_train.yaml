@@ -1,28 +1,29 @@
-defaults:
-  - /experiment/config/supervised_pretraining@config
-  - /experiment/config/logging/pretrain@config.logging
-  - /experiment/config/monty/five_lm@config.monty_config
-  - /experiment/config/monty/args/clear_monty_args@config.monty_config
-  - /experiment/config/monty/args/defaults@config.monty_config.monty_args
-  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
-  - /experiment/config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
-  - /experiment/config/environment/five_lm_mount_habitat@config.env_interface_config
-  - /experiment/config/environment_interface/per_object@config.train_env_interface_args
+# @package _global_
 
-_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
-config:
-  n_train_epochs: ${constants.rotations_all_count}
-  logging:
-    output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-    run_name: dist_agent_5lm_2obj_train
-  monty_config:
-    monty_args:
-      num_exploratory_steps: 500
-  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
-  train_env_interface_args:
-    object_names:
-      - mug
-      - banana
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations: ${constants.rotations_all}
+defaults:
+  - /monty: graph_exp500_e3_t3_tot2500
+  - /monty/motor_system_config: naive_scan_5
+  - /monty/learning_module: displacement_5lm
+  - /monty/sensor_module: 5sm_camera
+  - /monty/connectivity: 5lm_5sm
+  - /environment: habitat_dist_agent_sensors5
+  - /env_interface: tutorial_train_2obj_predefined
+  - /logging: silent_warning_train
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+  config:
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: ${constants.rotations_all_count}
+    n_eval_epochs: 3 # unused but required
+    model_name_or_path: ''
+    min_lms_match: 1
+    seed: 42
+    show_sensor_output: false
+    supervised_lm_ids: all
+    logging:
+      output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
+      run_name: dist_agent_5lm_2obj_train
+      wandb_group: debugging
