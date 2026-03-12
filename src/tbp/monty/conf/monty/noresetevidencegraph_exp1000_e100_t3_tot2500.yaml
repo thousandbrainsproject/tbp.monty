@@ -1,14 +1,5 @@
 # @package experiment.config.monty_config
 
-<<<<<<< HEAD:src/tbp/monty/conf/monty/informed_noresetevidence1_camera_dist_noise1.yaml
-defaults:
-  - motor_system_config: informed_5_goal1
-  - learning_module: noresetevidence_1lm
-  - sensor_module: camera_dist_noise_raw0
-  - connectivity: 1lm_1sm
-
-=======
->>>>>>> 65071e3b348c4e9e8601d33b299d97188f13e9e8:src/tbp/monty/conf/monty/noresetevidencegraph_exp1000_e100_t3_tot2500.yaml
 monty_class: ${monty.class:tbp.monty.frameworks.models.no_reset_evidence_matching.MontyForNoResetEvidenceGraphMatching}
 monty_args:
   num_exploratory_steps: 1000
