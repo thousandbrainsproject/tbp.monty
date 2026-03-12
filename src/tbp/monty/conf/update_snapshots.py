@@ -12,6 +12,7 @@ Usage:
     python update_snapshots.py
 """
 
+import sys
 from pathlib import Path
 
 import hydra
@@ -24,27 +25,35 @@ PROJECT_ROOT = Path(__file__).parents[4]
 
 
 def update_snapshots(
-    experiment_dir: Path = Path(__file__).parent / "experiment",
-    experiment_prefix: str = "",
+    config_dir: Path,
+    config_name: str = "experiment",
+    override_key: str = "experiment",
+    override_prefix: str = "",
     snapshots_dir: Path = PROJECT_ROOT / "tests" / "conf" / "snapshots",
 ):
-    """Update snapshots for all experiments in the experiment directory.
+    """Update snapshots for all configs in a directory.
 
     Args:
-        experiment_dir: The directory containing the experiments.
-        experiment_prefix: The prefix to add to the experiment name (e.g. "tutorial/")
+        config_dir: The directory containing the config YAML files.
+        config_name: The Hydra config name (e.g. "experiment" or "test").
+        override_key: The override key used in hydra.compose
+            (e.g. "experiment" or "test").
+        override_prefix: Prefix for the override value
+            (e.g. "tutorial/" or "evidence_lm/").
         snapshots_dir: The directory to write the snapshots to.
     """
+    snapshots_dir.mkdir(parents=True, exist_ok=True)
+
     # Delete existing snapshots to remove renamed or deleted experiments
     for existing_snapshot in snapshots_dir.glob("*.yaml"):
         existing_snapshot.unlink()
 
-    for file_path in experiment_dir.glob("*.yaml"):
+    for file_path in config_dir.glob("*.yaml"):
         print(f"Updating snapshot: {file_path}")
         with hydra.initialize(version_base=None, config_path="."):
             config = hydra.compose(
-                config_name="experiment",
-                overrides=[f"experiment={experiment_prefix}{file_path.stem}"],
+                config_name=config_name,
+                overrides=[f"{override_key}={override_prefix}{file_path.stem}"],
             )
             OmegaConf.to_object(config)
             current_config_yaml = OmegaConf.to_yaml(config)
@@ -54,11 +63,43 @@ def update_snapshots(
 
 
 if __name__ == "__main__":
+    sys.path.insert(0, str(PROJECT_ROOT))
     setup_env()
     register_resolvers()
-    update_snapshots()
+
+    conf_dir = Path(__file__).parent
+    snapshots_root = PROJECT_ROOT / "tests" / "conf" / "snapshots"
+
+    # Experiment configs
     update_snapshots(
-        experiment_dir=Path(__file__).parent / "experiment" / "tutorial",
-        experiment_prefix="tutorial/",
-        snapshots_dir=PROJECT_ROOT / "tests" / "conf" / "snapshots" / "tutorial",
+        config_dir=conf_dir / "experiment",
+        snapshots_dir=snapshots_root,
     )
+    update_snapshots(
+        config_dir=conf_dir / "experiment" / "tutorial",
+        override_prefix="tutorial/",
+        snapshots_dir=snapshots_root / "tutorial",
+    )
+
+    # Test configs
+    test_subdirs = [
+        "base_config",
+        "evidence_lm",
+        "frameworks/models/evidence_matching",
+        "graph_building",
+        "graph_learning",
+        "hierarchy",
+        "integration/positioning_procedures/get_good_view",
+        "no_reset_evidence_lm",
+        "policy",
+        "profile",
+        "sensor_module",
+    ]
+    for subdir in test_subdirs:
+        update_snapshots(
+            config_dir=conf_dir / "test" / subdir,
+            config_name="test",
+            override_key="test",
+            override_prefix=f"{subdir}/",
+            snapshots_dir=snapshots_root / "test" / subdir,
+        )
