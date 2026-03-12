@@ -83,6 +83,7 @@ RUNS = [
     "test/base_config/base",
     "test/evidence_lm/base",
     "test/evidence_lm/evidence_times_out",
+    "test/evidence_lm/evidence_off_object",
 ]
 
 def compare_snapshots(

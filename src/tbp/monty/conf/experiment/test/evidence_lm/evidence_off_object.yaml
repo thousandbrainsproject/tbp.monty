@@ -1,0 +1,25 @@
+# @package _global_
+
+defaults:
+  - /monty: graph_exp20_e3_t3_tot2500
+  - /monty/motor_system_config: predefined_off_object
+  - /monty/learning_module: evidence_test_basic_mmd0001
+  - /monty/sensor_module: camera_dist
+  - /monty/connectivity: 1lm_1sm
+  - /environment: habitat_dist_agent
+  - /env_interface: test_train_1obj_predefined
+  - /logging: detailed_debug
+  - config: test
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    max_total_steps: 200
+    n_train_epochs: 2
+    n_eval_epochs: 3
+    logging:
+      python_log_level: INFO
+      run_name: ""
+    monty_config:
+      monty_args:
+        min_train_steps: 12
