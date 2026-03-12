@@ -81,29 +81,35 @@ RUNS = [
     "tutorial/monty_meets_world_2dimage_inference",
 ]
 
+TEST_RUNS = [
+    "base_config/base",
+]
+
 
 def compare_snapshots(
-    experiment: str,
+    run: str,
+    config_name: str = "experiment",
+    override_key: str = "experiment",
     snapshots_dir: Path = PROJECT_ROOT / "tests" / "conf" / "snapshots",
 ) -> bool:
-    snapshot_path = snapshots_dir / f"{experiment}.yaml"
+    snapshot_path = snapshots_dir / f"{run}.yaml"
     print(f"Comparing with snapshot: {snapshot_path}")
     with snapshot_path.open("r") as f:
         snapshot: dict[str, Any] = yaml.safe_load(f)
 
     with hydra.initialize(version_base=None, config_path="."):
         config = hydra.compose(
-            config_name="experiment",
-            overrides=[f"experiment={experiment}"],
+            config_name=config_name,
+            overrides=[f"{override_key}={run}"],
         )
         # to_object ensures the config is resolved
-        experiment_yaml = OmegaConf.to_yaml(config)
-        experiment_conf: dict[str, Any] = yaml.safe_load(experiment_yaml)
+        config_yaml = OmegaConf.to_yaml(config)
+        config_conf: dict[str, Any] = yaml.safe_load(config_yaml)
         first = compare(
-            snapshot, experiment_conf, left_label="snapshot", right_label="experiment"
+            snapshot, config_conf, left_label="snapshot", right_label=config_name
         )
         second = compare(
-            experiment_conf, snapshot, left_label="experiment", right_label="snapshot"
+            config_conf, snapshot, left_label=config_name, right_label="snapshot"
         )
 
         return first and second
@@ -255,10 +261,13 @@ if __name__ == "__main__":
             exit(1)
     elif args.experiment is None:
         for run in RUNS:
+            compare_snapshots(run=run)
+        for run in TEST_RUNS:
             compare_snapshots(
-                experiment=run,
+                run=run,
+                config_name="test",
+                override_key="test",
+                snapshots_dir=PROJECT_ROOT / "tests" / "conf" / "snapshots" / "test",
             )
     else:
-        compare_snapshots(
-            experiment=args.experiment,
-        )
+        compare_snapshots(run=args.experiment)
