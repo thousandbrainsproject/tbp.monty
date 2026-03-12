@@ -80,6 +80,7 @@ RUNS = [
     "tutorial/surf_agent_2obj_unsupervised",
     "tutorial/monty_meets_world_2dimage_inference",
     "test/base_config/base",
+    "test/evidence_lm/base",
 ]
 
 def compare_snapshots(

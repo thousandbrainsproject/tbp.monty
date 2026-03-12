@@ -1,0 +1,18 @@
+# @package _global_
+
+defaults:
+  - /monty: graph_exp20_e3_t3_tot2500
+  - /monty/motor_system_config: informed_5_goal0
+  - /monty/learning_module: displacement_1lm
+  - /monty/sensor_module: camera_dist
+  - /monty/connectivity: 1lm_1sm
+  - /environment: habitat_dist_agent
+  - /env_interface: test_informed_train1eval1
+  - /logging: detailed_debug
+  - config: test_train30_eval30_tot60_epoch3
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    logging:
+      run_name: ""
