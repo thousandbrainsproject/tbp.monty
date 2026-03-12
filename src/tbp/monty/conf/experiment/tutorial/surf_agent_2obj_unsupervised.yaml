@@ -7,7 +7,7 @@ defaults:
   - /monty/sensor_module: camera_surf
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_surf_agent
-  - /env_interface: train_tutorial_surf_agent_2obj_unsupervised
+  - /env_interface: tutorial_train_2obj_random_rotation
   - /logging: detailed
   - config: train_tutorial_surf_agent_2obj_unsupervised
 
