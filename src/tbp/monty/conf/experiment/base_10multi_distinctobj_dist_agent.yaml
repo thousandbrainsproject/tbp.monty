@@ -6,7 +6,7 @@ defaults:
   - /monty/learning_module: evidence_1lm_nn5_dod003
   - /monty/sensor_module: camera_dist_delta
   - /monty/connectivity: 1lm_1sm
-  - /env_interface: eval_distinctobj_distractors_predefined_rotation
+  - /env_interface: eval_distinctobj_distractors_predefined
   - /logging: basic_monty_runs
   - /environment: habitat_dist_agent_semantics1
   - config: eval_dist_epochall

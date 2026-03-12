@@ -7,7 +7,7 @@ defaults:
   - /monty/sensor_module: camera_dist_delta
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_dist_agent_semantics0
-  - /env_interface: eval_distinctobj_predefined_rotation
+  - /env_interface: eval_distinctobj_predefined
   - /logging: basic_monty_runs
   - config: eval_dist_epochall
 

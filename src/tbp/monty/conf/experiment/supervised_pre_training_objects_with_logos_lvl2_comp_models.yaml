@@ -7,7 +7,7 @@ defaults:
   - /monty/sensor_module: 2sm_camera_dist
   - /monty/connectivity: 2lm_2sm
   - /environment: habitat_dist_agent_sensors2
-  - /env_interface: train_lvl2_predefined_rotation
+  - /env_interface: train_lvl2_predefined
   - /logging: silent_info_train
   - config: train_dist_supervised_lm1_pretrained_curved_after_flat_and_logo
 
