@@ -51,15 +51,25 @@ experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
   # config specifies the configuration of the experiment itself.
   config:
+    # `show_sensor_output: true` will display a live plot of the sensor output.
     show_sensor_output: false
+    # The maximum number of steps to train for.
     max_train_steps: 1
+    # The maximum number of steps to evaluate for.
     max_eval_steps: 500
+    # The maximum number of steps to run for.
     max_total_steps: 6000
+    # The number of epochs to train for.
     n_train_epochs: 1
+    # The number of epochs to evaluate for.
     n_eval_epochs: 3
+    # The path to the model to load, if any.
     model_name_or_path: ''
     min_lms_match: 1
+    # The random seed for the experiment.
     seed: 42
+    # The list of learning module IDs to supervise, or "all" to supervise all
+    # learning modules.
     supervised_lm_ids: all
     logging:
       # Every experiment has a unique run name. This is used to identify the
