@@ -121,7 +121,7 @@ experiment:
         motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
       monty_args:
         num_exploratory_steps: 1000
-        min_eval_steps: 20
+        min_eval_steps: ${constants.min_eval_steps}
         min_train_steps: 3
         max_total_steps: 2500
       monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}

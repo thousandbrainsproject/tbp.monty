@@ -76,6 +76,7 @@ RUNS = [
     "tutorial/omniglot_training",
     "tutorial/omniglot_inference",
     "tutorial/surf_agent_2obj_train",
+    "tutorial/surf_agent_2obj_eval",
 ]
 
 
