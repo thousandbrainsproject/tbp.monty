@@ -75,6 +75,7 @@ RUNS = [
     "world_image_from_stream_on_scanned_model",
     "tutorial/omniglot_training",
     "tutorial/omniglot_inference",
+    "tutorial/surf_agent_2obj_train",
 ]
 
 
