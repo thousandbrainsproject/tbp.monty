@@ -105,6 +105,7 @@ RUNS = [
     "test/no_reset_evidence_lm/unsupervised",
     "test/frameworks/models/evidence_matching/burst_sampling",
     "test/sensor_module/base",
+    "test/sensor_module/feature_change_sensor",
     "test/graph_building/load_habitat_for_feat_eval",
 ]
 
