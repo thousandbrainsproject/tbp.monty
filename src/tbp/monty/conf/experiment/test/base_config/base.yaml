@@ -7,7 +7,7 @@ defaults:
   - /monty/sensor_module: fake_single
   - /monty/connectivity: 1lm_1sm_single_sensor
   - /environment: habitat_test
-  - /env_interface: test_perobj_train1eval1
+  - /env_interface: test_train_3obj_default_eval_3obj_default
   - /logging: detailed_debug
   - config: test
 
