@@ -29,6 +29,10 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.frameworks.utils.transform_utils import (
+    rotation_as_quat,
+    rotation_from_quat,
+)
 from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 if TYPE_CHECKING:
@@ -134,6 +138,21 @@ class NoopAgent(Agent):
 
     @property
     def state(self) -> AgentState:
+        """Get the state of the agent."""
+        # Get agent position and rotation. Both are in world coordinates.
+        agent_pos = self.sim.data.body(self.id).xpos
+        agent_quat = self.sim.data.body(self.id).xquat
+        agent_rotation = rotation_from_quat(agent_quat)
+
+        # Get sensor position and rotation relative to the agent.
+        # Note: The sensor body position is in world coordinates.
+        sensor_body_pos = self.sim.data.body(f"{self.id}.sensor").xpos
+        sensor_quat = self.sim.data.body(f"{self.id}.sensor").xquat
+        sensor_rotation_rel_world = rotation_from_quat(sensor_quat)
+        sensor_rotation = agent_rotation.inv() * sensor_rotation_rel_world
+
+        sensor_angles = sensor_rotation.as_euler("xyz", degrees=True)
+
         sensor_states = {}
         for sensor_id in self._sensor_configs:
             sensor = self.sim.model.camera(f"{self.id}.{sensor_id}")
@@ -141,15 +160,9 @@ class NoopAgent(Agent):
                 position=sensor.pos,
                 rotation=qt.quaternion(*sensor.quat),
             )
-        agent_body = self.sim.model.body(self.id)
-        # z_joint_id = self.sim.model.joint(self.z_slide_joint.id).id
-        # qpos_addr = self.sim.model.jnt_qposadr[z_joint_id]
-        # z_pos = self.sim.data.qpos[pos_addr]
-        body_pos = self.sim.data.body(self.id).xpos
-        body_quat = self.sim.data.body(self.id).xquat
         return AgentState(
-            position=agent_body.pos,
-            rotation=qt.quaternion(*agent_body.quat),
+            position=agent_pos,
+            rotation=qt.quaternion(*rotation_as_quat(agent_rotation)),
             sensors=sensor_states,
         )
 
