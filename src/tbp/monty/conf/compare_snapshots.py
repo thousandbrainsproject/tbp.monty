@@ -96,6 +96,7 @@ RUNS = [
     "test/evidence_lm/five_lm_three_done",
     "test/evidence_lm/five_lm",
     "test/evidence_lm/fixed_actions_evidence",
+    "test/evidence_lm/fixed_possible_poses",
 ]
 
 def compare_snapshots(
