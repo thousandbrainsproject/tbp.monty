@@ -37,7 +37,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.math import QuaternionWXYZ, VectorXYZ
-from tbp.monty.simulators.mujoco import Agent, AgentConfig
+from tbp.monty.simulators.mujoco import Agent, AgentConfig, Size
 from tbp.monty.simulators.simulator import Simulator
 
 if TYPE_CHECKING:
@@ -94,6 +94,23 @@ class MuJoCoSimulator(Simulator):
 
         self._recompile()
 
+    def _max_sensor_resolution(self) -> Size:
+        """Determine the maximum resolution of a sensor.
+
+        We need this to set the off-screen buffer size in MuJoCo to support the
+        highest resolution sensor configured.
+
+        Returns:
+            max_x, max_y
+        """
+        max_x = 0
+        max_y = 0
+        for agent_cfg in self._agent_configs:
+            for sensor_cfg in agent_cfg["agent_args"]["sensor_configs"].values():
+                max_x = max(max_x, sensor_cfg["resolution"][0])
+                max_y = max(max_y, sensor_cfg["resolution"][1])
+        return max_x, max_y
+
     def _create_agents(self):
         for agent_config in self._agent_configs:
             agent_type = agent_config["agent_type"]
@@ -104,6 +121,8 @@ class MuJoCoSimulator(Simulator):
     def _recompile(self) -> None:
         """Recompile the MuJoCo model while retaining any state data."""
         self.spec.option.gravity = (0.0, 0.0, 0.0)  # TODO: check if necessary.
+        g = self.spec.visual.global_
+        g.offwidth, g.offheight = self._max_sensor_resolution()
         self.model, self.data = self.spec.recompile(self.model, self.data)
         mj_forward(self.model, self.data)
 
