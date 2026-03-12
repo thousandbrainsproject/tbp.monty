@@ -106,6 +106,7 @@ RUNS = [
     "test/graph_building/load_habitat_for_feat_train",
     "test/graph_building/load_habitat_for_ppf",
     "test/graph_building/load_habitat",
+    "test/graph_building/spth_feat",
     "test/no_reset_evidence_lm/pretraining",
     "test/no_reset_evidence_lm/unsupervised",
     "test/sensor_module/base",
