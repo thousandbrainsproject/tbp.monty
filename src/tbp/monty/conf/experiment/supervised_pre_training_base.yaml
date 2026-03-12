@@ -7,7 +7,7 @@ defaults:
   - /monty/sensor_module: camera_dist
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_dist_agent_semantics0
-  - /env_interface: train_distinctobj_predefined_rotation
+  - /env_interface: train_distinctobj_predefined
   - /logging: silent_info_train
   - config: train_surf_epochall
 

@@ -33,7 +33,7 @@ defaults:
   # /env_interface specifies how to setup the enviromment for the experiment.
   # We will train on one object and use a predefined rotation for placement of
   # one object.
-  - /env_interface: tutorial_train_1obj_predefined_rotation
+  - /env_interface: tutorial_train_1obj_predefined
 
   # /environment specifies the environment configuration to use. We use a
   # Habitat simulator environment, loaded with the YCB dataset, and Monty

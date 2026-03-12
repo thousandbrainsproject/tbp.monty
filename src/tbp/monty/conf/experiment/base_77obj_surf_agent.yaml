@@ -7,7 +7,7 @@ defaults:
   - /monty/sensor_module: camera_surf_delta
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_surf_agent
-  - /env_interface: eval_77obj_predefined_rotation
+  - /env_interface: eval_77obj_predefined
   - /logging: basic_monty_runs
   - config: eval_surf_epoch3_77obj
 

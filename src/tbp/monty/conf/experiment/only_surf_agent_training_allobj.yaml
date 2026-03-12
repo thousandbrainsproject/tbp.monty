@@ -7,7 +7,7 @@ defaults:
   - /monty/sensor_module: camera_surf_rgba
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_surf_agent
-  - /env_interface: train_allobj_predefined_rotation
+  - /env_interface: train_allobj_predefined
   - /logging: silent_warning_train
   - config: train_surf_epochall
 

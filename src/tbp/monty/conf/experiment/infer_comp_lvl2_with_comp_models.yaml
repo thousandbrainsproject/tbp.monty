@@ -6,7 +6,7 @@ defaults:
   - /monty/learning_module: evidence_2lm_gsg
   - /monty/sensor_module: 2sm_camera_dist
   - /monty/connectivity: 2lm_2sm
-  - /env_interface: eval_compositional_lvl2_predefined_rotation
+  - /env_interface: eval_compositional_lvl2_predefined
   - /logging: basic_wandb_evidence_eval_runs
   - /environment: habitat_dist_agent_sensors2
   - config: eval_dist_pretrained_lvl2_comp_epochall
