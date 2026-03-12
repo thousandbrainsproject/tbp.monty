@@ -115,6 +115,7 @@ RUNS = [
     "test/sensor_module/sensor_feature",
     "test/policy/base_dist",
     "test/policy/base_surf",
+    "test/policy/curve_informed",
 ]
 
 def compare_snapshots(

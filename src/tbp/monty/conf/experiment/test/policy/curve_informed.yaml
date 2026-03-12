@@ -1,0 +1,27 @@
+# @package _global_
+
+defaults:
+  - /monty: graph_exp20_e3_t3_tot2500
+  - /monty/motor_system_config: surface_curvature_informed_goal0
+  - /monty/learning_module: displacement_1lm
+  - /monty/sensor_module: camera_surf
+  - /monty/connectivity: 1lm_1sm
+  - /environment: test_habitat_surf_transforms
+  - /env_interface: test_train_2obj_predefined_eval_1obj_cubeSolid_predefined
+  - /logging: detailed_info_monty_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 30
+    max_eval_steps: 30
+    max_total_steps: 60
+    n_train_epochs: 1
+    n_eval_epochs: 1
+    model_name_or_path: ''
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    logging:
+      run_name: ""
