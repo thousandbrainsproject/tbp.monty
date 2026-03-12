@@ -81,6 +81,11 @@ if __name__ == "__main__":
         snapshots_dir=snapshots_root / "tutorial",
     )
 
+    # Below is commented out because we already generated the snapshots for
+    # the tests, so we don't need to update them going forward. They are used
+    # for comparison during the migration to new format and will be removed
+    # after that is complete.
+
     # Test configs
     # test_subdirs = [
     #     "base_config",
