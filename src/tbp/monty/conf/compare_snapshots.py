@@ -181,14 +181,79 @@ def compare(
     return True
 
 
+def compare_snapshot_dirs(
+    left_dir: Path,
+    right_dir: Path,
+) -> bool:
+    """Compare all YAML snapshots between two directories.
+
+    Recursively finds all .yaml files in both directories, parses them,
+    and compares them semantically (ignoring key order).
+
+    Args:
+        left_dir: The first snapshot directory.
+        right_dir: The second snapshot directory.
+
+    Returns:
+        True if all snapshots match, False otherwise.
+    """
+    left_files = {f.relative_to(left_dir) for f in left_dir.rglob("*.yaml")}
+    right_files = {f.relative_to(right_dir) for f in right_dir.rglob("*.yaml")}
+
+    all_match = True
+
+    for rel in sorted(left_files - right_files):
+        print(f"MISSING in {right_dir}: {rel}")
+        all_match = False
+
+    for rel in sorted(right_files - left_files):
+        print(f"MISSING in {left_dir}: {rel}")
+        all_match = False
+
+    for rel in sorted(left_files & right_files):
+        left_data = yaml.safe_load((left_dir / rel).read_text())
+        right_data = yaml.safe_load((right_dir / rel).read_text())
+        result = compare(
+            left_data, right_data,
+            path=str(rel),
+            left_label=str(left_dir),
+            right_label=str(right_dir),
+        ) and compare(
+            right_data, left_data,
+            path=str(rel),
+            left_label=str(right_dir),
+            right_label=str(left_dir),
+        )
+        if result:
+            print(f"OK: {rel}")
+        else:
+            all_match = False
+
+    return all_match
+
+
 if __name__ == "__main__":
     setup_env()
     register_resolvers()
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--experiment", type=str)
+    parser.add_argument(
+        "--compare-dirs",
+        nargs=2,
+        metavar=("LEFT", "RIGHT"),
+        help="Compare two snapshot directories semantically.",
+    )
     args = parser.parse_args()
 
-    if args.experiment is None:
+    if args.compare_dirs:
+        left, right = Path(args.compare_dirs[0]), Path(args.compare_dirs[1])
+        match = compare_snapshot_dirs(left, right)
+        if match:
+            print("\nAll snapshots match.")
+        else:
+            print("\nSome snapshots differ.")
+            exit(1)
+    elif args.experiment is None:
         for run in RUNS:
             compare_snapshots(
                 experiment=run,
