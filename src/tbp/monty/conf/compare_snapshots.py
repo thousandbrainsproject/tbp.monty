@@ -94,6 +94,7 @@ RUNS = [
     "test/evidence_lm/five_lm_no_threading",
     "test/evidence_lm/five_lm_off_object",
     "test/evidence_lm/five_lm_three_done",
+    "test/evidence_lm/five_lm",
 ]
 
 def compare_snapshots(
