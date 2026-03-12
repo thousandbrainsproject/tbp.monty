@@ -100,6 +100,7 @@ RUNS = [
     "test/evidence_lm/no_features",
     "test/evidence_lm/noise_mixin",
     "test/evidence_lm/noisy_sensor",
+    "test/evidence_lm/uniform_initial_poses",
 ]
 
 def compare_snapshots(
