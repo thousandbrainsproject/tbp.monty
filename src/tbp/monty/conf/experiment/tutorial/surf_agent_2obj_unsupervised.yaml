@@ -9,11 +9,20 @@ defaults:
   - /environment: habitat_ycb_surf_agent
   - /env_interface: tutorial_train_2obj_random
   - /logging: detailed
-  - config: train_tutorial_surf_agent_2obj_unsupervised
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
+    show_sensor_output: false
+    max_train_steps: 2000
+    max_eval_steps: 500
+    max_total_steps: 5000
+    n_train_epochs: 3
+    n_eval_epochs: 3
+    model_name_or_path: ''
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
     do_eval: false
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}

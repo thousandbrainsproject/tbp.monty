@@ -9,14 +9,20 @@ defaults:
   - /environment: habitat_dist_agent
   - /env_interface: test_train_1obj_predefined
   - /logging: detailed_debug
-  - config: test
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
+    show_sensor_output: false
+    max_train_steps: 50
+    max_eval_steps: 50
     max_total_steps: 200
     n_train_epochs: 2
     n_eval_epochs: 3
+    model_name_or_path: ""
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
     logging:
       python_log_level: INFO
       run_name: ""

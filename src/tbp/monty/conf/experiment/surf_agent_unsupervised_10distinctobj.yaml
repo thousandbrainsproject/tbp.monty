@@ -9,10 +9,20 @@ defaults:
   - /env_interface: train_distinctobj_random
   - /logging: detailed
   - /environment: habitat_ycb_surf_agent
-  - config: train_surf_epoch10
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
+    show_sensor_output: false
+    max_train_steps: 4000
+    max_eval_steps: 500
+    max_total_steps: 4000
+    n_train_epochs: 10
+    n_eval_epochs: ${constants.rotations_all_count}
+    model_name_or_path: ''
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
     logging:
       run_name: surf_agent_unsupervised_10distinctobj

@@ -9,10 +9,19 @@ defaults:
   - /env_interface: eval_omniglot
   - /logging: detailed_omniglot_tutorial
   - /environment: two_d_data_omniglot
-  - config: eval_dist_omniglot_tutorial
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    n_eval_epochs: 1
+    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/omniglot/omniglot_training/pretrained/}
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
     logging:
       run_name: omniglot_inference

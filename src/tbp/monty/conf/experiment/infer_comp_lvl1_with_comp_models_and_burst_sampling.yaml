@@ -9,10 +9,20 @@ defaults:
   - /env_interface: eval_compositional_lvl1_predefined
   - /logging: basic_wandb_evidence_eval_runs
   - /environment: habitat_dist_agent_sensors2
-  - config: eval_dist_pretrained_lvl1_comp_burst
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    n_eval_epochs: ${constants.rotations_all_count}
+    model_name_or_path: ${constants.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling/pretrained/
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
     logging:
       run_name: infer_comp_lvl1_with_comp_models_and_burst_sampling
