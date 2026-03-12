@@ -1,4 +1,4 @@
-test:
+experiment:
   config:
     do_train: true
     do_eval: true
@@ -402,3 +402,78 @@ test:
     train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
     eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+episodes: all
+num_parallel: 16
+print_cfg: false
+quiet_habitat_logs: true
+constants:
+  default_all_noise_params:
+    features:
+      pose_vectors: 2
+      hsv: 0.1
+      principal_curvatures_log: 0.1
+      pose_fully_defined: 0.01
+    location: 0.002
+  default_sensor_features:
+  - pose_vectors
+  - pose_fully_defined
+  - on_object
+  - hsv
+  - principal_curvatures_log
+  min_eval_steps: 20
+  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
+  rotations_all_count: 14
+  rotations_all:
+  - - 0
+    - 0
+    - 0
+  - - 0
+    - 90
+    - 0
+  - - 0
+    - 180
+    - 0
+  - - 0
+    - 270
+    - 0
+  - - 90
+    - 0
+    - 0
+  - - 90
+    - 180
+    - 0
+  - - 35
+    - 45
+    - 0
+  - - 325
+    - 45
+    - 0
+  - - 35
+    - 315
+    - 0
+  - - 325
+    - 315
+    - 0
+  - - 35
+    - 135
+    - 0
+  - - 325
+    - 135
+    - 0
+  - - 35
+    - 225
+    - 0
+  - - 325
+    - 225
+    - 0
+  rotations_3_count: 3
+  rotations_3:
+  - - 0
+    - 0
+    - 0
+  - - 0
+    - 90
+    - 0
+  - - 0
+    - 180
+    - 0
