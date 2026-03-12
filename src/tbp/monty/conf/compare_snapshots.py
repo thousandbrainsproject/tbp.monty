@@ -77,6 +77,7 @@ RUNS = [
     "tutorial/omniglot_inference",
     "tutorial/surf_agent_2obj_train",
     "tutorial/surf_agent_2obj_eval",
+    "tutorial/surf_agent_2obj_unsupervised",
 ]
 
 
