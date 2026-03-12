@@ -107,6 +107,7 @@ RUNS = [
     "test/sensor_module/base",
     "test/sensor_module/feature_change_sensor",
     "test/graph_building/load_habitat_for_feat_eval",
+    "test/graph_building/load_habitat_for_feat_train",
 ]
 
 def compare_snapshots(
