@@ -8,7 +8,7 @@ defaults:
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_surf_agent
   - /env_interface: tutorial_eval_2obj_predefined_r3
-  - /logging: detailed
+  - /logging: detailed_info_monty_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

@@ -7,7 +7,7 @@ defaults:
   - /monty/sensor_module: camera_surf_noise_raw1
   - /monty/connectivity: 1lm_1sm
   - /env_interface: train_distinctobj_random
-  - /logging: detailed
+  - /logging: detailed_info_monty_runs
   - /environment: habitat_ycb_surf_agent
 
 experiment:

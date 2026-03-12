@@ -8,7 +8,7 @@ defaults:
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_dist_agent
   - /env_interface: test_train_1obj_predefined
-  - /logging: detailed_debug
+  - /logging: detailed_debug_monty_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

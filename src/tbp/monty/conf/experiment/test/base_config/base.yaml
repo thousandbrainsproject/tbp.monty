@@ -8,7 +8,7 @@ defaults:
   - /monty/connectivity: test_1lm_1sm
   - /environment: test_habitat
   - /env_interface: test_train_3obj_default_eval_3obj_default
-  - /logging: detailed_debug
+  - /logging: detailed_debug_monty_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.monty_experiment.MontyExperiment

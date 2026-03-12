@@ -7,7 +7,7 @@ defaults:
   - /monty/sensor_module: camera_dist_omniglot_tutorial
   - /monty/connectivity: 1lm_1sm
   - /env_interface: eval_omniglot
-  - /logging: detailed_omniglot_tutorial
+  - /logging: tutorial_detailed_info_monty_runs
   - /environment: two_d_data_omniglot
 
 experiment:
