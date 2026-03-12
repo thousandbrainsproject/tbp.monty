@@ -145,13 +145,8 @@ experiment:
                 hsv: ${np.array:[1, 0, 0]}
             tolerances:
               patch_0:
-                hsv:
-                - 0.1
-                - 1
-                - 1
-                principal_curvatures_log:
-                - 0.1
-                - 0.1
+                hsv: ${np.array:[0.1, 1, 1]}
+                principal_curvatures_log: ${np.array:[0.1, 0.1]}
         learning_module_1:
           learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
           learning_module_args:
@@ -161,13 +156,8 @@ experiment:
                 hsv: ${np.array:[1, 0, 0]}
             tolerances:
               patch_1:
-                hsv:
-                - 0.1
-                - 1
-                - 1
-                principal_curvatures_log:
-                - 0.1
-                - 0.1
+                hsv: ${np.array:[0.1, 1, 1]}
+                principal_curvatures_log: ${np.array:[0.1, 0.1]}
         learning_module_2:
           learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
           learning_module_args:
@@ -177,13 +167,8 @@ experiment:
                 hsv: ${np.array:[1, 0, 0]}
             tolerances:
               patch_2:
-                hsv:
-                - 0.1
-                - 1
-                - 1
-                principal_curvatures_log:
-                - 0.1
-                - 0.1
+                hsv: ${np.array:[0.1, 1, 1]}
+                principal_curvatures_log: ${np.array:[0.1, 0.1]}
         learning_module_3:
           learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
           learning_module_args:
@@ -193,13 +178,8 @@ experiment:
                 hsv: ${np.array:[1, 0, 0]}
             tolerances:
               patch_3:
-                hsv:
-                - 0.1
-                - 1
-                - 1
-                principal_curvatures_log:
-                - 0.1
-                - 0.1
+                hsv: ${np.array:[0.1, 1, 1]}
+                principal_curvatures_log: ${np.array:[0.1, 0.1]}
         learning_module_4:
           learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
           learning_module_args:
@@ -209,13 +189,8 @@ experiment:
                 hsv: ${np.array:[1, 0, 0]}
             tolerances:
               patch_4:
-                hsv:
-                - 0.1
-                - 1
-                - 1
-                principal_curvatures_log:
-                - 0.1
-                - 0.1
+                hsv: ${np.array:[0.1, 1, 1]}
+                principal_curvatures_log: ${np.array:[0.1, 0.1]}
       sm_to_agent_dict:
         patch_0: ${monty.agent_id:agent_id_0}
         patch_1: ${monty.agent_id:agent_id_0}
