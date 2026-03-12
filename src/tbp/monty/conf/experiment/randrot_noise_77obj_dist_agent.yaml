@@ -7,7 +7,7 @@ defaults:
   - /monty/sensor_module: camera_dist_noise_raw1
   - /monty/connectivity: 1lm_1sm
   - /env_interface: eval_77obj_random
-  - /logging: basic_monty_runs
+  - /logging: basic_warning_wandb_monty_runs
   - /environment: habitat_ycb_dist_agent_semantics0
 
 experiment:

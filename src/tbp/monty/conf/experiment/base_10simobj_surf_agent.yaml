@@ -7,7 +7,7 @@ defaults:
   - /monty/sensor_module: camera_surf_delta
   - /monty/connectivity: 1lm_1sm
   - /env_interface: eval_simobj_predefined
-  - /logging: basic_monty_runs
+  - /logging: basic_warning_wandb_monty_runs
   - /environment: habitat_ycb_surf_agent
 
 experiment:

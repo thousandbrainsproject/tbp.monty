@@ -8,7 +8,7 @@ defaults:
   - /monty/connectivity: 1lm_1sm
   - /environment: two_d_data_dark
   - /env_interface: eval_worldimages
-  - /logging: basic_wandb_evidence_eval_runs
+  - /logging: basic_warning_wandb_evidence_eval_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

@@ -8,7 +8,7 @@ defaults:
   - /monty/connectivity: 1lm_1sm
   - /environment: two_d_data_stream
   - /env_interface: eval_stream
-  - /logging: basic_evidence_eval_runs
+  - /logging: basic_info_evidence_eval_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
