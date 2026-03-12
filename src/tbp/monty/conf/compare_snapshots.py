@@ -73,6 +73,7 @@ RUNS = [
     "supervised_pre_training_objects_with_logos_lvl3_comp_models",
     "supervised_pre_training_objects_with_logos_lvl4_comp_models",
     "world_image_from_stream_on_scanned_model",
+    "tutorial/first_experiment",
     "tutorial/omniglot_training",
     "tutorial/omniglot_inference",
     "tutorial/surf_agent_2obj_train",
