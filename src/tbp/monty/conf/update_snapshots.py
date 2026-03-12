@@ -82,24 +82,24 @@ if __name__ == "__main__":
     )
 
     # Test configs
-    test_subdirs = [
-        "base_config",
-        "evidence_lm",
-        "frameworks/models/evidence_matching",
-        "graph_building",
-        "graph_learning",
-        "hierarchy",
-        "integration/positioning_procedures/get_good_view",
-        "no_reset_evidence_lm",
-        "policy",
-        "profile",
-        "sensor_module",
-    ]
-    for subdir in test_subdirs:
-        update_snapshots(
-            config_dir=conf_dir / "test" / subdir,
-            config_name="test",
-            override_key="test",
-            override_prefix=f"{subdir}/",
-            snapshots_dir=snapshots_root / "test" / subdir,
-        )
+    # test_subdirs = [
+    #     "base_config",
+    #     "evidence_lm",
+    #     "frameworks/models/evidence_matching",
+    #     "graph_building",
+    #     "graph_learning",
+    #     "hierarchy",
+    #     "integration/positioning_procedures/get_good_view",
+    #     "no_reset_evidence_lm",
+    #     "policy",
+    #     "profile",
+    #     "sensor_module",
+    # ]
+    # for subdir in test_subdirs:
+    #     update_snapshots(
+    #         config_dir=conf_dir / "test" / subdir,
+    #         config_name="test",
+    #         override_key="test",
+    #         override_prefix=f"{subdir}/",
+    #         snapshots_dir=snapshots_root / "test" / subdir,
+    #     )
