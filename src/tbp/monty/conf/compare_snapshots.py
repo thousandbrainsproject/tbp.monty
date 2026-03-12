@@ -111,6 +111,7 @@ RUNS = [
     "test/no_reset_evidence_lm/unsupervised",
     "test/sensor_module/base",
     "test/sensor_module/feature_change_sensor",
+    "test/sensor_module/sensor_feature",
 ]
 
 def compare_snapshots(
