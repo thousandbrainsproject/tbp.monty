@@ -1,7 +1,6 @@
-# @package experiment.config
+# @package experiment.config.env_interface_config
 
-env_interface_config:
-  env_init_args:
-    data_path: ${path.expanduser:${oc.env:MONTY_DATA}/worldimages/bright_scenes/}
-  env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.SaccadeOnImageEnvironment}
-  transform: null
+env_init_args:
+  data_path: ${path.expanduser:${oc.env:MONTY_DATA}/worldimages/bright_scenes/}
+env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.SaccadeOnImageEnvironment}
+transform: null
