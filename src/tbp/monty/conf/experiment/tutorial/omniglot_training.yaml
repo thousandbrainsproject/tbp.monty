@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /monty: graph_exp1000_e3_t3_tot2500
+  - /monty: graph_exp1000_emin_t3_tot2500
   - /monty/motor_system_config: informed_1
   - /monty/learning_module: displacement_1lm
   - /monty/sensor_module: camera_dist_omniglot_tutorial
