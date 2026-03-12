@@ -82,6 +82,7 @@ RUNS = [
     "tutorial/monty_meets_world_2dimage_inference",
     "test/base_config/base",
     "test/evidence_lm/base",
+    "test/evidence_lm/evidence_times_out",
 ]
 
 def compare_snapshots(
