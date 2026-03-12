@@ -19,6 +19,8 @@ from tbp.monty.frameworks.actions.actions import (
     LookDown,
     LookUp,
     MoveForward,
+    SetAgentPose,
+    SetSensorRotation,
     TurnLeft,
     TurnRight,
 )
@@ -175,8 +177,8 @@ class NoopAgent(Agent):
         return f"{self.__class__.__name__}(id={self.id})"
 
 
-class PosableAgent(NoopAgent):
-    """An agent that can be moved around the scene."""
+class DistantAgent(NoopAgent):
+    """A multi-sensor agent for sensing an object from a distance."""
 
     def reset(self) -> None:
         self.position = self._initial_position
@@ -203,6 +205,16 @@ class PosableAgent(NoopAgent):
     def rotation(self, rotation: QuaternionWXYZ) -> None:
         qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
         self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7] = np.array(rotation)
+
+    def actuate_set_agent_pose(self, action: SetAgentPose):
+        self.position = action.location
+        self.rotation = qt.as_float_array(action.rotation_quat)
+
+    def actuate_set_sensor_rotation(self, action: SetSensorRotation):
+        rotation = rotation_from_quat(qt.as_float_array(action.rotation_quat))
+        angles = rotation.as_euler("xyz", degrees=False)
+        qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
+        self.sim.data.qpos[qpos_addr] = angles[1]
 
     def actuate_move_forward(self, action: MoveForward):
         rotation = rotation_from_quat(self.rotation)

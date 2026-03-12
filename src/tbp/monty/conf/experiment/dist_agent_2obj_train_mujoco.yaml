@@ -3,8 +3,8 @@ config:
   do_eval: true
   show_sensor_output: false
   max_train_steps: 2
-  max_eval_steps: 30
-  max_total_steps: 20
+  max_eval_steps: 500
+  max_total_steps: 500
   n_train_epochs: 1
   n_eval_epochs: 1
   model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
@@ -30,7 +30,7 @@ config:
     motor_system_config:
       motor_system_args:
         policy:
-          use_goal_state_driven_actions: false
+          use_goal_state_driven_actions: true
           agent_id: ${monty.agent_id:agent_id_0}
           action_sampler:
             actions:
@@ -44,9 +44,9 @@ config:
       motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
     monty_args:
       num_exploratory_steps: 2
-      min_eval_steps: 30
+      min_eval_steps: 20
       min_train_steps: 2
-      max_total_steps: 30
+      max_total_steps: 500
     monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
     learning_module_configs:
       learning_module_0:
@@ -128,7 +128,7 @@ config:
       agents:
         agent_args:
           agent_id: ${monty.agent_id:agent_id_0}
-          position: [0.0, 0.0, 0.16]
+          position: [0.0, 0.0, 0.5]
           rotation: [1.0, 0.0, 0.0, 0.0]
           sensor_configs:
             patch:
@@ -137,11 +137,11 @@ config:
               resolution: [64, 64]
               zoom: 10.0
             view_finder:
-              position: [0.0, 0.0, -0.03]
+              position: [0.0, 0.0, 0.0]
               rotation: [1.0, 0.0, 0.0, 0.0]
-              resolution: [256, 256]
+              resolution: [512, 512]
               zoom: 1.0
-        agent_type: ${monty.class:tbp.monty.simulators.mujoco.PosableAgent}
+        agent_type: ${monty.class:tbp.monty.simulators.mujoco.DistantAgent}
     env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoEnvironment}
     transform:
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
@@ -155,8 +155,8 @@ config:
         resolutions:
           - - 64
             - 64
-          - - 256
-            - 256
+          - - 512
+            - 512
         world_coord: true
         zooms:
           - 10.0
@@ -167,6 +167,8 @@ config:
     parent_to_child_mapping: null
     object_names:
       - mug
+      - banana
+      - potted_meat_can
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
       positions:
