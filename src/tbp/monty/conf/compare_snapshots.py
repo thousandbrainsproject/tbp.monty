@@ -98,6 +98,7 @@ RUNS = [
     "test/evidence_lm/fixed_actions_evidence",
     "test/evidence_lm/fixed_possible_poses",
     "test/evidence_lm/no_features",
+    "test/evidence_lm/noise_mixin",
 ]
 
 def compare_snapshots(
