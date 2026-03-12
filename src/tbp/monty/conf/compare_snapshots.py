@@ -79,7 +79,6 @@ RUNS = [
 
 def compare_snapshots(
     experiment: str,
-    experiment_prefix: str = "",
     snapshots_dir: Path = PROJECT_ROOT / "tests" / "conf" / "snapshots",
 ) -> bool:
     snapshot_path = snapshots_dir / f"{experiment}.yaml"
@@ -90,7 +89,7 @@ def compare_snapshots(
     with hydra.initialize(version_base=None, config_path="."):
         config = hydra.compose(
             config_name="experiment",
-            overrides=[f"experiment={experiment_prefix}{experiment}"],
+            overrides=[f"experiment={experiment}"],
         )
         # to_object ensures the config is resolved
         experiment_yaml = OmegaConf.to_yaml(config)
