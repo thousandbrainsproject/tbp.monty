@@ -104,6 +104,7 @@ RUNS = [
     "test/no_reset_evidence_lm/pretraining",
     "test/no_reset_evidence_lm/unsupervised",
     "test/frameworks/models/evidence_matching/burst_sampling",
+    "test/sensor_module/base",
 ]
 
 def compare_snapshots(
