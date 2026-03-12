@@ -262,7 +262,9 @@ class MuJoCoSimulator(Simulator):
         return states
 
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
-        # TODO: reset agents to their initial state
+        for agent in self._agents.values():
+            agent.reset()
+        mj_forward(self.model, self.data)
         return self.observations, self.states
 
     def close(self) -> None:

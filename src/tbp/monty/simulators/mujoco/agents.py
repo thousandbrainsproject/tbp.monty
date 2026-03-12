@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Protocol, TypedDict, cast
 
 import numpy as np
 import quaternion as qt
-from mujoco import Renderer, mjtJoint
+from mujoco import MjsBody, Renderer, mjtJoint
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
@@ -68,6 +68,8 @@ class Agent(Protocol):
     @property
     def state(self) -> AgentState: ...
 
+    def reset(self) -> None: ...
+
 
 class NoopAgent(Agent):
     """A simple multi-sensor agent that doesn't respond to actions."""
@@ -83,32 +85,31 @@ class NoopAgent(Agent):
         self.id = agent_id
         self.sim = simulator
 
-        self.position = position
-        self.rotation = rotation
+        self._initial_position = position
+        self._initial_rotation = rotation
         self._sensor_configs = sensor_configs
 
         # Create agent and sensors in MuJoCo
-        self.agent_body = self.sim.spec.worldbody.add_body(
+        agent_body: MjsBody = self.sim.spec.worldbody.add_body(
             name=agent_id,
             pos=position,
             quat=rotation,
             mass=1.0,
             inertia=(1.0, 1.0, 1.0),
         )
-        self.agent_joint = self.agent_body.add_freejoint()
-        self.sensor_body = self.agent_body.add_body(
+        self.agent_joint = agent_body.add_freejoint()
+        sensor_body: MjsBody = agent_body.add_body(
             name=f"{self.id}.sensor",
             pos=(0.0, 0.0, 0.0),
             quat=(1.0, 0.0, 0.0, 0.0),
             mass=1.0,
             inertia=(1.0, 1.0, 1.0),
         )
-        self.pitch_joint = self.sensor_body.add_joint(
+        self.pitch_joint = sensor_body.add_joint(
             type=mjtJoint.mjJNT_HINGE, axis=(1, 0, 0)
         )
-
         for sensor_id, sensor_cfg in self._sensor_configs.items():
-            self.sensor_body.add_camera(
+            sensor_body.add_camera(
                 name=f"{self.id}.{sensor_id}",
                 pos=sensor_cfg["position"],
                 quat=sensor_cfg["rotation"],
@@ -167,6 +168,9 @@ class NoopAgent(Agent):
             sensors=sensor_states,
         )
 
+    def reset(self):
+        pass
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(id={self.id})"
 
@@ -174,17 +178,38 @@ class NoopAgent(Agent):
 class PosableAgent(NoopAgent):
     """An agent that can be moved around the scene."""
 
+    def reset(self) -> None:
+        self.position = self._initial_position
+        self.rotation = self._initial_rotation
+
+    @property
+    def position(self) -> VectorXYZ:
+        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
+        return cast("VectorXYZ", tuple(self.sim.data.qpos[qpos_addr : qpos_addr + 3]))
+
+    @position.setter
+    def position(self, position: VectorXYZ) -> None:
+        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
+        self.sim.data.qpos[qpos_addr : qpos_addr + 3] = np.array(position)
+
+    @property
+    def rotation(self) -> QuaternionWXYZ:
+        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
+        return cast(
+            "QuaternionWXYZ", tuple(self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7])
+        )
+
+    @rotation.setter
+    def rotation(self, rotation: QuaternionWXYZ) -> None:
+        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
+        self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7] = np.array(rotation)
+
     def actuate_move_forward(self, action: MoveForward):
-        body_quat = self.sim.data.body(self.id).xquat
-        xyzw = [body_quat[1], body_quat[2], body_quat[3], body_quat[0]]
-        rotation = Rotation.from_quat(xyzw)
+        rotation = rotation_from_quat(self.rotation)
         rotation_matrix = rotation.as_matrix()
         forward_vector = rotation_matrix[:, 2] * action.distance
-
-        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
-        cur_xyz = self.sim.data.qpos[qpos_addr : qpos_addr + 3]
-        new_xyz = cur_xyz - forward_vector
-        self.sim.data.qpos[qpos_addr : qpos_addr + 3] = new_xyz
+        new_xyz = self.position - forward_vector
+        self.position = new_xyz
 
     def actuate_turn_right(self, action: TurnRight):
         self._actuate_yaw(-action.rotation_degrees)
@@ -203,21 +228,11 @@ class PosableAgent(NoopAgent):
 
         Args:
             delta_theta: The number of degrees to yaw the agent body.
-
-        TODO: Probably want to convert rotation amount to quaternion and then multiply
-          against current rotation (which is a quaternion) rather than convert the
-          current rotation to Euler angles and then add the rotation amount to it.
         """
-        body_quat = self.sim.data.body(self.id).xquat
-        xyzw = [body_quat[1], body_quat[2], body_quat[3], body_quat[0]]
-        rotation = Rotation.from_quat(xyzw)
-        angles = rotation.as_euler("xyz", degrees=True)
-        angles[1] += delta_theta
-        new_rotation = Rotation.from_euler("xyz", angles, degrees=True)
-        new_quat = new_rotation.as_quat()
-        new_quat_wxyz = [new_quat[3], new_quat[0], new_quat[1], new_quat[2]]
-        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
-        self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7] = new_quat_wxyz
+        delta_theta_rot = Rotation.from_euler("xyz", (0, delta_theta, 0), degrees=True)
+        rotation = rotation_from_quat(self.rotation)
+        new_rotation = rotation * delta_theta_rot
+        self.rotation = rotation_as_quat(new_rotation)
 
     def _actuate_pitch(self, delta_phi: float):
         """Pitch the sensor body by a specified number of degrees.
