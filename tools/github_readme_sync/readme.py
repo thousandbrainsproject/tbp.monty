@@ -229,6 +229,7 @@ class ReadMe:
 
                     # Process headers and build alignment lookup
                     alignments = {}
+                    hidden_columns = set()
                     for i, unparsed_header in enumerate(headers):
                         title_attr = ""
                         align_style = ""
@@ -246,13 +247,18 @@ class ReadMe:
                                 alignments[i] = (
                                     f" style='text-align:{html.escape(align_value)}'"
                                 )
-                        unsafe_html += f"<th{title_attr}>{header}</th>"
+                            elif part == "hidden":
+                                hidden_columns.add(i)
+                        if i not in hidden_columns:
+                            unsafe_html += f"<th{title_attr}>{header}</th>"
                     unsafe_html += "</tr>\n</thead>\n<tbody>\n"
 
                     # Add rows using stored alignments
                     for row in rows:
                         unsafe_html += "<tr>"
                         for i, cell in enumerate(row):
+                            if i in hidden_columns:
+                                continue
                             align_style = alignments.get(i, "")
                             unsafe_html += f"<td{align_style}>{cell}</td>"
                         unsafe_html += "</tr>\n"

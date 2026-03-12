@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
+from typing import Sequence
 
 import hydra
 import magnum
@@ -18,6 +19,7 @@ import numpy as np
 import numpy.typing as npt
 import quaternion as qt
 
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterface,
@@ -82,7 +84,7 @@ class FakeEnvironmentRel(SimulatedObjectEnvironment):
 
     def step(
         self,
-        actions,  # noqa: ARG002
+        actions: Sequence[Action],  # noqa: ARG002
     ) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
         obs = Observations(
@@ -145,7 +147,10 @@ class FakeEnvironmentAbs(SimulatedObjectEnvironment):
     def add_object(self, *_, **__) -> ObjectID:
         return ObjectID(-1)
 
-    def step(self, _) -> tuple[Observations, ProprioceptiveState]:
+    def step(
+        self,
+        actions: Sequence[Action],  # noqa: ARG002
+    ) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
         obs = Observations(
             {
@@ -342,7 +347,12 @@ class EmbodiedDataTest(unittest.TestCase):
 
             i += 1
 
-    def check_two_d_patch_obs(self, obs, patch_size, expected_keys):
+    def check_two_d_patch_obs(
+        self,
+        obs: SensorObservation,
+        patch_size: int,
+        expected_keys: Sequence[str],
+    ):
         for key in expected_keys:
             self.assertIn(
                 key,

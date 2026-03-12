@@ -15,16 +15,15 @@ from typing import TYPE_CHECKING, Sequence
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
-    QuaternionWXYZ,
     SemanticID,
     SimulatedObjectEnvironment,
-    VectorXYZ,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.utils.dataclass_utils import (
     create_dataclass_args,
 )
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.habitat import (
     HabitatAgent,
     HabitatSim,
