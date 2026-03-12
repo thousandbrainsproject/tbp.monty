@@ -7,7 +7,7 @@ defaults:
   - /monty/sensor_module: camera_dist
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_dist_agent
-  - /env_interface: test_train_1obj_predefined
+  - /env_interface: test_train_1obj_predefined_r1
   - /logging: detailed_debug_monty_runs
 
 experiment:
