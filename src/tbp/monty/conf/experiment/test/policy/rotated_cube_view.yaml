@@ -25,11 +25,10 @@ experiment:
     supervised_lm_ids: []
     monty_config:
       motor_system_config:
-        motor_system_args:
-          policy:
-            alpha: 0.0
-            action_sampler:
-              translation_distance: 0.05
+        policy:
+          alpha: 0.0
+          action_sampler:
+            translation_distance: 0.05
     train_env_interface_args:
       object_names:
       - cubeSolid

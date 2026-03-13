@@ -25,10 +25,9 @@ experiment:
     supervised_lm_ids: []
     monty_config:
       motor_system_config:
-        motor_system_args:
-          policy:
-            action_sampler:
-              actions:
-              - ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}
+        policy:
+          action_sampler:
+            actions:
+            - ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}
     logging:
       run_name: ""

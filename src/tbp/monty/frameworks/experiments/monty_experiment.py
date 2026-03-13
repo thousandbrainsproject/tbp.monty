@@ -40,7 +40,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
 )
 from tbp.monty.frameworks.models.monty_base import MontyBase
-from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )
@@ -139,10 +138,6 @@ class MontyExperiment:
 
         Returns:
             Monty class instance
-
-        Raises:
-            TypeError: If `motor_system_class` is not a subclass of `MotorSystem` or
-                `policy_class` is not a subclass of `MotorPolicy`.
         """
         # Make monty_config a dict from a DictConfig, so we can edit it.
         monty_config = dict(copy.deepcopy(monty_config))
@@ -167,15 +162,7 @@ class MontyExperiment:
             sensor_modules[sm_id] = sm_class(**sm_args)
 
         # Create motor system
-        motor_system_config = monty_config.pop("motor_system_config")
-        motor_system_class = motor_system_config["motor_system_class"]
-        motor_system_args = motor_system_config["motor_system_args"]
-        if not issubclass(motor_system_class, MotorSystem):
-            raise TypeError(
-                "motor_system_class must be a subclass of MotorSystem, got "
-                f"{motor_system_class}"
-            )
-        motor_system = motor_system_class(**motor_system_args)
+        motor_system = monty_config.pop("motor_system_config")
 
         # Get mapping between sensor modules, learning modules and agents
         lm_len = len(learning_modules)

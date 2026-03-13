@@ -1,4 +1,4 @@
-# @package experiment.config.monty_config.motor_system_config.motor_system_args.policy.action_sampler
+# @package experiment.config.monty_config.motor_system_config.policy.action_sampler
 
 _target_: tbp.monty.frameworks.actions.action_samplers.UniformlyDistributedSampler
 actions:

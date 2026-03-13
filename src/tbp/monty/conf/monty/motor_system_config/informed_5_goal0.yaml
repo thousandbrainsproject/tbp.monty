@@ -3,4 +3,4 @@
 defaults:
 - policy: informed_5_goal0
 
-motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+_target_: tbp.monty.frameworks.models.motor_system.MotorSystem
