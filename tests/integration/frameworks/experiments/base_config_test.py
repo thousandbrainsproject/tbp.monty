@@ -217,8 +217,8 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
                 config_name="experiment",
                 overrides=[
                     "experiment=test/evidence_lm/base",
-                    "+experiment/config/logging@experiment.config.logging=detailed_evidence_lm",
-                    f"experiment.config.logging.output_dir={self.output_dir}",
+                    "logging=detailed_info_evidence_eval_runs",
+                    f"++experiment.config.logging.output_dir={self.output_dir}",
                 ],
             )
 
