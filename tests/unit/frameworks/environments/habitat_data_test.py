@@ -76,14 +76,14 @@ class HabitatDataTest(unittest.TestCase):
 
         with hydra.initialize_config_dir(config_dir=str(HYDRA_ROOT), version_base=None):
             self.policy_cfg_fragment = hydra.compose(
-                config_name="experiment/test/monty/motor_system/policy/base_dist",
-            ).experiment.test.monty.motor_system.policy
+                config_name="monty/motor_system_config/policy/test_base_dist",
+            ).monty.motor_system_config.policy
             self.policy_cfg_abs_fragment = hydra.compose(
-                config_name="experiment/test/monty/motor_system/policy/base_absolute",
-            ).experiment.test.monty.motor_system.policy
+                config_name="monty/motor_system_config/policy/test_base_absolute",
+            ).monty.motor_system_config.policy
             self.policy_cfg_surf_fragment = hydra.compose(
-                config_name="experiment/test/monty/motor_system/policy/base_surf",
-            ).experiment.test.monty.motor_system.policy
+                config_name="monty/motor_system_config/policy/test_base_surf",
+            ).monty.motor_system_config.policy
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
