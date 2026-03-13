@@ -88,8 +88,8 @@ class PolicyTest(unittest.TestCase):
             self.rotated_cube_view_cfg = hydra_config("rotated_cube_view")
 
             self.motor_system_cfg_fragment = hydra.compose(
-                config_name="experiment/config/monty/motor_system/curvature_informed_surface"
-            ).experiment.config.monty.motor_system
+                config_name="experiment/test/monty/motor_system/surface_curvature_informed"
+            ).experiment.test.monty.motor_system
 
         # ==== Setup fake observations for testing principal-curvature policies ====
         fake_sender_id = "patch"
