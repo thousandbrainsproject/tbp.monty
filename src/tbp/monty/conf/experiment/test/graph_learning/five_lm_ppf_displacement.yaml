@@ -25,5 +25,4 @@ experiment:
     supervised_lm_ids: []
     logging:
       run_name: ""
-    env_interface_config:
-      env_interface_config: null
+

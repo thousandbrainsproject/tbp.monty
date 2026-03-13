@@ -67,7 +67,7 @@ experiment:
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
     train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
-    env_interface_config:
+    environment:
       env_init_args:
         objects:
         - name: coneSolid

@@ -1,4 +1,4 @@
-# @package experiment.config.env_interface_config
+# @package experiment.config.environment
 
 env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.SaccadeOnImageFromStreamEnvironment}
 env_init_args: {}

@@ -374,7 +374,7 @@ experiment:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
       run_name: randrot_noise_77obj_5lms_dist_agent
-    env_interface_config:
+    environment:
       env_init_args:
         objects:
         - name: coneSolid

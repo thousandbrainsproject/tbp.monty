@@ -84,7 +84,7 @@ experiment:
       - - 0
       lm_to_lm_matrix: null
       lm_to_lm_vote_matrix: null
-    env_interface_config:
+    environment:
       env_init_args:
         data_path: ${path.expanduser:${oc.env:MONTY_DATA}/worldimages/hand_intrusion_scenes/}
       env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.SaccadeOnImageEnvironment}

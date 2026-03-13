@@ -23,7 +23,7 @@ experiment:
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
-    env_interface_config:
+    environment:
       env_init_args:
         data_path: null
     logging:

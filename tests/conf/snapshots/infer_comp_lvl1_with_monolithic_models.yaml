@@ -241,7 +241,7 @@ experiment:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
       run_name: infer_comp_lvl1_with_monolithic_models
-    env_interface_config:
+    environment:
       env_init_args:
         objects:
         - name: coneSolid

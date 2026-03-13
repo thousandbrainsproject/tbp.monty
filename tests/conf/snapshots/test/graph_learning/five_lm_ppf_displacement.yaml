@@ -217,7 +217,7 @@ experiment:
         - 1
         - 2
         - 3
-    env_interface_config:
+    environment:
       env_init_args:
         objects:
         - name: coneSolid
@@ -352,7 +352,6 @@ experiment:
         - 1.0
         get_all_points: true
         use_semantic_sensor: false
-      env_interface_config: null
     train_env_interface_args:
       parent_to_child_mapping: null
       object_init_sampler:

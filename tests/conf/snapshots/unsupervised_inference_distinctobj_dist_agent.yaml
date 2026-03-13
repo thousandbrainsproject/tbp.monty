@@ -118,7 +118,7 @@ experiment:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
       run_name: unsupervised_inference_distinctobj_dist_agent
-    env_interface_config:
+    environment:
       env_init_args:
         objects:
         - name: coneSolid

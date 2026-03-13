@@ -144,7 +144,7 @@ experiment:
       - []
       - - 0
       lm_to_lm_vote_matrix: null
-    env_interface_config:
+    environment:
       env_init_args:
         objects:
         - name: coneSolid

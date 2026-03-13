@@ -89,7 +89,7 @@ experiment:
         _target_: wandb.util.generate_id
       wandb_group: debugging
       run_name: omniglot_training
-    env_interface_config:
+    environment:
       env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.OmniglotEnvironment}
       env_init_args: {}
       transform:

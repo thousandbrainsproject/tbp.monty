@@ -170,7 +170,7 @@ experiment:
         - 1
         - 2
         - 3
-    env_interface_config:
+    environment:
       env_init_args:
         objects:
         - name: coneSolid

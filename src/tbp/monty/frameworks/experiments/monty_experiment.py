@@ -212,9 +212,9 @@ class MontyExperiment:
 
     def load_environment_interfaces(self, config):
         # Initialize everything needed for environment interface
-        env_interface_config = config["env_interface_config"]
+        environment = config["environment"]
         self.init_env(
-            env_interface_config["env_init_func"], env_interface_config["env_init_args"]
+            environment["env_init_func"], environment["env_init_args"]
         )
 
         # Initialize train environment interface if needed
@@ -222,7 +222,7 @@ class MontyExperiment:
             env_interface_class = config["train_env_interface_class"]
             env_interface_args = dict(
                 env=self.env,
-                transform=env_interface_config["transform"],
+                transform=environment["transform"],
                 experiment_mode=ExperimentMode.TRAIN,
                 **config["train_env_interface_args"],
             )
@@ -238,7 +238,7 @@ class MontyExperiment:
             env_interface_class = config["eval_env_interface_class"]
             env_interface_args = dict(
                 env=self.env,
-                transform=env_interface_config["transform"],
+                transform=environment["transform"],
                 experiment_mode=ExperimentMode.EVAL,
                 **config["eval_env_interface_args"],
             )

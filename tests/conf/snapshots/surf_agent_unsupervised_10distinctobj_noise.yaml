@@ -123,7 +123,7 @@ experiment:
         _target_: wandb.util.generate_id
       wandb_group: debugging
       run_name: surf_agent_unsupervised_10distinctobj_noise
-    env_interface_config:
+    environment:
       env_init_args:
         objects:
         - name: coneSolid
