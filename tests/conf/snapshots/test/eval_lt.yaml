@@ -157,23 +157,6 @@ experiment:
         - 1.0
         get_all_points: true
         use_semantic_sensor: false
-    train_env_interface_args:
-      parent_to_child_mapping: null
-      object_init_sampler:
-        _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-        rotations:
-        - - 0.0
-          - 0.0
-          - 0.0
-        - - 0.0
-          - 45.0
-          - 0.0
-        - - 0.0
-          - 135.0
-          - 0.0
-      object_names:
-      - capsule3DSolid
-      - cubeSolid
     eval_env_interface_args:
       parent_to_child_mapping: null
       object_init_sampler:
@@ -191,7 +174,6 @@ experiment:
       object_names:
       - capsule3DSolid
       - cubeSolid
-    train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
     eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 episodes: all
