@@ -1,0 +1,27 @@
+# @package _global_
+
+defaults:
+  - /monty: base_exp1000_e3_t3_tot2500
+  - /monty/motor_system_config: base
+  - /monty/learning_module: fake_1lm
+  - /monty/sensor_module: fake
+  - /monty/connectivity: test_1lm_1sm
+  - /environment: test_habitat
+  - /env_interface: test_train_3obj_default_eval_3obj_default
+  - /logging: detailed_info_monty_runs
+
+experiment:
+  _target_: tests.integration.frameworks.experiments.profile_experiment_mixin_test.ProfiledExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 50
+    max_eval_steps: 50
+    max_total_steps: 400
+    n_train_epochs: 1
+    n_eval_epochs: 1
+    model_name_or_path: ''
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    logging:
+      run_name: ""

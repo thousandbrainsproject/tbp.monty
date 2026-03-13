@@ -138,6 +138,7 @@ RUNS = [
     "test/graph_learning/fixed_actions_feat",
     "test/graph_learning/fixed_actions_ppf",
     "test/graph_learning/surface_agent_eval",
+    "test/profile/base",
 ]
 
 def compare_snapshots(
