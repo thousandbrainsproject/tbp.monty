@@ -65,10 +65,10 @@ class PolicyTest(unittest.TestCase):
 
         def hydra_config(test_name: str) -> DictConfig:
             return hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    f"test=policy/{test_name}",
-                    f"test.config.logging.output_dir={self.output_dir}",
+                    f"experiment=test/policy/{test_name}",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
                 ],
             )
 
@@ -163,44 +163,44 @@ class PolicyTest(unittest.TestCase):
 
     # @unittest.skip("debugging")
     def test_can_run_informed_policy(self):
-        exp = hydra.utils.instantiate(self.base_dist_cfg.test)
+        exp = hydra.utils.instantiate(self.base_dist_cfg.experiment)
         with exp:
             exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_spiral_policy(self):
-        exp = hydra.utils.instantiate(self.spiral_cfg.test)
+        exp = hydra.utils.instantiate(self.spiral_cfg.experiment)
         with exp:
             # TODO: test that no two locations are the same
             exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_dist_agent_hypo_driven_policy(self):
-        exp = hydra.utils.instantiate(self.dist_hypo_driven_cfg.test)
+        exp = hydra.utils.instantiate(self.dist_hypo_driven_cfg.experiment)
         with exp:
             exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_surface_policy(self):
-        exp = hydra.utils.instantiate(self.base_surf_cfg.test)
+        exp = hydra.utils.instantiate(self.base_surf_cfg.experiment)
         with exp:
             exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_curv_informed_policy(self) -> None:
-        exp = hydra.utils.instantiate(self.curve_informed_cfg.test)
+        exp = hydra.utils.instantiate(self.curve_informed_cfg.experiment)
         with exp:
             exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_surf_agent_hypo_driven_policy(self):
-        exp = hydra.utils.instantiate(self.surf_hypo_driven_cfg.test)
+        exp = hydra.utils.instantiate(self.surf_hypo_driven_cfg.experiment)
         with exp:
             exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self):
-        exp = hydra.utils.instantiate(self.dist_hypo_driven_multi_lm_cfg.test)
+        exp = hydra.utils.instantiate(self.dist_hypo_driven_multi_lm_cfg.experiment)
         with exp:
             exp.run()
 
@@ -246,7 +246,7 @@ class PolicyTest(unittest.TestCase):
         In this basic version, the object is a bit too far away, and so the agent
         moves forward
         """
-        exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.test)
+        exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -266,7 +266,7 @@ class PolicyTest(unittest.TestCase):
                 "view_finder"
             ]
 
-            config = self.surf_poor_initial_view_cfg.test.config
+            config = self.surf_poor_initial_view_cfg.experiment.config
 
             points_on_target_obj = (
                 view["semantic_3d"][:, 3].reshape(view["depth"].shape) == 1
@@ -297,7 +297,7 @@ class PolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness and large saccade sizes, so
         that we are guaranteed to move off of the cube.
         """
-        exp = hydra.utils.instantiate(self.dist_fixed_action_cfg.test)
+        exp = hydra.utils.instantiate(self.dist_fixed_action_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -415,7 +415,7 @@ class PolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness, so that we are guaranteed to move
         off of the cube.
         """
-        exp = hydra.utils.instantiate(self.surf_fixed_action_cfg.test)
+        exp = hydra.utils.instantiate(self.surf_fixed_action_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -561,7 +561,7 @@ class PolicyTest(unittest.TestCase):
         Begins the episode by facing a cube whose surface is pointing away from
         the agent at an odd angle.
         """
-        exp = hydra.utils.instantiate(self.rotated_cube_view_cfg.test)
+        exp = hydra.utils.instantiate(self.rotated_cube_view_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)

@@ -32,24 +32,24 @@ class SensorModuleTest(unittest.TestCase):
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.base_cfg = hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    "test=sensor_module/base",
-                    f"test.config.logging.output_dir={self.output_dir}",
+                    "experiment=test/sensor_module/base",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
                 ],
             )
             self.sensor_feature_cfg = hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    "test=sensor_module/sensor_feature",
-                    f"test.config.logging.output_dir={self.output_dir}",
+                    "experiment=test/sensor_module/sensor_feature",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
                 ],
             )
             self.feature_change_sensor_cfg = hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    "test=sensor_module/feature_change_sensor",
-                    f"test.config.logging.output_dir={self.output_dir}",
+                    "experiment=test/sensor_module/feature_change_sensor",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
                 ],
             )
 
@@ -60,7 +60,7 @@ class SensorModuleTest(unittest.TestCase):
     # @unittest.skip("debugging")
     def test_can_set_up(self):
         """Check that correct features are returned by sensor module."""
-        exp = hydra.utils.instantiate(self.base_cfg.test)
+        exp = hydra.utils.instantiate(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -79,7 +79,7 @@ class SensorModuleTest(unittest.TestCase):
     # @unittest.skip("debugging")
     def test_features_in_sensor(self):
         """Check that correct features are returned by sensor module."""
-        exp = hydra.utils.instantiate(self.sensor_feature_cfg.test)
+        exp = hydra.utils.instantiate(self.sensor_feature_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -90,7 +90,7 @@ class SensorModuleTest(unittest.TestCase):
             exp.model.aggregate_sensory_inputs(ctx, observations)
 
             # Dig the features list out of the hydra config
-            config = self.sensor_feature_cfg.test.config
+            config = self.sensor_feature_cfg.experiment.config
             sensor_configs = config.monty_config.sensor_module_configs
             tested_features = sensor_configs.sensor_module_0.sensor_module_args.features
             for feature in tested_features:
@@ -112,7 +112,7 @@ class SensorModuleTest(unittest.TestCase):
                     )
 
     def test_feature_change_sm(self):
-        exp = hydra.utils.instantiate(self.feature_change_sensor_cfg.test)
+        exp = hydra.utils.instantiate(self.feature_change_sensor_cfg.experiment)
         with exp:
             exp.run()
             # TODO: test that only new features are given to LM

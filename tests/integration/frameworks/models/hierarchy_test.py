@@ -37,33 +37,33 @@ class HierarchyTest(unittest.TestCase):
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.two_lms_heterarchy_cfg = hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    "test=hierarchy/two_lms_heterarchy",
-                    f"test.config.logging.output_dir={self.output_dir}",
+                    "experiment=test/hierarchy/two_lms_heterarchy",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
                 ],
             )
             self.two_lms_constrained_cfg = hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    "test=hierarchy/two_lms_constrained",
-                    f"test.config.logging.output_dir={self.output_dir}",
+                    "experiment=test/hierarchy/two_lms_constrained",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
                 ],
             )
             self.two_lms_semisupervised_cfg = hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    "test=hierarchy/two_lms_semisupervised",
-                    f"test.config.logging.output_dir={self.output_dir}",
-                    f"test.config.model_name_or_path={self.model_path}",
+                    "experiment=test/hierarchy/two_lms_semisupervised",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
+                    f"experiment.config.model_name_or_path={self.model_path}",
                 ],
             )
             self.two_lms_eval_cfg = hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    "test=hierarchy/two_lms_eval",
-                    f"test.config.logging.output_dir={self.output_dir}",
-                    f"test.config.model_name_or_path={self.model_path}",
+                    "experiment=test/hierarchy/two_lms_eval",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
+                    f"experiment.config.model_name_or_path={self.model_path}",
                 ],
             )
 
@@ -179,7 +179,7 @@ class HierarchyTest(unittest.TestCase):
         of this longer run if we already have it? Maybe in the future we want to change
         this but this is my current reasoning.
         """
-        exp = hydra.utils.instantiate(self.two_lms_heterarchy_cfg.test)
+        exp = hydra.utils.instantiate(self.two_lms_heterarchy_cfg.experiment)
         with exp:
             exp.run()
 
@@ -210,7 +210,7 @@ class HierarchyTest(unittest.TestCase):
         - Extending a graph with a new input channel
         - logging prediction errors
         """
-        exp = hydra.utils.instantiate(self.two_lms_constrained_cfg.test)
+        exp = hydra.utils.instantiate(self.two_lms_constrained_cfg.experiment)
         with exp:
             exp.run()
             # check that both LMs have learned both objects.
@@ -229,7 +229,7 @@ class HierarchyTest(unittest.TestCase):
                     f"objects: {learned_objects}",
                 )
 
-        exp = hydra.utils.instantiate(self.two_lms_semisupervised_cfg.test)
+        exp = hydra.utils.instantiate(self.two_lms_semisupervised_cfg.experiment)
         with exp:
             # check that models for both objects are loaded into memory correctly.
             for lm_idx, lm in enumerate(exp.model.learning_modules):
@@ -268,7 +268,7 @@ class HierarchyTest(unittest.TestCase):
                     f"graph: {updated_graph} with keys: {updated_graph.keys()}",
                 )
 
-        exp = hydra.utils.instantiate(self.two_lms_eval_cfg.test)
+        exp = hydra.utils.instantiate(self.two_lms_eval_cfg.experiment)
         with exp:
             exp.run()
             eval_stats = pd.read_csv(Path(exp.output_dir) / "eval_stats.csv")
