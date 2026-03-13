@@ -8,7 +8,7 @@ defaults:
   - /monty/connectivity: test_1lm_1sm
   - /environment: test_habitat_ycb_agent
   - /env_interface: test_train_eval
-  - /logging: silent_info_monty_runs
+  - /logging: test_info_monty_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.monty_experiment.MontyExperiment
