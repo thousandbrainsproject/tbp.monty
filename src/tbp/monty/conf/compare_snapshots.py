@@ -140,6 +140,7 @@ RUNS = [
     "test/graph_learning/surface_agent_eval",
     "test/profile/base",
     "test/hierarchy/base",
+    "test/integration/positioning_procedures/get_good_view/base",
 ]
 
 def compare_snapshots(
