@@ -1,36 +1,28 @@
-defaults:
-  - /experiment/test/supervised_pre_training@
-  - /experiment/config/defaults@config
-  - /experiment/config/logging/clear_logging@config
-  - /experiment/config/logging/defaults@config.logging
-  - /experiment/config/monty/clear_monty_config@config
-  - /experiment/config/monty/patch_and_view@config.monty_config
-  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
-  - /experiment/test/config/monty/motor_system/uniformly_distributed@config.monty_config.motor_system_config
-  - /experiment/config/monty/args/clear_monty_args@config.monty_config
-  - /experiment/config/monty/args/defaults@config.monty_config.monty_args
-  - /experiment/config/environment_interface/clear_eval_env_interface_args@config
-  - /experiment/config/environment_interface/per_object_eval@config.eval_env_interface_args
+# @package _global_
 
-_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
-config:
-  do_eval: true
-  do_train: false
-  n_eval_epochs: 3
-  logging:
-    run_name: test_eval_episode_reproducibility
-  monty_config:
-    monty_args:
-      num_exploratory_steps: 10
-    learning_module_configs:
-      learning_module_0:
-        learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
-        learning_module_args:
-          k: 5
-          match_attribute: displacement
-  eval_env_interface_args:
-    object_names:
-      - capsule3DSolid
-      - cubeSolid
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
+defaults:
+  - /monty: graph_exp10_e3_t3_tot2500
+  - /monty/motor_system_config: informed_uniform
+  - /monty/learning_module: displacement_1lm
+  - /monty/sensor_module: camera_dist
+  - /monty/connectivity: 1lm_1sm
+  - /environment: test_habitat_dist_transforms
+  - /env_interface: test_eval_2obj_random
+  - /logging: detailed_info_monty_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    n_eval_epochs: 3
+    model_name_or_path: ''
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    logging:
+      output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs/}
+      run_name: test_eval_episode_reproducibility
