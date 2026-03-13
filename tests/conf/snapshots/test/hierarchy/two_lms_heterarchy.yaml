@@ -112,13 +112,8 @@ experiment:
             max_match_distance: 0.001
             tolerances:
               patch_0:
-                hsv:
-                - 0.1
-                - 1
-                - 1
-                principal_curvatures_log:
-                - 1
-                - 1
+                hsv: ${np.array:[0.1, 1, 1]}
+                principal_curvatures_log: ${np.ones:2}
             feature_weights: {}
             max_graph_size: 0.2
             num_model_voxels_per_dim: 50
@@ -130,13 +125,8 @@ experiment:
             max_match_distance: 0.001
             tolerances:
               patch_1:
-                hsv:
-                - 0.1
-                - 1
-                - 1
-                principal_curvatures_log:
-                - 1
-                - 1
+                hsv: ${np.array:[0.1, 1, 1]}
+                principal_curvatures_log: ${np.ones:2}
               learning_module_0:
                 object_id: 1
             feature_weights:
