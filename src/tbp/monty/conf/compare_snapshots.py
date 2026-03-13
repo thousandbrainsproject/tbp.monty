@@ -150,7 +150,8 @@ RUNS = [
     "test/integration/positioning_procedures/get_good_view/base",
     "test/integration/positioning_procedures/get_good_view/dist_agent_too_far_away",
     "test/integration/positioning_procedures/get_good_view/multi_object_target_not_visible",
-    "test/supervised_pre_training"
+    "test/supervised_pre_training",
+    "test/reproducibility_supervised_training"
 ]
 
 def compare_snapshots(
