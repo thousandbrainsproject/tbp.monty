@@ -112,13 +112,8 @@ experiment:
             max_match_distance: 0.001
             tolerances:
               patch_0:
-                hsv:
-                - 0.1
-                - 1
-                - 1
-                principal_curvatures_log:
-                - 1
-                - 1
+                hsv: ${np.array:[0.1, 1, 1]}
+                principal_curvatures_log: ${np.ones:2}
             feature_weights: {}
             max_graph_size: 0.3
             num_model_voxels_per_dim: 200
@@ -130,13 +125,8 @@ experiment:
             max_match_distance: 0.001
             tolerances:
               patch_1:
-                hsv:
-                - 0.1
-                - 1
-                - 1
-                principal_curvatures_log:
-                - 1
-                - 1
+                hsv: ${np.array:[0.1, 1, 1]}
+                principal_curvatures_log: ${np.ones:2}
               learning_module_0:
                 object_id: 1
             feature_weights:
@@ -243,13 +233,6 @@ experiment:
         - 1.0
         get_all_points: true
         use_semantic_sensor: false
-    train_env_interface_args:
-      parent_to_child_mapping: null
-      object_init_sampler:
-        _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      object_names:
-      - capsule3DSolid
-      - cubeSolid
     eval_env_interface_args:
       parent_to_child_mapping:
         capsule3DSolid: capsule3DSolid
@@ -258,7 +241,6 @@ experiment:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
       object_names:
       - capsule3DSolid
-    train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
     eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 episodes: all

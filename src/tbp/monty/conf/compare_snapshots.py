@@ -141,6 +141,7 @@ RUNS = [
     "test/profile/base",
     "test/hierarchy/base",
     "test/hierarchy/two_lms_constrained",
+    "test/hierarchy/two_lms_eval",
     "test/integration/positioning_procedures/get_good_view/base",
     "test/integration/positioning_procedures/get_good_view/dist_agent_too_far_away",
     "test/integration/positioning_procedures/get_good_view/multi_object_target_not_visible",
