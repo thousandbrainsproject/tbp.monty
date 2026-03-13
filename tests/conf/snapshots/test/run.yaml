@@ -13,7 +13,7 @@ experiment:
     seed: 42
     supervised_lm_ids: []
     logging:
-      monty_log_level: TEST
+      monty_log_level: SILENT
       monty_handlers: []
       wandb_handlers: []
       python_log_level: INFO

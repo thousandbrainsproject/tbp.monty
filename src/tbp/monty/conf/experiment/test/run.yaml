@@ -1,19 +1,27 @@
-defaults:
-  - /experiment/config/defaults@config
-  - /experiment/config/logging/defaults@config.logging
-  - /test/config/monty/fake_single_camera@config.monty_config
-  - /experiment/config/environment/single_ptz_habitat@config.env_interface_config
+# @package _global_
 
-_target_: tbp.monty.frameworks.experiments.monty_experiment.MontyExperiment
-config:
-  max_train_steps: 10
-  max_eval_steps: 5
-  n_train_epochs: 2
-  n_eval_epochs: 1
-  logging:
-    monty_log_level: TEST
-    monty_handlers: []
-  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterface}
-  train_env_interface_args: {}
-  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterface}
-  eval_env_interface_args: {}
+defaults:
+  - /monty: base_exp1000_e3_t3_tot2500
+  - /monty/motor_system_config: base
+  - /monty/learning_module: fake_1lm
+  - /monty/sensor_module: fake
+  - /monty/connectivity: test_1lm_1sm
+  - /environment: test_habitat_ycb_agent
+  - /env_interface: test_train_eval
+  - /logging: silent_info_monty_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.monty_experiment.MontyExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 10
+    max_eval_steps: 5
+    max_total_steps: 6000
+    n_train_epochs: 2
+    n_eval_epochs: 1
+    model_name_or_path: ""
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    logging:
+      run_name: ""

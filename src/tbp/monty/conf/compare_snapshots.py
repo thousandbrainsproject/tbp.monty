@@ -86,6 +86,7 @@ RUNS = [
     "test/eval",
     "test/eval_lt",
     "test/eval_gt",
+    "test/run",
     "test/base_config/base",
     "test/evidence_lm/base",
     "test/evidence_lm/evidence_times_out",
