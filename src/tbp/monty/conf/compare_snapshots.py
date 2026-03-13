@@ -124,6 +124,7 @@ RUNS = [
     "test/policy/surf_hypo_driven",
     "test/policy/surf_poor_initial_view",
     "test/graph_learning/base",
+    "test/graph_learning/disp_pred",
 ]
 
 def compare_snapshots(
