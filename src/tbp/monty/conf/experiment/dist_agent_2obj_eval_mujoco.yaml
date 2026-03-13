@@ -144,9 +144,6 @@ config:
         agent_type: ${monty.class:tbp.monty.simulators.mujoco.DistantAgent}
     env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoEnvironment}
     transform:
-      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
-        agent_id: ${monty.agent_id:agent_id_0}
-        max_depth: 1
       - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
         agent_id: ${monty.agent_id:agent_id_0}
         sensor_ids:
@@ -167,7 +164,6 @@ config:
     parent_to_child_mapping: null
     object_names:
       - mug
-      - banana
       - potted_meat_can
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined

@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Protocol, TypedDict, cast
 
 import numpy as np
@@ -40,6 +41,7 @@ from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 if TYPE_CHECKING:
     from tbp.monty.simulators.mujoco import MuJoCoSimulator
 
+logger = logging.getLogger(__name__)
 
 # TODO: Move elsewhere
 Size = tuple[int, int]
@@ -143,7 +145,7 @@ class NoopAgent(Agent):
     def state(self) -> AgentState:
         """Get the state of the agent."""
         # Get agent position and rotation. Both are in world coordinates.
-        agent_pos = self.sim.data.body(self.id).xpos
+        agent_pos = self.sim.data.body(self.id).xpos.copy()
         agent_quat = self.sim.data.body(self.id).xquat
         agent_rotation = rotation_from_quat(agent_quat)
 
@@ -164,11 +166,13 @@ class NoopAgent(Agent):
                 position=cast("VectorXYZ", tuple(sensor_pos_rel_agent)),
                 rotation=pitch_body_rot_quat,
             )
-        return AgentState(
+        state = AgentState(
             position=agent_pos,
             rotation=qt.quaternion(*rotation_as_quat(agent_rotation)),
             sensors=sensor_states,
         )
+        logger.debug(f"{state=}")
+        return state
 
     def reset(self):
         pass
@@ -214,7 +218,7 @@ class DistantAgent(NoopAgent):
         rotation = rotation_from_quat(qt.as_float_array(action.rotation_quat))
         angles = rotation.as_euler("xyz", degrees=False)
         qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
-        self.sim.data.qpos[qpos_addr] = angles[1]
+        self.sim.data.qpos[qpos_addr] = angles[0]
 
     def actuate_move_forward(self, action: MoveForward):
         rotation = rotation_from_quat(self.rotation)

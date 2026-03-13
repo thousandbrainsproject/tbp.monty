@@ -255,6 +255,7 @@ class MuJoCoSimulator(Simulator):
     def step(
         self, actions: Sequence[Action]
     ) -> tuple[Observations, ProprioceptiveState]:
+        logger.debug(f"{actions=}")
         for action in actions:
             agent = self._agents[action.agent_id]
             try:

@@ -393,6 +393,9 @@ class SetAgentPose(Action):
     def act(self, actuator: SetAgentPoseActuator) -> None:
         actuator.actuate_set_agent_pose(self)
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.location=}, {self.rotation_quat=})"
+
 
 class SetSensorPitchActionSampler(Protocol):
     def sample_set_sensor_pitch(
@@ -461,6 +464,9 @@ class SetSensorPose(Action):
     def act(self, actuator: SetSensorPoseActuator) -> None:
         actuator.actuate_set_sensor_pose(self)
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.location=}, {self.rotation_quat=})"
+
 
 class SetSensorRotationActionSampler(Protocol):
     def sample_set_sensor_rotation(
@@ -487,6 +493,9 @@ class SetSensorRotation(Action):
 
     def act(self, actuator: SetSensorRotationActuator) -> None:
         actuator.actuate_set_sensor_rotation(self)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.rotation_quat=})"
 
 
 class SetYawActionSampler(Protocol):

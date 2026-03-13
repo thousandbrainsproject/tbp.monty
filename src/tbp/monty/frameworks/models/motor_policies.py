@@ -561,6 +561,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # If the hypothesis-guided jump is unsuccessful (e.g. to empty space
         # or inside an object), we return here.
         self._pre_jump_state = state[self.agent_id]
+        logger.debug(f"{self._pre_jump_state=}")
 
         # Check that all sensors have identical rotations - this is because actions
         # currently update them all together; if this changes, the code needs
@@ -642,9 +643,13 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         )
 
         for current_sensor in state[self.agent_id].sensors:
-            assert np.all(
-                state[self.agent_id].sensors[current_sensor].rotation
-                == self._pre_jump_state.sensors[current_sensor].rotation
+            assert np.allclose(
+                qt.as_float_array(
+                    state[self.agent_id].sensors[current_sensor].rotation
+                ),
+                qt.as_float_array(
+                    self._pre_jump_state.sensors[current_sensor].rotation
+                ),
             ), "Failed to return sensor to orientation"
 
 
