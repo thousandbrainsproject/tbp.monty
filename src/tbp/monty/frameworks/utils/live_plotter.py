@@ -163,8 +163,6 @@ class LivePlotter:
                 )
 
     def show_patch(self, first_sensor_depth):
-        if self.depth_image is not None:
-            self.depth_image.remove()
         depth_image = first_sensor_depth
         depth_vals = depth_image.flatten()
         depth_vals = depth_vals[depth_vals < 1]
