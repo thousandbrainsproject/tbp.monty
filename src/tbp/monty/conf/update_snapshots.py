@@ -51,6 +51,7 @@ def update_snapshots(
     for file_path in config_dir.glob("*.yaml"):
         print(f"Updating snapshot: {file_path}")
         with hydra.initialize(version_base=None, config_path="."):
+            print(f"{override_key}={override_prefix}{file_path.stem}")
             config = hydra.compose(
                 config_name=config_name,
                 overrides=[f"{override_key}={override_prefix}{file_path.stem}"],
@@ -71,15 +72,15 @@ if __name__ == "__main__":
     snapshots_root = PROJECT_ROOT / "tests" / "conf" / "snapshots"
 
     # Experiment configs
-    update_snapshots(
-        config_dir=conf_dir / "experiment",
-        snapshots_dir=snapshots_root,
-    )
-    update_snapshots(
-        config_dir=conf_dir / "experiment" / "tutorial",
-        override_prefix="tutorial/",
-        snapshots_dir=snapshots_root / "tutorial",
-    )
+    # update_snapshots(
+    #     config_dir=conf_dir / "experiment",
+    #     snapshots_dir=snapshots_root,
+    # )
+    # update_snapshots(
+    #     config_dir=conf_dir / "experiment" / "tutorial",
+    #     override_prefix="tutorial/",
+    #     snapshots_dir=snapshots_root / "tutorial",
+    # )
 
     # Below is commented out because we already generated the snapshots for
     # the tests, so we don't need to update them going forward. They are used
@@ -108,3 +109,13 @@ if __name__ == "__main__":
     #         override_prefix=f"{subdir}/",
     #         snapshots_dir=snapshots_root / "test" / subdir,
     #     )
+
+    # Update test snapshots from experiment/test configs
+    # (eval/eval_lt/eval_gt, etc.)
+    # update_snapshots(
+    #     config_dir=conf_dir / "experiment" / "test",
+    #     config_name="test",
+    #     override_key="test",
+    #     override_prefix="../experiment/test/",
+    #     snapshots_dir=snapshots_root / "test",
+    # )
