@@ -120,6 +120,7 @@ RUNS = [
     "test/policy/dist_hypo_driven_multi_lm",
     "test/policy/dist_hypo_driven",
     "test/policy/spiral",
+    "test/policy/surf_hypo_driven",
 ]
 
 def compare_snapshots(
