@@ -47,10 +47,7 @@ experiment:
           learning_module_args:
             k: 5
             match_attribute: displacement
-            tolerance:
-            - 0.0001
-            - 0.0001
-            - 0.0001
+            tolerance: ${np.array:[0.0001, 0.0001, 0.0001]}
       sensor_module_configs:
         sensor_module_0:
           sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}

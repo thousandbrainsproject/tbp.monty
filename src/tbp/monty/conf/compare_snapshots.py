@@ -134,6 +134,7 @@ RUNS = [
     "test/graph_learning/feature_uniform_initial_poses",
     "test/graph_learning/five_lm_feature",
     "test/graph_learning/five_lm_ppf_displacement",
+    "test/graph_learning/fixed_actions_disp",
 ]
 
 def compare_snapshots(
