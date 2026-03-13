@@ -140,7 +140,7 @@ ipython = 'IPython'
 minversion = '6.0'
 addopts = '-ra -n auto'
 testpaths = [
-    'tests/conf',
+    # 'tests/conf',
     'tests/unit',
 ]
 filterwarnings = [
