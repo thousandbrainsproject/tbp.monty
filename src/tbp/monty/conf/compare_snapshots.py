@@ -122,6 +122,7 @@ RUNS = [
     "test/policy/spiral",
     "test/policy/rotated_cube_view",
     "test/policy/surf_hypo_driven",
+    "test/policy/surf_poor_initial_view",
     "test/graph_learning/base",
 ]
 
