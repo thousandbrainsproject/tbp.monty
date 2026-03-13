@@ -109,7 +109,7 @@ class LivePlotter:
         self.show_patch(first_sensor_depth)
         # if mlh_model:
         # self.show_mlh(mlh, mlh_model)
-        plt.pause(0.00001)
+        plt.pause(0.5)
 
     def show_view_finder(
         self,
@@ -163,11 +163,14 @@ class LivePlotter:
                 )
 
     def show_patch(self, first_sensor_depth):
-        if self.depth_image:
+        if self.depth_image is not None:
             self.depth_image.remove()
         depth_image = first_sensor_depth
         depth_vals = depth_image.flatten()
-        depth_vals = depth_vals[depth_vals < 100]
+        depth_vals = depth_vals[depth_vals < 1]
+        if not len(depth_vals):
+            self.depth_image = np.zeros_like(depth_image)
+            return
         min_depth, max_depth = np.min(depth_vals), np.max(depth_vals)
         depth_range = max_depth - min_depth
         vmin = min(0, min_depth - depth_range * 0.1)

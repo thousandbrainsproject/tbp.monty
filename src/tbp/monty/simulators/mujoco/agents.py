@@ -20,6 +20,9 @@ from tbp.monty.frameworks.actions.actions import (
     LookDown,
     LookUp,
     MoveForward,
+    MoveTangentially,
+    OrientHorizontal,
+    OrientVertical,
     SetAgentPose,
     SetSensorRotation,
     TurnLeft,
@@ -75,7 +78,7 @@ class Agent(Protocol):
     def reset(self) -> None: ...
 
 
-class NoopAgent(Agent):
+class AgentBase(Agent):
     """A simple multi-sensor agent that doesn't respond to actions."""
 
     def __init__(
@@ -120,6 +123,28 @@ class NoopAgent(Agent):
                 resolution=sensor_cfg["resolution"],
                 fovy=DEFAULT_CAMERA_FOVY / sensor_cfg["zoom"],
             )
+
+    @property
+    def position(self) -> VectorXYZ:
+        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
+        return cast("VectorXYZ", tuple(self.sim.data.qpos[qpos_addr : qpos_addr + 3]))
+
+    @position.setter
+    def position(self, position: VectorXYZ) -> None:
+        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
+        self.sim.data.qpos[qpos_addr : qpos_addr + 3] = np.array(position)
+
+    @property
+    def rotation(self) -> QuaternionWXYZ:
+        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
+        return cast(
+            "QuaternionWXYZ", tuple(self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7])
+        )
+
+    @rotation.setter
+    def rotation(self, rotation: QuaternionWXYZ) -> None:
+        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
+        self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7] = np.array(rotation)
 
     @property
     def observations(self) -> AgentObservations:
@@ -174,41 +199,9 @@ class NoopAgent(Agent):
         logger.debug(f"{state=}")
         return state
 
-    def reset(self):
-        pass
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(id={self.id})"
-
-
-class DistantAgent(NoopAgent):
-    """A multi-sensor agent for sensing an object from a distance."""
-
     def reset(self) -> None:
         self.position = self._initial_position
         self.rotation = self._initial_rotation
-
-    @property
-    def position(self) -> VectorXYZ:
-        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
-        return cast("VectorXYZ", tuple(self.sim.data.qpos[qpos_addr : qpos_addr + 3]))
-
-    @position.setter
-    def position(self, position: VectorXYZ) -> None:
-        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
-        self.sim.data.qpos[qpos_addr : qpos_addr + 3] = np.array(position)
-
-    @property
-    def rotation(self) -> QuaternionWXYZ:
-        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
-        return cast(
-            "QuaternionWXYZ", tuple(self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7])
-        )
-
-    @rotation.setter
-    def rotation(self, rotation: QuaternionWXYZ) -> None:
-        qpos_addr = self.sim.model.jnt_qposadr[self.agent_joint.id]
-        self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7] = np.array(rotation)
 
     def actuate_set_agent_pose(self, action: SetAgentPose):
         self.position = action.location
@@ -219,25 +212,6 @@ class DistantAgent(NoopAgent):
         angles = rotation.as_euler("xyz", degrees=False)
         qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
         self.sim.data.qpos[qpos_addr] = angles[0]
-
-    def actuate_move_forward(self, action: MoveForward):
-        rotation = rotation_from_quat(self.rotation)
-        rotation_matrix = rotation.as_matrix()
-        forward_vector = rotation_matrix[:, 2] * action.distance
-        new_xyz = self.position - forward_vector
-        self.position = new_xyz
-
-    def actuate_turn_right(self, action: TurnRight):
-        self._actuate_yaw(-action.rotation_degrees)
-
-    def actuate_turn_left(self, action: TurnLeft):
-        self._actuate_yaw(action.rotation_degrees)
-
-    def actuate_look_up(self, action: LookUp):
-        self._actuate_pitch(action.rotation_degrees)
-
-    def actuate_look_down(self, action: LookDown):
-        self._actuate_pitch(-action.rotation_degrees)
 
     def _actuate_yaw(self, delta_theta: float):
         """Yaw the agent body by a specified number of degrees.
@@ -259,3 +233,62 @@ class DistantAgent(NoopAgent):
         delta_phi = np.deg2rad(delta_phi)
         qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
         self.sim.data.qpos[qpos_addr] += delta_phi
+
+    def _move_along_local_axis(self, distance: float, axis: int):
+        rotation = rotation_from_quat(self.rotation)
+        rotation_matrix = rotation.as_matrix()
+        axis_vector = rotation_matrix[:, axis] * distance
+        new_xyz = np.array(self.position) + axis_vector
+        self.position = new_xyz
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(id={self.id})"
+
+
+class DistantAgent(AgentBase):
+    """A multi-sensor agent for sensing an object from a distance."""
+
+    def actuate_move_forward(self, action: MoveForward):
+        self._move_along_local_axis(-action.distance, 2)
+
+    def actuate_turn_right(self, action: TurnRight):
+        self._actuate_yaw(-action.rotation_degrees)
+
+    def actuate_turn_left(self, action: TurnLeft):
+        self._actuate_yaw(action.rotation_degrees)
+
+    def actuate_look_up(self, action: LookUp):
+        self._actuate_pitch(action.rotation_degrees)
+
+    def actuate_look_down(self, action: LookDown):
+        self._actuate_pitch(-action.rotation_degrees)
+
+
+class SurfaceAgent(AgentBase):
+    """A multi-sensor agent for sensing an object from a distance."""
+
+    def actuate_move_forward(self, action: MoveForward):
+        self._move_along_local_axis(-action.distance, 2)
+
+    def actuate_move_tangentially(self, action: MoveTangentially):
+        if action.distance == 0.0:
+            return
+        direction = np.array(action.direction)
+        direction_length = np.linalg.norm(direction)
+        if np.isclose(direction_length, 0.0):
+            return
+        direction = direction / direction_length
+
+        rotation = rotation_from_quat(self.rotation)
+        direction_rel_world = rotation.apply(direction)
+        self.position = np.array(self.position) + direction_rel_world * action.distance
+
+    def actuate_orient_horizontal(self, action: OrientHorizontal):
+        self._move_along_local_axis(-action.left_distance, 0)
+        self._actuate_yaw(-action.rotation_degrees)
+        self._move_along_local_axis(-action.forward_distance, 2)
+
+    def actuate_orient_vertical(self, action: OrientVertical):
+        self._move_along_local_axis(-action.down_distance, 1)
+        self._actuate_pitch(-action.rotation_degrees)
+        self._move_along_local_axis(-action.forward_distance, 2)
