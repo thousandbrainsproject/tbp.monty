@@ -144,3 +144,6 @@ Session.vim
 
 # hydra
 outputs/
+
+# Mujoco
+MUJOCO_LOG.TXT

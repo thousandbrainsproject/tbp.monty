@@ -11,7 +11,7 @@
 from __future__ import annotations
 
 from json import JSONDecoder, JSONEncoder
-from typing import Any, Generator
+from typing import Any, Generator, TypeVar
 
 from numpy.random import RandomState
 from pydantic.alias_generators import to_snake
@@ -70,6 +70,8 @@ __all__ = [
     "TurnRightActuator",
 ]
 
+ACTUATOR = TypeVar("ACTUATOR")
+
 
 @runtime_checkable
 class Action(Protocol):
@@ -115,6 +117,11 @@ class Action(Protocol):
             if key == "name":
                 continue
             yield key, value
+
+    def act(self, actuator: ACTUATOR) -> None: ...
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(agent_id={self.agent_id})"
 
 
 class LookDownActionSampler(Protocol):
@@ -386,6 +393,9 @@ class SetAgentPose(Action):
     def act(self, actuator: SetAgentPoseActuator) -> None:
         actuator.actuate_set_agent_pose(self)
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.location=}, {self.rotation_quat=})"
+
 
 class SetSensorPitchActionSampler(Protocol):
     def sample_set_sensor_pitch(
@@ -454,6 +464,9 @@ class SetSensorPose(Action):
     def act(self, actuator: SetSensorPoseActuator) -> None:
         actuator.actuate_set_sensor_pose(self)
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.location=}, {self.rotation_quat=})"
+
 
 class SetSensorRotationActionSampler(Protocol):
     def sample_set_sensor_rotation(
@@ -480,6 +493,9 @@ class SetSensorRotation(Action):
 
     def act(self, actuator: SetSensorRotationActuator) -> None:
         actuator.actuate_set_sensor_rotation(self)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.rotation_quat=})"
 
 
 class SetYawActionSampler(Protocol):

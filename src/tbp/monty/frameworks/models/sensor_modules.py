@@ -446,7 +446,7 @@ class MessageNoise(Protocol):
 
 
 class NoMessageNoise(MessageNoise):
-    def __call__(self, state: State, rng: np.random.RandomState) -> State:  # noqa: ARG002
+    def __call__(self, state: State, rng: np.random.RandomState) -> State:
         """No noise function.
 
         Returns:
@@ -670,6 +670,8 @@ class CameraSM(SensorModule):
         if not self.is_exploring:
             self.processed_obs.append(observed_state.__dict__)
             self.states.append(self.state)
+
+        logger.debug(f"{observed_state.get_on_object()=}")
 
         return observed_state
 

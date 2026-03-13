@@ -34,12 +34,12 @@ class LivePlotter:
         pass
 
     def initialize_online_plotting(self):
-        self.fig, self.ax = plt.subplots(1, 3, figsize=(9, 6))
+        self.fig, self.ax = plt.subplots(1, 2, figsize=(9, 6))
         self.fig.subplots_adjust(top=1.1)
         # self.colorbar = self.fig.colorbar(None, fraction=0.046, pad=0.04)
         self.setup_camera_ax()
         self.setup_sensor_ax()
-        self.setup_mlh_ax()
+        # self.setup_mlh_ax()
 
     def hardcoded_assumptions(self, observation, model):
         """Extract some of the hardcoded assumptions from the observation.
@@ -62,7 +62,7 @@ class LivePlotter:
         ]._snapshot_telemetry.raw_observations
         first_sensor_module_id = model.sensor_modules[0].sensor_module_id
         first_sensor_depth = observation[model.motor_system._policy.agent_id][
-            first_sensor_module_id
+            "view_finder"
         ]["depth"]
         view_finder_rgba = observation[model.motor_system._policy.agent_id][
             "view_finder"
@@ -107,9 +107,9 @@ class LivePlotter:
             is_saccade_on_image_data_loader,
         )
         self.show_patch(first_sensor_depth)
-        if mlh_model:
-            self.show_mlh(mlh, mlh_model)
-        plt.pause(0.00001)
+        # if mlh_model:
+        # self.show_mlh(mlh, mlh_model)
+        plt.pause(0.5)
 
     def show_view_finder(
         self,
@@ -163,11 +163,21 @@ class LivePlotter:
                 )
 
     def show_patch(self, first_sensor_depth):
-        if self.depth_image:
-            self.depth_image.remove()
+        depth_image = first_sensor_depth
+        depth_vals = depth_image.flatten()
+        depth_vals = depth_vals[depth_vals < 1]
+        if not len(depth_vals):
+            self.depth_image = np.zeros_like(depth_image)
+            return
+        min_depth, max_depth = np.min(depth_vals), np.max(depth_vals)
+        depth_range = max_depth - min_depth
+        vmin = min(0, min_depth - depth_range * 0.1)
+        vmax = max_depth + depth_range * 0.1
         self.depth_image = self.ax[1].imshow(
             first_sensor_depth,
-            cmap="viridis_r",
+            cmap="gray_r",
+            vmin=vmin,
+            vmax=vmax,
         )
         # self.colorbar.update_normal(self.depth_image)
 

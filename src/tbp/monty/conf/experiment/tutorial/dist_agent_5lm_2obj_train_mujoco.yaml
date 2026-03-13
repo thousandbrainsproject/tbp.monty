@@ -1,0 +1,92 @@
+defaults:
+  - /experiment/config/supervised_pretraining@config
+  - /experiment/config/logging/pretrain@config.logging
+  - /experiment/config/monty/five_lm@config.monty_config
+  - /experiment/config/monty/args/clear_monty_args@config.monty_config
+  - /experiment/config/monty/args/defaults@config.monty_config.monty_args
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - /experiment/config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
+  #- /experiment/config/environment/five_lm_mount_habitat@config.env_interface_config
+  - /experiment/config/environment_interface/per_object@config.train_env_interface_args
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+config:
+  n_train_epochs: ${benchmarks.rotations_all_count}
+  logging:
+    output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
+    run_name: dist_agent_5lm_2obj_train
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 500
+  env_interface_config:
+    env_init_args:
+      data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/ycb}
+      agents:
+        agent_args:
+          agent_id: ${monty.agent_id:agent_id_0}
+          sensor_configs:
+            patch_0:
+              position: [ 0.0, 0.0, 0.0 ]
+              rotation: [ 1.0, 0.0, 0.0, 0.0 ]
+              resolution: [ 64, 64 ]
+              zoom: 10.0
+            patch_1:
+              position: [ 0.0, 0.02, 0.0 ]
+              rotation: [ 1.0, 0.0, 0.0, 0.0 ]
+              resolution: [ 64, 64 ]
+              zoom: 10.0
+            patch_2:
+              position: [ 0.0, -0.02, 0.0 ]
+              rotation: [ 1.0, 0.0, 0.0, 0.0 ]
+              resolution: [ 64, 64 ]
+              zoom: 10.0
+            patch_3:
+              position: [ 0.02, 0.0, 0.0 ]
+              rotation: [ 1.0, 0.0, 0.0, 0.0 ]
+              resolution: [ 64, 64 ]
+              zoom: 10.0
+            patch_4:
+              position: [ -0.02, 0.0, 0.0 ]
+              rotation: [ 1.0, 0.0, 0.0, 0.0 ]
+              resolution: [ 64, 64 ]
+              zoom: 10.0
+            view_finder:
+              position: [ 0.0, 0.0, 0.0 ]
+              rotation: [ 1.0, 0.0, 0.0, 0.0 ]
+              resolution: [ 256, 256 ]
+              zoom: 1.0
+          position: [ 0.0, 1.5, 0.2 ]
+        agent_type: ${monty.class:tbp.monty.simulators.mujoco.PosableAgent}
+    env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoEnvironment}
+    transform:
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+        agent_id: ${monty.agent_id:agent_id_0} # env_init_args[agents][0].agent_args.agent_id
+        max_depth: 1
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_ids: # env_init_args[agents][0].agent_args.sensor_ids
+          - patch_0
+          - patch_1
+          - patch_2
+          - patch_3
+          - patch_4
+          - view_finder
+        resolutions: # env_init_args[agents][0].agent_args.resolutions
+          - [ 64, 64 ]
+          - [ 64, 64 ]
+          - [ 64, 64 ]
+          - [ 64, 64 ]
+          - [ 64, 64 ]
+          - [ 256, 256 ]
+        world_coord: true
+        zooms: [ 10.0, 10.0, 10.0, 10.0, 10.0, 1.0 ] # env_init_args[agents][0].agent_args.zooms
+        get_all_points: true
+        use_semantic_sensor: false
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  train_env_interface_args:
+    object_names:
+      - mug
+      - banana
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+      rotations: ${benchmarks.rotations_all}
