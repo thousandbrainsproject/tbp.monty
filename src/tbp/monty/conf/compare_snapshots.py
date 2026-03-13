@@ -127,6 +127,7 @@ RUNS = [
     "test/graph_learning/base",
     "test/graph_learning/disp_pred",
     "test/graph_learning/feature_pred",
+    "test/graph_learning/feature_pred_time_out",
     "test/graph_learning/ppf_pred",
 ]
 
