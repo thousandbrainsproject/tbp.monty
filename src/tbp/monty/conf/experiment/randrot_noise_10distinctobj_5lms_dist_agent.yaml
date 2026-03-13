@@ -7,6 +7,7 @@ defaults:
   - /monty/sensor_module: 5sm_camera_dist_noise
   - /monty/connectivity: 5lm_5sm
   - /env_interface: eval_distinctobj_random
+  - /env_interface/transform: missing_depthto3d_sensor6
   - /logging: basic_warning_wandb_monty_runs
   - /environment: habitat_dist_agent_sensors5
 

@@ -8,6 +8,7 @@ defaults:
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_surf_agent
   - /env_interface: eval_distinctobj_predefined
+  - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
   - /logging: basic_warning_wandb_monty_runs
 
 experiment:

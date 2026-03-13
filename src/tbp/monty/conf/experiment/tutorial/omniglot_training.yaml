@@ -7,6 +7,7 @@ defaults:
   - /monty/sensor_module: camera_dist_omniglot_tutorial
   - /monty/connectivity: 1lm_1sm
   - /env_interface: train_omniglot
+  - /env_interface/transform: depthto3d_sensor1
   - /logging: silent_warning_train
   - /environment: two_d_data_omniglot
 

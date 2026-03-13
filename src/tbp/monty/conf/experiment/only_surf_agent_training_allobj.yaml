@@ -8,6 +8,7 @@ defaults:
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_surf_agent
   - /env_interface: train_allobj_predefined
+  - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
   - /logging: silent_warning_train
 
 experiment:

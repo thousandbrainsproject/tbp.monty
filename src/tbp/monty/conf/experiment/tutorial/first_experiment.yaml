@@ -40,6 +40,7 @@ defaults:
   # controls a "distant" agent. Distant agent is like an eye, looking at things
   # from a distance.
   - /environment: habitat_ycb_dist_agent_semantics0
+  - /env_interface/transform: missing_depthto3d_sensor2_semantic0
 
   # /logging specifies the logging configuration to use. We tell Monty to use
   # the SILENT data logging mode, Python to use the WARNING log level, and we

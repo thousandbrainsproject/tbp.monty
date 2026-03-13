@@ -8,6 +8,7 @@ defaults:
   - /monty/connectivity: 1lm_1sm
   - /environment: two_d_data_bright
   - /env_interface: eval_worldimages
+  - /env_interface/transform: none
   - /logging: basic_warning_wandb_evidence_eval_runs
 
 experiment:

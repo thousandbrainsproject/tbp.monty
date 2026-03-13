@@ -8,6 +8,7 @@ defaults:
   - /monty/connectivity: 1lm_1sm
   - /environment: two_d_data_stream
   - /env_interface: eval_stream
+  - /env_interface/transform: depthto3d_res64hfov11_sensor1
   - /logging: basic_info_evidence_eval_runs
 
 experiment:

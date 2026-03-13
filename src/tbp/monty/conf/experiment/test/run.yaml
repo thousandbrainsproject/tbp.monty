@@ -8,6 +8,7 @@ defaults:
   - /monty/connectivity: test_1lm_1sm
   - /environment: test_habitat_ycb_agent
   - /env_interface: test_train_eval
+  - /env_interface/transform: none
   - /logging: test_info_monty_runs
 
 experiment:

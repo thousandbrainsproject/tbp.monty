@@ -3,4 +3,3 @@
 env_init_args:
   data_path: ${path.expanduser:${oc.env:MONTY_DATA}/worldimages/standard_scenes/}
 env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.SaccadeOnImageEnvironment}
-transform: null
