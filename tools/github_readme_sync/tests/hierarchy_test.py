@@ -118,6 +118,29 @@ class TestHierarchyFile(unittest.TestCase):
 
         self.assertTrue(any("Duplicate" in message for message in log.output))
 
+    def test_check_hierarchy_file_slug_mismatch(self):
+        hierarchy_file = self.test_dir / HIERARCHY_FILE
+        with hierarchy_file.open("w") as f:
+            f.write(
+                f"{CATEGORY_PREFIX}category-1: Category 1\n"
+                f"{DOCUMENT_PREFIX}[mismatched-doc](category-1/mismatched-doc.md)\n"
+            )
+
+        (self.test_dir / "category-1").mkdir(parents=True)
+        doc_file = self.test_dir / "category-1" / "mismatched-doc.md"
+        with doc_file.open("w") as f:
+            # Title "Different Title" slugifies to "different-title"
+            # which does not match "mismatched-doc"
+            f.write("---\ntitle: Different Title\n---\nContent")
+
+        with self.assertLogs(level="ERROR") as log:
+            with self.assertRaises(SystemExit):
+                check_hierarchy_file(self.test_dir)
+
+        self.assertTrue(any("Slug mismatch" in message for message in log.output))
+        self.assertTrue(any("different-title" in message for message in log.output))
+        self.assertTrue(any("mismatched-doc" in message for message in log.output))
+
     def test_check_hierarchy_broken_link_in_file(self):
         hierarchy_file = self.test_dir / HIERARCHY_FILE
         with hierarchy_file.open("w") as f:
