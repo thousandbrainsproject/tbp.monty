@@ -172,6 +172,17 @@ class HabitatTransformTest(unittest.TestCase):
         actual = np.unique(semantic_3d_obs[:, 3])
         self.assertEqual(actual, expected)
 
+        # Check Z values, should match -depth
+        expected = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"]
+        expected = np.unique(expected)
+        expected = -expected[expected.nonzero()][0]
+        actual = np.unique(semantic_3d_obs[:, 2])
+        self.assertEqual(actual, expected)
+
+        # Check X,Y values
+        actual = semantic_3d_obs[:, 0:2]
+        np.testing.assert_array_almost_equal(actual, EXPECTED_SEMANTIC_XY)
+
     def setup_test_data(
         self,
         agent_position: npt.NDArray[np.float64],
