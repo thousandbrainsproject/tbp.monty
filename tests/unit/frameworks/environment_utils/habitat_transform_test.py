@@ -123,7 +123,7 @@ class HabitatTransformTest(unittest.TestCase):
 
     def test_sensor_config_rejects_invalid_types(self):
         with self.assertRaises(TypeError):
-            SensorConfig(sensor_id="sensor_01", resolution=(8, 8))
+            SensorConfig(sensor_id=0, resolution=(8, 8))
 
         with self.assertRaises(TypeError):
             SensorConfig(sensor_id=SENSOR_ID, resolution=[8, 8])

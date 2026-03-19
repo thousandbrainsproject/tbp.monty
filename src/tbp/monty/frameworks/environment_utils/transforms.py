@@ -50,8 +50,8 @@ class SensorConfig:
     hfov: float = 90.0
 
     def __post_init__(self):
-        if not isinstance(self.sensor_id, SensorID):
-            raise TypeError("`sensor_id` must be a SensorID.")
+        if not isinstance(self.sensor_id, str):
+            raise TypeError("`sensor_id` must be a SensorID-compatible string.")
 
         if not isinstance(self.resolution, tuple) or len(self.resolution) != 2:
             raise TypeError("`resolution` must be a tuple[int, int].")
