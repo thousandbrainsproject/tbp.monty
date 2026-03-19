@@ -3,10 +3,12 @@ env_init_args: {}
 transform:
   - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
     agent_id: ${monty.agent_id:agent_id_0}
-    sensor_ids: ["patch"]
-    resolutions: ${np.array:[[10, 10]]}
+    sensor_configs:
+      - sensor_id: patch
+        resolution: [10, 10]
+        zoom: 1.0
+        hfov: 90.0
     world_coord: true
-    zooms: [1.0]
     get_all_points: true
     use_semantic_sensor: false
     depth_clip_sensors: [0]
