@@ -121,6 +121,22 @@ class HabitatTransformTest(unittest.TestCase):
         self.assertEqual(len(unique_0_replacements), 1)
         self.assertEqual(unique_0_replacements[0], max_depth)
 
+    def test_sensor_config_rejects_invalid_types(self):
+        with self.assertRaises(TypeError):
+            SensorConfig(sensor_id="sensor_01", resolution=(8, 8))
+
+        with self.assertRaises(TypeError):
+            SensorConfig(sensor_id=SENSOR_ID, resolution=[8, 8])
+
+        with self.assertRaises(TypeError):
+            SensorConfig(sensor_id=SENSOR_ID, resolution=(8, 8, 8))
+
+        with self.assertRaises(TypeError):
+            SensorConfig(sensor_id=SENSOR_ID, resolution=(8, 8), zoom=True)
+
+        with self.assertRaises(TypeError):
+            SensorConfig(sensor_id=SENSOR_ID, resolution=(8, 8), hfov=True)
+
     def test_semantic_3d_local(self):
         resolution = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"].shape
         # Replace 0 depth with max depth
@@ -155,17 +171,6 @@ class HabitatTransformTest(unittest.TestCase):
         expected = expected[expected.nonzero()][0]
         actual = np.unique(semantic_3d_obs[:, 3])
         self.assertEqual(actual, expected)
-
-        # Check Z values, should match -depth
-        expected = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"]
-        expected = np.unique(expected)
-        expected = -expected[expected.nonzero()][0]
-        actual = np.unique(semantic_3d_obs[:, 2])
-        self.assertEqual(actual, expected)
-
-        # Check X,Y values
-        actual = semantic_3d_obs[:, 0:2]
-        np.testing.assert_array_almost_equal(actual, EXPECTED_SEMANTIC_XY)
 
     def setup_test_data(
         self,

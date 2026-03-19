@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from numbers import Integral, Real
 from typing import Literal, Protocol, Sequence
 
 import numpy as np
@@ -47,6 +48,23 @@ class SensorConfig:
     resolution: tuple[int, int]
     zoom: float = 1.0
     hfov: float = 90.0
+
+    def __post_init__(self):
+        if not isinstance(self.sensor_id, SensorID):
+            raise TypeError("`sensor_id` must be a SensorID.")
+
+        if not isinstance(self.resolution, tuple) or len(self.resolution) != 2:
+            raise TypeError("`resolution` must be a tuple[int, int].")
+
+        height, width = self.resolution
+        if not isinstance(height, Integral) or not isinstance(width, Integral):
+            raise TypeError("`resolution` values must be ints.")
+
+        if not isinstance(self.zoom, Real) or isinstance(self.zoom, bool):
+            raise TypeError("`zoom` must be a number.")
+
+        if not isinstance(self.hfov, Real) or isinstance(self.hfov, bool):
+            raise TypeError("`hfov` must be a number.")
 
 
 class Transform(Protocol):
@@ -354,8 +372,8 @@ class DepthTo3DLocations(Transform):
             fy = fx
 
             # Adjust fy for aspect ratio
-            self.h.append(int(h))
-            self.w.append(int(w))
+            self.h.append(h)
+            self.w.append(w)
             fy = fy * self.h[i] / self.w[i]
 
             # Intrinsic matrix, K
