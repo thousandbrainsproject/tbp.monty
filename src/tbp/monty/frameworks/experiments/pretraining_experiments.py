@@ -12,7 +12,7 @@ import logging
 from pathlib import Path
 
 import numpy as np
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, open_dict
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.context import RuntimeContext
@@ -46,13 +46,14 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         # If we just add "pretrained" to dir at save time, then logs are stored in one
         # place and models in another. Changing the config ensures every reference to
         # output_dir has "pretrained" added to it
-        config = OmegaConf.to_object(config)
-        output_dir = Path(config["logging"]["output_dir"])
-        config["logging"]["output_dir"] = output_dir / "pretrained"
+        with open_dict(config["logging"]):
+            config["logging"]["output_dir"] = (
+                Path(config["logging"]["output_dir"]) / "pretrained"
+            )
         self.first_epoch_object_location = {}
         super().__init__(config)
 
-    def setup_experiment(self, config):
+    def setup_experiment(self, config: DictConfig):
         super().setup_experiment(config)
         if "agents" in config["env_interface_config"]["env_init_args"]:
             self.sensor_pos = np.array(
