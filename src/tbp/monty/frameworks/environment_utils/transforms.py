@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Mapping, Protocol, Sequence
+from typing import Literal, Protocol, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -328,65 +328,16 @@ class DepthTo3DLocations(Transform):
     def __init__(
         self,
         agent_id: AgentID,
-        sensor_configs: Sequence[SensorConfig | Mapping[str, Any]] | None = None,
+        sensor_configs: Sequence[SensorConfig],
         clip_value: float = 0.05,
         depth_clip_sensors: Sequence[int] | None = None,
         world_coord: bool = True,
         get_all_points: bool = False,
         use_semantic_sensor: bool = False,
-        sensor_ids: Sequence[SensorID] | None = None,
-        resolutions: Sequence[tuple[int, int]] | None = None,
-        zooms: Sequence[float] | None = None,
-        hfov: Sequence[float] | None = None,
     ):
-        if sensor_configs is None:
-            if sensor_ids is None or resolutions is None:
-                raise TypeError(
-                    "DepthTo3DLocations requires `sensor_configs` or the legacy "
-                    "`sensor_ids` and `resolutions` arguments."
-                )
-
-            if isinstance(zooms, (int, float)):
-                raise TypeError("`zooms` must be a sequence of floats.")
-            if isinstance(hfov, (int, float)):
-                raise TypeError("`hfov` must be a sequence of floats.")
-            zooms = [1.0] * len(sensor_ids) if zooms is None else zooms
-            hfov = [90.0] * len(sensor_ids) if hfov is None else hfov
-
-            if not (len(sensor_ids) == len(resolutions) == len(zooms) == len(hfov)):
-                raise ValueError(
-                    "All sensor configuration sequences must be the same length."
-                )
-
-            sensor_configs = [
-                SensorConfig(
-                    sensor_id=sensor_id,
-                    resolution=resolution,
-                    zoom=zoom,
-                    hfov=fov,
-                )
-                for sensor_id, resolution, zoom, fov in zip(
-                    sensor_ids, resolutions, zooms, hfov
-                )
-            ]
-
         self.sensor_configs = []
         for sensor_config in sensor_configs:
-            if isinstance(sensor_config, SensorConfig):
-                self.sensor_configs.append(sensor_config)
-            else:
-                sensor_id = sensor_config["sensor_id"]  # type: ignore[index]
-                resolution = sensor_config["resolution"]  # type: ignore[index]
-                zoom = sensor_config["zoom"]  # type: ignore[index]
-                hfov = sensor_config["hfov"]  # type: ignore[index]
-                self.sensor_configs.append(
-                    SensorConfig(
-                        sensor_id=SensorID(sensor_id),
-                        resolution=(int(resolution[0]), int(resolution[1])),
-                        zoom=float(zoom),
-                        hfov=float(hfov),
-                    )
-                )
+            self.sensor_configs.append(sensor_config)
 
         self.inv_k = []
         self.h, self.w = [], []
