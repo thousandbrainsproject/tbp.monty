@@ -21,7 +21,10 @@ from scipy.ndimage import gaussian_filter
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environment_utils.transforms import DepthTo3DLocations
+from tbp.monty.frameworks.environment_utils.transforms import (
+    DepthTo3DLocations,
+    SensorConfig,
+)
 from tbp.monty.frameworks.environments.environment import SimulatedEnvironment
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
@@ -549,14 +552,18 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
 
         transform = DepthTo3DLocations(
             agent_id=agent_id,
-            sensor_ids=[sensor_id],
-            resolutions=[self.current_depth_image.shape],
+            sensor_configs=[
+                SensorConfig(
+                    sensor_id=sensor_id,
+                    resolution=self.current_depth_image.shape,
+                    zoom=1,
+                    hfov=54.201,
+                )
+            ],
             world_coord=True,
-            zooms=1,
             # hfov of iPad front camera from
             # https://developer.apple.com/library/archive/documentation/DeviceInformation/Reference/iOSDeviceCompatibility/Cameras/Cameras.html
             # TODO: determine dynamically which device is sending data
-            hfov=54.201,
             get_all_points=True,
             use_semantic_sensor=False,
             depth_clip_sensors=[0],

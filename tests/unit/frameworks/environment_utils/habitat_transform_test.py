@@ -20,6 +20,7 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
     MissingToMaxDepth,
+    SensorConfig,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
@@ -120,6 +121,22 @@ class HabitatTransformTest(unittest.TestCase):
         self.assertEqual(len(unique_0_replacements), 1)
         self.assertEqual(unique_0_replacements[0], max_depth)
 
+    def test_sensor_config_rejects_invalid_types(self):
+        with self.assertRaises(TypeError):
+            SensorConfig(sensor_id=0, resolution=(8, 8))
+
+        with self.assertRaises(TypeError):
+            SensorConfig(sensor_id=SENSOR_ID, resolution=[8, 8])
+
+        with self.assertRaises(TypeError):
+            SensorConfig(sensor_id=SENSOR_ID, resolution=(8, 8, 8))
+
+        with self.assertRaises(TypeError):
+            SensorConfig(sensor_id=SENSOR_ID, resolution=(8, 8), zoom=True)
+
+        with self.assertRaises(TypeError):
+            SensorConfig(sensor_id=SENSOR_ID, resolution=(8, 8), hfov=True)
+
     def test_semantic_3d_local(self):
         resolution = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"].shape
         # Replace 0 depth with max depth
@@ -128,8 +145,7 @@ class HabitatTransformTest(unittest.TestCase):
         # Test transform using local coordinates
         transform = DepthTo3DLocations(
             agent_id=AGENT_ID,
-            sensor_ids=[SENSOR_ID],
-            resolutions=[resolution],
+            sensor_configs=[SensorConfig(sensor_id=SENSOR_ID, resolution=resolution)],
             use_semantic_sensor=True,
         )
         obs = transform.call(md_obs)
@@ -195,8 +211,7 @@ class HabitatTransformTest(unittest.TestCase):
 
         transform = DepthTo3DLocations(
             agent_id=AGENT_ID,
-            sensor_ids=[SENSOR_ID],
-            resolutions=[resolution],
+            sensor_configs=[SensorConfig(sensor_id=SENSOR_ID, resolution=resolution)],
             world_coord=True,
             get_all_points=False,
             use_semantic_sensor=True,
@@ -209,6 +224,53 @@ class HabitatTransformTest(unittest.TestCase):
         semantic_3d_obs = transformed_sensor_obs["semantic_3d"]
 
         return md_obs, depth_obs, semantic_obs, semantic_3d_obs
+
+    def test_semantic_3d_local_multisensor(self):
+        first_sensor_resolution = TEST_OBS[AGENT_ID][SENSOR_ID]["depth"].shape
+        second_sensor_id = SensorID("sensor_02")
+        second_sensor_resolution = (4, 4)
+        second_sensor_observation = SensorObservation(
+            {
+                "depth": np.full(second_sensor_resolution, 0.2, dtype=np.float64),
+                "semantic": np.full(second_sensor_resolution, 5, dtype=np.int_),
+            }
+        )
+
+        observation = copy.deepcopy(TEST_OBS)
+        observation[AGENT_ID][second_sensor_id] = second_sensor_observation
+        md_transform = MissingToMaxDepth(agent_id=AGENT_ID, max_depth=100)
+        observation = md_transform.call(observation)
+
+        transform = DepthTo3DLocations(
+            agent_id=AGENT_ID,
+            sensor_configs=[
+                SensorConfig(
+                    sensor_id=SENSOR_ID,
+                    resolution=first_sensor_resolution,
+                    zoom=1.0,
+                    hfov=90.0,
+                ),
+                SensorConfig(
+                    sensor_id=second_sensor_id,
+                    resolution=second_sensor_resolution,
+                    zoom=1.0,
+                    hfov=90.0,
+                ),
+            ],
+            world_coord=False,
+            get_all_points=False,
+            use_semantic_sensor=True,
+        )
+
+        obs = transform.call(observation)
+        self.assertTupleEqual(obs[AGENT_ID][SENSOR_ID]["semantic_3d"].shape, (16, 4))
+        self.assertTupleEqual(
+            obs[AGENT_ID][second_sensor_id]["semantic_3d"].shape, (16, 4)
+        )
+        self.assertEqual(
+            set(obs[AGENT_ID][second_sensor_id]["semantic_3d"][:, 3]),
+            {5.0},
+        )
 
     def compute_expected_semantic_3d(
         self,
