@@ -194,9 +194,9 @@ experiment:
         - - 64
           - 64
         world_coord: true
-        zooms: 1
+        zooms: [1.0]
         get_all_points: true
-        hfov: 11
+        hfov: [11.0]
         use_semantic_sensor: false
         depth_clip_sensors:
         - 0
