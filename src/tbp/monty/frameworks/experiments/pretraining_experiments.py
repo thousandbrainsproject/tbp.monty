@@ -16,6 +16,7 @@ from omegaconf import DictConfig, open_dict
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
 )
@@ -63,7 +64,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         else:
             self.sensor_pos = np.array([0, 0, 0])
 
-    def run_episode(self):
+    def run_episode(self) -> None:
         """Run a supervised episode on one object in one pose.
 
         In a supervised episode we only make exploratory steps (no object recognition
@@ -85,19 +86,9 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
         # Collect data about the object (exploratory steps)
         num_steps = 0
+        actions: list[Action] = []
         while True:
-            try:
-                observations, _ = self.env_interface.step(ctx, first=(num_steps == 0))
-            except StopIteration:
-                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
-                #       episode termination. This is a holdover from when we used
-                #       iterators. However, this also abdicates control of the
-                #       experiment to the policy. We should find a better way to handle
-                #       this, so that the experiment can control the episode termination
-                #       fully. For example, we know how many steps the policy will take,
-                #       so the experiment can set max steps based on that knowledge
-                #       alone.
-                break
+            observations, _ = self.env_interface.step(actions, first=(num_steps == 0))
 
             num_steps += 1
             if self.show_sensor_output:
@@ -109,7 +100,18 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                     num_steps,
                     is_saccade_on_image_env_interface,
                 )
-            self.model.step(ctx, observations)
+            try:
+                actions = self.model.step(ctx, observations)
+            except StopIteration:
+                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
+                #       episode termination. This is a holdover from when we used
+                #       iterators. However, this also abdicates control of the
+                #       experiment to the policy. We should find a better way to handle
+                #       this, so that the experiment can control the episode termination
+                #       fully. For example, we know how many steps the policy will take,
+                #       so the experiment can set max steps based on that knowledge
+                #       alone.
+                break
             if self.model.is_done:
                 break
 
