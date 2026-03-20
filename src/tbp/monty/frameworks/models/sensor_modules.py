@@ -609,7 +609,11 @@ class CameraSM(SensorModule):
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
-        self.transform_pipeline = transform_pipeline
+        self.transform_pipeline = (
+            transform_pipeline
+            if transform_pipeline is not None
+            else TransformPipeline([])
+        )
 
     def pre_episode(self) -> None:
         self._snapshot_telemetry.reset()

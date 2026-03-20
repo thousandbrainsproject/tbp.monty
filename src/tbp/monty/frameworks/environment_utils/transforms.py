@@ -131,6 +131,7 @@ class AddNoiseToRawDepthImage(Transform):
         Raises:
             NoDepthSensorPresent: If no depth sensor is present.
         """
+        # loop over sensor modules
         for sm in observations[self.agent_id]:
             if "depth" in observations[self.agent_id][sm]:
                 noise = rng.normal(
