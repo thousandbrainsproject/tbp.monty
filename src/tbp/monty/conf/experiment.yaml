@@ -1,8 +1,13 @@
 defaults:
-  - benchmarks: defaults
-  # Experiment name
-  - experiment: MISSING
   - _self_
+  - constants: defaults
+  - experiment: ??
+
+# Global defaults for the experiment config itself
+experiment:
+  config:
+    do_eval: false
+    do_train: false
 
 # Which episodes to run (zero-based). Examples: "all" | "3" | "0,3,5:8" | "4:" | ":8".
 episodes: all

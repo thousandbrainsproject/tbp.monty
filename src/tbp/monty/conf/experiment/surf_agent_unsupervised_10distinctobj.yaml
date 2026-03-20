@@ -1,34 +1,29 @@
-defaults:
-  - base_config_10distinctobj_dist_agent
-  - config/logging/clear_logging@config
-  - config/logging/csv@config.logging
-  - config/monty/clear_monty_config@config
-  - config/monty/surface_and_view@config.monty_config
-  - config/monty/args/clear_monty_args@config.monty_config
-  - config/monty/args/defaults@config.monty_config.monty_args
-  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
-  - config/monty/learning_modules/default_lfs_lm@config.monty_config.learning_module_configs
-  - config/environment/clear_env_interface_config@config
-  - config/environment/surface_view_finder_mount_habitat@config.env_interface_config
-  - config/environment_interface/clear_train_env_interface_args@config
-  - config/environment_interface/per_object@config.train_env_interface_args
-  - config/environment_interface/ycb/distinct_objects@config.train_env_interface_args.object_names
+# @package _global_
 
-config:
-  do_train: true
-  do_eval: false
-  model_name_or_path: ""
-  n_train_epochs: 10
-  max_train_steps: 4000
-  max_total_steps: 4000
-  logging:
-    python_log_level: INFO
-    run_name: surf_agent_unsupervised_10distinctobj
-  monty_config:
-    monty_args:
-      num_exploratory_steps: 1000
-      min_train_steps: 100
-  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
-  train_env_interface_args:
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
+defaults:
+  - /monty: graph_exp1000_e3_t100_tot2500
+  - /monty/motor_system_config: surface
+  - /monty/learning_module: evidence_1lm_nn5
+  - /monty/sensor_module: camera_surf
+  - /monty/connectivity: 1lm_1sm
+  - /env_interface: train_distinctobj_random
+  - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
+  - /logging: basic_info_monty_runs
+  - /environment: habitat_ycb_surf_agent
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 4000
+    max_eval_steps: 500
+    max_total_steps: 4000
+    n_train_epochs: 10
+    n_eval_epochs: ${constants.rotations_all_count}
+    model_name_or_path: ''
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
+    logging:
+      run_name: surf_agent_unsupervised_10distinctobj

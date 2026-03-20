@@ -1,0 +1,15 @@
+# @package experiment.config
+
+do_eval: true
+eval_env_interface_args:
+  parent_to_child_mapping: null
+  object_names:
+  - mug
+  - banana
+  object_init_sampler:
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    rotations:
+    - ${np.array:[0.0, 15.0, 30.0]}
+    - ${np.array:[7.0, 77.0, 2.0]}
+    - ${np.array:[81.0, 33.0, 90.0]}
+eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}

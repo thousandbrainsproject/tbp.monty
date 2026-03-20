@@ -1,26 +1,29 @@
-defaults:
-  - base_config_10distinctobj_dist_agent
-  - config/monty/clear_monty_config@config
-  - config/monty/patch_and_view_farther_away_sota@config.monty_config
-  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
-  - config/monty/learning_modules/lower_max_nneighbors_1lm@config.monty_config.learning_module_configs
-  - config/monty/args/clear_monty_args@config.monty_config
-  - config/monty/args/defaults@config.monty_config.monty_args
-  - config/environment/clear_env_interface_config@config
-  - config/environment/patch_view_finder_multi_object_mount_habitat@config.env_interface_config
-  - config/environment_interface/clear_eval_env_interface_args@config
-  - config/environment_interface/ycb/distinct_objects@config.eval_env_interface_args.object_names.targets_list
-  - config/environment_interface/ycb/distinct_objects@config.eval_env_interface_args.object_names.source_object_list
+# @package _global_
 
-config:
-  logging:
-    run_name: base_10multi_distinctobj_dist_agent
-  monty_config:
-    monty_args:
-      min_eval_steps: ${benchmarks.min_eval_steps}
-  eval_env_interface_args:
-    object_names:
-      num_distractors: 10
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations: ${benchmarks.rotations_all}
+defaults:
+  - /monty: evidencegraph_exp1000_emin_t3_tot2500
+  - /monty/motor_system_config: informed_10
+  - /monty/learning_module: evidence_1lm_nn5_dod003
+  - /monty/sensor_module: camera_dist_delta
+  - /monty/connectivity: 1lm_1sm
+  - /env_interface: eval_distinctobj_distractors_predefined
+  - /env_interface/transform: missing_depthto3d_sensor2_semantic1
+  - /logging: basic_warning_wandb_monty_runs
+  - /environment: habitat_dist_agent_semantics1
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+    n_eval_epochs: ${constants.rotations_all_count}
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
+    logging:
+      run_name: base_10multi_distinctobj_dist_agent

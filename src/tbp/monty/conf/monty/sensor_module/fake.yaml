@@ -1,0 +1,6 @@
+# @package experiment.config.monty_config.sensor_module_configs
+
+sensor_module_0:
+  sensor_module_class: ${monty.class:tests.unit.frameworks.models.fakes.sensor_modules.FakeSensorModule}
+  sensor_module_args:
+    sensor_module_id: sensor_id_0

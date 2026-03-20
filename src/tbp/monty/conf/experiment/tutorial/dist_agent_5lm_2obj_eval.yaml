@@ -1,52 +1,31 @@
-defaults:
-  - /experiment/config/eval@config
-  - /experiment/config/logging/eval@config.logging
-  - /experiment/config/monty/five_lm@config.monty_config
-  - /experiment/config/monty/args/clear_monty_args@config.monty_config
-  - /experiment/config/monty/args/defaults@config.monty_config.monty_args
-  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
-  - /experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config@config.monty_config.learning_module_configs.learning_module_0
-  - /experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights@config.monty_config.learning_module_configs.learning_module_0.learning_module_args.feature_weights.patch_0
-  - /experiment/tutorial/dist_agent_5lm_2obj/tolerance_values@config.monty_config.learning_module_configs.learning_module_0.learning_module_args.tolerances.patch_0
-  - /experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config@config.monty_config.learning_module_configs.learning_module_1
-  - /experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights@config.monty_config.learning_module_configs.learning_module_1.learning_module_args.feature_weights.patch_1
-  - /experiment/tutorial/dist_agent_5lm_2obj/tolerance_values@config.monty_config.learning_module_configs.learning_module_1.learning_module_args.tolerances.patch_1
-  - /experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config@config.monty_config.learning_module_configs.learning_module_2
-  - /experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights@config.monty_config.learning_module_configs.learning_module_2.learning_module_args.feature_weights.patch_2
-  - /experiment/tutorial/dist_agent_5lm_2obj/tolerance_values@config.monty_config.learning_module_configs.learning_module_2.learning_module_args.tolerances.patch_2
-  - /experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config@config.monty_config.learning_module_configs.learning_module_3
-  - /experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights@config.monty_config.learning_module_configs.learning_module_3.learning_module_args.feature_weights.patch_3
-  - /experiment/tutorial/dist_agent_5lm_2obj/tolerance_values@config.monty_config.learning_module_configs.learning_module_3.learning_module_args.tolerances.patch_3
-  - /experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config@config.monty_config.learning_module_configs.learning_module_4
-  - /experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights@config.monty_config.learning_module_configs.learning_module_4.learning_module_args.feature_weights.patch_4
-  - /experiment/tutorial/dist_agent_5lm_2obj/tolerance_values@config.monty_config.learning_module_configs.learning_module_4.learning_module_args.tolerances.patch_4
-  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
-  - /experiment/config/monty/motor_system/informed_goal_state_driven@config.monty_config.motor_system_config
-  - /experiment/config/environment/five_lm_mount_habitat@config.env_interface_config
-  - /experiment/config/environment_interface/per_object@config.eval_env_interface_args
+# @package _global_
 
-_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
-config:
-  # load the pre-trained models from this path; this needs to be the same name as used for pretraining
-  model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train/pretrained"}
-  n_train_epochs: 1
-  min_lms_match: 3 # Terminate when 3 learning modules makes a decision.
-  logging:
-    output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-    run_name: dist_agent_5lm_2obj_eval
-    monty_handlers:
-      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
-    wandb_handlers: []
-  monty_config:
-    monty_args:
-      min_eval_steps: 20
-    monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
-  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
-  eval_env_interface_args:
-    object_names:
-      - mug
-      - banana
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations:
-        - ${np.array:[0, 15, 30]} # A previously unseen rotation of the objects.
+defaults:
+  - /monty: evidencegraph_exp1000_emin_t3_tot2500
+  - /monty/motor_system_config: informed_5_goal1
+  - /monty/learning_module: tutorial_evidence_5lm
+  - /monty/sensor_module: 5sm_camera
+  - /monty/connectivity: 5lm_5sm
+  - /environment: habitat_dist_agent_sensors5
+  - /env_interface: tutorial_eval_2obj_predefined_r1
+  - /env_interface/transform: missing_depthto3d_sensor6
+  - /logging: basic_info_monty_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 1 # unused but required
+    n_eval_epochs: 1
+    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train/pretrained"}
+    min_lms_match: 3
+    python_log_level: DEBUG
+    seed: 42
+    show_sensor_output: false
+    supervised_lm_ids: []
+    logging:
+      output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
+      run_name: dist_agent_5lm_2obj_eval
+      wandb_group: gm_eval_runs

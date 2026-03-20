@@ -1,0 +1,29 @@
+# @package _global_
+
+defaults:
+  - /monty: ??
+  - /monty/motor_system_config: ??
+  - /monty/learning_module: ??
+  - /monty/sensor_module: ??
+  - /monty/connectivity: ??
+  - /env_interface: ??
+  - /env_interface/transform: ??
+  - /logging: ??
+  - /environment: ??
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+    n_eval_epochs: 10
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
+    logging:
+      run_name: my_experiment

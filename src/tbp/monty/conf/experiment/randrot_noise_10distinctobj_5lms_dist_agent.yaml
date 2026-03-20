@@ -1,23 +1,29 @@
-defaults:
-  - randrot_noise_10distinctobj_dist_agent
-  - config/monty/clear_monty_config@config
-  - config/monty/five_lm_sota@config.monty_config
-  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
-  - config/monty/learning_modules/default_5lm@config.monty_config.learning_module_configs
-  - config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
-  - config/monty/sensor_modules/default_5sm@config.monty_config.sensor_module_configs
-  - config/monty/args/clear_monty_args@config.monty_config
-  - config/monty/args/defaults@config.monty_config.monty_args
-  - config/environment/clear_env_interface_config@config
-  - config/environment/five_lm_mount_habitat@config.env_interface_config
+# @package _global_
 
-config:
-  model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_5lms/pretrained/
-  n_eval_epochs: 10
-  min_lms_match: 3
-  logging:
-    run_name: randrot_noise_10distinctobj_5lms_dist_agent
-  monty_config:
-    monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching} # has custom evidence voting method
-    monty_args:
-      min_eval_steps: ${benchmarks.min_eval_steps}
+defaults:
+  - /monty: evidencegraph_exp1000_emin_t3_tot2500
+  - /monty/motor_system_config: informed_5_goal1
+  - /monty/learning_module: evidence_5lm_nn10_dod003
+  - /monty/sensor_module: 5sm_camera_dist_noise
+  - /monty/connectivity: 5lm_5sm
+  - /env_interface: eval_distinctobj_random
+  - /env_interface/transform: missing_depthto3d_sensor6
+  - /logging: basic_warning_wandb_monty_runs
+  - /environment: habitat_dist_agent_sensors5
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    model_name_or_path: ${constants.pretrained_dir}/supervised_pre_training_5lms/pretrained/
+    n_eval_epochs: 10
+    min_lms_match: 3
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
+    logging:
+      run_name: randrot_noise_10distinctobj_5lms_dist_agent

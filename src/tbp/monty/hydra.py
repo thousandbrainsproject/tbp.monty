@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import contextlib
 import importlib
 from pathlib import Path
 
@@ -60,10 +61,21 @@ def tests_dir_resolver(path: str) -> str:
 
 
 def register_resolvers() -> None:
-    OmegaConf.register_new_resolver("monty.agent_id", agent_id_resolver)
-    OmegaConf.register_new_resolver("monty.class", monty_class_resolver)
-    OmegaConf.register_new_resolver("np.array", ndarray_resolver)
-    OmegaConf.register_new_resolver("np.ones", ones_resolver)
-    OmegaConf.register_new_resolver("np.list_eval", numpy_list_eval_resolver)
-    OmegaConf.register_new_resolver("path.expanduser", path_expanduser_resolver)
-    OmegaConf.register_new_resolver("path.tests", tests_dir_resolver)
+    """Register custom OmegaConf resolvers for Monty configs.
+
+    Skips resolvers that are already registered rather than raising
+    a ValueError, since multiple entry points (e.g. tests/__init__.py
+    and update_snapshots.py) may call this function in the same process.
+    """
+    resolvers = {
+        "monty.agent_id": agent_id_resolver,
+        "monty.class": monty_class_resolver,
+        "np.array": ndarray_resolver,
+        "np.ones": ones_resolver,
+        "np.list_eval": numpy_list_eval_resolver,
+        "path.expanduser": path_expanduser_resolver,
+        "path.tests": tests_dir_resolver,
+    }
+    for name, resolver in resolvers.items():
+        with contextlib.suppress(ValueError):
+            OmegaConf.register_new_resolver(name, resolver)
