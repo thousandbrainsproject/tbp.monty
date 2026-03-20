@@ -12,6 +12,7 @@ from __future__ import annotations
 import pytest
 
 from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.actions.actions import Action
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -163,9 +164,10 @@ class GraphLearningTest(BaseGraphTest):
             exp.pre_episode()
             step = 0
             ctx = RuntimeContext(rng=exp.rng)
+            actions: list[Action] = []
             while True:
-                observations, _ = exp.env_interface.step(ctx, first=(step == 0))
-                exp.model.step(ctx, observations)
+                observations, _ = exp.env_interface.step(actions, first=(step == 0))
+                actions = exp.model.step(ctx, observations)
                 self.assertEqual(
                     step + 1,
                     len(exp.model.learning_modules[0].buffer),

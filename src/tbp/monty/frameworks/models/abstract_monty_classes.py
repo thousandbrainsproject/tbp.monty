@@ -16,6 +16,7 @@ import numpy as np
 import numpy.typing as npt
 
 from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.motor_system_state import AgentState
@@ -75,6 +76,7 @@ class Monty(metaclass=abc.ABCMeta):
         self._vote()
         self._pass_goal_states()
         self._pass_infos_to_motor_system()
+        self._step_motor_system(ctx, observation)
         self._set_step_type_and_check_if_done()
         self._post_step()
 
@@ -87,14 +89,39 @@ class Monty(metaclass=abc.ABCMeta):
         self._step_learning_modules(ctx)
         self._pass_goal_states()
         self._pass_infos_to_motor_system()
+        self._step_motor_system(ctx, observation)
         self._set_step_type_and_check_if_done()
         self._post_step()
 
     @abc.abstractmethod
-    def step(self, ctx: RuntimeContext, observation):
+    def step(self, ctx: RuntimeContext, observations: Observations) -> list[Action]:
         """Take a matching, exploratory, or custom user-defined step.
 
         Step taken depends on the value of self.step_type.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+
+        Returns:
+            The actions to take.
+        """
+        pass
+
+    @abc.abstractmethod
+    def motor_only_step(
+        self, ctx: RuntimeContext, observations: Observations
+    ) -> list[Action]:
+        """Take a step of the sensors and motor system only.
+
+        This skips stepping the learning modules.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+
+        Returns:
+            The actions to take.
         """
         pass
 
@@ -130,6 +157,11 @@ class Monty(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def _pass_infos_to_motor_system(self):
         """Pass input observations and goal states to the motor system."""
+        pass
+
+    @abc.abstractmethod
+    def _step_motor_system(self, ctx: RuntimeContext, observation):
+        """Step the motor system."""
         pass
 
     @abc.abstractmethod
