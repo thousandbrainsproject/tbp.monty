@@ -21,8 +21,6 @@ from tbp.monty.frameworks.environment_utils.transform_handlers import (
     MissingToMaxDepth,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import (
-    AgentObservations,
-    Observations,
     SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import (
@@ -117,6 +115,7 @@ class HabitatTransformTest(unittest.TestCase):
         md_transform = MissingToMaxDepth(None, agent_id=AGENT_ID, max_depth=100)
         md_obs = md_transform.call(TEST_OBS)
 
+        # Create a mock agent state with identity position/rotation
         mock_agent_state = AgentState(
             position=np.array([0.0, 0.0, 0.0]),
             rotation=qt.quaternion(1, 0, 0, 0),
@@ -128,17 +127,17 @@ class HabitatTransformTest(unittest.TestCase):
             },
         )
 
-        # Test transform using local coordinates
+        # Create the 3D projection transform
         transform = DepthTo3DLocations(
             None,
             agent_id=AGENT_ID,
             sensor_id=SENSOR_ID,
             resolutions=resolution,
             use_semantic_sensor=True,
-            world_coord=False, # Explicitly local
+            world_coord=False,
         )
 
-        # Pass the mock_agent_state here
+        # Run the transform
         obs = transform.call(md_obs, state=mock_agent_state)
 
         module_obs = obs
@@ -146,8 +145,6 @@ class HabitatTransformTest(unittest.TestCase):
         semantic_obs = module_obs["semantic"]
         semantic_3d_obs = module_obs["semantic_3d"]
 
-        # ... (rest of your assertions stay the same) ...
-        # make sure old observations stay unchanged
         expected = TEST_OBS["depth"]
         np.testing.assert_array_equal(depth_obs, expected)
         expected = TEST_OBS["semantic"]
