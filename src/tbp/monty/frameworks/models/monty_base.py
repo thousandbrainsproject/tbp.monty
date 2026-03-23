@@ -12,9 +12,14 @@ from __future__ import annotations
 import logging
 from typing import ClassVar
 
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
-from tbp.monty.frameworks.models.abstract_monty_classes import Monty, RuntimeContext
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    Monty,
+    Observations,
+    RuntimeContext,
+)
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
 
@@ -131,19 +136,22 @@ class MontyBase(Monty):
                 "sensor_module id; no more, no less!"
             )
 
-    ###
-    # Basic methods that specify the algorithm
-    ###
+        self._actions: list[Action] = []
 
-    def step(self, ctx: RuntimeContext, observation):
+    def step(self, ctx: RuntimeContext, observations: Observations) -> list[Action]:
         # For the base class, just use matching step. Note that matching_step and
         # exploratory_step are fully implemented by the abstract class.
         if self.step_type == "matching_step":
-            self._matching_step(ctx, observation)
+            self._matching_step(ctx, observations)
         elif self.step_type == "exploratory_step":
-            self._exploratory_step(ctx, observation)
+            self._exploratory_step(ctx, observations)
         else:
             raise ValueError(f"step type {self.step_type} not found in base monty")
+        # TODO: Once this works, refactor to be more functional and less side-effect
+        #       driven. For now, we're minimizing changes to the existing side-effect
+        #       driven pattern and return `self._actions` that got updated at some
+        #       point during the step method calls above.
+        return self._actions
 
     def aggregate_sensory_inputs(self, ctx: RuntimeContext, observation):
         sensor_module_outputs = []
@@ -161,9 +169,10 @@ class MontyBase(Monty):
         # TODO: Maybe combine the two?
         self.learning_module_outputs = learning_module_outputs
 
-    def pass_features_directly_to_motor_system(self, ctx: RuntimeContext, observation):
-        """Pass features directly to motor system without stepping LMs."""
-        self.aggregate_sensory_inputs(ctx, observation)
+    def motor_only_step(
+        self, ctx: RuntimeContext, observations: Observations
+    ) -> list[Action]:
+        self.aggregate_sensory_inputs(ctx, observations)
         self._pass_input_obs_to_motor_system(  # TODO: not part of MontyBase
             get_first_sensory_state(self.sensor_module_outputs)
         )
@@ -178,6 +187,8 @@ class MontyBase(Monty):
             self.learning_modules[ii].stepwise_targets_list.append(
                 self.learning_modules[ii].stepwise_target_object
             )
+        self._step_motor_system(ctx, observations)
+        return self._actions
 
     def check_reached_max_matching_steps(self, max_steps):
         """Check if max_steps was reached and deal with time_out.
@@ -294,6 +305,11 @@ class MontyBase(Monty):
     def _pass_infos_to_motor_system(self):
         """Pass input observations and goal states to the motor system."""
         pass
+
+    def _step_motor_system(
+        self, ctx: RuntimeContext, observations: Observations
+    ) -> None:
+        self._actions = self.motor_system(ctx, observations)
 
     def _set_step_type_and_check_if_done(self):
         """Check terminal conditions and decide if we change the step type.
