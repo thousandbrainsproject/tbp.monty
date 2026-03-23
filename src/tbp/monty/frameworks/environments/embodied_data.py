@@ -183,8 +183,6 @@ class EnvironmentInterface:
         return observations, state
 
     def pre_episode(self, rng: np.random.RandomState):
-        self.motor_system.pre_episode()
-
         # Reset the environment interface state.
         self._observations, self._proprioceptive_state = self.reset(rng)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
