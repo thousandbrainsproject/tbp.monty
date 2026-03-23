@@ -86,7 +86,6 @@ dev = [
 
     # Python linter and formatter
     'ruff==0.14.2',
-
 ]
 generate_api_docs_tool = [
     'docutils>=0.17',
@@ -140,7 +139,7 @@ ipython = 'IPython'
 minversion = '6.0'
 addopts = '-ra -n auto'
 testpaths = [
-    # 'tests/conf',
+    'tests/conf',
     'tests/unit',
 ]
 filterwarnings = [
