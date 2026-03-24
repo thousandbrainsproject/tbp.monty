@@ -15,7 +15,8 @@ from scipy.spatial.transform import Rotation
 from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 # A type alias for a 1D array of `float`
-FloatVector = np.ndarray[tuple[int], np.dtype[np.float64]]
+# FloatVector = np.ndarray[tuple[int], np.dtype[np.float64]]
+FloatVector = np.ndarray
 
 
 def _deg(d: float) -> float:
@@ -341,7 +342,7 @@ class Orientation:  # noqa: PLW1641
         >>> b_orientation
         Orientation(frame=None, w=0.707107, x=0.0, y=-0.707107, z=0.0)
         >>> b_orientation.inverse()
-        Orientation(frame=None, w=0.707107, x=0.0, y=0.707107, z=0.0)
+        Orientation(frame=None, w=-0.707107, x=0.0, y=-0.707107, z=0.0)
         >>> b_orientation.inverse().inverse()
         Orientation(frame=None, w=0.707107, x=0.0, y=-0.707107, z=0.0)
     """  # noqa: E501
@@ -388,7 +389,10 @@ class Orientation:  # noqa: PLW1641
         if self is other:
             return True
         if isinstance(other, self.__class__):
-            return self.frame == other.frame and self._r.approx_equal(other._r)
+            # return self.frame == other.frame and self._r.approx_equal(other._r)
+            return self.frame == other.frame and (
+                _round_tuple(self.rotation) == _round_tuple(other.rotation)
+            )
         return False
 
     def copy(self) -> Orientation:
@@ -693,7 +697,7 @@ class Pose:  # noqa: PLW1641
 
             >>> world_in_agent = agent_in_world.inverse()
             >>> world_in_agent
-            Pose(frame='Agent', location=(-0.330127, -9.428203, 0.0), orientation=(0.965926, 0.0, 0.0, 0.258819), label='World')
+            Pose(frame='Agent', location=(-0.330127, -9.428203, 0.0), orientation=(-0.965926, 0.0, 0.0, -0.258819), label='World')
 
             >>> p = world_in_agent.new_location(3.401924, 11.232051, -1.0)
             >>> p
