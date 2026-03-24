@@ -15,6 +15,7 @@ import numpy as np
 from omegaconf import OmegaConf
 
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.sensors import SensorID
 
 
 def agent_id_resolver(agent_id: str) -> AgentID:
@@ -55,6 +56,11 @@ def path_expanduser_resolver(path: str) -> str:
     return str(Path(path).expanduser())
 
 
+def sensor_id_resolver(sensor_id: str) -> SensorID:
+    """Returns a SensorID new type from a string."""
+    return SensorID(sensor_id)
+
+
 def tests_dir_resolver(path: str) -> str:
     return str(Path(__file__).parents[3] / "tests" / Path(path))
 
@@ -62,6 +68,7 @@ def tests_dir_resolver(path: str) -> str:
 def register_resolvers() -> None:
     OmegaConf.register_new_resolver("monty.agent_id", agent_id_resolver)
     OmegaConf.register_new_resolver("monty.class", monty_class_resolver)
+    OmegaConf.register_new_resolver("monty.sensor_id", sensor_id_resolver)
     OmegaConf.register_new_resolver("np.array", ndarray_resolver)
     OmegaConf.register_new_resolver("np.ones", ones_resolver)
     OmegaConf.register_new_resolver("np.list_eval", numpy_list_eval_resolver)

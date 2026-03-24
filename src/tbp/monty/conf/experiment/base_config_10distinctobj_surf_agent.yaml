@@ -21,3 +21,5 @@ config:
   monty_config:
     monty_args:
       min_eval_steps: ${benchmarks.min_eval_steps}
+  eval_env_interface_args:
+    positioning_procedures: null

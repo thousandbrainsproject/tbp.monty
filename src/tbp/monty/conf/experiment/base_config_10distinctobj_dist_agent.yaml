@@ -27,6 +27,15 @@ config:
       min_eval_steps: ${benchmarks.min_eval_steps}
   eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
   eval_env_interface_args:
+    positioning_procedures:
+      - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_id: ${monty.sensor_id:view_finder}
+      - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_id: ${monty.sensor_id:patch}
+        allow_translation: false
+        max_orientation_attempts: 3
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
       rotations: ${benchmarks.rotations_all}
