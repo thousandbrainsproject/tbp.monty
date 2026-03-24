@@ -18,7 +18,6 @@ from typing import Iterable, Mapping, Sequence
 import numpy as np
 import quaternion as qt
 
-from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import (
     Action,
 )
@@ -135,7 +134,6 @@ class EnvironmentInterface:
 
     def step(
         self,
-        ctx: RuntimeContext,
         actions: Sequence[Action] | None = None,
         first: bool = False,
     ) -> tuple[Observations, ProprioceptiveState]:
@@ -164,7 +162,6 @@ class EnvironmentInterface:
             # Return first observations after 'reset' before any action is applied
             return self._observations, self._proprioceptive_state
 
-        actions = self.motor_system(ctx, self._observations)
         self._observations, self._proprioceptive_state = self._step(actions)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
         return self._observations, self._proprioceptive_state
@@ -186,8 +183,6 @@ class EnvironmentInterface:
         return observations, state
 
     def pre_episode(self, rng: np.random.RandomState):
-        self.motor_system.pre_episode()
-
         # Reset the environment interface state.
         self._observations, self._proprioceptive_state = self.reset(rng)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
@@ -463,7 +458,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
 
     def step(
         self,
-        ctx: RuntimeContext,
         actions: Sequence[Action] | None = None,
         first: bool = False,
     ) -> tuple[Observations, ProprioceptiveState]:
@@ -472,7 +466,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         if first:
             return self.first_step()
 
-        actions = self.motor_system(ctx, self._observations)
         self._observations, self._proprioceptive_state = self._step(actions)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
         return self._observations, self._proprioceptive_state
