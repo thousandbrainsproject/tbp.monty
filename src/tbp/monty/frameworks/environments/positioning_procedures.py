@@ -100,6 +100,7 @@ class PositioningProcedure(Protocol):
         """
         pass
 
+
 class PositioningProcedureFactory(Protocol):
     """Factory for creating positioning procedures."""
 
@@ -484,6 +485,7 @@ class GetGoodView(PositioningProcedure):
         sensor_rotation = agent_state.sensors[self._sensor_id].rotation
         # Derive sensor's rotation relative to the world.
         return agent_rotation * sensor_rotation
+
 
 class GetGoodViewFactory(PositioningProcedureFactory):
     """Factory for creating GetGoodView positioning procedures."""
