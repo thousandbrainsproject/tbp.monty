@@ -76,22 +76,7 @@ experiment:
       - 1
       - 1
     train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.OmniglotEnvironmentInterface}
-    logging:
-      monty_log_level: SILENT
-      monty_handlers: []
-      wandb_handlers: []
-      python_log_level: WARNING
-      python_log_to_file: true
-      python_log_to_stderr: true
-      output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
-      resume_wandb_run: false
-      wandb_id:
-        _target_: wandb.util.generate_id
-      wandb_group: debugging
-      run_name: omniglot_training
     environment:
-      env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.OmniglotEnvironment}
-      env_init_args: {}
       transform:
       - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
         agent_id: ${monty.agent_id:agent_id_0}
@@ -105,6 +90,21 @@ experiment:
         depth_clip_sensors:
         - 0
         clip_value: 1.1
+      env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.OmniglotEnvironment}
+      env_init_args: {}
+    logging:
+      monty_log_level: SILENT
+      monty_handlers: []
+      wandb_handlers: []
+      python_log_level: WARNING
+      python_log_to_file: true
+      python_log_to_stderr: true
+      output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
+      resume_wandb_run: false
+      wandb_id:
+        _target_: wandb.util.generate_id
+      wandb_group: debugging
+      run_name: omniglot_training
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500

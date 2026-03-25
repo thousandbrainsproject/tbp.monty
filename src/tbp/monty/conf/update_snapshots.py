@@ -72,50 +72,12 @@ if __name__ == "__main__":
     snapshots_root = PROJECT_ROOT / "tests" / "conf" / "snapshots"
 
     # Experiment configs
-    # update_snapshots(
-    #     config_dir=conf_dir / "experiment",
-    #     snapshots_dir=snapshots_root,
-    # )
-    # update_snapshots(
-    #     config_dir=conf_dir / "experiment" / "tutorial",
-    #     override_prefix="tutorial/",
-    #     snapshots_dir=snapshots_root / "tutorial",
-    # )
-
-    # Below is commented out because we already generated the snapshots for
-    # the tests, so we don't need to update them going forward. They are used
-    # for comparison during the migration to new format and will be removed
-    # after that is complete.
-
-    # Test configs
-    # test_subdirs = [
-    #     "base_config",
-    #     "evidence_lm",
-    #     "frameworks/models/evidence_matching",
-    #     "graph_building",
-    #     "graph_learning",
-    #     "hierarchy",
-    #     "integration/positioning_procedures/get_good_view",
-    #     "no_reset_evidence_lm",
-    #     "policy",
-    #     "profile",
-    #     "sensor_module",
-    # ]
-    # for subdir in test_subdirs:
-    #     update_snapshots(
-    #         config_dir=conf_dir / "test" / subdir,
-    #         config_name="test",
-    #         override_key="test",
-    #         override_prefix=f"{subdir}/",
-    #         snapshots_dir=snapshots_root / "test" / subdir,
-    #     )
-
-    # Update test snapshots from experiment/test configs
-    # (eval/eval_lt/eval_gt, etc.)
-    # update_snapshots(
-    #     config_dir=conf_dir / "experiment" / "test",
-    #     config_name="test",
-    #     override_key="test",
-    #     override_prefix="../experiment/test/",
-    #     snapshots_dir=snapshots_root / "test",
-    # )
+    update_snapshots(
+        config_dir=conf_dir / "experiment",
+        snapshots_dir=snapshots_root,
+    )
+    update_snapshots(
+        config_dir=conf_dir / "experiment" / "tutorial",
+        override_prefix="tutorial/",
+        snapshots_dir=snapshots_root / "tutorial",
+    )
