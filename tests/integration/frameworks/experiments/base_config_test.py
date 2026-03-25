@@ -189,7 +189,8 @@ class BaseConfigTest(unittest.TestCase):
     def test_logging_info_level(self) -> None:
         """Check that if we set logging level to info, debug logs do not show up."""
         base_config: Mapping = OmegaConf.to_object(self.base_cfg)
-        base_config["experiment"]["config"]["logging"]["python_log_level"] = logging.INFO
+        log_cfg = base_config["experiment"]["config"]["logging"]
+        log_cfg["python_log_level"] = logging.INFO
 
         exp = hydra.utils.instantiate(base_config["experiment"])
         with exp:
