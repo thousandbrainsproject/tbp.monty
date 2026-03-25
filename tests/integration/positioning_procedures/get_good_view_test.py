@@ -57,8 +57,8 @@ class GetGoodViewTest(unittest.TestCase):
         """
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("dist_agent_too_far_away", self.output_dir)
-            exp: MontyObjectRecognitionExperiment = (
-                hydra.utils.instantiate(config.experiment)
+            exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(
+                config.experiment
             )
             with exp:
                 exp.experiment_mode = ExperimentMode.TRAIN
@@ -106,8 +106,8 @@ class GetGoodViewTest(unittest.TestCase):
         """
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("multi_object_target_not_visible", self.output_dir)
-            exp: MontyObjectRecognitionExperiment = (
-                hydra.utils.instantiate(config.experiment)
+            exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(
+                config.experiment
             )
             with exp:
                 exp.train()

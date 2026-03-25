@@ -153,8 +153,9 @@ RUNS = [
     "test/integration/positioning_procedures/get_good_view/multi_object_target_not_visible",
     "test/supervised_pre_training",
     "test/reproducibility_supervised_training",
-    "test/reproducibility_eval_episodes"
+    "test/reproducibility_eval_episodes",
 ]
+
 
 def compare_snapshots(
     run: str,
@@ -290,12 +291,14 @@ def compare_snapshot_dirs(
         left_data = yaml.safe_load((left_dir / rel).read_text())
         right_data = yaml.safe_load((right_dir / rel).read_text())
         result = compare(
-            left_data, right_data,
+            left_data,
+            right_data,
             path=str(rel),
             left_label=str(left_dir),
             right_label=str(right_dir),
         ) and compare(
-            right_data, left_data,
+            right_data,
+            left_data,
             path=str(rel),
             left_label=str(right_dir),
             right_label=str(left_dir),
