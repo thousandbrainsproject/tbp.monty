@@ -494,9 +494,9 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         # For first step of surface-agent policy, always bypass LM processing
         # For distant-agent policy, we still process the first sensation if it is
         # on the object
-        self.motor_system.motor_only_step = isinstance(
-            self.motor_system._policy, SurfacePolicy
-        )
+        # self.motor_system.motor_only_step = isinstance(
+        #     self.motor_system._policy, SurfacePolicy
+        # )
 
         return self._observations, self._proprioceptive_state
 
