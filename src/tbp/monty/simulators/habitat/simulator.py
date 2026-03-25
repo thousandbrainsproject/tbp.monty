@@ -65,10 +65,9 @@ __all__ = [
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
-    QuaternionWXYZ,
     SemanticID,
-    VectorXYZ,
 )
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.simulator import Simulator
 
 DEFAULT_SCENE = "NONE"
@@ -613,14 +612,14 @@ class HabitatSim(HabitatActuator, Simulator):
                     continue
                 rotation = sim_utils.quat_from_magnum(sensor.node.rotation)
                 sensors[monty_id] = SensorState(
-                    position=sensor.node.translation,
+                    position=tuple(sensor.node.translation),
                     rotation=rotation,
                 )
 
             # Update agent/module state
             rotation = sim_utils.quat_from_magnum(agent_node.rotation)
             result[agent.agent_id] = AgentState(
-                position=agent_node.translation,
+                position=tuple(agent_node.translation),
                 rotation=rotation,
                 sensors=sensors,
             )

@@ -25,7 +25,7 @@ from tbp.monty.frameworks.models.salience.on_object_observation import (
     OnObjectObservation,
 )
 from tbp.monty.frameworks.models.salience.sensor_module import (
-    HabitatSalienceSM,
+    SalienceSM,
 )
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.sensors import SensorID
@@ -60,9 +60,9 @@ def mocked_object_observation():
     ],
 )
 @pytest.mark.usefixtures("mocked_object_observation")
-class HabitatSalienceSMTest(unittest.TestCase):
+class SalienceSMTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.sensor_module = HabitatSalienceSM(
+        self.sensor_module = SalienceSM(
             sensor_module_id="test",
             salience_strategy=MagicMock(),
             return_inhibitor=MagicMock(),
@@ -159,9 +159,9 @@ class HabitatSalienceSMTest(unittest.TestCase):
             self.assertEqual(g.sender_type, expected_goal.sender_type)
 
 
-class HabitatSalienceSMPrivateTest(unittest.TestCase):
+class SalienceSMPrivateTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.sensor_module = HabitatSalienceSM(
+        self.sensor_module = SalienceSM(
             sensor_module_id="test",
             salience_strategy=MagicMock(),
             return_inhibitor=MagicMock(),

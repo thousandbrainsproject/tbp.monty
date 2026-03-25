@@ -33,6 +33,7 @@ from omegaconf import DictConfig
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
+    Action,
     LookDown,
     LookUp,
     MoveForward,
@@ -255,11 +256,11 @@ class PolicyTest(unittest.TestCase):
 
             # Get a first step to allow the surface agent to touch the object
             ctx = RuntimeContext(rng=exp.rng)
-            observation_pre_touch = exp.env_interface.step(ctx, first=True)
-            exp.model.step(ctx, observation_pre_touch)
+            observation_pre_touch, _ = exp.env_interface.step(first=True)
+            actions: list[Action] = exp.model.step(ctx, observation_pre_touch)
 
             # Check initial view post touch-attempt
-            observation_post_touch = exp.env_interface.step(ctx)
+            observation_post_touch, _ = exp.env_interface.step(actions)
 
             # TODO M remove the following train-wreck during refactor
             view = observation_post_touch[exp.model.motor_system._policy.agent_id][
@@ -309,9 +310,10 @@ class PolicyTest(unittest.TestCase):
             # Manually step through part of run_episode function
             step = 0
             ctx = RuntimeContext(rng=exp.rng)
+            actions: list[Action] = []
             while True:
-                observations = exp.env_interface.step(ctx, first=(step == 0))
-                exp.model.step(ctx, observations)
+                observations, _ = exp.env_interface.step(actions, first=(step == 0))
+                actions = exp.model.step(ctx, observations)
 
                 last_action = None
                 action_sequence = exp.model.motor_system.action_sequence
@@ -428,9 +430,10 @@ class PolicyTest(unittest.TestCase):
             # ensure we get back on to it
             step = 0
             ctx = RuntimeContext(rng=exp.rng)
+            actions: list[Action] = []
             while True:
-                observations = exp.env_interface.step(ctx, first=(step == 0))
-                exp.model.step(ctx, observations)
+                observations, _ = exp.env_interface.step(actions, first=(step == 0))
+                actions = exp.model.step(ctx, observations)
 
                 #  Step | Action           | Motor-only? | Processed? | Source
                 # ------|------------------|-------------|------------|-------------
@@ -570,9 +573,10 @@ class PolicyTest(unittest.TestCase):
 
             step = 0
             ctx = RuntimeContext(rng=exp.rng)
+            actions: list[Action] = []
             while True:
-                observations = exp.env_interface.step(ctx, first=(step == 0))
-                exp.model.step(ctx, observations)
+                observations, _ = exp.env_interface.step(actions, first=(step == 0))
+                actions = exp.model.step(ctx, observations)
                 exp.post_step(step, observations)
 
                 if step == 3:  # Surface agent should have re-oriented

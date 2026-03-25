@@ -7,12 +7,14 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 
 import torch
 
 from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
 )
@@ -87,7 +89,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-    def run_episode_steps(self):
+    def run_episode_steps(self) -> int:
         """Runs one episode of the experiment.
 
         At each step, observations are collected from the env_interface and either
@@ -99,20 +101,9 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         """
         step = 0
         ctx = RuntimeContext(rng=self.rng)
+        actions: list[Action] = []
         while True:
-            try:
-                observations = self.env_interface.step(ctx, first=(step == 0))
-            except StopIteration:
-                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
-                #       episode termination. This is a holdover from when we used
-                #       iterators. However, this also abdicates control of the
-                #       experiment to the policy. We should find a better way to handle
-                #       this, so that the experiment can control the episode termination
-                #       fully. For example, we know how many steps the policy will take,
-                #       so the experiment can set max steps based on that knowledge
-                #       alone.
-                self.model.set_is_done()
-                return step
+            observations, _ = self.env_interface.step(actions, first=(step == 0))
 
             if self.show_sensor_output:
                 is_saccade_on_image_data_loader = isinstance(
@@ -137,15 +128,23 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 self.model.deal_with_time_out()
                 return step
 
-            if self.model.is_motor_only_step:
-                logger.debug(
-                    "Performing a motor-only step, so passing info straight to motor"
-                )
-                # On these sensations, we just want to pass information to the motor
-                # system, so bypass the main model step (i.e. updating of LMs)
-                self.model.pass_features_directly_to_motor_system(ctx, observations)
-            else:
-                self.model.step(ctx, observations)
+            try:
+                if self.model.is_motor_only_step:
+                    logger.debug("Performing a motor-only step")
+                    actions = self.model.motor_only_step(ctx, observations)
+                else:
+                    actions = self.model.step(ctx, observations)
+            except StopIteration:
+                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
+                #       episode termination. This is a holdover from when we used
+                #       iterators. However, this also abdicates control of the
+                #       experiment to the policy. We should find a better way to handle
+                #       this, so that the experiment can control the episode termination
+                #       fully. For example, we know how many steps the policy will take,
+                #       so the experiment can set max steps based on that knowledge
+                #       alone.
+                self.model.set_is_done()
+                return step
 
             if self.model.is_done:
                 # Check this right after step to avoid setting time out
