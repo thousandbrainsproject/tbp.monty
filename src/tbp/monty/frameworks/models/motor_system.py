@@ -25,7 +25,10 @@ class MotorSystem:
     """The basic motor system implementation."""
 
     def __init__(
-        self, policy: MotorPolicy, state: MotorSystemState | None = None
+        self,
+        policy: MotorPolicy,
+        state: MotorSystemState | None = None,
+        motor_only_step: bool = False,
     ) -> None:
         """Initialize the motor system with a motor policy.
 
@@ -42,7 +45,8 @@ class MotorSystem:
 
         # TODO: When the motor system is encapsulated within Monty, then motor_only_step
         #       attribute should be moved to Monty itself instead.
-        self.motor_only_step = False
+        self.initial_motor_only_step = motor_only_step
+        self.motor_only_step = self.initial_motor_only_step
 
     @property
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
@@ -52,6 +56,7 @@ class MotorSystem:
         """Pre episode hook."""
         self._policy.pre_episode()
         self._action_sequence = []
+        self.motor_only_step = self.initial_motor_only_step
 
     def __call__(self, ctx: RuntimeContext, observations: Observations) -> list[Action]:
         """Defines the structure for __call__.
