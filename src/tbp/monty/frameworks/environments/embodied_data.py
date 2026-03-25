@@ -238,7 +238,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
     def __init__(
         self,
-        object_names: Sequence[str] | MultiObjectNames,
+        object_names: list[str] | MultiObjectNames,
         object_init_sampler: Default | Predefined | RandomRotation,
         parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         *args,
@@ -248,8 +248,8 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
         Args:
             object_names: list of objects if doing a simple experiment with primary
-                target objects only; dict for experiments with multiple objects,
-                corresponding to -->
+                target objects only; mapping matching `MultiObjectNames` for
+                experiments with multiple objects, corresponding to -->
                 targets_list : the list of primary target objects
                 source_object_list : the original object list from which the primary
                     target objects were sampled; used to sample distractor objects
@@ -263,7 +263,8 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             **kwargs: passed to `super()` call
 
         Raises:
-            TypeError: If `object_names` is not a list or dictionary
+            TypeError: If `object_names` is not a `list` or a mapping containing
+                `targets_list`, `source_object_list`, and `num_distractors`
         """
         super().__init__(*args, **kwargs)
         if isinstance(object_names, Mapping):
@@ -276,9 +277,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
                 dict.fromkeys(object_names["source_object_list"])
             )
             self.num_distractors = object_names["num_distractors"]
-        elif isinstance(object_names, Sequence) and not isinstance(
-            object_names, (str, bytes)
-        ):
+        elif isinstance(object_names, list):
             self.object_names = object_names
             # Return an (ordered) list of unique items:
             self.source_object_list = list(dict.fromkeys(object_names))
