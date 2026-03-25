@@ -475,7 +475,9 @@ class EmbodiedDataTest(unittest.TestCase):
         env_init_args = {"patch_size": patch_size, "data_path": data_path}
         env = SaccadeOnImageFromStreamEnvironment(**env_init_args)
         env_interface_rel = SaccadeOnImageFromStreamEnvironmentInterface(
-            env=env, rng=rng, motor_system=motor_system_rel
+            env=env,
+            rng=rng,
+            motor_system=motor_system_rel,
         )
         env_interface_rel.pre_episode(rng)
         initial_state, _ = env_interface_rel.step()

@@ -28,3 +28,5 @@ config:
         sensor_module_args:
           sensor_module_id: view_finder
           save_raw_obs: true
+  eval_env_interface_args:
+    positioning_procedures: null

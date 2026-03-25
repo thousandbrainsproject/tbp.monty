@@ -27,9 +27,29 @@ config:
       - capsule3DSolid
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    positioning_procedures:
+      - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_id: ${monty.sensor_id:view_finder}
+        multiple_objects_present: true
+      - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_id: ${monty.sensor_id:patch}
+        allow_translation: false
+        max_orientation_attempts: 3
   eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
   eval_env_interface_args:
     object_names:
       - cubeSolid
     object_init_sampler:
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    positioning_procedures:
+      - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_id: ${monty.sensor_id:view_finder}
+        multiple_objects_present: true
+      - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_id: ${monty.sensor_id:patch}
+        allow_translation: false
+        max_orientation_attempts: 3

@@ -291,15 +291,17 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         success = False
         for factory in self._positioning_procedures:
             positioning_procedure = factory.create(target_semantic_id)
-            observations, proprioceptive_state = self._step([])
+            self._observations, self._proprioceptive_state = self._step([])
             result = positioning_procedure(
-                observations, MotorSystemState(proprioceptive_state)
+                self._observations, MotorSystemState(self._proprioceptive_state)
             )
             while not result.terminated and not result.truncated:
-                observations, proprioceptive_state = self._step(result.actions)
-                self.motor_system._state = MotorSystemState(proprioceptive_state)
+                self._observations, self._proprioceptive_state = self._step(
+                    result.actions
+                )
+                self.motor_system._state = MotorSystemState(self._proprioceptive_state)
                 result = positioning_procedure(
-                    observations, MotorSystemState(proprioceptive_state)
+                    self._observations, MotorSystemState(self._proprioceptive_state)
                 )
 
             # We only care about the last result.
@@ -518,6 +520,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         env: OmniglotEnvironment,
         motor_system: MotorSystem,
         rng,
+        positioning_procedures: Sequence[PositioningProcedureFactory] | None = None,
         transform=None,
         parent_to_child_mapping=None,
         *_args,
@@ -532,6 +535,8 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
             env: An instance of a class that implements :class:`OmniglotEnvironment`.
             motor_system: The motor system.
             rng: Random number generator to use.
+            positioning_procedures: Sequence of positioning procedures to apply
+                prior to each episode.
             transform: Callable used to transform the observations returned
                  by the environment.
             parent_to_child_mapping: dictionary mapping parent objects to their child
@@ -550,6 +555,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.env = env
         self.rng = rng
         self.motor_system = motor_system
+        self._positioning_procedures = positioning_procedures
         self.transform = transform
         self._observations, self._proprioceptive_state = self.reset(self.rng)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
@@ -617,6 +623,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         env: SaccadeOnImageEnvironment,
         motor_system: MotorSystem,
         rng,
+        positioning_procedures: Sequence[PositioningProcedureFactory] | None = None,
         transform=None,
         parent_to_child_mapping=None,
         *_args,
@@ -631,6 +638,8 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
                 :class:`SaccadeOnImageEnvironment`.
             motor_system: The motor system.
             rng: Random number generator to use.
+            positioning_procedures: Sequence of positioning procedures to apply
+                prior to each episode.
             transform: Callable used to transform the observations returned by
                 the environment.
             parent_to_child_mapping: dictionary mapping parent objects to their child
@@ -648,6 +657,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self.env = env
         self.rng = rng
         self.motor_system = motor_system
+        self._positioning_procedures = positioning_procedures
         self.transform = transform
         self._observations, self._proprioceptive_state = self.reset(self.rng)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
@@ -716,6 +726,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         env: SaccadeOnImageFromStreamEnvironment,
         motor_system: MotorSystem,
         rng,
+        positioning_procedures: Sequence[PositioningProcedureFactory] | None = None,
         transform=None,
         *_args,
         **_kwargs,
@@ -727,6 +738,8 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
                 :class:`SaccadeOnImageFromStreamEnvironment`.
             motor_system: The motor system.
             rng: Random number generator to use.
+            positioning_procedures: Sequence of positioning procedures to apply
+                prior to each episode.
             transform: Callable used to transform the observations returned by
                 the environment.
             *args: Unused?
@@ -742,6 +755,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self.env = env
         self.rng = rng
         self.motor_system = motor_system
+        self._positioning_procedures = positioning_procedures
         self.transform = transform
         self._observations, self._proprioceptive_state = self.reset(self.rng)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)

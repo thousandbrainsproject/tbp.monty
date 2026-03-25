@@ -272,6 +272,7 @@ experiment:
       - golf_ball
       - c_lego_duplo
       - banana
+      positioning_procedures: null
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
         rotations: ${benchmarks.rotations_all}

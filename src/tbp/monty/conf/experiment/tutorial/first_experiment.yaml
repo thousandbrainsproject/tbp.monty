@@ -39,3 +39,14 @@ config:
       # Since this is a _target_, Hydra will instantiate this class using the _target_ and any
       # additional arguments you provide.
       _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    # We use the GetGoodView positioning procedure to position the agent on the object before
+    # the episode starts.
+    positioning_procedures:
+      - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_id: ${monty.sensor_id:view_finder}
+      - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_id: ${monty.sensor_id:patch}
+        allow_translation: false
+        max_orientation_attempts: 3

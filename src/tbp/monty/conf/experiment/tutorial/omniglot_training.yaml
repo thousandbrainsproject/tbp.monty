@@ -42,3 +42,14 @@ config:
     # of character 1 in alphabet 0, in the next episode version 1 of character 2 in
     # alphabet 0, and so on.
     versions: [1, 1, 1, 1, 1, 1]
+    # We use the GetGoodView positioning procedure to position the agent on the object before
+    # the episode starts.
+    positioning_procedures:
+      - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_id: ${monty.sensor_id:view_finder}
+      - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_id: ${monty.sensor_id:patch}
+        allow_translation: false
+        max_orientation_attempts: 3
