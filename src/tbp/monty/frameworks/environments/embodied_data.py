@@ -275,11 +275,6 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             parent_to_child_mapping if parent_to_child_mapping else {}
         )
 
-    def pre_episode(self, rng: np.random.RandomState):
-        super().pre_episode(rng)
-
-        self.motor_system.motor_only_step = False
-
     def post_episode(self):
         super().post_episode()
         self.episodes += 1
@@ -464,7 +459,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         actions = [] if actions is None else actions
 
         if first:
-            return self.first_step()
+            return self._observations, self._proprioceptive_state
 
         self._observations, self._proprioceptive_state = self._step(actions)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
@@ -480,25 +475,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
                 assert on_target_object, (
                     "Primary target must be visible at the start of the episode"
                 )
-
-    def first_step(self) -> tuple[Observations, ProprioceptiveState]:
-        """Carry out particular motor-system state updates required on the first step.
-
-        TODO: can get rid of this by appropriately initializing motor_only_step
-
-        Returns:
-            The observations and proprioceptive state from the first step.
-        """
-        # Return first observations after 'reset' before any action is applied
-
-        # For first step of surface-agent policy, always bypass LM processing
-        # For distant-agent policy, we still process the first sensation if it is
-        # on the object
-        self.motor_system.motor_only_step = isinstance(
-            self.motor_system._policy, SurfacePolicy
-        )
-
-        return self._observations, self._proprioceptive_state
 
     def get_good_view(
         self,
