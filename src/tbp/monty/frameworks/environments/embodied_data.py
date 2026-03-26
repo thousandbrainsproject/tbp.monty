@@ -38,9 +38,6 @@ from tbp.monty.frameworks.environments.two_d_data import (
 )
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
-from tbp.monty.frameworks.models.motor_policies import (
-    SurfacePolicy,
-)
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
