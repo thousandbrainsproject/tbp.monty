@@ -27,7 +27,6 @@ PROJECT_ROOT = Path(__file__).parents[4]
 def update_snapshots(
     config_dir: Path,
     config_name: str = "experiment",
-    override_key: str = "experiment",
     override_prefix: str = "",
     snapshots_dir: Path = PROJECT_ROOT / "tests" / "conf" / "snapshots",
 ):
@@ -35,9 +34,7 @@ def update_snapshots(
 
     Args:
         config_dir: The directory containing the config YAML files.
-        config_name: The Hydra config name (e.g. "experiment" or "test").
-        override_key: The override key used in hydra.compose
-            (e.g. "experiment" or "test").
+        config_name: The Hydra config name (e.g. "experiment").
         override_prefix: Prefix for the override value
             (e.g. "tutorial/" or "evidence_lm/").
         snapshots_dir: The directory to write the snapshots to.
@@ -51,10 +48,10 @@ def update_snapshots(
     for file_path in config_dir.glob("*.yaml"):
         print(f"Updating snapshot: {file_path}")
         with hydra.initialize(version_base=None, config_path="."):
-            print(f"{override_key}={override_prefix}{file_path.stem}")
+            print(f"experiment={override_prefix}{file_path.stem}")
             config = hydra.compose(
                 config_name=config_name,
-                overrides=[f"{override_key}={override_prefix}{file_path.stem}"],
+                overrides=[f"experiment={override_prefix}{file_path.stem}"],
             )
             OmegaConf.to_object(config)
             current_config_yaml = OmegaConf.to_yaml(config)
