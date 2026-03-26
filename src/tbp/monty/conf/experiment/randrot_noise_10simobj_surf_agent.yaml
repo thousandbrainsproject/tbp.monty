@@ -6,10 +6,10 @@ defaults:
   - /monty/learning_module: evidence_1lm_nn10_dod0025
   - /monty/sensor_module: camera_surf_noise_raw1
   - /monty/connectivity: 1lm_1sm
+  - /environment: habitat_ycb_surf_agent
   - /env_interface: eval_simobj_random
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
   - /logging: basic_warning_wandb_monty_runs
-  - /environment: habitat_ycb_surf_agent
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

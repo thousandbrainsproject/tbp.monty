@@ -86,43 +86,7 @@ experiment:
       - - 0
       lm_to_lm_matrix: null
       lm_to_lm_vote_matrix: null
-    eval_env_interface_args:
-      parent_to_child_mapping: null
-      object_names:
-      - mug
-      - e_cups
-      - knife
-      - fork
-      - spoon
-      - c_cups
-      - d_cups
-      - cracker_box
-      - sugar_box
-      - pudding_box
-      object_init_sampler:
-        _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
-    eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
     environment:
-      transform:
-      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
-        agent_id: ${monty.agent_id:agent_id_0}
-        max_depth: 1
-      - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
-        agent_id: ${monty.agent_id:agent_id_0}
-        sensor_ids:
-        - patch
-        - view_finder
-        resolutions:
-        - - 64
-          - 64
-        - - 64
-          - 64
-        world_coord: true
-        zooms:
-        - 10.0
-        - 1.0
-        get_all_points: true
-        use_semantic_sensor: false
       env_init_args:
         objects:
         - name: coneSolid
@@ -173,6 +137,42 @@ experiment:
             - 1.0
           agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
       env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+      transform:
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+        agent_id: ${monty.agent_id:agent_id_0}
+        max_depth: 1
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_ids:
+        - patch
+        - view_finder
+        resolutions:
+        - - 64
+          - 64
+        - - 64
+          - 64
+        world_coord: true
+        zooms:
+        - 10.0
+        - 1.0
+        get_all_points: true
+        use_semantic_sensor: false
+    eval_env_interface_args:
+      parent_to_child_mapping: null
+      object_names:
+      - mug
+      - e_cups
+      - knife
+      - fork
+      - spoon
+      - c_cups
+      - d_cups
+      - cracker_box
+      - sugar_box
+      - pudding_box
+      object_init_sampler:
+        _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
+    eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
     logging:
       monty_log_level: BASIC
       monty_handlers:

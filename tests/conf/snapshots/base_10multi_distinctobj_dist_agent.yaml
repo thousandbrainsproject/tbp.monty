@@ -89,56 +89,7 @@ experiment:
       - - 0
       lm_to_lm_matrix: null
       lm_to_lm_vote_matrix: null
-    eval_env_interface_args:
-      object_names:
-        targets_list:
-        - mug
-        - bowl
-        - potted_meat_can
-        - spoon
-        - strawberry
-        - mustard_bottle
-        - dice
-        - golf_ball
-        - c_lego_duplo
-        - banana
-        source_object_list:
-        - mug
-        - bowl
-        - potted_meat_can
-        - spoon
-        - strawberry
-        - mustard_bottle
-        - dice
-        - golf_ball
-        - c_lego_duplo
-        - banana
-        num_distractors: 10
-      object_init_sampler:
-        _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-        rotations: ${constants.rotations_all}
-    eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
     environment:
-      transform:
-      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
-        agent_id: ${monty.agent_id:agent_id_0}
-        max_depth: 1
-      - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
-        agent_id: ${monty.agent_id:agent_id_0}
-        sensor_ids:
-        - patch
-        - view_finder
-        resolutions:
-        - - 64
-          - 64
-        - - 64
-          - 64
-        world_coord: true
-        zooms:
-        - 10.0
-        - 1.0
-        get_all_points: true
-        use_semantic_sensor: true
       env_init_args:
         objects:
         - name: coneSolid
@@ -189,6 +140,55 @@ experiment:
             - 1.0
           agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
       env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+      transform:
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+        agent_id: ${monty.agent_id:agent_id_0}
+        max_depth: 1
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+        agent_id: ${monty.agent_id:agent_id_0}
+        sensor_ids:
+        - patch
+        - view_finder
+        resolutions:
+        - - 64
+          - 64
+        - - 64
+          - 64
+        world_coord: true
+        zooms:
+        - 10.0
+        - 1.0
+        get_all_points: true
+        use_semantic_sensor: true
+    eval_env_interface_args:
+      object_names:
+        targets_list:
+        - mug
+        - bowl
+        - potted_meat_can
+        - spoon
+        - strawberry
+        - mustard_bottle
+        - dice
+        - golf_ball
+        - c_lego_duplo
+        - banana
+        source_object_list:
+        - mug
+        - bowl
+        - potted_meat_can
+        - spoon
+        - strawberry
+        - mustard_bottle
+        - dice
+        - golf_ball
+        - c_lego_duplo
+        - banana
+        num_distractors: 10
+      object_init_sampler:
+        _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+        rotations: ${constants.rotations_all}
+    eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
     logging:
       monty_log_level: BASIC
       monty_handlers:

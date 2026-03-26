@@ -60,13 +60,6 @@ experiment:
       - - 0
       lm_to_lm_matrix: null
       lm_to_lm_vote_matrix: null
-    train_env_interface_args:
-      parent_to_child_mapping: null
-      object_names:
-      - mug
-      object_init_sampler:
-        _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-    train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
     environment:
       env_init_args:
         objects:
@@ -138,6 +131,13 @@ experiment:
         - 1.0
         get_all_points: true
         use_semantic_sensor: false
+    train_env_interface_args:
+      parent_to_child_mapping: null
+      object_names:
+      - mug
+      object_init_sampler:
+        _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
     logging:
       monty_log_level: SILENT
       monty_handlers: []

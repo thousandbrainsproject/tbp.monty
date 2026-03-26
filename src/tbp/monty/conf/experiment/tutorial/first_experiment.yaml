@@ -30,16 +30,16 @@ defaults:
   # the sensor modules. We connect one sensor module with one learning module.
   - /monty/connectivity: 1lm_1sm
 
-  # /env_interface specifies how to setup the enviromment for the experiment.
-  # We will train on one object and use a predefined rotation for placement of
-  # one object.
-  - /env_interface: tutorial_train_1obj_predefined
-
   # /environment specifies the environment configuration to use. We use a
   # Habitat simulator environment, loaded with the YCB dataset, and Monty
   # controls a "distant" agent. Distant agent is like an eye, looking at things
   # from a distance.
   - /environment: habitat_ycb_dist_agent_semantics0
+
+  # /env_interface specifies how to setup the enviromment for the experiment.
+  # We will train on one object and use a predefined rotation for placement of
+  # one object.
+  - /env_interface: tutorial_train_1obj_predefined
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0
 
   # /logging specifies the logging configuration to use. We tell Monty to use
@@ -65,7 +65,7 @@ experiment:
     # The number of epochs to evaluate for.
     n_eval_epochs: 3
     # The path to the model to load, if any.
-    model_name_or_path: ''
+    model_name_or_path: ""
     min_lms_match: 1
     # The random seed for the experiment.
     seed: 42

@@ -6,10 +6,10 @@ defaults:
   - /monty/learning_module: evidence_omniglot_tutorial
   - /monty/sensor_module: camera_dist_omniglot_tutorial
   - /monty/connectivity: 1lm_1sm
+  - /environment: two_d_data_omniglot
   - /env_interface: eval_omniglot
   - /env_interface/transform: depthto3d_sensor1
   - /logging: tutorial_detailed_info_monty_runs
-  - /environment: two_d_data_omniglot
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

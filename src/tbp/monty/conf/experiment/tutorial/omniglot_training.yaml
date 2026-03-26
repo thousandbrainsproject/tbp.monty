@@ -6,10 +6,10 @@ defaults:
   - /monty/learning_module: displacement_1lm
   - /monty/sensor_module: camera_dist_omniglot_tutorial
   - /monty/connectivity: 1lm_1sm
+  - /environment: two_d_data_omniglot
   - /env_interface: train_omniglot
   - /env_interface/transform: depthto3d_sensor1
   - /logging: silent_warning_train
-  - /environment: two_d_data_omniglot
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
@@ -20,7 +20,7 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: 1
     n_eval_epochs: 3
-    model_name_or_path: ''
+    model_name_or_path: ""
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: all
