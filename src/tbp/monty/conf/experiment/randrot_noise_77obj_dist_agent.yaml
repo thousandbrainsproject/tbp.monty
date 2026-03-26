@@ -1,14 +1,29 @@
-defaults:
-  - randrot_noise_10distinctobj_dist_agent
-  - config/environment_interface/clear_eval_env_interface_args@config
-  - config/environment_interface/per_object@config.eval_env_interface_args
-  - config/environment_interface/ycb/shuffled_objects@config.eval_env_interface_args.object_names
+# @package _global_
 
-config:
-  model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_77obj/pretrained/
-  n_eval_epochs: 3
-  logging:
-    run_name: randrot_noise_77obj_dist_agent
-  eval_env_interface_args:
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
+defaults:
+  - /monty: evidencegraph_exp1000_emin_t3_tot2500
+  - /monty/motor_system_config: informed_5_goal1
+  - /monty/learning_module: evidence_1lm_nn10_dod003
+  - /monty/sensor_module: camera_dist_noise_raw1
+  - /monty/connectivity: 1lm_1sm
+  - /environment: habitat_ycb_dist_agent_semantics0
+  - /env_interface: eval_77obj_random
+  - /env_interface/transform: missing_depthto3d_sensor2_semantic0
+  - /logging: basic_warning_wandb_monty_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_77obj/pretrained/
+    n_eval_epochs: ${constants.rotations_3_count}
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
+    logging:
+      run_name: randrot_noise_77obj_dist_agent

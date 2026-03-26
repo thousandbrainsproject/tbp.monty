@@ -1,32 +1,29 @@
-defaults:
-  - config/eval
-  - config/logging/parallel_evidence_lm
-  - config/monty/patch_and_view_sota@config.monty_config
-  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
-  - config/monty/learning_modules/lower_max_nneighbors_1lm@config.monty_config.learning_module_configs
-  - config/monty/args/clear_monty_args@config.monty_config
-  - config/monty/args/defaults@config.monty_config.monty_args
-  - config/environment/patch_view_finder_mount_habitat@config.env_interface_config
-  - config/environment_interface/per_object@config.eval_env_interface_args
-  - config/environment_interface/ycb/distinct_objects@config.eval_env_interface_args.object_names
+# @package _global_
 
-_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
-config:
-  model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
-  n_eval_epochs: ${benchmarks.rotations_all_count}
-  logging:
-    wandb_group: benchmark_experiments
-    # Comment in for quick debugging (turns off wandb and increases logging)
-    # wandb_handlers: []
-    # python_log_level: DEBUG
-    # FIXME: Probably shouldn't import config/logging/parallel_evidence_lm in the first place
-    output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs}
-    run_name: base_config_10distinctobj_dist_agent
-  monty_config:
-    monty_args:
-      min_eval_steps: ${benchmarks.min_eval_steps}
-  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
-  eval_env_interface_args:
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations: ${benchmarks.rotations_all}
+defaults:
+  - /monty: evidencegraph_exp1000_emin_t3_tot2500
+  - /monty/motor_system_config: informed_5_goal1
+  - /monty/learning_module: evidence_1lm_nn5_dod003
+  - /monty/sensor_module: camera_dist_delta
+  - /monty/connectivity: 1lm_1sm
+  - /environment: habitat_ycb_dist_agent_semantics0
+  - /env_interface: eval_distinctobj_predefined
+  - /env_interface/transform: missing_depthto3d_sensor2_semantic0
+  - /logging: basic_warning_wandb_monty_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+    n_eval_epochs: ${constants.rotations_all_count}
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
+    logging:
+      run_name: base_config_10distinctobj_dist_agent

@@ -358,6 +358,8 @@ class MontyBase(Monty):
         for sm in self.sensor_modules:
             sm.pre_episode()
 
+        self.motor_system.pre_episode()
+
     def post_episode(self):
         for lm in self.learning_modules:
             lm.post_episode()

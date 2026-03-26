@@ -30,14 +30,14 @@ GOOD_VIEW_DISTANCE_DEFAULT = 0.03
 
 def hydra_config(test_name: str, output_dir: str) -> DictConfig:
     return hydra.compose(
-        config_name="test",
+        config_name="experiment",
         overrides=[
-            f"test=integration/positioning_procedures/get_good_view/{test_name}",
-            f"test.config.logging.output_dir={output_dir}",
-            f"+test.config.train_env_interface_args.good_view_percentage={GOOD_VIEW_PERCENTAGE_DEFAULT}",
-            f"+test.config.train_env_interface_args.good_view_distance={GOOD_VIEW_DISTANCE_DEFAULT}",
-            f"+test.config.eval_env_interface_args.good_view_percentage={GOOD_VIEW_PERCENTAGE_DEFAULT}",
-            f"+test.config.eval_env_interface_args.good_view_distance={GOOD_VIEW_DISTANCE_DEFAULT}",
+            f"experiment=test/integration/positioning_procedures/get_good_view/{test_name}",
+            f"experiment.config.logging.output_dir={output_dir}",
+            f"+experiment.config.train_env_interface_args.good_view_percentage={GOOD_VIEW_PERCENTAGE_DEFAULT}",
+            f"+experiment.config.train_env_interface_args.good_view_distance={GOOD_VIEW_DISTANCE_DEFAULT}",
+            f"+experiment.config.eval_env_interface_args.good_view_percentage={GOOD_VIEW_PERCENTAGE_DEFAULT}",
+            f"+experiment.config.eval_env_interface_args.good_view_distance={GOOD_VIEW_DISTANCE_DEFAULT}",
         ],
     )
 
@@ -57,7 +57,9 @@ class GetGoodViewTest(unittest.TestCase):
         """
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("dist_agent_too_far_away", self.output_dir)
-            exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(config.test)
+            exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(
+                config.experiment
+            )
             with exp:
                 exp.experiment_mode = ExperimentMode.TRAIN
                 exp.model.set_experiment_mode(exp.experiment_mode)
@@ -104,7 +106,9 @@ class GetGoodViewTest(unittest.TestCase):
         """
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("multi_object_target_not_visible", self.output_dir)
-            exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(config.test)
+            exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(
+                config.experiment
+            )
             with exp:
                 exp.train()
 

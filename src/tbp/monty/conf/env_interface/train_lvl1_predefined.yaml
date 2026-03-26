@@ -1,0 +1,16 @@
+# @package experiment.config
+
+do_train: true
+train_env_interface_args:
+  parent_to_child_mapping: null
+  object_names:
+  - 001_cube
+  - 006_disk
+  - 002_cube_tbp_horz
+  - 004_cube_numenta_horz
+  - 007_disk_tbp_horz
+  - 009_disk_numenta_horz
+  object_init_sampler:
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    rotations: ${constants.rotations_all}
+train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}

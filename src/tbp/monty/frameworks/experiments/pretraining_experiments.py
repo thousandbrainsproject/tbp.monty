@@ -54,9 +54,9 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
     def setup_experiment(self, config):
         super().setup_experiment(config)
-        if "agents" in config["env_interface_config"]["env_init_args"]:
+        if "agents" in config["environment"]["env_init_args"]:
             self.sensor_pos = np.array(
-                config["env_interface_config"]["env_init_args"]["agents"]["agent_args"][
+                config["environment"]["env_init_args"]["agents"]["agent_args"][
                     "positions"
                 ]
             )

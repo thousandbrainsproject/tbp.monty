@@ -1,0 +1,57 @@
+# @package experiment.config.monty_config.learning_module_configs
+
+learning_module_0:
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+  learning_module_args:
+    max_match_distance: 0.0001
+    feature_weights:
+      patch:
+        hsv: ${np.array:[1, 0, 0]}
+    tolerances:
+      patch_0:
+        hsv: ${np.array:[0.1, 1, 1]}
+        principal_curvatures_log: ${np.array:[0.1, 0.1]}
+learning_module_1:
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+  learning_module_args:
+    max_match_distance: 0.0001
+    feature_weights:
+      patch:
+        hsv: ${np.array:[1, 0, 0]}
+    tolerances:
+      patch_1:
+        hsv: ${np.array:[0.1, 1, 1]}
+        principal_curvatures_log: ${np.array:[0.1, 0.1]}
+learning_module_2:
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+  learning_module_args:
+    max_match_distance: 0.0001
+    feature_weights:
+      patch:
+        hsv: ${np.array:[1, 0, 0]}
+    tolerances:
+      patch_2:
+        hsv: ${np.array:[0.1, 1, 1]}
+        principal_curvatures_log: ${np.array:[0.1, 0.1]}
+learning_module_3:
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+  learning_module_args:
+    max_match_distance: 0.0001
+    feature_weights:
+      patch:
+        hsv: ${np.array:[1, 0, 0]}
+    tolerances:
+      patch_3:
+        hsv: ${np.array:[0.1, 1, 1]}
+        principal_curvatures_log: ${np.array:[0.1, 0.1]}
+learning_module_4:
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+  learning_module_args:
+    max_match_distance: 0.0001
+    feature_weights:
+      patch:
+        hsv: ${np.array:[1, 0, 0]}
+    tolerances:
+      patch_4:
+        hsv: ${np.array:[0.1, 1, 1]}
+        principal_curvatures_log: ${np.array:[0.1, 0.1]}

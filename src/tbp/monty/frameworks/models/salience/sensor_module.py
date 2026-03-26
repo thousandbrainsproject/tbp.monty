@@ -29,10 +29,10 @@ from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
 from tbp.monty.frameworks.models.states import GoalState, State
 from tbp.monty.frameworks.sensors import SensorID
 
-__all__ = ["HabitatSalienceSM"]
+__all__ = ["SalienceSM"]
 
 
-class HabitatSalienceSM(SensorModule):
+class SalienceSM(SensorModule):
     def __init__(
         self,
         sensor_module_id: str,
