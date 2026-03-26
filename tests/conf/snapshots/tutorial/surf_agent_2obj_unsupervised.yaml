@@ -24,6 +24,7 @@ experiment:
           desired_object_distance: 0.025
           alpha: 0.1
         _target_: tbp.monty.frameworks.models.motor_system.MotorSystem
+        motor_only_step: true
       learning_module_configs:
         learning_module_0:
           learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
