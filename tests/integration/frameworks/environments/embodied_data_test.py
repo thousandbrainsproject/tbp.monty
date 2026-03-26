@@ -23,6 +23,7 @@ from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterface,
+    EnvironmentInterfacePerObject,
     OmniglotEnvironmentInterface,
     SaccadeOnImageEnvironmentInterface,
     SaccadeOnImageFromStreamEnvironmentInterface,
@@ -31,6 +32,7 @@ from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     SimulatedObjectEnvironment,
 )
+from tbp.monty.frameworks.environments.object_init_samplers import Default
 from tbp.monty.frameworks.environments.two_d_data import (
     SaccadeOnImageEnvironment,
     SaccadeOnImageFromStreamEnvironment,
@@ -346,6 +348,47 @@ class EmbodiedDataTest(unittest.TestCase):
                 break
 
             i += 1
+
+    def test_per_object_env_interface_accepts_list_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
+        base_policy.agent_id = AGENT_ID
+
+        env_interface = EnvironmentInterfacePerObject(
+            env=FakeEnvironmentAbs(),
+            rng=rng,
+            motor_system=MotorSystem(policy=base_policy),
+            seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
+            object_names=["object_a", "object_b", "object_a"],
+            object_init_sampler=Default(),
+        )
+
+        self.assertEqual(
+            ["object_a", "object_b", "object_a"], env_interface.object_names
+        )
+        self.assertEqual(["object_a", "object_b"], env_interface.source_object_list)
+        self.assertEqual(0, env_interface.num_distractors)
+
+    def test_per_object_env_interface_rejects_tuple_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
+        base_policy.agent_id = AGENT_ID
+
+        with self.assertRaisesRegex(
+            TypeError, "Object names should be a list or dictionary"
+        ):
+            EnvironmentInterfacePerObject(
+                env=FakeEnvironmentAbs(),
+                rng=rng,
+                motor_system=MotorSystem(policy=base_policy),
+                seed=seed,
+                experiment_mode=ExperimentMode.EVAL,
+                object_names=("object_a", "object_b"),
+                object_init_sampler=Default(),
+            )
 
     def check_two_d_patch_obs(
         self,
