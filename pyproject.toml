@@ -156,7 +156,6 @@ junit_family = 'xunit1'
 [tool.coverage.run]
 branch = true
 parallel = true
-dynamic_context = 'test_function'
 source = [
     'src'
 ]
