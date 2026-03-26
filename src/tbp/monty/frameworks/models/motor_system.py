@@ -45,8 +45,8 @@ class MotorSystem:
 
         # TODO: When the motor system is encapsulated within Monty, then motor_only_step
         #       attribute should be moved to Monty itself instead.
-        self.initial_motor_only_step = motor_only_step
-        self.motor_only_step = self.initial_motor_only_step
+        self._initial_motor_only_step = motor_only_step
+        self.motor_only_step = self._initial_motor_only_step
 
     @property
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
