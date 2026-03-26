@@ -749,7 +749,6 @@ class SurfacePolicy(InformedPolicy):
     functions for moving along an object based on its surface normal.
     """
 
-
     def __init__(
         self,
         alpha,
