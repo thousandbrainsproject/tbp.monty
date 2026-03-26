@@ -625,7 +625,7 @@ class PolicyTest(unittest.TestCase):
         motor_system = hydra.utils.instantiate(self.motor_system_cfg_fragment)
         policy: SurfacePolicyCurvatureInformed = motor_system._policy
         policy.max_pc_bias_steps = 2
-        policy.pre_episode()
+        policy.pre_episode(motor_system)
 
         rng = np.random.RandomState(123)
         ctx = RuntimeContext(rng)
@@ -748,7 +748,7 @@ class PolicyTest(unittest.TestCase):
 
         initial_min_general_steps = 1
         policy.min_general_steps = initial_min_general_steps
-        policy.pre_episode()
+        policy.pre_episode(motor_system)
 
         rng = np.random.RandomState(123)
         ctx = RuntimeContext(rng)
