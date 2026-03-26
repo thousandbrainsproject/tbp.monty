@@ -13,7 +13,7 @@ from __future__ import annotations
 import copy
 import logging
 from pprint import pformat
-from typing import Iterable, Mapping, Sequence
+from typing import Iterable, Mapping, Sequence, cast
 
 import numpy as np
 import quaternion as qt
@@ -21,7 +21,6 @@ import quaternion as qt
 from tbp.monty.frameworks.actions.actions import (
     Action,
 )
-from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import TransformContext
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
@@ -29,7 +28,7 @@ from tbp.monty.frameworks.environments.environment import (
     SimulatedObjectEnvironment,
 )
 from tbp.monty.frameworks.environments.positioning_procedures import (
-    GetGoodView,
+    PositioningProcedureFactory,
 )
 from tbp.monty.frameworks.environments.two_d_data import (
     OmniglotEnvironment,
@@ -38,15 +37,11 @@ from tbp.monty.frameworks.environments.two_d_data import (
 )
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
-from tbp.monty.frameworks.models.motor_policies import (
-    SurfacePolicy,
-)
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
-from tbp.monty.frameworks.sensors import SensorID
 
 __all__ = [
     "EnvironmentInterface",
@@ -183,8 +178,6 @@ class EnvironmentInterface:
         return observations, state
 
     def pre_episode(self, rng: np.random.RandomState):
-        self.motor_system.pre_episode()
-
         # Reset the environment interface state.
         self._observations, self._proprioceptive_state = self.reset(rng)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
@@ -219,6 +212,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         object_names,
         object_init_sampler,
         parent_to_child_mapping=None,
+        positioning_procedures: Sequence[PositioningProcedureFactory] | None = None,
         *args,
         **kwargs,
     ):
@@ -237,6 +231,8 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
                 and scale of objects when re-initializing.
             parent_to_child_mapping: dictionary mapping parent objects to their child
                 objects. Used for logging.
+            positioning_procedures: Sequence of positioning procedures to apply
+                prior to each episode.
             *args: passed to `super()` call
             **kwargs: passed to `super()` call
 
@@ -276,11 +272,38 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         self.parent_to_child_mapping = (
             parent_to_child_mapping if parent_to_child_mapping else {}
         )
+        self._positioning_procedures = positioning_procedures
 
     def pre_episode(self, rng: np.random.RandomState):
         super().pre_episode(rng)
 
-        self.motor_system.motor_only_step = False
+        if self._positioning_procedures is None:
+            return
+
+        assert self.primary_target is not None, "Primary target not set"
+        target_semantic_id = cast("SemanticID", self.primary_target["semantic_id"])
+
+        success = False
+        for factory in self._positioning_procedures:
+            positioning_procedure = factory.create(target_semantic_id)
+            self._observations, self._proprioceptive_state = self._step([])
+            result = positioning_procedure(
+                self._observations, MotorSystemState(self._proprioceptive_state)
+            )
+            while not result.terminated and not result.truncated:
+                self._observations, self._proprioceptive_state = self._step(
+                    result.actions
+                )
+                self.motor_system._state = MotorSystemState(self._proprioceptive_state)
+                result = positioning_procedure(
+                    self._observations, MotorSystemState(self._proprioceptive_state)
+                )
+
+            # We only care about the last result.
+            success = result.success
+
+        if self.num_distractors == 0 and not success:
+            raise RuntimeError("Primary target not visible at start of episode")
 
     def post_episode(self):
         super().post_episode()
@@ -447,17 +470,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
     iv) Supports hypothesis-testing "jump" policy
     """
 
-    def __init__(
-        self,
-        *args,
-        good_view_distance: float = 0.03,
-        good_view_percentage: float = 0.5,
-        **kwargs,
-    ) -> None:
-        super().__init__(*args, **kwargs)
-        self._good_view_distance = good_view_distance
-        self._good_view_percentage = good_view_percentage
-
     def step(
         self,
         actions: Sequence[Action] | None = None,
@@ -466,109 +478,11 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
         actions = [] if actions is None else actions
 
         if first:
-            return self.first_step()
+            return self._observations, self._proprioceptive_state
 
         self._observations, self._proprioceptive_state = self._step(actions)
         self.motor_system._state = MotorSystemState(self._proprioceptive_state)
         return self._observations, self._proprioceptive_state
-
-    def pre_episode(self, rng: np.random.RandomState):
-        super().pre_episode(rng)
-        # TODO: self.env._agents is not part of SimulatedObjectEnvironment
-        if self.env._agents[0].action_space_type != "surface_agent":
-            on_target_object = self.get_good_view_with_patch_refinement()
-            if self.num_distractors == 0:
-                # Only perform this check if we aren't doing multi-object experiments.
-                assert on_target_object, (
-                    "Primary target must be visible at the start of the episode"
-                )
-
-    def first_step(self) -> tuple[Observations, ProprioceptiveState]:
-        """Carry out particular motor-system state updates required on the first step.
-
-        TODO: can get rid of this by appropriately initializing motor_only_step
-
-        Returns:
-            The observations and proprioceptive state from the first step.
-        """
-        # Return first observations after 'reset' before any action is applied
-
-        # For first step of surface-agent policy, always bypass LM processing
-        # For distant-agent policy, we still process the first sensation if it is
-        # on the object
-        self.motor_system.motor_only_step = isinstance(
-            self.motor_system._policy, SurfacePolicy
-        )
-
-        return self._observations, self._proprioceptive_state
-
-    def get_good_view(
-        self,
-        sensor_id: SensorID,
-        allow_translation: bool = True,
-        max_orientation_attempts: int = 1,
-    ) -> bool:
-        """Invoke the GetGoodView positioning procedure.
-
-        Args:
-            sensor_id: The ID of the sensor to use for positioning.
-            allow_translation: Whether to allow movement toward the object via
-                the motor system's move_close_enough method. If False, only
-                orienting movements are performed. Defaults to True.
-            max_orientation_attempts: The maximum number of orientation attempts
-                allowed before giving up and truncating the procedure indicating that
-                the sensor is not on the target object.
-
-        Returns:
-            Whether the sensor is on the target object.
-        """
-        positioning_procedure = GetGoodView(
-            agent_id=self.motor_system._policy.agent_id,
-            good_view_distance=self._good_view_distance,
-            good_view_percentage=self._good_view_percentage,
-            multiple_objects_present=self.num_distractors > 0,
-            sensor_id=sensor_id,
-            target_semantic_id=self.primary_target["semantic_id"],
-            allow_translation=allow_translation,
-            max_orientation_attempts=max_orientation_attempts,
-        )
-        result = positioning_procedure(self._observations, self.motor_system._state)
-        while not result.terminated and not result.truncated:
-            self._observations, self._proprioceptive_state = self._step(result.actions)
-            self.motor_system._state = (
-                MotorSystemState(self._proprioceptive_state)
-                if self._proprioceptive_state
-                else None
-            )
-
-            result = positioning_procedure(self._observations, self.motor_system._state)
-
-        return result.success
-
-    def get_good_view_with_patch_refinement(self) -> bool:
-        """Policy to get a good view of the object for the central patch.
-
-        Used by the distant agent to move and orient toward an object such that the
-        central patch is on-object. This is done by first moving and orienting the
-        agent toward the object using the view finder. Then orienting movements are
-        performed using the central patch (i.e., the sensor module with id
-        "patch" or "patch_0") to ensure that the patch's central pixel is on-object.
-        Up to 3 reorientation attempts are performed using the central patch.
-
-        Returns:
-            Whether the sensor is on the object.
-
-        """
-        self.get_good_view(SensorID("view_finder"))
-        for patch_id in (SensorID("patch"), SensorID("patch_0")):
-            if patch_id in self._observations[AgentID("agent_id_0")]:
-                on_target_object = self.get_good_view(
-                    patch_id,
-                    allow_translation=False,  # only orientation movements
-                    max_orientation_attempts=3,  # allow 3 reorientation attempts
-                )
-                break
-        return on_target_object
 
 
 class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
@@ -584,6 +498,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         rng,
         transform=None,
         parent_to_child_mapping=None,
+        positioning_procedures: Sequence[PositioningProcedureFactory] | None = None,
         *_args,
         **_kwargs,
     ):
@@ -600,7 +515,8 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
                  by the environment.
             parent_to_child_mapping: dictionary mapping parent objects to their child
                 objects. Used for logging.
-
+            positioning_procedures: Sequence of positioning procedures to apply
+                prior to each episode.
             *args: Unused?
             **kwargs: Unused?
 
@@ -634,6 +550,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.parent_to_child_mapping = (
             parent_to_child_mapping if parent_to_child_mapping else {}
         )
+        self._positioning_procedures = positioning_procedures
 
     def post_episode(self):
         self.cycle_object()
@@ -683,6 +600,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         rng,
         transform=None,
         parent_to_child_mapping=None,
+        positioning_procedures: Sequence[PositioningProcedureFactory] | None = None,
         *_args,
         **_kwargs,
     ):
@@ -699,6 +617,8 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
                 the environment.
             parent_to_child_mapping: dictionary mapping parent objects to their child
                 objects. Used for logging.
+            positioning_procedures: Sequence of positioning procedures to apply
+                prior to each episode.
             *args: Unused?
             **kwargs: Unused?
 
@@ -728,6 +648,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self.parent_to_child_mapping = (
             parent_to_child_mapping if parent_to_child_mapping else {}
         )
+        self._positioning_procedures = positioning_procedures
 
     def post_episode(self):
         self.cycle_object()
@@ -781,6 +702,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         motor_system: MotorSystem,
         rng,
         transform=None,
+        positioning_procedures: Sequence[PositioningProcedureFactory] | None = None,
         *_args,
         **_kwargs,
     ):
@@ -793,6 +715,8 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
                 the environment.
+            positioning_procedures: Sequence of positioning procedures to apply
+                prior to each episode.
             *args: Unused?
             **kwargs: Unused?
 
@@ -813,6 +737,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self.episodes = 0
         self.epochs = 0
         self.primary_target = None
+        self._positioning_procedures = positioning_procedures
 
     def pre_epoch(self):
         # TODO: Could give a start index as parameter

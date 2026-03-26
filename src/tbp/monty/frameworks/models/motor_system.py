@@ -50,7 +50,13 @@ class MotorSystem:
 
     def pre_episode(self) -> None:
         """Pre episode hook."""
-        self._policy.pre_episode()
+        # TODO: Passing self to policy pre_episode is a hack. What we should be
+        # doing is using a positioning procedure for surface agents instead.
+        # We only do this so that SurfacePolicy and its descendants can set
+        # motor_only_step to True.
+        # Undoing this hack should probably happen when motor_only_step is moved
+        # to Monty itself.
+        self._policy.pre_episode(self)
         self._action_sequence = []
 
     def __call__(self, ctx: RuntimeContext, observations: Observations) -> list[Action]:

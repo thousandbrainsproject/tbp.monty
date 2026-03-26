@@ -27,12 +27,19 @@ from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 from tbp.monty.frameworks.sensors import SensorID
 
 __all__ = [
+    "GOOD_VIEW_DISTANCE_DEFAULT",
+    "GOOD_VIEW_PERCENTAGE_DEFAULT",
     "GetGoodView",
+    "GetGoodViewFactory",
     "PositioningProcedure",
+    "PositioningProcedureFactory",
     "PositioningProcedureResult",
 ]
 
 logger = logging.getLogger(__name__)
+
+GOOD_VIEW_PERCENTAGE_DEFAULT = 0.5
+GOOD_VIEW_DISTANCE_DEFAULT = 0.03
 
 
 @dataclass
@@ -97,6 +104,20 @@ class PositioningProcedure(Protocol):
             terminated, and whether the procedure truncated.
         """
         pass
+
+
+class PositioningProcedureFactory(Protocol):
+    """Factory for creating positioning procedures."""
+
+    def create(self, target_semantic_id: SemanticID) -> PositioningProcedure:
+        """Create a positioning procedure.
+
+        Args:
+            target_semantic_id: The semantic ID of the target object.
+
+        Returns:
+            A positioning procedure.
+        """
 
 
 def get_perc_on_obj_semantic(
@@ -469,3 +490,37 @@ class GetGoodView(PositioningProcedure):
         sensor_rotation = agent_state.sensors[self._sensor_id].rotation
         # Derive sensor's rotation relative to the world.
         return agent_rotation * sensor_rotation
+
+
+class GetGoodViewFactory(PositioningProcedureFactory):
+    """Factory for creating GetGoodView positioning procedures."""
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sensor_id: SensorID,
+        allow_translation: bool = True,
+        good_view_distance: float = GOOD_VIEW_DISTANCE_DEFAULT,
+        good_view_percentage: float = GOOD_VIEW_PERCENTAGE_DEFAULT,
+        max_orientation_attempts: int = 1,
+        multiple_objects_present: bool = False,
+    ):
+        self._agent_id = agent_id
+        self._allow_translation = allow_translation
+        self._good_view_distance = good_view_distance
+        self._good_view_percentage = good_view_percentage
+        self._max_orientation_attempts = max_orientation_attempts
+        self._multiple_objects_present = multiple_objects_present
+        self._sensor_id = sensor_id
+
+    def create(self, target_semantic_id: SemanticID) -> GetGoodView:
+        return GetGoodView(
+            agent_id=self._agent_id,
+            good_view_distance=self._good_view_distance,
+            good_view_percentage=self._good_view_percentage,
+            multiple_objects_present=self._multiple_objects_present,
+            sensor_id=self._sensor_id,
+            target_semantic_id=target_semantic_id,
+            allow_translation=self._allow_translation,
+            max_orientation_attempts=self._max_orientation_attempts,
+        )

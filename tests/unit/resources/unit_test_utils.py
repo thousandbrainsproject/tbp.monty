@@ -14,10 +14,10 @@ from unittest import TestCase
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+from tbp.monty.conf.make_environment import (
     make_sensor_positions_on_grid,
 )
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.states import State
 
 

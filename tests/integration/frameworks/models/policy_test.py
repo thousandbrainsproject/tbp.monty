@@ -66,10 +66,10 @@ class PolicyTest(unittest.TestCase):
 
         def hydra_config(test_name: str) -> DictConfig:
             return hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    f"test=policy/{test_name}",
-                    f"test.config.logging.output_dir={self.output_dir}",
+                    f"experiment=test/policy/{test_name}",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
                 ],
             )
 
@@ -89,8 +89,8 @@ class PolicyTest(unittest.TestCase):
             self.rotated_cube_view_cfg = hydra_config("rotated_cube_view")
 
             self.motor_system_cfg_fragment = hydra.compose(
-                config_name="experiment/config/monty/motor_system/curvature_informed_surface"
-            ).experiment.config.monty.motor_system
+                config_name="monty/motor_system_config/test_surface_curvature_informed"
+            ).monty.motor_system_config
 
         # ==== Setup fake observations for testing principal-curvature policies ====
         fake_sender_id = "patch"
@@ -164,44 +164,44 @@ class PolicyTest(unittest.TestCase):
 
     # @unittest.skip("debugging")
     def test_can_run_informed_policy(self):
-        exp = hydra.utils.instantiate(self.base_dist_cfg.test)
+        exp = hydra.utils.instantiate(self.base_dist_cfg.experiment)
         with exp:
             exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_spiral_policy(self):
-        exp = hydra.utils.instantiate(self.spiral_cfg.test)
+        exp = hydra.utils.instantiate(self.spiral_cfg.experiment)
         with exp:
             # TODO: test that no two locations are the same
             exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_dist_agent_hypo_driven_policy(self):
-        exp = hydra.utils.instantiate(self.dist_hypo_driven_cfg.test)
+        exp = hydra.utils.instantiate(self.dist_hypo_driven_cfg.experiment)
         with exp:
             exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_surface_policy(self):
-        exp = hydra.utils.instantiate(self.base_surf_cfg.test)
+        exp = hydra.utils.instantiate(self.base_surf_cfg.experiment)
         with exp:
             exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_curv_informed_policy(self) -> None:
-        exp = hydra.utils.instantiate(self.curve_informed_cfg.test)
+        exp = hydra.utils.instantiate(self.curve_informed_cfg.experiment)
         with exp:
             exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_surf_agent_hypo_driven_policy(self):
-        exp = hydra.utils.instantiate(self.surf_hypo_driven_cfg.test)
+        exp = hydra.utils.instantiate(self.surf_hypo_driven_cfg.experiment)
         with exp:
             exp.run()
 
     # @unittest.skip("debugging")
     def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self):
-        exp = hydra.utils.instantiate(self.dist_hypo_driven_multi_lm_cfg.test)
+        exp = hydra.utils.instantiate(self.dist_hypo_driven_multi_lm_cfg.experiment)
         with exp:
             exp.run()
 
@@ -247,7 +247,7 @@ class PolicyTest(unittest.TestCase):
         In this basic version, the object is a bit too far away, and so the agent
         moves forward
         """
-        exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.test)
+        exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -267,7 +267,7 @@ class PolicyTest(unittest.TestCase):
                 "view_finder"
             ]
 
-            config = self.surf_poor_initial_view_cfg.test.config
+            config = self.surf_poor_initial_view_cfg.experiment.config
 
             points_on_target_obj = (
                 view["semantic_3d"][:, 3].reshape(view["depth"].shape) == 1
@@ -280,8 +280,8 @@ class PolicyTest(unittest.TestCase):
             )
 
             target_closest_point = config["monty_config"]["motor_system_config"][
-                "motor_system_args"
-            ]["policy"]["desired_object_distance"]
+                "policy"
+            ]["desired_object_distance"]
 
             # Utility policy should not have moved too close to the object
             assert closest_point_on_target_obj > target_closest_point, (
@@ -298,7 +298,7 @@ class PolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness and large saccade sizes, so
         that we are guaranteed to move off of the cube.
         """
-        exp = hydra.utils.instantiate(self.dist_fixed_action_cfg.test)
+        exp = hydra.utils.instantiate(self.dist_fixed_action_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -417,7 +417,7 @@ class PolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness, so that we are guaranteed to move
         off of the cube.
         """
-        exp = hydra.utils.instantiate(self.surf_fixed_action_cfg.test)
+        exp = hydra.utils.instantiate(self.surf_fixed_action_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -564,7 +564,7 @@ class PolicyTest(unittest.TestCase):
         Begins the episode by facing a cube whose surface is pointing away from
         the agent at an odd angle.
         """
-        exp = hydra.utils.instantiate(self.rotated_cube_view_cfg.test)
+        exp = hydra.utils.instantiate(self.rotated_cube_view_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -622,12 +622,10 @@ class PolicyTest(unittest.TestCase):
         Note these movements are not actually performed, i.e. they represent
         hypothetical outputs from the motor-system.
         """
-        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
-        policy: SurfacePolicyCurvatureInformed = motor_system_cfg["motor_system_args"][
-            "policy"
-        ]
+        motor_system = hydra.utils.instantiate(self.motor_system_cfg_fragment)
+        policy: SurfacePolicyCurvatureInformed = motor_system._policy
         policy.max_pc_bias_steps = 2
-        policy.pre_episode()
+        policy.pre_episode(motor_system)
 
         rng = np.random.RandomState(123)
         ctx = RuntimeContext(rng)
@@ -724,9 +722,9 @@ class PolicyTest(unittest.TestCase):
         # the same); note the agent is still orthogonal to the PC directions.
 
         # Update relevant motor-system variables
-        policy.ignoring_pc_counter = self.motor_system_cfg_fragment[
-            "motor_system_args"
-        ]["policy"]["min_general_steps"]
+        policy.ignoring_pc_counter = self.motor_system_cfg_fragment["policy"][
+            "min_general_steps"
+        ]
         proprioceptive_state[AgentID("agent_id_0")].rotation = qt.quaternion(0, 0, 1, 0)
 
         policy.processed_observations = self.fake_obs_pc[5]
@@ -742,16 +740,15 @@ class PolicyTest(unittest.TestCase):
         such as checks to avoid doubling back on ourself, and how to handle when the
         proposed PC points in the z direction (i.e. towards or away from the agent).
         """
-        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
+        motor_system = hydra.utils.instantiate(self.motor_system_cfg_fragment)
 
         # Overwrite min_general_steps default value so that we more quickly transition
         # into taking PC steps when testing this
-        policy: SurfacePolicyCurvatureInformed = motor_system_cfg["motor_system_args"][
-            "policy"
-        ]
+        policy: SurfacePolicyCurvatureInformed = motor_system._policy
+
         initial_min_general_steps = 1
         policy.min_general_steps = initial_min_general_steps
-        policy.pre_episode()
+        policy.pre_episode(motor_system)
 
         rng = np.random.RandomState(123)
         ctx = RuntimeContext(rng)
@@ -970,10 +967,7 @@ class PolicyTest(unittest.TestCase):
         """
         lm, gsg_args = self.initialize_lm_with_gsg()
 
-        motor_system_cfg = hydra.utils.instantiate(self.motor_system_cfg_fragment)
-        motor_system_class = motor_system_cfg["motor_system_class"]
-        motor_system_args = motor_system_cfg["motor_system_args"]
-        motor_system = motor_system_class(**motor_system_args)
+        motor_system = hydra.utils.instantiate(self.motor_system_cfg_fragment)
         motor_system.pre_episode()
 
         # The target displacement of the agent from the object; used to determine

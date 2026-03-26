@@ -31,6 +31,13 @@ All of the above can be run at the same time, in parallel.
 
 #### Objects with logos Experiments
 
+There are 4 levels of difficulty for testing compositional models:
+
+1. Logos on flat surfaces
+2. Logos on curved surfaces
+3. Logos at different rotations
+4. Logos with bends
+
 To generate models for the objects with logos experiments, run the following pretraining. Note that some of the pretraining depends on the previous ones.
 
 ##### Phase 1

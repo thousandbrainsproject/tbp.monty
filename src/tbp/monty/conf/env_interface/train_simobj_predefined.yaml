@@ -1,0 +1,20 @@
+# @package experiment.config
+
+do_train: true
+train_env_interface_args:
+  parent_to_child_mapping: null
+  object_names:
+  - mug
+  - e_cups
+  - knife
+  - fork
+  - spoon
+  - c_cups
+  - d_cups
+  - cracker_box
+  - sugar_box
+  - pudding_box
+  object_init_sampler:
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    rotations: ${constants.rotations_all}
+train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}

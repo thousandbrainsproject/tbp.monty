@@ -1,0 +1,6 @@
+# @package experiment.config.monty_config.motor_system_config
+
+defaults:
+- policy: surface_curvature_informed_5_goal0
+
+_target_: tbp.monty.frameworks.models.motor_system.MotorSystem

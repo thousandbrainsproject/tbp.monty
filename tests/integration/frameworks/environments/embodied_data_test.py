@@ -215,11 +215,11 @@ class EmbodiedDataTest(unittest.TestCase):
     def setUp(self) -> None:
         with hydra.initialize_config_dir(config_dir=str(HYDRA_ROOT), version_base=None):
             self.policy_cfg_fragment = hydra.compose(
-                config_name="experiment/config/monty/motor_system/defaults"
-            ).experiment.config.monty.motor_system.motor_system_args.policy
+                config_name="monty/motor_system_config/policy/test_base_dist",
+            ).monty.motor_system_config.policy
             self.policy_cfg_abs_fragment = hydra.compose(
-                config_name="test/config/monty/motor_system/absolute"
-            ).test.config.monty.motor_system.motor_system_args.policy
+                config_name="monty/motor_system_config/policy/test_base_absolute",
+            ).monty.motor_system_config.policy
 
     def test_embodied_env_interface_dist(self):
         seed = 42

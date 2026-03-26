@@ -1,5 +1,0 @@
-defaults:
-  - init_args/monty_world_standard_scenes@env_init_args
-
-env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.SaccadeOnImageEnvironment}
-transform: null
