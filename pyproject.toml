@@ -305,3 +305,4 @@ where = ["src"]
 
 [tool.uv]
 no-build-isolation-package = ["torch-scatter", "torch-sparse"]
+
