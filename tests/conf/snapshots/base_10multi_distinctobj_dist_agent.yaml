@@ -245,18 +245,20 @@ experiment:
         max_depth: 1
       - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
         agent_id: ${monty.agent_id:agent_id_0}
-        sensor_ids:
-        - patch
-        - view_finder
-        resolutions:
-        - - 64
+        sensor_configs:
+        - sensor_id: patch
+          resolution:
           - 64
-        - - 64
           - 64
+          zoom: 10.0
+          hfov: 90.0
+        - sensor_id: view_finder
+          resolution:
+          - 64
+          - 64
+          zoom: 1.0
+          hfov: 90.0
         world_coord: true
-        zooms:
-        - 10.0
-        - 1.0
         get_all_points: true
         use_semantic_sensor: true
     eval_env_interface_args:

@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from numbers import Integral, Real
 from typing import Literal, Protocol, Sequence
 
 import numpy as np
@@ -27,6 +28,7 @@ __all__ = [
     "DepthTo3DLocations",
     "GaussianSmoothing",
     "MissingToMaxDepth",
+    "SensorConfig",
     "Transform",
     "TransformContext",
 ]
@@ -36,6 +38,33 @@ __all__ = [
 class TransformContext:
     rng: np.random.RandomState
     state: ProprioceptiveState | None = None
+
+
+@dataclass(frozen=True)
+class SensorConfig:
+    """Per-sensor configuration for :class:`DepthTo3DLocations`."""
+
+    sensor_id: SensorID
+    resolution: tuple[int, int]
+    zoom: float = 1.0
+    hfov: float = 90.0
+
+    def __post_init__(self):
+        if not isinstance(self.sensor_id, str):
+            raise TypeError("`sensor_id` must be a SensorID-compatible string.")
+
+        if not isinstance(self.resolution, tuple) or len(self.resolution) != 2:
+            raise TypeError("`resolution` must be a tuple[int, int].")
+
+        height, width = self.resolution
+        if not isinstance(height, Integral) or not isinstance(width, Integral):
+            raise TypeError("`resolution` values must be ints.")
+
+        if not isinstance(self.zoom, Real) or isinstance(self.zoom, bool):
+            raise TypeError("`zoom` must be a number.")
+
+        if not isinstance(self.hfov, Real) or isinstance(self.hfov, bool):
+            raise TypeError("`hfov` must be a number.")
 
 
 class Transform(Protocol):
@@ -295,9 +324,8 @@ class DepthTo3DLocations(Transform):
 
     Attributes:
         agent_id: Agent ID to get observations from.
-        resolution: Camera resolution (H, W).
-        zoom: Camera zoom factor. Default 1.0 (no zoom).
-        hfov: Camera HFOV, default 90 degrees.
+        sensor_configs: Per-sensor camera configuration including resolution, zoom, and
+            hfov.
         semantic_sensor: Semantic sensor id. Default "semantic".
         depth_sensor: Depth sensor id. Default "depth".
         world_coord: Whether to return 3D locations in world coordinates.
@@ -318,35 +346,34 @@ class DepthTo3DLocations(Transform):
     def __init__(
         self,
         agent_id: AgentID,
-        sensor_ids: Sequence[SensorID],
-        resolutions: Sequence[tuple[int, int]],
-        zooms: float | Sequence[float] = 1.0,
-        hfov: float | Sequence[float] = 90.0,
+        sensor_configs: Sequence[SensorConfig],
         clip_value: float = 0.05,
         depth_clip_sensors: Sequence[int] | None = None,
         world_coord: bool = True,
         get_all_points: bool = False,
         use_semantic_sensor: bool = False,
     ):
+        self.sensor_configs = []
+        for sensor_config in sensor_configs:
+            self.sensor_configs.append(sensor_config)
+
         self.inv_k = []
         self.h, self.w = [], []
+        self.sensor_ids: list[SensorID] = []
 
-        if isinstance(zooms, (int, float)):
-            zooms = [zooms] * len(sensor_ids)
+        for i, config in enumerate(self.sensor_configs):
+            zoom = float(config.zoom)
+            hfov_radians = float(config.hfov) * np.pi / 180.0
+            sensor_id = config.sensor_id
+            h, w = config.resolution
 
-        if isinstance(hfov, (int, float)):
-            hfov = [hfov] * len(sensor_ids)
-
-        for i, zoom in enumerate(zooms):
             # Pinhole camera, focal length fx = fy
-            hfov[i] = float(hfov[i] * np.pi / 180.0)
-
-            fx = np.tan(hfov[i] / 2.0) / zoom
+            fx = np.tan(hfov_radians / 2.0) / zoom
             fy = fx
 
             # Adjust fy for aspect ratio
-            self.h.append(resolutions[i][0])
-            self.w.append(resolutions[i][1])
+            self.h.append(h)
+            self.w.append(w)
             fy = fy * self.h[i] / self.w[i]
 
             # Intrinsic matrix, K
@@ -361,9 +388,9 @@ class DepthTo3DLocations(Transform):
             )
             # Inverse K
             self.inv_k.append(np.linalg.inv(k))
+            self.sensor_ids.append(sensor_id)
 
         self.agent_id = agent_id
-        self.sensor_ids = sensor_ids
         self.world_coord = world_coord
         self.get_all_points = get_all_points
         self.use_semantic_sensor = use_semantic_sensor
