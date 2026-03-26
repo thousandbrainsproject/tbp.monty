@@ -12,3 +12,4 @@ motor_system_args:
     alpha: 0.1 # alpha 0.1 means we mostly maintain our heading
     use_goal_state_driven_actions: false
     agent_id: ${monty.agent_id:agent_id_0}
+  motor_only_step: true
