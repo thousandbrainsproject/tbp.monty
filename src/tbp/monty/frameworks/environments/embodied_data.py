@@ -278,8 +278,6 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
     def pre_episode(self, rng: np.random.RandomState):
         super().pre_episode(rng)
 
-        self.motor_system.motor_only_step = False
-
     def post_episode(self):
         super().post_episode()
         self.episodes += 1
@@ -490,14 +488,6 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
             The observations and proprioceptive state from the first step.
         """
         # Return first observations after 'reset' before any action is applied
-
-        # For first step of surface-agent policy, always bypass LM processing
-        # For distant-agent policy, we still process the first sensation if it is
-        # on the object
-        self.motor_system.motor_only_step = isinstance(
-            self.motor_system._policy, SurfacePolicy
-        )
-
         return self._observations, self._proprioceptive_state
 
     def get_good_view(

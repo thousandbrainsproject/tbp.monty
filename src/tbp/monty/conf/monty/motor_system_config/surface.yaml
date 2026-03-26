@@ -4,3 +4,4 @@ defaults:
 - policy: surface
 
 _target_: tbp.monty.frameworks.models.motor_system.MotorSystem
+motor_only_step: true
