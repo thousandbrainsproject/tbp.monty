@@ -1,0 +1,11 @@
+# @package experiment.config.train_env_interface_args
+
+positioning_procedures:
+- _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+  agent_id: ${monty.agent_id:agent_id_0}
+  sensor_id: ${monty.sensor_id:view_finder}
+- _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+  agent_id: ${monty.agent_id:agent_id_0}
+  sensor_id: ${monty.sensor_id:patch_0}
+  allow_translation: false
+  max_orientation_attempts: 3

@@ -16,6 +16,8 @@ from omegaconf import DictConfig
 
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.environments.positioning_procedures import (
+    GOOD_VIEW_DISTANCE_DEFAULT,
+    GOOD_VIEW_PERCENTAGE_DEFAULT,
     get_perc_on_obj_semantic,
 )
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -24,9 +26,6 @@ from tbp.monty.frameworks.experiments.object_recognition_experiments import (
 )
 from tests import HYDRA_ROOT
 
-GOOD_VIEW_PERCENTAGE_DEFAULT = 0.5
-GOOD_VIEW_DISTANCE_DEFAULT = 0.03
-
 
 def hydra_config(test_name: str, output_dir: str) -> DictConfig:
     return hydra.compose(
@@ -34,10 +33,6 @@ def hydra_config(test_name: str, output_dir: str) -> DictConfig:
         overrides=[
             f"experiment=test/integration/positioning_procedures/get_good_view/{test_name}",
             f"experiment.config.logging.output_dir={output_dir}",
-            f"+experiment.config.train_env_interface_args.good_view_percentage={GOOD_VIEW_PERCENTAGE_DEFAULT}",
-            f"+experiment.config.train_env_interface_args.good_view_distance={GOOD_VIEW_DISTANCE_DEFAULT}",
-            f"+experiment.config.eval_env_interface_args.good_view_percentage={GOOD_VIEW_PERCENTAGE_DEFAULT}",
-            f"+experiment.config.eval_env_interface_args.good_view_distance={GOOD_VIEW_DISTANCE_DEFAULT}",
         ],
     )
 

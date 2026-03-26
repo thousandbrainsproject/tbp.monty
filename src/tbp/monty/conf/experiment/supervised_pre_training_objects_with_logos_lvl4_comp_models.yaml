@@ -8,6 +8,7 @@ defaults:
   - /monty/connectivity: 2lm_2sm
   - /environment: habitat_dist_agent_sensors2
   - /env_interface: train_lvl4_predefined
+  - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
   - /env_interface/transform: missing_depthto3d_sensor3
   - /logging: silent_info_train
 

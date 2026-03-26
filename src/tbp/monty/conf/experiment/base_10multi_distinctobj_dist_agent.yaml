@@ -8,6 +8,7 @@ defaults:
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_dist_agent_semantics1
   - /env_interface: eval_distinctobj_distractors_predefined
+  - /env_interface/positioning_procedures_eval: getgoodview_mop1_viewfinder_patch
   - /env_interface/transform: missing_depthto3d_sensor2_semantic1
   - /logging: basic_warning_wandb_monty_runs
 

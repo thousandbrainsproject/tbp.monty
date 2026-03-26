@@ -8,6 +8,7 @@ defaults:
   - /monty/connectivity: 2lm_2sm
   - /environment: habitat_dist_agent_sensors2
   - /env_interface: eval_compositional_lvl2_predefined
+  - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
   - /env_interface/transform: missing_depthto3d_sensor3
   - /logging: basic_warning_wandb_evidence_eval_runs
 
