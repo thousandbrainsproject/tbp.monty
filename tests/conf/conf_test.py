@@ -39,8 +39,8 @@ TUTORIAL_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots" / "tutorial"
 
 
 def _config_mismatches(
-    left: dict[str, Any] | list[Any] | Any,
-    right: dict[str, Any] | list[Any] | Any,
+    snapshot: dict[str, Any] | list[Any] | Any,
+    current: dict[str, Any] | list[Any] | Any,
     path: str = "",
 ) -> list[str]:
     """Compare two configs recursively, returning dotted-path mismatch descriptions.
@@ -50,8 +50,8 @@ def _config_mismatches(
     list comparison is order-sensitive.
 
     Args:
-        left: The snapshot (expected) configuration value.
-        right: The current (actual) configuration value.
+        snapshot: The snapshot (expected) configuration value.
+        current: The current (actual) configuration value.
         path: The dotted path to the current position in the config tree,
             used for generating readable mismatch descriptions.
 
@@ -59,34 +59,36 @@ def _config_mismatches(
         A list of mismatch description strings. Empty if the configs match.
     """
     mismatches = []
-    if type(left) is not type(right):
+    if type(snapshot) is not type(current):
         mismatches.append(
-            f"{path}: type mismatch: snapshot={type(left).__name__}({left!r}) "
-            f"vs current={type(right).__name__}({right!r})"
+            f"{path}: type mismatch: snapshot={type(snapshot).__name__}({snapshot!r}) "
+            f"vs current={type(current).__name__}({current!r})"
         )
         return mismatches
-    if isinstance(left, dict):
-        for k in left:
-            if k not in right:
-                mismatches.append(f"{path}.{k}: missing in current config")
-            else:
-                mismatches.extend(_config_mismatches(left[k], right[k], f"{path}.{k}"))
-        for k in right:
-            if k not in left:
-                mismatches.append(f"{path}.{k}: missing in snapshot")
+    if isinstance(snapshot, dict):
+        snapshot_keys = set(snapshot)
+        current_keys = set(current)
+        for k in snapshot_keys - current_keys:
+            mismatches.append(f"{path}.{k}: missing in current config")
+        for k in current_keys - snapshot_keys:
+            mismatches.append(f"{path}.{k}: missing in snapshot")
+        for k in snapshot_keys & current_keys:
+            mismatches.extend(
+                _config_mismatches(snapshot[k], current[k], f"{path}.{k}")
+            )
         return mismatches
-    if isinstance(left, list):
-        if len(left) != len(right):
+    if isinstance(snapshot, list):
+        if len(snapshot) != len(current):
             mismatches.append(
                 f"{path}: list length mismatch: "
-                f"snapshot={len(left)} vs current={len(right)}"
+                f"snapshot={len(snapshot)} vs current={len(current)}"
             )
             return mismatches
-        for i, (a, b) in enumerate(zip(left, right)):
-            mismatches.extend(_config_mismatches(a, b, f"{path}[{i}]"))
+        for i, (snap_item, curr_item) in enumerate(zip(snapshot, current)):
+            mismatches.extend(_config_mismatches(snap_item, curr_item, f"{path}[{i}]"))
         return mismatches
-    if left != right:
-        mismatches.append(f"{path}: snapshot={left!r} vs current={right!r}")
+    if snapshot != current:
+        mismatches.append(f"{path}: snapshot={snapshot!r} vs current={current!r}")
     return mismatches
 
 
