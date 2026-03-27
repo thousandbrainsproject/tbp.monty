@@ -387,10 +387,6 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             )
 
 
-class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
-    """TODO: Remove empty shell."""
-
-
 class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
     """Environment interface for Omniglot dataset."""
 

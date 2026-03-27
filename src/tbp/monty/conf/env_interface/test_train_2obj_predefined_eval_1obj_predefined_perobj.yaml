@@ -1,7 +1,7 @@
 # @package experiment.config
 
 do_train: true
-train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
 train_env_interface_args:
   parent_to_child_mapping: null
   object_init_sampler:
