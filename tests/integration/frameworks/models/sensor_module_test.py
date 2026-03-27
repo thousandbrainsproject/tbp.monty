@@ -88,7 +88,7 @@ class SensorModuleTest(unittest.TestCase):
             exp.pre_epoch()
             exp.pre_episode()
             ctx = RuntimeContext(rng=exp.rng)
-            observations, proprioceptive_state = exp.env_interface.step()
+            observations, proprioceptive_state = exp.env_interface.step([])
             exp.model.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
 
             # Dig the features list out of the hydra config

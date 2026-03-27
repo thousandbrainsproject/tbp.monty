@@ -256,7 +256,7 @@ class PolicyTest(unittest.TestCase):
 
             # Get a first step to allow the surface agent to touch the object
             ctx = RuntimeContext(rng=exp.rng)
-            observation_pre_touch, proprioceptive_state = exp.env_interface.step()
+            observation_pre_touch, proprioceptive_state = exp.env_interface.step([])
             actions: list[Action] = exp.model.step(
                 ctx, observation_pre_touch, proprioceptive_state
             )
