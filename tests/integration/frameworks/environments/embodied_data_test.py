@@ -45,7 +45,6 @@ from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
-    MotorSystemState,
     ProprioceptiveState,
 )
 from tbp.monty.frameworks.sensors import SensorID
@@ -418,7 +417,7 @@ class EmbodiedDataTest(unittest.TestCase):
         base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
         base_policy.agent_id = AGENT_ID
 
-        motor_system_rel = MotorSystem(policy=base_policy, state=MotorSystemState())
+        motor_system_rel = MotorSystem(policy=base_policy)
 
         env_init_args = {"patch_size": patch_size, "data_path": data_path}
         env = SaccadeOnImageEnvironment(**env_init_args)
