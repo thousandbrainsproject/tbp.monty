@@ -12,38 +12,6 @@ import numpy as np
 import numpy.typing as npt
 
 
-def extract_unified_displacement(
-    displacements: dict[str, np.ndarray] | None,
-) -> np.ndarray:
-    """Assert all channel displacements are equal and return the mean.
-
-    Computes the average displacement across all channels, then verifies that
-    every individual channel displacement is close to that average. For colocated
-    SMs the displacements should be identical, so the mean equals any of them.
-
-    Args:
-        displacements: Dictionary mapping channel names to displacement vectors,
-            or None if no movement has been detected yet.
-
-    Returns:
-        The mean displacement vector, or a zero vector if displacements is None.
-
-    Raises:
-        ValueError: If any channel displacement differs from the mean.
-    """
-    if displacements is None:
-        return np.zeros(3)
-    values = list(displacements.values())
-    mean = np.mean(values, axis=0)
-    for d in values:
-        if not np.allclose(d, mean, atol=1e-6):
-            raise ValueError(
-                "Channel displacements must be equal for colocated SMs. "
-                f"Got {d}, expected {mean}"
-            )
-    return mean
-
-
 class EvidenceSlopeTracker:
     """Tracks the slopes of evidence streams over a sliding window.
 

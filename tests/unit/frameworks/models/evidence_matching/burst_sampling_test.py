@@ -111,7 +111,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         result, _ = self.updater.update_hypotheses(
             hypotheses=hypotheses,
             features={"patch": {"pose_fully_defined": True}},
-            displacements={"patch": np.zeros(3)},
+            displacement=np.zeros(3),
             graph_id="object1",
             evidence_update_threshold=0,
         )
@@ -427,7 +427,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             self.updater.update_hypotheses(
                 hypotheses=hypotheses,
                 features={"patch": {"pose_fully_defined": True}},
-                displacements={"patch": np.zeros(3)},
+                displacement=np.zeros(3),
                 graph_id="new_object",
                 evidence_update_threshold=0,
             )

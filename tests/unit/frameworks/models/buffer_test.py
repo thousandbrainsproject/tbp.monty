@@ -167,7 +167,7 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         state_lm_1 = create_mock_state(
             sender_id="LM_0",
             sender_type="LM",
-            location=np.array([1.1, 2.1, 3.1]),
+            location=np.array([1.0, 2.0, 3.0]),
             on_object=True,
         )
         self.buffer.append([state_sm_1, state_lm_1])
@@ -199,6 +199,66 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
                 f"Channel {channel}: locations has {loc_rows} rows but "
                 f"features has {feat_rows} rows",
             )
+
+
+class GlobalLocationAveragingTest(unittest.TestCase):
+    """Tests that buffer stores the average location across all channels."""
+
+    def setUp(self):
+        self.buffer = FeatureAtLocationBuffer()
+
+    def test_global_location_is_average_of_channels(self):
+        state_a = create_mock_state(
+            sender_id="SM_0",
+            sender_type="SM",
+            location=np.array([1.0, 2.0, 3.0]),
+            on_object=True,
+        )
+        state_b = create_mock_state(
+            sender_id="LM_0",
+            sender_type="LM",
+            location=np.array([3.0, 4.0, 5.0]),
+            on_object=True,
+        )
+        self.buffer.append([state_a, state_b])
+        np.testing.assert_array_equal(
+            self.buffer.global_location, np.array([2.0, 3.0, 4.0])
+        )
+
+    def test_global_location_single_channel(self):
+        state_a = create_mock_state(
+            sender_id="SM_0",
+            sender_type="SM",
+            location=np.array([1.0, 2.0, 3.0]),
+            on_object=True,
+        )
+        self.buffer.append([state_a])
+        np.testing.assert_array_equal(
+            self.buffer.global_location, np.array([1.0, 2.0, 3.0])
+        )
+
+    def test_stores_displacement_from_first_observation(self):
+        disp = np.array([0.1, 0.2, 0.3])
+        state_a = create_mock_state(
+            sender_id="SM_0",
+            sender_type="SM",
+            location=np.array([1.0, 2.0, 3.0]),
+            on_object=True,
+        )
+        state_a.displacement = {"displacement": disp.copy()}
+
+        state_b = create_mock_state(
+            sender_id="LM_0",
+            sender_type="LM",
+            location=np.array([1.0, 2.0, 3.0]),
+            on_object=True,
+        )
+        state_b.displacement = {"displacement": disp.copy()}
+
+        self.buffer.append([state_a, state_b])
+        np.testing.assert_array_almost_equal(
+            self.buffer.get_current_displacement(), disp
+        )
 
 
 class PadToTargetLengthTest(unittest.TestCase):

@@ -41,7 +41,8 @@ class FeatureAtLocationBuffer:
         self.on_object = []
         self.input_states = []
 
-        self.displacements = {}
+        self.global_location = None
+        self.global_displacements = {}
 
         self.channel_sender_types = {}
 
@@ -123,13 +124,12 @@ class FeatureAtLocationBuffer:
             for attr in state.non_morphological_features:
                 attr_val = state.non_morphological_features[attr]
                 self._add_attr_to_feature_buffer(input_channel, attr, attr_val)
-            for attr in state.displacement:
-                attr_val = state.displacement[attr]
-                self._add_disp_to_displacement_buffer(input_channel, attr, attr_val)
             on_obj = state.get_on_object()
             self._add_attr_to_feature_buffer(input_channel, "on_object", on_obj)
             if on_obj:
                 any_obs_on_obj = True
+        self._store_global_displacement_and_location(list_of_data)
+
         self.on_object.append(any_obs_on_obj)  # TODO S: remove?
 
     def append_input_states(self, input_state):
@@ -273,46 +273,31 @@ class FeatureAtLocationBuffer:
             return self.input_states[-2]
         return None
 
-    def get_nth_displacement(self, n, input_channel):
+    def get_nth_displacement(self, n):
         """Get the nth displacement.
 
         Returns:
             The nth displacement.
         """
-        if input_channel == "first":
-            input_channel = self.get_first_sensory_input_channel()
-        return self.displacements[input_channel]["displacement"][n]
+        return self.global_displacements["displacement"][n]
 
-    def get_current_displacement(self, input_channel):
+    def get_current_displacement(self):
         """Get the current displacement.
 
         Returns:
             The current displacement.
         """
-        return self.get_nth_displacement(-1, input_channel)
+        return self.get_nth_displacement(-1)
 
-    def get_all_current_displacements(self):
-        """Get all current displacements.
-
-        Returns:
-            A dictionary mapping channels to all current displacements.
-        """
-        return {
-            channel: self.get_current_displacement(channel)
-            for channel in self.displacements
-        }
-
-    def get_current_ppf(self, input_channel):
+    def get_current_ppf(self):
         """Get the current ppf.
 
         Returns:
             The current ppf.
         """
-        if input_channel == "first":
-            input_channel = self.get_first_sensory_input_channel()
-        return copy.deepcopy(self.displacements[input_channel]["ppf"][-1])
+        return copy.deepcopy(self.global_displacements["ppf"][-1])
 
-    def get_first_displacement_len(self, input_channel):
+    def get_first_displacement_len(self):
         """Get length of first observed displacement.
 
         Use for scale in DisplacementLM.
@@ -320,11 +305,9 @@ class FeatureAtLocationBuffer:
         Returns:
             The length of the first observed displacement.
         """
-        if input_channel == "first":
-            input_channel = self.get_first_sensory_input_channel()
-        if "ppf" in self.displacements[input_channel]:
-            return self.displacements[input_channel]["ppf"][1][0]
-        return np.linalg.norm(self.displacements[input_channel]["displacement"][1])
+        if "ppf" in self.global_displacements:
+            return self.global_displacements["ppf"][1][0]
+        return np.linalg.norm(self.global_displacements["displacement"][1])
 
     def get_all_features_on_object(self):
         """Get all observed features that were on the object.
@@ -538,28 +521,42 @@ class FeatureAtLocationBuffer:
         self.locations[input_channel] = padded_locs
         self.locations[input_channel][-1] = location
 
-    def _add_disp_to_displacement_buffer(self, input_channel, disp_name, disp_val):
-        """Add displacement to displacement buffer.
+    def _store_global_displacement_and_location(self, list_of_data):
+        """Store the global displacement and location from the current step.
+
+        Computes the average location across all input channels and stores
+        any displacement present on the first observation.
 
         Args:
-            input_channel: Input channel from which the displacement was received.
-            disp_name: Name of the displacement. Currently in ["displacement", "ppf"]
+            list_of_data: List of State objects from the current step.
+        """
+        avg_location = np.mean([s.location for s in list_of_data], axis=0)
+
+        if getattr(list_of_data[0], "displacement", None):
+            for attr in list_of_data[0].displacement:
+                self._add_global_displacement(attr, list_of_data[0].displacement[attr])
+
+        self.global_location = avg_location.copy()
+
+    def _add_global_displacement(self, disp_name, disp_val):
+        """Add a displacement value to the global displacement buffer.
+
+        Args:
+            disp_name: Name of the displacement (e.g. "displacement", "ppf").
             disp_val: Value of the displacement.
         """
-        if input_channel not in self.displacements:
-            self.displacements[input_channel] = {}
-        if disp_name not in self.displacements[input_channel]:
-            self.displacements[input_channel][disp_name] = np.full(
+        if disp_name not in self.global_displacements:
+            self.global_displacements[disp_name] = np.full(
                 (len(self.locations), len(disp_val)), np.nan
             )
 
         padded_vals = self._pad_to_target_length(
-            existing_vals=self.displacements[input_channel][disp_name],
+            existing_vals=self.global_displacements[disp_name],
             target_length=len(self) + 1,
             new_val_len=disp_val.shape[0],
         )
-        self.displacements[input_channel][disp_name] = padded_vals
-        self.displacements[input_channel][disp_name][-1] = disp_val
+        self.global_displacements[disp_name] = padded_vals
+        self.global_displacements[disp_name][-1] = disp_val
 
     def _pad_to_target_length(
         self,

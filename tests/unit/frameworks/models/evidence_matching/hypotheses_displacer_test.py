@@ -68,10 +68,7 @@ class DefaultHypothesesDisplacerTest(TestCase):
         ):
             result, _telemetry = (
                 self.displacer.displace_hypotheses_and_compute_evidence(
-                    displacements={
-                        "channel_a": np.zeros(3),
-                        "channel_b": np.zeros(3),
-                    },
+                    displacement=np.zeros(3),
                     features={
                         "channel_a": {"pose_fully_defined": True},
                         "channel_b": {"pose_fully_defined": True},
@@ -109,10 +106,7 @@ class DefaultHypothesesDisplacerTest(TestCase):
             side_effect=lambda **kw: evidence_by_channel[kw["input_channel"]],
         ):
             _, telemetry = self.displacer.displace_hypotheses_and_compute_evidence(
-                displacements={
-                    "channel_a": np.zeros(3),
-                    "channel_b": np.zeros(3),
-                },
+                displacement=np.zeros(3),
                 features={
                     "channel_a": {"pose_fully_defined": True},
                     "channel_b": {"pose_fully_defined": True},

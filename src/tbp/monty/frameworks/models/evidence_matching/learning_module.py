@@ -276,6 +276,10 @@ class EvidenceGraphLM(GraphLM):
             # TODO: could do this in the object model class
             self.graph_memory.initialize_feature_arrays()
         self.symmetry_evidence = 0
+        self.evidence = {}
+        self.possible_locations = {}
+        self.possible_poses = {}
+        self.possible_hyps = {}
         self.hypotheses_updater.reset()
 
         self.current_mlh["graph_id"] = "no_observations_yet"
@@ -765,7 +769,7 @@ class EvidenceGraphLM(GraphLM):
     def _update_evidence(
         self,
         features: dict,
-        displacements: dict | None,
+        displacement: npt.NDArray[np.float64] | None,
         graph_id: str,
     ) -> None:
         """Update evidence based on sensor displacement and sensed features.
@@ -778,7 +782,7 @@ class EvidenceGraphLM(GraphLM):
 
         Args:
             features: input features
-            displacements: given displacements
+            displacement: given displacement vector
             graph_id: identifier of the graph being updated
         """
         start_time = time.time()
@@ -807,7 +811,7 @@ class EvidenceGraphLM(GraphLM):
                     possible=self.possible_hyps[graph_id],
                 ),
                 features=features,
-                displacements=displacements,
+                displacement=displacement,
                 graph_id=graph_id,
                 evidence_update_threshold=update_threshold,
             )

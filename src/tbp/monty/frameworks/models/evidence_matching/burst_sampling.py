@@ -274,7 +274,7 @@ class BurstSamplingHypothesesUpdater:
         self,
         hypotheses: Hypotheses,
         features: dict,
-        displacements: dict | None,
+        displacement: npt.NDArray[np.float64] | None,
         graph_id: str,
         evidence_update_threshold: float,
     ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
@@ -289,7 +289,7 @@ class BurstSamplingHypothesesUpdater:
         Args:
             hypotheses: Hypothesis space for the graph id.
             features: Input features keyed by channel name.
-            displacements: Given displacements keyed by channel name.
+            displacement: Given displacement vector.
             graph_id: Identifier of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
@@ -340,7 +340,7 @@ class BurstSamplingHypothesesUpdater:
         if len(hypotheses_selection.maintain_ids):
             existing_hypotheses, displacer_telemetry = (
                 self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
-                    displacements=displacements,
+                    displacement=displacement,
                     features=features,
                     evidence_update_threshold=evidence_update_threshold,
                     graph_id=graph_id,

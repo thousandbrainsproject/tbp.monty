@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Any, ContextManager, Dict, Literal, Optional, Protocol
 
 import numpy as np
+import numpy.typing as npt
 from scipy.spatial.transform import Rotation
 from typing_extensions import Self
 
@@ -65,7 +66,7 @@ class HypothesesUpdater(ContextManager[Self], Protocol):
         self,
         hypotheses: Hypotheses,
         features: dict,
-        displacements: dict | None,
+        displacement: npt.NDArray[np.float64] | None,
         graph_id: str,
         evidence_update_threshold: float,
     ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
@@ -74,7 +75,7 @@ class HypothesesUpdater(ContextManager[Self], Protocol):
         Args:
             hypotheses: Unified hypotheses for the graph.
             features: Input features keyed by channel name.
-            displacements: Given displacements keyed by channel name.
+            displacement: Given displacement vector.
             graph_id: ID of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
@@ -206,7 +207,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         self,
         hypotheses: Hypotheses,
         features: dict,
-        displacements: dict | None,
+        displacement: npt.NDArray[np.float64] | None,
         graph_id: str,
         evidence_update_threshold: float,
     ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
@@ -221,7 +222,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         Args:
             hypotheses: Unified hypotheses for the graph.
             features: Input features keyed by channel name.
-            displacements: Given displacements keyed by channel name.
+            displacement: Given displacement vector.
             graph_id: Identifier of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
@@ -263,7 +264,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         # sensory input.
         displaced_hypotheses, telemetry_data = (
             self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
-                displacements=displacements,
+                displacement=displacement,
                 features=features,
                 evidence_update_threshold=evidence_update_threshold,
                 graph_id=graph_id,

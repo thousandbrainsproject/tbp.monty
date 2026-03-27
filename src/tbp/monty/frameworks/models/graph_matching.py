@@ -972,7 +972,7 @@ class GraphLM(LearningModule):
         if first_movement_detected:
             query = [
                 self._select_features_to_use(observations),
-                self.buffer.get_all_current_displacements(),
+                self.buffer.get_current_displacement(),
             ]
         else:
             query = [
@@ -1031,13 +1031,12 @@ class GraphLM(LearningModule):
         Returns:
             Observations with displacements.
         """
+        if self.buffer.global_location is not None:
+            avg_location = np.mean([o.location for o in obs], axis=0)
+            displacement = avg_location - self.buffer.global_location
+        else:
+            displacement = np.zeros(3)
         for o in obs:
-            if self.buffer.get_buffer_len_by_channel(o.sender_id) > 0:
-                displacement = o.location - self.buffer.get_current_location(
-                    input_channel=o.sender_id
-                )
-            else:
-                displacement = np.zeros(3)
             o.set_displacement(displacement)
         return obs
 

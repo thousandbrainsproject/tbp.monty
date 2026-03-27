@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 import numpy as np
+import numpy.typing as npt
 
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
     DefaultFeatureEvidenceCalculator,
@@ -25,7 +26,6 @@ from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.utils.evidence_matching import (
     all_usable_input_channels,
-    extract_unified_displacement,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_custom_distances,
@@ -50,7 +50,7 @@ class HypothesesDisplacer(Protocol):
 
     def displace_hypotheses_and_compute_evidence(
         self,
-        displacements: dict[str, np.ndarray],
+        displacement: npt.NDArray[np.float64],
         features: dict[str, dict],
         evidence_update_threshold: float,
         graph_id: str,
@@ -64,8 +64,7 @@ class HypothesesDisplacer(Protocol):
         channels. Per-channel evidence is summed and applied as a weighted update.
 
         Args:
-            displacements: Per-channel displacement vectors, keyed by channel
-                name. For colocated SMs these should all be equal.
+            displacement: Displacement vector.
             features: All-channel input features, keyed by channel name.
             evidence_update_threshold: Evidence update threshold.
             graph_id: The ID of the current graph.
@@ -142,14 +141,13 @@ class DefaultHypothesesDisplacer:
 
     def displace_hypotheses_and_compute_evidence(
         self,
-        displacements: dict[str, np.ndarray],
+        displacement: npt.NDArray[np.float64],
         features: dict[str, dict],
         evidence_update_threshold: float,
         graph_id: str,
         possible_hypotheses: Hypotheses,
         total_hypotheses_count: int,
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
-        displacement = extract_unified_displacement(displacements)
         # Have to do this for all hypotheses so we don't lose the path information
         rotated_displacements = possible_hypotheses.poses.dot(displacement)
         search_locations = possible_hypotheses.locations + rotated_displacements

@@ -13,39 +13,7 @@ import numpy as np
 
 from tbp.monty.frameworks.utils.evidence_matching import (
     EvidenceSlopeTracker,
-    extract_unified_displacement,
 )
-
-
-class ExtractUnifiedDisplacementTest(unittest.TestCase):
-    def test_single_channel(self) -> None:
-        d = {"SM_0": np.array([1.0, 2.0, 3.0])}
-        result = extract_unified_displacement(d)
-        np.testing.assert_array_equal(result, [1.0, 2.0, 3.0])
-
-    def test_equal_displacements(self) -> None:
-        d = {
-            "SM_0": np.array([1.0, 0.0, 0.0]),
-            "SM_1": np.array([1.0, 0.0, 0.0]),
-        }
-        result = extract_unified_displacement(d)
-        np.testing.assert_array_almost_equal(result, [1.0, 0.0, 0.0])
-
-    def test_mismatched_displacements_raises(self) -> None:
-        d = {
-            "SM_0": np.array([1.0, 0.0, 0.0]),
-            "SM_1": np.array([0.0, 1.0, 0.0]),
-        }
-        with self.assertRaises(ValueError):
-            extract_unified_displacement(d)
-
-    def test_nearly_equal_within_tolerance(self) -> None:
-        d = {
-            "SM_0": np.array([1.0, 0.0, 0.0]),
-            "SM_1": np.array([1.0 + 1e-7, 0.0, 0.0]),
-        }
-        result = extract_unified_displacement(d)
-        np.testing.assert_array_almost_equal(result, [1.0, 0.0, 0.0])
 
 
 class EvidenceSlopeTrackerTest(unittest.TestCase):
