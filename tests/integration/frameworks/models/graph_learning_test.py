@@ -185,9 +185,7 @@ class GraphLearningTest(BaseGraphTest):
                 if step == 0:
                     self.assertListEqual(
                         list(
-                            exp.model.learning_modules[0].buffer.get_nth_displacement(
-                                0, input_channel="first"
-                            )
+                            exp.model.learning_modules[0].buffer.get_nth_displacement(0)
                         ),
                         [0, 0, 0],
                         "displacement at step 0 should be 0.",
@@ -195,7 +193,7 @@ class GraphLearningTest(BaseGraphTest):
                 self.assertEqual(
                     step + 1,
                     len(
-                        exp.model.learning_modules[0].buffer.displacements["patch"][
+                        exp.model.learning_modules[0].buffer.global_displacements[
                             "displacement"
                         ]
                     ),

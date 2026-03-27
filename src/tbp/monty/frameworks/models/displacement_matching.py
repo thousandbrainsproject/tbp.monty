@@ -111,7 +111,7 @@ class DisplacementGraphLM(GraphLM):
             )
             r_euler, _, r = self.get_object_rotation(
                 sensed_displacements=np.array(
-                    self.buffer.displacements[first_channel]["displacement"][1:]
+                    self.buffer.global_displacements["displacement"][1:]
                 ),
                 model_displacements=model_displacements,
                 get_reverse_r=False,
@@ -120,9 +120,7 @@ class DisplacementGraphLM(GraphLM):
             if r_euler is not None:
                 self.detected_rotation_r = r
                 scale = self.get_object_scale(
-                    np.array(
-                        self.buffer.get_nth_displacement(1, input_channel=first_channel)
-                    ),
+                    np.array(self.buffer.get_nth_displacement(1)),
                     model_displacements[0],
                 )
                 pose_and_scale = np.concatenate([current_model_loc, r_euler, [scale]])
@@ -207,9 +205,9 @@ class DisplacementGraphLM(GraphLM):
         if not first_movement_detected:
             return
         if self.match_attribute == "displacement":
-            query = self.buffer.get_current_displacement(input_channel="first")
+            query = self.buffer.get_current_displacement()
         elif self.match_attribute == "PPF":
-            query = self.buffer.get_current_ppf(input_channel="first")
+            query = self.buffer.get_current_ppf()
         else:
             logger.error("match_attribute not defined")
 
@@ -217,9 +215,7 @@ class DisplacementGraphLM(GraphLM):
         target = self._select_features_to_use(observation)
 
         if self.match_attribute == "PPF" and self.use_relative_len:
-            query[0] = query[0] / self.buffer.get_first_displacement_len(
-                input_channel="first"
-            )
+            query[0] = query[0] / self.buffer.get_first_displacement_len()
 
         logger.debug(f"query: {query}")
 
@@ -415,13 +411,9 @@ class DisplacementGraphLM(GraphLM):
         if len(self.buffer) > 0:
             # TODO S: Make sure result of get_current_location() and get_current_pose()
             # is on object (should always be atm).
-            displacement = np.array(
-                obs_to_use.location
-            ) - self.buffer.get_current_location(input_channel=obs_to_use.sender_id)
+            displacement = np.array(obs_to_use.location) - self.buffer.global_location
 
-            pos1 = torch.tensor(
-                self.buffer.get_current_location(input_channel=obs_to_use.sender_id)
-            )
+            pos1 = torch.tensor(self.buffer.global_location)
             pos2 = torch.tensor(obs_to_use.location)
             norm1 = torch.tensor(
                 # element 0 of current pose is location, element 1 is surface normal

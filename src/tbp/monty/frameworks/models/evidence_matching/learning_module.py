@@ -25,7 +25,6 @@ from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
 )
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
-    ChannelHypotheses,
     Hypotheses,
 )
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
@@ -37,7 +36,6 @@ from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateG
 from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.evidence_matching import (
-    ChannelMapper,
     evidence_update_threshold,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (
@@ -234,9 +232,6 @@ class EvidenceGraphLM(GraphLM):
         # and stores which hypotheses are "possible" for symmetry checks.
         self.possible_hyps: dict[str, npt.NDArray[np.bool_]] = {}
 
-        # A dictionary from graph_id to instances of `ChannelMapper`.
-        self.channel_hypothesis_mapping: dict[str, ChannelMapper] = {}
-
         self.current_mlh = {
             "graph_id": "no_observations_yet",
             "location": [0, 0, 0],
@@ -281,7 +276,10 @@ class EvidenceGraphLM(GraphLM):
             # TODO: could do this in the object model class
             self.graph_memory.initialize_feature_arrays()
         self.symmetry_evidence = 0
-        self.channel_hypothesis_mapping = {}
+        self.evidence = {}
+        self.possible_locations = {}
+        self.possible_poses = {}
+        self.possible_hyps = {}
         self.hypotheses_updater.reset()
 
         self.current_mlh["graph_id"] = "no_observations_yet"
@@ -771,7 +769,7 @@ class EvidenceGraphLM(GraphLM):
     def _update_evidence(
         self,
         features: dict,
-        displacements: dict | None,
+        displacement: npt.NDArray[np.float64] | None,
         graph_id: str,
     ) -> None:
         """Update evidence based on sensor displacement and sensed features.
@@ -784,19 +782,17 @@ class EvidenceGraphLM(GraphLM):
 
         Args:
             features: input features
-            displacements: given displacements
+            displacement: given displacement vector
             graph_id: identifier of the graph being updated
         """
         start_time = time.time()
 
-        # Initialize a `ChannelMapper` to keep track of input channel range
-        # of hypotheses for a specific graph_id
-        if graph_id not in self.channel_hypothesis_mapping:
-            self.channel_hypothesis_mapping[graph_id] = ChannelMapper()
-            self.evidence[graph_id] = np.array([])
-            self.possible_locations[graph_id] = np.array([])
-            self.possible_poses[graph_id] = np.array([])
-            self.possible_hyps[graph_id] = np.array([])
+        # Initialize empty arrays on first call for this graph
+        if graph_id not in self.evidence:
+            self.evidence[graph_id] = np.empty((0,))
+            self.possible_locations[graph_id] = np.empty((0, 3))
+            self.possible_poses[graph_id] = np.empty((0, 3, 3))
+            self.possible_hyps[graph_id] = np.empty((0,), dtype=np.bool_)
 
         # Calculate the evidence_update_threshold
         update_threshold = evidence_update_threshold(
@@ -806,7 +802,7 @@ class EvidenceGraphLM(GraphLM):
             evidence_all_channels=self.evidence[graph_id],
         )
 
-        hypotheses_updates, hypotheses_update_telemetry = (
+        hypotheses_update, hypotheses_update_telemetry = (
             self.hypotheses_updater.update_hypotheses(
                 hypotheses=Hypotheses(
                     evidence=self.evidence[graph_id],
@@ -815,21 +811,20 @@ class EvidenceGraphLM(GraphLM):
                     possible=self.possible_hyps[graph_id],
                 ),
                 features=features,
-                displacements=displacements,
+                displacement=displacement,
                 graph_id=graph_id,
-                mapper=self.channel_hypothesis_mapping[graph_id],
                 evidence_update_threshold=update_threshold,
             )
         )
 
-        if hypotheses_update_telemetry is not None:
+        if hypotheses_update_telemetry:
             self.hypotheses_updater_telemetry[graph_id] = hypotheses_update_telemetry
 
-        if not hypotheses_updates:
-            return
-
-        for update in hypotheses_updates:
-            self._set_hypotheses_in_hpspace(graph_id=graph_id, new_hypotheses=update)
+        if hypotheses_update is not None:
+            self.evidence[graph_id] = hypotheses_update.evidence
+            self.possible_locations[graph_id] = hypotheses_update.locations
+            self.possible_poses[graph_id] = hypotheses_update.poses
+            self.possible_hyps[graph_id] = hypotheses_update.possible
 
         end_time = time.time()
 
@@ -846,84 +841,6 @@ class EvidenceGraphLM(GraphLM):
                 f" New max evidence: {np.round(np.max(self.evidence[graph_id]), 3)}"
             )
         logger.debug(logger_msg)
-
-    def _set_hypotheses_in_hpspace(
-        self,
-        graph_id: str,
-        new_hypotheses: ChannelHypotheses,
-    ) -> None:
-        """Updates the hypothesis space for a given input channel in a graph.
-
-        This function updates the hypothesis space (for a specific graph and input
-        channel) with a new set of locations, rotations and evidence scores.
-            - If the hypothesis space does not exist for any input channel, a new one
-                is initialized
-            - If the hypothesis space only exists for other channels, a new channel is
-                created with the mean evidence scores of the existing channels
-            - If the hypothesis space exists for the given input channel, the new space
-                replaces the existing hypothesis space
-
-        Args:
-            graph_id: The ID of the current graph to update.
-            new_hypotheses: The new hypotheses to set. These are the
-                sets of location, pose, and evidence after applying movements to the
-                possible locations and updating their evidence scores. These could also
-                refer to newly initialized hypotheses if a hypothesis space did not
-                exist.
-        """
-        # Extract channel mapper
-        mapper = self.channel_hypothesis_mapping[graph_id]
-        new_evidence = new_hypotheses.evidence
-
-        if new_hypotheses.input_channel not in mapper.channels:
-            # If there are currently no channels in the mapper, initialize the
-            # space with empty arrays of the correct shapes.
-            if len(mapper.channels) == 0:
-                self.possible_locations[graph_id] = np.empty((0, 3))
-                self.possible_poses[graph_id] = np.empty((0, 3, 3))
-                self.evidence[graph_id] = np.empty((0,))
-                self.possible_hyps[graph_id] = np.empty((0,), dtype=np.bool_)
-
-            # If there exists other channels, add current mean evidence to give the
-            # new hypotheses a fighting chance.
-            # TODO H: Test mean vs. median here.
-            else:
-                current_mean_evidence = np.mean(self.evidence[graph_id])
-                new_evidence = new_evidence + current_mean_evidence
-
-            # Add a mapper channel to be updated with the new data. The mapper will
-            # be later resized to `len(new_evidence)` after we update the hypothesis
-            # space.
-            mapper.add_channel(new_hypotheses.input_channel, 0)
-
-        # The mapper update function calls below automatically resize the
-        # arrays they update. Afterward, we must update the channel indices
-        # in the mapper via resize_channel_to to stay in sync with
-        # the now resized arrays. We do not resize before array updates
-        # because then, during the update, the indices would not correspond
-        # to the data in the arrays.
-        self.possible_locations[graph_id] = mapper.update(
-            self.possible_locations[graph_id],
-            new_hypotheses.input_channel,
-            new_hypotheses.locations,
-        )
-        self.possible_poses[graph_id] = mapper.update(
-            self.possible_poses[graph_id],
-            new_hypotheses.input_channel,
-            new_hypotheses.poses,
-        )
-        self.evidence[graph_id] = mapper.update(
-            self.evidence[graph_id],
-            new_hypotheses.input_channel,
-            new_evidence,
-        )
-        self.possible_hyps[graph_id] = mapper.update(
-            self.possible_hyps[graph_id],
-            new_hypotheses.input_channel,
-            new_hypotheses.possible,
-        )
-
-        mapper.resize_channel_to(new_hypotheses.input_channel, len(new_evidence))
 
     def _update_evidence_with_vote(self, state_votes, graph_id):
         """Use incoming votes to update all hypotheses."""
@@ -1284,26 +1201,9 @@ class EvidenceGraphLM(GraphLM):
             # detected no match.
             return
         graph_telemetry = self.hypotheses_updater_telemetry[graph_id]
-        prediction_errors = []
-        for input_channel in graph_telemetry:
-            channel_telemetry = graph_telemetry[input_channel]
-            # Check if there is displacer telemetry and if it contains a prediction
-            # error. This would not be the case if there are no existing hypotheses
-            # or if a channel was newly initialized.
-            try:
-                displacer_telemetry = channel_telemetry[
-                    "channel_hypothesis_displacer_telemetry"
-                ]
-                channel_prediction_error = displacer_telemetry["mlh_prediction_error"]
-                prediction_errors.append(channel_prediction_error)
-            except KeyError:
-                # channel_telemetry was missing needed attributes,
-                # so skip adding prediction errors
-                pass
+        mlh_prediction_error = graph_telemetry.get("mlh_prediction_error")
 
-        if prediction_errors:
-            # Get the average prediction error over all channels for this step.
-            mlh_prediction_error = np.mean(prediction_errors)
+        if mlh_prediction_error is not None:
             self.buffer.update_stats(
                 {"mlh_prediction_error": mlh_prediction_error},
                 update_time=False,
