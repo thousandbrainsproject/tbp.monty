@@ -21,6 +21,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     RuntimeContext,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
 
 __all__ = ["MontyBase"]
@@ -138,13 +139,18 @@ class MontyBase(Monty):
 
         self._actions: list[Action] = []
 
-    def step(self, ctx: RuntimeContext, observations: Observations) -> list[Action]:
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ) -> list[Action]:
         # For the base class, just use matching step. Note that matching_step and
         # exploratory_step are fully implemented by the abstract class.
         if self.step_type == "matching_step":
-            self._matching_step(ctx, observations)
+            self._matching_step(ctx, observations, proprioceptive_state)
         elif self.step_type == "exploratory_step":
-            self._exploratory_step(ctx, observations)
+            self._exploratory_step(ctx, observations, proprioceptive_state)
         else:
             raise ValueError(f"step type {self.step_type} not found in base monty")
         # TODO: Once this works, refactor to be more functional and less side-effect
@@ -170,7 +176,10 @@ class MontyBase(Monty):
         self.learning_module_outputs = learning_module_outputs
 
     def motor_only_step(
-        self, ctx: RuntimeContext, observations: Observations
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
         self.aggregate_sensory_inputs(ctx, observations)
         self._pass_input_obs_to_motor_system(  # TODO: not part of MontyBase
@@ -187,7 +196,7 @@ class MontyBase(Monty):
             self.learning_modules[ii].stepwise_targets_list.append(
                 self.learning_modules[ii].stepwise_target_object
             )
-        self._step_motor_system(ctx, observations)
+        self._step_motor_system(ctx, observations, proprioceptive_state)
         return self._actions
 
     def check_reached_max_matching_steps(self, max_steps):
@@ -307,9 +316,12 @@ class MontyBase(Monty):
         pass
 
     def _step_motor_system(
-        self, ctx: RuntimeContext, observations: Observations
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
     ) -> None:
-        self._actions = self.motor_system(ctx, observations)
+        self._actions = self.motor_system(ctx, observations, proprioceptive_state)
 
     def _set_step_type_and_check_if_done(self):
         """Check terminal conditions and decide if we change the step type.
