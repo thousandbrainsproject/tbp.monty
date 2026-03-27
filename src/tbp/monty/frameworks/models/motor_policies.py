@@ -54,6 +54,8 @@ from tbp.monty.math import VectorXYZ
 if TYPE_CHECKING:
     from os import PathLike
 
+    from tbp.monty.frameworks.models.motor_system import MotorSystem
+
 __all__ = [
     "BasePolicy",
     "InformedPolicy",
@@ -96,8 +98,12 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def pre_episode(self) -> None:
-        """Pre episode hook."""
+    def pre_episode(self, motor_system: MotorSystem) -> None:
+        """Pre episode hook.
+
+        Args:
+            motor_system: The motor system.
+        """
         pass
 
     @abc.abstractmethod
@@ -163,7 +169,7 @@ class BasePolicy(MotorPolicy):
         """
         return MotorPolicyResult([self.action_sampler.sample(self.agent_id, ctx.rng)])
 
-    def pre_episode(self) -> None:
+    def pre_episode(self, motor_system: MotorSystem) -> None:
         pass
 
     ###
@@ -239,7 +245,7 @@ class PredefinedPolicy(MotorPolicy):
     def get_agent_state(self, state: MotorSystemState) -> AgentState:
         return state[self.agent_id]
 
-    def pre_episode(self) -> None:
+    def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
         self.episode_step = 0
 
     def state_dict(self) -> dict[str, Any]:
@@ -260,7 +266,7 @@ class JumpToGoalStateMixin:
     def __init__(self) -> None:
         self.driving_goal_state = None
 
-    def pre_episode(self) -> None:
+    def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
         self.set_driving_goal_state(None)
 
     def set_driving_goal_state(self, goal_state):
@@ -354,13 +360,13 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     def processed_observations(self, percept: State | None) -> None:
         self._processed_observations = percept
 
-    def pre_episode(self) -> None:
+    def pre_episode(self, motor_system: MotorSystem) -> None:
         self._processed_observations = None
         self._undo_action = None
         if self.use_goal_state_driven_actions:
-            JumpToGoalStateMixin.pre_episode(self)
+            JumpToGoalStateMixin.pre_episode(self, motor_system)
         self._reset_jump_state()
-        return super().pre_episode()
+        return super().pre_episode(motor_system)
 
     def __call__(
         self,
@@ -708,8 +714,8 @@ class NaiveScanPolicy(InformedPolicy):
         self.step_on_action += 1
         return MotorPolicyResult([self._naive_scan_actions[self.current_action_id]])
 
-    def pre_episode(self) -> None:
-        super().pre_episode()
+    def pre_episode(self, motor_system: MotorSystem) -> None:
+        super().pre_episode(motor_system)
         self.steps_per_action = 1
         self.current_action_id = 0
         self.step_on_action = 0
@@ -772,7 +778,7 @@ class SurfacePolicy(InformedPolicy):
         self.attempting_to_find_object: bool = False
         self.last_surface_policy_action: Action | None = None
 
-    def pre_episode(self) -> None:
+    def pre_episode(self, motor_system: MotorSystem) -> None:
         self.tangential_angle = 0
         self.touch_search_amount = 0  # Track how many rotations the agent has made
         # along the horizontal plane searching for an object; when this reaches 360,
@@ -781,7 +787,11 @@ class SurfacePolicy(InformedPolicy):
 
         self.last_surface_policy_action = None
 
-        return super().pre_episode()
+        # TODO: This is a hack. What we should be doing is using a positioning
+        #       procedure for surface agents instead.
+        motor_system.motor_only_step = True
+
+        return super().pre_episode(motor_system)
 
     def _touch_object(
         self,
@@ -1359,8 +1369,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.tangent_locs = []
         self.tangent_norms = []
 
-    def pre_episode(self) -> None:
-        super().pre_episode()
+    def pre_episode(self, motor_system: MotorSystem) -> None:
+        super().pre_episode(motor_system)
 
         # == Variables for representing heading ==
         # We represent it both in angular and vector form as under different settings,

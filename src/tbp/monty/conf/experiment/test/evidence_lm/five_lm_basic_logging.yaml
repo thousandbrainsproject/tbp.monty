@@ -1,0 +1,29 @@
+# @package _global_
+
+defaults:
+  - /monty: evidencegraph_exp30_e3_t3_tot2500
+  - /monty/motor_system_config: test_predefined
+  - /monty/learning_module: test_evidence_5lm
+  - /monty/sensor_module: 5sm_camera
+  - /monty/connectivity: 5lm_5sm
+  - /environment: test_habitat_dist_agent_sensors5
+  - /env_interface: test_train_2obj_predefined
+  - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
+  - /env_interface/transform: missing_depthto3d_sensor6
+  - /logging: silent_info_monty_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 30
+    max_eval_steps: 30
+    max_total_steps: 60
+    n_train_epochs: 3
+    n_eval_epochs: 3
+    model_name_or_path: ""
+    min_lms_match: 5
+    seed: 42
+    supervised_lm_ids: []
+    logging:
+      run_name: ""

@@ -8,13 +8,16 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import contextlib
 import importlib
 from pathlib import Path
+from typing import Any, Callable
 
 import numpy as np
 from omegaconf import OmegaConf
 
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.sensors import SensorID
 
 
 def agent_id_resolver(agent_id: str) -> AgentID:
@@ -55,15 +58,32 @@ def path_expanduser_resolver(path: str) -> str:
     return str(Path(path).expanduser())
 
 
+def sensor_id_resolver(sensor_id: str) -> SensorID:
+    """Returns a SensorID new type from a string."""
+    return SensorID(sensor_id)
+
+
 def tests_dir_resolver(path: str) -> str:
     return str(Path(__file__).parents[3] / "tests" / Path(path))
 
 
 def register_resolvers() -> None:
-    OmegaConf.register_new_resolver("monty.agent_id", agent_id_resolver)
-    OmegaConf.register_new_resolver("monty.class", monty_class_resolver)
-    OmegaConf.register_new_resolver("np.array", ndarray_resolver)
-    OmegaConf.register_new_resolver("np.ones", ones_resolver)
-    OmegaConf.register_new_resolver("np.list_eval", numpy_list_eval_resolver)
-    OmegaConf.register_new_resolver("path.expanduser", path_expanduser_resolver)
-    OmegaConf.register_new_resolver("path.tests", tests_dir_resolver)
+    """Register custom OmegaConf resolvers for Monty configs.
+
+    Skips resolvers that are already registered rather than raising
+    a ValueError, since multiple entry points (e.g. tests/__init__.py
+    and update_snapshots.py) may call this function in the same process.
+    """
+    resolvers: dict[str, Callable[..., Any]] = {
+        "monty.agent_id": agent_id_resolver,
+        "monty.class": monty_class_resolver,
+        "monty.sensor_id": sensor_id_resolver,
+        "np.array": ndarray_resolver,
+        "np.ones": ones_resolver,
+        "np.list_eval": numpy_list_eval_resolver,
+        "path.expanduser": path_expanduser_resolver,
+        "path.tests": tests_dir_resolver,
+    }
+    for name, resolver in resolvers.items():
+        with contextlib.suppress(ValueError):
+            OmegaConf.register_new_resolver(name, resolver)

@@ -74,6 +74,7 @@ dev = [
 
     # Python static type checker
     'mypy==1.11.2',
+    'types-PyYAML',
 
     # Testing, code style, etc...
     'hypothesis==6.113.0',
@@ -156,7 +157,6 @@ junit_family = 'xunit1'
 [tool.coverage.run]
 branch = true
 parallel = true
-dynamic_context = 'test_function'
 source = [
     'src'
 ]
