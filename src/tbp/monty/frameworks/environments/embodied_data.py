@@ -45,7 +45,6 @@ from tbp.monty.frameworks.models.motor_system_state import (
 __all__ = [
     "EnvironmentInterface",
     "EnvironmentInterfacePerObject",
-    "InformedEnvironmentInterface",
     "OmniglotEnvironmentInterface",
     "SaccadeOnImageEnvironmentInterface",
     "SaccadeOnImageFromStreamEnvironmentInterface",
