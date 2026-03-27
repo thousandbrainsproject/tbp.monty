@@ -16,7 +16,10 @@ from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
-from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
+from tbp.monty.frameworks.models.motor_system_state import (
+    MotorSystemState,
+    ProprioceptiveState,
+)
 
 __all__ = ["MotorSystem"]
 
@@ -24,18 +27,13 @@ __all__ = ["MotorSystem"]
 class MotorSystem:
     """The basic motor system implementation."""
 
-    def __init__(
-        self, policy: MotorPolicy, state: MotorSystemState | None = None
-    ) -> None:
+    def __init__(self, policy: MotorPolicy) -> None:
         """Initialize the motor system with a motor policy.
 
         Args:
             policy: The motor policy to use.
-            state: The initial state of the motor system.
-                Defaults to None.
         """
         self._policy = policy
-        self._state = state
         # For each step, we store the actions produced by the policy and the current
         # motor system state as a (actions, state) tuple.
         self._action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]] = []
@@ -59,7 +57,12 @@ class MotorSystem:
         self._policy.pre_episode(self)
         self._action_sequence = []
 
-    def __call__(self, ctx: RuntimeContext, observations: Observations) -> list[Action]:
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ) -> list[Action]:
         """Defines the structure for __call__.
 
         Delegates to the motor policy.
@@ -67,13 +70,15 @@ class MotorSystem:
         Args:
             ctx: The runtime context.
             observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
 
         Returns:
             The action to take.
         """
-        policy_result = self._policy(ctx, observations, self._state)
+        motor_system_state = MotorSystemState(proprioceptive_state)
+        policy_result = self._policy(ctx, observations, motor_system_state)
         self.motor_only_step = policy_result.motor_only_step
 
-        state_copy = self._state.convert_motor_state() if self._state else None
+        state_copy = motor_system_state.convert_motor_state()
         self._action_sequence.append((policy_result.actions, state_copy))
         return policy_result.actions

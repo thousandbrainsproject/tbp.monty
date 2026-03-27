@@ -12,6 +12,8 @@ from __future__ import annotations
 import logging
 from typing import ClassVar
 
+from mock import PropertyMock
+
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
@@ -159,11 +161,24 @@ class MontyBase(Monty):
         #       point during the step method calls above.
         return self._actions
 
-    def aggregate_sensory_inputs(self, ctx: RuntimeContext, observation):
+    def aggregate_sensory_inputs(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ):
         sensor_module_outputs = []
         for sensor_module in self.sensor_modules:
-            raw_obs = self.get_observations(observation, sensor_module.sensor_module_id)
-            sensor_module.update_state(self.get_agent_state())
+            raw_obs = self.get_observations(
+                observations, sensor_module.sensor_module_id
+            )
+            # TODO: To get rid of agent access here, we need to make
+            # proprioceptive_state a flat data structure where they keys are agent
+            # IDs and sensor IDs. Also, sensor module should be given only its
+            # proprioceptive state.
+            agent_id = self.sm_to_agent_dict[sensor_module.sensor_module_id]
+            agent_state = proprioceptive_state[agent_id]
+            sensor_module.update_state(agent_state)
             sm_output = sensor_module.step(ctx, raw_obs, self.is_motor_only_step)
             sensor_module_outputs.append(sm_output)
         # Aggregate LM outputs here to be input to higher level LM at next step
@@ -181,7 +196,7 @@ class MontyBase(Monty):
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
-        self.aggregate_sensory_inputs(ctx, observations)
+        self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
         self._pass_input_obs_to_motor_system(  # TODO: not part of MontyBase
             get_first_sensory_state(self.sensor_module_outputs)
         )

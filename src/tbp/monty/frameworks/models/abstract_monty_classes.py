@@ -81,7 +81,7 @@ class Monty(metaclass=abc.ABCMeta):
             observations: The observations from the environment.
             proprioceptive_state: The proprioceptive state from the environment.
         """
-        self.aggregate_sensory_inputs(ctx, observations)
+        self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
         self._step_learning_modules(ctx)
         self._vote()
         self._pass_goal_states()
@@ -105,7 +105,7 @@ class Monty(metaclass=abc.ABCMeta):
             observations: The observations from the environment.
             proprioceptive_state: The proprioceptive state from the environment.
         """
-        self.aggregate_sensory_inputs(ctx, observations)
+        self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
         self._step_learning_modules(ctx)
         self._pass_goal_states()
         self._pass_infos_to_motor_system()
@@ -156,8 +156,19 @@ class Monty(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def aggregate_sensory_inputs(self, ctx: RuntimeContext, observation):
-        """Receive data from environment, organize on a per sensor module basis."""
+    def aggregate_sensory_inputs(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ):
+        """Receive data from environment, organize on a per sensor module basis.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
+        """
         pass
 
     @abc.abstractmethod

@@ -477,11 +477,11 @@ class MontyExperiment:
         ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []
         while True:
-            observations, _ = self.env_interface.step(actions)
+            observations, proprioceptive_state = self.env_interface.step(actions)
 
             self.pre_step(step, observations)
             try:
-                actions = self.model.step(ctx, observations)
+                actions = self.model.step(ctx, observations, proprioceptive_state)
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used

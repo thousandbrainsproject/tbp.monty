@@ -104,8 +104,7 @@ class EnvironmentInterface:
         self.rng = rng
         self.seed = seed
         self.transform = transform
-        _, proprioceptive_state = self.reset(self.rng)
-        self.motor_system._state = MotorSystemState(proprioceptive_state)
+        self.reset(self.rng)
         self.experiment_mode = experiment_mode
 
     def reset(self, rng: np.random.RandomState):
@@ -141,9 +140,7 @@ class EnvironmentInterface:
             The observations and proprioceptive state.
         """
         actions = [] if actions is None else actions
-        observations, proprioceptive_state = self._step(actions)
-        self.motor_system._state = MotorSystemState(proprioceptive_state)
-        return observations, proprioceptive_state
+        return self._step(actions)
 
     def _step(
         self, actions: Sequence[Action]
@@ -162,9 +159,7 @@ class EnvironmentInterface:
         return observations, state
 
     def pre_episode(self, rng: np.random.RandomState):
-        # Reset the environment interface state.
-        _, proprioceptive_state = self.reset(rng)
-        self.motor_system._state = MotorSystemState(proprioceptive_state)
+        self.reset(rng)
 
     def post_episode(self):
         pass
@@ -276,7 +271,6 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             )
             while not result.terminated and not result.truncated:
                 observations, proprioceptive_state = self._step(result.actions)
-                self.motor_system._state = MotorSystemState(proprioceptive_state)
                 result = positioning_procedure(
                     observations, MotorSystemState(proprioceptive_state)
                 )
@@ -478,8 +472,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        _, proprioceptive_state = self.reset(self.rng)
-        self.motor_system._state = MotorSystemState(proprioceptive_state)
+        self.reset(self.rng)
 
         self.alphabets = alphabets
         self.characters = characters
@@ -580,8 +573,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        _, proprioceptive_state = self.reset(self.rng)
-        self.motor_system._state = MotorSystemState(proprioceptive_state)
+        self.reset(self.rng)
 
         self.scenes = scenes
         self.versions = versions
@@ -678,8 +670,8 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         self.rng = rng
         self.motor_system = motor_system
         self.transform = transform
-        _, proprioceptive_state = self.reset(self.rng)
-        self.motor_system._state = MotorSystemState(proprioceptive_state)
+        self.reset(self.rng)
+
         self.current_scene = 0
         self.episodes = 0
         self.epochs = 0

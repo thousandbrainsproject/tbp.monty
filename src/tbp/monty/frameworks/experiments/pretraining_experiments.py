@@ -87,7 +87,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         num_steps = 0
         actions: list[Action] = []
         while True:
-            observations, _ = self.env_interface.step(actions)
+            observations, proprioceptive_state = self.env_interface.step(actions)
 
             num_steps += 1
             if self.show_sensor_output:
@@ -100,7 +100,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                     is_saccade_on_image_env_interface,
                 )
             try:
-                actions = self.model.step(ctx, observations)
+                actions = self.model.step(ctx, observations, proprioceptive_state)
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used
