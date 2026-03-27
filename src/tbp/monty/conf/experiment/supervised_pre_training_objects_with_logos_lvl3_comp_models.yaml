@@ -28,3 +28,4 @@ experiment:
       - learning_module_1
     logging:
       run_name: supervised_pre_training_objects_with_logos_lvl3_comp_models
+      output_dir: ${constants.compositional_models_dir}

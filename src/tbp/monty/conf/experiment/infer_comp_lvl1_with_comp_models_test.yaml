@@ -3,7 +3,7 @@
 defaults:
   - /monty: evidencegraph_exp1000_emin_t3_tot2500
   - /monty/motor_system_config: informed_5_goal1
-  - /monty/learning_module: evidence_2lm_burst
+  - /monty/learning_module: evidence_2lm_gsg
   - /monty/sensor_module: 2sm_camera_dist
   - /monty/connectivity: 2lm_2sm
   - /environment: habitat_dist_agent_sensors2
@@ -21,10 +21,12 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: ${constants.rotations_all_count}
-    model_name_or_path: ${constants.compositional_models_dir}/supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling/pretrained/
+    model_name_or_path: ${constants.compositional_models_dir}/supervised_pre_training_objects_with_logos_lvl1_comp_models/pretrained/
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG
     logging:
-      run_name: infer_comp_lvl1_with_comp_models_and_burst_sampling
+      run_name: infer_comp_lvl1_with_comp_models_test
+    environment:
+      data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/compositional_objects}

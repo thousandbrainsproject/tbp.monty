@@ -27,6 +27,9 @@ min_eval_steps: 20
 # v12 : v11 with resampling experiment renamed to burst sampling
 pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
 
+# v2 : First pretrained models learned on version 1.1 of the compositional objects dataset
+compositional_models_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v2}
+
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.
 rotations_all_count: 14
