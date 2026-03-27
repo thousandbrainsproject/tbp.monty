@@ -13,7 +13,6 @@ import unittest
 from pathlib import Path
 from typing import Sequence
 
-import hydra
 import magnum
 import numpy as np
 import numpy.typing as npt
@@ -41,15 +40,11 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     Observations,
     SensorObservation,
 )
-from tbp.monty.frameworks.models.motor_policies import BasePolicy
-from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
-    MotorSystemState,
     ProprioceptiveState,
 )
 from tbp.monty.frameworks.sensors import SensorID
-from tests import HYDRA_ROOT
 
 AGENT_ID = AgentID("agent_id_0")
 SENSOR_ID = SensorID("sensor_id_0")
@@ -212,26 +207,13 @@ class FakeOmniglotEnvironment(FakeEnvironmentAbs):
 
 
 class EmbodiedDataTest(unittest.TestCase):
-    def setUp(self) -> None:
-        with hydra.initialize_config_dir(config_dir=str(HYDRA_ROOT), version_base=None):
-            self.policy_cfg_fragment = hydra.compose(
-                config_name="monty/motor_system_config/policy/test_base_dist",
-            ).monty.motor_system_config.policy
-            self.policy_cfg_abs_fragment = hydra.compose(
-                config_name="monty/motor_system_config/policy/test_base_absolute",
-            ).monty.motor_system_config.policy
-
     def test_embodied_env_interface_dist(self):
         seed = 42
         rng = np.random.RandomState(seed)
-        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
-        base_policy.agent_id = AGENT_ID
-        motor_system_dist = MotorSystem(policy=base_policy)
         env = FakeEnvironmentRel()
         env_interface_dist = EnvironmentInterface(
             env,
             rng=rng,
-            motor_system=motor_system_dist,
             seed=seed,
             experiment_mode=ExperimentMode.EVAL,
         )
@@ -259,15 +241,10 @@ class EmbodiedDataTest(unittest.TestCase):
     def test_embodied_env_interface_abs(self):
         seed = 42
         rng = np.random.RandomState(seed)
-        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
-        base_policy.agent_id = AGENT_ID
-
-        motor_system_abs = MotorSystem(policy=base_policy)
         env = FakeEnvironmentAbs()
         env_interface_abs = EnvironmentInterface(
             env,
             rng=rng,
-            motor_system=motor_system_abs,
             seed=seed,
             experiment_mode=ExperimentMode.EVAL,
         )
@@ -294,22 +271,19 @@ class EmbodiedDataTest(unittest.TestCase):
     def test_embodied_env_interface_dist_states(self):
         seed = 42
         rng = np.random.RandomState(seed)
-        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
-        base_policy.agent_id = AGENT_ID
 
-        motor_system_dist = MotorSystem(policy=base_policy)
         env = FakeEnvironmentRel()
         env_interface_dist = EnvironmentInterface(
             env=env,
             rng=rng,
-            motor_system=motor_system_dist,
             seed=seed,
             experiment_mode=ExperimentMode.EVAL,
         )
 
-        i = 0
+        # Start at 1 because the initial call to reset consumes the zeroth state.
+        i = 1
         while True:
-            obs, _ = env_interface_dist.step(first=(i == 0))
+            obs, _ = env_interface_dist.step()
             self.assertTrue(
                 np.all(obs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
             )
@@ -323,22 +297,18 @@ class EmbodiedDataTest(unittest.TestCase):
         seed = 42
         rng = np.random.RandomState(seed)
 
-        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
-        base_policy.agent_id = AGENT_ID
-
-        motor_system_abs = MotorSystem(policy=base_policy)
         env = FakeEnvironmentAbs()
         env_interface_abs = EnvironmentInterface(
             env=env,
             rng=rng,
-            motor_system=motor_system_abs,
             seed=seed,
             experiment_mode=ExperimentMode.EVAL,
         )
 
-        i = 0
+        # Start at 1 because the initial call to reset consumes the zeroth state.
+        i = 1
         while True:
-            obs, _ = env_interface_abs.step(first=(i == 0))
+            obs, _ = env_interface_abs.step()
             self.assertTrue(
                 np.all(obs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
             )
@@ -377,11 +347,6 @@ class EmbodiedDataTest(unittest.TestCase):
     def test_omniglot_data_loader(self):
         rng = np.random.RandomState(42)
 
-        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_abs_fragment)
-        base_policy.agent_id = AGENT_ID
-
-        motor_system_abs = MotorSystem(policy=base_policy)
-
         alphabets = [0, 0, 0, 1, 1, 1]
         characters = [1, 2, 3, 1, 2, 3]
         versions = [1, 1, 1, 1, 1, 1]
@@ -391,7 +356,6 @@ class EmbodiedDataTest(unittest.TestCase):
         omniglot_data_loader_abs = OmniglotEnvironmentInterface(
             env=env,  # TODO: FakeOmniglotEnvironment is not an OmniglotEnvironment
             rng=rng,
-            motor_system=motor_system_abs,
             alphabets=alphabets,
             characters=characters,
             versions=versions,
@@ -413,17 +377,11 @@ class EmbodiedDataTest(unittest.TestCase):
 
         data_path = TEST_DATALOADER_PATH
 
-        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
-        base_policy.agent_id = AGENT_ID
-
-        motor_system_rel = MotorSystem(policy=base_policy, state=MotorSystemState())
-
         env_init_args = {"patch_size": patch_size, "data_path": data_path}
         env = SaccadeOnImageEnvironment(**env_init_args)
         env_interface_rel = SaccadeOnImageEnvironmentInterface(
             env=env,
             rng=rng,
-            motor_system=motor_system_rel,
             scenes=[0, 0],
             versions=[0, 1],
         )
@@ -467,15 +425,10 @@ class EmbodiedDataTest(unittest.TestCase):
 
         data_path = TEST_DATALOADER_PATH / "0_numenta_mug"
 
-        base_policy: BasePolicy = hydra.utils.instantiate(self.policy_cfg_fragment)
-        base_policy.agent_id = AGENT_ID
-
-        motor_system_rel = MotorSystem(policy=base_policy)
-
         env_init_args = {"patch_size": patch_size, "data_path": data_path}
         env = SaccadeOnImageFromStreamEnvironment(**env_init_args)
         env_interface_rel = SaccadeOnImageFromStreamEnvironmentInterface(
-            env=env, rng=rng, motor_system=motor_system_rel
+            env=env, rng=rng
         )
         env_interface_rel.pre_episode(rng)
         initial_state, _ = env_interface_rel.step()

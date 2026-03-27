@@ -155,7 +155,7 @@ class GraphLearningTest(BaseGraphTest):
             exp.pre_epoch()
             exp.run_episode()
 
-    def test_right_data_in_buffer(self):
+    def test_right_data_in_buffer(self) -> None:
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
@@ -166,8 +166,8 @@ class GraphLearningTest(BaseGraphTest):
             ctx = RuntimeContext(rng=exp.rng)
             actions: list[Action] = []
             while True:
-                observations, _ = exp.env_interface.step(actions, first=(step == 0))
-                actions = exp.model.step(ctx, observations)
+                observations, proprioceptive_state = exp.env_interface.step(actions)
+                actions = exp.model.step(ctx, observations, proprioceptive_state)
                 self.assertEqual(
                     step + 1,
                     len(exp.model.learning_modules[0].buffer),

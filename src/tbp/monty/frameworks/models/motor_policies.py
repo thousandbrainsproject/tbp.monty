@@ -81,18 +81,6 @@ class MotorPolicy(abc.ABC):
     """The abstract scaffold for motor policies."""
 
     @abc.abstractmethod
-    def get_agent_state(self, state: MotorSystemState) -> AgentState:
-        """Get agent state.
-
-        Args:
-            state: The current state of the motor system.
-
-        Returns:
-            Agent state.
-        """
-        pass
-
-    @abc.abstractmethod
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
         """Take a state dict as an argument and set state for policy."""
         pass
@@ -176,20 +164,6 @@ class BasePolicy(MotorPolicy):
     # Other required abstract methods, methods called by Monty or Environment Interface
     ###
 
-    def get_agent_state(self, state: MotorSystemState) -> AgentState:
-        """Get agent state.
-
-        Note:
-            Assumes we only have one agent.
-
-        Args:
-            state: The current state of the motor system.
-
-        Returns:
-            Agent state.
-        """
-        return state[self.agent_id]
-
     def state_dict(self):
         return {}
 
@@ -241,9 +215,6 @@ class PredefinedPolicy(MotorPolicy):
         actions = [self.action_list[self.episode_step % len(self.action_list)]]
         self.episode_step += 1
         return MotorPolicyResult(actions)
-
-    def get_agent_state(self, state: MotorSystemState) -> AgentState:
-        return state[self.agent_id]
 
     def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
         self.episode_step = 0
