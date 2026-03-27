@@ -244,7 +244,6 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             )
             return None, {}
 
-        # INITIALIZATION (first step — empty hypotheses)
         if hypotheses.evidence.shape[0] == 0:
             if graph_id not in self._initialized_channels:
                 self._initialized_channels[graph_id] = set()
@@ -259,7 +258,6 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 self._initialized_channels[graph_id].add(channel)
             return Hypotheses.concatenate(all_hyps), {}
 
-        # UPDATE (subsequent steps)
         # We only displace existing hypotheses since the newly sampled
         # hypotheses should not be affected by the displacement from the last
         # sensory input.
@@ -280,8 +278,8 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         # a fighting chance (otherwise they'd start at ~0 and be immediately
         # pruned).
         # TODO H: Test mean vs. median here.
-        hypotheses = self._initialize_new_channels(
-            hypotheses, features, input_channels_to_use, graph_id
+        displaced_hypotheses = self._initialize_new_channels(
+            displaced_hypotheses, features, input_channels_to_use, graph_id
         )
 
         telemetry = {"mlh_prediction_error": telemetry_data.mlh_prediction_error}
@@ -309,7 +307,10 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         Returns:
             Hypotheses with any new channel hypotheses appended.
         """
-        initialized = self._initialized_channels.get(graph_id, set())
+        if graph_id not in self._initialized_channels:
+            self._initialized_channels[graph_id] = set()
+
+        initialized = self._initialized_channels[graph_id]
         new_channels = [ch for ch in input_channels_to_use if ch not in initialized]
         if not new_channels:
             return hypotheses
