@@ -12,8 +12,6 @@ from __future__ import annotations
 import logging
 from typing import ClassVar
 
-from mock import PropertyMock
-
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
@@ -465,16 +463,6 @@ class MontyBase(Monty):
         agent_id = self.sm_to_agent_dict[sensor_module_id]
         agent_obs = observations[agent_id]
         return agent_obs[sensor_module_id]
-
-    def get_agent_state(self):
-        """Get state of agent (dict).
-
-        Returns:
-            State of the agent.
-        """
-        # TODO: This is left in place for now to keep PR scope limited, but should be
-        #       refactored in the future to simplify this access pattern.
-        return self.motor_system._policy.get_agent_state(self.motor_system._state)
 
     @property
     def is_motor_only_step(self):
