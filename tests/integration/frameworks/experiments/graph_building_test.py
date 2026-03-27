@@ -10,11 +10,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Sequence
 
 import hydra
 import pytest
 from omegaconf import DictConfig
 
+from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -79,7 +81,9 @@ class GraphBuildingTest(unittest.TestCase):
         """Code that gets executed after every test."""
         shutil.rmtree(self.output_dir)
 
-    def check_graph_formatting(self, graph, features_to_check):
+    def check_graph_formatting(
+        self, graph: GraphObjectModel, features_to_check: Sequence[str]
+    ):
         """Makes sure graph contains right feature at location information."""
         self.assertIsNot(
             graph.pos,

@@ -14,7 +14,7 @@ import datetime
 import logging
 import pprint
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Iterable, Literal
 
 import numpy as np
 import torch
@@ -23,6 +23,7 @@ from typing_extensions import Self
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.environment_utils.transforms import Transform
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterface,
     EnvironmentInterfacePerObject,
@@ -38,6 +39,7 @@ from tbp.monty.frameworks.loggers.exp_logger import (
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
+    Observations,
     SensorModule,
 )
 from tbp.monty.frameworks.models.monty_base import MontyBase
@@ -45,6 +47,13 @@ from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
+
+if TYPE_CHECKING:
+    from types import TracebackType
+
+    from tbp.monty.frameworks.environments.environment import (
+        SimulatedObjectEnvironment,
+    )
 
 __all__ = ["MontyExperiment"]
 
@@ -113,7 +122,7 @@ class MontyExperiment:
         logger.info(f"resetting RNG to seed {seed}")
         self.rng = np.random.RandomState(seed)
 
-    def setup_experiment(self, config: dict[str, Any]) -> None:
+    def setup_experiment(self, config: DictConfig) -> None:
         """Set up the basic elements of a Monty experiment and initialize counters.
 
         Args:
@@ -129,7 +138,11 @@ class MontyExperiment:
         self.init_monty_data_loggers(self.config["logging"])
         self.init_counters()
 
-    def init_model(self, monty_config, model_path=None):
+    def init_model(
+        self,
+        monty_config: DictConfig,
+        model_path: Path | None = None,
+    ):
         """Initialize the Monty model.
 
         Args:
@@ -208,10 +221,14 @@ class MontyExperiment:
 
         return model
 
-    def init_env(self, env_init_func, env_init_args):
+    def init_env(
+        self,
+        env_init_func: type[SimulatedObjectEnvironment],
+        env_init_args: DictConfig,
+    ) -> None:
         self.env = env_init_func(**env_init_args)
 
-    def load_environment_interfaces(self, config):
+    def load_environment_interfaces(self, config: DictConfig):
         # Initialize everything needed for environment interface
         environment = config["environment"]
         self.init_env(environment["env_init_func"], environment["env_init_args"])
@@ -219,15 +236,14 @@ class MontyExperiment:
         # Initialize train environment interface if needed
         if config["do_train"]:
             env_interface_class = config["train_env_interface_class"]
-            env_interface_args = dict(
+            env_interface_args = config["train_env_interface_args"]
+
+            self.train_env_interface = self.create_env_interface(
+                env_interface_class=env_interface_class,
+                env_interface_args=env_interface_args,
                 env=self.env,
                 transform=environment["transform"],
                 experiment_mode=ExperimentMode.TRAIN,
-                **config["train_env_interface_args"],
-            )
-
-            self.train_env_interface = self.create_env_interface(
-                env_interface_class, env_interface_args
             )
         else:
             self.train_env_interface = None
@@ -235,25 +251,34 @@ class MontyExperiment:
         # Initialize eval environment interfaces if needed
         if config["do_eval"]:
             env_interface_class = config["eval_env_interface_class"]
-            env_interface_args = dict(
+            env_interface_args = config["eval_env_interface_args"]
+
+            self.eval_env_interface = self.create_env_interface(
+                env_interface_class=env_interface_class,
+                env_interface_args=env_interface_args,
                 env=self.env,
                 transform=environment["transform"],
                 experiment_mode=ExperimentMode.EVAL,
-                **config["eval_env_interface_args"],
-            )
-
-            self.eval_env_interface = self.create_env_interface(
-                env_interface_class, env_interface_args
             )
         else:
             self.eval_env_interface = None
 
-    def create_env_interface(self, env_interface_class, env_interface_args):
+    def create_env_interface(
+        self,
+        env_interface_class: type[EnvironmentInterface],
+        env_interface_args: DictConfig,
+        env: SimulatedObjectEnvironment,
+        transform: Transform | Iterable[Transform] | None,
+        experiment_mode: ExperimentMode,
+    ):
         """Environment interface used to collect data from environment observations.
 
         Args:
             env_interface_class: The class of the environment interface.
             env_interface_args: The arguments for the environment interface.
+            env: Environment instance used by the interface.
+            transform: Transform(s) applied to observations.
+            experiment_mode: The mode which the interface is initialized for.
 
         Returns:
             The instantiated environment interface.
@@ -270,6 +295,9 @@ class MontyExperiment:
 
         env_interface = env_interface_class(
             **env_interface_args,
+            env=env,
+            transform=transform,
+            experiment_mode=experiment_mode,
             motor_system=self.model.motor_system,
             rng=self.rng,
             seed=self.config["seed"],
@@ -321,7 +349,7 @@ class MontyExperiment:
             args.update(target=target)
         return args
 
-    def init_loggers(self, logging_config: dict[str, Any]) -> None:
+    def init_loggers(self, logging_config: DictConfig) -> None:
         """Initialize logger with specified log level.
 
         Args:
@@ -365,7 +393,7 @@ class MontyExperiment:
         logger.info("logger initialized")
         logger.debug(pprint.pformat(self.config))
 
-    def init_monty_data_loggers(self, logging_config: dict[str, Any]) -> None:
+    def init_monty_data_loggers(self, logging_config: DictConfig) -> None:
         """Initialize Monty data loggers.
 
         Args:
@@ -462,11 +490,11 @@ class MontyExperiment:
     # Methods for running the experiment
     ####
 
-    def pre_step(self, _step, _observation):
+    def pre_step(self, step: int, observations: Observations):  # noqa: ARG002
         """Hook for anything you want to do before a step."""
         self.logger_handler.pre_step(self.logger_args)
 
-    def post_step(self, _step, _observation):
+    def post_step(self, step: int, observations: Observations):  # noqa: ARG002
         """Hook for anything you want to do after a step."""
         self.logger_handler.post_step(self.logger_args)
 
@@ -527,7 +555,7 @@ class MontyExperiment:
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-    def post_episode(self, steps):
+    def post_episode(self, steps: int):
         """Call post_episode on elements in experiment and increment counters.
 
         General order of post episode should be:
@@ -644,7 +672,7 @@ class MontyExperiment:
             time_stamp=datetime.datetime.now(),
         )
 
-    def save_state_dict(self, output_dir=None):
+    def save_state_dict(self, output_dir: Path | None = None):
         """Save state_dict of experiment and model."""
         model_state_dict = self.model.state_dict()
         exp_state_dict = self.state_dict()
@@ -668,7 +696,7 @@ class MontyExperiment:
             torch.save(exp_state_dict, output_dir / "exp_state_dict.pt")
             torch.save(self.config, output_dir / "config.pt")
 
-    def load_state_dict(self, load_dir):
+    def load_state_dict(self, load_dir: str | Path):
         """Load state_dict of previous experiment."""
         load_dir = Path(load_dir)
         model_state_dict = torch.load(load_dir / "model.pt")
@@ -705,7 +733,12 @@ class MontyExperiment:
         self.setup_experiment(self.config)
         return self
 
-    def __exit__(self, exc_type, exc_value, exc_traceback) -> Literal[False]:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> Literal[False]:
         """Context manager exit method.
 
         Ensure that we always close the environment if necessary.
