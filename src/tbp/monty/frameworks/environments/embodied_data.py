@@ -37,7 +37,6 @@ from tbp.monty.frameworks.environments.two_d_data import (
 )
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
-from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
@@ -58,15 +57,11 @@ logger = logging.getLogger(__name__)
 class EnvironmentInterface:
     """Provides an interface to an embodied environment.
 
-    The observations are based on the actions returned by the `motor_system`.
-
-    The first values returned by this iterator are the observations of the
-    environment's initial state, subsequent observations are returned after the action
-    returned by `motor_system` is applied.
+    Observations and proprioceptive state are returned from the environment
+    based on the actions taken.
 
     Attributes:
         env: An instance of a class that implements :class:`SimulatedObjectEnvironment`.
-        motor_system: :class:`MotorSystem`
         rng: Random number generator to use.
         seed: The configured random seed.
         experiment_mode: The experiment mode that this environment interface is used
@@ -75,32 +70,18 @@ class EnvironmentInterface:
             the environment.
 
     Note:
-        If the amount variable returned by motor_system is None, the amount used by
-        habitat will be the default for the actuator, e.g.
-        PanTiltZoomCamera.translation_step
-
-    Note:
         This one on its own won't work.
-
-    Raises:
-        TypeError: If `motor_system` is not an instance of `MotorSystem`.
     """
 
     def __init__(
         self,
         env: SimulatedObjectEnvironment,
-        motor_system: MotorSystem,
         rng,
         seed: int,
         experiment_mode: ExperimentMode,
         transform=None,
     ):
-        if not isinstance(motor_system, MotorSystem):
-            raise TypeError(
-                f"motor_system must be an instance of MotorSystem, got {motor_system}"
-            )
         self.env = env
-        self.motor_system = motor_system
         self.rng = rng
         self.seed = seed
         self.transform = transform
@@ -435,7 +416,6 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         characters,
         versions,
         env: OmniglotEnvironment,
-        motor_system: MotorSystem,
         rng,
         transform=None,
         parent_to_child_mapping=None,
@@ -450,7 +430,6 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
             characters: List of characters.
             versions: List of versions.
             env: An instance of a class that implements :class:`OmniglotEnvironment`.
-            motor_system: The motor system.
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned
                  by the environment.
@@ -460,17 +439,9 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
                 prior to each episode.
             *args: Unused?
             **kwargs: Unused?
-
-        Raises:
-            TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
-        if not isinstance(motor_system, MotorSystem):
-            raise TypeError(
-                f"motor_system must be an instance of MotorSystem, got {motor_system}"
-            )
         self.env = env
         self.rng = rng
-        self.motor_system = motor_system
         self.transform = transform
         self.reset(self.rng)
 
@@ -536,7 +507,6 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         scenes,
         versions,
         env: SaccadeOnImageEnvironment,
-        motor_system: MotorSystem,
         rng,
         transform=None,
         parent_to_child_mapping=None,
@@ -551,7 +521,6 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
             versions: List of versions
             env: An instance of a class that implements
                 :class:`SaccadeOnImageEnvironment`.
-            motor_system: The motor system.
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
                 the environment.
@@ -561,17 +530,9 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
                 prior to each episode.
             *args: Unused?
             **kwargs: Unused?
-
-        Raises:
-            TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
-        if not isinstance(motor_system, MotorSystem):
-            raise TypeError(
-                f"motor_system must be an instance of MotorSystem, got {motor_system}"
-            )
         self.env = env
         self.rng = rng
-        self.motor_system = motor_system
         self.transform = transform
         self.reset(self.rng)
 
@@ -638,7 +599,6 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
     def __init__(
         self,
         env: SaccadeOnImageFromStreamEnvironment,
-        motor_system: MotorSystem,
         rng,
         transform=None,
         positioning_procedures: Sequence[PositioningProcedureFactory] | None = None,
@@ -650,7 +610,6 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         Args:
             env: An instance of a class that implements
                 :class:`SaccadeOnImageFromStreamEnvironment`.
-            motor_system: The motor system.
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
                 the environment.
@@ -658,17 +617,9 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
                 prior to each episode.
             *args: Unused?
             **kwargs: Unused?
-
-        Raises:
-            TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
-        if not isinstance(motor_system, MotorSystem):
-            raise TypeError(
-                f"motor_system must be an instance of MotorSystem, got {motor_system}"
-            )
         self.env = env
         self.rng = rng
-        self.motor_system = motor_system
         self.transform = transform
         self.reset(self.rng)
 
