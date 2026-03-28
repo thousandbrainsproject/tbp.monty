@@ -359,9 +359,6 @@ class MontyBase(Monty):
                         f"finished evaluating after {self.matching_steps} steps"
                     )
 
-    def _post_step(self):
-        pass
-
     ###
     # Methods (other than step) that interact with the experiment
     ###
