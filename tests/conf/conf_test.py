@@ -7,7 +7,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
+from typing import Any
+
 import pytest
+import yaml
 
 from tests import HYDRA_ROOT
 
@@ -33,19 +38,73 @@ TUTORIALS = [x.stem for x in TUTORIALS_DIR.glob("*.yaml")]
 TUTORIAL_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots" / "tutorial"
 
 
+def _config_mismatches(
+    snapshot: dict[str, Any] | list[Any] | Any,
+    current: dict[str, Any] | list[Any] | Any,
+    path: str = "",
+) -> list[str]:
+    """Compare two configs recursively, returning dotted-path mismatch descriptions.
+
+    Walks both structures in tandem, collecting human-readable descriptions
+    of every difference found. Dict comparison is key-order invariant;
+    list comparison is order-sensitive.
+
+    Args:
+        snapshot: The snapshot (expected) configuration value.
+        current: The current (actual) configuration value.
+        path: The dotted path to the current position in the config tree,
+            used for generating readable mismatch descriptions.
+
+    Returns:
+        A list of mismatch description strings. Empty if the configs match.
+    """
+    mismatches = []
+    if type(snapshot) is not type(current):
+        mismatches.append(
+            f"{path}: type mismatch: snapshot={type(snapshot).__name__}({snapshot!r}) "
+            f"vs current={type(current).__name__}({current!r})"
+        )
+        return mismatches
+    if isinstance(snapshot, dict):
+        snapshot_keys = set(snapshot)
+        current_keys = set(current)
+        for k in snapshot_keys - current_keys:
+            mismatches.append(f"{path}.{k}: missing in current config")
+        for k in current_keys - snapshot_keys:
+            mismatches.append(f"{path}.{k}: missing in snapshot")
+        for k in snapshot_keys & current_keys:
+            mismatches.extend(
+                _config_mismatches(snapshot[k], current[k], f"{path}.{k}")
+            )
+        return mismatches
+    if isinstance(snapshot, list):
+        if len(snapshot) != len(current):
+            mismatches.append(
+                f"{path}: list length mismatch: "
+                f"snapshot={len(snapshot)} vs current={len(current)}"
+            )
+            return mismatches
+        for i, (snap_item, curr_item) in enumerate(zip(snapshot, current)):
+            mismatches.extend(_config_mismatches(snap_item, curr_item, f"{path}[{i}]"))
+        return mismatches
+    if snapshot != current:
+        mismatches.append(f"{path}: snapshot={snapshot!r} vs current={current!r}")
+    return mismatches
+
+
 def _assert_config_matches_snapshot(
     current_config_yaml: str, snapshot_config_yaml: str, name: str
 ):
-    try:
-        assert snapshot_config_yaml == current_config_yaml
-    except AssertionError as e:
-        # TODO: Use e.add_note() once we get to Python 3.11 or higher
+    snapshot = yaml.safe_load(snapshot_config_yaml)
+    current = yaml.safe_load(current_config_yaml)
+    if snapshot != current:
+        details = "\n".join(_config_mismatches(snapshot, current))
         raise AssertionError(
-            f"\nThe {name} configuration does not match the stored "
-            "snapshot.\nPlease see the direct cause exception above for details about "
-            "the mismatch.\nFor more information on how to update snapshots"
+            f"\nThe {name} configuration does not match the stored snapshot.\n"
+            f"Mismatches:\n{details}\n"
+            "For more information on how to update snapshots"
             ", please see the tests/conf/README.md file."
-        ) from e
+        )
 
 
 class ExperimentTest(ParametrizedTestCase):
