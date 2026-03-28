@@ -28,3 +28,4 @@ experiment:
       - learning_module_0
     logging:
       run_name: supervised_pre_training_flat_objects_wo_logos
+      output_dir: ${constants.compositional_pretrained_dir}

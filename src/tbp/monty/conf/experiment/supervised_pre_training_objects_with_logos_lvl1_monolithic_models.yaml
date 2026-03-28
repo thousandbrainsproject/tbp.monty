@@ -21,9 +21,10 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12/supervised_pre_training_logos_after_flat_objects/pretrained/}
+    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_logos_after_flat_objects/pretrained/
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: all
     logging:
       run_name: supervised_pre_training_objects_with_logos_lvl1_monolithic_models
+      output_dir: ${constants.compositional_pretrained_dir}
