@@ -130,7 +130,7 @@ experiment:
           - -0.1
         scene_id: null
         seed: 42
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/compositional_objects}
         agents:
           agent_args:
             agent_id: ${monty.agent_id:agent_id_0}
@@ -245,7 +245,7 @@ experiment:
       python_log_level: INFO
       python_log_to_file: true
       python_log_to_stderr: true
-      output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
+      output_dir: ${constants.compositional_pretrained_dir}
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
@@ -257,7 +257,7 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12/supervised_pre_training_curved_objects_after_flat_and_logo/pretrained/}
+    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_curved_objects_after_flat_and_logo/pretrained/
     min_lms_match: 2
     seed: 42
     supervised_lm_ids:
@@ -283,6 +283,7 @@ constants:
   - principal_curvatures_log
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
+  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v2}
   rotations_all_count: 14
   rotations_all:
   - - 0

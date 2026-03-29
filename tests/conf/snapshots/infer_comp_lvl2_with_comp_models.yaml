@@ -145,7 +145,7 @@ experiment:
           - -0.1
         scene_id: null
         seed: 42
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/compositional_objects}
         agents:
           agent_args:
             agent_id: ${monty.agent_id:agent_id_0}
@@ -352,7 +352,7 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: ${constants.rotations_all_count}
-    model_name_or_path: ${constants.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl2_comp_models/pretrained/
+    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_objects_with_logos_lvl2_comp_models/pretrained/
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
@@ -378,6 +378,7 @@ constants:
   - principal_curvatures_log
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
+  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v2}
   rotations_all_count: 14
   rotations_all:
   - - 0
