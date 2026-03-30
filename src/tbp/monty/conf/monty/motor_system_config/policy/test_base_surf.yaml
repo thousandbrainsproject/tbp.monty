@@ -1,9 +1,0 @@
-_target_: tbp.monty.frameworks.models.motor_policies.BasePolicy
-action_sampler:
-  _target_: tbp.monty.frameworks.actions.action_samplers.UniformlyDistributedSampler
-  actions:
-  - ${monty.class:tbp.monty.frameworks.actions.actions.MoveForward}
-  - ${monty.class:tbp.monty.frameworks.actions.actions.MoveTangentially}
-  - ${monty.class:tbp.monty.frameworks.actions.actions.OrientHorizontal}
-  - ${monty.class:tbp.monty.frameworks.actions.actions.OrientVertical}
-agent_id: ${monty.agent_id:agent_id_0}

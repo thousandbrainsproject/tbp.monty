@@ -268,15 +268,11 @@ class MontyExperiment:
                 "env_interface_class must be EnvironmentInterface (for now)"
             )
 
-        env_interface = env_interface_class(
+        return env_interface_class(
             **env_interface_args,
-            motor_system=self.model.motor_system,
             rng=self.rng,
             seed=self.config["seed"],
         )
-
-        assert env_interface.motor_system is self.model.motor_system
-        return env_interface
 
     def init_counters(self):
         # Initialize time stamp variables for logging
@@ -477,11 +473,11 @@ class MontyExperiment:
         ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []
         while True:
-            observations, _ = self.env_interface.step(actions, first=(step == 0))
+            observations, proprioceptive_state = self.env_interface.step(actions)
 
             self.pre_step(step, observations)
             try:
-                actions = self.model.step(ctx, observations)
+                actions = self.model.step(ctx, observations, proprioceptive_state)
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used

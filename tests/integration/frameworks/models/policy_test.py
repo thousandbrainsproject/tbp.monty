@@ -256,8 +256,10 @@ class PolicyTest(unittest.TestCase):
 
             # Get a first step to allow the surface agent to touch the object
             ctx = RuntimeContext(rng=exp.rng)
-            observation_pre_touch, _ = exp.env_interface.step(first=True)
-            actions: list[Action] = exp.model.step(ctx, observation_pre_touch)
+            observation_pre_touch, proprioceptive_state = exp.env_interface.step([])
+            actions: list[Action] = exp.model.step(
+                ctx, observation_pre_touch, proprioceptive_state
+            )
 
             # Check initial view post touch-attempt
             observation_post_touch, _ = exp.env_interface.step(actions)
@@ -312,8 +314,8 @@ class PolicyTest(unittest.TestCase):
             ctx = RuntimeContext(rng=exp.rng)
             actions: list[Action] = []
             while True:
-                observations, _ = exp.env_interface.step(actions, first=(step == 0))
-                actions = exp.model.step(ctx, observations)
+                observations, proprioceptive_state = exp.env_interface.step(actions)
+                actions = exp.model.step(ctx, observations, proprioceptive_state)
 
                 last_action = None
                 action_sequence = exp.model.motor_system.action_sequence
@@ -432,8 +434,8 @@ class PolicyTest(unittest.TestCase):
             ctx = RuntimeContext(rng=exp.rng)
             actions: list[Action] = []
             while True:
-                observations, _ = exp.env_interface.step(actions, first=(step == 0))
-                actions = exp.model.step(ctx, observations)
+                observations, proprioceptive_state = exp.env_interface.step(actions)
+                actions = exp.model.step(ctx, observations, proprioceptive_state)
 
                 #  Step | Action           | Motor-only? | Processed? | Source
                 # ------|------------------|-------------|------------|-------------
@@ -575,8 +577,8 @@ class PolicyTest(unittest.TestCase):
             ctx = RuntimeContext(rng=exp.rng)
             actions: list[Action] = []
             while True:
-                observations, _ = exp.env_interface.step(actions, first=(step == 0))
-                actions = exp.model.step(ctx, observations)
+                observations, proprioceptive_state = exp.env_interface.step(actions)
+                actions = exp.model.step(ctx, observations, proprioceptive_state)
                 exp.post_step(step, observations)
 
                 if step == 3:  # Surface agent should have re-oriented
@@ -593,7 +595,7 @@ class PolicyTest(unittest.TestCase):
             # current orientation
             agent_direction = np.array(
                 hab_utils.quat_rotate_vector(
-                    exp.model.motor_system._state[AgentID("agent_id_0")].rotation,
+                    proprioceptive_state[AgentID("agent_id_0")].rotation,
                     [
                         0,
                         0,
@@ -625,7 +627,7 @@ class PolicyTest(unittest.TestCase):
         motor_system = hydra.utils.instantiate(self.motor_system_cfg_fragment)
         policy: SurfacePolicyCurvatureInformed = motor_system._policy
         policy.max_pc_bias_steps = 2
-        policy.pre_episode()
+        policy.pre_episode(motor_system)
 
         rng = np.random.RandomState(123)
         ctx = RuntimeContext(rng)
@@ -748,7 +750,7 @@ class PolicyTest(unittest.TestCase):
 
         initial_min_general_steps = 1
         policy.min_general_steps = initial_min_general_steps
-        policy.pre_episode()
+        policy.pre_episode(motor_system)
 
         rng = np.random.RandomState(123)
         ctx = RuntimeContext(rng)
