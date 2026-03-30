@@ -23,9 +23,9 @@ class SensorState:
     """The proprioceptive state of a sensor."""
 
     position: VectorXYZ
-    """The sensor's position."""
+    """The sensor's position in agent coordinates."""
     rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
-    """The sensor's rotation."""
+    """The sensor's rotation in agent coordinates."""
 
 
 @dataclass
@@ -39,9 +39,9 @@ class AgentState:
     the agent's position and rotation.
     """
     position: VectorXYZ
-    """The agent's position."""
+    """The agent's position in world coordinates."""
     rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
-    """The agent's rotation."""
+    """The agent's rotation in world coordinates."""
 
 
 class ProprioceptiveState(Dict[AgentID, AgentState]):

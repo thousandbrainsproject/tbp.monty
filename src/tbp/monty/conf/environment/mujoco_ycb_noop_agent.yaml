@@ -1,0 +1,33 @@
+# @package experiment.config.environment
+
+env_init_args:
+  # TODO: What is this used for? Do we need it?
+  objects:
+    - name: coneSolid
+      position:
+        - 0.0
+        - 1.5
+        - -0.1
+  scene_id: null
+  seed: 42
+  data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/ycb}
+  agents:
+    agent_args:
+      agent_id: ${monty.agent_id:agent_id_0}
+      sensor_configs:
+        patch:
+          position: [0.0, 0.0, 0.0]
+          rotation: [1.0, 0.0, 0.0, 0.0]
+          resolution: [64, 64]
+          zoom: 10.0
+        view_finder:
+          position: [0.0, 0.0, 0.0]
+          rotation: [1.0, 0.0, 0.0, 0.0]
+          resolution: [64, 64]
+          zoom: 1.0
+      position:
+        - 0.0
+        - 1.5
+        - 0.2
+    agent_type: ${monty.class:tbp.monty.simulators.mujoco.NoopAgent}
+env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoEnvironment}

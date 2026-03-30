@@ -16,3 +16,6 @@ from typing import Tuple
 VectorXYZ = Tuple[float, float, float]
 EulerAnglesXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]
+
+IDENTITY_QUATERNION: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0)
+ZERO_VECTOR: VectorXYZ = (0.0, 0.0, 0.0)

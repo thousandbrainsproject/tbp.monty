@@ -1,0 +1,78 @@
+# Copyright 2026 Thousand Brains Project
+#
+# Copyright may exist in Contributors' modifications
+# and/or contributions to the work.
+#
+# Use of this source code is governed by the MIT
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Sequence
+
+import quaternion as qt
+
+from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.agents import AgentConfig
+from tbp.monty.frameworks.environments.environment import (
+    ObjectID,
+    SemanticID,
+    SimulatedObjectEnvironment,
+)
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.math import ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
+from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
+class MuJoCoEnvironment(SimulatedObjectEnvironment):
+    def __init__(
+        self,
+        agents: AgentConfig,
+        data_path: str | Path | None,
+        # TODO: remove after adding remaining arguments
+        **kwargs,
+    ):
+        # TODO: Change the configurations to support multiple agents
+        agent_configs = [agents]
+        self._sim = MuJoCoSimulator(agent_configs, data_path, **kwargs)
+
+    def step(
+        self,
+        # TODO: rename to actions?
+        action: Sequence[Action],
+    ) -> tuple[Observations, ProprioceptiveState]:
+        return self._sim.step(action)
+
+    def close(self) -> None:
+        return self._sim.close()
+
+    def add_object(
+        self,
+        name: str,
+        position: VectorXYZ = ZERO_VECTOR,
+        rotation: QuaternionWXYZ = ZERO_VECTOR,
+        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        semantic_id: SemanticID | None = None,
+        primary_target_object: ObjectID | None = None,
+    ) -> ObjectID:
+        # TODO: move this up the call chain since this method's argument types are lying
+        if isinstance(rotation, qt.quaternion):
+            rotation = (
+                rotation.w,
+                rotation.x,
+                rotation.y,
+                rotation.z,
+            )
+        return self._sim.add_object(
+            name, position, rotation, scale, semantic_id, primary_target_object
+        ).object_id
+
+    def remove_all_objects(self) -> None:
+        return self._sim.remove_all_objects()
+
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
+        return self._sim.reset()

@@ -16,21 +16,24 @@ import pytest
 from mujoco import MjSpec
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.simulators.mujoco import PRIMITIVE_OBJECT_TYPES
 from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
 
 # Parameters for add primitive object tests
-SHAPES = ["box", "capsule", "cylinder", "ellipsoid", "sphere"]
-SHAPE_PARAMS = [param(s, id=s) for s in SHAPES]
+SHAPE_PARAMS = [param(s, id=s) for s in PRIMITIVE_OBJECT_TYPES]
+
+AGENT_ID = AgentID("agent_id_0")
 
 
 class MuJoCoSimulatorTestCase(ParametrizedTestCase):
     """Tests for the MuJoCo simulator."""
 
     def test_initial_scene_is_empty(self) -> None:
-        sim = MuJoCoSimulator()
+        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
         self.assert_counts_equal(sim, 0)
 
     @parametrize(
@@ -38,7 +41,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         SHAPE_PARAMS,
     )
     def test_add_primitive_object(self, shape: str) -> None:
-        sim = MuJoCoSimulator()
+        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
         sim.add_object(shape)
 
         self.assert_counts_equal(sim, 1)
@@ -61,7 +64,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         scene. So, several objects should be numbered in the order they were added.
         """
         shapes = ["box", "box", "box"]
-        sim = MuJoCoSimulator()
+        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
         for shape in shapes:
             sim.add_object(shape)
 
@@ -74,7 +77,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
             sim.model.geom(f"{shape}_{i}")
 
     def test_remove_all_objects(self) -> None:
-        sim = MuJoCoSimulator()
+        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
         sim.add_object("box")
         sim.add_object("capsule")
 
@@ -83,7 +86,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         self.assert_counts_equal(sim, 0)
 
     def test_primitive_object_positioning(self) -> None:
-        sim = MuJoCoSimulator()
+        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
         sim.add_object("box", position=(1.0, 1.0, 2.0))
 
         assert np.allclose(sim.model.geom("box_0").pos, np.array([1.0, 1.0, 2.0]))
@@ -91,7 +94,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         assert geom_elems[0].attrib["pos"] == "1 1 2"
 
     def test_primitive_box_scaling(self) -> None:
-        sim = MuJoCoSimulator()
+        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
         sim.add_object("box", scale=(3.0, 3.0, 3.0))
 
         assert np.allclose(sim.model.geom("box_0").size, np.array([3.0, 3.0, 3.0]))
@@ -100,7 +103,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
 
     def test_primitive_sphere_scaling(self) -> None:
         """Test that scaling works correctly on a sphere."""
-        sim = MuJoCoSimulator()
+        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
         sim.add_object("sphere", scale=(3.0, 3.0, 3.0))
 
         assert np.allclose(sim.model.geom("sphere_0").size, np.array([3.0, 3.0, 3.0]))
