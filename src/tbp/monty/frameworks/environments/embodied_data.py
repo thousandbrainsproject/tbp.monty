@@ -45,7 +45,6 @@ from tbp.monty.frameworks.models.motor_system_state import (
 __all__ = [
     "EnvironmentInterface",
     "EnvironmentInterfacePerObject",
-    "InformedEnvironmentInterface",
     "OmniglotEnvironmentInterface",
     "SaccadeOnImageEnvironmentInterface",
     "SaccadeOnImageFromStreamEnvironmentInterface",
@@ -108,22 +107,6 @@ class EnvironmentInterface:
         return observations
 
     def step(
-        self,
-        actions: Sequence[Action] | None = None,
-    ) -> tuple[Observations, ProprioceptiveState]:
-        """Request actions from the motor system and step the environment.
-
-        Args:
-            ctx: The runtime context.
-            actions: The actions to take in the environment.
-
-        Returns:
-            The observations and proprioceptive state.
-        """
-        actions = [] if actions is None else actions
-        return self._step(actions)
-
-    def _step(
         self, actions: Sequence[Action]
     ) -> tuple[Observations, ProprioceptiveState]:
         """Take actions in the environment and apply the transform to the observations.
@@ -246,12 +229,12 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         success = False
         for factory in self._positioning_procedures:
             positioning_procedure = factory.create(target_semantic_id)
-            observations, proprioceptive_state = self._step([])
+            observations, proprioceptive_state = self.step([])
             result = positioning_procedure(
                 observations, MotorSystemState(proprioceptive_state)
             )
             while not result.terminated and not result.truncated:
-                observations, proprioceptive_state = self._step(result.actions)
+                observations, proprioceptive_state = self.step(result.actions)
                 result = positioning_procedure(
                     observations, MotorSystemState(proprioceptive_state)
                 )
@@ -401,10 +384,6 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
                 **new_init_params,
                 primary_target_object=primary_target_obj,
             )
-
-
-class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
-    """TODO: Remove empty shell."""
 
 
 class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):

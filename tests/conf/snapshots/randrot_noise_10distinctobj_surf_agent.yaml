@@ -186,7 +186,7 @@ experiment:
       - banana
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
-    eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+    eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
     logging:
       monty_log_level: BASIC
       monty_handlers:

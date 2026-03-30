@@ -95,7 +95,7 @@ class BaseConfigTest(unittest.TestCase):
             count = 0
             ctx = RuntimeContext(rng=exp.rng)
             while True:
-                observations, _ = exp.train_env_interface.step()
+                observations, _ = exp.train_env_interface.step([])
                 agent_keys = set(observations.keys())
                 sensor_keys = []
                 for agent in agent_keys:
