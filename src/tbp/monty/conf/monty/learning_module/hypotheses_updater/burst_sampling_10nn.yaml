@@ -1,0 +1,3 @@
+hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
+hypotheses_updater_args:
+  max_nneighbors: 10

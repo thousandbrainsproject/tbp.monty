@@ -1,0 +1,8 @@
+# @package experiment.config.monty_config.motor_system_config.policy.action_sampler
+
+_target_: tbp.monty.frameworks.actions.action_samplers.ConstantSampler
+actions:
+- ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}
+- ${monty.class:tbp.monty.frameworks.actions.actions.LookDown}
+- ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
+- ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}

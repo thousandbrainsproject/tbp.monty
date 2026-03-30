@@ -38,17 +38,17 @@ class NoResetEvidenceLMTest(BaseGraphTest):
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.pretraining_cfg = hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    "test=no_reset_evidence_lm/pretraining",
-                    f"test.config.logging.output_dir={self.output_dir}",
+                    "experiment=test/no_reset_evidence_lm/pretraining",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
                 ],
             )
             self.unsupervised_cfg = hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    "test=no_reset_evidence_lm/unsupervised",
-                    f"test.config.logging.output_dir={self.output_dir}",
+                    "experiment=test/no_reset_evidence_lm/unsupervised",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
                 ],
             )
 
@@ -82,11 +82,11 @@ class NoResetEvidenceLMTest(BaseGraphTest):
         unsupervised Inference Experiment. Disabling the reset logic does not support
         training at the moment.
         """
-        train_exp = hydra.utils.instantiate(self.pretraining_cfg.test)
+        train_exp = hydra.utils.instantiate(self.pretraining_cfg.experiment)
         with train_exp:
             train_exp.run()
 
-        eval_exp = hydra.utils.instantiate(self.unsupervised_cfg.test)
+        eval_exp = hydra.utils.instantiate(self.unsupervised_cfg.experiment)
         with eval_exp:
             # load the eval experiment with the pretrained models
             pretrained_models = train_exp.model.learning_modules[0].state_dict()

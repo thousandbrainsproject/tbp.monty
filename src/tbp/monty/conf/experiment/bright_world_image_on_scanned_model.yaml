@@ -1,10 +1,29 @@
-defaults:
-  - world_image_on_scanned_model
-  - config/environment/clear_env_interface_config@config
-  - config/environment/world_image@config.env_interface_config
-  - config/environment/init_args/clear_env_init_args@config.env_interface_config
-  - config/environment/init_args/monty_world_bright_scenes@config.env_interface_config.env_init_args
+# @package _global_
 
-config:
-  logging:
-    run_name: bright_world_image_on_scanned_model
+defaults:
+  - /monty: graph_exp1000_emin_t3_tot2500
+  - /monty/motor_system_config: informed_20
+  - /monty/learning_module: evidence_1lm_nn10_dod003_dts02
+  - /monty/sensor_module: camera_dist
+  - /monty/connectivity: 1lm_1sm
+  - /environment: two_d_data_bright
+  - /env_interface: eval_worldimages
+  - /env_interface/transform: none
+  - /logging: basic_warning_wandb_evidence_eval_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    n_eval_epochs: 1
+    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
+    logging:
+      run_name: bright_world_image_on_scanned_model

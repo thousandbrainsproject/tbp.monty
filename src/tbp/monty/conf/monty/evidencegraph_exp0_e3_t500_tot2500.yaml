@@ -1,0 +1,8 @@
+# @package experiment.config.monty_config
+
+monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
+monty_args:
+  num_exploratory_steps: 0
+  min_eval_steps: 3
+  min_train_steps: 500
+  max_total_steps: 2500
