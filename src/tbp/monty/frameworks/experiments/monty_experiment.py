@@ -18,7 +18,7 @@ from typing import Any, Literal
 
 import numpy as np
 import torch
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from typing_extensions import Self
 
 from tbp.monty.context import RuntimeContext
@@ -219,11 +219,14 @@ class MontyExperiment:
         # Initialize train environment interface if needed
         if config["do_train"]:
             env_interface_class = config["train_env_interface_class"]
+            train_env_interface_args = config["train_env_interface_args"]
+            if isinstance(train_env_interface_args, DictConfig):
+                train_env_interface_args = OmegaConf.to_object(train_env_interface_args)
             env_interface_args = dict(
                 env=self.env,
                 transform=environment["transform"],
                 experiment_mode=ExperimentMode.TRAIN,
-                **config["train_env_interface_args"],
+                **train_env_interface_args,
             )
 
             self.train_env_interface = self.create_env_interface(
@@ -235,11 +238,14 @@ class MontyExperiment:
         # Initialize eval environment interfaces if needed
         if config["do_eval"]:
             env_interface_class = config["eval_env_interface_class"]
+            eval_env_interface_args = config["eval_env_interface_args"]
+            if isinstance(eval_env_interface_args, DictConfig):
+                eval_env_interface_args = OmegaConf.to_object(eval_env_interface_args)
             env_interface_args = dict(
                 env=self.env,
                 transform=environment["transform"],
                 experiment_mode=ExperimentMode.EVAL,
-                **config["eval_env_interface_args"],
+                **eval_env_interface_args,
             )
 
             self.eval_env_interface = self.create_env_interface(
