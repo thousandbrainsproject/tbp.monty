@@ -514,6 +514,11 @@ jobs:
         with:
           lfs: true
           path: tbp.monty
+      - name: Install dependencies
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          sudo apt update -y
+          sudo apt install -y --no-install-recommends xvfb libegl1-mesa-dev
       - name: Install uv
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: astral-sh/setup-uv@v5
@@ -534,8 +539,9 @@ jobs:
         working-directory: tbp.monty
         continue-on-error: true
         run: |
+          export MUJOCO_GL=osmesa
           mkdir -p test_results/pytest
-          uv run pytest --cov --cov-context=test --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
+          xvfb uv run pytest --cov --cov-context=test --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v4
