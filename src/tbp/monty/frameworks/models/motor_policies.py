@@ -117,7 +117,7 @@ class MotorPolicy(abc.ABC):
         self,
         ctx: RuntimeContext,
         observations: Observations,
-        state: MotorSystemState | None = None,
+        state: MotorSystemState,
     ) -> MotorPolicyResult:
         """Invoke motor policy to determine the next actions to take.
 
@@ -153,7 +153,7 @@ class BasePolicy(MotorPolicy):
         self,
         ctx: RuntimeContext,
         observations: Observations,  # noqa: ARG002
-        state: MotorSystemState | None = None,  # noqa: ARG002
+        state: MotorSystemState,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return a motor policy result containing a random action.
 
@@ -223,7 +223,7 @@ class PredefinedPolicy(MotorPolicy):
         self,
         ctx: RuntimeContext,  # noqa: ARG002
         observations: Observations,  # noqa: ARG002
-        state: MotorSystemState | None = None,  # noqa: ARG002
+        state: MotorSystemState,  # noqa: ARG002
     ) -> MotorPolicyResult:
         actions = [self.action_list[self.episode_step % len(self.action_list)]]
         self.episode_step += 1
@@ -356,7 +356,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self,
         ctx: RuntimeContext,
         observations: Observations,
-        state: MotorSystemState | None = None,
+        state: MotorSystemState,
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
 
@@ -667,7 +667,7 @@ class NaiveScanPolicy(InformedPolicy):
         self,
         ctx: RuntimeContext,  # noqa: ARG002
         observations: Observations,  # noqa: ARG002
-        state: MotorSystemState | None = None,  # noqa: ARG002
+        state: MotorSystemState,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions in the spiral.
 
@@ -910,7 +910,7 @@ class SurfacePolicy(InformedPolicy):
         self,
         ctx: RuntimeContext,
         observations: Observations,
-        state: MotorSystemState | None = None,
+        state: MotorSystemState,
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
 
