@@ -19,6 +19,7 @@ sensor_module_configs:
         - object_coverage
         - hsv
         - principal_curvatures_log
+        - mock_obs
       delta_thresholds:
         on_object: 0
         n_steps: 20

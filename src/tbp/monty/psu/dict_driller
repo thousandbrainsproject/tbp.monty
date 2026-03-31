@@ -1,0 +1,44 @@
+import numpy as np
+
+def print_dict_structure(d, indent=0):
+    indent_str = "  " * indent
+
+    if isinstance(d, dict):
+        for key, value in d.items():
+            print(f"{indent_str}{key}:", end=" ")
+
+            # If nested dict → recurse
+            if isinstance(value, dict):
+                print("(dict)")
+                print_dict_structure(value, indent + 1)
+
+            # If list/tuple
+            elif isinstance(value, (list, tuple)):
+                print(f"({type(value).__name__}, len={len(value)})")
+                
+                # Check if it's a 2D structure
+                if len(value) > 0 and isinstance(value[0], (list, tuple)):
+                    flat = [item for sub in value for item in sub]
+                    print(f"{indent_str}  first 10 values: {flat[:10]}")
+                else:
+                    print(f"{indent_str}  first 10 values: {value[:10]}")
+
+            # If numpy array
+            elif isinstance(value, np.ndarray):
+                print(f"(ndarray, shape={value.shape})")
+                
+                if value.ndim == 2:
+                    print(f"{indent_str}  first 10 values: {value.flatten()[:10]}")
+                else:
+                    print(f"{indent_str}  first 10 values: {value[:10]}")
+
+            # Everything else
+            else:
+                try:
+                    length = len(value)
+                except:
+                    length = "N/A"
+                print(f"({type(value).__name__}, len={length})")
+
+    else:
+        print(f"{indent_str}(Not a dict)")

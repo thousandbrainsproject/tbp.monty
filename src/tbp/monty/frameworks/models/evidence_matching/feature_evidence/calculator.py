@@ -55,6 +55,9 @@ class DefaultFeatureEvidenceCalculator:
             The feature evidence for all nodes.
         """
         # generate the lists of features, tolerances, and whether features are circular
+
+        # LBP DISTANCE METRIC WILL PROBABLY GO HERE
+        #print(f"\n\n\nCalculating feature evidence for channel {input_channel} with features {channel_query_features}")
         shape_to_use = channel_feature_array.shape[1]
         tolerance_list = np.zeros(shape_to_use) * np.nan
         feature_weight_list = np.zeros(shape_to_use) * np.nan
@@ -100,4 +103,7 @@ class DefaultFeatureEvidenceCalculator:
         feature_evidence = np.clip(tolerance_list - feature_differences, 0, np.inf)
         # normalize evidence to be in [0, 1]
         feature_evidence = feature_evidence / tolerance_list
+        graph_evidence = np.average(feature_evidence, weights=feature_weight_list, axis=1)
+        #print(f"Evidence values of each node: {graph_evidence}")
+        print(f"Total number of nodes: {len(graph_evidence)}\n\n\n")
         return np.average(feature_evidence, weights=feature_weight_list, axis=1)

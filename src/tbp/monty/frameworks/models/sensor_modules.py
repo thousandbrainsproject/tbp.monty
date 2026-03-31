@@ -143,6 +143,7 @@ class ObservationProcessor:
         "mean_curvature_sc",
         "curvature_for_TM",
         "coords_for_TM",
+        "mock_obs",
     ]
 
     def __init__(
@@ -194,6 +195,7 @@ class ObservationProcessor:
         sensor_frame_data = observation["sensor_frame_data"]
         world_camera = observation["world_camera"]
         rgba_feat = observation["rgba"]
+        mock_obs = [[.1, .2, .3], [.4, .5, .6], [.7, .8, .9]]
         depth_feat = (
             observation["depth"]
             .reshape(observation["depth"].size, 1)
@@ -317,6 +319,9 @@ class ObservationProcessor:
             rgba = rgba_feat[center_row_col, center_row_col]
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
+        if "mock_obs" in self._features:
+            mock_obs = np.array([[.1, .2, .3], [.4, .5, .6], [.7, .8, .9]])
+            features["mock_obs"] = mock_obs
 
         # Note we only determine curvature if we could determine a valid surface normal
         if any(feat in self.CURVATURE_FEATURES for feat in self._features) and valid_sn:
@@ -671,6 +676,7 @@ class CameraSM(SensorModule):
             self.processed_obs.append(observed_state.__dict__)
             self.states.append(self.state)
 
+        print_dict_structure(observed_state.__dict__)
         return observed_state
 
 
@@ -807,3 +813,50 @@ class FeatureChangeFilter(StateFilter):
             self._last_sent_n_steps_ago += 1
 
         return state
+
+
+
+import numpy as np
+
+def print_dict_structure(d, indent=0):
+    indent_str = "  " * indent
+
+    if isinstance(d, dict):
+        for key, value in d.items():
+            print(f"{indent_str}{key}:", end=" ")
+
+            # If nested dict → recurse
+            if isinstance(value, dict):
+                print("(dict)")
+                print_dict_structure(value, indent + 1)
+
+            # If list/tuple
+            elif isinstance(value, (list, tuple)):
+                print(f"({type(value).__name__}, len={len(value)})")
+                
+                # Check if it's a 2D structure
+                if len(value) > 0 and isinstance(value[0], (list, tuple)):
+                    flat = [item for sub in value for item in sub]
+                    print(f"{indent_str}  first 10 values: {flat[:10]}")
+                else:
+                    print(f"{indent_str}  first 10 values: {value[:10]}")
+
+            # If numpy array
+            elif isinstance(value, np.ndarray):
+                print(f"(ndarray, shape={value.shape})")
+                
+                if value.ndim == 2:
+                    print(f"{indent_str}  first 10 values: {value.flatten()[:10]}")
+                else:
+                    print(f"{indent_str}  first 10 values: {value[:10]}")
+
+            # Everything else
+            else:
+                try:
+                    length = len(value)
+                except:
+                    length = "N/A"
+                print(f"({type(value).__name__}, len={length})")
+
+    else:
+        print(f"{indent_str}(Not a dict)")
