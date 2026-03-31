@@ -27,4 +27,3 @@ experiment:
     supervised_lm_ids: all
     logging:
       run_name: supervised_pre_training_objects_with_logos_lvl1_monolithic_models
-      output_dir: ${constants.compositional_pretrained_dir}

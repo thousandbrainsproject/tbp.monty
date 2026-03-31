@@ -28,4 +28,3 @@ experiment:
       - learning_module_1
     logging:
       run_name: supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling
-      output_dir: ${constants.compositional_pretrained_dir}

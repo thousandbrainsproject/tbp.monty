@@ -28,4 +28,3 @@ experiment:
       - learning_module_0
     logging:
       run_name: supervised_pre_training_curved_objects_after_flat_and_logo
-      output_dir: ${constants.compositional_pretrained_dir}
