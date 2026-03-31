@@ -247,7 +247,7 @@ experiment:
       python_log_level: INFO
       python_log_to_file: true
       python_log_to_stderr: true
-      output_dir: ${constants.compositional_pretrained_dir}
+      output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
