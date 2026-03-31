@@ -104,15 +104,16 @@ class MotorSystem:
         state_copy = motor_system_state.convert_motor_state()
         self._action_sequence.append((policy_result.actions, state_copy))
 
-        if policy_result.telemetry is not None:
+        telemetry = policy_result.telemetry
+        if telemetry is not None:
             self._telemetry_surface_action_details.pc_heading.append(
-                policy_result.telemetry.pc_heading
+                telemetry.pc_heading
             )
             self._telemetry_surface_action_details.avoidance_heading.append(
-                policy_result.telemetry.avoidance_heading
+                telemetry.avoidance_heading
             )
             self._telemetry_surface_action_details.z_defined_pc.append(
-                policy_result.telemetry.z_defined_pc
+                telemetry.z_defined_pc
             )
 
         return policy_result.actions

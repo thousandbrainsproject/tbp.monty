@@ -1459,8 +1459,6 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         else:
             pc_heading = "no"
 
-        avoidance_heading = self.setting_new_heading
-
         if self.pc_is_z_defined:
             # Note for logging we save the orientations in the global reference frame,
             # however whether the PC is z-defined is relative to the agent and its
@@ -1475,7 +1473,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         self._telemetry = SurfacePolicyTelemetry(
             pc_heading=pc_heading,
-            avoidance_heading=avoidance_heading,
+            avoidance_heading=self.setting_new_heading,
             z_defined_pc=z_defined_pc,
         )
 
