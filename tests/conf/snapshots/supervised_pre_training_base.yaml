@@ -162,7 +162,7 @@ experiment:
       positioning_procedures:
       - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
         agent_id: agent_id_0
-        sensor_id: view_finder}
+        sensor_id: view_finder
       - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
         agent_id: agent_id_0
         sensor_id: patch
