@@ -23,6 +23,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
+from tbp.monty.frameworks.models.states import State
 
 __all__ = ["MotorSystem"]
 
@@ -84,6 +85,7 @@ class MotorSystem:
         ctx: RuntimeContext,
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
+        percept: State,
     ) -> list[Action]:
         """Defines the structure for __call__.
 
@@ -93,12 +95,14 @@ class MotorSystem:
             ctx: The runtime context.
             observations: The observations from the environment.
             proprioceptive_state: The proprioceptive state from the environment.
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             The action to take.
         """
         motor_system_state = MotorSystemState(proprioceptive_state)
-        policy_result = self._policy(ctx, observations, motor_system_state)
+        policy_result = self._policy(ctx, observations, motor_system_state, percept)
         self.motor_only_step = policy_result.motor_only_step
 
         state_copy = motor_system_state.convert_motor_state()

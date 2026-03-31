@@ -80,6 +80,10 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
             forward_distance=1,
         )
 
+        # TODO: Change this to a policy call, and assertions should be the same!
+        #       just need to come up with bunch of stubs to shove into policy.__call__ params
+        #       ... so that it does something simple, like MoveForward (what's the simplest thing that could work?)
+
         self.policy.processed_observations = self.state
 
         self.assertEqual(len(self.policy.tangent_locs), 1)

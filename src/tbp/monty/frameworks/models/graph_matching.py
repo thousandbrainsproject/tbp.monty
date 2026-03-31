@@ -415,19 +415,6 @@ class MontyForGraphMatching(MontyBase):
             )
             logger.info(f"Possible matches for {lm.learning_module_id}: {pm}")
 
-    def _pass_infos_to_motor_system(self):
-        """Pass input observations to the motor system.
-
-        Omit goal states in this case.
-        """
-        # TODO M: generalize to multiple sensor modules
-
-        if (
-            self.step_type == "matching_step"
-            or self.sensor_module_outputs[0] is not None
-        ):
-            self._pass_input_obs_to_motor_system(self.sensor_module_outputs[0])
-
     def _set_step_type_and_check_if_done(self):
         """Check terminal conditions and decide if we change the step type."""
         self.update_step_counters()
@@ -475,18 +462,6 @@ class MontyForGraphMatching(MontyBase):
                 # exploratory_steps is never being incremented (e.g. because we're in
                 # a void without any objects), ensuring that we eventually time-out
                 # according to max_total_steps
-
-    def _pass_input_obs_to_motor_system(self, percept: State):
-        """Pass processed observations to motor system.
-
-        Give the motor system all information it needs for its policy to decide the
-        next action. Here it needs the processed observation from the sensor patch.
-
-        For some motor systems (e.g. curvature-informed surface-agent policy), also
-        provides locations associated with tangential movements; this can help ensure we
-        e.g. avoid revisiting old locations.
-        """
-        self.motor_system._policy.processed_observations = percept
 
     # ------------------------ Helper --------------------------
     def _set_stepwise_targets(self, lm, sensory_inputs):
