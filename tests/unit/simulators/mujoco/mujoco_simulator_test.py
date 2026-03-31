@@ -17,8 +17,10 @@ from mujoco import MjSpec
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.simulators.mujoco import PRIMITIVE_OBJECT_TYPES
-from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
+from tbp.monty.simulators.mujoco.simulator import (
+    PRIMITIVE_OBJECT_TYPES,
+    MuJoCoSimulator,
+)
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element

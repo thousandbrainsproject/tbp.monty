@@ -20,7 +20,8 @@ from tbp.monty.frameworks.actions.actions import LookUp
 from tbp.monty.frameworks.agents import AgentConfig, AgentID
 from tbp.monty.frameworks.sensors import SensorConfig
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR
-from tbp.monty.simulators.mujoco import MuJoCoSimulator, NoopAgent
+from tbp.monty.simulators.mujoco.agents import NoopAgent
+from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
 
 AGENT_ID = AgentID("agent_id_0")
 
