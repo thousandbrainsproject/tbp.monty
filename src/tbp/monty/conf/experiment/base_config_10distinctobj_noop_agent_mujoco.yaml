@@ -8,9 +8,6 @@ defaults:
   - /monty/connectivity: 1lm_1sm
   - /environment: mujoco_ycb_noop_agent
   - /env_interface: eval_distinctobj_predefined
-  # Note: NoopAgent doesn't respond to actions that the GetGoodView procedure uses
-  # so if it is enabled, we'll be stuck in a loop.
-  # - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch
   - /env_interface/transform: depthto3d_res64hfov11_sensor1
   - /logging: basic_warning_monty_runs
 
@@ -29,4 +26,4 @@ experiment:
     supervised_lm_ids: []
     python_log_level: DEBUG
     logging:
-      run_name: base_config_10distinctobj_dist_agent
+      run_name: base_config_10distinctobj_noop_agent_mujoco

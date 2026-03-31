@@ -35,7 +35,7 @@ from tbp.monty.frameworks.environments.environment import (
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
-from tbp.monty.frameworks.sensors import Resolution
+from tbp.monty.frameworks.sensors import Resolution2D
 from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.simulator import Simulator
 
@@ -71,8 +71,6 @@ class MuJoCoSimulator(Simulator):
         self,
         agent_configs: Sequence[AgentConfig],
         data_path: str | Path | None,
-        # TODO: remove after adding remaining arguments
-        **kwargs,  # noqa: ARG002
     ) -> None:
         self.spec = MjSpec()
         self.model: MjModel = self.spec.compile()
@@ -106,7 +104,7 @@ class MuJoCoSimulator(Simulator):
             agent = agent_type(simulator=self, **agent_args)
             self._agents[agent.id] = agent
 
-    def _max_sensor_resolution(self) -> Resolution:
+    def _max_sensor_resolution(self) -> Resolution2D:
         """Determine the maximum resolution of all the sensors.
 
         We need this to set the off-screen buffer size in MuJoCo to support the
@@ -120,7 +118,7 @@ class MuJoCoSimulator(Simulator):
             for sensor_cfg in agent_cfg["agent_args"]["sensor_configs"].values():
                 max_x = max(max_x, sensor_cfg["resolution"][0])
                 max_y = max(max_y, sensor_cfg["resolution"][1])
-        return max_x, max_y
+        return Resolution2D((max_x, max_y))
 
     def remove_all_objects(self) -> None:
         # TODO: is there a better way to do this?

@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from typing import NewType, Tuple, TypedDict
 
-__all__ = ["Resolution", "SensorConfig", "SensorID"]
+__all__ = ["Resolution2D", "SensorConfig", "SensorID"]
 
 from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
@@ -16,9 +16,8 @@ SensorID = NewType("SensorID", str)
 """Unique identifier for a sensor."""
 
 
-# TODO: should this live elsewhere?
-Resolution = Tuple[int, int]
-"""Pixel resolution of a sensor."""
+Resolution2D = NewType("Resolution2D", Tuple[int, int])
+"""Pixel resolution of a sensor, in width and height."""
 
 
 class SensorConfig(TypedDict):
@@ -26,5 +25,5 @@ class SensorConfig(TypedDict):
 
     position: VectorXYZ
     rotation: QuaternionWXYZ
-    resolution: Resolution
+    resolution: Resolution2D
     zoom: float

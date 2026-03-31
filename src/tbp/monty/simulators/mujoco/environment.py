@@ -33,12 +33,10 @@ class MuJoCoEnvironment(SimulatedObjectEnvironment):
         self,
         agents: AgentConfig,
         data_path: str | Path | None,
-        # TODO: remove after adding remaining arguments
-        **kwargs,
     ):
         # TODO: Change the configurations to support multiple agents
         agent_configs = [agents]
-        self._sim = MuJoCoSimulator(agent_configs, data_path, **kwargs)
+        self._sim = MuJoCoSimulator(agent_configs, data_path)
 
     def step(
         self,

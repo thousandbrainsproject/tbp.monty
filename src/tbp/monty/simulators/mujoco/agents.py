@@ -30,7 +30,7 @@ from tbp.monty.frameworks.utils.transform_utils import (
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
 
 if TYPE_CHECKING:
-    from tbp.monty.simulators.mujoco import MuJoCoSimulator
+    from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
 
 
 logger = logging.getLogger(__name__)
