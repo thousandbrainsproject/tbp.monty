@@ -4,4 +4,4 @@ defaults:
   - action_sampler: uniform_dist
 
 _target_: tbp.monty.frameworks.models.motor_policies.BasePolicy
-agent_id: ${monty.agent_id:agent_id_0}
+agent_id: agent_id_0
