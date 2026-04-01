@@ -969,7 +969,7 @@ class SurfacePolicy(InformedPolicy):
                 self.agent_id, ctx.rng
             )
 
-        next_action = self.get_next_action(ctx, state)
+        next_action = self.get_next_action(ctx, state, percept)
 
         # Out of the four actions in the
         # MoveForward->OrientHorizontal->OrientVertical->MoveTangentially "subroutine"
