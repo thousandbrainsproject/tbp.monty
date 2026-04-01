@@ -662,6 +662,7 @@ class NaiveScanPolicy(InformedPolicy):
         ctx: RuntimeContext,  # noqa: ARG002
         observations: Observations,  # noqa: ARG002
         state: MotorSystemState,  # noqa: ARG002
+        percept: State,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions in the spiral.
 
@@ -672,6 +673,8 @@ class NaiveScanPolicy(InformedPolicy):
             observations: The observations from the environment.
             state: The current state of the motor system.
                 Defaults to None. Unused.
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             A MotorPolicyResult that contains the actions to take.
@@ -987,19 +990,27 @@ class SurfacePolicy(InformedPolicy):
             telemetry=self._telemetry,
         )
 
-    def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
+    def _orient_horizontal(
+        self, state: MotorSystemState, percept: State
+    ) -> OrientHorizontal:
         """Orient the agent horizontally.
 
         Args:
             state: The current state of the motor system.
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             OrientHorizontal action.
         """
         rotation_degrees = self.orienting_angle_from_normal(
-            orienting="horizontal", state=state
+            orienting="horizontal",
+            state=state,
+            percept=percept,
         )
-        left_distance, forward_distance = self.horizontal_distances(rotation_degrees)
+        left_distance, forward_distance = self.horizontal_distances(
+            rotation_degrees, percept
+        )
         return OrientHorizontal(
             agent_id=self.agent_id,
             rotation_degrees=rotation_degrees,
@@ -1007,7 +1018,9 @@ class SurfacePolicy(InformedPolicy):
             forward_distance=forward_distance,
         )
 
-    def _orient_vertical(self, state: MotorSystemState) -> OrientVertical:
+    def _orient_vertical(
+        self, state: MotorSystemState, percept: State
+    ) -> OrientVertical:
         """Orient the agent vertically.
 
         Args:
@@ -1017,9 +1030,13 @@ class SurfacePolicy(InformedPolicy):
             OrientVertical action.
         """
         rotation_degrees = self.orienting_angle_from_normal(
-            orienting="vertical", state=state
+            orienting="vertical",
+            state=state,
+            percept=percept,
         )
-        down_distance, forward_distance = self.vertical_distances(rotation_degrees)
+        down_distance, forward_distance = self.vertical_distances(
+            rotation_degrees, percept
+        )
         return OrientVertical(
             agent_id=self.agent_id,
             rotation_degrees=rotation_degrees,
@@ -1101,10 +1118,10 @@ class SurfacePolicy(InformedPolicy):
         last_action = self.last_surface_policy_action
 
         if isinstance(last_action, MoveForward):
-            return self._orient_horizontal(state)
+            return self._orient_horizontal(state, percept)
 
         if isinstance(last_action, OrientHorizontal):
-            return self._orient_vertical(state)
+            return self._orient_vertical(state, percept)
 
         if isinstance(last_action, OrientVertical):
             return self._move_tangentially(ctx, state, percept)
@@ -1112,7 +1129,7 @@ class SurfacePolicy(InformedPolicy):
         if isinstance(last_action, MoveTangentially):
             # orient around object if it's not centered in view
             if not percept.get_on_object():
-                return self._orient_horizontal(state)
+                return self._orient_horizontal(state, percept)
 
             # move to the desired_object_distance if it is in view
             return self._move_forward(percept)
