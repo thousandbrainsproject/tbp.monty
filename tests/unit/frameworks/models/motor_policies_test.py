@@ -12,6 +12,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import numpy.testing as nptest
@@ -30,58 +31,12 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
-    BasePolicy,
     PredefinedPolicy,
     SurfacePolicyCurvatureInformed,
 )
-from tbp.monty.frameworks.models.motor_system_state import (
-    AgentState,
-    MotorSystemState,
-    SensorState,
-)
+from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 from tbp.monty.frameworks.models.states import State
-from tbp.monty.frameworks.sensors import SensorID
-
-
-class BasePolicyTest(unittest.TestCase):
-    def setUp(self) -> None:
-        self.rng = np.random.RandomState(42)
-        self.agent_id = AgentID(f"agent_id_{self.rng.randint(0, 999_999_999)}")
-        self.default_sensor_state = SensorState(
-            position=(0.0, 0.0, 0.0),
-            rotation=(1.0, 0.0, 0.0, 0.0),
-        )
-        self.agent_sensors = {
-            SensorID(
-                f"sensor_id_{self.rng.randint(0, 999_999_999)}"
-            ): self.default_sensor_state,
-        }
-        self.default_agent_state = AgentState(
-            sensors=self.agent_sensors,
-            position=self.default_sensor_state.position,
-            rotation=self.default_sensor_state.rotation,
-        )
-
-        self.policy = BasePolicy(
-            action_sampler=UniformlyDistributedSampler(actions=[LookUp]),
-            agent_id=self.agent_id,
-        )
-
-    def test_get_agent_state_selects_state_matching_agent_id(self):
-        expected_state = AgentState(
-            sensors=self.agent_sensors,
-            position=self.default_sensor_state.position,
-            rotation=self.default_sensor_state.rotation,
-        )
-        state = MotorSystemState(
-            {
-                self.agent_id: expected_state,
-                AgentID("different_agent_id"): AgentState(
-                    sensors={}, position=(), rotation=()
-                ),
-            }
-        )
-        self.assertEqual(self.policy.get_agent_state(state), expected_state)
+from tests.unit.frameworks.models.fakes.state import FakeState
 
 
 class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
@@ -118,7 +73,7 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
             sender_type="SM",
         )
 
-    def test_assign_to_processed_observations_appends_to_tangent_locs_and_tangent_norms_if_last_action_is_orient_vertical(  # noqa: E501
+    def test_appends_to_tangent_locs_and_tangent_norms_if_last_action_is_orient_vertical(  # noqa: E501
         self,
     ):
         self.policy.last_surface_policy_action = OrientVertical(
@@ -128,14 +83,20 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
             forward_distance=1,
         )
 
-        self.policy.processed_observations = self.state
+        with patch("tbp.monty.frameworks.models.motor_policies.SurfacePolicy.__call__"):
+            self.policy(
+                RuntimeContext(rng=np.random.RandomState(42)),
+                Observations(),
+                MotorSystemState(),
+                self.state,
+            )
 
         self.assertEqual(len(self.policy.tangent_locs), 1)
         nptest.assert_array_equal(self.policy.tangent_locs[0], self.location)
         self.assertEqual(len(self.policy.tangent_norms), 1)
         nptest.assert_array_equal(self.policy.tangent_norms[0], self.tangent_norm)
 
-    def test_assign_to_processed_observations_appends_none_to_tangent_norms_if_last_action_is_orient_vertical_but_no_pose_vectors_in_state(  # noqa: E501
+    def test_appends_none_to_tangent_norms_if_last_action_is_orient_vertical_but_no_pose_vectors_in_state(  # noqa: E501
         self,
     ):
         del self.state.morphological_features["pose_vectors"]
@@ -146,20 +107,32 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
             forward_distance=1,
         )
 
-        self.policy.processed_observations = self.state
+        with patch("tbp.monty.frameworks.models.motor_policies.SurfacePolicy.__call__"):
+            self.policy(
+                RuntimeContext(rng=np.random.RandomState(42)),
+                Observations(),
+                MotorSystemState(),
+                self.state,
+            )
 
         self.assertEqual(len(self.policy.tangent_locs), 1)
         nptest.assert_array_equal(self.policy.tangent_locs[0], self.location)
         self.assertEqual(self.policy.tangent_norms, [None])
 
-    def test_assign_to_processed_observations_does_not_append_to_tangent_locs_and_tangent_norms_if_last_action_is_not_orient_vertical(  # noqa: E501
+    def test_does_not_append_to_tangent_locs_and_tangent_norms_if_last_action_is_not_orient_vertical(  # noqa: E501
         self,
     ):
         self.policy.last_surface_policy_action = LookUp(
             agent_id=self.agent_id, rotation_degrees=0
         )
 
-        self.policy.processed_observations = self.state
+        with patch("tbp.monty.frameworks.models.motor_policies.SurfacePolicy.__call__"):
+            self.policy(
+                RuntimeContext(rng=np.random.RandomState(42)),
+                Observations(),
+                MotorSystemState(),
+                self.state,
+            )
 
         self.assertEqual(self.policy.tangent_locs, [])
         self.assertEqual(self.policy.tangent_norms, [])
@@ -209,7 +182,7 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
         observations = Observations()
         returned_actions: list[Action] = []
         for _ in range(2 * cycle_length):
-            result = policy(ctx, observations)
+            result = policy(ctx, observations, MotorSystemState(), FakeState())
             assert len(result.actions) == 1, "Expected one action"
             returned_actions.append(result.actions[0])
 

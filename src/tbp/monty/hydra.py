@@ -11,16 +11,10 @@ from __future__ import annotations
 import contextlib
 import importlib
 from pathlib import Path
+from typing import Any, Callable
 
 import numpy as np
 from omegaconf import OmegaConf
-
-from tbp.monty.frameworks.agents import AgentID
-
-
-def agent_id_resolver(agent_id: str) -> AgentID:
-    """Returns an AgentID new type from a string."""
-    return AgentID(agent_id)
 
 
 def monty_class_resolver(class_name: str) -> type:
@@ -67,8 +61,7 @@ def register_resolvers() -> None:
     a ValueError, since multiple entry points (e.g. tests/__init__.py
     and update_snapshots.py) may call this function in the same process.
     """
-    resolvers = {
-        "monty.agent_id": agent_id_resolver,
+    resolvers: dict[str, Callable[..., Any]] = {
         "monty.class": monty_class_resolver,
         "np.array": ndarray_resolver,
         "np.ones": ones_resolver,

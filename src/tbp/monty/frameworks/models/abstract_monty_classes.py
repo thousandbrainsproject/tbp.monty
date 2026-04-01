@@ -19,7 +19,10 @@ from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.models.motor_system_state import AgentState
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    ProprioceptiveState,
+)
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.sensors import SensorID
 
@@ -63,38 +66,60 @@ class Observations(Dict[AgentID, AgentObservations]):
 
 
 class Monty(metaclass=abc.ABCMeta):
-    ###
-    # Methods that specify the algorithm
-    ###
-    def _matching_step(self, ctx: RuntimeContext, observation):
+    def _matching_step(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ):
         """Step format for matching observations to graph.
 
         Used during training or evaluation.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
         """
-        self.aggregate_sensory_inputs(ctx, observation)
+        self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
         self._step_learning_modules(ctx)
         self._vote()
         self._pass_goal_states()
         self._pass_infos_to_motor_system()
-        self._step_motor_system(ctx, observation)
+        self._step_motor_system(ctx, observations, proprioceptive_state)
         self._set_step_type_and_check_if_done()
         self._post_step()
 
-    def _exploratory_step(self, ctx: RuntimeContext, observation):
+    def _exploratory_step(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ):
         """Step format for adding data to an existing model.
 
         Used only during training.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
         """
-        self.aggregate_sensory_inputs(ctx, observation)
+        self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
         self._step_learning_modules(ctx)
         self._pass_goal_states()
         self._pass_infos_to_motor_system()
-        self._step_motor_system(ctx, observation)
+        self._step_motor_system(ctx, observations, proprioceptive_state)
         self._set_step_type_and_check_if_done()
         self._post_step()
 
     @abc.abstractmethod
-    def step(self, ctx: RuntimeContext, observations: Observations) -> list[Action]:
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ) -> list[Action]:
         """Take a matching, exploratory, or custom user-defined step.
 
         Step taken depends on the value of self.step_type.
@@ -102,6 +127,7 @@ class Monty(metaclass=abc.ABCMeta):
         Args:
             ctx: The runtime context.
             observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
 
         Returns:
             The actions to take.
@@ -110,7 +136,10 @@ class Monty(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def motor_only_step(
-        self, ctx: RuntimeContext, observations: Observations
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
         """Take a step of the sensors and motor system only.
 
@@ -119,6 +148,7 @@ class Monty(metaclass=abc.ABCMeta):
         Args:
             ctx: The runtime context.
             observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
 
         Returns:
             The actions to take.
@@ -126,8 +156,19 @@ class Monty(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def aggregate_sensory_inputs(self, ctx: RuntimeContext, observation):
-        """Receive data from environment, organize on a per sensor module basis."""
+    def aggregate_sensory_inputs(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ):
+        """Receive data from environment, organize on a per sensor module basis.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
+        """
         pass
 
     @abc.abstractmethod
@@ -160,8 +201,19 @@ class Monty(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def _step_motor_system(self, ctx: RuntimeContext, observation):
-        """Step the motor system."""
+    def _step_motor_system(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ):
+        """Step the motor system.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
+        """
         pass
 
     @abc.abstractmethod

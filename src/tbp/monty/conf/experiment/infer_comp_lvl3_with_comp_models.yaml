@@ -8,6 +8,7 @@ defaults:
   - /monty/connectivity: 2lm_2sm
   - /environment: habitat_dist_agent_sensors2
   - /env_interface: eval_compositional_lvl3_predefined
+  - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
   - /env_interface/transform: missing_depthto3d_sensor3
   - /logging: basic_warning_wandb_evidence_eval_runs
 
@@ -20,7 +21,7 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: ${constants.rotations_all_count}
-    model_name_or_path: ${constants.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl3_comp_models/pretrained/
+    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_objects_with_logos_lvl3_comp_models/pretrained/
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []

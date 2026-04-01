@@ -8,6 +8,7 @@ defaults:
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_dist_agent_semantics0
   - /env_interface: train_distinctobj_predefined
+  - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0
   - /logging: silent_info_train
 

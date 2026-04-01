@@ -8,6 +8,7 @@ defaults:
   - /monty/connectivity: 5lm_5sm
   - /environment: habitat_dist_agent_sensors5
   - /env_interface: eval_77obj_random
+  - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
   - /env_interface/transform: missing_depthto3d_sensor6
   - /logging: basic_warning_wandb_monty_runs
 
