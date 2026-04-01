@@ -17,6 +17,7 @@ import magnum
 import numpy as np
 import numpy.typing as npt
 import quaternion as qt
+from omegaconf import OmegaConf
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
@@ -208,6 +209,114 @@ class FakeOmniglotEnvironment(FakeEnvironmentAbs):
         self.alphabet_names = ["name_one", "name_two", "name_three"]
 
 
+class EnvironmentInterfacePerObjectTest(unittest.TestCase):
+    def test_accepts_plain_list_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        env_interface = EnvironmentInterfacePerObject(
+            env=FakeEnvironmentAbs(),
+            rng=rng,
+            seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
+            object_names=["object_a", "object_b", "object_a"],
+            object_init_sampler=Default(),
+        )
+
+        self.assertEqual(
+            ["object_a", "object_b", "object_a"], env_interface.object_names
+        )
+        self.assertEqual(["object_a", "object_b"], env_interface.source_object_list)
+        self.assertEqual(0, env_interface.num_distractors)
+
+    def test_accepts_hydra_list_config_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        env_interface = EnvironmentInterfacePerObject(
+            env=FakeEnvironmentAbs(),
+            rng=rng,
+            seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
+            object_names=OmegaConf.create(["object_a", "object_b", "object_a"]),
+            object_init_sampler=Default(),
+        )
+
+        self.assertEqual(
+            ["object_a", "object_b", "object_a"], env_interface.object_names
+        )
+        self.assertEqual(["object_a", "object_b"], env_interface.source_object_list)
+        self.assertEqual(0, env_interface.num_distractors)
+
+    def test_accepts_mapping_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        env_interface = EnvironmentInterfacePerObject(
+            env=FakeEnvironmentAbs(),
+            rng=rng,
+            seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
+            object_names={
+                "targets_list": ["object_a", "object_c"],
+                "source_object_list": [
+                    "object_a",
+                    "object_b",
+                    "object_c",
+                    "object_b",
+                ],
+                "num_distractors": 2,
+            },
+            object_init_sampler=Default(),
+        )
+
+        self.assertEqual(["object_a", "object_c"], env_interface.object_names)
+        self.assertEqual(
+            ["object_a", "object_b", "object_c"], env_interface.source_object_list
+        )
+        self.assertEqual(2, env_interface.num_distractors)
+
+    def test_rejects_tuple_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        with self.assertRaisesRegex(
+            TypeError,
+            "Object names must be a list, ListConfig, or a mapping with "
+            "keys: targets_list, source_object_list, num_distractors",
+        ):
+            EnvironmentInterfacePerObject(
+                env=FakeEnvironmentAbs(),
+                rng=rng,
+                seed=seed,
+                experiment_mode=ExperimentMode.EVAL,
+                object_names=("object_a", "object_b"),
+                object_init_sampler=Default(),
+            )
+
+    def test_rejects_mapping_missing_required_keys(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        with self.assertRaises(TypeError) as cm:
+            EnvironmentInterfacePerObject(
+                env=FakeEnvironmentAbs(),
+                rng=rng,
+                seed=seed,
+                experiment_mode=ExperimentMode.EVAL,
+                object_names={"targets_list": ["object_a"]},
+                object_init_sampler=Default(),
+            )
+
+        self.assertIn(
+            "Object names mapping must contain keys: "
+            "targets_list, source_object_list, num_distractors.",
+            str(cm.exception),
+        )
+        self.assertIn("source_object_list", str(cm.exception))
+        self.assertIn("num_distractors", str(cm.exception))
+
+
 class EmbodiedDataTest(unittest.TestCase):
     def test_embodied_env_interface_dist(self):
         seed = 42
@@ -318,41 +427,6 @@ class EmbodiedDataTest(unittest.TestCase):
                 break
 
             i += 1
-
-    def test_per_object_env_interface_accepts_list_object_names(self):
-        seed = 42
-        rng = np.random.RandomState(seed)
-
-        env_interface = EnvironmentInterfacePerObject(
-            env=FakeEnvironmentAbs(),
-            rng=rng,
-            seed=seed,
-            experiment_mode=ExperimentMode.EVAL,
-            object_names=["object_a", "object_b", "object_a"],
-            object_init_sampler=Default(),
-        )
-
-        self.assertEqual(
-            ["object_a", "object_b", "object_a"], env_interface.object_names
-        )
-        self.assertEqual(["object_a", "object_b"], env_interface.source_object_list)
-        self.assertEqual(0, env_interface.num_distractors)
-
-    def test_per_object_env_interface_rejects_tuple_object_names(self):
-        seed = 42
-        rng = np.random.RandomState(seed)
-
-        with self.assertRaisesRegex(
-            TypeError, "Object names should be a list or dictionary"
-        ):
-            EnvironmentInterfacePerObject(
-                env=FakeEnvironmentAbs(),
-                rng=rng,
-                seed=seed,
-                experiment_mode=ExperimentMode.EVAL,
-                object_names=("object_a", "object_b"),
-                object_init_sampler=Default(),
-            )
 
     def check_two_d_patch_obs(
         self,
