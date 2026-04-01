@@ -17,7 +17,7 @@ import logging
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import numpy as np
 import quaternion as qt
@@ -70,11 +70,24 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class SurfacePolicyTelemetry:
+    """Telemetry class used by SurfacePolicy."""
+
+    pc_heading: Literal["min", "max", "no", "jump"] | None = None
+    avoidance_heading: bool | None = None
+    z_defined_pc: tuple[np.ndarray, tuple[np.ndarray, np.ndarray]] | None = None
+
+
+@dataclass
 class MotorPolicyResult:
-    """Result of a motor policy."""
+    """Result of a motor policy.
+
+    TODO: Get rid of telemetry field once we have another path for it.
+    """
 
     actions: list[Action] = field(default_factory=list)
     motor_only_step: bool = False
+    telemetry: SurfacePolicyTelemetry | None = None
 
 
 class MotorPolicy(abc.ABC):
@@ -748,6 +761,7 @@ class SurfacePolicy(InformedPolicy):
 
         self.attempting_to_find_object: bool = False
         self.last_surface_policy_action: Action | None = None
+        self._telemetry = SurfacePolicyTelemetry()
 
     def pre_episode(self, motor_system: MotorSystem) -> None:
         self.tangential_angle = 0
@@ -913,6 +927,8 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             A MotorPolicyResult that contains the actions to take.
         """
+        self._telemetry = SurfacePolicyTelemetry()
+
         if self.use_goal_state_driven_actions:
             assert state is not None
             result = self._goal_driven_actions(observations, state)
@@ -941,7 +957,9 @@ class SurfacePolicy(InformedPolicy):
                 view_sensor_id=SensorID("view_finder"),
                 state=state,
             )
-            return MotorPolicyResult(actions=[action], motor_only_step=True)
+            return MotorPolicyResult(
+                actions=[action], motor_only_step=True, telemetry=self._telemetry
+            )
 
         # Reset touch_object search state so that the next time we fall off the object,
         # we will try to find the object using its full repertoire of actions.
@@ -974,7 +992,11 @@ class SurfacePolicy(InformedPolicy):
         )
         self.last_surface_policy_action = next_action
         actions: list[Action] = [] if next_action is None else [next_action]
-        return MotorPolicyResult(actions, motor_only_step=motor_only_step)
+        return MotorPolicyResult(
+            actions=actions,
+            motor_only_step=motor_only_step,
+            telemetry=self._telemetry,
+        )
 
     def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
         """Orient the agent horizontally.
@@ -1257,9 +1279,11 @@ class SurfacePolicy(InformedPolicy):
         # local to a "motor-system buffer" given that these are model-free
         # actions that have nothing to do with the LMs
         # Store logging information about jump success
-        self.action_details["pc_heading"].append("jump")
-        self.action_details["avoidance_heading"].append(False)
-        self.action_details["z_defined_pc"].append(None)
+        self._telemetry = SurfacePolicyTelemetry(
+            pc_heading="jump",
+            avoidance_heading=False,
+            z_defined_pc=None,
+        )
 
 
 class SurfacePolicyCurvatureInformed(SurfacePolicy):
@@ -1387,30 +1411,6 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.tangent_norms = []  # As for tangent_locs; helpful for distinguishing
         # locations as being on different surfaces
 
-        # == Logging variables ==
-        # Store detailed information about actions taken; useful for both visualization,
-        # and potentially informing e.g. an LM to intervene where certain policy
-        # decisions are failing
-        if not hasattr(self, "action_details"):
-            # TODO M clean up where we log action information for motor system
-            # Ideally as much as as possible should be with buffer following refactor
-            self.action_details = dict(
-                pc_heading=[],  # "min", "max", or "no"; indicates the type of curvature
-                # the agent is following
-                avoidance_heading=[],  # True or False, whether the agent is taking a
-                # new heading to avoid previously visited points
-                z_defined_pc=[],  # None, and otherwise the principle curvature and
-                # surface normal directions when the PC direction is predominantly in
-                # z-axis of the agent (i.e. pointing towards/away from the agent rather
-                # than being orthogonal)
-            )
-        else:
-            self.action_details.update(
-                pc_heading=[],
-                avoidance_heading=[],
-                z_defined_pc=[],
-            )
-
     @property
     def processed_observations(self) -> State | None:
         return self._processed_observations
@@ -1453,27 +1453,29 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         """
         if self.using_pc_guide:
             if self.min_dir_pref:
-                self.action_details["pc_heading"].append("min")
+                pc_heading = "min"
             else:
-                self.action_details["pc_heading"].append("max")
+                pc_heading = "max"
         else:
-            self.action_details["pc_heading"].append("no")
-
-        self.action_details["avoidance_heading"].append(self.setting_new_heading)
+            pc_heading = "no"
 
         if self.pc_is_z_defined:
             # Note for logging we save the orientations in the global reference frame,
             # however whether the PC is z-defined is relative to the agent and its
             # orientation
             # TODO: This value doesn't seem to be used anywhere
-            self.action_details["z_defined_pc"].append(
-                [
-                    self.processed_observations.get_surface_normal(),
-                    self.processed_observations.get_curvature_directions(),
-                ]
+            z_defined_pc = (
+                self.processed_observations.get_surface_normal(),
+                self.processed_observations.get_curvature_directions(),
             )
         else:
-            self.action_details["z_defined_pc"].append(None)
+            z_defined_pc = None
+
+        self._telemetry = SurfacePolicyTelemetry(
+            pc_heading=pc_heading,
+            avoidance_heading=self.setting_new_heading,
+            z_defined_pc=z_defined_pc,
+        )
 
     def tangential_direction(
         self,

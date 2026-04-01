@@ -9,7 +9,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Literal
+
+import numpy as np
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
@@ -22,6 +25,13 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 
 __all__ = ["MotorSystem"]
+
+
+@dataclass
+class SurfacePolicyActionDetailsTelemetry:
+    pc_heading: list[Literal["min", "max", "no", "jump"] | None]
+    avoidance_heading: list[bool | None]
+    z_defined_pc: list[tuple[np.ndarray, tuple[np.ndarray, np.ndarray]] | None]
 
 
 class MotorSystem:
@@ -42,6 +52,13 @@ class MotorSystem:
         #       attribute should be moved to Monty itself instead.
         self.motor_only_step = False
 
+        # TODO: Get rid of this once we have another path for telemetry.
+        self._telemetry_surface_action_details = SurfacePolicyActionDetailsTelemetry(
+            pc_heading=[],
+            avoidance_heading=[],
+            z_defined_pc=[],
+        )
+
     @property
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
@@ -56,6 +73,11 @@ class MotorSystem:
         # to Monty itself.
         self._policy.pre_episode(self)
         self._action_sequence = []
+        self._telemetry_surface_action_details = SurfacePolicyActionDetailsTelemetry(
+            pc_heading=[],
+            avoidance_heading=[],
+            z_defined_pc=[],
+        )
 
     def __call__(
         self,
@@ -81,4 +103,17 @@ class MotorSystem:
 
         state_copy = motor_system_state.convert_motor_state()
         self._action_sequence.append((policy_result.actions, state_copy))
+
+        telemetry = policy_result.telemetry
+        if telemetry is not None:
+            self._telemetry_surface_action_details.pc_heading.append(
+                telemetry.pc_heading
+            )
+            self._telemetry_surface_action_details.avoidance_heading.append(
+                telemetry.avoidance_heading
+            )
+            self._telemetry_surface_action_details.z_defined_pc.append(
+                telemetry.z_defined_pc
+            )
+
         return policy_result.actions

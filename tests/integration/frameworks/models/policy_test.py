@@ -14,6 +14,7 @@ from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.motor_policies import (
     SurfacePolicyCurvatureInformed,
 )
+from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -88,9 +89,9 @@ class PolicyTest(unittest.TestCase):
             self.surf_fixed_action_cfg = hydra_config("surf_fixed_action")
             self.rotated_cube_view_cfg = hydra_config("rotated_cube_view")
 
-            self.motor_system_cfg_fragment = hydra.compose(
-                config_name="monty/motor_system_config/test_surface_curvature_informed"
-            ).monty.motor_system_config
+            self.policy_cfg_fragment = hydra.compose(
+                config_name="monty/motor_system_config/policy/test_surface_curvature_informed"
+            ).monty.motor_system_config.policy
 
         # ==== Setup fake observations for testing principal-curvature policies ====
         fake_sender_id = "patch"
@@ -247,6 +248,9 @@ class PolicyTest(unittest.TestCase):
         In this basic version, the object is a bit too far away, and so the agent
         moves forward
         """
+        agent_id = self.surf_poor_initial_view_cfg.experiment.config.monty_config[
+            "motor_system_config"
+        ].policy.agent_id
         exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
@@ -265,9 +269,7 @@ class PolicyTest(unittest.TestCase):
             observation_post_touch, _ = exp.env_interface.step(actions)
 
             # TODO M remove the following train-wreck during refactor
-            view = observation_post_touch[exp.model.motor_system._policy.agent_id][
-                "view_finder"
-            ]
+            view = observation_post_touch[agent_id]["view_finder"]
 
             config = self.surf_poor_initial_view_cfg.experiment.config
 
@@ -611,7 +613,7 @@ class PolicyTest(unittest.TestCase):
                 )
             ), "Agent should be (approximately) looking down on the surface normal"
 
-    def test_core_following_principal_curvature(self):
+    def test_core_following_principal_curvature(self) -> None:
         """Test ability of surface agent to follow principal curvature.
 
         Test that the surface-agent follows the principal curvature direction when
@@ -624,8 +626,10 @@ class PolicyTest(unittest.TestCase):
         Note these movements are not actually performed, i.e. they represent
         hypothetical outputs from the motor-system.
         """
-        motor_system = hydra.utils.instantiate(self.motor_system_cfg_fragment)
-        policy: SurfacePolicyCurvatureInformed = motor_system._policy
+        policy: SurfacePolicyCurvatureInformed = hydra.utils.instantiate(
+            self.policy_cfg_fragment
+        )
+        motor_system = MotorSystem(policy)
         policy.max_pc_bias_steps = 2
         policy.pre_episode(motor_system)
 
@@ -724,9 +728,7 @@ class PolicyTest(unittest.TestCase):
         # the same); note the agent is still orthogonal to the PC directions.
 
         # Update relevant motor-system variables
-        policy.ignoring_pc_counter = self.motor_system_cfg_fragment["policy"][
-            "min_general_steps"
-        ]
+        policy.ignoring_pc_counter = self.policy_cfg_fragment.min_general_steps
         proprioceptive_state[AgentID("agent_id_0")].rotation = qt.quaternion(0, 0, 1, 0)
 
         policy.processed_observations = self.fake_obs_pc[5]
@@ -742,12 +744,13 @@ class PolicyTest(unittest.TestCase):
         such as checks to avoid doubling back on ourself, and how to handle when the
         proposed PC points in the z direction (i.e. towards or away from the agent).
         """
-        motor_system = hydra.utils.instantiate(self.motor_system_cfg_fragment)
+        policy: SurfacePolicyCurvatureInformed = hydra.utils.instantiate(
+            self.policy_cfg_fragment
+        )
+        motor_system = MotorSystem(policy)
 
         # Overwrite min_general_steps default value so that we more quickly transition
         # into taking PC steps when testing this
-        policy: SurfacePolicyCurvatureInformed = motor_system._policy
-
         initial_min_general_steps = 1
         policy.min_general_steps = initial_min_general_steps
         policy.pre_episode(motor_system)
@@ -869,7 +872,7 @@ class PolicyTest(unittest.TestCase):
         self,
         ctx: RuntimeContext,
         lm,
-        motor_system,
+        policy,
         object_orientation,
         target_location_on_object,
     ):
@@ -882,7 +885,7 @@ class PolicyTest(unittest.TestCase):
         Args:
             ctx: The runtime context
             lm: The LM with the GSG that we will test
-            motor_system: The motor-system to test
+            policy: The policy to test
             object_orientation: The orientation of the object in Euler angle degrees
             target_location_on_object: The location in object-centric coordinates
                 which the agent should move to
@@ -943,9 +946,9 @@ class PolicyTest(unittest.TestCase):
 
         # --- Determine Habitat-coordinates from goal-state ---
 
-        motor_system._policy.set_driving_goal_state(motor_goal_state)
+        policy.set_driving_goal_state(motor_goal_state)
 
-        target_loc_hab, target_quat = motor_system._policy.derive_habitat_goal_state()
+        target_loc_hab, target_quat = policy.derive_habitat_goal_state()
 
         resulting_rot = Rotation.from_quat(
             numpy_to_scipy_quat(np.array([target_quat.real] + list(target_quat.imag)))
@@ -969,8 +972,9 @@ class PolicyTest(unittest.TestCase):
         """
         lm, gsg_args = self.initialize_lm_with_gsg()
 
-        motor_system = hydra.utils.instantiate(self.motor_system_cfg_fragment)
-        motor_system.pre_episode()
+        policy = hydra.utils.instantiate(self.policy_cfg_fragment)
+        motor_system = MotorSystem(policy)
+        policy.pre_episode(motor_system)
 
         # The target displacement of the agent from the object; used to determine
         # the validity of the final agent location
@@ -987,7 +991,7 @@ class PolicyTest(unittest.TestCase):
         ) = self.core_evaluate_compute_goal_state_for_target_loc(
             ctx,
             lm,
-            motor_system,
+            policy,
             object_orientation=[0, 0, 0],
             target_location_on_object=[0.2, 0.2, 0.2],
         )
@@ -1020,7 +1024,7 @@ class PolicyTest(unittest.TestCase):
         ) = self.core_evaluate_compute_goal_state_for_target_loc(
             ctx,
             lm,
-            motor_system,
+            policy,
             object_orientation=[180, 0, 0],  # Flip the object around the x-axis, such
             # that e.g. a vector pointing up will now point down
             target_location_on_object=[0.1, 0.2, 0.1],
@@ -1056,7 +1060,7 @@ class PolicyTest(unittest.TestCase):
         ) = self.core_evaluate_compute_goal_state_for_target_loc(
             ctx,
             lm,
-            motor_system,
+            policy,
             object_orientation=[160, 45, 70],
             target_location_on_object=[0.3, 0.2, 0.15],
         )
