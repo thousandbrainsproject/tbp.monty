@@ -33,7 +33,7 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_state_generation import GraphGoalStateGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
-from tbp.monty.frameworks.models.states import GoalState, State
+from tbp.monty.frameworks.models.states import GoalState
 
 __all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
 

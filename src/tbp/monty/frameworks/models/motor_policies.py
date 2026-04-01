@@ -1025,6 +1025,8 @@ class SurfacePolicy(InformedPolicy):
 
         Args:
             state: The current state of the motor system.
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             OrientVertical action.
