@@ -142,13 +142,14 @@ class GaussianBlurRGBTest(unittest.TestCase):
     def test_empty_sensor_ids_raises(self):
         with pytest.raises(ValueError, match="sensor_ids must not be empty"):
             GaussianBlurRGB(agent_id=AGENT_ID, sensor_ids=[])
+
     def test_sensor_id_not_in_agent(self):
         obs = Observations()
         obs[AGENT_ID] = AgentObservations()
         gaussian_smoother = GaussianBlurRGB(
             agent_id=AGENT_ID, sensor_ids=[SENSOR_ID], sigma=15, kernel_size=15
         )
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError, match="not found in observations"):
             gaussian_smoother(obs, _ctx=None)
 
     def test_rgba_not_in_sensor_observations(self):
@@ -156,7 +157,7 @@ class GaussianBlurRGBTest(unittest.TestCase):
         obs[AGENT_ID] = AgentObservations()
         obs[AGENT_ID][SENSOR_ID] = SensorObservation()
         gaussian_smoother = GaussianBlurRGB(agent_id=AGENT_ID, sigma=15, kernel_size=15)
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError, match="no 'rgba' key"):
             gaussian_smoother(obs, _ctx=None)
 
     def test_blur_solid_image_returns_identical(self):
