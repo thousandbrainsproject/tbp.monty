@@ -52,6 +52,9 @@ class GetGoodViewTest(unittest.TestCase):
         """
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("dist_agent_too_far_away", self.output_dir)
+            agent_id = config.experiment.config.train_env_interface_args[
+                "positioning_procedures"
+            ][0].agent_id
             exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(
                 config.experiment
             )
@@ -65,9 +68,7 @@ class GetGoodViewTest(unittest.TestCase):
                 target_closest_point = GOOD_VIEW_DISTANCE_DEFAULT
 
                 observation, _ = exp.env_interface.step([])
-                view = observation[exp.model.motor_system._policy.agent_id][
-                    "view_finder"
-                ]
+                view = observation[agent_id]["view_finder"]
                 semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
                 perc_on_target_obj = get_perc_on_obj_semantic(
                     semantic, semantic_id=SemanticID(1)
@@ -101,6 +102,9 @@ class GetGoodViewTest(unittest.TestCase):
         """
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("multi_object_target_not_visible", self.output_dir)
+            agent_id = config.experiment.config.train_env_interface_args[
+                "positioning_procedures"
+            ][0].agent_id
             exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(
                 config.experiment
             )
@@ -116,9 +120,7 @@ class GetGoodViewTest(unittest.TestCase):
                 target_closest_point = GOOD_VIEW_DISTANCE_DEFAULT
 
                 observation, _ = exp.env_interface.step([])
-                view = observation[exp.model.motor_system._policy.agent_id][
-                    "view_finder"
-                ]
+                view = observation[agent_id]["view_finder"]
                 semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
                 perc_on_target_obj = get_perc_on_obj_semantic(
                     semantic, semantic_id=SemanticID(1)
