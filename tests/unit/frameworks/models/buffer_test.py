@@ -207,7 +207,7 @@ class GlobalLocationAveragingTest(unittest.TestCase):
     def setUp(self):
         self.buffer = FeatureAtLocationBuffer()
 
-    def test_global_location_is_average_of_channels(self):
+    def test_global_location_is_average_of_sm_channels(self):
         state_a = create_mock_state(
             sender_id="SM_0",
             sender_type="SM",
@@ -221,8 +221,9 @@ class GlobalLocationAveragingTest(unittest.TestCase):
             on_object=True,
         )
         self.buffer.append([state_a, state_b])
+        # Only SM locations are averaged; LM locations are excluded
         np.testing.assert_array_equal(
-            self.buffer.global_location, np.array([2.0, 3.0, 4.0])
+            self.buffer.global_location, np.array([1.0, 2.0, 3.0])
         )
 
     def test_global_location_single_channel(self):
