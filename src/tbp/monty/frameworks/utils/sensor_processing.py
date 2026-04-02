@@ -22,6 +22,66 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 logger = logging.getLogger(__name__)
 
 
+def directional_curvature(
+    movement_direction: np.ndarray,
+    k1: float,
+    k2: float,
+    dir1: np.ndarray,
+    dir2: np.ndarray,
+) -> float:
+    """Compute normal curvature in a given direction via Euler's formula.
+
+    Returns the curvature of the surface along a particular direction, as
+    opposed to the maximum (k1) or minimum (k2) principal curvatures.
+
+    k(theta) = k1 * cos^2(theta) + k2 * sin^2(theta)
+
+    where theta is the angle between ``movement_direction`` and the first
+    principal direction ``dir1``. Requires ``dir1`` and ``dir2`` to be
+    orthogonal; raises ``ValueError`` otherwise.
+
+    Reference: Weisstein, Eric W. "Euler Curvature Formula." MathWorld.
+    https://mathworld.wolfram.com/EulerCurvatureFormula.html
+
+    Args:
+        movement_direction: Direction vector (will be normalized).
+        k1: First principal curvature (corresponds to dir1).
+        k2: Second principal curvature (corresponds to dir2).
+        dir1: First principal curvature direction (unit vector in tangent plane).
+        dir2: Second principal curvature direction (unit vector in tangent plane).
+
+    Returns:
+        Normal curvature in the given direction.
+
+    Raises:
+        ValueError: If dir1 and dir2 are not orthogonal, or if
+            movement_direction does not lie in the plane spanned by dir1
+            and dir2.
+    """
+    if abs(np.dot(dir1, dir2)) > 1e-6:
+        raise ValueError(
+            f"dir1 and dir2 must be orthogonal (dot product = {np.dot(dir1, dir2):.6f})"
+        )
+
+    movement_norm = np.linalg.norm(movement_direction)
+    if movement_norm < 1e-12:
+        return 0.0
+
+    move_hat = movement_direction / movement_norm
+
+    plane_normal = np.cross(dir1, dir2)
+    out_of_plane = abs(np.dot(move_hat, plane_normal))
+    if out_of_plane > 1e-6:
+        raise ValueError(
+            f"movement_direction must lie in the plane of dir1 and dir2 "
+            f"(out-of-plane component = {out_of_plane:.6f})"
+        )
+
+    cos_theta_squared = np.dot(move_hat, dir1) ** 2
+    sin_theta_squared = 1.0 - cos_theta_squared
+    return k1 * cos_theta_squared + k2 * sin_theta_squared
+
+
 def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
     """Estimate surface normal.
 
