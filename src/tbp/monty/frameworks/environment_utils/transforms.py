@@ -278,10 +278,7 @@ class GaussianSmoothing(Transform):
 
 
 class GaussianBlurRGB(Transform):
-    """Apply Gaussian blur to RGB image before edge detection.
-
-    This transform is useful to reduce noise and extract the dominant edge of the patch.
-    """
+    """Apply Gaussian blur to RGB image."""
 
     def __init__(
         self,
