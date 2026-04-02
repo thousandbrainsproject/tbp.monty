@@ -306,6 +306,8 @@ class GaussianBlurRGB(Transform):
         self.kernel_size = kernel_size
         self.sensor_ids = sensor_ids
 
+        if sensor_ids is not None and len(sensor_ids) == 0:
+            raise ValueError("sensor_ids must not be empty; use None for all sensors")
         if self.kernel_size < 0:
             raise ValueError(
                 f"The kernel_size must be non-negative, got {kernel_size}."
@@ -334,9 +336,7 @@ class GaussianBlurRGB(Transform):
             KeyError: If sensor is not found in observations or has no 'rgba' key.
         """
         agent_obs = observations[self.agent_id]
-        sensors_to_process = self.sensor_ids
-        if sensors_to_process is None:
-            sensors_to_process = list(agent_obs.keys())
+        sensors_to_process = self.sensor_ids if self.sensor_ids else list(agent_obs.keys())
 
         for sensor_id in sensors_to_process:
             if sensor_id not in agent_obs:

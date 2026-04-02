@@ -139,6 +139,10 @@ class GaussianBlurRGBInitTest(unittest.TestCase):
         ):
             GaussianBlurRGB(agent_id=AGENT_ID, sigma=0, kernel_size=0)
 
+    def test_empty_sensor_ids_raises(self):
+        with pytest.raises(ValueError, match="sensor_ids must not be empty"):
+            GaussianBlurRGB(agent_id=AGENT_ID, sensor_ids=[])
+
 
 class GaussianBlurRGBTest(unittest.TestCase):
     def test_sensor_id_not_in_agent(self):
