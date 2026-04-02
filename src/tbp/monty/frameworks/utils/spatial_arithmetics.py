@@ -20,6 +20,26 @@ from scipy.spatial.transform import Rotation
 logger = logging.getLogger(__name__)
 
 
+def project_onto_tangent_plane(v: np.ndarray, n: np.ndarray) -> np.ndarray:
+    """Project a vector onto the tangent plane perpendicular to a normal.
+
+    Removes the component of v that is parallel to n, leaving only the
+    component that lies in the plane perpendicular to n.
+
+    Args:
+        v: Vector to project.
+        n: Normal vector defining the tangent plane. Normalized internally.
+
+    Returns:
+        The projection of v onto the plane perpendicular to n.
+
+    Raises:
+        ValueError: If n is a near-zero vector.
+    """
+    n = normalize(n)
+    return v - np.dot(v, n) * n
+
+
 def rotations_to_quats(rotations, invert=False):
     # We get euler rotations from feature LM
     if rotations.ndim == 2:
