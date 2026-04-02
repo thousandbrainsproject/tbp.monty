@@ -73,14 +73,14 @@ class HypothesesUpdater(ContextManager[Self], Protocol):
         """Update hypotheses based on sensor displacement and sensed features.
 
         Args:
-            hypotheses: Unified hypotheses for the graph.
+            hypotheses: Hypothesis space for the graph.
             features: Input features keyed by channel name.
             displacement: Given displacement vector.
             graph_id: ID of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            Updated unified hypotheses (or None if no channels available)
+            Updated graph hypothesis space (or None if no channels available)
             and telemetry.
         """
         ...
@@ -220,14 +220,14 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         is computed and summed by the displacer.
 
         Args:
-            hypotheses: Unified hypotheses for the graph.
+            hypotheses: Hypothesis space for the graph.
             features: Input features keyed by channel name.
             displacement: Given displacement vector.
             graph_id: Identifier of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            Updated unified hypotheses (or None if no channels available)
+            Updated hypothesis space (or None if no channels available)
             and telemetry.
         """
         # Get all usable input channels
@@ -238,6 +238,9 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             features, self.graph_memory.get_input_channels_in_graph(graph_id)
         )
 
+        if graph_id not in self._initialized_channels:
+            self._initialized_channels[graph_id] = set()
+
         if len(input_channels_to_use) == 0:
             logger.info(
                 f"No input channels observed for {graph_id} that are stored in the "
@@ -246,8 +249,6 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             return None, {}
 
         if hypotheses.evidence.shape[0] == 0:
-            if graph_id not in self._initialized_channels:
-                self._initialized_channels[graph_id] = set()
             all_hyps = []
             for channel in input_channels_to_use:
                 channel_hyps = self._get_initial_hypothesis_space(
@@ -269,7 +270,6 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 evidence_update_threshold=evidence_update_threshold,
                 graph_id=graph_id,
                 possible_hypotheses=hypotheses,
-                total_hypotheses_count=hypotheses.evidence.shape[0],
             )
         )
 
@@ -279,9 +279,14 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         # a fighting chance (otherwise they'd start at ~0 and be immediately
         # pruned).
         # TODO H: Test mean vs. median here.
-        displaced_hypotheses = self._initialize_new_channels(
-            displaced_hypotheses, features, input_channels_to_use, graph_id
-        )
+        new_channels = [
+            ch for ch in input_channels_to_use
+            if ch not in self._initialized_channels[graph_id]
+        ]
+        if new_channels:
+            displaced_hypotheses = self._initialize_new_channels(
+                displaced_hypotheses, features, new_channels, graph_id
+            )
 
         telemetry = {"mlh_prediction_error": telemetry_data.mlh_prediction_error}
         return displaced_hypotheses, telemetry
@@ -290,7 +295,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         self,
         hypotheses: Hypotheses,
         features: dict,
-        input_channels_to_use: list[str],
+        new_channels: list[str],
         graph_id: str,
     ) -> Hypotheses:
         """Initialize hypotheses for channels that haven't been seen before.
@@ -302,20 +307,12 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         Args:
             hypotheses: Current unified hypotheses.
             features: Input features keyed by channel name.
-            input_channels_to_use: Channels available this step.
+            new_channels: Channels to initialize.
             graph_id: Identifier of the graph being updated.
 
         Returns:
-            Hypotheses with any new channel hypotheses appended.
+            Hypotheses with new channel hypotheses appended.
         """
-        if graph_id not in self._initialized_channels:
-            self._initialized_channels[graph_id] = set()
-
-        initialized = self._initialized_channels[graph_id]
-        new_channels = [ch for ch in input_channels_to_use if ch not in initialized]
-        if not new_channels:
-            return hypotheses
-
         current_mean_evidence = np.mean(hypotheses.evidence)
         new_hyps = []
         for channel in new_channels:

@@ -995,10 +995,11 @@ class GraphLM(LearningModule):
     # ------------------------ Helper --------------------------
 
     def _add_displacements(self, obs):
-        """Add displacements to the current observation.
+        """Compute and add a single displacement vector to all observations.
 
-        The observation consists of features at a location. To get the displacement we
-        have to look at the previous observation stored in the buffer.
+        Computes one displacement by comparing the current average SM location from
+        current observations to the previous average SM location stored in the buffer.
+        This single displacement is then set on every SM and LM observation.
 
         Args:
             obs: Observations to add displacements to.

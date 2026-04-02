@@ -45,9 +45,6 @@ class HypothesisDisplacerTelemetry:
 
 
 class HypothesesDisplacer(Protocol):
-    past_weight: float
-    present_weight: float
-
     def displace_hypotheses_and_compute_evidence(
         self,
         displacement: npt.NDArray[np.float64],
@@ -55,7 +52,6 @@ class HypothesesDisplacer(Protocol):
         evidence_update_threshold: float,
         graph_id: str,
         possible_hypotheses: Hypotheses,
-        total_hypotheses_count: int,
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
         """Updates evidence by comparing features after applying sensed displacement.
 
@@ -69,7 +65,6 @@ class HypothesesDisplacer(Protocol):
             evidence_update_threshold: Evidence update threshold.
             graph_id: The ID of the current graph.
             possible_hypotheses: hypotheses to be modified.
-            total_hypotheses_count: Total number of hypotheses in the graph.
 
         Returns:
             Displaced hypotheses with computed evidence and telemetry.
@@ -146,7 +141,6 @@ class DefaultHypothesesDisplacer:
         evidence_update_threshold: float,
         graph_id: str,
         possible_hypotheses: Hypotheses,
-        total_hypotheses_count: int,
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
         # Have to do this for all hypotheses so we don't lose the path information
         rotated_displacements = possible_hypotheses.poses.dot(displacement)
@@ -160,7 +154,7 @@ class DefaultHypothesesDisplacer:
         if num_hypotheses_to_test > 0:
             logger.info(
                 f"Testing {num_hypotheses_to_test} out of "
-                f"{total_hypotheses_count} hypotheses for {graph_id} "
+                f"{possible_hypotheses.evidence.shape[0]} hypotheses for {graph_id} "
                 f"(evidence > {evidence_update_threshold})"
             )
 

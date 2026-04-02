@@ -787,7 +787,7 @@ class EvidenceGraphLM(GraphLM):
         """
         start_time = time.time()
 
-        # Initialize empty arrays on first call for this graph
+        # Initialize empty hypothesis space on first call for this graph
         if graph_id not in self.evidence:
             self.evidence[graph_id] = np.empty((0,))
             self.possible_locations[graph_id] = np.empty((0, 3))
@@ -817,7 +817,7 @@ class EvidenceGraphLM(GraphLM):
             )
         )
 
-        if hypotheses_update_telemetry:
+        if hypotheses_update_telemetry is not None:
             self.hypotheses_updater_telemetry[graph_id] = hypotheses_update_telemetry
 
         if hypotheses_update is not None:

@@ -86,7 +86,8 @@ class BurstSamplingHypothesesUpdater:
 
     The burst sampling process is governed by four main parameters:
       - `sampling_multiplier`: Determines the number of hypotheses to sample during
-        bursts as a multiplier of the object graph nodes.
+        bursts as a multiplier of the total number of available informed hypotheses.
+        This value has a range of [0, 1].
       - `deletion_trigger_slope`: Hypotheses below this threshold are deleted.
       - `sampling_burst_duration`: The number of consecutive steps in each burst.
       - `burst_trigger_slope`: The threshold for triggering a sampling burst. This
@@ -320,6 +321,7 @@ class BurstSamplingHypothesesUpdater:
         hypotheses_selection, informed_per_channel = self._sample_count(
             features=features,
             graph_id=graph_id,
+            input_channels=input_channels_to_use,
             tracker=tracker,
         )
 
@@ -345,7 +347,6 @@ class BurstSamplingHypothesesUpdater:
                     evidence_update_threshold=evidence_update_threshold,
                     graph_id=graph_id,
                     possible_hypotheses=existing_hypotheses,
-                    total_hypotheses_count=hypotheses.evidence.shape[0],
                 )
             )
         else:
@@ -409,6 +410,7 @@ class BurstSamplingHypothesesUpdater:
         self,
         features: dict,
         graph_id: str,
+        input_channels: list[str],
         tracker: EvidenceSlopeTracker,
     ) -> tuple[HypothesesSelection, dict[str, int]]:
         """Calculates the number of existing and informed hypotheses needed.
@@ -416,6 +418,7 @@ class BurstSamplingHypothesesUpdater:
         Args:
             features: Input features keyed by channel name.
             graph_id: Identifier of the graph being queried.
+            input_channels: Usable input channels for this graph.
             tracker: Slope tracker for the evidence values of a
                 graph_id
 
@@ -437,11 +440,6 @@ class BurstSamplingHypothesesUpdater:
         """
         informed_per_channel: dict[str, int] = {}
         if self.sampling_burst_steps > 0:
-            input_channels = all_usable_input_channels(
-                features,
-                self.graph_memory.get_input_channels_in_graph(graph_id),
-            )
-
             # Calculate informed count per channel based on each channel's
             # num_hyps_per_node and node count. Each channel may have a
             # different num_hyps_per_node (e.g. due to pose_fully_defined),
