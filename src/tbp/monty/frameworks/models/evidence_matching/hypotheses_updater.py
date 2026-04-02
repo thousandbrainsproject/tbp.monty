@@ -280,7 +280,8 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         # pruned).
         # TODO H: Test mean vs. median here.
         new_channels = [
-            ch for ch in input_channels_to_use
+            ch
+            for ch in input_channels_to_use
             if ch not in self._initialized_channels[graph_id]
         ]
         if new_channels:

@@ -229,9 +229,7 @@ class GlobalLocationAveragingTest(unittest.TestCase):
         self.buffer.append([state_sm0, state_sm1, state_lm])
         # Only SM locations are averaged; LM locations are excluded
         expected_avg = (state_sm0.location + state_sm1.location) / 2
-        np.testing.assert_array_equal(
-            self.buffer.global_location, expected_avg
-        )
+        np.testing.assert_array_equal(self.buffer.global_location, expected_avg)
 
     def test_global_location_single_channel(self):
         state_a = create_mock_state(
