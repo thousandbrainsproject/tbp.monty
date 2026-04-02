@@ -314,7 +314,8 @@ class GaussianBlurRGB(Transform):
             )
         if self.kernel_size != 0 and self.kernel_size % 2 == 0:
             raise ValueError(
-                f"The kernel_size must be odd or 0 (for auto-compute), got {kernel_size}."
+                f"The kernel_size must be odd or 0 (for auto-compute), "
+                f"got {kernel_size}."
             )
         if self.kernel_size == 0 and self.sigma <= 0:
             raise ValueError(
@@ -336,7 +337,9 @@ class GaussianBlurRGB(Transform):
             KeyError: If sensor is not found in observations or has no 'rgba' key.
         """
         agent_obs = observations[self.agent_id]
-        sensors_to_process = self.sensor_ids if self.sensor_ids else list(agent_obs.keys())
+        sensors_to_process = (
+            self.sensor_ids if self.sensor_ids else list(agent_obs.keys())
+        )
 
         for sensor_id in sensors_to_process:
             if sensor_id not in agent_obs:
