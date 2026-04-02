@@ -307,14 +307,16 @@ class GaussianBlurRGB(Transform):
         self.sensor_ids = sensor_ids
 
         if self.kernel_size < 0:
-            raise ValueError(f"kernel_size must be non-negative, got {kernel_size}")
+            raise ValueError(
+                f"The kernel_size must be non-negative, got {kernel_size}."
+            )
         if self.kernel_size != 0 and self.kernel_size % 2 == 0:
             raise ValueError(
-                f"kernel_size must be odd or 0 (for auto-compute), got {kernel_size}"
+                f"The kernel_size must be odd or 0 (for auto-compute), got {kernel_size}."
             )
         if self.kernel_size == 0 and self.sigma <= 0:
             raise ValueError(
-                f"sigma must be positive when kernel_size is 0, got {sigma}"
+                f"The sigma must be positive when kernel_size is 0, got {sigma}."
             )
 
     def __call__(
