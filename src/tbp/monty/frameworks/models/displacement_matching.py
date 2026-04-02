@@ -406,7 +406,8 @@ class DisplacementGraphLM(GraphLM):
         displacement = np.zeros(3)
         ppf = np.zeros(4)
         # TODO S: calculate displacements for each separately (mostly for rotation disp)
-        obs_to_use = obs[0]
+        sm_obs = [o for o in obs if o.sender_type == "SM"]
+        obs_to_use = sm_obs[0]
 
         if len(self.buffer) > 0:
             # TODO S: Make sure result of get_current_location() and get_current_pose()

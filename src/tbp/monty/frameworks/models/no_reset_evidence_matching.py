@@ -137,12 +137,13 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         Returns:
             The list of observations, each updated with a displacement vector.
         """
+        sm_obs = [o for o in obs if o.sender_type == "SM"]
+        avg_location = np.mean([o.location for o in sm_obs], axis=0)
         if self.last_location is not None:
-            avg_location = np.mean([o.location for o in obs], axis=0)
             displacement = avg_location - self.last_location
         else:
             displacement = np.zeros(3)
-            avg_location = np.mean([o.location for o in obs], axis=0)
+
         for o in obs:
             o.set_displacement(displacement)
         self.last_location = avg_location.copy()

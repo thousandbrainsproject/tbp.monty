@@ -524,17 +524,18 @@ class FeatureAtLocationBuffer:
     def _store_global_displacement_and_location(self, list_of_data):
         """Store the global displacement and location from the current step.
 
-        Computes the average location across all input channels and stores
-        any displacement present on the first observation.
+        Computes the average location across SM input channels and stores
+        any displacement present on the first SM observation.
 
         Args:
             list_of_data: List of State objects from the current step.
         """
-        avg_location = np.mean([s.location for s in list_of_data], axis=0)
+        sm_data = [s for s in list_of_data if s.sender_type == "SM"]
+        avg_location = np.mean([s.location for s in sm_data], axis=0)
 
-        if getattr(list_of_data[0], "displacement", None):
-            for attr in list_of_data[0].displacement:
-                self._add_global_displacement(attr, list_of_data[0].displacement[attr])
+        if getattr(sm_data[0], "displacement", None):
+            for attr in sm_data[0].displacement:
+                self._add_global_displacement(attr, sm_data[0].displacement[attr])
 
         self.global_location = avg_location.copy()
 

@@ -1031,8 +1031,9 @@ class GraphLM(LearningModule):
         Returns:
             Observations with displacements.
         """
+        sm_obs = [o for o in obs if o.sender_type == "SM"]
         if self.buffer.global_location is not None:
-            avg_location = np.mean([o.location for o in obs], axis=0)
+            avg_location = np.mean([o.location for o in sm_obs], axis=0)
             displacement = avg_location - self.buffer.global_location
         else:
             displacement = np.zeros(3)
