@@ -124,7 +124,7 @@ class GaussianSmoothingTest(unittest.TestCase):
         self.assertTrue(all_equal, "Filtered pixel values do not match.")
 
 
-class GaussianBlurRGBInitTest(unittest.TestCase):
+class GaussianBlurRGBTest(unittest.TestCase):
     def test_negative_kernel_size_raises(self):
         with pytest.raises(ValueError, match="kernel_size must be non-negative"):
             GaussianBlurRGB(agent_id=AGENT_ID, kernel_size=-1)
@@ -142,9 +142,6 @@ class GaussianBlurRGBInitTest(unittest.TestCase):
     def test_empty_sensor_ids_raises(self):
         with pytest.raises(ValueError, match="sensor_ids must not be empty"):
             GaussianBlurRGB(agent_id=AGENT_ID, sensor_ids=[])
-
-
-class GaussianBlurRGBTest(unittest.TestCase):
     def test_sensor_id_not_in_agent(self):
         obs = Observations()
         obs[AGENT_ID] = AgentObservations()
