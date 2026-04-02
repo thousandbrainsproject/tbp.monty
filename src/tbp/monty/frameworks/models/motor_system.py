@@ -80,6 +80,9 @@ class MotorSystem:
             z_defined_pc=[],
         )
 
+    def state_dict(self) -> dict[str, Any]:
+        return self._policy.state_dict()
+
     def __call__(
         self,
         ctx: RuntimeContext,
