@@ -22,7 +22,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
-from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
 
 __all__ = ["MontyBase"]
 
@@ -195,9 +194,6 @@ class MontyBase(Monty):
         proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
         self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
-        self._pass_input_obs_to_motor_system(  # TODO: not part of MontyBase
-            get_first_sensory_state(self.sensor_module_outputs)
-        )
         self.total_steps += 1
         self.episode_steps += 1
         # For each of the learning modules, update the list of processed
@@ -334,7 +330,9 @@ class MontyBase(Monty):
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
     ) -> None:
-        self._actions = self.motor_system(ctx, observations, proprioceptive_state)
+        self._actions = self.motor_system(
+            ctx, observations, proprioceptive_state, self.sensor_module_outputs[0]
+        )
 
     def _set_step_type_and_check_if_done(self):
         """Check terminal conditions and decide if we change the step type.

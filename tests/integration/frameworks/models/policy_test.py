@@ -654,8 +654,9 @@ class PolicyTest(unittest.TestCase):
         # also in environmental coordinates, so we compare these
         # Note that the movement is a unit vector because it is a direction, the amount
         # (i.e. size) of the translation is represented separately.
-        policy.processed_observations = self.fake_obs_pc[0]
-        direction = policy.tangential_direction(ctx, proprioceptive_state)
+        direction = policy.tangential_direction(
+            ctx, proprioceptive_state, self.fake_obs_pc[0]
+        )
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -667,8 +668,9 @@ class PolicyTest(unittest.TestCase):
         )
 
         # Step 2
-        policy.processed_observations = self.fake_obs_pc[1]
-        direction = policy.tangential_direction(ctx, proprioceptive_state)
+        direction = policy.tangential_direction(
+            ctx, proprioceptive_state, self.fake_obs_pc[1]
+        )
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -681,8 +683,9 @@ class PolicyTest(unittest.TestCase):
 
         # Step 3: Our bias should change from following minimal to maximal
         # PC
-        policy.processed_observations = self.fake_obs_pc[2]
-        direction = policy.tangential_direction(ctx, proprioceptive_state)
+        direction = policy.tangential_direction(
+            ctx, proprioceptive_state, self.fake_obs_pc[2]
+        )
         assert np.all(np.isclose(direction, [0, 1, 0])), (
             "Not following correct PC direction"
         )
@@ -694,8 +697,9 @@ class PolicyTest(unittest.TestCase):
         )
 
         # Step 4
-        policy.processed_observations = self.fake_obs_pc[3]
-        direction = policy.tangential_direction(ctx, proprioceptive_state)
+        direction = policy.tangential_direction(
+            ctx, proprioceptive_state, self.fake_obs_pc[3]
+        )
         assert np.all(np.isclose(direction, [0, 1, 0])), (
             "Not following correct PC direction"
         )
@@ -707,8 +711,9 @@ class PolicyTest(unittest.TestCase):
         )
 
         # Step 5: Pass observation *without* a well-defined PC direction
-        policy.processed_observations = self.fake_obs_pc[4]
-        direction = policy.tangential_direction(ctx, proprioceptive_state)
+        direction = policy.tangential_direction(
+            ctx, proprioceptive_state, self.fake_obs_pc[4]
+        )
         assert np.isclose(
             np.dot(self.fake_obs_pc[4].get_surface_normal(), direction), 0
         ), "Direction should be orthogonal to tangent (surface) plane"
@@ -731,8 +736,9 @@ class PolicyTest(unittest.TestCase):
         policy.ignoring_pc_counter = self.policy_cfg_fragment.min_general_steps
         proprioceptive_state[AgentID("agent_id_0")].rotation = qt.quaternion(0, 0, 1, 0)
 
-        policy.processed_observations = self.fake_obs_pc[5]
-        direction = policy.tangential_direction(ctx, proprioceptive_state)
+        direction = policy.tangential_direction(
+            ctx, proprioceptive_state, self.fake_obs_pc[5]
+        )
         assert np.all(np.isclose(direction, [1.0, 0.0, 0])), (
             "Not following correct PC direction"
         )
@@ -772,12 +778,13 @@ class PolicyTest(unittest.TestCase):
         # Step 1 : PC-guided information, but we haven't taken the minimum number of
         # non-PC steps, so take random step
         policy.ignoring_pc_counter = 0  # Set to 0 so we skip PC
-        policy.processed_observations = self.fake_obs_advanced_pc[0]
         # TODO M clean up how we set this when doing the refactor; currently this is
         # done in graph_matching.py normally
         policy.tangent_locs.append(self.fake_obs_advanced_pc[0].location)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(ctx, proprioceptive_state)
+        direction = policy.tangential_direction(
+            ctx, proprioceptive_state, self.fake_obs_advanced_pc[0]
+        )
         assert np.isclose(
             np.dot(self.fake_obs_advanced_pc[0].get_surface_normal(), direction), 0
         ), "Direction should be orthogonal to tangent (surface) plane"
@@ -790,12 +797,13 @@ class PolicyTest(unittest.TestCase):
 
         # Step 2 : Given the same observation, but now have taken sufficient non-PC
         # steps, so should follow PC direction
-        policy.processed_observations = self.fake_obs_advanced_pc[0]
         # TODO M clean up how we set this when doing the refactor; currently this is
         # done in graph_matching.py normally
         policy.tangent_locs.append(self.fake_obs_pc[0].location)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(ctx, proprioceptive_state)
+        direction = policy.tangential_direction(
+            ctx, proprioceptive_state, self.fake_obs_advanced_pc[0]
+        )
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -808,10 +816,11 @@ class PolicyTest(unittest.TestCase):
 
         # Step 3 : Following PC direction would cause us to double back on ourself;
         # PC has been arbitrarily flipped vs. previous step, so can just flip it back
-        policy.processed_observations = self.fake_obs_advanced_pc[1]
         policy.tangent_locs.append(self.fake_obs_advanced_pc[1].location)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(ctx, proprioceptive_state)
+        direction = policy.tangential_direction(
+            ctx, proprioceptive_state, self.fake_obs_advanced_pc[1]
+        )
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -823,10 +832,11 @@ class PolicyTest(unittest.TestCase):
         )
 
         # Step 4 : PC is defined in z-direction, so policy should take a random step
-        policy.processed_observations = self.fake_obs_advanced_pc[2]
         policy.tangent_locs.append(self.fake_obs_advanced_pc[2].location)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(ctx, proprioceptive_state)
+        direction = policy.tangential_direction(
+            ctx, proprioceptive_state, self.fake_obs_advanced_pc[2]
+        )
         assert np.isclose(np.linalg.norm(direction), 1), (
             "Direction should be a unit vector"
         )
@@ -843,7 +853,6 @@ class PolicyTest(unittest.TestCase):
 
         # Step 5 : Following PC direction would cause us to double back on ourself; PC
         # has not been arbitrarily flipped, so policy selects a new heading
-        policy.processed_observations = self.fake_obs_advanced_pc[0]
         policy.tangent_locs.append(
             self.fake_obs_advanced_pc[0].location
         )  # Synthetically
@@ -851,7 +860,9 @@ class PolicyTest(unittest.TestCase):
         # following PC would cause it to visit the observation 1 again (which it is
         # designed to avoid)
         policy.tangent_norms.append([0, 0, 1])
-        direction = policy.tangential_direction(ctx, proprioceptive_state)
+        direction = policy.tangential_direction(
+            ctx, proprioceptive_state, self.fake_obs_advanced_pc[0]
+        )
         # Note the following movement is a random direction deterministically set by the
         # random seed
         assert np.isclose(
