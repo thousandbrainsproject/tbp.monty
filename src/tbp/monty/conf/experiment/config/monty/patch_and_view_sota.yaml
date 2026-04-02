@@ -20,6 +20,7 @@ sensor_module_configs:
         - hsv
         - principal_curvatures_log
         - mock_obs
+        - local_binary_pattern
       delta_thresholds:
         on_object: 0
         n_steps: 20

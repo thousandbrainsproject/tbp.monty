@@ -17,6 +17,8 @@ import numpy as np
 import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
+from skimage.feature import local_binary_pattern
+from skimage.color import rgb2gray
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
@@ -144,6 +146,7 @@ class ObservationProcessor:
         "curvature_for_TM",
         "coords_for_TM",
         "mock_obs",
+        "local_binary_pattern",
     ]
 
     def __init__(
@@ -322,6 +325,13 @@ class ObservationProcessor:
         if "mock_obs" in self._features:
             mock_obs = np.array([[.1, .2, .3], [.4, .5, .6], [.7, .8, .9]])
             features["mock_obs"] = mock_obs
+        if "local_binary_pattern" in self._features:
+            print("In LBP")
+
+            patch = rgba_feat[:, :, :3]
+            gray = rgb2gray(patch)
+            lbp = local_binary_pattern(gray, P=8, R=1, method="default")
+            features["local_binary_pattern"] = lbp
 
         # Note we only determine curvature if we could determine a valid surface normal
         if any(feat in self.CURVATURE_FEATURES for feat in self._features) and valid_sn:
