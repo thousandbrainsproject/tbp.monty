@@ -19,6 +19,7 @@ from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
+from tbp.monty.frameworks.models.motor_policy_selectors import MotorPolicySelector
 from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
@@ -38,13 +39,13 @@ class SurfacePolicyActionDetailsTelemetry:
 class MotorSystem:
     """The basic motor system implementation."""
 
-    def __init__(self, policy: MotorPolicy) -> None:
+    def __init__(self, policy_selector: MotorPolicySelector) -> None:
         """Initialize the motor system with a motor policy.
 
         Args:
             policy: The motor policy to use.
         """
-        self._policy = policy
+        self._policy_selector = policy_selector
         # For each step, we store the actions produced by the policy and the current
         # motor system state as a (actions, state) tuple.
         self._action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]] = []
@@ -64,10 +65,6 @@ class MotorSystem:
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
 
-    def set_driving_goal_state(self, goal: GoalState | None) -> None:
-        """Set the driving goal state."""
-        self._policy.set_driving_goal_state(goal)
-
     def pre_episode(self) -> None:
         """Pre episode hook."""
         # TODO: Passing self to policy pre_episode is a hack. What we should be
@@ -76,7 +73,7 @@ class MotorSystem:
         # motor_only_step to True.
         # Undoing this hack should probably happen when motor_only_step is moved
         # to Monty itself.
-        self._policy.pre_episode(self)
+        self._policy_selector.pre_episode(self)
         self._action_sequence = []
         self._telemetry_surface_action_details = SurfacePolicyActionDetailsTelemetry(
             pc_heading=[],
@@ -90,6 +87,7 @@ class MotorSystem:
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
         percept: State,
+        goals: list[GoalState],
     ) -> list[Action]:
         """Defines the structure for __call__.
 
@@ -101,12 +99,14 @@ class MotorSystem:
             proprioceptive_state: The proprioceptive state from the environment.
             percept: The percept from (as of this writing) the first sensor
                 module.
+            goals: The goals to consider.
 
         Returns:
             The action to take.
         """
         motor_system_state = MotorSystemState(proprioceptive_state)
-        policy_result = self._policy(ctx, observations, motor_system_state, percept)
+        policy, goal = self._policy_selector(goals)
+        policy_result = policy(ctx, observations, motor_system_state, percept, goal)
         self.motor_only_step = policy_result.motor_only_step
 
         state_copy = motor_system_state.convert_motor_state()

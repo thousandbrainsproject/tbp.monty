@@ -85,7 +85,6 @@ class Monty(metaclass=abc.ABCMeta):
         self._step_learning_modules(ctx)
         self._vote()
         self._pass_goal_states()
-        self._pass_infos_to_motor_system()
         self._step_motor_system(ctx, observations, proprioceptive_state)
         self._set_step_type_and_check_if_done()
         self._post_step()
@@ -108,7 +107,6 @@ class Monty(metaclass=abc.ABCMeta):
         self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
         self._step_learning_modules(ctx)
         self._pass_goal_states()
-        self._pass_infos_to_motor_system()
         self._step_motor_system(ctx, observations, proprioceptive_state)
         self._set_step_type_and_check_if_done()
         self._post_step()
@@ -193,11 +191,6 @@ class Monty(metaclass=abc.ABCMeta):
 
         Aggregate any goal states for sending to the motor-system.
         """
-        pass
-
-    @abc.abstractmethod
-    def _pass_infos_to_motor_system(self):
-        """Pass input observations and goal states to the motor system."""
         pass
 
     @abc.abstractmethod

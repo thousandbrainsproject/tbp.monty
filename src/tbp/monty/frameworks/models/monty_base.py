@@ -320,10 +320,6 @@ class MontyBase(Monty):
             goal_states = sm.propose_goal_states()
             self.gsg_outputs.extend(goal_states)
 
-    def _pass_infos_to_motor_system(self):
-        """Pass input observations and goal states to the motor system."""
-        pass
-
     def _step_motor_system(
         self,
         ctx: RuntimeContext,
@@ -331,7 +327,11 @@ class MontyBase(Monty):
         proprioceptive_state: ProprioceptiveState,
     ) -> None:
         self._actions = self.motor_system(
-            ctx, observations, proprioceptive_state, self.sensor_module_outputs[0]
+            ctx,
+            observations,
+            proprioceptive_state,
+            self.sensor_module_outputs[0],
+            self.gsg_outputs,
         )
 
     def _set_step_type_and_check_if_done(self):
