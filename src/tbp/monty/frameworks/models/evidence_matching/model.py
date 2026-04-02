@@ -55,7 +55,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                     best_goal_state = current_goal_state
                     best_goal_confidence = current_goal_state.confidence
 
-            self.motor_system._policy.set_driving_goal_state(best_goal_state)
+            self.motor_system.set_driving_goal_state(best_goal_state)
 
     def _combine_votes(self, votes_per_lm):
         """Combine evidence from different LMs.

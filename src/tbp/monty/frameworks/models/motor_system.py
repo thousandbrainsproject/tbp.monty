@@ -23,7 +23,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
-from tbp.monty.frameworks.models.states import State
+from tbp.monty.frameworks.models.states import GoalState, State
 
 __all__ = ["MotorSystem"]
 
@@ -63,6 +63,10 @@ class MotorSystem:
     @property
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
+
+    def set_driving_goal_state(self, goal: GoalState | None) -> None:
+        """Set the driving goal state."""
+        self._policy.set_driving_goal_state(goal)
 
     def pre_episode(self) -> None:
         """Pre episode hook."""
