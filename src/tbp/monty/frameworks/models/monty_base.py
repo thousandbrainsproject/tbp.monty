@@ -407,7 +407,7 @@ class MontyBase(Monty):
         sm_dict = {
             i: module.state_dict() for i, module in enumerate(self.sensor_modules)
         }
-        motor_system_dict = self.motor_system._policy.state_dict()
+        motor_system_dict = self.motor_system.state_dict()
 
         return dict(
             lm_dict=lm_dict,
