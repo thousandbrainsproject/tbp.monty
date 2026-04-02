@@ -45,7 +45,7 @@ from tbp.monty.frameworks.environments.positioning_procedures import (
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
-from tbp.monty.frameworks.models.states import State
+from tbp.monty.frameworks.models.states import GoalState, State
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
@@ -59,7 +59,6 @@ if TYPE_CHECKING:
 __all__ = [
     "BasePolicy",
     "InformedPolicy",
-    "JumpToGoalStateMixin",
     "MotorPolicy",
     "NaiveScanPolicy",
     "SurfacePolicy",
@@ -113,6 +112,11 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def set_driving_goal_state(self, goal: GoalState | None) -> None:
+        """Specify the goal-state that the motor-actuator will attempt to satisfy."""
+        pass
+
+    @abc.abstractmethod
     def __call__(
         self,
         ctx: RuntimeContext,
@@ -151,6 +155,7 @@ class BasePolicy(MotorPolicy):
         super().__init__()
         self.agent_id = agent_id
         self.action_sampler = action_sampler
+        self.driving_goal_state = None
 
     def __call__(
         self,
@@ -176,8 +181,11 @@ class BasePolicy(MotorPolicy):
         """
         return MotorPolicyResult([self.action_sampler.sample(self.agent_id, ctx.rng)])
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:
-        pass
+    def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
+        self.driving_goal_state = None
+
+    def set_driving_goal_state(self, goal: GoalState | None) -> None:
+        self.driving_goal_state = goal
 
     ###
     # Other required abstract methods, methods called by Monty or Environment Interface
@@ -224,6 +232,7 @@ class PredefinedPolicy(MotorPolicy):
         self.action_list: list[Action] = PredefinedPolicy.read_action_file(file_name)
         self.episode_step = 0
         self.use_goal_state_driven_actions = False
+        self.driving_goal_state = None
 
     def __call__(
         self,
@@ -238,6 +247,10 @@ class PredefinedPolicy(MotorPolicy):
 
     def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
         self.episode_step = 0
+        self.driving_goal_state = None
+
+    def set_driving_goal_state(self, goal: GoalState | None) -> None:
+        self.driving_goal_state = goal
 
     def state_dict(self) -> dict[str, Any]:
         return {"episode_step": self.episode_step}
@@ -246,63 +259,7 @@ class PredefinedPolicy(MotorPolicy):
         self.episode_step = state_dict["episode_step"]
 
 
-class JumpToGoalStateMixin:
-    """Convert driving goal state to an action in Habitat-compatible coordinates.
-
-    Motor policy that enables us to take in a driving goal state for the motor agent,
-    and specify the action in Habitat-compatible coordinates that must be taken
-    to move there.
-    """
-
-    def __init__(self) -> None:
-        self.driving_goal_state = None
-
-    def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
-        self.set_driving_goal_state(None)
-
-    def set_driving_goal_state(self, goal_state):
-        """Specify the goal-state that the motor-actuator will attempt to satisfy."""
-        self.driving_goal_state = goal_state
-
-    def derive_habitat_goal_state(self):
-        """Derive the Habitat-compatible goal state.
-
-        Take the current driving goal state (in CMP format), and derive the
-        corresponding Habitat compatible goal-state to pass through the Embodied
-        Environment Interface.
-
-        Returns:
-            target_loc: Target location.
-            target_quat: Target quaternion.
-        """
-        if self.driving_goal_state is not None:
-            target_loc = self.driving_goal_state.location
-            target_agent_vec = self.driving_goal_state.morphological_features[
-                "pose_vectors"
-            ][0]
-
-            yaw_angle = math.atan2(-target_agent_vec[0], -target_agent_vec[2])
-            pitch_angle = math.asin(target_agent_vec[1])
-
-            # Should rotate by pitch degrees around x, and by yaw degrees around y (and
-            # no change about z, which would correspond to roll)
-            scipy_combined_orientation = rot.from_euler(
-                "xyz",
-                [pitch_angle, yaw_angle, 0],
-                degrees=False,
-            )
-
-            target_quat = scipy_to_numpy_quat(scipy_combined_orientation.as_quat())
-
-            # Reset driving goal state and await further inputs
-            self.set_driving_goal_state(None)
-
-            return target_loc, target_quat
-
-        return None, None
-
-
-class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
+class InformedPolicy(BasePolicy):
     """Policy that takes observation as input.
 
     Extension of BasePolicy that allows for taking the observation into account for
@@ -323,16 +280,12 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         """Initialize policy.
 
         Args:
-            use_goal_state_driven_actions: Whether to enable the motor system to make
-                use of the JumpToGoalStateMixin, which attempts to "jump" (i.e.
-                teleport) the agent to a specified goal state.
+            use_goal_state_driven_actions: Whether to enable the motor system to
+                attempt to jump (i.e. teleport) the agent to a specified goal state.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
         self.use_goal_state_driven_actions = use_goal_state_driven_actions
-        if self.use_goal_state_driven_actions:
-            JumpToGoalStateMixin.__init__(self)
-
         self._undo_action: Action | None = None
 
         self._is_jumping: bool = False
@@ -342,8 +295,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
     def pre_episode(self, motor_system: MotorSystem) -> None:
         self._undo_action = None
-        if self.use_goal_state_driven_actions:
-            JumpToGoalStateMixin.pre_episode(self, motor_system)
         self._reset_jump_state()
         return super().pre_episode(motor_system)
 
@@ -519,6 +470,34 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         raise TypeError(f"Invalid action: {last_action}")
 
+    def _derive_set_agent_pose_from_goal(self, goal: GoalState) -> SetAgentPose:
+        """Derive the `SetAgentPose` action from the driving goal.
+
+        Returns:
+            A `SetAgentPose` action.
+        """
+        target_loc = goal.location
+        target_agent_vec = goal.morphological_features["pose_vectors"][0]
+
+        yaw_angle = math.atan2(-target_agent_vec[0], -target_agent_vec[2])
+        pitch_angle = math.asin(target_agent_vec[1])
+
+        # Should rotate by pitch degrees around x, and by yaw degrees around y (and
+        # no change about z, which would correspond to roll)
+        scipy_combined_orientation = rot.from_euler(
+            "xyz",
+            [pitch_angle, yaw_angle, 0],
+            degrees=False,
+        )
+
+        target_quat = scipy_to_numpy_quat(scipy_combined_orientation.as_quat())
+
+        return SetAgentPose(
+            agent_id=self.agent_id,
+            location=target_loc,
+            rotation_quat=target_quat,
+        )
+
     def _reset_jump_state(self) -> None:
         """Clear the jump state."""
         self._is_jumping = False
@@ -557,7 +536,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 == self._pre_jump_state.sensors[first_sensor].rotation
             ), "Sensors are not identical in pose"
 
-        (target_loc, target_np_quat) = self.derive_habitat_goal_state()
+        assert self.driving_goal_state is not None, "Driving goal state is not set"
+        set_agent_pose = self._derive_set_agent_pose_from_goal(self.driving_goal_state)
+        self.set_driving_goal_state(None)
 
         self._is_jumping = True
 
@@ -568,11 +549,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # modify this from the unit quaternion and [0, 0, 0] position
         # anyways; further note this is globally applied to all sensors.
         actions = [
-            SetAgentPose(
-                agent_id=self.agent_id,
-                location=target_loc,
-                rotation_quat=target_np_quat,
-            ),
+            set_agent_pose,
             SetSensorRotation(
                 agent_id=self.agent_id,
                 rotation_quat=qt.one,

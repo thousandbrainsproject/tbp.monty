@@ -891,7 +891,7 @@ class PolicyTest(unittest.TestCase):
 
         Test the GSGs ability to propose a motor-system goal-state, and then for
         the motor-system to propose a particular target agent location and
-        orientation in Habitat-compatible coordinates.
+        orientation for that goal-state (this is a full roundtrip).
 
         Args:
             ctx: The runtime context
@@ -957,9 +957,9 @@ class PolicyTest(unittest.TestCase):
 
         # --- Determine Habitat-coordinates from goal-state ---
 
-        policy.set_driving_goal_state(motor_goal_state)
-
-        target_loc_hab, target_quat = policy.derive_habitat_goal_state()
+        set_agent_pose = policy._derive_set_agent_pose_from_goal(motor_goal_state)
+        target_loc_hab = set_agent_pose.location
+        target_quat = set_agent_pose.rotation_quat
 
         resulting_rot = Rotation.from_quat(
             numpy_to_scipy_quat(np.array([target_quat.real] + list(target_quat.imag)))
