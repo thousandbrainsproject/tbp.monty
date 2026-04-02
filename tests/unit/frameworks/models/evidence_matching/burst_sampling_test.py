@@ -267,6 +267,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         _, informed_per_channel = self.updater._sample_count(
             features={"patch": channel_features},
             graph_id="object1",
+            input_channels=["patch"],
             tracker=tracker,
         )
 
@@ -303,6 +304,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         _, informed_per_channel = self.updater._sample_count(
             features={"patch": {"pose_fully_defined": pose_fully_defined}},
             graph_id="object1",
+            input_channels=["patch"],
             tracker=tracker,
         )
 
@@ -769,6 +771,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
                 "channel_b": {"pose_fully_defined": True},
             },
             graph_id="object1",
+            input_channels=channels,
             tracker=EvidenceSlopeTracker(),
         )
 

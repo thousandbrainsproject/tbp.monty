@@ -76,7 +76,6 @@ class DefaultHypothesesDisplacerTest(TestCase):
                     evidence_update_threshold=-np.inf,
                     graph_id="test_object",
                     possible_hypotheses=hypotheses,
-                    total_hypotheses_count=num_hyps,
                 )
             )
 
@@ -114,7 +113,6 @@ class DefaultHypothesesDisplacerTest(TestCase):
                 evidence_update_threshold=-np.inf,
                 graph_id="test_object",
                 possible_hypotheses=hypotheses,
-                total_hypotheses_count=num_hyps,
             )
 
         # MLH is index 0 (evidence 5.0), summed evidence at MLH = 1.5 + 0.5 = 2.0
