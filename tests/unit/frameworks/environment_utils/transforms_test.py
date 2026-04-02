@@ -181,7 +181,8 @@ class GaussianBlurRGBTest(unittest.TestCase):
         alpha = np.full((4, 4, 1), 255.0, dtype=np.float32)
         rgba_img = np.concatenate([rgb, alpha], axis=2)
 
-        expected_img = np.array(
+        # Expected RGB values only; alpha channel is tested separately below.
+        expected_per_channel = np.array(
             [
                 [4.01506871, 3.89632597, 4.42645374, 4.33937188],
                 [4.83031406, 4.37522804, 4.41742389, 3.86105315],
@@ -189,6 +190,7 @@ class GaussianBlurRGBTest(unittest.TestCase):
                 [6.69921204, 5.35835336, 5.11543164, 3.52320474],
             ]
         )
+        expected_rgb = np.stack([expected_per_channel] * 3, axis=2)
 
         obs = Observations()
         obs[AGENT_ID] = AgentObservations()
@@ -198,7 +200,6 @@ class GaussianBlurRGBTest(unittest.TestCase):
         smoothed_img = smoothed_obs[AGENT_ID][SENSOR_ID]["rgba"]
 
         self.assertEqual(smoothed_img.shape, rgba_img.shape)
-        expected_rgb = np.stack([expected_img] * 3, axis=2)
         np.testing.assert_allclose(smoothed_img[:, :, :3], expected_rgb, atol=1e-5)
         np.testing.assert_array_equal(smoothed_img[:, :, 3], 255.0)
 
