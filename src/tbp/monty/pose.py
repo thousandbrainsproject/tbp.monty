@@ -9,14 +9,15 @@
 from __future__ import annotations
 
 import numpy as np
+from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
 # Simple 3 and 4-tuples of `float`
 from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 # A type alias for a 1D array of `float`
-# FloatVector = np.ndarray[tuple[int], np.dtype[np.float64]]
 FloatVector = np.ndarray
+# FloatVector = np.ndarray[tuple[int], np.dtype[np.float64]]
 
 
 def _deg(d: float) -> float:
@@ -57,6 +58,14 @@ class Location:  # noqa: PLW1641
         >>> print(a_location.frame)
         None
 
+        >>> a_location = Location(xyz=[8, -3, 5])
+        >>> a_location
+        Location(frame=None, x=8.0, y=-3.0, z=5.0)
+        >>> print(a_location)
+        (8.0, -3.0, 5.0)
+        >>> a_location.to_vector()
+        array([ 8., -3.,  5.])
+
         >>> a_location.x = 3
         >>> a_location.x
         3.0
@@ -68,18 +77,16 @@ class Location:  # noqa: PLW1641
         -2.0
         >>> a_location.position
         (3.0, 5.0, -2.0)
-        >>> a_location.to_xyz()
-        (3.0, 5.0, -2.0)
         >>> a_location.to_vector()
         array([ 3.,  5., -2.])
 
-        >>> a_location.delta_x(5)
+        >>> a_location.move_x(5)
         Location(frame=None, x=8.0, y=5.0, z=-2.0)
-        >>> a_location.delta_y(-3).delta_z(5)
+        >>> a_location.move_y(-3).move_z(5)
         Location(frame=None, x=8.0, y=2.0, z=3.0)
         >>> a_location
         Location(frame=None, x=8.0, y=2.0, z=3.0)
-        >>> a_location.displace([-13, 3, -2])
+        >>> a_location.move_by([-13, 3, -2])
         Location(frame=None, x=-5.0, y=5.0, z=1.0)
 
         >>> b_location = a_location.copy()
@@ -100,14 +107,79 @@ class Location:  # noqa: PLW1641
         Location(frame=None, x=-2.8, y=10.0, z=-2.3)
         >>> a_location - b_location
         Location(frame=None, x=7.2, y=0.0, z=4.3)
+        >>> -b_location
+        Location(frame=None, x=5.0, y=-5.0, z=3.3)
     """
 
     def __init__(
-        self, frame: Pose | None = None, x: float = 0.0, y: float = 0.0, z: float = 0.0
+        self, frame: Pose | None = None, xyz: ArrayLike = (0.0, 0.0, 0.0)
     ) -> None:
-        self.frame: Pose | None = frame
-        t: VectorXYZ = (float(x), float(y), float(z))
-        self._v: FloatVector = np.array(t)
+        self._frame: Pose | None = frame
+        self._v: FloatVector = np.asarray(xyz, dtype=float)
+
+    @staticmethod
+    def from_scalars(
+        frame: Pose | None = None, x: float = 0.0, y: float = 0.0, z: float = 0.0
+    ) -> Location:
+        r"""Create a `Location` from scalar components.
+
+        Returns:
+            The new `Location` object.
+
+        Examples:
+            >>> a_location = Location.from_scalars()
+            >>> a_location
+            Location(frame=None, x=0.0, y=0.0, z=0.0)
+            >>> print(a_location)
+            (0.0, 0.0, 0.0)
+            >>> print(a_location.frame)
+            None
+
+            >>> a_location = Location.from_scalars(None, 3.0, 5.0, -8.0)
+            >>> a_location
+            Location(frame=None, x=3.0, y=5.0, z=-8.0)
+            >>> print(a_location)
+            (3.0, 5.0, -8.0)
+        """
+        return Location(frame, (x, y, z))
+
+    @property
+    def frame(self) -> Pose | None:
+        return self._frame
+
+    # @frame.setter
+    # def frame(self, frame: Pose) -> None:
+    #     # FIXME: changing `frame` may imply updating internal representation
+    #     self._frame = frame
+
+    @property
+    def x(self) -> float:
+        return self._v[0]
+
+    @x.setter
+    def x(self, x: float) -> None:
+        self._v[0] = x
+
+    @property
+    def y(self) -> float:
+        return self._v[1]
+
+    @y.setter
+    def y(self, y: float) -> None:
+        self._v[1] = y
+
+    @property
+    def z(self) -> float:
+        return self._v[2]
+
+    @z.setter
+    def z(self, z: float) -> None:
+        self._v[2] = z
+
+    @property
+    def position(self) -> tuple[float]:
+        """This `Location` as an (_x_, _y_, _z_) tuple."""
+        return tuple(self._v)
 
     def __str__(self) -> str:
         return str(_round_tuple(self.position))
@@ -121,25 +193,25 @@ class Location:  # noqa: PLW1641
             f"z={_round_scalar(self.z)})"
         )
 
-    def __add__(self, other: object) -> Location:  # TODO: implement more operations?
+    def __add__(self, other: object) -> Location:
         if not isinstance(other, self.__class__):
             raise TypeError(f"{self.__class__.__name__} required.")
-        if self.frame is not other.frame:
+        if self._frame is not other._frame:
             raise ValueError("Locations must be in the same frame.")
         v = self._v + other._v
-        return Location(self.frame, *v)
+        return Location(self._frame, v)
 
     def __sub__(self, other: object) -> Location:
         if not isinstance(other, self.__class__):
             raise TypeError(f"{self.__class__.__name__} required.")
-        if self.frame is not other.frame:
+        if self._frame is not other._frame:
             raise ValueError("Locations must be in the same frame.")
         v = self._v - other._v
-        return Location(self.frame, *v)
+        return Location(self._frame, v)
 
     def __neg__(self) -> Location:
         v = -self._v
-        return Location(self.frame, *v)
+        return Location(self._frame, v)
 
     def __eq__(self, other: object) -> bool:
         if self is other:
@@ -165,37 +237,25 @@ class Location:  # noqa: PLW1641
         Returns:
             The new `Location` object.
         """
-        return Location(self.frame, self.x, self.y, self.z)
+        return Location(self._frame, self._v.copy())
 
-    @property
-    def position(self) -> VectorXYZ:
-        return self.to_xyz()
+    def move_to(
+        self, x: float | None = None, y: float | None = None, z: float | None = None
+    ) -> Location:
+        """Move to [_x_, _y_, _z_].
 
-    @property
-    def x(self) -> float:
-        return self._v[0]
+        Returns:
+            This `Location`.
+        """
+        if x is not None:
+            self.x = x
+        if y is not None:
+            self.y = y
+        if z is not None:
+            self.z = z
+        return self
 
-    @x.setter
-    def x(self, x: float) -> None:
-        self._v[0] = float(x)
-
-    @property
-    def y(self) -> float:
-        return self._v[1]
-
-    @y.setter
-    def y(self, y: float) -> None:
-        self._v[1] = float(y)
-
-    @property
-    def z(self) -> float:
-        return self._v[2]
-
-    @z.setter
-    def z(self, z: float) -> None:
-        self._v[2] = float(z)
-
-    def delta_x(self, dx: float) -> Location:
+    def move_x(self, dx: float) -> Location:
         """Move _x_ by _dx_ units.
 
         Returns:
@@ -204,7 +264,7 @@ class Location:  # noqa: PLW1641
         self.x += dx
         return self
 
-    def delta_y(self, dy: float) -> Location:
+    def move_y(self, dy: float) -> Location:
         """Move _y_ by _dy_ units.
 
         Returns:
@@ -213,7 +273,7 @@ class Location:  # noqa: PLW1641
         self.y += dy
         return self
 
-    def delta_z(self, dz: float) -> Location:
+    def move_z(self, dz: float) -> Location:
         """Move _z_ by _dz_ units.
 
         Returns:
@@ -222,13 +282,13 @@ class Location:  # noqa: PLW1641
         self.z += dz
         return self
 
-    def displace(self, offset: FloatVector) -> Location:  # FIXME: choose a better name?
-        """Move by (_dx_, _dy_, _dz_) 3-tuple `offset`.
+    def move_by(self, offset: ArrayLike) -> Location:
+        """Move by [_dx_, _dy_, _dz_] `offset`.
 
         Returns:
             This `Location`.
         """
-        self._v += offset
+        self._v += np.asarray(offset, dtype=float)
         return self
 
     def inverse(self) -> Location:
@@ -238,7 +298,7 @@ class Location:  # noqa: PLW1641
             The new `Location` object.
         """
         v = -self._v
-        return Location(self.frame, *v)
+        return Location(self.frame, v)
 
     def in_frame(self, frame: Pose | None = None) -> Location:
         """Create a copy of this `Location` relative to another frame-of-reference.
@@ -251,17 +311,15 @@ class Location:  # noqa: PLW1641
                 When this `Location` is not in the frame hierarchy.
         """
         origin: Pose | None = self.frame
-        # xyz: FloatVector = np.array(self.to_xyz())
         xyz: FloatVector = self._v
         while origin is not frame:
             if origin is None:
                 raise ValueError("Location must be in the frame hierarchy.")
             xyz = origin.orientation.apply(xyz)
-            # offset: FloatVector = np.array(origin.location.to_xyz())
             offset: FloatVector = origin.location._v
             xyz += offset
             origin = origin.frame
-        return Location(origin, *xyz)
+        return Location(origin, xyz)
 
     def to_vector(self) -> FloatVector:
         """This `Location` as a vector.
@@ -270,16 +328,6 @@ class Location:  # noqa: PLW1641
             `array([`_x_, _y_, _z_`])`
         """
         return self._v.copy()
-
-    def to_xyz(self) -> VectorXYZ:
-        """This `Location` as an (_x_, _y_, _z_) tuple.
-
-        Returns:
-            `tuple(`_x_, _y_, _z_`)`
-        """
-        # FIXME: determine which of these implementations is more efficient
-        # return tuple(self.x, self.y, self.z)
-        return tuple(self._v)
 
 
 class Orientation:  # noqa: PLW1641
@@ -305,10 +353,6 @@ class Orientation:  # noqa: PLW1641
         0.0
         >>> an_orientation.rotation
         (1.0, 0.0, 0.0, 0.0)
-        >>> an_orientation.to_wxyz()
-        (1.0, 0.0, 0.0, 0.0)
-        >>> an_orientation.to_xyzw()
-        (0.0, 0.0, 0.0, 1.0)
         >>> an_orientation.to_quat()
         array([1., 0., 0., 0.])
 
@@ -321,21 +365,21 @@ class Orientation:  # noqa: PLW1641
         False
         >>> an_orientation.approx_equal(b_orientation)
         True
-        >>> _ = an_orientation.delta_pitch(np.pi/2)  # up 90°
-        >>> _ = b_orientation.delta_yaw(-np.pi/2)  # right 90°
+        >>> _ = an_orientation.pitch(np.pi/2)  # up 90°
+        >>> _ = b_orientation.yaw(-np.pi/2)  # right 90°
         >>> _round_tuple(an_orientation.rotation)
         (0.707107, 0.707107, 0.0, 0.0)
         >>> _round_tuple(b_orientation.rotation)
         (0.707107, 0.0, -0.707107, 0.0)
 
-        >>> an_orientation.delta_pitch(-np.pi/2)  # down 90°
+        >>> an_orientation.pitch(-np.pi/2)  # down 90°
         Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
         >>> _round_tuple(an_orientation.rotation) == (1.0, 0.0, 0.0, 0.0)
         True
-        >>> _ = an_orientation.delta_pitch(_deg(45)).delta_yaw(_deg(90))  # up 45°, left 90°
+        >>> _ = an_orientation.pitch(_deg(45)).yaw(_deg(90))  # up 45°, left 90°
         >>> _round_tuple(an_orientation.rotation) == (1.0, 0.0, 0.0, 0.0)
         False
-        >>> _ = an_orientation.delta_yaw(_deg(-90)).delta_pitch(_deg(-45))  # right 90°, down 45°
+        >>> _ = an_orientation.yaw(_deg(-90)).pitch(_deg(-45))  # right 90°, down 45°
         >>> _round_tuple(an_orientation.rotation) == (1.0, 0.0, 0.0, 0.0)
         True
 
@@ -348,15 +392,91 @@ class Orientation:  # noqa: PLW1641
     """  # noqa: E501
 
     def __init__(
-        self,
+        self, frame: Pose | None = None, wxyz: ArrayLike = (1.0, 0.0, 0.0, 0.0)
+    ) -> None:
+        self._frame: Pose | None = frame
+        wxyz = np.asarray(wxyz, dtype=float)
+        self._q: FloatVector = wxyz
+        self.__r: Rotation | None = None
+
+    @staticmethod
+    def from_scalars(
         frame: Pose | None = None,
         w: float = 1.0,
         x: float = 0.0,
         y: float = 0.0,
         z: float = 0.0,
-    ) -> None:
-        self.frame: Pose | None = frame
-        self._r: Rotation = Rotation.from_quat([x, y, z, w])
+    ) -> Orientation:
+        r"""Create a `Orientation` from scalar components.
+
+        Returns:
+            The new `Orientation` object.
+
+        Examples:
+            >>> an_orientation = Orientation.from_scalars()
+            >>> an_orientation
+            Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
+            >>> print(an_orientation)
+            (1.0, 0.0, 0.0, 0.0)
+            >>> print(an_orientation.frame)
+            None
+            >>> an_orientation.yaw(_deg(30)).pitch(_deg(15))  # left 30°, up 15°
+            Orientation(frame=None, w=0.957662, x=0.126079, y=0.256605, z=-0.033783)
+
+            >>> b_orientation = Orientation.from_scalars(w=0.957662, x=0.126079, y=0.256605, z=-0.033783)
+            >>> b_orientation
+            Orientation(frame=None, w=0.957662, x=0.126079, y=0.256605, z=-0.033783)
+            >>> print(b_orientation)
+            (0.957662, 0.126079, 0.256605, -0.033783)
+            >>> b_orientation.pitch(_deg(-15)).yaw(_deg(-30))  # down 15°, right 30°
+            Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
+        """  # noqa: E501
+        return Orientation(frame, (w, x, y, z))
+
+    @property
+    def frame(self) -> Pose | None:
+        return self._frame
+
+    # @frame.setter
+    # def frame(self, frame: Pose) -> None:
+    #     # FIXME: changing `frame` may imply updating internal representation
+    #     self._frame = frame
+
+    @property
+    def _r(self) -> Rotation:
+        if self.__r is None:
+            wxyz: FloatVector = self._q
+            xyzw = wxyz[..., [1, 2, 3, 0]]
+            self.__r = Rotation.from_quat(xyzw)
+        return self.__r
+
+    @_r.setter
+    def _r(self, r: Rotation) -> None:
+        xyzw = r.as_quat()
+        wxyz: FloatVector = xyzw[..., [3, 0, 1, 2]]
+        self._q = wxyz
+        self.__r = r
+
+    @property
+    def w(self) -> float:
+        return self._q[0]
+
+    @property
+    def x(self) -> float:
+        return self._q[1]
+
+    @property
+    def y(self) -> float:
+        return self._q[2]
+
+    @property
+    def z(self) -> float:
+        return self._q[3]
+
+    @property
+    def rotation(self) -> tuple[float]:
+        """This `Orientation` as a (_w_, _x_, _y_, _z_) tuple."""
+        return tuple(self._q)
 
     def __str__(self) -> str:
         return str(_round_tuple(self.rotation))
@@ -376,7 +496,8 @@ class Orientation:  # noqa: PLW1641
             raise TypeError(f"{self.__class__.__name__} required.")
         r = self._r * other._r
         xyzw: FloatVector = r.as_quat()
-        return Orientation(self.frame, xyzw[3], xyzw[0], xyzw[1], xyzw[2])
+        wxyz = xyzw[..., [3, 0, 1, 2]]
+        return Orientation(self.frame, wxyz)
 
     def __eq__(self, other: object) -> bool:
         if self is other:
@@ -403,33 +524,9 @@ class Orientation:  # noqa: PLW1641
         Returns:
             The new `Orientation` object.
         """
-        return Orientation(self.frame, self.w, self.x, self.y, self.z)
+        return Orientation(self.frame, self._q.copy())
 
-    @property
-    def rotation(self) -> QuaternionWXYZ:
-        return self.to_wxyz()
-
-    @property
-    def w(self) -> float:
-        xyzw = self.to_xyzw()
-        return xyzw[3]
-
-    @property
-    def x(self) -> float:
-        xyzw = self.to_xyzw()
-        return xyzw[0]
-
-    @property
-    def y(self) -> float:
-        xyzw = self.to_xyzw()
-        return xyzw[1]
-
-    @property
-    def z(self) -> float:
-        xyzw = self.to_xyzw()
-        return xyzw[2]
-
-    def delta_pitch(self, d_phi: float) -> Orientation:
+    def pitch(self, d_phi: float) -> Orientation:
         """Rotate up by _phi_ radians (elevation).
 
         Returns:
@@ -438,16 +535,7 @@ class Orientation:  # noqa: PLW1641
         self._r *= Rotation.from_euler("x", d_phi)
         return self
 
-    def delta_roll(self, d_psi: float) -> Orientation:
-        """Rotate counter-clockwise by _psi_ radians.
-
-        Returns:
-            This `Orientation`.
-        """
-        self._r *= Rotation.from_euler("z", d_psi)
-        return self
-
-    def delta_yaw(self, d_theta: float) -> Orientation:
+    def yaw(self, d_theta: float) -> Orientation:
         """Rotate left by _theta_ radians (azimuth).
 
         Returns:
@@ -456,13 +544,23 @@ class Orientation:  # noqa: PLW1641
         self._r *= Rotation.from_euler("y", d_theta)
         return self
 
-    def apply(self, vector: FloatVector) -> FloatVector:
-        """Apply this `Orientation` to a _vector_.
+    def roll(self, d_psi: float) -> Orientation:
+        """Rotate counter-clockwise by _psi_ radians.
+
+        Returns:
+            This `Orientation`.
+        """
+        self._r *= Rotation.from_euler("z", d_psi)
+        return self
+
+    def apply(self, vectors: ArrayLike) -> FloatVector:
+        """Apply this `Orientation` to a _vectors_.
 
         Returns:
             The rotated `array([`_x'_, _y'_, _z'_`])`
+            or `array([[`_x'_, _y'_, _z'_`], ...])`
         """
-        return self._r.apply(vector)
+        return self._r.apply(vectors)
 
     def inverse(self) -> Orientation:
         """Create a new `Orientation` that is the inverse of this `Orientation`.
@@ -470,9 +568,10 @@ class Orientation:  # noqa: PLW1641
         Returns:
             The new `Orientation` object.
         """
-        r: Rotation = self._r.inv()
-        xyzw: FloatVector = r.as_quat()
-        return Orientation(self.frame, xyzw[3], xyzw[0], xyzw[1], xyzw[2])
+        r_inv: Rotation = self._r.inv()
+        xyzw = r_inv.as_quat()
+        wxyz: FloatVector = xyzw[..., [3, 0, 1, 2]]
+        return Orientation(self.frame, wxyz)
 
     def in_frame(self, frame: Pose = None) -> Orientation:
         """Create a copy of this `Orientation` relative to another frame-of-reference.
@@ -492,8 +591,9 @@ class Orientation:  # noqa: PLW1641
             rr: Rotation = origin.orientation._r
             r = rr * r
             origin = origin.frame
-        xyzw: FloatVector = r.as_quat()
-        return Orientation(origin, xyzw[3], xyzw[0], xyzw[1], xyzw[2])
+        xyzw = r.as_quat()
+        wxyz: FloatVector = xyzw[..., [3, 0, 1, 2]]
+        return Orientation(origin, wxyz)
 
     def to_quat(self) -> FloatVector:
         """This `Orientation` as a quaternion.
@@ -503,26 +603,7 @@ class Orientation:  # noqa: PLW1641
         Returns:
             `array([`_w_, _x_, _y_, _z_`])`
         """
-        return np.array(self.to_wxyz())
-
-    def to_wxyz(self) -> QuaternionWXYZ:
-        """This `Orientation` as an (_w_, _x_, _y_, _z_) tuple.
-
-        Returns:
-            `tuple(`_w_, _x_, _y_, _z_`)`
-        """
-        xyzw = self._r.as_quat()
-        wxyz: QuaternionWXYZ = (xyzw[3], xyzw[0], xyzw[1], xyzw[2])
-        return wxyz
-
-    def to_xyzw(self) -> tuple[float, float, float, float]:
-        """This `Orientation` as an (_x_, _y_, _z_, _w_) tuple.
-
-        Returns:
-            `tuple(`_x_, _y_, _z_, _w_`)`
-        """
-        xyzw = self._r.as_quat()
-        return tuple(xyzw)
+        return self._q.copy()
 
 
 class Pose:  # noqa: PLW1641
@@ -550,7 +631,7 @@ class Pose:  # noqa: PLW1641
         >>> world_frame == global_frame
         True
 
-        >>> agent_location = world_frame.new_location(3, 5, -2)
+        >>> agent_location = world_frame.new_location([3, 5, -2])
         >>> agent_location
         Location(frame='World', x=3.0, y=5.0, z=-2.0)
 
@@ -564,18 +645,18 @@ class Pose:  # noqa: PLW1641
 
         >>> sensor_frame = agent_frame.new_frame((0.0, 1.5, 4.2), (0.707, 0.707, 0.0, 0.0))
         >>> sensor_frame
-        Pose(frame='Agent', location=(0.0, 1.5, 4.2), orientation=(0.707107, 0.707107, 0.0, 0.0), label='')
+        Pose(frame='Agent', location=(0.0, 1.5, 4.2), orientation=(0.707, 0.707, 0.0, 0.0), label='')
         >>> sensor_frame.location
         Location(frame='Agent', x=0.0, y=1.5, z=4.2)
         >>> sensor_frame.orientation
-        Orientation(frame='Agent', w=0.707107, x=0.707107, y=0.0, z=0.0)
+        Orientation(frame='Agent', w=0.707, x=0.707, y=0.0, z=0.0)
 
         >>> sensor_frame.label = "Sensor"
-        >>> s_point = sensor_frame.new_location(-7.4, 0.0, 4.7)
+        >>> s_point = sensor_frame.new_location([-7.4, 0.0, 4.7])
         >>> s_point
         Location(frame='Sensor', x=-7.4, y=0.0, z=4.7)
         >>> s_point.frame
-        Pose(frame='Agent', location=(0.0, 1.5, 4.2), orientation=(0.707107, 0.707107, 0.0, 0.0), label='Sensor')
+        Pose(frame='Agent', location=(0.0, 1.5, 4.2), orientation=(0.707, 0.707, 0.0, 0.0), label='Sensor')
         >>> s_point.in_frame(sensor_frame)
         Location(frame='Sensor', x=-7.4, y=0.0, z=4.7)
 
@@ -657,21 +738,22 @@ class Pose:  # noqa: PLW1641
 
     def new_frame(
         self,
-        position: VectorXYZ = (0.0, 0.0, 0.0),
-        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
+        position: ArrayLike = (0.0, 0.0, 0.0),
+        rotation: ArrayLike = (1.0, 0.0, 0.0, 0.0),
         label: str = "",
     ) -> Pose:
         return Pose(
-            self, Location(self, *position), Orientation(self, *rotation), label
+            self,
+            Location(self, position),
+            Orientation(self, rotation),
+            label,
         )
 
-    def new_location(self, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> Location:
-        return Location(self, x, y, z)
+    def new_location(self, xyz: ArrayLike = (0.0, 0.0, 0.0)) -> Location:
+        return Location(self, xyz)
 
-    def new_orientation(
-        self, w: float = 1.0, x: float = 0.0, y: float = 0.0, z: float = 0.0
-    ) -> Orientation:
-        return Orientation(self, w, x, y, z)
+    def new_orientation(self, wxyz: ArrayLike = (1.0, 0.0, 0.0, 0.0)) -> Orientation:
+        return Orientation(self, wxyz)
 
     def inverse(self) -> Pose:
         """Create a new `Pose` that is the inverse of this `Pose`.
@@ -683,13 +765,13 @@ class Pose:  # noqa: PLW1641
             >>> world_frame = Pose(label="World")
             >>> world_frame
             Pose(frame=None, location=(0.0, 0.0, 0.0), orientation=(1.0, 0.0, 0.0, 0.0), label='World')
-            >>> location = world_frame.new_location(5.0, 8.0, 0.0)
-            >>> orientation = world_frame.new_orientation().delta_roll(_deg(-30))
+            >>> location = world_frame.new_location().move_to(x=5.0, y=8.0)
+            >>> orientation = world_frame.new_orientation().roll(_deg(-30))
             >>> agent_in_world = world_frame.new_pose(location, orientation, "Agent")
             >>> agent_in_world
             Pose(frame='World', location=(5.0, 8.0, 0.0), orientation=(0.965926, 0.0, 0.0, -0.258819), label='Agent')
 
-            >>> p = agent_in_world.new_location(-3.0, 2.0, -1.0)
+            >>> p = agent_in_world.new_location([-3.0, 2.0, -1.0])
             >>> p
             Location(frame='Agent', x=-3.0, y=2.0, z=-1.0)
             >>> p.in_frame(world_frame)
@@ -699,16 +781,16 @@ class Pose:  # noqa: PLW1641
             >>> world_in_agent
             Pose(frame='Agent', location=(-0.330127, -9.428203, 0.0), orientation=(-0.965926, 0.0, 0.0, -0.258819), label='World')
 
-            >>> p = world_in_agent.new_location(3.401924, 11.232051, -1.0)
+            >>> p = world_in_agent.new_location([3.401924, 11.232051, -1.0])
             >>> p
             Location(frame='World', x=3.401924, y=11.232051, z=-1.0)
             >>> p.in_frame(agent_in_world)
             Location(frame='Agent', x=-3.0, y=2.0, z=-1.0)
         """  # noqa: E501
         orientation: Orientation = self.orientation.inverse()
-        wxyz: QuaternionWXYZ = orientation.to_wxyz()
+        wxyz: FloatVector = orientation.to_quat()
         location: Location = self.location.inverse()
-        xyz: VectorXYZ = tuple(orientation.apply(location.to_vector()))
+        xyz: FloatVector = orientation.apply(location.to_vector())
         label: str = "" if self.frame is None else self.frame.label
         return self.new_frame(xyz, wxyz, label)
 
