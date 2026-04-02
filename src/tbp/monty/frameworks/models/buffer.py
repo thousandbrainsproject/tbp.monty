@@ -13,7 +13,7 @@ import copy
 import json
 import logging
 import time
-from typing import Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar
 
 import numpy as np
 import numpy.typing as npt
@@ -23,6 +23,9 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
+
+if TYPE_CHECKING:
+    from tbp.monty.frameworks.models.states import State
 
 logger = logging.getLogger(__name__)
 
@@ -273,15 +276,18 @@ class FeatureAtLocationBuffer:
             return self.input_states[-2]
         return None
 
-    def get_nth_displacement(self, n):
+    def get_nth_displacement(self, n: int) -> npt.NDArray[np.float64]:
         """Get the nth displacement.
+
+        Args:
+            n: Index of the displacement to retrieve.
 
         Returns:
             The nth displacement.
         """
         return self.global_displacements["displacement"][n]
 
-    def get_current_displacement(self):
+    def get_current_displacement(self) -> npt.NDArray[np.float64]:
         """Get the current displacement.
 
         Returns:
@@ -289,7 +295,7 @@ class FeatureAtLocationBuffer:
         """
         return self.get_nth_displacement(-1)
 
-    def get_current_ppf(self):
+    def get_current_ppf(self) -> npt.NDArray[np.float64]:
         """Get the current ppf.
 
         Returns:
@@ -297,7 +303,7 @@ class FeatureAtLocationBuffer:
         """
         return copy.deepcopy(self.global_displacements["ppf"][-1])
 
-    def get_first_displacement_len(self):
+    def get_first_displacement_len(self) -> float:
         """Get length of first observed displacement.
 
         Use for scale in DisplacementLM.
@@ -521,7 +527,9 @@ class FeatureAtLocationBuffer:
         self.locations[input_channel] = padded_locs
         self.locations[input_channel][-1] = location
 
-    def _store_global_displacement_and_location(self, list_of_data):
+    def _store_global_displacement_and_location(
+        self, list_of_data: list[State]
+    ) -> None:
         """Store the global displacement and location from the current step.
 
         Computes the average location across SM input channels and stores
@@ -539,7 +547,9 @@ class FeatureAtLocationBuffer:
 
         self.global_location = avg_location.copy()
 
-    def _add_global_displacement(self, disp_name, disp_val):
+    def _add_global_displacement(
+        self, disp_name: str, disp_val: npt.NDArray[np.float64]
+    ) -> None:
         """Add a displacement value to the global displacement buffer.
 
         Args:
