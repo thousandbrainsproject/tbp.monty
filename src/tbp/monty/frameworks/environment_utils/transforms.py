@@ -299,6 +299,7 @@ class GaussianBlurRGB(Transform):
                 to all sensors of the agent.
 
         Raises:
+            ValueError: If sensor_ids is an empty list.
             ValueError: If kernel_size is even (when not 0).
         """
         self.agent_id = agent_id
