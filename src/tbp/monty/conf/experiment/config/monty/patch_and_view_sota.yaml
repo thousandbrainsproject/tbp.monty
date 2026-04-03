@@ -19,7 +19,7 @@ sensor_module_configs:
         - object_coverage
         - hsv
         - principal_curvatures_log
-        - mock_obs
+        #- mock_obs
         - local_binary_pattern
       delta_thresholds:
         on_object: 0

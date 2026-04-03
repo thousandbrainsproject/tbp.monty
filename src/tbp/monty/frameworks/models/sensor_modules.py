@@ -330,15 +330,16 @@ class ObservationProcessor:
 
             patch = rgba_feat[:, :, :3]
             gray = rgb2gray(patch)
-            lbp = local_binary_pattern(gray, P=8, R=1, method="default")
-            n_bins = int(lbp.max() + 1)
+            lbp = local_binary_pattern(gray, P=8, R=1, method="uniform")
+            n_bins = 10
 
             hist, _ = np.histogram(
                 lbp.ravel(),
                 bins=n_bins,
                 range=(0, n_bins),
-                density=True  # this normalizes the histogram
             )
+            hist = hist.astype("float")
+            hist /= (hist.sum() + 1e-6)
             features["local_binary_pattern"] = hist
 
         # Note we only determine curvature if we could determine a valid surface normal
@@ -376,7 +377,8 @@ class ObservationProcessor:
         if not valid_signals:
             logger.debug("Either the surface-normal or pc-directions were ill-defined")
 
-        print(features["local_binary_pattern"])
+        print(f'LBP feature vector shape: {features["local_binary_pattern"].shape} \n\n\n')
+        print(f'LBP feature vector: {features["local_binary_pattern"]} \n\n\n')
         return features, morphological_features, valid_signals
 
     def _get_surface_normals(

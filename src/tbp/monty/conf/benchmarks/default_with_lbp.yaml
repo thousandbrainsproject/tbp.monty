@@ -4,6 +4,7 @@ default_all_noise_params:
     hsv: 0.1 # add gaussian noise with 0.1 std
     principal_curvatures_log: 0.1
     pose_fully_defined: 0.01 # flip bool in 1% of cases
+    #local_binary_pattern: 0.001 # add gaussian noise to each lbp histogram bin
     #mock_obs: 0.1
   location: 0.002 # add gaussian noise with 0.002 std
 
@@ -13,6 +14,7 @@ default_sensor_features:
   - on_object
   - hsv
   - principal_curvatures_log
+  #- local_binary_pattern
   #- mock_obs
 
 # NOTE: maybe lower once we have better policies
