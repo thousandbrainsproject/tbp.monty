@@ -20,14 +20,19 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
 class NormalizeTest(unittest.TestCase):
     """Unit tests for the normalize function."""
 
-    def test_unit_vector_along_axis(self):
-        result = normalize(np.array([3.0, 0.0, 0.0]))
-        np.testing.assert_array_almost_equal(result, [1.0, 0.0, 0.0])
-
-    def test_3d_diagonal_vector(self):
-        result = normalize(np.array([1.0, 1.0, 1.0]))
-        expected = np.array([1, 1, 1]) / np.sqrt(3)
-        np.testing.assert_array_almost_equal(result, expected)
+    @given(
+        arrays(
+            dtype=np.float64,
+            shape=st.integers(min_value=1, max_value=10),
+            elements=st.floats(min_value=-1e6, max_value=1e6),
+        )
+    )
+    def test_preserves_direction(self, v):
+        norm = np.linalg.norm(v)
+        if norm < 1e-12:
+            return
+        result = normalize(v)
+        np.testing.assert_array_almost_equal(result * norm, v)
 
     @given(
         arrays(
@@ -42,10 +47,6 @@ class NormalizeTest(unittest.TestCase):
         once = normalize(v)
         twice = normalize(once)
         np.testing.assert_array_almost_equal(twice, once)
-
-    def test_negative_components(self):
-        result = normalize(np.array([-3.0, 4.0, 0.0]))
-        np.testing.assert_array_almost_equal(result, [-0.6, 0.8, 0.0])
 
     @given(
         arrays(
