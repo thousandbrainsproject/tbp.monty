@@ -159,7 +159,3 @@ class DirectionalCurvatureTest(unittest.TestCase):
             dir2=self.dir2,
         )
         self.assertAlmostEqual(fwd, bwd)
-
-
-if __name__ == "__main__":
-    unittest.main()
