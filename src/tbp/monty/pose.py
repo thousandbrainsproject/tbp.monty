@@ -12,9 +12,6 @@ import numpy as np
 from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
-# Simple 3 and 4-tuples of `float`
-from tbp.monty.math import QuaternionWXYZ, VectorXYZ
-
 # A type alias for a 1D array of `float`
 FloatVector = np.ndarray
 # FloatVector = np.ndarray[tuple[int], np.dtype[np.float64]]
@@ -25,6 +22,7 @@ def _deg(d: float) -> float:
 
     Radians | Degrees
     --------|--------
+    Pi      | 180
     Pi / 2  | 90
     Pi / 4  | 45
     Pi / 6  | 30
@@ -291,6 +289,47 @@ class Location:  # noqa: PLW1641
         self._v += np.asarray(offset, dtype=float)
         return self
 
+    def apply(self, vectors: ArrayLike) -> FloatVector:
+        """Apply this `Location` to _vectors_.
+
+        Returns:
+            The translated `array([`_x'_, _y'_, _z'_`])`
+            or `array([[`_x'_, _y'_, _z'_`], ...])`
+
+        Examples:
+            >>> an_offset = Location(None, [0, -1, 2])
+            >>> an_offset
+            Location(frame=None, x=0.0, y=-1.0, z=2.0)
+            >>> an_offset.to_vector()
+            array([ 0., -1.,  2.])
+            >>> an_offset.apply([3, 5, 8])
+            array([ 3.,  4., 10.])
+
+            >>> vectors = np.array([
+            ...     [3, 5, 8],
+            ...     [3, 5, -8],
+            ...     [3, -5, -8],
+            ...     [-3, -5, -8],
+            ...     [-3, -5, 8],
+            ...     [-3, 5, 8]
+            ... ], dtype=float)
+            >>> vectors
+            array([[ 3.,  5.,  8.],
+                   [ 3.,  5., -8.],
+                   [ 3., -5., -8.],
+                   [-3., -5., -8.],
+                   [-3., -5.,  8.],
+                   [-3.,  5.,  8.]])
+            >>> an_offset.apply(vectors)
+            array([[ 3.,  4., 10.],
+                   [ 3.,  4., -6.],
+                   [ 3., -6., -6.],
+                   [-3., -6., -6.],
+                   [-3., -6., 10.],
+                   [-3.,  4., 10.]])
+        """
+        return vectors + self._v
+
     def inverse(self) -> Location:
         """Create a new `Location` that is the inverse of this `Location`.
 
@@ -396,8 +435,9 @@ class Orientation:  # noqa: PLW1641
     ) -> None:
         self._frame: Pose | None = frame
         wxyz = np.asarray(wxyz, dtype=float)
-        self._q: FloatVector = wxyz
+        self.__q: FloatVector = wxyz
         self.__r: Rotation | None = None
+        self.__r_inv: Rotation | None = None
 
     @staticmethod
     def from_scalars(
@@ -443,6 +483,16 @@ class Orientation:  # noqa: PLW1641
     #     self._frame = frame
 
     @property
+    def _q(self) -> FloatVector:
+        return self.__q
+
+    @_q.setter
+    def _q(self, q: FloatVector) -> None:
+        self.__q = q
+        self.__r = None
+        self.__r_inv = None
+
+    @property
     def _r(self) -> Rotation:
         if self.__r is None:
             wxyz: FloatVector = self._q
@@ -456,6 +506,13 @@ class Orientation:  # noqa: PLW1641
         wxyz: FloatVector = xyzw[..., [3, 0, 1, 2]]
         self._q = wxyz
         self.__r = r
+        self.__r_inv = None
+
+    @property
+    def _r_inv(self) -> Rotation:
+        if self.__r_inv is None:
+            self.__r_inv = self._r.inv()
+        return self.__r_inv
 
     @property
     def w(self) -> float:
@@ -554,11 +611,52 @@ class Orientation:  # noqa: PLW1641
         return self
 
     def apply(self, vectors: ArrayLike) -> FloatVector:
-        """Apply this `Orientation` to a _vectors_.
+        """Apply this `Orientation` to _vectors_.
 
         Returns:
             The rotated `array([`_x'_, _y'_, _z'_`])`
             or `array([[`_x'_, _y'_, _z'_`], ...])`
+
+        Examples:
+            >>> a_rotation = Orientation()
+            >>> a_rotation
+            Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
+            >>> a_rotation.to_quat()
+            array([1., 0., 0., 0.])
+            >>> a_rotation.apply([3, 5, 8])
+            array([3., 5., 8.])
+
+            >>> a_rotation.pitch(_deg(180))
+            Orientation(frame=None, w=0.0, x=1.0, y=0.0, z=0.0)
+            >>> a_rotation.apply([3, 5, 8])
+            array([ 3., -5., -8.])
+            >>> a_rotation.roll(_deg(90))
+            Orientation(frame=None, w=0.0, x=0.707107, y=-0.707107, z=0.0)
+            >>> a_rotation.apply([3, 5, 8])
+            array([-5., -3., -8.])
+
+            >>> vectors = np.array([
+            ...     [3, 5, 8],
+            ...     [3, 5, -8],
+            ...     [3, -5, -8],
+            ...     [-3, -5, -8],
+            ...     [-3, -5, 8],
+            ...     [-3, 5, 8]
+            ... ], dtype=float)
+            >>> vectors
+            array([[ 3.,  5.,  8.],
+                   [ 3.,  5., -8.],
+                   [ 3., -5., -8.],
+                   [-3., -5., -8.],
+                   [-3., -5.,  8.],
+                   [-3.,  5.,  8.]])
+            >>> a_rotation.apply(vectors)
+            array([[-5., -3., -8.],
+                   [-5., -3.,  8.],
+                   [ 5., -3.,  8.],
+                   [ 5.,  3.,  8.],
+                   [ 5.,  3., -8.],
+                   [-5.,  3., -8.]])
         """
         return self._r.apply(vectors)
 
@@ -568,8 +666,7 @@ class Orientation:  # noqa: PLW1641
         Returns:
             The new `Orientation` object.
         """
-        r_inv: Rotation = self._r.inv()
-        xyzw = r_inv.as_quat()
+        xyzw = self._r_inv.as_quat()
         wxyz: FloatVector = xyzw[..., [3, 0, 1, 2]]
         return Orientation(self.frame, wxyz)
 
@@ -686,7 +783,7 @@ class Pose:  # noqa: PLW1641
         orientation: Orientation | None = None,
         label: str = "",
     ) -> None:
-        self.frame: Pose | None = frame
+        self._frame: Pose | None = frame
 
         if location is None:
             location = Location(frame)
@@ -701,6 +798,15 @@ class Pose:  # noqa: PLW1641
         self.orientation = orientation
 
         self.label: str = label
+
+    @property
+    def frame(self) -> Pose | None:
+        return self._frame
+
+    # @frame.setter
+    # def frame(self, frame: Pose) -> None:
+    #     # FIXME: changing `frame` may imply updating internal representation
+    #     self._frame = frame
 
     def __str__(self) -> str:
         return f"{self.label!r}"
