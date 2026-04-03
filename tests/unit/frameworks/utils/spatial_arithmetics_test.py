@@ -10,40 +10,32 @@
 import unittest
 
 import numpy as np
-from hypothesis import given
+from hypothesis import assume, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
 
+finite_vectors = arrays(
+    dtype=np.float64,
+    shape=st.integers(min_value=1, max_value=10),
+    elements=st.floats(min_value=-1e6, max_value=1e6),
+)
+
 
 class NormalizeTest(unittest.TestCase):
     """Unit tests for the normalize function."""
 
-    @given(
-        arrays(
-            dtype=np.float64,
-            shape=st.integers(min_value=1, max_value=10),
-            elements=st.floats(min_value=-1e6, max_value=1e6),
-        )
-    )
+    @given(finite_vectors)
     def test_preserves_direction(self, v):
         norm = np.linalg.norm(v)
-        if norm < 1e-12:
-            return
+        assume(norm >= 1e-12)
         result = normalize(v)
         np.testing.assert_array_almost_equal(result * norm, v)
 
-    @given(
-        arrays(
-            dtype=np.float64,
-            shape=st.integers(min_value=1, max_value=10),
-            elements=st.floats(min_value=-1e6, max_value=1e6),
-        )
-    )
+    @given(finite_vectors)
     def test_idempotent(self, v):
-        if np.linalg.norm(v) < 1e-12:
-            return
+        assume(np.linalg.norm(v) >= 1e-12)
         once = normalize(v)
         twice = normalize(once)
         np.testing.assert_array_almost_equal(twice, once)
@@ -68,15 +60,8 @@ class NormalizeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             normalize(v, epsilon=epsilon)
 
-    @given(
-        arrays(
-            dtype=np.float64,
-            shape=st.integers(min_value=1, max_value=10),
-            elements=st.floats(min_value=-1e6, max_value=1e6),
-        )
-    )
+    @given(finite_vectors)
     def test_result_has_unit_norm(self, v):
-        if np.linalg.norm(v) < 1e-12:
-            return
+        assume(np.linalg.norm(v) >= 1e-12)
         result = normalize(v)
         self.assertAlmostEqual(np.linalg.norm(result), 1.0)
