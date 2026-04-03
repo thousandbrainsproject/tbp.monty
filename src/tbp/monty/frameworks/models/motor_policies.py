@@ -112,6 +112,11 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def set_driving_goal_state(self, goal: GoalState | None) -> None:
+        """Specify the goal-state that the motor-actuator will attempt to satisfy."""
+        pass
+
+    @abc.abstractmethod
     def __call__(
         self,
         ctx: RuntimeContext,
@@ -152,6 +157,7 @@ class BasePolicy(MotorPolicy):
         super().__init__()
         self.agent_id = agent_id
         self.action_sampler = action_sampler
+        self.driving_goal_state = None
 
     def __call__(
         self,
@@ -178,10 +184,6 @@ class BasePolicy(MotorPolicy):
             A MotorPolicyResult that contains a random action.
         """
         return MotorPolicyResult([self.action_sampler.sample(self.agent_id, ctx.rng)])
-
-    ###
-    # Other required abstract methods, methods called by Monty or Environment Interface
-    ###
 
     def state_dict(self):
         return {}
@@ -224,6 +226,7 @@ class PredefinedPolicy(MotorPolicy):
         self.action_list: list[Action] = PredefinedPolicy.read_action_file(file_name)
         self.episode_step = 0
         self.use_goal_state_driven_actions = False
+        self.driving_goal_state = None
 
     def __call__(
         self,
@@ -239,6 +242,10 @@ class PredefinedPolicy(MotorPolicy):
 
     def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
         self.episode_step = 0
+        self.driving_goal_state = None
+
+    def set_driving_goal_state(self, goal: GoalState | None) -> None:
+        self.driving_goal_state = goal
 
     def state_dict(self) -> dict[str, Any]:
         return {"episode_step": self.episode_step}
