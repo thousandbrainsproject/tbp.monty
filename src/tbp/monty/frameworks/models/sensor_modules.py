@@ -145,7 +145,7 @@ class ObservationProcessor:
         "mean_curvature_sc",
         "curvature_for_TM",
         "coords_for_TM",
-        "mock_obs",
+        #"mock_obs",
         "local_binary_pattern",
     ]
 
@@ -198,7 +198,7 @@ class ObservationProcessor:
         sensor_frame_data = observation["sensor_frame_data"]
         world_camera = observation["world_camera"]
         rgba_feat = observation["rgba"]
-        mock_obs = [.1, .2, .3, .4, .5, .6, .7, .8, .9]
+        #mock_obs = [.1, .2, .3, .4, .5, .6, .7, .8, .9]
         depth_feat = (
             observation["depth"]
             .reshape(observation["depth"].size, 1)
@@ -322,16 +322,24 @@ class ObservationProcessor:
             rgba = rgba_feat[center_row_col, center_row_col]
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
-        if "mock_obs" in self._features:
-            mock_obs = np.array([.1, .2, .3, .4, .5, .6, .7, .8, .9])
-            features["mock_obs"] = mock_obs
+        # if "mock_obs" in self._features:
+        #     mock_obs = np.array([.1, .2, .3, .4, .5, .6, .7, .8, .9])
+        #     features["mock_obs"] = mock_obs
         if "local_binary_pattern" in self._features:
             print("In LBP")
 
             patch = rgba_feat[:, :, :3]
             gray = rgb2gray(patch)
             lbp = local_binary_pattern(gray, P=8, R=1, method="default")
-            features["local_binary_pattern"] = lbp
+            n_bins = int(lbp.max() + 1)
+
+            hist, _ = np.histogram(
+                lbp.ravel(),
+                bins=n_bins,
+                range=(0, n_bins),
+                density=True  # this normalizes the histogram
+            )
+            features["local_binary_pattern"] = hist
 
         # Note we only determine curvature if we could determine a valid surface normal
         if any(feat in self.CURVATURE_FEATURES for feat in self._features) and valid_sn:
@@ -368,6 +376,7 @@ class ObservationProcessor:
         if not valid_signals:
             logger.debug("Either the surface-normal or pc-directions were ill-defined")
 
+        print(features["local_binary_pattern"])
         return features, morphological_features, valid_signals
 
     def _get_surface_normals(

@@ -7,4 +7,4 @@ patch:
   pose_vectors: ${np.ones:3}
   principal_curvatures_log: ${np.ones:2}
   #lbp_trace
-  mock_obs: ${np.array:[1, 1, 1, 1, 1, 1, 1, 1, 1]}
+  #mock_obs: ${np.array:[1, 1, 1, 1, 1, 1, 1, 1, 1]}

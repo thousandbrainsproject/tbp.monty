@@ -29,7 +29,8 @@ sensor_module_configs:
         - mean_curvature
         - gaussian_curvature_sc
         - mean_curvature_sc
-        - mock_obs
+        - local_binary_pattern
+        #- mock_obs
       save_raw_obs: true
   sensor_module_1:
     sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}

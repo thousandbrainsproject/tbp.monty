@@ -41,7 +41,7 @@ config:
               pose_vectors: ${np.list_eval:[np.pi / 8, np.pi * 2, np.pi * 2]}
               principal_curvatures_log: [1, 1]
               hsv: [0.1, 1, 1]
-              mock_obs: [1, 1, 1, 1, 1, 1, 1, 1, 1]
+              #mock_obs: [1, 1, 1, 1, 1, 1, 1, 1, 1]
           # NOTE: Learning works with any LM type. For instance you can use
           # the following code to run learning with the EvidenceGraphLM:
           # learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
