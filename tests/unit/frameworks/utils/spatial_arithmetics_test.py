@@ -43,9 +43,9 @@ class NormalizeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             normalize(np.array([0.0, 0.0, 0.0]))
 
-    def test_custom_eps(self):
+    def test_custom_epsilon(self):
         with self.assertRaises(ValueError):
-            normalize(np.array([1e-8, 0.0, 0.0]), eps=1e-6)
+            normalize(np.array([1e-8, 0.0, 0.0]), epsilson=1e-6)
 
     def test_result_has_unit_norm(self):
         v = np.array([2.5, -7.1, 3.3])
