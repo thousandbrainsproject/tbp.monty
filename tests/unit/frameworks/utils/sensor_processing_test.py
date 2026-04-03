@@ -151,19 +151,18 @@ class DirectionalCurvatureTest(unittest.TestCase):
         )
         self.assertAlmostEqual(result, 4.0)
 
-    def test_opposite_direction_same_result(self):
+    @given(
+        angle=st.floats(min_value=0, max_value=2 * np.pi, allow_nan=False),
+        k1=st.floats(min_value=-1e6, max_value=1e6, allow_nan=False),
+        k2=st.floats(min_value=-1e6, max_value=1e6, allow_nan=False),
+    )
+    def test_opposite_direction_same_result(self, angle, k1, k2):
+        """Negating the direction does not change the curvature (sign-invariant)."""
+        direction = np.array([np.cos(angle), np.sin(angle), 0.0])
         fwd = directional_curvature(
-            np.array([1.0, 1.0, 0.0]),
-            k1=5.0,
-            k2=2.0,
-            dir1=self.dir1,
-            dir2=self.dir2,
+            direction, k1=k1, k2=k2, dir1=self.dir1, dir2=self.dir2
         )
         bwd = directional_curvature(
-            np.array([-1.0, -1.0, 0.0]),
-            k1=5.0,
-            k2=2.0,
-            dir1=self.dir1,
-            dir2=self.dir2,
+            -direction, k1=k1, k2=k2, dir1=self.dir1, dir2=self.dir2
         )
         self.assertAlmostEqual(fwd, bwd)
