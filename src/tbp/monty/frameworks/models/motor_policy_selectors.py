@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.states import GoalState
@@ -29,6 +29,9 @@ class MotorPolicySelector(Protocol):
     def pre_episode(self, motor_system: MotorSystem) -> None:
         pass
 
+    def state_dict(self) -> dict[str, Any]:
+        pass
+
     def __call__(self, goals: list[GoalState]) -> tuple[MotorPolicy, GoalState | None]:
         pass
 
@@ -39,6 +42,9 @@ class SinglePolicySelector(MotorPolicySelector):
 
     def pre_episode(self, motor_system: MotorSystem) -> None:
         self._policy.pre_episode(motor_system)
+
+    def state_dict(self) -> dict[str, Any]:
+        return self._policy.state_dict()
 
     def __call__(self, goals: list[GoalState]) -> tuple[MotorPolicy, GoalState | None]:
         if goals:

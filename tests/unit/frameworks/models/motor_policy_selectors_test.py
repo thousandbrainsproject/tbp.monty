@@ -44,3 +44,7 @@ class SinglePolicySelectorTest(unittest.TestCase):
         self.selector.pre_episode(motor_system)
         self.policy.pre_episode.assert_called_once_with(motor_system)
 
+    def test_state_dict_returns_state_dict_of_policy(self):
+        state_dict = Mock()
+        self.policy.state_dict.return_value = state_dict
+        self.assertIs(self.selector.state_dict(), state_dict)

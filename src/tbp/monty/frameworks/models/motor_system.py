@@ -64,10 +64,6 @@ class MotorSystem:
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
 
-    def set_driving_goal_state(self, goal: GoalState | None) -> None:
-        """Set the driving goal state."""
-        self._policy.set_driving_goal_state(goal)
-
     def pre_episode(self) -> None:
         """Pre episode hook."""
         # TODO: Passing self to policy pre_episode is a hack. What we should be
@@ -85,7 +81,7 @@ class MotorSystem:
         )
 
     def state_dict(self) -> dict[str, Any]:
-        return self._policy.state_dict()
+        return self._policy_selector.state_dict()
 
     def __call__(
         self,
