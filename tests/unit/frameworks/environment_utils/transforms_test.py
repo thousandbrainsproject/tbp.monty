@@ -12,6 +12,8 @@ import unittest
 
 import numpy as np
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
@@ -168,6 +170,28 @@ class GaussianBlurRGBTest(unittest.TestCase):
         gaussian_smoother = GaussianBlurRGB(agent_id=AGENT_ID, sigma=2, kernel_size=5)
         result = gaussian_smoother(obs, _ctx=None)
         result_img = result[AGENT_ID][SENSOR_ID]["rgba"]
+
+        self.assertEqual(result_img.shape, rgba_img.shape)
+        np.testing.assert_array_equal(result_img, rgba_img)
+
+    @given(
+        height=st.integers(min_value=1, max_value=256),
+        width=st.integers(min_value=1, max_value=256),
+        fill_value=st.integers(min_value=0, max_value=255),
+        sigma=st.floats(min_value=0.1, max_value=10.0),
+        kernel_size=st.sampled_from([0, 1, 3, 5, 7, 9, 11, 13, 15]),
+    )
+    def test_blur_solid_image_is_unchanged(
+        self, height, width, fill_value, sigma, kernel_size
+    ):
+        rgba_img = np.full((height, width, 4), fill_value, dtype=np.uint8)
+        obs = Observations()
+        obs[AGENT_ID] = AgentObservations()
+        obs[AGENT_ID][SENSOR_ID] = SensorObservation({"rgba": rgba_img.copy()})
+        smoother = GaussianBlurRGB(
+            agent_id=AGENT_ID, sigma=sigma, kernel_size=kernel_size
+        )
+        result_img = smoother(obs, _ctx=None)[AGENT_ID][SENSOR_ID]["rgba"]
 
         self.assertEqual(result_img.shape, rgba_img.shape)
         np.testing.assert_array_equal(result_img, rgba_img)
