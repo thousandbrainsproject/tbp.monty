@@ -1,4 +1,4 @@
-# @package experiment.config.monty_config.motor_system_config.policy
+# @package experiment.config.monty_config.motor_system_config.policy_selector.policy
 
 defaults:
   - action_sampler: constant_dist_10

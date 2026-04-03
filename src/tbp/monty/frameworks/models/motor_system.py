@@ -18,7 +18,6 @@ from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
-from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_policy_selectors import MotorPolicySelector
 from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
@@ -43,7 +42,7 @@ class MotorSystem:
         """Initialize the motor system with a motor policy.
 
         Args:
-            policy: The motor policy to use.
+            policy_selector: The motor policy selector to use.
         """
         self._policy_selector = policy_selector
         # For each step, we store the actions produced by the policy and the current
