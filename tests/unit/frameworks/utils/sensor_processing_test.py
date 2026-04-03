@@ -10,6 +10,8 @@
 import unittest
 
 import numpy as np
+from hypothesis import given
+from hypothesis import strategies as st
 
 from tbp.monty.frameworks.utils.sensor_processing import directional_curvature
 
@@ -61,15 +63,21 @@ class DirectionalCurvatureTest(unittest.TestCase):
         )
         self.assertAlmostEqual(result, 2.0)
 
-    def test_equal_curvatures_returns_that_value(self):
+    @given(
+        angle=st.floats(min_value=0, max_value=2 * np.pi, allow_nan=False),
+        k=st.floats(min_value=-1e6, max_value=1e6, allow_nan=False),
+    )
+    def test_equal_curvatures_returns_that_value(self, angle, k):
+        """When k1 == k2, result equals that value for any in-plane direction."""
+        direction = np.array([np.cos(angle), np.sin(angle), 0.0])
         result = directional_curvature(
-            np.array([1.0, 1.0, 0.0]),
-            k1=3.0,
-            k2=3.0,
+            direction,
+            k1=k,
+            k2=k,
             dir1=self.dir1,
             dir2=self.dir2,
         )
-        self.assertAlmostEqual(result, 3.0)
+        self.assertAlmostEqual(result, k)
 
     def test_45_degrees_gives_average(self):
         # At 45 deg from dir1: cos^2 = sin^2 = 0.5
