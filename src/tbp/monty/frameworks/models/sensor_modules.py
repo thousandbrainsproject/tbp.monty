@@ -326,8 +326,6 @@ class ObservationProcessor:
         #     mock_obs = np.array([.1, .2, .3, .4, .5, .6, .7, .8, .9])
         #     features["mock_obs"] = mock_obs
         if "local_binary_pattern" in self._features:
-            print("In LBP")
-
             patch = rgba_feat[:, :, :3]
             gray = rgb2gray(patch)
             lbp = local_binary_pattern(gray, P=8, R=1, method="uniform")
@@ -377,8 +375,6 @@ class ObservationProcessor:
         if not valid_signals:
             logger.debug("Either the surface-normal or pc-directions were ill-defined")
 
-        print(f'LBP feature vector shape: {features["local_binary_pattern"].shape} \n\n\n')
-        print(f'LBP feature vector: {features["local_binary_pattern"]} \n\n\n')
         return features, morphological_features, valid_signals
 
     def _get_surface_normals(

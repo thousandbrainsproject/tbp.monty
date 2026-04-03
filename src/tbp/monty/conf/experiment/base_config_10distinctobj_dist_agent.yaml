@@ -1,6 +1,6 @@
 defaults:
   - config/eval
-  - config/logging/pretrain@config.logging # changed to turn off wandb logging and increase logging for debugging
+  - config/logging/detailed_evidence_lm # changed to turn off wandb logging and increase logging for debugging
   - config/monty/patch_and_view_sota@config.monty_config
   - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
   - config/monty/learning_modules/lower_max_nneighbors_1lm@config.monty_config.learning_module_configs

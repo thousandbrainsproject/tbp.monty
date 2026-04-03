@@ -3,9 +3,12 @@ patch:
   # Weighting saturation and value less since these might change under different
   # lighting conditions. In the future we can extract better features in the SM
   # such as relative value changes.
-  hsv: ${np.array:[1, 0.5, 0.5]}
-  pose_vectors: ${np.ones:3}
-  principal_curvatures_log: ${np.ones:2}
-  #lbp_trace
-  #mock_obs: ${np.array:[1, 1, 1, 1, 1, 1, 1, 1, 1]}
-  local_binary_pattern: ${np.ones:10}
+  # hsv: ${np.array:[1, 0.5, 0.5]}
+  # pose_vectors: ${np.ones:3}
+  # principal_curvatures_log: ${np.ones:2}
+  # local_binary_pattern: 1 # LBP_PARAMS
+
+  hsv: ${np.array:[0, 0, 0]}
+  pose_vectors: ${np.array:[0, 0, 0]}
+  principal_curvatures_log: ${np.array:[0, 0]}
+  local_binary_pattern: 20 # LBP_PARAMS
