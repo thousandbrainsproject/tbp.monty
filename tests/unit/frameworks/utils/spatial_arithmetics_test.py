@@ -29,10 +29,19 @@ class NormalizeTest(unittest.TestCase):
         expected = np.array([1, 1, 1]) / np.sqrt(3)
         np.testing.assert_array_almost_equal(result, expected)
 
-    def test_already_unit_vector(self):
-        v = np.array([0.0, 1.0, 0.0])
-        result = normalize(v)
-        np.testing.assert_array_almost_equal(result, v)
+    @given(
+        arrays(
+            dtype=np.float64,
+            shape=st.integers(min_value=1, max_value=10),
+            elements=st.floats(min_value=-1e6, max_value=1e6),
+        )
+    )
+    def test_idempotent(self, v):
+        if np.linalg.norm(v) < 1e-12:
+            return
+        once = normalize(v)
+        twice = normalize(once)
+        np.testing.assert_array_almost_equal(twice, once)
 
     def test_negative_components(self):
         result = normalize(np.array([-3.0, 4.0, 0.0]))
