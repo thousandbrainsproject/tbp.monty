@@ -47,17 +47,25 @@ class NormalizeTest(unittest.TestCase):
         result = normalize(np.array([-3.0, 4.0, 0.0]))
         np.testing.assert_array_almost_equal(result, [-0.6, 0.8, 0.0])
 
-    def test_near_zero_vector_raises(self):
+    @given(
+        arrays(
+            dtype=np.float64,
+            shape=st.integers(min_value=1, max_value=10),
+            elements=st.floats(min_value=-1e-13, max_value=1e-13),
+        )
+    )
+    def test_near_zero_vector_raises(self, v):
         with self.assertRaises(ValueError):
-            normalize(np.array([1e-13, 0.0, 0.0]))
+            normalize(v)
 
-    def test_zero_vector_raises(self):
+    @given(
+        epsilon=st.floats(min_value=1e-12, max_value=1e-2),
+        scale=st.floats(min_value=0.01, max_value=0.99),
+    )
+    def test_custom_epsilon(self, epsilon, scale):
+        v = np.array([epsilon * scale, 0.0, 0.0])
         with self.assertRaises(ValueError):
-            normalize(np.array([0.0, 0.0, 0.0]))
-
-    def test_custom_epsilon(self):
-        with self.assertRaises(ValueError):
-            normalize(np.array([1e-8, 0.0, 0.0]), epsilson=1e-6)
+            normalize(v, epsilon=epsilon)
 
     @given(
         arrays(
