@@ -10,6 +10,9 @@
 import unittest
 
 import numpy as np
+from hypothesis import given
+from hypothesis import strategies as st
+from hypothesis.extra.numpy import arrays
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
 
@@ -47,8 +50,16 @@ class NormalizeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             normalize(np.array([1e-8, 0.0, 0.0]), epsilson=1e-6)
 
-    def test_result_has_unit_norm(self):
-        v = np.array([2.5, -7.1, 3.3])
+    @given(
+        arrays(
+            dtype=np.float64,
+            shape=st.integers(min_value=1, max_value=10),
+            elements=st.floats(min_value=-1e6, max_value=1e6),
+        )
+    )
+    def test_result_has_unit_norm(self, v):
+        if np.linalg.norm(v) < 1e-12:
+            return
         result = normalize(v)
         self.assertAlmostEqual(np.linalg.norm(result), 1.0)
 
