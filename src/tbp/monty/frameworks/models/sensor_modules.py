@@ -198,7 +198,7 @@ class ObservationProcessor:
         sensor_frame_data = observation["sensor_frame_data"]
         world_camera = observation["world_camera"]
         rgba_feat = observation["rgba"]
-        mock_obs = [[.1, .2, .3], [.4, .5, .6], [.7, .8, .9]]
+        mock_obs = [.1, .2, .3, .4, .5, .6, .7, .8, .9]
         depth_feat = (
             observation["depth"]
             .reshape(observation["depth"].size, 1)
@@ -323,7 +323,7 @@ class ObservationProcessor:
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
         if "mock_obs" in self._features:
-            mock_obs = np.array([[.1, .2, .3], [.4, .5, .6], [.7, .8, .9]])
+            mock_obs = np.array([.1, .2, .3, .4, .5, .6, .7, .8, .9])
             features["mock_obs"] = mock_obs
         if "local_binary_pattern" in self._features:
             print("In LBP")
@@ -685,8 +685,8 @@ class CameraSM(SensorModule):
         if not self.is_exploring:
             self.processed_obs.append(observed_state.__dict__)
             self.states.append(self.state)
-
-        print_dict_structure(observed_state.__dict__)
+        #lbp trace
+        #print(f"Printing sensor module observed state: \n{print_dict_structure(observed_state.__dict__)}")
         return observed_state
 
 

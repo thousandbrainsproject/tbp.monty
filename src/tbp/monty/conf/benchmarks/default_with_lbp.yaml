@@ -13,6 +13,7 @@ default_sensor_features:
   - on_object
   - hsv
   - principal_curvatures_log
+  - mock_obs
 
 # NOTE: maybe lower once we have better policies
 # Is not really nescessary for good performance but makes sure we don't just overfit

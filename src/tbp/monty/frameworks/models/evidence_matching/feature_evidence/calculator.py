@@ -57,7 +57,15 @@ class DefaultFeatureEvidenceCalculator:
         # generate the lists of features, tolerances, and whether features are circular
 
         # LBP DISTANCE METRIC WILL PROBABLY GO HERE
-        #print(f"\n\n\nCalculating feature evidence for channel {input_channel} with features {channel_query_features}")
+
+
+        # print(f"Printing all arguments to DefaultFeatureEvidenceCalculator.calculate:")
+        # print(f"channel_feature_order: {channel_feature_order}\n")
+        # print(f"channel_feature_weights: {channel_feature_weights}\n")
+        # print(f"channel_query_features: {channel_query_features}\n")
+        # print(f"channel_tolerances: {channel_tolerances}\n")
+        # print(f"input_channel: {input_channel}\n")
+
         shape_to_use = channel_feature_array.shape[1]
         tolerance_list = np.zeros(shape_to_use) * np.nan
         feature_weight_list = np.zeros(shape_to_use) * np.nan
@@ -105,5 +113,51 @@ class DefaultFeatureEvidenceCalculator:
         feature_evidence = feature_evidence / tolerance_list
         graph_evidence = np.average(feature_evidence, weights=feature_weight_list, axis=1)
         #print(f"Evidence values of each node: {graph_evidence}")
-        print(f"Total number of nodes: {len(graph_evidence)}\n\n\n")
+        # print(f"Total number of nodes: {len(graph_evidence)}")
         return np.average(feature_evidence, weights=feature_weight_list, axis=1)
+
+import numpy as np
+
+def print_dict_structure(d, indent=0):
+    indent_str = "  " * indent
+
+    if isinstance(d, dict):
+        for key, value in d.items():
+            print(f"{indent_str}{key}:", end=" ")
+
+            # If nested dict → recurse
+            if isinstance(value, dict):
+                print("(dict)")
+                print_dict_structure(value, indent + 1)
+
+            # If list/tuple
+            elif isinstance(value, (list, tuple)):
+                print(f"({type(value).__name__}, len={len(value)})")
+                
+                # Check if it's a 2D structure
+                if len(value) > 0 and isinstance(value[0], (list, tuple)):
+                    flat = [item for sub in value for item in sub]
+                    print(f"{indent_str}  first 10 values: {flat[:10]}")
+                else:
+                    print(f"{indent_str}  first 10 values: {value[:10]}")
+
+            # If numpy array
+            elif isinstance(value, np.ndarray):
+                print(f"(ndarray, shape={value.shape})")
+                
+                if value.ndim == 2:
+                    print(f"{indent_str}  first 10 values: {value.flatten()[:10]}")
+                else:
+                    print(f"{indent_str}  first 10 values: {value[:10]}")
+
+            # Everything else
+            else:
+                try:
+                    length = len(value)
+                except:
+                    length = "N/A"
+                print(f"({type(value).__name__}, len={length})")
+
+    else:
+        print(f"{indent_str}(Not a dict)")
+        
