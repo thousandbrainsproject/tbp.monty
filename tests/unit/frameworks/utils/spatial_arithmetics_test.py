@@ -80,7 +80,3 @@ class NormalizeTest(unittest.TestCase):
             return
         result = normalize(v)
         self.assertAlmostEqual(np.linalg.norm(result), 1.0)
-
-
-if __name__ == "__main__":
-    unittest.main()
