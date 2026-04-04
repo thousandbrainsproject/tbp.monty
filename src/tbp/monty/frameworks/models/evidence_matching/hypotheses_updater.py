@@ -75,7 +75,7 @@ class HypothesesUpdater(ContextManager[Self], Protocol):
         Args:
             hypotheses: Hypothesis space for the graph.
             features: Input features keyed by channel name.
-            displacement: Given displacement vector.
+            displacement: LM displacement between the current and previous input.
             graph_id: ID of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
@@ -217,12 +217,12 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         if one does not exist (i.e., at the beginning of the episode). Updating the
         hypothesis space includes displacing the hypotheses' possible locations, as well
         as updating their evidence scores. Evidence from all available input channels
-        is computed and summed by the displacer.
+        is computed and summed by the HypothesesDisplacer.
 
         Args:
             hypotheses: Hypothesis space for the graph.
             features: Input features keyed by channel name.
-            displacement: Given displacement vector.
+            displacement: LM displacement between the current and previous input.
             graph_id: Identifier of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
@@ -273,12 +273,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             )
         )
 
-        # Initialize hypotheses for newly available channels. If a channel
-        # starts reporting after other channels have already accumulated
-        # evidence, add the current mean evidence to give the new hypotheses
-        # a fighting chance (otherwise they'd start at ~0 and be immediately
-        # pruned).
-        # TODO H: Test mean vs. median here.
+        # Initialize hypotheses for newly available channels.
         new_channels = [
             ch
             for ch in input_channels_to_use

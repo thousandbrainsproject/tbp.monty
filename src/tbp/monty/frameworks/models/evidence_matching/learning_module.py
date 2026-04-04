@@ -782,7 +782,7 @@ class EvidenceGraphLM(GraphLM):
 
         Args:
             features: input features
-            displacement: given displacement vector
+            displacement: LM displacement between the current and previous input.
             graph_id: identifier of the graph being updated
         """
         start_time = time.time()

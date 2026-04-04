@@ -173,10 +173,6 @@ class DefaultHypothesesDisplacer:
                 )
                 min_update = np.clip(np.min(new_evidence), 0, np.inf)
 
-                # Alternatives (no update to other Hs or adding avg) left in
-                # here in case we want to revert back to those.
-                # avg_update = np.mean(new_evidence)
-                # channel_evidence = np.zeros_like(possible_hypotheses.evidence)
                 channel_evidence = (
                     np.ones_like(possible_hypotheses.evidence) * min_update
                 )

@@ -290,7 +290,7 @@ class BurstSamplingHypothesesUpdater:
         Args:
             hypotheses: Hypothesis space for the graph id.
             features: Input features keyed by channel name.
-            displacement: Given displacement vector.
+            displacement: LM displacement between the current and previous input.
             graph_id: Identifier of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
@@ -533,8 +533,9 @@ class BurstSamplingHypothesesUpdater:
         """Samples the specified number of fully informed hypotheses.
 
         For each channel, the method identifies the top-k nodes with the highest
-        evidence scores and samples hypotheses only from those nodes. The number
-        of hypotheses per channel is pre-computed by ``_sample_count``.
+        feature match scores to the current step's input and samples hypotheses only
+        from those nodes. The number of hypotheses per channel is pre-computed
+        by ``_sample_count``.
 
         The sampling includes:
           - Selecting the top-k node indices based on evidence scores, where k is

@@ -1009,8 +1009,8 @@ class GraphLM(LearningModule):
         """
         sm_obs = [o for o in obs if o.sender_type == "SM"]
         if self.buffer.global_location is not None:
-            avg_location = np.mean([o.location for o in sm_obs], axis=0)
-            displacement = avg_location - self.buffer.global_location
+            current_location = np.mean([o.location for o in sm_obs], axis=0)
+            displacement = current_location - self.buffer.global_location
         else:
             displacement = np.zeros(3)
         for o in obs:

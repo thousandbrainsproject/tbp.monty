@@ -412,10 +412,11 @@ class DisplacementGraphLM(GraphLM):
         if len(self.buffer) > 0:
             # TODO S: Make sure result of get_current_location() and get_current_pose()
             # is on object (should always be atm).
-            displacement = np.array(obs_to_use.location) - self.buffer.global_location
+            current_location = np.mean([o.location for o in sm_obs], axis=0)
+            displacement = current_location - self.buffer.global_location
 
             pos1 = torch.tensor(self.buffer.global_location)
-            pos2 = torch.tensor(obs_to_use.location)
+            pos2 = torch.tensor(current_location)
             norm1 = torch.tensor(
                 # element 0 of current pose is location, element 1 is surface normal
                 self.buffer.get_current_pose(input_channel=obs_to_use.sender_id)[1],

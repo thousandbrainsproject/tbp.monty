@@ -539,13 +539,13 @@ class FeatureAtLocationBuffer:
             list_of_data: List of State objects from the current step.
         """
         sm_data = [s for s in list_of_data if s.sender_type == "SM"]
-        avg_location = np.mean([s.location for s in sm_data], axis=0)
+        current_location = np.mean([s.location for s in sm_data], axis=0)
 
         if getattr(sm_data[0], "displacement", None):
             for attr in sm_data[0].displacement:
                 self._add_global_displacement(attr, sm_data[0].displacement[attr])
 
-        self.global_location = avg_location.copy()
+        self.global_location = current_location.copy()
 
     def _add_global_displacement(
         self, disp_name: str, disp_val: npt.NDArray[np.float64]
