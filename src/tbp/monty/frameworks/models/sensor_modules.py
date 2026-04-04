@@ -328,6 +328,7 @@ class ObservationProcessor:
         if "local_binary_pattern" in self._features:
             patch = rgba_feat[:, :, :3]
             gray = rgb2gray(patch)
+            gray = (gray * 255).astype(np.uint8) # LBP should be done with ints
             lbp = local_binary_pattern(gray, P=8, R=1, method="uniform")
             n_bins = 10
 
