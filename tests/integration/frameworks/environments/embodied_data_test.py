@@ -32,7 +32,10 @@ from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     SimulatedObjectEnvironment,
 )
-from tbp.monty.frameworks.environments.object_init_samplers import Default
+from tbp.monty.frameworks.environments.object_init_samplers import (
+    Default,
+    MultiObjectNames,
+)
 from tbp.monty.frameworks.environments.two_d_data import (
     SaccadeOnImageEnvironment,
     SaccadeOnImageFromStreamEnvironment,
@@ -257,16 +260,16 @@ class EnvironmentInterfacePerObjectTest(unittest.TestCase):
             rng=rng,
             seed=seed,
             experiment_mode=ExperimentMode.EVAL,
-            object_names={
-                "targets_list": ["object_a", "object_c"],
-                "source_object_list": [
+            object_names=MultiObjectNames(
+                targets_list=["object_a", "object_c"],
+                source_object_list=[
                     "object_a",
                     "object_b",
                     "object_c",
                     "object_b",
                 ],
-                "num_distractors": 2,
-            },
+                num_distractors=2,
+            ),
             object_init_sampler=Default(),
         )
 
@@ -282,8 +285,7 @@ class EnvironmentInterfacePerObjectTest(unittest.TestCase):
 
         with self.assertRaisesRegex(
             TypeError,
-            "Object names must be a list, ListConfig, or a mapping with "
-            "keys: targets_list, source_object_list, num_distractors",
+            "Object names must be a list, ListConfig, or a mapping",
         ):
             EnvironmentInterfacePerObject(
                 env=FakeEnvironmentAbs(),
@@ -293,28 +295,6 @@ class EnvironmentInterfacePerObjectTest(unittest.TestCase):
                 object_names=("object_a", "object_b"),
                 object_init_sampler=Default(),
             )
-
-    def test_rejects_mapping_missing_required_keys(self):
-        seed = 42
-        rng = np.random.RandomState(seed)
-
-        with self.assertRaises(TypeError) as cm:
-            EnvironmentInterfacePerObject(
-                env=FakeEnvironmentAbs(),
-                rng=rng,
-                seed=seed,
-                experiment_mode=ExperimentMode.EVAL,
-                object_names={"targets_list": ["object_a"]},
-                object_init_sampler=Default(),
-            )
-
-        self.assertIn(
-            "Object names mapping must contain keys: "
-            "targets_list, source_object_list, num_distractors.",
-            str(cm.exception),
-        )
-        self.assertIn("source_object_list", str(cm.exception))
-        self.assertIn("num_distractors", str(cm.exception))
 
 
 class EmbodiedDataTest(unittest.TestCase):

@@ -188,7 +188,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
         Args:
             object_names: plain list of objects, or Hydra `ListConfig`, if doing a
-                simple experiment with primary target objects only; mapping matching
+                simple experiment with primary target objects only; mapping typed as
                 `MultiObjectNames` for experiments with multiple objects,
                 corresponding to -->
                 targets_list : the list of primary target objects
@@ -207,43 +207,25 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
         Raises:
             TypeError: If `object_names` is not a `list`, `ListConfig`, or a mapping
-                with `targets_list`, `source_object_list`, and `num_distractors`
         """
         super().__init__(*args, **kwargs)
         if isinstance(object_names, Mapping):
-            required_keys = {
-                "targets_list",
-                "source_object_list",
-                "num_distractors",
-            }
-            missing_keys = required_keys.difference(object_names)
-            if missing_keys:
-                missing_keys_str = ", ".join(missing_keys)
-                raise TypeError(
-                    "Object names mapping must contain keys: "
-                    "targets_list, source_object_list, num_distractors. "
-                    f"Missing: {missing_keys_str}"
-                )
-
             # TODO when we want more advanced multi-object experiments, update these
             # arguments along with the Object Initializers so that we can easily
             # specify a set of primary targets and distractors, i.e. random sampling
             # of the distractor objects shouldn't happen here
-            self.object_names = list(object_names["targets_list"])
+            self.object_names = object_names["targets_list"]
             self.source_object_list = list(
                 dict.fromkeys(object_names["source_object_list"])
             )
             self.num_distractors = object_names["num_distractors"]
         elif isinstance(object_names, (list, ListConfig)):
-            self.object_names = list(object_names)
+            self.object_names = object_names
             # Return an (ordered) list of unique items:
             self.source_object_list = list(dict.fromkeys(self.object_names))
             self.num_distractors = 0
         else:
-            raise TypeError(
-                "Object names must be a list, ListConfig, or a mapping with "
-                "keys: targets_list, source_object_list, num_distractors"
-            )
+            raise TypeError("Object names must be a list, ListConfig, or a mapping")
         self.create_semantic_mapping()
 
         self.episodes = 0
