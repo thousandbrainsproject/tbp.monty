@@ -300,28 +300,28 @@ class MontyBase(Monty):
                 voting_data = [votes_per_lm[j] for j in self.lm_to_lm_vote_matrix[i]]
                 self.learning_modules[i].receive_votes(voting_data)
 
-    def _pass_goal_states(self) -> None:
-        """Pass goal states between learning modules.
+    def _pass_goals(self) -> None:
+        """Pass goals between learning modules.
 
         Currently we just aggregate these for later passing to the (single) motor
         system.
 
-        TODO M implement more complex, hierarchical passing of goal-states.
+        TODO M implement more complex, hierarchical passing of goals.
         """
-        self.gsg_outputs = []  # NB we reset these at each step to ensure the goal
-        # states do not persist unless this is expected by the GSGs. NOTE we may need
+        self.gsg_outputs = []  # NB we reset these at each step to ensure the goals
+        # do not persist unless this is expected by the GSGs. NOTE we may need
         # to revisit this with heterarchy if we have some LMs that are being stepped
         # at higher frequencies than others.
 
         for lm in self.learning_modules:
-            goal_states = lm.propose_goal_states()
-            self.gsg_outputs.extend(goal_states)
+            goals = lm.propose_goals()
+            self.gsg_outputs.extend(goals)
         for sm in self.sensor_modules:
-            goal_states = sm.propose_goal_states()
-            self.gsg_outputs.extend(goal_states)
+            goals = sm.propose_goals()
+            self.gsg_outputs.extend(goals)
 
     def _pass_infos_to_motor_system(self):
-        """Pass input observations and goal states to the motor system."""
+        """Pass input observations and goals to the motor system."""
         pass
 
     def _step_motor_system(

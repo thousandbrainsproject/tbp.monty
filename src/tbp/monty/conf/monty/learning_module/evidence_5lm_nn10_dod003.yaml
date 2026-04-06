@@ -27,7 +27,7 @@ learning_module_0:
     max_graph_size: 0.3
     num_model_voxels_per_dim: 100
     gsg:
-      _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
+      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
       goal_tolerances:
         location: 0.015
       elapsed_steps_factor: 10
@@ -57,7 +57,7 @@ learning_module_1:
     max_graph_size: 0.3
     num_model_voxels_per_dim: 100
     gsg:
-      _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
+      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
       goal_tolerances:
         location: 0.015
       elapsed_steps_factor: 10
@@ -87,7 +87,7 @@ learning_module_2:
     max_graph_size: 0.3
     num_model_voxels_per_dim: 100
     gsg:
-      _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
+      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
       goal_tolerances:
         location: 0.015
       elapsed_steps_factor: 10
@@ -117,7 +117,7 @@ learning_module_3:
     max_graph_size: 0.3
     num_model_voxels_per_dim: 100
     gsg:
-      _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
+      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
       goal_tolerances:
         location: 0.015
       elapsed_steps_factor: 10
@@ -147,7 +147,7 @@ learning_module_4:
     max_graph_size: 0.3
     num_model_voxels_per_dim: 100
     gsg:
-      _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
+      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
       goal_tolerances:
         location: 0.015
       elapsed_steps_factor: 10
