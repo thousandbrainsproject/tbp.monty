@@ -1091,7 +1091,3 @@ class PolicyTest(unittest.TestCase):
         assert np.all(
             np.isclose(agent_direction_hab_3, [-0.965738, 0.09413407, -0.24184476])
         ), "Habitat pose is not as expected"
-
-
-if __name__ == "__main__":
-    unittest.main()

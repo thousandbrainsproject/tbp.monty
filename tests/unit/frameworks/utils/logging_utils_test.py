@@ -93,7 +93,3 @@ class TestComputePoseError(unittest.TestCase):
 
         with self.assertRaises(AttributeError):
             compute_pose_error(Rotation.identity(), "not a rotation")
-
-
-if __name__ == "__main__":
-    unittest.main()

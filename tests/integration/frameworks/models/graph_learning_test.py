@@ -972,7 +972,3 @@ class GraphLearningTest(BaseGraphTest):
         self.check_multilm_eval_results(
             eval_stats, num_lms=5, min_done=3, num_episodes=1
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

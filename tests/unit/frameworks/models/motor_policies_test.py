@@ -193,7 +193,3 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
             first_occurrence = returned_actions[i]
             second_occurrence = returned_actions[i + cycle_length]
             self.assertEqual(first_occurrence, second_occurrence)
-
-
-if __name__ == "__main__":
-    unittest.main()

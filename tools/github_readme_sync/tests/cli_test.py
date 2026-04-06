@@ -38,7 +38,3 @@ class TestCLIArgumentErrors:
         with patch.object(sys, "argv", test_args):
             with pytest.raises(SystemExit):
                 main()
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -683,7 +683,3 @@ class TurnRightTest(unittest.TestCase):
                 "rotation_degrees": 90,
             },
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

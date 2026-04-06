@@ -132,7 +132,3 @@ class NoResetEvidenceLMTest(BaseGraphTest):
 
     def tearDown(self):
         shutil.rmtree(self.output_dir)
-
-
-if __name__ == "__main__":
-    unittest.main()
