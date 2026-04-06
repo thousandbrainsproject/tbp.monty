@@ -317,9 +317,6 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
     Returns:
         Tuple containing the representative pose vector mean and a bool
         indicating whether we used curvature directions to update it.
-
-    Raises:
-        ValueError: If the mean surface normal is zero.
     """
     # Check the angle between all surface normals relative to the first curvature
     # directions. Then look at how many are positive vs. negative and use the ones
@@ -358,10 +355,10 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
         cd1_dirs = get_right_hand_angle(cds1, cds2[0], norm_mean) < 0
         cds1[cd1_dirs] = -cds1[cd1_dirs]
         cd1_mean = np.mean(cds1, axis=0)
-        normed_cd1_mean = cd1_mean / np.linalg.norm(cd1_mean)
+        normed_cd1_mean = normalize(cd1_mean)
         # Get the second cd by calculating a vector orthogonal to cd1 and surface normal
         cd2_mean = np.cross(norm_mean, normed_cd1_mean)
-        normed_cd2_mean = cd2_mean / np.linalg.norm(cd2_mean)
+        normed_cd2_mean = normalize(cd2_mean)
         if get_right_hand_angle(normed_cd1_mean, cd2_mean, norm_mean) < 0:
             normed_cd2_mean = -normed_cd2_mean
         use_cds_to_update = True
