@@ -21,7 +21,7 @@ from tbp.monty.frameworks.environments.environment import (
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
-from tbp.monty.math import ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
 
 if TYPE_CHECKING:
@@ -52,7 +52,7 @@ class MuJoCoEnvironment(SimulatedObjectEnvironment):
         self,
         name: str,
         position: VectorXYZ = ZERO_VECTOR,
-        rotation: QuaternionWXYZ = ZERO_VECTOR,
+        rotation: QuaternionWXYZ = IDENTITY_QUATERNION,
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
