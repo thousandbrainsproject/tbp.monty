@@ -13,7 +13,7 @@ from unittest.mock import Mock
 
 import numpy as np
 import pytest
-from hypothesis import example, given
+from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
