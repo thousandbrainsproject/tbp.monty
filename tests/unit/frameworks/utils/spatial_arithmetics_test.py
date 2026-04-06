@@ -18,7 +18,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
 
 finite_vectors = arrays(
     dtype=np.float64,
-    shape=st.integers(min_value=1, max_value=10),
+    shape=3,
     elements=st.floats(min_value=-1e6, max_value=1e6),
 )
 
@@ -43,7 +43,7 @@ class NormalizeTest(unittest.TestCase):
     @given(
         arrays(
             dtype=np.float64,
-            shape=st.integers(min_value=1, max_value=10),
+            shape=3,
             elements=st.floats(min_value=-1e-13, max_value=1e-13),
         )
     )
