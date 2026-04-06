@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 from typing import ClassVar
 
+from tbp.monty.cmp import Goal
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
@@ -137,6 +138,7 @@ class MontyBase(Monty):
             )
 
         self._actions: list[Action] = []
+        self._goals: list[Goal] = []
 
     def step(
         self,
@@ -308,21 +310,20 @@ class MontyBase(Monty):
 
         TODO M implement more complex, hierarchical passing of goals.
         """
-        self.gsg_outputs = []  # NB we reset these at each step to ensure the goals
+        self._goals = []  # NB we reset these at each step to ensure the goals
         # do not persist unless this is expected by the GSGs. NOTE we may need
         # to revisit this with heterarchy if we have some LMs that are being stepped
         # at higher frequencies than others.
+        # Note: self._goals does not get reset here during motor-only steps. This
+        # means goals can get sent to the motor system that were proposed in the last
+        # non-motor-only step.
 
         for lm in self.learning_modules:
             goals = lm.propose_goals()
-            self.gsg_outputs.extend(goals)
+            self._goals.extend(goals)
         for sm in self.sensor_modules:
             goals = sm.propose_goals()
-            self.gsg_outputs.extend(goals)
-
-    def _pass_infos_to_motor_system(self):
-        """Pass input observations and goals to the motor system."""
-        pass
+            self._goals.extend(goals)
 
     def _step_motor_system(
         self,
@@ -331,7 +332,11 @@ class MontyBase(Monty):
         proprioceptive_state: ProprioceptiveState,
     ) -> None:
         self._actions = self.motor_system(
-            ctx, observations, proprioceptive_state, self.sensor_module_outputs[0]
+            ctx,
+            observations,
+            proprioceptive_state,
+            self.sensor_module_outputs[0],
+            self._goals,
         )
 
     def _set_step_type_and_check_if_done(self):
@@ -382,6 +387,7 @@ class MontyBase(Monty):
             sm.pre_episode()
 
         self.motor_system.pre_episode()
+        self._goals = []
 
     def post_episode(self):
         for lm in self.learning_modules:
