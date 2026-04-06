@@ -44,20 +44,20 @@ class GraphBuildingTest(unittest.TestCase):
 
         def training_config(test_name: str) -> DictConfig:
             return hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    f"test=graph_building/{test_name}",
-                    f"test.config.logging.output_dir={self.habitat_save_path}",
+                    f"experiment=test/graph_building/{test_name}",
+                    f"experiment.config.logging.output_dir={self.habitat_save_path}",
                 ],
             )
 
         def loading_config(test_name: str) -> DictConfig:
             return hydra.compose(
-                config_name="test",
+                config_name="experiment",
                 overrides=[
-                    f"test=graph_building/{test_name}",
-                    f"test.config.logging.output_dir={self.habitat_save_path}",
-                    f"test.config.model_name_or_path={self.model_load_path}",
+                    f"experiment=test/graph_building/{test_name}",
+                    f"experiment.config.logging.output_dir={self.habitat_save_path}",
+                    f"experiment.config.model_name_or_path={self.model_load_path}",
                 ],
             )
 
@@ -121,7 +121,7 @@ class GraphBuildingTest(unittest.TestCase):
         Returns:
             The experiment.
         """
-        exp = hydra.utils.instantiate(self.supervised_pre_training_cfg.test)
+        exp = hydra.utils.instantiate(self.supervised_pre_training_cfg.experiment)
         with exp:
             exp.run()
         return exp
@@ -134,7 +134,7 @@ class GraphBuildingTest(unittest.TestCase):
         Returns:
             The experiment.
         """
-        exp = hydra.utils.instantiate(self.spth_feat_cfg.test)
+        exp = hydra.utils.instantiate(self.spth_feat_cfg.experiment)
         with exp:
             exp.run()
         return exp
@@ -151,7 +151,7 @@ class GraphBuildingTest(unittest.TestCase):
         exp = self.build_and_save_supervised_graph()
 
         cfg_object_names = list(
-            self.supervised_pre_training_cfg.test.config.train_env_interface_args.object_names
+            self.supervised_pre_training_cfg.experiment.config.train_env_interface_args.object_names
         )
         self.assertListEqual(
             cfg_object_names,
@@ -181,7 +181,7 @@ class GraphBuildingTest(unittest.TestCase):
 
     def test_can_load_disp_graph(self):
         self.build_and_save_supervised_graph()
-        exp = hydra.utils.instantiate(self.load_habitat_cfg.test)
+        exp = hydra.utils.instantiate(self.load_habitat_cfg.experiment)
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
@@ -195,7 +195,7 @@ class GraphBuildingTest(unittest.TestCase):
 
     def test_can_load_disp_graph_for_ppf_matching(self):
         self.build_and_save_supervised_graph()
-        exp = hydra.utils.instantiate(self.load_habitat_for_ppf_cfg.test)
+        exp = hydra.utils.instantiate(self.load_habitat_for_ppf_cfg.experiment)
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
@@ -214,7 +214,7 @@ class GraphBuildingTest(unittest.TestCase):
 
     def test_can_load_disp_graph_for_feature_matching(self):
         self.build_and_save_supervised_graph()
-        exp = hydra.utils.instantiate(self.load_habitat_for_feat_eval_cfg.test)
+        exp = hydra.utils.instantiate(self.load_habitat_for_feat_eval_cfg.experiment)
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
@@ -233,7 +233,7 @@ class GraphBuildingTest(unittest.TestCase):
 
     def test_can_extend_and_save_feat_graph(self):
         self.build_and_save_supervised_graph_feat()
-        exp = hydra.utils.instantiate(self.load_habitat_for_feat_train_cfg.test)
+        exp = hydra.utils.instantiate(self.load_habitat_for_feat_train_cfg.experiment)
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(

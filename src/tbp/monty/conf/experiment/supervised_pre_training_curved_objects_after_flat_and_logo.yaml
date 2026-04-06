@@ -1,17 +1,30 @@
-defaults:
-  - supervised_pre_training_flat_objects_wo_logos
-  - config/supervised_pretraining@config
-  - config/environment_interface/clear_train_env_interface_args@config
-  - config/environment_interface/per_object@config.train_env_interface_args
-  - config/environment_interface/logos_on_objs/curved_objects_without_logos@config.train_env_interface_args.object_names
+# @package _global_
 
-config:
-  n_train_epochs: ${benchmarks.rotations_all_count}
-  supervised_lm_ids: ["learning_module_0"]
-  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12/supervised_pre_training_logos_after_flat_objects/pretrained/}
-  logging:
-    run_name: supervised_pre_training_curved_objects_after_flat_and_logo
-  train_env_interface_args:
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-      rotations: ${benchmarks.rotations_all}
+defaults:
+  - /monty: evidencegraph_exp1000_e3_t3_tot2500
+  - /monty/motor_system_config: naive_scan_5
+  - /monty/learning_module: evidence_2lm
+  - /monty/sensor_module: 2sm_camera_dist
+  - /monty/connectivity: 2lm_2sm
+  - /environment: habitat_dist_agent_sensors2
+  - /env_interface: train_curvedobjs_predefined
+  - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
+  - /env_interface/transform: missing_depthto3d_sensor3
+  - /logging: silent_info_train
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: ${constants.rotations_all_count}
+    n_eval_epochs: 3
+    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_logos_after_flat_objects/pretrained/
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids:
+      - learning_module_0
+    logging:
+      run_name: supervised_pre_training_curved_objects_after_flat_and_logo

@@ -21,75 +21,77 @@ In this section, we'll show how to perform supervised pretraining with a model c
 To follow along, open the `src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj_train.yaml` file.
 
 ```yaml
-defaults:
-  # Use supervised_pretraining for config defaults.
-  - /experiment/config/supervised_pretraining@config
-  - /experiment/config/logging/pretrain@config.logging
-  # Specify the Monty model. The five_lm config contains all of the sensor module
-  # configs, learning module configs, and connectivity matrices we need.
-  - /experiment/config/monty/five_lm@config.monty_config
-  - /experiment/config/monty/args/clear_monty_args@config.monty_config
-  - /experiment/config/monty/args/defaults@config.monty_config.monty_args
-  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
-  - /experiment/config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
-  # Set up the environment and agent.
-  - /experiment/config/environment/five_lm_mount_habitat@config.env_interface_config
-  # Set up the training environment interface.
-  - /experiment/config/environment_interface/per_object@config.train_env_interface_args
+# @package _global_
 
-# The MontySupervisedObjectPretrainingExperiment class will provide the model
-# with object and pose labels for supervised pretraining.
-_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
-config:
-  n_train_epochs: ${benchmarks.rotations_all_count}
-  logging:
-    # Specify directory where an output directory will be created.
-    output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-    run_name: dist_agent_5lm_2obj_train
-  monty_config:
-    monty_args:
-      num_exploratory_steps: 500
-  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
-  train_env_interface_args:
-    # Specify the objects to train on.
-    object_names:
-      - mug
-      - banana
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
-      # Specify the objects to train on 14 unique object poses.
-      rotations: ${benchmarks.rotations_all}
+defaults:
+  - /monty: graph_exp500_e3_t3_tot2500
+  - /monty/motor_system_config: naive_scan_5
+  - /monty/learning_module: displacement_5lm
+  - /monty/sensor_module: 5sm_camera
+  - /monty/connectivity: 5lm_5sm
+  - /environment: habitat_dist_agent_sensors5
+  - /env_interface: tutorial_train_2obj_predefined
+  - /env_interface/transform: missing_depthto3d_sensor6
+  - /logging: silent_warning_train
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+  config:
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: ${constants.rotations_all_count}
+    n_eval_epochs: 3 # unused but required
+    model_name_or_path: ''
+    min_lms_match: 1
+    seed: 42
+    show_sensor_output: false
+    supervised_lm_ids: all
+    logging:
+      output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
+      run_name: dist_agent_5lm_2obj_train
+      wandb_group: debugging
 
 ```
 
-If you've read the previous tutorials, much of this should look familiar. As in our [pretraining](./pretraining-a-model.md) tutorial, we've configured a `MontySupervisedObjectPretrainingExperiment` with a `src/tbp/monty/conf/experiment/config/logging/pretrain` logging configuration. However, we are now using a built-in Monty model configuration called `src/tbp/monty/conf/experiment/config/monty/five_lm` that specifies everything we need to have five `CameraSM` sensor modules that each connect to exactly one of five `DisplacementGraphLM` learning modules. `src/tbp/monty/conf/experiment/config/monty/five_lm` also specifies that each learning module connects to every other learning module through lateral voting connections. Note that `GraphLM` learning modules used in previous tutorials would work fine here, but we're going with the default `DisplacementGraphLM` for convenience (this is a graph-based LM that also stores displacements between points, although these are generally not used during inference at present). To see how this is done, we can take a closer look at the `src/tbp/monty/conf/experiment/config/monty/five_lm` configuration which contains the following lines:
+If you've read the previous tutorials, much of this should look familiar. As in our [pretraining](./pretraining-a-model.md) tutorial, we've configured a `MontySupervisedObjectPretrainingExperiment` with a `silent_warning_train` logging configuration. However, we are now using a Monty model configuration that specifies everything we need to have five `CameraSM` sensor modules that each connect to exactly one of five `DisplacementGraphLM` learning modules. `/monty/connectivity` also specifies that each learning module connects to every other learning module through lateral voting connections. Note that `GraphLM` learning modules used in previous tutorials would work fine here, but we're going with the default `DisplacementGraphLM` for convenience (this is a graph-based LM that also stores displacements between points, although these are generally not used during inference at present). To see how this is done, we can take a closer look at the `/monty/connectivity/5lm_5sm` configuration which contains the following lines:
 
 ```yaml
 sm_to_lm_matrix:
-  - [0]
-  - [1]
-  - [2]
-  - [3]
-  - [4]
-  # View finder (sm5) not connected to lm
-
-# For hierarchically connected LMs.
+- - 0
+- - 1
+- - 2
+- - 3
+- - 4
 lm_to_lm_matrix: null
-
-# All LMs connect to each other
 lm_to_lm_vote_matrix:
-  - [1, 2, 3, 4]
-  - [0, 2, 3, 4]
-  - [0, 1, 3, 4]
-  - [0, 1, 2, 4]
-  - [0, 1, 2, 3]
+- - 1
+  - 2
+  - 3
+  - 4
+- - 0
+  - 2
+  - 3
+  - 4
+- - 0
+  - 1
+  - 3
+  - 4
+- - 0
+  - 1
+  - 2
+  - 4
+- - 0
+  - 1
+  - 2
+  - 3
 ```
 
 `sm_to_lm_matrix` is a list where the *i*-th entry indicates the learning module that receives input from the *i*-th sensor module. Note, the view finder, which is configured as sensor module 5, is not connected to any learning modules since `sm_to_lm_matrix[5]` does not exist. Similarly, `lm_to_lm_vote_matrix` specifies which learning modules communicate with each for voting during inference. `lm_to_lm_vote_matrix[i]` is a list of learning module IDs that communicate with learning module *i*.
 
-We have also specified that we want to use a `src/tbp/monty/conf/experiment/config/monty/motor_system/naive_scan_spiral` for the motor system. This is a *learning-focused* motor policy that directs the agent to look across the object surface in a spiraling motion. That way, we can ensure efficient coverage of the entire object (of what is visible from the current perspective) during learning.
+We have also specified that we want to use a `naive_scan_5` for the motor system. This is a *learning-focused* motor policy that directs the agent to look across the object surface in a spiraling motion. That way, we can ensure efficient coverage of the entire object (of what is visible from the current perspective) during learning.
 
-Finally, we have also set the `env_interface_config` to `src/tbp/monty/conf/experiment/config/environment/five_lm_mount_habitat`. This specifies that we have five `CameraSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see `src/tbp/monty/conf/experiment/config/environment/init_args/five_lm_mount`.
+Finally, we have also set the `/environment` to `habitat_dist_agent_sensors5`. This specifies that we have five `CameraSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see `src/tbp/monty/conf/environment/habitat_dist_agent_sensors5`.
 
 To run this experiment, call the `run.py` script like so:
 ```bash
@@ -102,108 +104,73 @@ We will now specify an experiment config to perform inference.
 To follow along, open the `src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj_eval.yaml` file.
 
 ```yaml
+# @package _global_
+
 defaults:
-  - /experiment/config/eval@config
-  - /experiment/config/logging/eval@config.logging
-  - /experiment/config/monty/five_lm@config.monty_config
-  - /experiment/config/monty/args/clear_monty_args@config.monty_config
-  - /experiment/config/monty/args/defaults@config.monty_config.monty_args
-  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
-  - /experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config@config.monty_config.learning_module_configs.learning_module_0
-  - /experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights@config.monty_config.learning_module_configs.learning_module_0.feature_weights.patch_0
-  - /experiment/tutorial/dist_agent_5lm_2obj/tolerance_values@config.monty_config.learning_module_configs.learning_module_0.tolerances.patch_0
-  - /experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config@config.monty_config.learning_module_configs.learning_module_1
-  - /experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights@config.monty_config.learning_module_configs.learning_module_1.feature_weights.patch_1
-  - /experiment/tutorial/dist_agent_5lm_2obj/tolerance_values@config.monty_config.learning_module_configs.learning_module_1.tolerances.patch_1
-  - /experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config@config.monty_config.learning_module_configs.learning_module_2
-  - /experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights@config.monty_config.learning_module_configs.learning_module_2.feature_weights.patch_2
-  - /experiment/tutorial/dist_agent_5lm_2obj/tolerance_values@config.monty_config.learning_module_configs.learning_module_2.tolerances.patch_2
-  - /experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config@config.monty_config.learning_module_configs.learning_module_3
-  - /experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights@config.monty_config.learning_module_configs.learning_module_3.feature_weights.patch_3
-  - /experiment/tutorial/dist_agent_5lm_2obj/tolerance_values@config.monty_config.learning_module_configs.learning_module_3.tolerances.patch_3
-  - /experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config@config.monty_config.learning_module_configs.learning_module_4
-  - /experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights@config.monty_config.learning_module_configs.learning_module_4.feature_weights.patch_4
-  - /experiment/tutorial/dist_agent_5lm_2obj/tolerance_values@config.monty_config.learning_module_configs.learning_module_4.tolerances.patch_4
-  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
-  - /experiment/config/monty/motor_system/informed_goal_state_driven@config.monty_config.motor_system_config
-  - /experiment/config/environment/five_lm_mount_habitat@config.env_interface_config
-  - /experiment/config/environment_interface/per_object@config.eval_env_interface_args
+  - /monty: evidencegraph_exp1000_emin_t3_tot2500
+  - /monty/motor_system_config: informed_5_goal1
+  - /monty/learning_module: tutorial_evidence_5lm
+  - /monty/sensor_module: 5sm_camera
+  - /monty/connectivity: 5lm_5sm
+  - /environment: habitat_dist_agent_sensors5
+  - /env_interface: tutorial_eval_2obj_predefined_r1
+  - /env_interface/transform: missing_depthto3d_sensor6
+  - /logging: basic_info_monty_runs
 
-_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
-config:
-  # load the pre-trained models from this path; this needs to be the same name as used for pretraining
-  model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train/pretrained"}
-  n_train_epochs: 1
-  min_lms_match: 3 # Terminate when 3 learning modules makes a decision.
-  logging:
-    output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-    run_name: dist_agent_5lm_2obj_eval
-    monty_handlers:
-      - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
-    wandb_handlers: []
-  monty_config:
-    monty_args:
-      min_eval_steps: 20
-    monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
-  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
-  eval_env_interface_args:
-    object_names:
-      - mug
-      - banana
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.environments.object_initializers.Predefined
-      rotations:
-        - ${np.array:[0, 15, 30]} # A previously unseen rotation of the objects.
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 1 # unused but required
+    n_eval_epochs: 1
+    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train/pretrained"}
+    min_lms_match: 3
+    python_log_level: DEBUG
+    seed: 42
+    show_sensor_output: false
+    supervised_lm_ids: []
+    logging:
+      output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
+      run_name: dist_agent_5lm_2obj_eval
+      wandb_group: gm_eval_runs
+
 ```
 
-As usual, we set up our imports, save/load paths, and specify which objects to use and what rotations they'll be in. For simplicity, we'll only perform inference on each of the two objects once but you could easily test more by adding more rotations to the `config.train_env_interface_args.object_init_sampler.rotations` array.
+As usual, we set up our imports, save/load paths, and specify which objects to use and what rotations they'll be in. For simplicity, we'll only perform inference on each of the two objects once but you could easily test more by adding more rotations to the `config.train_env_interface_args.object_init_sampler.rotations` array specified in `/env_interface/tutorial_eval_2obj_predefined_r1`.
 
-Now we specify the learning module config. For simplicity, we define one learning module config and copy it to reuse settings across learning modules. We need only make two changes to each copy so that the feature_weights and tolerances reference the sensor ID connected to the learning module.
+Now we specify the learning module config. We define five learning modules with the same configuration. We need only make two changes to each copy so that the feature_weights and tolerances reference the sensor ID connected to the learning module.
 
 ```yaml
-# src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config.yaml
-learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
-learning_module_args:
-  max_match_distance: 0.01, # =1cm
-  # Use this to update all hypotheses > 80% of the max hypothesis evidence
-  evidence_threshold_config: 80%
-  x_percent_threshold: 20
-  gsg:
-    _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
-    # Tolerance(s) when determining goal-state success
-    goal_tolerances:
-      location: 0.015 # distance in meters
-    min_post_goal_success_steps: 5 # Number of necessary steps for a hypothesis
-  hypotheses_updater_args:
-    max_nneighbors: 10
+# src/tbp/monty/conf/monty/learning_module/tutorial_evidence_5lm.yaml
+# ...
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+  learning_module_args:
+    max_match_distance: 0.01 # =1cm
+    # Use this to update all hypotheses > 80% of the max hypothesis evidence
+    evidence_threshold_config: 80%
+    x_percent_threshold: 20
+    gsg:
+      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+      # Tolerance(s) when determining goal success
+      goal_tolerances:
+        location: 0.015 # distance in meters
+      min_post_goal_success_steps: 5 # Number of necessary steps for a hypothesis
+    hypotheses_updater_args:
+      max_nneighbors: 10
+    feature_weights:
+      patch_0:
+        # Weighting saturation and value less since these might change under
+        # different lighting conditions.
+        hsv: ${np.array:[1, 0.5, 0.5]}
+    tolerances:
+      patch_0:
+        hsv: ${np.array:[0.1, 0.2, 0.2]}
+        principal_curvatures_log: ${np.ones:2}
 ```
 
-```yaml
-# src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights.yaml
-# Weighting saturation and value less since these might change under
-# different lighting conditions.
-hsv: ${np.array:[1, 0.5, 0.5]}
-```
-
-```yaml
-# src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj/tolerance_values.yaml
-hsv: ${np.array:[0.1, 0.2, 0.2]}
-principal_curvatures_log: ${np.ones:2}
-```
-
-These are then imported into specific configuration paths corresponding to each learning module, and feature weights and tolerances dictionaries within them.
-
-```yaml
-defaults:
-  # ...
-  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
-  - /experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config@config.monty_config.learning_module_configs.learning_module_0
-  - /experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights@config.monty_config.learning_module_configs.learning_module_0.feature_weights.patch_0
-  - /experiment/tutorial/dist_agent_5lm_2obj/tolerance_values@config.monty_config.learning_module_configs.learning_module_0.tolerances.patch_0
-  - /experiment/tutorial/dist_agent_5lm_2obj/evidence_lm_config@config.monty_config.learning_module_configs.learning_module_1
-  - /experiment/tutorial/dist_agent_5lm_2obj/patch_feature_weights@config.monty_config.learning_module_configs.learning_module_1.feature_weights.patch_1
-  # ...
-```
+These are then imported as `/monty/learning_module: tutorial_evidence_5lm` defaults.
 
 Finally, run the experiment.
 ```bash

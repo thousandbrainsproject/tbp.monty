@@ -91,6 +91,21 @@ This is the body of the markdown.
         result["body"] = result["body"].strip()
         self.assertEqual(result, expected)
 
+    def test_process_markdown_completed_status_sets_hidden(self):
+        body = """---
+title: Some Completed Task
+status: completed
+---
+
+This task has been completed.
+"""
+        slug = "completed-task-slug"
+        result = process_markdown(body, slug)
+        self.assertTrue(
+            result["hidden"],
+            "Documents with status: completed should be hidden",
+        )
+
     def test_description_field_in_frontmatter_is_processed(self):
         body = """---
 title: Glossary

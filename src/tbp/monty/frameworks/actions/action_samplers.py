@@ -23,7 +23,6 @@ from tbp.monty.frameworks.actions.actions import (
     MoveTangentially,
     OrientHorizontal,
     OrientVertical,
-    QuaternionWXYZ,
     SetAgentPitch,
     SetAgentPose,
     SetSensorPitch,
@@ -32,7 +31,6 @@ from tbp.monty.frameworks.actions.actions import (
     SetYaw,
     TurnLeft,
     TurnRight,
-    VectorXYZ,
 )
 from tbp.monty.frameworks.agents import AgentID
 
@@ -41,6 +39,8 @@ __all__ = [
     "ConstantSampler",
     "UniformlyDistributedSampler",
 ]
+
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 
 class ActionSampler:

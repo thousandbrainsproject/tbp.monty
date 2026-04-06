@@ -17,7 +17,7 @@ from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
-from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
+from tbp.monty.frameworks.models.goal_generation import EvidenceGoalGenerator
 from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 
@@ -184,10 +184,13 @@ class EvidenceLMTest(BaseGraphTest):
             [0, 0, 0],
             "Should have rotation 0, 0, 0 as a possible pose.",
         )
-        self.assertListEqual(
-            list(graph_lm.get_possible_poses()["new_object0"][-1]),
-            [180.0, 0.0, 180.0],
-            "Since have symmtry here 180, 0, 180 should also be a possible pose.",
+        symmetry_pose = np.mod(
+            np.array(graph_lm.get_possible_poses()["new_object0"][-1], dtype=float),
+            360.0,
+        )
+        self.assertTrue(
+            np.allclose(symmetry_pose, np.array([180.0, 0.0, 180.0])),
+            "Since we have symmetry here, 180, 0, 180 should also be a possible pose.",
         )
 
     def test_same_sequence_recognition_elm(self):
@@ -453,7 +456,7 @@ class EvidenceLMTest(BaseGraphTest):
             self.fake_obs_house,
             initial_possible_poses=[[0, 0, 0]],  # Note we isolate the influence of
             # ambiguous pose on the hypothesis testing
-            gsg=EvidenceGoalStateGenerator(**self.default_gsg_config),
+            gsg=EvidenceGoalGenerator(**self.default_gsg_config),
         )
 
         self._evaluate_target_location(
@@ -471,14 +474,14 @@ class EvidenceLMTest(BaseGraphTest):
         that the policy still proposes the correct location in object-centric
         coordinates.
         """
-        fake_obs_test = copy.deepcopy(self.fake_obs_house_trans)
+        fake_obs_test = copy.deepcopy(self.fake_percept_house_trans)
 
         graph_lm = self.get_elm_with_two_fake_objects(
             self.fake_obs_square,
             self.fake_obs_house,
             initial_possible_poses=[[45, 75, 190]],  # Note we isolate the influence of
             # ambiguous pose on the hypothesis testing
-            gsg=EvidenceGoalStateGenerator(**self.default_gsg_config),
+            gsg=EvidenceGoalGenerator(**self.default_gsg_config),
         )
 
         self._evaluate_target_location(
@@ -503,7 +506,7 @@ class EvidenceLMTest(BaseGraphTest):
             # Note pose *is* ambiguous in this unti test, vs. in proposal_for_id; in
             # particular, house can either be right-side up, or upside-down (rotated
             # about z)
-            gsg=EvidenceGoalStateGenerator(**self.default_gsg_config),
+            gsg=EvidenceGoalGenerator(**self.default_gsg_config),
         )
 
         self._evaluate_target_location(
@@ -522,7 +525,7 @@ class EvidenceLMTest(BaseGraphTest):
         (translated and rotated), and we confirm that the object-centric target
         point is still correct.
         """
-        fake_obs_test = copy.deepcopy(self.fake_obs_house_trans)
+        fake_obs_test = copy.deepcopy(self.fake_percept_house_trans)
 
         # Only trained on one object
         graph_lm = self.get_elm_with_fake_object(
@@ -531,7 +534,7 @@ class EvidenceLMTest(BaseGraphTest):
             # Note pose *is* ambiguous in this unti test, vs. in proposal_for_id; in
             # particular, house can either be right-side up, or upside-down (was rotated
             # about z before the additional complex transformation was applied)
-            gsg=EvidenceGoalStateGenerator(**self.default_gsg_config),
+            gsg=EvidenceGoalGenerator(**self.default_gsg_config),
         )
 
         self._evaluate_target_location(
