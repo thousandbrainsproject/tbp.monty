@@ -67,4 +67,4 @@ class MontyBasePrivateTest(unittest.TestCase):
                 sentinel.sm2_goal_2,
             }
         )
-        self.assertEqual(set(self.monty_base.gsg_outputs), expected)
+        self.assertEqual(set(self.monty_base._goals), expected)

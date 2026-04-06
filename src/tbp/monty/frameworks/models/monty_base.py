@@ -138,7 +138,7 @@ class MontyBase(Monty):
             )
 
         self._actions: list[Action] = []
-        self.gsg_outputs: list[Goal] = []
+        self._goals: list[Goal] = []
 
     def step(
         self,
@@ -310,20 +310,20 @@ class MontyBase(Monty):
 
         TODO M implement more complex, hierarchical passing of goals.
         """
-        self.gsg_outputs = []  # NB we reset these at each step to ensure the goals
+        self._goals = []  # NB we reset these at each step to ensure the goals
         # do not persist unless this is expected by the GSGs. NOTE we may need
         # to revisit this with heterarchy if we have some LMs that are being stepped
         # at higher frequencies than others.
-        # Note: self.gsg_outputs does not get reset here during motor-only steps. This
+        # Note: self._goals does not get reset here during motor-only steps. This
         # means goals can get sent to the motor system that were proposed in the last
         # non-motor-only step.
 
         for lm in self.learning_modules:
             goals = lm.propose_goals()
-            self.gsg_outputs.extend(goals)
+            self._goals.extend(goals)
         for sm in self.sensor_modules:
             goals = sm.propose_goals()
-            self.gsg_outputs.extend(goals)
+            self._goals.extend(goals)
 
     def _step_motor_system(
         self,
@@ -336,7 +336,7 @@ class MontyBase(Monty):
             observations,
             proprioceptive_state,
             self.sensor_module_outputs[0],
-            self.gsg_outputs,
+            self._goals,
         )
 
     def _set_step_type_and_check_if_done(self):
@@ -387,7 +387,7 @@ class MontyBase(Monty):
             sm.pre_episode()
 
         self.motor_system.pre_episode()
-        self.gsg_outputs = []
+        self._goals = []
 
     def post_episode(self):
         for lm in self.learning_modules:
