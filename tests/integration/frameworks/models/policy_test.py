@@ -250,7 +250,12 @@ class PolicyTest(unittest.TestCase):
         """
         agent_id = self.surf_poor_initial_view_cfg.experiment.config.monty_config[
             "motor_system_config"
-        ].policy.agent_id
+        ].policy_selector.policy.agent_id
+        target_closest_point = (
+            self.surf_poor_initial_view_cfg.experiment.config.monty_config[
+                "motor_system_config"
+            ].policy_selector.policy.desired_object_distance
+        )
         exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
@@ -271,8 +276,6 @@ class PolicyTest(unittest.TestCase):
             # TODO M remove the following train-wreck during refactor
             view = observation_post_touch[agent_id]["view_finder"]
 
-            config = self.surf_poor_initial_view_cfg.experiment.config
-
             points_on_target_obj = (
                 view["semantic_3d"][:, 3].reshape(view["depth"].shape) == 1
             )
@@ -282,10 +285,6 @@ class PolicyTest(unittest.TestCase):
                 f"Should be within a meter of the object, "
                 f"closest point at {closest_point_on_target_obj}"
             )
-
-            target_closest_point = config["monty_config"]["motor_system_config"][
-                "policy"
-            ]["desired_object_distance"]
 
             # Utility policy should not have moved too close to the object
             assert closest_point_on_target_obj > target_closest_point, (
