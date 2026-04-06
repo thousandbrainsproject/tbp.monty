@@ -25,7 +25,6 @@ __all__ = [
 
 
 class MotorPolicySelector(Protocol):
-
     def pre_episode(self, motor_system: MotorSystem) -> None:
         pass
 
