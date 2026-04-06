@@ -61,7 +61,7 @@ class Location:  # noqa: PLW1641
         Location(frame=None, x=8.0, y=-3.0, z=5.0)
         >>> print(a_location)
         (8.0, -3.0, 5.0)
-        >>> a_location.to_vector()
+        >>> a_location.as_array()
         array([ 8., -3.,  5.])
 
         >>> a_location.x = 3
@@ -75,7 +75,7 @@ class Location:  # noqa: PLW1641
         -2.0
         >>> a_location.position
         (3.0, 5.0, -2.0)
-        >>> a_location.to_vector()
+        >>> a_location.as_array()
         array([ 3.,  5., -2.])
 
         >>> a_location.move_x(5)
@@ -300,7 +300,7 @@ class Location:  # noqa: PLW1641
             >>> an_offset = Location(None, [0, -1, 2])
             >>> an_offset
             Location(frame=None, x=0.0, y=-1.0, z=2.0)
-            >>> an_offset.to_vector()
+            >>> an_offset.as_array()
             array([ 0., -1.,  2.])
             >>> an_offset.apply([3, 5, 8])
             array([ 3.,  4., 10.])
@@ -360,13 +360,16 @@ class Location:  # noqa: PLW1641
             origin = origin.frame
         return Location(origin, xyz)
 
-    def to_vector(self) -> FloatVector:
-        """This `Location` as a vector.
+    def as_array(self) -> FloatVector:
+        """This `Location` as an NDArray.
+
+        This is an efficient accessor of internal state.
+        **DO NOT MUTATE**
 
         Returns:
             `array([`_x_, _y_, _z_`])`
         """
-        return self._v.copy()
+        return self._v
 
 
 class Orientation:  # noqa: PLW1641
@@ -392,7 +395,7 @@ class Orientation:  # noqa: PLW1641
         0.0
         >>> an_orientation.rotation
         (1.0, 0.0, 0.0, 0.0)
-        >>> an_orientation.to_quat()
+        >>> an_orientation.as_array()
         array([1., 0., 0., 0.])
 
         >>> b_orientation = an_orientation.copy()
@@ -621,7 +624,7 @@ class Orientation:  # noqa: PLW1641
             >>> a_rotation = Orientation()
             >>> a_rotation
             Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
-            >>> a_rotation.to_quat()
+            >>> a_rotation.as_array()
             array([1., 0., 0., 0.])
             >>> a_rotation.apply([3, 5, 8])
             array([3., 5., 8.])
@@ -692,15 +695,18 @@ class Orientation:  # noqa: PLW1641
         wxyz: FloatVector = xyzw[..., [3, 0, 1, 2]]
         return Orientation(origin, wxyz)
 
-    def to_quat(self) -> FloatVector:
-        """This `Orientation` as a quaternion.
+    def as_array(self) -> FloatVector:
+        """This `Orientation` as an NDArray (quaternion).
 
-        **WARNING!** The element order is scalar-first.
+        This is an efficient accessor of internal state.
+        **DO NOT MUTATE**
+
+        NOTE: The element order is scalar-first.
 
         Returns:
             `array([`_w_, _x_, _y_, _z_`])`
         """
-        return self._q.copy()
+        return self._q
 
 
 class Pose:  # noqa: PLW1641
@@ -894,9 +900,9 @@ class Pose:  # noqa: PLW1641
             Location(frame='Agent', x=-3.0, y=2.0, z=-1.0)
         """  # noqa: E501
         orientation: Orientation = self.orientation.inverse()
-        wxyz: FloatVector = orientation.to_quat()
+        wxyz: FloatVector = orientation.as_array()
         location: Location = self.location.inverse()
-        xyz: FloatVector = orientation.apply(location.to_vector())
+        xyz: FloatVector = orientation.apply(location.as_array())
         label: str = "" if self.frame is None else self.frame.label
         return self.new_frame(xyz, wxyz, label)
 
