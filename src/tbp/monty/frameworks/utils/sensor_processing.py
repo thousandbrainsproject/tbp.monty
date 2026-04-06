@@ -17,6 +17,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_angle_torch,
     get_right_hand_angle,
     non_singular_mat,
+    normalize,
 )
 
 logger = logging.getLogger(__name__)
@@ -69,10 +70,10 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
         vecright = point_cloud[center_id + tan_len, :3] - point_cloud[center_id, :3]
         vecleft = point_cloud[center_id - tan_len, :3] - point_cloud[center_id, :3]
 
-        vecup_norm = vecup / np.linalg.norm(vecup)
-        vecdown_norm = vecdown / np.linalg.norm(vecdown)
-        vecright_norm = vecright / np.linalg.norm(vecright)
-        vecleft_norm = vecleft / np.linalg.norm(vecleft)
+        vecup_norm = normalize(vecup)
+        vecdown_norm = normalize(vecdown)
+        vecright_norm = normalize(vecright)
+        vecleft_norm = normalize(vecleft)
 
         # Check if tan_len up and right land on the object and calculate the
         # surface normal from those
