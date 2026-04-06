@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 from typing import ClassVar
 
+from tbp.monty.cmp import Goal
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
@@ -137,6 +138,7 @@ class MontyBase(Monty):
             )
 
         self._actions: list[Action] = []
+        self.gsg_outputs: list[Goal] = []
 
     def step(
         self,
@@ -312,6 +314,9 @@ class MontyBase(Monty):
         # do not persist unless this is expected by the GSGs. NOTE we may need
         # to revisit this with heterarchy if we have some LMs that are being stepped
         # at higher frequencies than others.
+        # Note: self.gsg_outputs does not get reset here during motor-only steps. This
+        # means goals can get sent to the motor system that were proposed in the last
+        # non-motor-only step.
 
         for lm in self.learning_modules:
             goals = lm.propose_goals()
@@ -382,6 +387,7 @@ class MontyBase(Monty):
             sm.pre_episode()
 
         self.motor_system.pre_episode()
+        self.gsg_outputs = []
 
     def post_episode(self):
         for lm in self.learning_modules:

@@ -76,6 +76,7 @@ class MontyForGraphMatching(MontyBase):
             sm.pre_episode()
 
         self.motor_system.pre_episode()
+        self.gsg_outputs = []
 
         logger.debug(
             f"Models in memory: {self.learning_modules[0].get_all_known_object_ids()}"
