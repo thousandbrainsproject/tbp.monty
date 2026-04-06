@@ -27,15 +27,3 @@ def get_state_from_channel(states, channel_name):
             return state
 
     raise ValueError(f"Channel {channel_name} not found in states")
-
-
-def get_first_sensory_state(states):
-    """Given a list of states, return the first one from a sensory channel.
-
-    Returns:
-        First state from a sensory channel.
-    """
-    for state in states:
-        if state.sender_type == "SM":
-            return state
-    return None

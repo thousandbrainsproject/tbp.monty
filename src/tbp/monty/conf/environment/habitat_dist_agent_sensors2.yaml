@@ -9,10 +9,10 @@ env_init_args:
     - -0.1
   scene_id: null
   seed: 42
-  data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
+  data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/compositional_objects}
   agents:
     agent_args:
-      agent_id: ${monty.agent_id:agent_id_0}
+      agent_id: agent_id_0
       sensor_ids:
       - patch_0
       - patch_1

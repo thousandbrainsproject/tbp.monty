@@ -1,9 +1,9 @@
 # @package experiment.config.monty_config
 
 sm_to_agent_dict:
-  patch_0: ${monty.agent_id:agent_id_0}
-  patch_1: ${monty.agent_id:agent_id_0}
-  view_finder: ${monty.agent_id:agent_id_0}
+  patch_0: agent_id_0
+  patch_1: agent_id_0
+  view_finder: agent_id_0
 sm_to_lm_matrix:
 - - 0
 - - 1

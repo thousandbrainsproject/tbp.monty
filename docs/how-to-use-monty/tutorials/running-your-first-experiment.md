@@ -111,7 +111,7 @@ The model is specified in the `config.monty_config` field of the `first_experime
 
 For now, we will start with one of the simpler and most common versions of this complex system. The `/experiment/config/monty/patch_and_view` configuration has fields `learning_module_configs` and `sensor_module_configs` where each key is the name of an LM (or SM resp.), and each value is the full config for that model component. **Our first model has one LM and two SMs**. Why two SMs and only 1 LM? One SM provides the LM with processed observations, while the second SM serves as our experimental probe and is used solely to initialize the agent at the beginning of the experiment.
 
-Note that the `sm_to_agent_dict` field of the model config maps each SM to an "agent" (i.e. a moveable part), and only a single agent is specified, meaning that our model has one moveable part with one sensor attached to it. In particular, it has an RGBD camera attached to it. The mapping is specified using the `monty.agent_id` resolver: `${monty.agent_id:agent_id_0}` which ensures that we pass the `AgentID` type (specifically `AgentID("agent_id_0")`) to the dictionary.
+Note that the `sm_to_agent_dict` field of the model config maps each SM to an "agent" (i.e. a moveable part), and only a single agent is specified, meaning that our model has one moveable part with one sensor attached to it. In particular, it has an RGBD camera attached to it.
 
 ## Steps
 
