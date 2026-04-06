@@ -19,6 +19,7 @@ from mujoco import (
     MjModel,
     MjsBody,
     MjSpec,
+    Renderer,
     mj_forward,
     mjtGeom,
     mjtTexture,
@@ -81,21 +82,39 @@ class MuJoCoSimulator(Simulator):
         self._agents: dict[AgentID, Agent] = {}
         self._create_agents()
 
+        self._render_resolution = self._max_sensor_resolution()
+        g = self.spec.visual.global_
+        g.offwidth, g.offheight = self._render_resolution
+
         # Track how many objects we add to the environment.
         # Note: We can't use the `model.ngeoms` for this since that will include parts
         # of the agents, especially when we start to add more structure to them.
         self._object_count = 0
 
+        self.renderer = None
         self._recompile()
 
     def _recompile(self) -> None:
         """Recompile the MuJoCo model while retaining any state data."""
-        self.spec.option.gravity = (0.0, 0.0, 0.0)  # TODO: is this necessary?
+        # The spec might be new, so reset all the options
+        self.spec.option.gravity = (0.0, 0.0, 0.0)
         g = self.spec.visual.global_
-        g.offwidth, g.offheight = self._max_sensor_resolution()
+        g.offwidth, g.offheight = self._render_resolution
         self.model, self.data = self.spec.recompile(self.model, self.data)
+        # The renderer has to be recreated when the model is updated.
+        self._create_renderer()
         # Step the simulation so all objects are in their initial positions.
         mj_forward(self.model, self.data)
+
+    def _create_renderer(self):
+        """Create a new MuJoCo renderer, closing the existing one if needed."""
+        if self.renderer:
+            self.renderer.close()
+        self.renderer = Renderer(
+            width=self._render_resolution[0],
+            height=self._render_resolution[1],
+            model=self.model,
+        )
 
     def _create_agents(self) -> None:
         for agent_config in self._agent_configs:
@@ -111,14 +130,14 @@ class MuJoCoSimulator(Simulator):
         highest resolution sensor configured.
 
         Returns:
-            max_x, max_y
+            max_width, max_height
         """
-        max_x = max_y = 0
+        max_width = max_height = 0
         for agent_cfg in self._agent_configs:
             for sensor_cfg in agent_cfg["agent_args"]["sensor_configs"].values():
-                max_x = max(max_x, sensor_cfg["resolution"][0])
-                max_y = max(max_y, sensor_cfg["resolution"][1])
-        return Resolution2D((max_x, max_y))
+                max_width = max(max_width, sensor_cfg["resolution"][0])
+                max_height = max(max_height, sensor_cfg["resolution"][1])
+        return Resolution2D((max_width, max_height))
 
     def remove_all_objects(self) -> None:
         # TODO: is there a better way to do this?
@@ -294,4 +313,6 @@ class MuJoCoSimulator(Simulator):
         return self.observations, self.states
 
     def close(self) -> None:
-        pass
+        if self.renderer:
+            self.renderer.close()
+        self.renderer = None

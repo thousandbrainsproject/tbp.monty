@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import quaternion as qt
-from mujoco import MjsBody, Renderer, mjtJoint
+from mujoco import MjsBody, mjtJoint
 
 from tbp.monty.frameworks.agents import Agent, AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import (
@@ -126,23 +126,21 @@ class NoopAgent(Agent):
     @property
     def observations(self) -> AgentObservations:
         obs = AgentObservations()
-        for sensor_id, sensor_cfg in self._sensor_configs.items():
-            res = sensor_cfg["resolution"]
-            with Renderer(self.sim.model, width=res[0], height=res[1]) as renderer:
-                renderer.update_scene(self.sim.data, camera=f"{self.id}.{sensor_id}")
-                rgba_data = renderer.render()
+        for sensor_id in self._sensor_configs:
+            renderer = self.sim.renderer
+            renderer.update_scene(self.sim.data, camera=f"{self.id}.{sensor_id}")
+            rgba_data = renderer.render()
 
-                renderer.enable_depth_rendering()
-                # TODO: do we need to do this between rendering?
-                renderer.update_scene(self.sim.data, camera=f"{self.id}.{sensor_id}")
-                depth_data = renderer.render()
-                # TODO: do we need to do this between observations?
-                renderer.disable_depth_rendering()
+            renderer.enable_depth_rendering()
+            # TODO: do we need to do this between rendering?
+            renderer.update_scene(self.sim.data, camera=f"{self.id}.{sensor_id}")
+            depth_data = renderer.render()
+            renderer.disable_depth_rendering()
 
-                obs[sensor_id] = SensorObservation(
-                    depth=depth_data,
-                    rgba=rgba_data,
-                )
+            obs[sensor_id] = SensorObservation(
+                depth=depth_data,
+                rgba=rgba_data,
+            )
         return obs
 
     @property
