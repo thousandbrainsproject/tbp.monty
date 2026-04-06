@@ -5,7 +5,6 @@ NOTE: While this RFC process is document-based, you are encouraged to also inclu
 
 # Summary
 
-> A brief explanation of the feature.
 Replace the `JumpToGoalState` mixin in Monty's motor system with a model-free reinforcement learning (RL) agent that learns to navigate incrementally toward goal states provided by Learning Modules. Instead of teleporting the sensor to a target pose, the RL agent selects from existing Monty actions (MoveTangentially, MoveForward, LookUp, etc.) to move step-by-step toward the goal, learning from dense reward signals based on distance reduction.
 
 The system uses Q-learning with an HNSW-based state store for continuous state space support, Gaussian kernel interpolation for generalization, and heuristic-guided exploration derived from Monty's existing motor policies for efficient initial learning.
@@ -19,10 +18,6 @@ World model planning would become valuable when Monty extends to:
 - Multi-agent coordination
 
 # Motivation
-
-> Why are we doing this? What use cases does it support? What is the expected outcome? Which metrics will this improve? What capabilities will it add?
->
-> Please focus on explaining the motivation so that if this RFC is not accepted, the motivation could be used to develop alternative solutions. In other words, enumerate the constraints you are trying to solve without coupling them too closely to the solution you have in mind.
 
 ### Current Problem
 
@@ -100,8 +95,7 @@ All spatial quantities are in the agent's local coordinate frame.
 **Key design decisions**:
 - **Why not tabular**: 13-dimensional continuous state space makes discretization impractical (exponential bin explosion). Even coarse 10-bin-per-dimension discretization yields 10^13 states.
 - **Why not neural network (DQN)**: Neural function approximation suffers from catastrophic forgetting, requires GPU, needs millions of samples for convergence, and introduces the deadly triad instability (function approximation + bootstrapping + off-policy). HNSW-based approach is stable, fast to learn, and GPU-free.  
-**Theoretical basis**:
-- Ormoneit & Sen (2002) "Kernel-Based Reinforcement Learning" — proved convergence of kernel-based Q-learning
+- **Theoretical basis**: Ormoneit & Sen (2002) "Kernel-Based Reinforcement Learning" — proved convergence of kernel-based Q-learning
 
 
 ## MontyActionSpace
@@ -501,10 +495,10 @@ config = {
 
 ### Alternative 1: DQN (Deep Q-Network)
 ***Description***: Use a neural network to approximate Q(s, a) instead of HNSW + kernel interpolation.  
-***Pros***:
+***Pros***:  
 - Better generalization in very high dimensions
 - Mature ecosystem (PyTorch, stable-baselines3)  
-***Rejected because***:
+***Rejected because***:  
 - Requires GPU for reasonable training speed
 - Catastrophic forgetting when learning new objects
 - Deadly triad instability (function approximation + bootstrapping + off-policy)
@@ -513,10 +507,10 @@ config = {
 
 ### Alternative 2: Actor-Critic with Continuous Actions
 ***Description***: Use PPO/SAC to output continuous action vectors [dx, dy, dz, droll, dpitch, dyaw].  
-***Pros***:
+***Pros***:  
 - No discretization artifacts (zigzag paths)
 - Can move in exact direction of goal  
-***Rejected because***:
+***Rejected because***:  
 - Significantly more complex (two networks, policy gradient estimation)
 - Requires GPU for reasonable training speed
 - Harder to debug (continuous action space)
@@ -527,10 +521,10 @@ config = {
 
 ### Alternative 3: Tabular Q-Learning with State Discretization
 ***Description***: Discretize the 13D state into bins and use standard tabular Q-learning.  
-***Pros***:
+***Pros***:  
 - Simplest possible implementation
 - Guaranteed convergence  
-***Rejected because***:
+***Rejected because***:  
 - 13D with even 10 bins per dimension = 10^13 states (impossible)
 - Coarse binning loses critical information (small position differences matter)
 - No generalization between adjacent bins
@@ -575,7 +569,7 @@ Several factors mitigate this:
 
 4. **Use Embeddings**: It needs a separate embedding module but we can increase dimensions without constaints risk   
 
-### Q5: Hyperparameter and Config Sensitivity
+### Q2: Hyperparameter and Config Sensitivity
 How sensitive is the system to sigma, k_neighbors, and learning rate?
 What are optimal parameters for reward weights, action steps, etc?
 
