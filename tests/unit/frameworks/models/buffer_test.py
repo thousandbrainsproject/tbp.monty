@@ -265,7 +265,7 @@ class GlobalLocationAveragingTest(unittest.TestCase):
 
         self.buffer.append([state_a, state_b])
         np.testing.assert_array_almost_equal(
-            self.buffer.get_current_displacement(), disp
+            self.buffer.current_displacement(), disp
         )
 
 

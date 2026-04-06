@@ -185,7 +185,7 @@ class GraphLearningTest(BaseGraphTest):
                 if step == 0:
                     self.assertListEqual(
                         list(
-                            exp.model.learning_modules[0].buffer.get_nth_displacement(0)
+                            exp.model.learning_modules[0].buffer.nth_displacement(0)
                         ),
                         [0, 0, 0],
                         "displacement at step 0 should be 0.",

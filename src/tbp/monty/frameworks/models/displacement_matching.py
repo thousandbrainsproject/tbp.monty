@@ -126,7 +126,7 @@ class DisplacementGraphLM(GraphLM):
             if r_euler is not None:
                 self.detected_rotation_r = r
                 scale = self.get_object_scale(
-                    np.array(self.buffer.get_nth_displacement(1)),
+                    np.array(self.buffer.nth_displacement(1)),
                     model_displacements[0],
                 )
                 pose_and_scale = np.concatenate([current_model_loc, r_euler, [scale]])
@@ -211,9 +211,9 @@ class DisplacementGraphLM(GraphLM):
         if not first_movement_detected:
             return
         if self.match_attribute == "displacement":
-            query = self.buffer.get_current_displacement()
+            query = self.buffer.current_displacement()
         elif self.match_attribute == "PPF":
-            query = self.buffer.get_current_ppf()
+            query = self.buffer.current_ppf()
         else:
             logger.error("match_attribute not defined")
 
@@ -221,7 +221,7 @@ class DisplacementGraphLM(GraphLM):
         target = self._select_features_to_use(observation)
 
         if self.match_attribute == "PPF" and self.use_relative_len:
-            query[0] = query[0] / self.buffer.get_first_displacement_len()
+            query[0] = query[0] / self.buffer.first_displacement_len()
 
         logger.debug(f"query: {query}")
 

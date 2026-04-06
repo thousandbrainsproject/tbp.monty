@@ -276,7 +276,7 @@ class FeatureAtLocationBuffer:
             return self.input_percepts[-2]
         return None
 
-    def get_nth_displacement(self, n: int) -> npt.NDArray[np.float64]:
+    def nth_displacement(self, n: int) -> npt.NDArray[np.float64]:
         """Get the nth displacement.
 
         Args:
@@ -287,15 +287,15 @@ class FeatureAtLocationBuffer:
         """
         return self.global_displacements["displacement"][n]
 
-    def get_current_displacement(self) -> npt.NDArray[np.float64]:
+    def current_displacement(self) -> npt.NDArray[np.float64]:
         """Get the current displacement.
 
         Returns:
             The current displacement.
         """
-        return self.get_nth_displacement(-1)
+        return self.nth_displacement(-1)
 
-    def get_current_ppf(self) -> npt.NDArray[np.float64]:
+    def current_ppf(self) -> npt.NDArray[np.float64]:
         """Get the current ppf.
 
         Returns:
@@ -303,7 +303,7 @@ class FeatureAtLocationBuffer:
         """
         return copy.deepcopy(self.global_displacements["ppf"][-1])
 
-    def get_first_displacement_len(self) -> float:
+    def first_displacement_len(self) -> float:
         """Get length of first observed displacement.
 
         Use for scale in DisplacementLM.
