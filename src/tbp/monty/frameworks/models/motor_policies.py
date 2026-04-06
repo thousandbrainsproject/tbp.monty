@@ -23,6 +23,7 @@ import numpy as np
 import quaternion as qt
 from scipy.spatial.transform import Rotation as rot  # noqa: N813
 
+from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.action_samplers import ActionSampler
 from tbp.monty.frameworks.actions.actions import (
@@ -45,7 +46,6 @@ from tbp.monty.frameworks.environments.positioning_procedures import (
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
-from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
@@ -59,7 +59,6 @@ if TYPE_CHECKING:
 __all__ = [
     "BasePolicy",
     "InformedPolicy",
-    "JumpToGoalStateMixin",
     "MotorPolicy",
     "NaiveScanPolicy",
     "SurfacePolicy",
@@ -117,7 +116,9 @@ class MotorPolicy(abc.ABC):
         self,
         ctx: RuntimeContext,
         observations: Observations,
-        state: MotorSystemState | None = None,
+        state: MotorSystemState,
+        percept: Message,
+        goal: Goal | None,
     ) -> MotorPolicyResult:
         """Invoke motor policy to determine the next actions to take.
 
@@ -126,6 +127,9 @@ class MotorPolicy(abc.ABC):
             observations: The observations from the environment.
             state: The current state of the motor system.
                 Defaults to None.
+            percept: The percept from (as of this writing) the first sensor
+                module.
+            goal: The (optional) goal to consider.
 
         Returns:
             The motor policy result.
@@ -153,7 +157,9 @@ class BasePolicy(MotorPolicy):
         self,
         ctx: RuntimeContext,
         observations: Observations,  # noqa: ARG002
-        state: MotorSystemState | None = None,  # noqa: ARG002
+        state: MotorSystemState,  # noqa: ARG002
+        percept: Message,  # noqa: ARG002
+        goal: Goal | None,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return a motor policy result containing a random action.
 
@@ -164,6 +170,9 @@ class BasePolicy(MotorPolicy):
             observations: The observations from the environment.
             state: The current state of the motor system.
                 Defaults to None. Unused.
+            percept: The percept from (as of this writing) the first sensor
+                module.
+            goal: The (optional) goal to consider.
 
         Returns:
             A MotorPolicyResult that contains a random action.
@@ -172,10 +181,6 @@ class BasePolicy(MotorPolicy):
 
     def pre_episode(self, motor_system: MotorSystem) -> None:
         pass
-
-    ###
-    # Other required abstract methods, methods called by Monty or Environment Interface
-    ###
 
     def state_dict(self):
         return {}
@@ -217,13 +222,15 @@ class PredefinedPolicy(MotorPolicy):
         self.agent_id = agent_id
         self.action_list: list[Action] = PredefinedPolicy.read_action_file(file_name)
         self.episode_step = 0
-        self.use_goal_state_driven_actions = False
+        self.use_goal_driven_actions = False
 
     def __call__(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
         observations: Observations,  # noqa: ARG002
-        state: MotorSystemState | None = None,  # noqa: ARG002
+        state: MotorSystemState,  # noqa: ARG002
+        percept: Message,  # noqa: ARG002
+        goal: Goal | None,  # noqa: ARG002
     ) -> MotorPolicyResult:
         actions = [self.action_list[self.episode_step % len(self.action_list)]]
         self.episode_step += 1
@@ -239,67 +246,11 @@ class PredefinedPolicy(MotorPolicy):
         self.episode_step = state_dict["episode_step"]
 
 
-class JumpToGoalStateMixin:
-    """Convert driving goal state to an action in Habitat-compatible coordinates.
-
-    Motor policy that enables us to take in a driving goal state for the motor agent,
-    and specify the action in Habitat-compatible coordinates that must be taken
-    to move there.
-    """
-
-    def __init__(self) -> None:
-        self.driving_goal_state = None
-
-    def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
-        self.set_driving_goal_state(None)
-
-    def set_driving_goal_state(self, goal_state):
-        """Specify the goal-state that the motor-actuator will attempt to satisfy."""
-        self.driving_goal_state = goal_state
-
-    def derive_habitat_goal_state(self):
-        """Derive the Habitat-compatible goal state.
-
-        Take the current driving goal state (in CMP format), and derive the
-        corresponding Habitat compatible goal-state to pass through the Embodied
-        Environment Interface.
-
-        Returns:
-            target_loc: Target location.
-            target_quat: Target quaternion.
-        """
-        if self.driving_goal_state is not None:
-            target_loc = self.driving_goal_state.location
-            target_agent_vec = self.driving_goal_state.morphological_features[
-                "pose_vectors"
-            ][0]
-
-            yaw_angle = math.atan2(-target_agent_vec[0], -target_agent_vec[2])
-            pitch_angle = math.asin(target_agent_vec[1])
-
-            # Should rotate by pitch degrees around x, and by yaw degrees around y (and
-            # no change about z, which would correspond to roll)
-            scipy_combined_orientation = rot.from_euler(
-                "xyz",
-                [pitch_angle, yaw_angle, 0],
-                degrees=False,
-            )
-
-            target_quat = scipy_to_numpy_quat(scipy_combined_orientation.as_quat())
-
-            # Reset driving goal state and await further inputs
-            self.set_driving_goal_state(None)
-
-            return target_loc, target_quat
-
-        return None, None
-
-
-class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
+class InformedPolicy(BasePolicy):
     """Policy that takes observation as input.
 
     Extension of BasePolicy that allows for taking the observation into account for
-    action selection. Uses processed_observations.get_on_object() to decide whether to
+    action selection. Uses percept.get_on_object() to decide whether to
     reverse the last action when the patch is off the object.
 
     Attributes:
@@ -310,25 +261,18 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
     def __init__(
         self,
-        use_goal_state_driven_actions=False,
+        use_goal_driven_actions=False,
         **kwargs,
     ) -> None:
         """Initialize policy.
 
         Args:
-            use_goal_state_driven_actions: Whether to enable the motor system to make
-                use of the JumpToGoalStateMixin, which attempts to "jump" (i.e.
-                teleport) the agent to a specified goal state.
+            use_goal_driven_actions: Whether to enable the motor system to
+                attempt to jump (i.e. teleport) the agent to a specified goal.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
-        self.use_goal_state_driven_actions = use_goal_state_driven_actions
-        if self.use_goal_state_driven_actions:
-            JumpToGoalStateMixin.__init__(self)
-
-        # Observations after passing through sensor modules.
-        # Are updated in Monty step method.
-        self._processed_observations = None
+        self.use_goal_driven_actions = use_goal_driven_actions
         self._undo_action: Action | None = None
 
         self._is_jumping: bool = False
@@ -336,19 +280,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self._pre_jump_state: AgentState | None = None
         self._undo_jump_actions: list[Action] = []
 
-    @property
-    def processed_observations(self) -> State | None:
-        return self._processed_observations
-
-    @processed_observations.setter
-    def processed_observations(self, percept: State | None) -> None:
-        self._processed_observations = percept
-
     def pre_episode(self, motor_system: MotorSystem) -> None:
-        self._processed_observations = None
         self._undo_action = None
-        if self.use_goal_state_driven_actions:
-            JumpToGoalStateMixin.pre_episode(self, motor_system)
         self._reset_jump_state()
         return super().pre_episode(motor_system)
 
@@ -356,30 +289,30 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self,
         ctx: RuntimeContext,
         observations: Observations,
-        state: MotorSystemState | None = None,
+        state: MotorSystemState,
+        percept: Message,
+        goal: Goal | None,
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
-
-        This requires self.processed_observations to be updated at every step
-        in the Monty class. self.processed_observations contains the features
-        extracted by the sensor module for the guiding sensor (patch).
 
         Args:
             ctx: The runtime context.
             observations: The observations from the environment.
             state: The current state of the motor system.
                 Defaults to None.
+            percept: The percept from (as of this writing) the first sensor
+                module.
+            goal: The (optional) goal to consider.
 
         Returns:
             A MotorPolicyResult that contains the actions to take.
         """
-        if self.use_goal_state_driven_actions:
-            assert state is not None
-            result = self._goal_driven_actions(observations, state)
+        if self.use_goal_driven_actions:
+            result = self._goal_driven_actions(observations, state, goal)
             if result is not None:
                 return result
 
-        if self.processed_observations.get_on_object():
+        if percept.get_on_object():
             action = self.action_sampler.sample(self.agent_id, ctx.rng)
             self._undo_action = self.fixme_undo_last_action(action)
             return MotorPolicyResult([action])
@@ -392,13 +325,17 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         return MotorPolicyResult([])
 
     def _goal_driven_actions(
-        self, observations: Observations, state: MotorSystemState
+        self,
+        observations: Observations,
+        state: MotorSystemState,
+        goal: Goal | None,
     ) -> MotorPolicyResult | None:
         """Handle Goal-driven processing and maybe return actions to take.
 
         Args:
             observations: The observations from the environment.
             state: The current state of the motor system.
+            goal: The (optional) goal to consider.
 
         Returns:
             Either a `MotorPolicyResult`, which should be immediately returned by
@@ -409,8 +346,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             if result is not None:
                 return result
 
-        if self.driving_goal_state is not None:
-            actions = self._jump(state)
+        if goal is not None:
+            actions = self._jump(state, goal)
             return MotorPolicyResult(actions)
 
         return None
@@ -525,6 +462,34 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         raise TypeError(f"Invalid action: {last_action}")
 
+    def _derive_set_agent_pose_from_goal(self, goal: Goal) -> SetAgentPose:
+        """Derive the `SetAgentPose` action from the driving goal.
+
+        Returns:
+            A `SetAgentPose` action.
+        """
+        target_loc = goal.location
+        target_agent_vec = goal.morphological_features["pose_vectors"][0]
+
+        yaw_angle = math.atan2(-target_agent_vec[0], -target_agent_vec[2])
+        pitch_angle = math.asin(target_agent_vec[1])
+
+        # Should rotate by pitch degrees around x, and by yaw degrees around y (and
+        # no change about z, which would correspond to roll)
+        scipy_combined_orientation = rot.from_euler(
+            "xyz",
+            [pitch_angle, yaw_angle, 0],
+            degrees=False,
+        )
+
+        target_quat = scipy_to_numpy_quat(scipy_combined_orientation.as_quat())
+
+        return SetAgentPose(
+            agent_id=self.agent_id,
+            location=target_loc,
+            rotation_quat=target_quat,
+        )
+
     def _reset_jump_state(self) -> None:
         """Clear the jump state."""
         self._is_jumping = False
@@ -532,13 +497,14 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self._pre_jump_state = None
         self._undo_jump_actions = []
 
-    def _jump(self, state: MotorSystemState) -> list[Action]:
+    def _jump(self, state: MotorSystemState, goal: Goal) -> list[Action]:
         """Compute the jump and undo jump actions.
 
         The undo jump actions are stored in `self._undo_jump_actions`.
 
         Args:
             state: The current state of the motor system.
+            goal: The goal to jump to.
 
         Returns:
             A list of jump actions to take.
@@ -563,7 +529,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 == self._pre_jump_state.sensors[first_sensor].rotation
             ), "Sensors are not identical in pose"
 
-        (target_loc, target_np_quat) = self.derive_habitat_goal_state()
+        set_agent_pose = self._derive_set_agent_pose_from_goal(goal)
 
         self._is_jumping = True
 
@@ -574,11 +540,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # modify this from the unit quaternion and [0, 0, 0] position
         # anyways; further note this is globally applied to all sensors.
         actions = [
-            SetAgentPose(
-                agent_id=self.agent_id,
-                location=target_loc,
-                rotation_quat=target_np_quat,
-            ),
+            set_agent_pose,
             SetSensorRotation(
                 agent_id=self.agent_id,
                 rotation_quat=qt.one,
@@ -667,7 +629,9 @@ class NaiveScanPolicy(InformedPolicy):
         self,
         ctx: RuntimeContext,  # noqa: ARG002
         observations: Observations,  # noqa: ARG002
-        state: MotorSystemState | None = None,  # noqa: ARG002
+        state: MotorSystemState,  # noqa: ARG002
+        percept: Message,  # noqa: ARG002
+        goal: Goal | None,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions in the spiral.
 
@@ -678,6 +642,9 @@ class NaiveScanPolicy(InformedPolicy):
             observations: The observations from the environment.
             state: The current state of the motor system.
                 Defaults to None. Unused.
+            percept: The percept from (as of this writing) the first sensor
+                module.
+            goal: The (optional) goal to consider.
 
         Returns:
             A MotorPolicyResult that contains the actions to take.
@@ -910,41 +877,39 @@ class SurfacePolicy(InformedPolicy):
         self,
         ctx: RuntimeContext,
         observations: Observations,
-        state: MotorSystemState | None = None,
+        state: MotorSystemState,
+        percept: Message,
+        goal: Goal | None,
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
-
-        This requires self.processed_observations to be updated at every step
-        in the Monty class. self.processed_observations contains the features
-        extracted by the sensor module for the guiding sensor (patch).
 
         Args:
             ctx: The runtime context.
             observations: The observations from the environment.
             state: The current state of the motor system.
                 Defaults to None.
+            percept: The percept from (as of this writing) the first sensor
+                module.
+            goal: The (optional) goal to consider.
 
         Returns:
             A MotorPolicyResult that contains the actions to take.
         """
         self._telemetry = SurfacePolicyTelemetry()
 
-        if self.use_goal_state_driven_actions:
-            assert state is not None
-            result = self._goal_driven_actions(observations, state)
+        if self.use_goal_driven_actions:
+            result = self._goal_driven_actions(observations, state, goal)
             if result is not None:
                 return result
 
         # Check if we have poor visualization of the object
         if (
-            self.processed_observations.get_feature_by_name("object_coverage") < 0.1
+            percept.get_feature_by_name("object_coverage") < 0.1
             or self.attempting_to_find_object
         ):
             logger.debug(
                 "Object coverage of only "
-                + str(
-                    self.processed_observations.get_feature_by_name("object_coverage")
-                )
+                + str(percept.get_feature_by_name("object_coverage"))
             )
             logger.debug(f"Attempting to find object: {self.attempting_to_find_object}")
             logger.debug("Initiating attempts to touch object")
@@ -968,9 +933,7 @@ class SurfacePolicy(InformedPolicy):
         if self.last_surface_policy_action is None:
             logger.debug(
                 "Object coverage good at initialization: "
-                + str(
-                    self.processed_observations.get_feature_by_name("object_coverage")
-                )
+                + str(percept.get_feature_by_name("object_coverage"))
             )
 
             # In this case, we are on the first action, but the object view is already
@@ -980,7 +943,7 @@ class SurfacePolicy(InformedPolicy):
                 self.agent_id, ctx.rng
             )
 
-        next_action = self.get_next_action(ctx, state)
+        next_action = self.get_next_action(ctx, state, percept)
 
         # Out of the four actions in the
         # MoveForward->OrientHorizontal->OrientVertical->MoveTangentially "subroutine"
@@ -998,19 +961,27 @@ class SurfacePolicy(InformedPolicy):
             telemetry=self._telemetry,
         )
 
-    def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
+    def _orient_horizontal(
+        self, state: MotorSystemState, percept: Message
+    ) -> OrientHorizontal:
         """Orient the agent horizontally.
 
         Args:
             state: The current state of the motor system.
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             OrientHorizontal action.
         """
         rotation_degrees = self.orienting_angle_from_normal(
-            orienting="horizontal", state=state
+            orienting="horizontal",
+            state=state,
+            percept=percept,
         )
-        left_distance, forward_distance = self.horizontal_distances(rotation_degrees)
+        left_distance, forward_distance = self.horizontal_distances(
+            rotation_degrees, percept
+        )
         return OrientHorizontal(
             agent_id=self.agent_id,
             rotation_degrees=rotation_degrees,
@@ -1018,19 +989,27 @@ class SurfacePolicy(InformedPolicy):
             forward_distance=forward_distance,
         )
 
-    def _orient_vertical(self, state: MotorSystemState) -> OrientVertical:
+    def _orient_vertical(
+        self, state: MotorSystemState, percept: Message
+    ) -> OrientVertical:
         """Orient the agent vertically.
 
         Args:
             state: The current state of the motor system.
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             OrientVertical action.
         """
         rotation_degrees = self.orienting_angle_from_normal(
-            orienting="vertical", state=state
+            orienting="vertical",
+            state=state,
+            percept=percept,
         )
-        down_distance, forward_distance = self.vertical_distances(rotation_degrees)
+        down_distance, forward_distance = self.vertical_distances(
+            rotation_degrees, percept
+        )
         return OrientVertical(
             agent_id=self.agent_id,
             rotation_degrees=rotation_degrees,
@@ -1039,13 +1018,15 @@ class SurfacePolicy(InformedPolicy):
         )
 
     def _move_tangentially(
-        self, ctx: RuntimeContext, state: MotorSystemState
+        self, ctx: RuntimeContext, state: MotorSystemState, percept: Message
     ) -> MoveTangentially:
         """Move tangentially along the object surface.
 
         Args:
             ctx: The runtime context.
             state: The current state of the motor system.
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             MoveTangentially action.
@@ -1053,25 +1034,29 @@ class SurfacePolicy(InformedPolicy):
         action = self.action_sampler.sample_move_tangentially(self.agent_id, ctx.rng)
 
         # be careful if you're falling off the object!
-        if self.processed_observations.get_feature_by_name("object_coverage") < 0.2:
+        if percept.get_feature_by_name("object_coverage") < 0.2:
             # Scale the step size by how small the object coverage is
             # Reduces situations where e.g. change in sensor resolution causes agent
             # to fall off the object
             action.distance = action.distance / (
-                4 / self.processed_observations.get_feature_by_name("object_coverage")
+                4 / percept.get_feature_by_name("object_coverage")
             )
             logger.debug(f"Very close to edge so only moving by {action.distance}")
 
-        elif self.processed_observations.get_feature_by_name("object_coverage") < 0.75:
+        elif percept.get_feature_by_name("object_coverage") < 0.75:
             action.distance = action.distance / 4
             logger.debug(f"Near edge so only moving by {action.distance}")
 
-        action.direction = self.tangential_direction(ctx, state)
+        action.direction = self.tangential_direction(ctx, state, percept)
 
         return action
 
-    def _move_forward(self) -> MoveForward:
+    def _move_forward(self, percept: Message) -> MoveForward:
         """Move forward to touch the object at the right distance.
+
+        Args:
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             MoveForward action.
@@ -1079,13 +1064,12 @@ class SurfacePolicy(InformedPolicy):
         return MoveForward(
             agent_id=self.agent_id,
             distance=(
-                self.processed_observations.get_feature_by_name("min_depth")
-                - self.desired_object_distance
+                percept.get_feature_by_name("min_depth") - self.desired_object_distance
             ),
         )
 
     def get_next_action(
-        self, ctx: RuntimeContext, state: MotorSystemState
+        self, ctx: RuntimeContext, state: MotorSystemState, percept: Message
     ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Retrieve next action from a cycle of four actions.
 
@@ -1098,6 +1082,8 @@ class SurfacePolicy(InformedPolicy):
         Args:
             ctx: The runtime context.
             state: The current state of the motor system.
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             Next action in the cycle.
@@ -1105,26 +1091,29 @@ class SurfacePolicy(InformedPolicy):
         last_action = self.last_surface_policy_action
 
         if isinstance(last_action, MoveForward):
-            return self._orient_horizontal(state)
+            return self._orient_horizontal(state, percept)
 
         if isinstance(last_action, OrientHorizontal):
-            return self._orient_vertical(state)
+            return self._orient_vertical(state, percept)
 
         if isinstance(last_action, OrientVertical):
-            return self._move_tangentially(ctx, state)
+            return self._move_tangentially(ctx, state, percept)
 
         if isinstance(last_action, MoveTangentially):
             # orient around object if it's not centered in view
-            if not self.processed_observations.get_on_object():
-                return self._orient_horizontal(state)
+            if not percept.get_on_object():
+                return self._orient_horizontal(state, percept)
 
             # move to the desired_object_distance if it is in view
-            return self._move_forward()
+            return self._move_forward(percept)
 
         return None
 
     def tangential_direction(
-        self, ctx: RuntimeContext, state: MotorSystemState
+        self,
+        ctx: RuntimeContext,
+        state: MotorSystemState,
+        percept: Message,  # noqa: ARG002
     ) -> VectorXYZ:
         """Set the direction of the action to be a direction 0 - 2pi.
 
@@ -1139,6 +1128,8 @@ class SurfacePolicy(InformedPolicy):
         Args:
             ctx: The runtime context.
             state: The current state of the motor system.
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             Direction of the action
@@ -1163,20 +1154,24 @@ class SurfacePolicy(InformedPolicy):
 
         return tuple(direction)
 
-    def horizontal_distances(self, rotation_degrees: float) -> tuple[float, float]:
+    def horizontal_distances(
+        self, rotation_degrees: float, percept: Message
+    ) -> tuple[float, float]:
         """Compute the horizontal and forward distances to move to.
 
         Compensate for a given rotation of a certain angle.
 
         Args:
             rotation_degrees: The angle to rotate by
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             move_left_distance: The left distance to move
             move_forward_distance: The forward distance to move
         """
         rotation_radians = np.radians(rotation_degrees)
-        depth = self.processed_observations.non_morphological_features["mean_depth"]
+        depth = percept.get_feature_by_name("mean_depth")
 
         move_left_distance = np.tan(rotation_radians) * depth
         move_forward_distance = (
@@ -1185,20 +1180,24 @@ class SurfacePolicy(InformedPolicy):
 
         return move_left_distance, move_forward_distance
 
-    def vertical_distances(self, rotation_degrees: float) -> tuple[float, float]:
+    def vertical_distances(
+        self, rotation_degrees: float, percept: Message
+    ) -> tuple[float, float]:
         """Compute the down and forward distances to move to.
 
         Compensate for a given rotation of a certain angle.
 
         Args:
             rotation_degrees: The angle to rotate by
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             move_down_distance: The down distance to move
             move_forward_distance: The forward distance to move
         """
         rotation_radians = np.radians(rotation_degrees)
-        depth = self.processed_observations.non_morphological_features["mean_depth"]
+        depth = percept.get_feature_by_name("mean_depth")
 
         move_down_distance = np.tan(rotation_radians) * depth
         move_forward_distance = (
@@ -1231,7 +1230,7 @@ class SurfacePolicy(InformedPolicy):
         return qt.quaternion(w, x, y, z)
 
     def orienting_angle_from_normal(
-        self, orienting: str, state: MotorSystemState
+        self, orienting: str, state: MotorSystemState, percept: Message
     ) -> float:
         """Compute turn angle to face the object.
 
@@ -1241,11 +1240,13 @@ class SurfacePolicy(InformedPolicy):
         Args:
             orienting: `"horizontal" or "vertical"`
             state: The current state of the motor system.
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             degrees that the agent needs to turn
         """
-        original_surface_normal = self.processed_observations.get_surface_normal()
+        original_surface_normal = percept.get_surface_normal()
 
         inverse_quaternion_rotation = self.get_inverse_agent_rot(state)
 
@@ -1411,21 +1412,31 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.tangent_norms = []  # As for tangent_locs; helpful for distinguishing
         # locations as being on different surfaces
 
-    @property
-    def processed_observations(self) -> State | None:
-        return self._processed_observations
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        state: MotorSystemState,
+        percept: Message,
+        goal: Goal | None,
+    ) -> MotorPolicyResult:
+        """Return a motor policy result containing the next actions to take.
 
-    @processed_observations.setter
-    def processed_observations(self, percept: State | None) -> None:
-        self._processed_observations = percept
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            state: The current state of the motor system.
+            percept: The percept from (as of this writing) the first sensor
+                module.
+            goal: The (optional) goal to consider.
 
-        if percept is None:
-            return
-
-        if self.last_surface_policy_action is None:
-            return
-
-        if self.last_surface_policy_action.name == "orient_vertical":
+        Returns:
+            A MotorPolicyResult that contains the actions to take.
+        """
+        if (
+            self.last_surface_policy_action is not None
+            and self.last_surface_policy_action.name == "orient_vertical"
+        ):
             # Only append locations associated with performing a tangential
             # action, rather than some form of corrective movement; these
             # movements are performed immediately after "orient_vertical"
@@ -1439,7 +1450,9 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             else:
                 self.tangent_norms.append(None)
 
-    def update_action_details(self):
+        return super().__call__(ctx, observations, state, percept, goal)
+
+    def update_action_details(self, percept: Message) -> None:
         """Store informaton for later logging.
 
         This stores information that details elements of the policy or observations
@@ -1450,10 +1463,14 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         particular action (TODO not yet implemented, and NOTE that any modelling
         should ultimately be located in the learning module(s), not in motor
         systems)
+
+        Args:
+            percept: The percept from (as of this writing) the first sensor
+                module.
         """
         if self.using_pc_guide:
             if self.min_dir_pref:
-                pc_heading = "min"
+                pc_heading: Literal["min", "max", "no", "jump"] = "min"
             else:
                 pc_heading = "max"
         else:
@@ -1465,8 +1482,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # orientation
             # TODO: This value doesn't seem to be used anywhere
             z_defined_pc = (
-                self.processed_observations.get_surface_normal(),
-                self.processed_observations.get_curvature_directions(),
+                percept.get_surface_normal(),
+                percept.get_curvature_directions(),
             )
         else:
             z_defined_pc = None
@@ -1481,6 +1498,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self,
         ctx: RuntimeContext,
         state: MotorSystemState,
+        percept: Message,
     ) -> VectorXYZ:
         """Set the direction of action to be a direction 0 - 2pi.
 
@@ -1495,6 +1513,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         Args:
             ctx: The runtime context.
             state: The current state of the motor system.
+            percept: The percept from (as of this writing) the first sensor
+                module.
 
         Returns:
             Direction of the action
@@ -1505,12 +1525,12 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         logger.debug("Input-driven tangential movement")
 
-        if (self.processed_observations.get_feature_by_name("pose_fully_defined")) and (
+        if (percept.get_feature_by_name("pose_fully_defined")) and (
             self.ignoring_pc_counter >= self.min_general_steps
         ):  # Principal curvatures are defined, and counter for a min number of
             # general steps is satisfied
 
-            tang_movement = self.perform_pc_guided_step(ctx, state)
+            tang_movement = self.perform_pc_guided_step(ctx, state, percept)
             # Note this may fail if the PC guidance directs us back towards
             # a point we have previously experienced, in which case we revert
             # to a standard tangential movement (as below)
@@ -1534,12 +1554,12 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             tang_movement = self.perform_standard_tang_step(ctx, state)
 
         # Save detailed information about tangential steps
-        self.update_action_details()
+        self.update_action_details(percept)
 
         return tang_movement
 
     def perform_pc_guided_step(
-        self, ctx: RuntimeContext, state: MotorSystemState
+        self, ctx: RuntimeContext, state: MotorSystemState, percept: Message
     ) -> VectorXYZ:
         """Inform steps to take using defined directions of principal curvature.
 
@@ -1549,6 +1569,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         Args:
             ctx: The runtime context.
             state: The current state of the motor system.
+            percept: The percept from (as of this writing) the first sensor
 
         Returns:
             Direction of the action
@@ -1559,9 +1580,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         self.check_for_preference_change()
 
-        pc_for_use = self.determine_pc_for_use()  # Get the index for the PC we will
-        # follow
-        pc_dirs = self.processed_observations.get_curvature_directions()
+        pc_for_use = self.determine_pc_for_use(percept)
+        pc_dirs = percept.get_curvature_directions()
         # Select the PC directions for use
         selected_pc_dir = pc_dirs[pc_for_use]
 
@@ -1791,18 +1811,20 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
             logger.debug(f"Updated preference: {self.min_dir_pref}")
 
-    def determine_pc_for_use(self):
+    def determine_pc_for_use(self, percept: Message):
         """Determine the principal curvature to use for our heading.
 
         Use magnitude (ignoring negatives), as well as the current direction
         preference.
 
+        Args:
+            percept: The percept from (as of this writing) the first sensor
+                module.
+
         Returns:
             Principal curvature to use.
         """
-        absolute_pcs = np.abs(
-            self.processed_observations.get_feature_by_name("principal_curvatures")
-        )
+        absolute_pcs = np.abs(percept.get_feature_by_name("principal_curvatures"))
 
         if self.min_dir_pref:  # Follow minimal curvature direction
             return np.argmin(absolute_pcs)

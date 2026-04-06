@@ -14,11 +14,12 @@ from typing import Any, Literal
 
 import numpy as np
 
+from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
-from tbp.monty.frameworks.models.motor_policies import MotorPolicy
+from tbp.monty.frameworks.models.motor_policy_selectors import MotorPolicySelector
 from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
@@ -37,13 +38,13 @@ class SurfacePolicyActionDetailsTelemetry:
 class MotorSystem:
     """The basic motor system implementation."""
 
-    def __init__(self, policy: MotorPolicy) -> None:
+    def __init__(self, policy_selector: MotorPolicySelector) -> None:
         """Initialize the motor system with a motor policy.
 
         Args:
-            policy: The motor policy to use.
+            policy_selector: The motor policy selector to use.
         """
-        self._policy = policy
+        self._policy_selector = policy_selector
         # For each step, we store the actions produced by the policy and the current
         # motor system state as a (actions, state) tuple.
         self._action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]] = []
@@ -71,7 +72,7 @@ class MotorSystem:
         # motor_only_step to True.
         # Undoing this hack should probably happen when motor_only_step is moved
         # to Monty itself.
-        self._policy.pre_episode(self)
+        self._policy_selector.pre_episode(self)
         self._action_sequence = []
         self._telemetry_surface_action_details = SurfacePolicyActionDetailsTelemetry(
             pc_heading=[],
@@ -79,11 +80,16 @@ class MotorSystem:
             z_defined_pc=[],
         )
 
+    def state_dict(self) -> dict[str, Any]:
+        return self._policy_selector.state_dict()
+
     def __call__(
         self,
         ctx: RuntimeContext,
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
+        percept: Message,
+        goals: list[Goal],
     ) -> list[Action]:
         """Defines the structure for __call__.
 
@@ -93,12 +99,16 @@ class MotorSystem:
             ctx: The runtime context.
             observations: The observations from the environment.
             proprioceptive_state: The proprioceptive state from the environment.
+            percept: The percept from (as of this writing) the first sensor
+                module.
+            goals: The goals to consider.
 
         Returns:
             The action to take.
         """
         motor_system_state = MotorSystemState(proprioceptive_state)
-        policy_result = self._policy(ctx, observations, motor_system_state)
+        policy, goal = self._policy_selector(goals)
+        policy_result = policy(ctx, observations, motor_system_state, percept, goal)
         self.motor_only_step = policy_result.motor_only_step
 
         state_copy = motor_system_state.convert_motor_state()

@@ -14,11 +14,11 @@ from unittest import TestCase
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.cmp import Message
 from tbp.monty.conf.make_environment import (
     make_sensor_positions_on_grid,
 )
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.models.states import State
 
 
 class BaseGraphTest(TestCase):
@@ -26,7 +26,7 @@ class BaseGraphTest(TestCase):
         print("setting up")
         fake_sender_id = "patch"
 
-        default_obs_args = dict(
+        default_percept_args = dict(
             location=np.array([0.0, 0.0, 0.0]),
             morphological_features={
                 "pose_vectors": np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]]),
@@ -42,17 +42,17 @@ class BaseGraphTest(TestCase):
             sender_id=fake_sender_id,
             sender_type="SM",
         )
-        fo_1 = copy.deepcopy(default_obs_args)
-        fo_1["location"] = np.array([1.0, 0.0, 0.0])
-        fo_2 = copy.deepcopy(default_obs_args)
-        fo_2["location"] = np.array([1.0, 1.0, 0.0])
-        fo_3 = copy.deepcopy(default_obs_args)
-        fo_3["location"] = np.array([1.0, 1.0, 1.0])
+        fp_1 = copy.deepcopy(default_percept_args)
+        fp_1["location"] = np.array([1.0, 0.0, 0.0])
+        fp_2 = copy.deepcopy(default_percept_args)
+        fp_2["location"] = np.array([1.0, 1.0, 0.0])
+        fp_3 = copy.deepcopy(default_percept_args)
+        fp_3["location"] = np.array([1.0, 1.0, 1.0])
         self.fake_obs_learn = [
-            State(**default_obs_args),
-            State(**fo_1),
-            State(**fo_2),
-            State(**fo_3),
+            Message(**default_percept_args),
+            Message(**fp_1),
+            Message(**fp_2),
+            Message(**fp_3),
         ]
 
         self.lm_offsets = make_sensor_positions_on_grid(
@@ -63,16 +63,16 @@ class BaseGraphTest(TestCase):
         # Create a symmetric synthetic object, where the location of the last
         # feature differs from the base-synthetic object, resulting in
         # ambiguous rotations
-        fo_sym = copy.deepcopy(default_obs_args)
-        fo_sym_1 = copy.deepcopy(fo_1)
-        fo_sym_2 = copy.deepcopy(fo_2)
-        fo_sym_3 = copy.deepcopy(fo_3)
-        fo_sym_3["location"] = np.array([0.0, 1.0, 0.0])
+        fp_sym = copy.deepcopy(default_percept_args)
+        fp_sym_1 = copy.deepcopy(fp_1)
+        fp_sym_2 = copy.deepcopy(fp_2)
+        fp_sym_3 = copy.deepcopy(fp_3)
+        fp_sym_3["location"] = np.array([0.0, 1.0, 0.0])
         self.fake_obs_symmetric = [
-            State(**fo_sym),
-            State(**fo_sym_1),
-            State(**fo_sym_2),
-            State(**fo_sym_3),
+            Message(**fp_sym),
+            Message(**fp_sym_1),
+            Message(**fp_sym_2),
+            Message(**fp_sym_3),
         ]
 
         # === Synthetic objects for hypothesis-testing policy ===
@@ -81,31 +81,31 @@ class BaseGraphTest(TestCase):
         # triangle point above); this helps simulate distinguishing e.g. a mug from
         # a can
         # The square
-        fo_square = copy.deepcopy(default_obs_args)
-        fo_square_1 = copy.deepcopy(fo_1)
-        fo_square_2 = copy.deepcopy(fo_2)
-        fo_square_3 = copy.deepcopy(fo_3)
-        fo_square_3["location"] = np.array([0.0, 1.0, 0.0])
+        fp_square = copy.deepcopy(default_percept_args)
+        fp_square_1 = copy.deepcopy(fp_1)
+        fp_square_2 = copy.deepcopy(fp_2)
+        fp_square_3 = copy.deepcopy(fp_3)
+        fp_square_3["location"] = np.array([0.0, 1.0, 0.0])
         self.fake_obs_square = [
-            State(**fo_square),
-            State(**fo_square_1),
-            State(**fo_square_2),
-            State(**fo_square_3),
+            Message(**fp_square),
+            Message(**fp_square_1),
+            Message(**fp_square_2),
+            Message(**fp_square_3),
         ]
 
         # The house; note it has an additional, 5th feature
-        fo_house = copy.deepcopy(fo_square)
-        fo_house_1 = copy.deepcopy(fo_square_1)
-        fo_house_2 = copy.deepcopy(fo_square_2)
-        fo_house_3 = copy.deepcopy(fo_square_3)
-        fo_house_4 = copy.deepcopy(default_obs_args)
-        fo_house_4["location"] = np.array([0.5, 1.5, 0.0])
+        fp_house = copy.deepcopy(fp_square)
+        fp_house_1 = copy.deepcopy(fp_square_1)
+        fp_house_2 = copy.deepcopy(fp_square_2)
+        fp_house_3 = copy.deepcopy(fp_square_3)
+        fp_house_4 = copy.deepcopy(default_percept_args)
+        fp_house_4["location"] = np.array([0.5, 1.5, 0.0])
         self.fake_obs_house = [
-            State(**fo_house),
-            State(**fo_house_1),
-            State(**fo_house_2),
-            State(**fo_house_3),
-            State(**fo_house_4),
+            Message(**fp_house),
+            Message(**fp_house_1),
+            Message(**fp_house_2),
+            Message(**fp_house_3),
+            Message(**fp_house_4),
         ]
 
         # The house, but translated and rotated in the world
@@ -138,23 +138,23 @@ class BaseGraphTest(TestCase):
 
         config_list = []
         for ii in range(5):
-            config_list.append(copy.deepcopy(fo_house))
+            config_list.append(copy.deepcopy(fp_house))
             config_list[ii]["location"] = house_points[ii]
             config_list[ii]["morphological_features"]["pose_vectors"] = (
                 rotated_ref_frames[ii]
             )
 
-        self.fake_obs_house_trans = [State(**obs_dic) for obs_dic in config_list]
+        self.fake_percept_house_trans = [Message(**obs_dic) for obs_dic in config_list]
 
-        fo_house_5 = copy.deepcopy(fo_house)
-        fo_house_5["location"] = np.array([0.5, 1.5, 1.0])
+        fp_house_5 = copy.deepcopy(fp_house)
+        fp_house_5["location"] = np.array([0.5, 1.5, 1.0])
         self.fake_obs_house_3d = [
-            State(**fo_house),
-            State(**fo_house_1),
-            State(**fo_house_2),
-            State(**fo_house_3),
+            Message(**fp_house),
+            Message(**fp_house_1),
+            Message(**fp_house_2),
+            Message(**fp_house_3),
             # replacing fo_house_4 with fo_house_5 to make its pose unambiguous
-            State(**fo_house_5),
+            Message(**fp_house_5),
         ]
 
         self.placeholder_target = {

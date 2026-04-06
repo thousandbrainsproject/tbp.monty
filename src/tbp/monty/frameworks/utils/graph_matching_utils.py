@@ -318,7 +318,7 @@ def get_custom_distances(nearest_node_locs, search_locs, search_sns, search_curv
 
 
 # ====== Functions for detecting on new object ======
-# TODO: These will be integrated into the goal-state-generator with the motor
+# TODO: These will be integrated into the goal generator with the motor
 # system refactor
 def create_exponential_kernel(size, decay_rate):
     """Create an exponentially decaying kernel.

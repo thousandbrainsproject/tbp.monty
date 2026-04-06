@@ -8,7 +8,7 @@ These are the things we would like to implement:
 - [Automate benchmark experiments & analysis](framework-improvements/automate-benchmark-experiments-analysis.md)
 - [Add more wandb logging for unsupervised learning](framework-improvements/add-more-wandb-logging-for-unsupervised-learning.md)
 - [Add GPU support for Monty](framework-improvements/add-gpu-support-for-monty.md)
-- [Use State class inside of LMs](framework-improvements/use-state-class-inside-of-lms.md)
+- [Use Message class inside of LMs](framework-improvements/use-state-class-inside-of-lms.md)
 - [Make configs easier to use](framework-improvements/make-configs-easier-to-use.md)
 - [Find faster alternative to KDTree search](framework-improvements/find-faster-alternative-to-kdtree-search.md)
 - [Combine Dataloader and Dataset class into EnvironmentInterface](framework-improvements/combine-dataloader-and-dataset-into-environment-interface.md)
