@@ -25,7 +25,7 @@ from mujoco import (
     mjtTexture,
     mjtTextureRole,
 )
-from typing_extensions import override
+from typing_extensions import Self, override
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import Agent, AgentConfig, AgentID
@@ -51,6 +51,9 @@ PRIMITIVE_OBJECT_TYPES = {
     "ellipsoid": mjtGeom.mjGEOM_ELLIPSOID,
     "sphere": mjtGeom.mjGEOM_SPHERE,
 }
+
+
+DEFAULT_RESOLUTION = Resolution2D((64, 64))
 
 
 class UnknownShapeType(RuntimeError):
@@ -82,9 +85,13 @@ class MuJoCoSimulator(Simulator):
         self._agents: dict[AgentID, Agent] = {}
         self._create_agents()
 
-        self._render_resolution = self._max_sensor_resolution()
-        g = self.spec.visual.global_
-        g.offwidth, g.offheight = self._render_resolution
+        if agent_configs:
+            self._render_resolution = self._max_sensor_resolution()
+        else:
+            # This only really comes up in test contexts, but if we don't have
+            # any agents, we can't calculate the maximum sensor resolution, so
+            # we need to just us a default value.
+            self._render_resolution = DEFAULT_RESOLUTION
 
         # Track how many objects we add to the environment.
         # Note: We can't use the `model.ngeoms` for this since that will include parts
@@ -316,3 +323,9 @@ class MuJoCoSimulator(Simulator):
         if self.renderer:
             self.renderer.close()
         self.renderer = None
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()

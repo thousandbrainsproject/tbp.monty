@@ -59,24 +59,25 @@ class NoopAgentTest(unittest.TestCase):
             ],
             data_path=None,
         )
-        sim.add_object("box", position=(0.0, 0.0, -5.0))
+        with sim:
+            sim.add_object("box", position=(0.0, 0.0, -5.0))
 
-        obs = sim.observations[AGENT_ID]
-        depth = obs["patch"]["depth"]
-        rgba = obs["patch"]["rgba"]
+            obs = sim.observations[AGENT_ID]
+            depth = obs["patch"]["depth"]
+            rgba = obs["patch"]["rgba"]
 
-        # We don't want to assert on the specifics of the data, since they may
-        # be sensitive to rendering differences, but we want to get a rough idea
-        # that we got back observational data.
-        assert depth.shape == (64, 64)
-        assert rgba.shape == (64, 64, 3)
-        # assert that the min depth is the near surface of the cube
-        assert np.allclose(depth.min(), 4.0)
-        # assert that the max depth is beyond the back of the cube
-        assert depth.max() >= 5.0
-        # TODO: these might be too sensitive to variations
-        assert rgba.min() == 0.0
-        assert rgba.max() == 127.0
+            # We don't want to assert on the specifics of the data, since they may
+            # be sensitive to rendering differences, but we want to get a rough idea
+            # that we got back observational data.
+            assert depth.shape == (64, 64)
+            assert rgba.shape == (64, 64, 3)
+            # assert that the min depth is the near surface of the cube
+            assert np.allclose(depth.min(), 4.0)
+            # assert that the max depth is beyond the back of the cube
+            assert depth.max() >= 5.0
+            # TODO: these might be too sensitive to variations
+            assert rgba.min() == 0.0
+            assert rgba.max() == 127.0
 
     def test_agent_that_does_not_understand_an_action(self) -> None:
         """Ensure the simulator works with an agent that doesn't respond to actions."""
@@ -92,8 +93,9 @@ class NoopAgentTest(unittest.TestCase):
             data_path=None,
         )
 
-        action = LookUp(AGENT_ID, rotation_degrees=5.0)
-        sim.step([action])
+        with sim:
+            action = LookUp(AGENT_ID, rotation_degrees=5.0)
+            sim.step([action])
 
     def test_agent_action_with_attribute_error(self) -> None:
         """This test ensures that the simulator doesn't swallow agent errors."""
@@ -116,7 +118,7 @@ class NoopAgentTest(unittest.TestCase):
         )
         action = LookUp(AGENT_ID, rotation_degrees=5.0)
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError), sim:
             sim.step([action])
 
     @property

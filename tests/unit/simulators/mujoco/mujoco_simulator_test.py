@@ -35,28 +35,29 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
     """Tests for the MuJoCo simulator."""
 
     def test_initial_scene_is_empty(self) -> None:
-        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
-        self.assert_counts_equal(sim, 0)
+        with MuJoCoSimulator(agent_configs=[], data_path=None) as sim:
+            self.assert_counts_equal(sim, 0)
 
     @parametrize(
         "shape",
         SHAPE_PARAMS,
     )
     def test_add_primitive_object(self, shape: str) -> None:
-        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
-        sim.add_object(shape)
+        with MuJoCoSimulator(agent_configs=[], data_path=None) as sim:
+            sim.add_object(shape)
 
-        self.assert_counts_equal(sim, 1)
-        # 1. Check that the spec was updated
-        geom_elems = self.parse_spec_geoms(sim.spec)
-        if shape != "sphere":
-            # Sphere is the default and so its type doesn't end up in the resulting XML
-            assert geom_elems[0].attrib["type"] == f"{shape}"
-        assert geom_elems[0].attrib["name"] == f"{shape}_0"
+            self.assert_counts_equal(sim, 1)
+            # 1. Check that the spec was updated
+            geom_elems = self.parse_spec_geoms(sim.spec)
+            if shape != "sphere":
+                # Sphere is the default and so its type doesn't end up in
+                # the resulting XML.
+                assert geom_elems[0].attrib["type"] == f"{shape}"
+            assert geom_elems[0].attrib["name"] == f"{shape}_0"
 
-        # 2. Check that the model was updated
-        # This raises if it doesn't exist
-        sim.model.geom(f"{shape}_0")
+            # 2. Check that the model was updated
+            # This raises if it doesn't exist
+            sim.model.geom(f"{shape}_0")
 
     def test_multiple_objects_have_different_ids(self) -> None:
         """Test that multiple objects have different IDs.
@@ -66,51 +67,54 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         scene. So, several objects should be numbered in the order they were added.
         """
         shapes = ["box", "box", "box"]
-        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
-        for shape in shapes:
-            sim.add_object(shape)
+        with MuJoCoSimulator(agent_configs=[], data_path=None) as sim:
+            for shape in shapes:
+                sim.add_object(shape)
 
-        self.assert_counts_equal(sim, len(shapes))
-        geom_elems = self.parse_spec_geoms(sim.spec)
-        for i, shape in enumerate(shapes):
-            # Objects should appear in the spec XML in the same order as they were added
-            assert geom_elems[i].attrib["name"] == f"{shape}_{i}"
-            # Raises if geom doesn't exist with ID
-            sim.model.geom(f"{shape}_{i}")
+            self.assert_counts_equal(sim, len(shapes))
+            geom_elems = self.parse_spec_geoms(sim.spec)
+            for i, shape in enumerate(shapes):
+                # Objects should appear in the spec XML in the same order as they
+                # were added.
+                assert geom_elems[i].attrib["name"] == f"{shape}_{i}"
+                # Raises if geom doesn't exist with ID
+                sim.model.geom(f"{shape}_{i}")
 
     def test_remove_all_objects(self) -> None:
-        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
-        sim.add_object("box")
-        sim.add_object("capsule")
+        with MuJoCoSimulator(agent_configs=[], data_path=None) as sim:
+            sim.add_object("box")
+            sim.add_object("capsule")
 
-        self.assert_counts_equal(sim, 2)
-        sim.remove_all_objects()
-        self.assert_counts_equal(sim, 0)
+            self.assert_counts_equal(sim, 2)
+            sim.remove_all_objects()
+            self.assert_counts_equal(sim, 0)
 
     def test_primitive_object_positioning(self) -> None:
-        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
-        sim.add_object("box", position=(1.0, 1.0, 2.0))
+        with MuJoCoSimulator(agent_configs=[], data_path=None) as sim:
+            sim.add_object("box", position=(1.0, 1.0, 2.0))
 
-        assert np.allclose(sim.model.geom("box_0").pos, np.array([1.0, 1.0, 2.0]))
-        geom_elems = self.parse_spec_geoms(sim.spec)
-        assert geom_elems[0].attrib["pos"] == "1 1 2"
+            assert np.allclose(sim.model.geom("box_0").pos, np.array([1.0, 1.0, 2.0]))
+            geom_elems = self.parse_spec_geoms(sim.spec)
+            assert geom_elems[0].attrib["pos"] == "1 1 2"
 
     def test_primitive_box_scaling(self) -> None:
-        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
-        sim.add_object("box", scale=(3.0, 3.0, 3.0))
+        with MuJoCoSimulator(agent_configs=[], data_path=None) as sim:
+            sim.add_object("box", scale=(3.0, 3.0, 3.0))
 
-        assert np.allclose(sim.model.geom("box_0").size, np.array([3.0, 3.0, 3.0]))
-        geom_elems = self.parse_spec_geoms(sim.spec)
-        assert geom_elems[0].attrib["size"] == "3 3 3"
+            assert np.allclose(sim.model.geom("box_0").size, np.array([3.0, 3.0, 3.0]))
+            geom_elems = self.parse_spec_geoms(sim.spec)
+            assert geom_elems[0].attrib["size"] == "3 3 3"
 
     def test_primitive_sphere_scaling(self) -> None:
         """Test that scaling works correctly on a sphere."""
-        sim = MuJoCoSimulator(agent_configs=[], data_path=None)
-        sim.add_object("sphere", scale=(3.0, 3.0, 3.0))
+        with MuJoCoSimulator(agent_configs=[], data_path=None) as sim:
+            sim.add_object("sphere", scale=(3.0, 3.0, 3.0))
 
-        assert np.allclose(sim.model.geom("sphere_0").size, np.array([3.0, 3.0, 3.0]))
-        geom_elems = self.parse_spec_geoms(sim.spec)
-        assert geom_elems[0].attrib["size"] == "3"
+            assert np.allclose(
+                sim.model.geom("sphere_0").size, np.array([3.0, 3.0, 3.0])
+            )
+            geom_elems = self.parse_spec_geoms(sim.spec)
+            assert geom_elems[0].attrib["size"] == "3"
 
     @staticmethod
     def assert_counts_equal(sim: MuJoCoSimulator, count: int) -> None:
