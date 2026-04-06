@@ -264,9 +264,7 @@ class GlobalLocationAveragingTest(unittest.TestCase):
         state_b.displacement = {"displacement": disp.copy()}
 
         self.buffer.append([state_a, state_b])
-        np.testing.assert_array_almost_equal(
-            self.buffer.current_displacement(), disp
-        )
+        np.testing.assert_array_almost_equal(self.buffer.current_displacement(), disp)
 
 
 class PadToTargetLengthTest(unittest.TestCase):
