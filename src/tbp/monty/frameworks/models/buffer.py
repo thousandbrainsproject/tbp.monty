@@ -528,7 +528,7 @@ class FeatureAtLocationBuffer:
         self.locations[input_channel][-1] = location
 
     def _store_global_displacement_and_location(
-        self, list_of_data: list[State]
+        self, list_of_data: list[Message]
     ) -> None:
         """Store the global displacement and location from the current step.
 
