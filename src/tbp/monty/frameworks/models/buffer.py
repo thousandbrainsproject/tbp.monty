@@ -13,7 +13,7 @@ import copy
 import json
 import logging
 import time
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -102,15 +102,15 @@ class FeatureAtLocationBuffer:
             return 0
         return np.count_nonzero(~np.isnan(self.locations[input_channel][:, 0]))
 
-    def append(self, list_of_data):
-        """Add an observation to the buffer. Must be features at locations.
+    def append(self, percepts: list[Message]) -> None:
+        """Add a list of percepts to the buffer. Must be features at locations.
 
-        TODO S: Store messages instead of list of data?
+        TODO S: Store messages instead of list of percepts?
         A provisional version of this is implemented below, as the GSG uses
         messages for computations.
         """
         any_obs_on_obj = False
-        for msg in list_of_data:
+        for msg in percepts:
             input_channel = msg.sender_id
 
             self.channel_sender_types[input_channel] = msg.sender_type
@@ -131,7 +131,7 @@ class FeatureAtLocationBuffer:
             self._add_attr_to_feature_buffer(input_channel, "on_object", on_obj)
             if on_obj:
                 any_obs_on_obj = True
-        self._store_global_displacement_and_location(list_of_data)
+        self._store_global_displacement_and_location(percepts)
 
         self.on_object.append(any_obs_on_obj)  # TODO S: remove?
 
@@ -527,47 +527,48 @@ class FeatureAtLocationBuffer:
         self.locations[input_channel] = padded_locs
         self.locations[input_channel][-1] = location
 
-    def _store_global_displacement_and_location(
-        self, list_of_data: list[Message]
-    ) -> None:
+    def _store_global_displacement_and_location(self, percepts: list[Message]) -> None:
         """Store the global displacement and location from the current step.
 
         Computes the average location across SM input channels and stores
-        any displacement present on the first SM observation.
+        any displacement present on the first SM percept.
 
         Args:
-            list_of_data: List of State objects from the current step.
+            percepts: List of Message objects from the current step.
         """
-        sm_data = [s for s in list_of_data if s.sender_type == "SM"]
-        current_location = np.mean([s.location for s in sm_data], axis=0)
+        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
+        current_location = np.mean([p.location for p in sm_percepts], axis=0)
 
-        if getattr(sm_data[0], "displacement", None):
-            for attr in sm_data[0].displacement:
-                self._add_global_displacement(attr, sm_data[0].displacement[attr])
+        first_percept = sm_percepts[0]
+        if getattr(first_percept, "displacement", None):
+            for attr in sm_percepts[0].displacement:
+                self._add_global_displacement(attr, sm_percepts[0].displacement[attr])
 
         self.global_location = current_location.copy()
 
     def _add_global_displacement(
-        self, disp_name: str, disp_val: npt.NDArray[np.float64]
+        self,
+        name: Literal["displacement", "ppf"],
+        val: npt.NDArray[np.float64],
     ) -> None:
         """Add a displacement value to the global displacement buffer.
 
         Args:
-            disp_name: Name of the displacement (e.g. "displacement", "ppf").
-            disp_val: Value of the displacement.
+            name: Name of the displacement (e.g. "displacement", "ppf").
+            val: Value of the displacement.
         """
-        if disp_name not in self.global_displacements:
-            self.global_displacements[disp_name] = np.full(
-                (len(self.locations), len(disp_val)), np.nan
+        if name not in self.global_displacements:
+            self.global_displacements[name] = np.full(
+                (len(self.locations), len(val)), np.nan
             )
 
         padded_vals = self._pad_to_target_length(
-            existing_vals=self.global_displacements[disp_name],
+            existing_vals=self.global_displacements[name],
             target_length=len(self) + 1,
-            new_val_len=disp_val.shape[0],
+            new_val_len=val.shape[0],
         )
-        self.global_displacements[disp_name] = padded_vals
-        self.global_displacements[disp_name][-1] = disp_val
+        self.global_displacements[name] = padded_vals
+        self.global_displacements[name][-1] = val
 
     def _pad_to_target_length(
         self,

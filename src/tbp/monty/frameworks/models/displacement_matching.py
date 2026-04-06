@@ -8,10 +8,16 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
+
+if TYPE_CHECKING:
+    from tbp.monty.cmp import Message
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.context import RuntimeContext
@@ -392,44 +398,44 @@ class DisplacementGraphLM(GraphLM):
         return prediction_error
 
     # ------------------------ Helper --------------------------
-    def _add_displacements(self, obs):
-        """Add displacements to the current observation.
+    def _add_displacements(self, percepts: list[Message]) -> list[Message]:
+        """Add displacements to the current percept.
 
-        The observation consists of features at a location. To get the displacement we
-        have to look at the previous observation stored in the buffer.
+        The percept consists of features at a location. To get the displacement we
+        have to look at the previous percept stored in the buffer.
 
         TODO: Should we move this and a (short-term) buffer to the sensor module?
 
         Returns:
-            The observations with displacements added.
+            The percepts with displacements added.
         """
         displacement = np.zeros(3)
         ppf = np.zeros(4)
         # TODO S: calculate displacements for each separately (mostly for rotation disp)
-        sm_obs = [o for o in obs if o.sender_type == "SM"]
-        obs_to_use = sm_obs[0]
+        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
+        percept_to_use = sm_percepts[0]
 
         if len(self.buffer) > 0:
             # TODO S: Make sure result of get_current_location() and get_current_pose()
             # is on object (should always be atm).
-            current_location = np.mean([o.location for o in sm_obs], axis=0)
+            current_location = np.mean([p.location for p in sm_percepts], axis=0)
             displacement = current_location - self.buffer.global_location
 
             pos1 = torch.tensor(self.buffer.global_location)
             pos2 = torch.tensor(current_location)
             norm1 = torch.tensor(
                 # element 0 of current pose is location, element 1 is surface normal
-                self.buffer.get_current_pose(input_channel=obs_to_use.sender_id)[1],
+                self.buffer.get_current_pose(input_channel=percept_to_use.sender_id)[1],
                 dtype=torch.float64,
             )
             norm2 = torch.tensor(
-                obs_to_use.get_nth_pose_vector(pose_vector_index=0),
+                percept_to_use.get_nth_pose_vector(pose_vector_index=0),
                 dtype=torch.float64,
             )
             ppf = point_pair_features(pos1, pos2, norm1, norm2)
-        for o in obs:
-            o.set_displacement(displacement=displacement, ppf=ppf)
-        return obs
+        for p in percepts:
+            p.set_displacement(displacement=displacement, ppf=ppf)
+        return percepts
 
     def _select_features_to_use(self, states) -> int:
         """Extract on_object from observed features to use as target.

@@ -994,28 +994,28 @@ class GraphLM(LearningModule):
 
     # ------------------------ Helper --------------------------
 
-    def _add_displacements(self, obs):
-        """Compute and add a single displacement vector to all observations.
+    def _add_displacements(self, percepts: list[Message]) -> list[Message]:
+        """Compute and add a single displacement vector to all percepts.
 
         Computes one displacement by comparing the current average SM location from
-        current observations to the previous average SM location stored in the buffer.
-        This single displacement is then set on every SM and LM observation.
+        current percepts to the previous average SM location stored in the buffer.
+        This single displacement is then set on every SM and LM percept.
 
         Args:
-            obs: Observations to add displacements to.
+            percepts: Percepts to add displacements to.
 
         Returns:
-            Observations with displacements.
+            Percepts with displacements.
         """
-        sm_obs = [o for o in obs if o.sender_type == "SM"]
+        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
         if self.buffer.global_location is not None:
-            current_location = np.mean([o.location for o in sm_obs], axis=0)
+            current_location = np.mean([p.location for p in sm_percepts], axis=0)
             displacement = current_location - self.buffer.global_location
         else:
             displacement = np.zeros(3)
-        for o in obs:
-            o.set_displacement(displacement)
-        return obs
+        for p in percepts:
+            p.set_displacement(displacement)
+        return percepts
 
     def _select_features_to_use(self, percepts: list[Message]):
         """Extract the features from percepts that are specified in tolerances.
