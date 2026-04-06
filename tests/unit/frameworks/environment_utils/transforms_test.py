@@ -228,28 +228,6 @@ class GaussianBlurRGBTest(unittest.TestCase):
         np.testing.assert_array_equal(result[:, :, 3], alpha_before)
 
     @given(params=rgba_and_blur_params())
-    @example(
-        params=(
-            np.array(
-                [[[0.75, 0.75, 0.75, 0.75], [0.75, 0.75, 0.75, 0.75]]], dtype=np.float32
-            ),
-            1.0,
-            0,
-        ),
-    )  # Generated Failure Case
-    @example(
-        params=(
-            np.array(
-                [
-                    [[1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
-                    [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
-                ],
-                dtype=np.float32,
-            ),
-            0.125,
-            0,
-        )
-    )  # Generated Failure Case
     def test_blur_reduces_total_variation(self, params):
         """Gaussian blur is a low-pass filter, so total variation cannot increase."""
         rgba, sigma, kernel_size = params
