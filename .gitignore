@@ -1,3 +1,5 @@
+locals
+
 # wandb local configs
 wandb/
 
