@@ -6,6 +6,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import inspect
 import json
@@ -19,6 +20,7 @@ import torch
 from scipy.spatial.transform import Rotation
 
 import tests.unit.frameworks.models.fakes.encoder_classes
+from tbp.monty.cmp import Message
 from tbp.monty.frameworks.actions.actions import (
     ActionJSONEncoder,
     LookDown,
@@ -45,14 +47,14 @@ from tests.unit.frameworks.models.fakes.encoders import (
 )
 
 
-def create_mock_state(
+def create_mock_message(
     sender_id: str,
     sender_type: str,
     location: npt.NDArray[np.float64],
     on_object: bool,
-    pose_vectors: npt.NDArray[np.float64] = None,
-):
-    """Create a mock State object for testing the buffer.
+    pose_vectors: npt.NDArray[np.float64] | None = None,
+) -> Message:
+    """Create a mock Message for testing the buffer.
 
     Args:
         sender_id: Input channel identifier.
@@ -62,27 +64,27 @@ def create_mock_state(
         pose_vectors: Optional pose vectors (3x3 array). Defaults to identity.
 
     Returns:
-        A mock State object compatible with FeatureAtLocationBuffer.append().
+        A mock Message compatible with FeatureAtLocationBuffer.append().
     """
     if pose_vectors is None:
         pose_vectors = np.eye(3)
 
-    state = Mock()
-    state.sender_id = sender_id
-    state.sender_type = sender_type
-    state.location = location
-    state.morphological_features = {
+    msg = Mock()
+    msg.sender_id = sender_id
+    msg.sender_type = sender_type
+    msg.location = location
+    msg.morphological_features = {
         "pose_vectors": pose_vectors.flatten(),
         "pose_fully_defined": True,
     }
-    state.non_morphological_features = {}
+    msg.non_morphological_features = {}
     # For these tests focused on location/feature padding, we skip displacements.
     # displacements are computed and set by the LM's _add_displacements() method
     # before calling buffer.append().
-    state.displacement = {}
-    state.get_on_object = Mock(return_value=on_object)
+    msg.displacement = {}
+    msg.get_on_object = Mock(return_value=on_object)
 
-    return state
+    return msg
 
 
 class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
@@ -102,13 +104,13 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         missing entries.
         """
         # Step 1: Both channels send data
-        state_sm = create_mock_state(
+        state_sm = create_mock_message(
             sender_id="SM_0",
             sender_type="SM",
             location=np.array([1.0, 2.0, 3.0]),
             on_object=True,
         )
-        state_lm = create_mock_state(
+        state_lm = create_mock_message(
             sender_id="LM_0",
             sender_type="LM",
             location=np.array([1.0, 2.0, 3.0]),
@@ -117,7 +119,7 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         self.buffer.append([state_sm, state_lm])
 
         # Step 2: Only SM sends data
-        state_sm_2 = create_mock_state(
+        state_sm_2 = create_mock_message(
             sender_id="SM_0",
             sender_type="SM",
             location=np.array([4.0, 5.0, 6.0]),
@@ -158,13 +160,13 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         the shape of features returned by get_all_features_on_object().
         """
         # Step 1: Both channels send data
-        state_sm_1 = create_mock_state(
+        state_sm_1 = create_mock_message(
             sender_id="SM_0",
             sender_type="SM",
             location=np.array([1.0, 2.0, 3.0]),
             on_object=True,
         )
-        state_lm_1 = create_mock_state(
+        state_lm_1 = create_mock_message(
             sender_id="LM_0",
             sender_type="LM",
             location=np.array([1.0, 2.0, 3.0]),
@@ -173,7 +175,7 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         self.buffer.append([state_sm_1, state_lm_1])
 
         # Step 2: Only SM sends data
-        state_sm_2 = create_mock_state(
+        state_sm_2 = create_mock_message(
             sender_id="SM_0",
             sender_type="SM",
             location=np.array([4.0, 5.0, 6.0]),
@@ -274,13 +276,13 @@ class PadToTargetLengthTest(unittest.TestCase):
         self.buffer = FeatureAtLocationBuffer()
         # Add 3 steps to the buffer
         for i in range(3):
-            state = create_mock_state(
+            msg = create_mock_message(
                 sender_id="SM_0",
                 sender_type="SM",
                 location=np.array([float(i), float(i), float(i)]),
                 on_object=True,
             )
-            self.buffer.append([state])
+            self.buffer.append([msg])
 
     def test_pads_shorter_array_to_buffer_length(self):
         # Create a 2x3 array (shorter than buffer length of 3)

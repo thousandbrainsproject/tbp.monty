@@ -17,7 +17,7 @@ learning_module_0:
     num_model_voxels_per_dim: 200
     max_nodes_per_graph: 2000
     gsg:
-      _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
+      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
       goal_tolerances:
         location: 0.015
       elapsed_steps_factor: 10
@@ -43,7 +43,7 @@ learning_module_1:
     num_model_voxels_per_dim: 200
     max_nodes_per_graph: 2000
     gsg:
-      _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
+      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
       goal_tolerances:
         location: 0.015
       elapsed_steps_factor: 10

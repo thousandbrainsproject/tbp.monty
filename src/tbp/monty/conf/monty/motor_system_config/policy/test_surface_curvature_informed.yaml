@@ -14,5 +14,5 @@ pc_alpha: 0.5
 max_pc_bias_steps: 32
 min_general_steps: 8
 min_heading_steps: 12
-use_goal_state_driven_actions: false
+use_goal_driven_actions: false
 agent_id: agent_id_0
