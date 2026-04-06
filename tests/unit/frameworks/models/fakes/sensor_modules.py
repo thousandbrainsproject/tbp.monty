@@ -11,11 +11,14 @@ from __future__ import annotations
 
 import numpy as np
 
+from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    SensorModule,
+    SensorObservation,
+)
 from tbp.monty.frameworks.models.motor_system_state import AgentState
-from tbp.monty.frameworks.models.states import State
 
 __all__ = ["FakeSensorModule"]
 
@@ -45,16 +48,17 @@ class FakeSensorModule(SensorModule):
     def step(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
-        data,
+        observation: SensorObservation,
+        motor_only_step: bool = False,  # noqa: ARG002
     ):
-        """Returns a dummy/placeholder state."""
-        return State(
+        """Returns a dummy/placeholder message."""
+        return Message(
             location=np.zeros(3),
             morphological_features={
                 "pose_vectors": np.eye(3),
                 "pose_fully_defined": True,
             },
-            non_morphological_features=data,
+            non_morphological_features=observation,
             confidence=1,
             use_state=True,
             sender_id=self.sensor_module_id,

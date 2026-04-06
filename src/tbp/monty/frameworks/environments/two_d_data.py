@@ -11,10 +11,11 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import PIL
 import quaternion as qt
 from scipy.ndimage import gaussian_filter
@@ -36,6 +37,9 @@ from tbp.monty.frameworks.models.motor_system_state import (
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.path import monty_data_path
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 logger = logging.getLogger(__name__)
 
 __all__ = [
@@ -48,7 +52,7 @@ __all__ = [
 class OmniglotEnvironment(SimulatedEnvironment):
     """Environment for Omniglot dataset."""
 
-    def __init__(self, patch_size=10, data_path=None):
+    def __init__(self, patch_size: int = 10, data_path: str | Path | None = None):
         """Initialize environment.
 
         Args:
@@ -95,18 +99,18 @@ class OmniglotEnvironment(SimulatedEnvironment):
         Returns:
             The observations and proprioceptive state.
         """
-        obs = self._observation()
+        obs = self._observations()
 
         for action in actions:
             amount = 1
             if hasattr(action, "rotation_degrees"):
                 amount = max(action.rotation_degrees, 1)
             self.step_num += int(amount)
-            obs = self._observation()
+            obs = self._observations()
 
-        return obs
+        return obs, self.get_state()
 
-    def _observation(self) -> Observations:
+    def _observations(self) -> Observations:
         query_loc = self.locations[self.step_num % self.max_steps]
         patch = self.get_image_patch(
             self.current_image,
@@ -114,7 +118,7 @@ class OmniglotEnvironment(SimulatedEnvironment):
             self.patch_size,
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
-        obs = Observations(
+        return Observations(
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
@@ -135,7 +139,6 @@ class OmniglotEnvironment(SimulatedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
 
     def get_state(self) -> ProprioceptiveState:
         loc = self.locations[self.step_num % self.max_steps]
@@ -159,7 +162,12 @@ class OmniglotEnvironment(SimulatedEnvironment):
             }
         )
 
-    def switch_to_object(self, alphabet_id, character_id, version_id):
+    def switch_to_object(
+        self,
+        alphabet_id: int,
+        character_id: int,
+        version_id: int,
+    ):
         self.current_alphabet = self.alphabet_names[alphabet_id]
         self.character_id = character_id
         self.character_version = version_id
@@ -227,7 +235,12 @@ class OmniglotEnvironment(SimulatedEnvironment):
         self.max_steps = len(locations) - 1
         return current_image, locations
 
-    def get_image_patch(self, img, loc, patch_size):
+    def get_image_patch(
+        self,
+        img: npt.NDArray[np.bool_],
+        loc: npt.NDArray[np.float64],
+        patch_size: int,
+    ):
         loc = np.array(loc, dtype=int)
         startx = loc[1] - patch_size // 2
         stopx = loc[1] + patch_size // 2
@@ -235,7 +248,7 @@ class OmniglotEnvironment(SimulatedEnvironment):
         stopy = loc[0] + patch_size // 2
         return img[startx:stopx, starty:stopy]
 
-    def motor_to_locations(self, motor):
+    def motor_to_locations(self, motor: Sequence[npt.NDArray[np.float64]]):
         motor = [d[:, 0:2] for d in motor]
         motor = [space_motor_to_img(d) for d in motor]
         locations = np.zeros(2)
@@ -253,7 +266,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
     Images should be stored in .png format for rgb and .data format for depth.
     """
 
-    def __init__(self, patch_size=64, data_path=None):
+    def __init__(self, patch_size: int = 64, data_path: str | Path | None = None):
         """Initialize environment.
 
         Args:
@@ -308,7 +321,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         Returns:
             The observation and proprioceptive state.
         """
-        obs = self._observation()
+        obs = self._observations()
 
         for action in actions:
             if action.name in self._valid_actions:
@@ -321,18 +334,18 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             # Make sure amount is int since we are moving using pixel indices
             amount = int(amount)
             self.current_loc = self.get_next_loc(action.name, amount)
-            obs = self._observation()
+            obs = self._observations()
 
-        return obs
+        return obs, self.get_state()
 
-    def _observation(self) -> Observations:
+    def _observations(self) -> Observations:
         (
             depth_patch,
             rgb_patch,
             depth3d_patch,
             sensor_frame_patch,
         ) = self.get_image_patch(self.current_loc)
-        obs = Observations(
+        return Observations(
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
@@ -357,7 +370,6 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
 
     def get_state(self) -> ProprioceptiveState:
         loc = self.current_loc
@@ -384,7 +396,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             }
         )
 
-    def switch_to_object(self, scene_id, scene_version_id):
+    def switch_to_object(self, scene_id: int, scene_version_id: int):
         """Load new image to be used as environment."""
         self.current_scene = self.scene_names[scene_id]
         self.scene_version = scene_version_id
@@ -471,7 +483,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         start_location = [obs_shape[0] // 2, obs_shape[1] // 2]
         return current_depth_image, current_rgb_image, start_location
 
-    def load_depth_data(self, depth_path, height, width):
+    def load_depth_data(self, depth_path: Path, height: int, width: int):
         """Load depth image from .data file.
 
         Returns:
@@ -479,7 +491,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         """
         return np.fromfile(depth_path, np.float32).reshape(height, width)
 
-    def process_depth_data(self, depth):
+    def process_depth_data(self, depth: npt.NDArray[np.float32]):
         """Process depth data by reshaping, clipping and flipping.
 
         Returns:
@@ -498,7 +510,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         # sensor orientation (TODO).
         return depth_clipped  # np.flipud(depth_clipped)
 
-    def load_rgb_data(self, rgb_path):
+    def load_rgb_data(self, rgb_path: Path):
         """Load RGB image and put into np array.
 
         Returns:
@@ -577,7 +589,10 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         self.world_camera = obs_3d[agent_id][sensor_id]["world_camera"]
         return current_scene_point_cloud, current_sf_scene_point_cloud
 
-    def get_3d_coordinates_from_pixel_indices(self, pixel_idx):
+    def get_3d_coordinates_from_pixel_indices(
+        self,
+        pixel_idx: npt.NDArray[np.int_],
+    ):
         """Retrieve 3D coordinates of a pixel.
 
         Returns:
@@ -601,7 +616,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             ]
         )
 
-    def get_next_loc(self, action_name, amount):
+    def get_next_loc(self, action_name: str, amount: int):
         """Calculate next location in pixel space given the current action.
 
         Returns:
@@ -629,7 +644,10 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             new_loc[1] = self.move_area[1][1]
         return new_loc
 
-    def get_image_patch(self, loc):
+    def get_image_patch(
+        self,
+        loc: npt.NDArray[np.int_],
+    ):
         """Extract 2D image patch from a location in pixel space.
 
         Returns:
@@ -670,7 +688,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
 class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
     """Environment for moving over a 2D streamed image with depth channel."""
 
-    def __init__(self, patch_size=64, data_path=None):
+    def __init__(self, patch_size: int = 64, data_path: str | Path | None = None):
         """Initialize environment.
 
         Args:
@@ -715,7 +733,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         #      don't call super().__init__ while inheriting
         self._valid_actions = ["look_up", "look_down", "turn_left", "turn_right"]
 
-    def switch_to_scene(self, scene_id):
+    def switch_to_scene(self, scene_id: int):
         self.current_scene = scene_id
         (
             self.current_depth_image,
@@ -775,12 +793,12 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
 
 # Functions from omniglot/python.demo.py
 # TODO: integrate better and maybe rewrite
-def load_img(fn):
+def load_img(fn: Path):
     img = plt.imread(fn)
     return np.array(img, dtype=bool)
 
 
-def load_motor(fn):
+def load_motor(fn: Path):
     motor = []
     with fn.open() as fid:
         lines = fid.readlines()
@@ -798,6 +816,6 @@ def load_motor(fn):
     return motor
 
 
-def space_motor_to_img(pt):
+def space_motor_to_img(pt: npt.NDArray[np.float64]):
     pt[:, 1] = -pt[:, 1]
     return pt

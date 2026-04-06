@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -55,7 +55,7 @@ class FakeHabitat(HabitatActuator):
         return None
 
 
-class HabitatAcutatorTest(unittest.TestCase):
+class HabitatActuatorTest(unittest.TestCase):
     def test_action_name_concatenates_agent_id_and_name_with_period(self) -> None:
         actuator = FakeHabitat()
         action = FakeAction(agent_id=AgentID("agent1"))

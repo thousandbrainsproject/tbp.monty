@@ -1,0 +1,21 @@
+# @package experiment.config.environment
+
+env_init_args:
+  objects:
+  - name: coneSolid
+    position:
+    - 0.0
+    - 1.5
+    - -0.1
+  scene_id: null
+  seed: 42
+  data_path: null
+  agents:
+    agent_type: ${monty.class:tbp.monty.simulators.habitat.agents.SingleSensorAgent}
+    agent_args:
+      agent_id: agent_id_0
+      sensor_id: sensor_id_0
+      resolution:
+      - 320
+      - 240
+env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
