@@ -14,6 +14,7 @@ from typing import Any, Literal
 
 import numpy as np
 
+from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
@@ -23,7 +24,6 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
-from tbp.monty.frameworks.models.states import GoalState, State
 
 __all__ = ["MotorSystem"]
 
@@ -88,8 +88,8 @@ class MotorSystem:
         ctx: RuntimeContext,
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
-        percept: State,
-        goals: list[GoalState],
+        percept: Message,
+        goals: list[Goal],
     ) -> list[Action]:
         """Defines the structure for __call__.
 

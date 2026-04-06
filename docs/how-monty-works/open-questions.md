@@ -35,10 +35,10 @@ For more details, we also encourage checking out our [Future Work Roadmap](../fu
 
 # Policies
 ## Model-Based Policies
-- How are goal states decomposed into sub-goals?
+- How are goals decomposed into sub-goals?
 
 ## Model-Free Policies and the Motor System
-- How does the motor system decide which goal state to carry out (given that every/many LMs produce goal states)?
+- How does the motor system decide which goal to carry out (given that every/many LMs produce goals)?
 
 # CMP
 

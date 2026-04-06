@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -41,22 +41,22 @@ class MontyBasePrivateTest(unittest.TestCase):
             max_total_steps=100,
         )
 
-    def test_pass_goal_states_collects_all_goals_from_learning_and_sensor_modules(
+    def test_pass_goals_collects_all_goals_from_learning_and_sensor_modules(
         self,
     ) -> None:
         self.monty_base.step_type = "matching_step"
-        self.lm1.propose_goal_states.return_value = []
-        self.lm2.propose_goal_states.return_value = [sentinel.lm2_goal]
-        self.lm3.propose_goal_states.return_value = [
+        self.lm1.propose_goals.return_value = []
+        self.lm2.propose_goals.return_value = [sentinel.lm2_goal]
+        self.lm3.propose_goals.return_value = [
             sentinel.lm3_goal_1,
             sentinel.lm3_goal_2,
         ]
-        self.sm1.propose_goal_states.return_value = []
-        self.sm2.propose_goal_states.return_value = [
+        self.sm1.propose_goals.return_value = []
+        self.sm2.propose_goals.return_value = [
             sentinel.sm2_goal_1,
             sentinel.sm2_goal_2,
         ]
-        self.monty_base._pass_goal_states()
+        self.monty_base._pass_goals()
 
         expected = set(
             {

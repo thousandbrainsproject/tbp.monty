@@ -77,7 +77,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                             # NOTE: rotation votes are not being used right now.
                             transformed_lm_states_for_object = []
                             for s in lm_states_for_object:
-                                # need to make a copy because the same vote state may be
+                                # need to make a copy because the same vote may be
                                 # transformed in different ways depending on the
                                 # receiving LMs' poses
                                 new_s = copy.deepcopy(s)

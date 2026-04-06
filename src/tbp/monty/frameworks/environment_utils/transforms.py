@@ -528,7 +528,7 @@ class DepthTo3DLocations(Transform):
 
         Args:
             observations: Observations returned by the environment interface.
-            state: Optionally supplied CMP-compliant state of the object.
+            state: Optionally supplied proprioceptive state.
 
         Returns:
             The original Observations, with the following possibly added:

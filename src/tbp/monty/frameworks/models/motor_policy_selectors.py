@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Protocol
 
+from tbp.monty.cmp import Goal
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
-from tbp.monty.frameworks.models.states import GoalState
 
 if TYPE_CHECKING:
     from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -32,7 +32,7 @@ class MotorPolicySelector(Protocol):
     def state_dict(self) -> dict[str, Any]:
         pass
 
-    def __call__(self, goals: list[GoalState]) -> tuple[MotorPolicy, GoalState | None]:
+    def __call__(self, goals: list[Goal]) -> tuple[MotorPolicy, Goal | None]:
         pass
 
 
@@ -46,7 +46,7 @@ class SinglePolicySelector(MotorPolicySelector):
     def state_dict(self) -> dict[str, Any]:
         return self._policy.state_dict()
 
-    def __call__(self, goals: list[GoalState]) -> tuple[MotorPolicy, GoalState | None]:
+    def __call__(self, goals: list[Goal]) -> tuple[MotorPolicy, Goal | None]:
         if goals:
             sorted_goals = sorted(goals, key=lambda x: x.confidence, reverse=True)
             return self._policy, sorted_goals[0]

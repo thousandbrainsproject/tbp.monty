@@ -27,13 +27,13 @@ class SinglePolicySelectorTest(unittest.TestCase):
         _, goal = self.selector([])
         self.assertIsNone(goal)
 
-    def test_returns_goal_state_with_highest_confidence(self):
+    def test_returns_goal_with_highest_confidence(self):
         best_goal = Mock(confidence=0.9)
         second_best_goal = Mock(confidence=0.8)
         _, goal = self.selector([second_best_goal, best_goal])
         self.assertIs(goal, best_goal)
 
-    def test_returns_first_goal_state_with_highest_confidence_if_ties(self):
+    def test_returns_first_goal_with_highest_confidence_if_ties(self):
         first_goal = Mock(confidence=0.9)
         second_goal = Mock(confidence=0.9)
         _, goal = self.selector([first_goal, second_goal])

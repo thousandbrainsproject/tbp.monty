@@ -958,7 +958,7 @@ class GraphLearningTest(BaseGraphTest):
                     ]
                     monty._step_learning_modules(ctx)
                     monty._vote()
-                    monty._pass_goal_states()
+                    monty._pass_goals()
                     monty._set_step_type_and_check_if_done()
                     monty._post_step()
                 exp.post_episode(tm.num_observations(episode_num))
