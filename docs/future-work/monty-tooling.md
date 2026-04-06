@@ -4,6 +4,6 @@ description: These are efforts to develop tools that make Monty easier to use an
 ---
 These are the things we would like to do and you can help us with:
 
-- [Improve Visualizations During Learning and Inference](monty-tooling/improve-visualizations-during-learning-and-inference.md)
+- [Improve tbp.plot Visualizations During Learning and Inference](monty-tooling/improve-tbp-plot-visualizations-during-learning-and-inference.md)
 
 !snippet[../snippets/contributing-tasks.md]

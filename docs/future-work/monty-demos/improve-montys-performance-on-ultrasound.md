@@ -4,7 +4,7 @@ description: Improve the ability of Monty to learn and infer 3D objects in ultra
 rfc: not-required
 estimated-scope: medium
 improved-metric: real-world, accuracy, noise, numsteps
-output-type: experiments, analysis, publication
+output-type: experiments, analysis, publication, demo
 skills: python, computer-vision, research
 contributor: nleadholm
 status: evergreen

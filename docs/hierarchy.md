@@ -177,7 +177,7 @@
   - [organize-start-podcast-series](future-work/oss-communication-improvements/organize-start-podcast-series.md)
   - [robust-docs-preview-cleanup](future-work/oss-communication-improvements/robust-docs-preview-cleanup.md)
 - [monty-tooling](future-work/monty-tooling.md)
-  - [improve-visualizations-during-learning-and-inference](future-work/monty-tooling/improve-visualizations-during-learning-and-inference.md)
+  - [improve-tbp-plot-visualizations-during-learning-and-inference](future-work/monty-tooling/improve-tbp-plot-visualizations-during-learning-and-inference.md)
 - [monty-demos](future-work/monty-demos.md)
   - [improve-montys-performance-on-ultrasound](future-work/monty-demos/improve-montys-performance-on-ultrasound.md)
 <!-- vale on -->
