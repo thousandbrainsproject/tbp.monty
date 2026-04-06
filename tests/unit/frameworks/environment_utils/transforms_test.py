@@ -9,6 +9,7 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
@@ -31,7 +32,8 @@ from tbp.monty.frameworks.sensors import SensorID
 AGENT_ID = AgentID("0")
 SENSOR_ID = SensorID("0")
 
-BLUR_KERNEL_SIZES = [0, 1, 3, 5, 7, 9, 11, 13, 15]
+MAX_KERNEL = 15
+BLUR_KERNEL_SIZES = [n for n in range(MAX_KERNEL + 1) if n == 0 or n % 2 == 1]
 
 
 @st.composite
@@ -176,7 +178,7 @@ class GaussianBlurRGBTest(unittest.TestCase):
             agent_id=AGENT_ID, sensor_ids=[SENSOR_ID], sigma=15, kernel_size=15
         )
         with pytest.raises(KeyError, match="not found in observations"):
-            gaussian_smoother(obs, _ctx=None)
+            gaussian_smoother(obs, ctx=Mock())
 
     def test_rgba_not_in_sensor_observations(self):
         obs = Observations()
@@ -184,7 +186,7 @@ class GaussianBlurRGBTest(unittest.TestCase):
         obs[AGENT_ID][SENSOR_ID] = SensorObservation()
         gaussian_smoother = GaussianBlurRGB(agent_id=AGENT_ID, sigma=15, kernel_size=15)
         with pytest.raises(KeyError, match="no 'rgba' key"):
-            gaussian_smoother(obs, _ctx=None)
+            gaussian_smoother(obs, ctx=Mock())
 
     @given(
         height=st.integers(min_value=1, max_value=256),
@@ -204,7 +206,7 @@ class GaussianBlurRGBTest(unittest.TestCase):
         gaussian_smoother = GaussianBlurRGB(
             agent_id=AGENT_ID, sigma=sigma, kernel_size=kernel_size
         )
-        result_img = gaussian_smoother(obs, _ctx=None)[AGENT_ID][SENSOR_ID]["rgba"]
+        result_img = gaussian_smoother(obs, ctx=Mock())[AGENT_ID][SENSOR_ID]["rgba"]
 
         self.assertEqual(result_img.shape, rgba_img.shape)
         np.testing.assert_array_equal(result_img, rgba_img)
@@ -220,7 +222,7 @@ class GaussianBlurRGBTest(unittest.TestCase):
         gaussian_smoother = GaussianBlurRGB(
             agent_id=AGENT_ID, sigma=sigma, kernel_size=kernel_size
         )
-        result = gaussian_smoother(obs, _ctx=None)[AGENT_ID][SENSOR_ID]["rgba"]
+        result = gaussian_smoother(obs, ctx=Mock())[AGENT_ID][SENSOR_ID]["rgba"]
 
         self.assertEqual(result.shape, rgba.shape)
         np.testing.assert_array_equal(result[:, :, 3], alpha_before)
@@ -242,9 +244,8 @@ class GaussianBlurRGBTest(unittest.TestCase):
         gaussian_smoother = GaussianBlurRGB(
             agent_id=AGENT_ID, sigma=sigma, kernel_size=kernel_size
         )
-        result_rgb = gaussian_smoother(obs, _ctx=None)[AGENT_ID][SENSOR_ID]["rgba"][
-            :, :, :3
-        ]
+        result_rgba = gaussian_smoother(obs, ctx=Mock())[AGENT_ID][SENSOR_ID]["rgba"]
+        result_rgb = result_rgba[:, :, :3]
 
         self.assertLessEqual(
             total_variation(result_rgb), total_variation(rgba[:, :, :3])
