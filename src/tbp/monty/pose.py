@@ -87,26 +87,15 @@ class Location:  # noqa: PLW1641
         >>> a_location.move_by([-13, 3, -2])
         Location(frame=None, x=-5.0, y=5.0, z=1.0)
 
-        >>> b_location = a_location.copy()
+        >>> b_location = Location.from_scalars(x=3, y=8)
         >>> b_location
-        Location(frame=None, x=-5.0, y=5.0, z=1.0)
-        >>> a_location is b_location
-        False
-        >>> a_location == b_location
-        True
-        >>> a_location.x = 2.2
-        >>> b_location.z = -3.3
-        >>> a_location
-        Location(frame=None, x=2.2, y=5.0, z=1.0)
-        >>> b_location
-        Location(frame=None, x=-5.0, y=5.0, z=-3.3)
-
+        Location(frame=None, x=3.0, y=8.0, z=0.0)
         >>> a_location + b_location
-        Location(frame=None, x=-2.8, y=10.0, z=-2.3)
+        Location(frame=None, x=-2.0, y=13.0, z=1.0)
         >>> a_location - b_location
-        Location(frame=None, x=7.2, y=0.0, z=4.3)
+        Location(frame=None, x=-8.0, y=-3.0, z=1.0)
         >>> -b_location
-        Location(frame=None, x=5.0, y=-5.0, z=3.3)
+        Location(frame=None, x=-3.0, y=-8.0, z=0.0)
     """
 
     def __init__(
@@ -234,6 +223,27 @@ class Location:  # noqa: PLW1641
 
         Returns:
             The new `Location` object.
+
+        Examples:
+            >>> a = Location.from_scalars(x=3.0, y=-5.0)
+            >>> a
+            Location(frame=None, x=3.0, y=-5.0, z=0.0)
+            >>> b = a.copy()
+            >>> b
+            Location(frame=None, x=3.0, y=-5.0, z=0.0)
+            >>> a is b
+            False
+            >>> a == b
+            True
+
+            >>> a.x = 2.2
+            >>> b.z = -8.8
+            >>> a
+            Location(frame=None, x=2.2, y=-5.0, z=0.0)
+            >>> b
+            Location(frame=None, x=3.0, y=-5.0, z=-8.8)
+            >>> a == b
+            False
         """
         return Location(self._frame, self._v.copy())
 
@@ -404,7 +414,7 @@ class Orientation:  # noqa: PLW1641
         >>> an_orientation is b_orientation
         False
         >>> an_orientation == b_orientation
-        False
+        True
         >>> an_orientation.approx_equal(b_orientation)
         True
         >>> _ = an_orientation.pitch(np.pi/2)  # up 90°
@@ -563,7 +573,7 @@ class Orientation:  # noqa: PLW1641
         if self is other:
             return True
         if isinstance(other, self.__class__):
-            return self.frame == other.frame and self._r == other._r
+            return self.frame == other.frame and self.rotation == other.rotation
         return False
 
     def approx_equal(self, other: object) -> bool:
@@ -583,6 +593,38 @@ class Orientation:  # noqa: PLW1641
 
         Returns:
             The new `Orientation` object.
+
+        Examples:
+            >>> a = Orientation()
+            >>> a
+            Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
+            >>> a.pitch(_deg(180))
+            Orientation(frame=None, w=0.0, x=1.0, y=0.0, z=0.0)
+
+            >>> b = a.copy()
+            >>> b
+            Orientation(frame=None, w=0.0, x=1.0, y=0.0, z=0.0)
+            >>> a is b
+            False
+            >>> a == b
+            True
+
+            >>> b.roll(_deg(90))
+            Orientation(frame=None, w=0.0, x=0.707107, y=-0.707107, z=0.0)
+            >>> a == b
+            False
+            >>> c = Orientation.from_scalars(w=0.0, x=0.707107, y=-0.707107)
+            >>> c
+            Orientation(frame=None, w=0.0, x=0.707107, y=-0.707107, z=0.0)
+            >>> b == c
+            False
+            >>> b.approx_equal(c)
+            True
+
+            >>> b.roll(_deg(-90))
+            Orientation(frame=None, w=0.0, x=1.0, y=0.0, z=0.0)
+            >>> a == b
+            True
         """
         return Orientation(self.frame, self._q.copy())
 
@@ -721,19 +763,6 @@ class Pose:  # noqa: PLW1641
         >>> print(world_frame.frame)
         None
 
-        >>> global_frame = world_frame.copy()
-        >>> global_frame
-        Pose(frame=None, location=(0.0, 0.0, 0.0), orientation=(1.0, 0.0, 0.0, 0.0), label='World')
-        >>> world_frame is global_frame
-        False
-        >>> world_frame == global_frame
-        True
-        >>> global_frame.label = "Global"
-        >>> global_frame
-        Pose(frame=None, location=(0.0, 0.0, 0.0), orientation=(1.0, 0.0, 0.0, 0.0), label='Global')
-        >>> world_frame == global_frame
-        True
-
         >>> agent_location = world_frame.new_location([3, 5, -2])
         >>> agent_location
         Location(frame='World', x=3.0, y=5.0, z=-2.0)
@@ -838,7 +867,32 @@ class Pose:  # noqa: PLW1641
         return False
 
     def copy(self) -> Pose:
-        return Pose(self.frame, self.location, self.orientation, self.label)
+        """Create a copy of this `Pose`.
+
+        You can mutate the copy without changing the original.
+
+        Returns:
+            The new `Pose` object.
+
+        Examples:
+            >>> world_frame = Pose(label="World")
+            >>> world_frame
+            Pose(frame=None, location=(0.0, 0.0, 0.0), orientation=(1.0, 0.0, 0.0, 0.0), label='World')
+            >>> global_frame = world_frame.copy()
+            >>> world_frame is global_frame
+            False
+            >>> world_frame == global_frame
+            True
+            >>> global_frame.label = "Global"
+            >>> global_frame
+            Pose(frame=None, location=(0.0, 0.0, 0.0), orientation=(1.0, 0.0, 0.0, 0.0), label='Global')
+            >>> world_frame == global_frame
+            True
+        """  # noqa: E501
+        return Pose(
+            self.frame, self.location, self.orientation, self.label
+            # self.frame, self.location.copy(), self.orientation.copy(), self.label
+        )
 
     def new_pose(
         self,
