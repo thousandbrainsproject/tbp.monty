@@ -14,6 +14,7 @@ from typing import Any, Literal
 
 import numpy as np
 
+from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
@@ -23,7 +24,6 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
-from tbp.monty.frameworks.models.states import GoalState, State
 
 __all__ = ["MotorSystem"]
 
@@ -64,9 +64,9 @@ class MotorSystem:
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
 
-    def set_driving_goal_state(self, goal: GoalState | None) -> None:
-        """Set the driving goal state."""
-        self._policy.set_driving_goal_state(goal)
+    def set_driving_goal(self, goal: Goal | None) -> None:
+        """Set the driving goal."""
+        self._policy.set_driving_goal(goal)
 
     def pre_episode(self) -> None:
         """Pre episode hook."""
@@ -92,7 +92,7 @@ class MotorSystem:
         ctx: RuntimeContext,
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
-        percept: State,
+        percept: Message,
     ) -> list[Action]:
         """Defines the structure for __call__.
 

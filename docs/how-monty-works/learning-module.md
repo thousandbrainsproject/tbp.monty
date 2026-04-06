@@ -3,7 +3,7 @@ title: Learning Module
 ---
 Learning modules are the core modeling system of Monty. They are responsible for learning models from the incoming data (either from a sensor module or another learning module). Their input and output formats are features at a pose. **Using the displacement between two consecutive poses, they can learn object models of features relative to each other and recognize objects** that they already know, independent of where they are in the world. How exactly this happens is up to each learning module and we have several different implementations for this.
 
-Generally, each learning module contains a buffer, which functions as a short term memory, and some form of long term memory that stores models of objects. Both can then be used to generate hypotheses about what is currently being sensed, update, and communicate these hypotheses. If certainty about a sensed object is reached, information from the buffer can be processed and integrated into the long term memory. Finally, each learning module can also receive and send target states, using a goal state generator, to guide the exploration of the environment.
+Generally, each learning module contains a buffer, which functions as a short term memory, and some form of long term memory that stores models of objects. Both can then be used to generate hypotheses about what is currently being sensed, update, and communicate these hypotheses. If certainty about a sensed object is reached, information from the buffer can be processed and integrated into the long term memory. Finally, each learning module can also receive and send target states, using a goal generator, to guide the exploration of the environment.
 
 # Specific Implementations
 
