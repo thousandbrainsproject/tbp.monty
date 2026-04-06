@@ -7,7 +7,7 @@ improved-metric: noise, multi-object
 output-type: prototype, monty-feature, PR, analysis
 skills: python, research, monty
 contributor: ramyamounir
-status: in-progress
+status: completed
 ---
 
 In the current implementation, Monty initializes its entire hypothesis space during the first step of an episode.
@@ -19,4 +19,4 @@ A more flexible approach is to remove the special sampling procedure of the firs
 Hypotheses should be initialized, expanded, or replaced at any point during episode, based on evidence scores rather than episode boundaries.
 
 > [!NOTE]
-> See the [feat.dynamic_resizing](https://github.com/thousandbrainsproject/feat.dynamic_resizing) feature branch to see the current prototype. This prototype validated that removing the special sampling procedure at the beginning of the episode and allowing Monty to sample new hypotheses during the episode improves Monty's recognition accuracy and reduces the pose error. This feature is planned to be integrated into Monty.
+> This has been implemented as part of the `BurstSamplingHypothesesUpdater`. Burst sampling removes the special first-step initialization entirely; instead, hypotheses are sampled through bursts triggered by evidence slopes at any point during inference. This means the system is no longer anchored to a single initial observation. See the [burst sampling](../../how-monty-works/learning-module/evidence-based-learning-module.md#burst-sampling) documentation for details.

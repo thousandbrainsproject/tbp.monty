@@ -16,6 +16,7 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
@@ -24,7 +25,10 @@ from tbp.monty.frameworks.loggers.graph_matching_loggers import (
     DetailedGraphMatchingLogger,
     SelectiveEvidenceLogger,
 )
-from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule, LMMemory
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    LearningModule,
+    LMMemory,
+)
 from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_state_generation import GraphGoalStateGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
@@ -56,9 +60,7 @@ class MontyForGraphMatching(MontyBase):
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
-    def pre_episode(
-        self, rng: np.random.RandomState, primary_target, semantic_id_to_label=None
-    ) -> None:
+    def pre_episode(self, primary_target, semantic_id_to_label=None) -> None:
         """Reset values and call sub-pre_episode functions."""
         self._is_done = False
         self.reset_episode_steps()
@@ -68,10 +70,10 @@ class MontyForGraphMatching(MontyBase):
         self.semantic_id_to_label = semantic_id_to_label
 
         for lm in self.learning_modules:
-            lm.pre_episode(rng, primary_target)
+            lm.pre_episode(primary_target)
 
         for sm in self.sensor_modules:
-            sm.pre_episode(rng)
+            sm.pre_episode()
 
         logger.debug(
             f"Models in memory: {self.learning_modules[0].get_all_known_object_ids()}"
@@ -228,7 +230,7 @@ class MontyForGraphMatching(MontyBase):
     # ======================= Private ==========================
     # ------------------- Main Algorithm -----------------------
 
-    def _step_learning_modules(self):
+    def _step_learning_modules(self, ctx: RuntimeContext):
         """Collect inputs and step each learning module."""
         for i in range(len(self.learning_modules)):
             sensory_inputs = self._collect_inputs_to_lm(i)
@@ -244,7 +246,7 @@ class MontyForGraphMatching(MontyBase):
                     )
                 lm_step_method = getattr(self.learning_modules[i], self.step_type)
                 assert callable(lm_step_method), f"{lm_step_method} must be callable"
-                lm_step_method(sensory_inputs)
+                lm_step_method(ctx, sensory_inputs)
                 if self.step_type == "matching_step":
                     logger.debug(f"Stepping learning module {i}")
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
@@ -543,9 +545,7 @@ class MontyForGraphMatching(MontyBase):
 class GraphLM(LearningModule):
     """General Learning Module that contains a graph memory."""
 
-    def __init__(
-        self, rng: np.random.RandomState, initialize_base_modules=True
-    ) -> None:
+    def __init__(self, initialize_base_modules=True) -> None:
         """Initialize general Learning Module based on graphs.
 
         Args:
@@ -555,7 +555,6 @@ class GraphLM(LearningModule):
                 child LMs. Defaults to True.
         """
         super().__init__()
-        self._rng = rng
         self.buffer = FeatureAtLocationBuffer()
         self.buffer.reset()
         self.learning_module_id = "LM_0"
@@ -589,11 +588,10 @@ class GraphLM(LearningModule):
             self.possible_poses,
         ) = self.graph_memory.get_initial_hypotheses()
 
-    def pre_episode(self, rng: np.random.RandomState, primary_target) -> None:
+    def pre_episode(self, primary_target) -> None:
         """Set target object var and reset others from last episode.
 
         Args:
-            rng: The random number generator.
             primary_target: The primary target for the learning module/
                 Monty system to recognize (e.g. the object the agent begins on, or an
                 important object in the environment; NB that a learning module can also
@@ -601,7 +599,6 @@ class GraphLM(LearningModule):
                 it is currently on, while it is attempting to classify the
                 primary_target)
         """
-        self._rng = rng
         self.reset()
         self.buffer.reset()
         if self.gsg is not None:
@@ -615,7 +612,11 @@ class GraphLM(LearningModule):
         self.detected_pose = [None for _ in range(7)]
         self.detected_rotation_r = None
 
-    def matching_step(self, observations):
+    def matching_step(
+        self,
+        ctx: RuntimeContext,
+        observations,
+    ):
         """Update the possible matches given an observation."""
         first_movement_detected = self._agent_moved_since_reset()
         buffer_data = self._add_displacements(observations)
@@ -628,19 +629,23 @@ class GraphLM(LearningModule):
             logger.debug("we have not moved yet.")
 
         self._compute_possible_matches(
-            observations, first_movement_detected=first_movement_detected
+            ctx, observations, first_movement_detected=first_movement_detected
         )
 
         if len(self.get_possible_matches()) == 0:
             self.set_individual_ts(terminal_state="no_match")
 
         if self.gsg is not None:
-            self.gsg.step(observations)
+            self.gsg.step(ctx, observations)
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
 
-    def exploratory_step(self, observations):
+    def exploratory_step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        observations,
+    ):
         """Step without trying to recognize object (updating possible matches)."""
         buffer_data = self._add_displacements(observations)
         self.buffer.append(buffer_data)
@@ -951,10 +956,13 @@ class GraphLM(LearningModule):
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
-    def _compute_possible_matches(self, observations, first_movement_detected=True):
+    def _compute_possible_matches(
+        self, ctx: RuntimeContext, observations, first_movement_detected=True
+    ):
         """Use graph memory to get the current possible matches.
 
         Args:
+            ctx: The runtime context.
             observations: Observations to use for computing possible matches.
             first_movement_detected: Whether the agent has moved since the buffer reset
                 signal.
@@ -972,9 +980,9 @@ class GraphLM(LearningModule):
 
         logger.debug(f"query: {query}")
 
-        self._update_possible_matches(query=query)
+        self._update_possible_matches(ctx, query=query)
 
-    def _update_possible_matches(self):
+    def _update_possible_matches(self, ctx: RuntimeContext):
         # QUESTION: Should we give this a more general name? Like update_hypotheses
         # or update_state?
         # QUESTION: Should this actually be something handled in LMs?

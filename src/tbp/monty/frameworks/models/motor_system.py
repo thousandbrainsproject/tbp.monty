@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 
@@ -41,14 +40,6 @@ class MotorSystem:
     def pre_episode(self) -> None:
         """Pre episode hook."""
         self._policy.pre_episode()
-
-    def set_experiment_mode(self, mode: ExperimentMode) -> None:
-        """Sets the experiment mode.
-
-        Args:
-            mode: The experiment mode.
-        """
-        self._policy.set_experiment_mode(mode)
 
     def __call__(self, ctx: RuntimeContext) -> list[Action]:
         """Defines the structure for __call__.

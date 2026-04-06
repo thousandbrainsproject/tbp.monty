@@ -19,6 +19,7 @@ import numpy.typing as npt
 from scipy.spatial import KDTree
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
@@ -152,7 +153,6 @@ class EvidenceGraphLM(GraphLM):
 
     def __init__(
         self,
-        rng: np.random.RandomState,
         max_match_distance,
         tolerances: dict,
         feature_weights: dict,
@@ -179,7 +179,7 @@ class EvidenceGraphLM(GraphLM):
         **kwargs,
     ) -> None:
         kwargs["initialize_base_modules"] = False
-        super().__init__(rng, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         # --- LM components ---
         self.graph_memory = EvidenceGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
@@ -733,7 +733,11 @@ class EvidenceGraphLM(GraphLM):
             stats = self._add_detailed_stats(stats)
         return stats
 
-    def _update_possible_matches(self, query):
+    def _update_possible_matches(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        query,
+    ):
         """Update evidence for each hypothesis instead of removing them."""
         with self.hypotheses_updater:
             thread_list = []

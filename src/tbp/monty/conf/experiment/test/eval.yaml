@@ -5,8 +5,6 @@ defaults:
   - /experiment/config/logging/defaults@config.logging
   - /experiment/config/monty/clear_monty_config@config
   - /experiment/config/monty/patch_and_view@config.monty_config
-  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
-  - /experiment/test/config/monty/motor_system/fixed@config.monty_config.motor_system_config
   - /experiment/config/monty/args/clear_monty_args@config.monty_config
   - /experiment/config/monty/args/defaults@config.monty_config.monty_args
   - /experiment/config/environment_interface/clear_eval_env_interface_args@config

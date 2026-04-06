@@ -9,6 +9,5 @@ motor_system_args:
     action_sampler:
       _target_: tbp.monty.frameworks.actions.action_samplers.ConstantSampler
       rotation_degrees: 10.0 # Relatively large step-size
-    good_view_percentage: 0.5 # Relatively far from the object
     use_goal_state_driven_actions: true
     agent_id: ${monty.agent_id:agent_id_0}

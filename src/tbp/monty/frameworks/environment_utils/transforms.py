@@ -499,7 +499,7 @@ class DepthTo3DLocations(Transform):
             if self.world_coord and state is not None:
                 # Get agent and sensor states from state dictionary
                 agent_state = state[self.agent_id]
-                depth_state = agent_state.sensors[SensorID(sensor_id + ".depth")]
+                depth_state = agent_state.sensors[SensorID(sensor_id)]
                 agent_rotation = agent_state.rotation
                 agent_rotation_matrix = qt.as_rotation_matrix(agent_rotation)
                 agent_position = agent_state.position

@@ -128,7 +128,7 @@ config:
     # (sensor_module_1).
     sensor_module_configs:
       sensor_module_0:
-        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
         sensor_module_args:
           is_surface_sm: true
           sensor_module_id: patch
@@ -178,7 +178,7 @@ Briefly, we specified our experiment class and the number of epochs to run. We a
 - `/experiment/config/monty/patch_and_view`: the top-level Monty config object defaults that specify that we will have a sensor patch and an additional viewfinder as inputs to the system. They also specify the routing matrices between sensors, SMs and LMs (using defaults in this simple setup).
   - `monty_args`: a dictionary specifying we want 500 exploratory steps per episode.
   - `sensor_module_configs`: a dictionary specifying sensor module class and arguments. These dictionaries specify that
-    - `sensor_module_0` will be a `HabitatSM` with `is_surface_sm=True` (a small sensory patch for a surface agent). The sensor module will extract the given list of features for each patch. We won't save raw observations here since it is memory-intensive and only required for detailed logging/plotting.
+    - `sensor_module_0` will be a `CameraSM` with `is_surface_sm=True` (a small sensory patch for a surface agent). The sensor module will extract the given list of features for each patch. We won't save raw observations here since it is memory-intensive and only required for detailed logging/plotting.
     - `sensor_module_1` will be a `Probe` which we can use for logging. We could also store raw observations from the viewfinder for later visualization/analysis if needed. This sensor module is not connected to a learning module and, therefore, is not used for learning. It is called `view_finder` since it helps initialize each episode on the object.
   - `learning_module_configs`: a dictionary specifying the learning module class and arguments. This dictionary specifies that
     - `learning_module_0` will be a `GraphLM` that constructs a graph of the object being explored.

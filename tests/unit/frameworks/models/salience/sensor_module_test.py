@@ -19,6 +19,7 @@ import pytest
 import quaternion as qt
 from parameterized import parameterized_class
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
     OnObjectObservation,
@@ -62,7 +63,6 @@ def mocked_object_observation():
 class HabitatSalienceSMTest(unittest.TestCase):
     def setUp(self) -> None:
         self.sensor_module = HabitatSalienceSM(
-            rng=np.random.RandomState(42),
             sensor_module_id="test",
             salience_strategy=MagicMock(),
             return_inhibitor=MagicMock(),
@@ -74,13 +74,12 @@ class HabitatSalienceSMTest(unittest.TestCase):
         )
         self.state = AgentState(
             sensors={
-                SensorID(
-                    self.sensor_module.sensor_module_id + ".rgba"
-                ): self.default_sensor_state
+                SensorID(self.sensor_module.sensor_module_id): self.default_sensor_state
             },
             position=self.default_sensor_state.position,
             rotation=self.default_sensor_state.rotation,
         )
+        self.ctx = RuntimeContext(rng=np.random.RandomState())
 
     def test_step_snapshots_raw_observation_as_needed(self) -> None:
         self.sensor_module._save_raw_obs = self.save_raw_obs  # type: ignore[attr-defined]
@@ -88,7 +87,7 @@ class HabitatSalienceSMTest(unittest.TestCase):
         data: dict[str, Any] = MagicMock()
 
         self.sensor_module.update_state(self.state)
-        self.sensor_module.step(data)
+        self.sensor_module.step(self.ctx, data)
 
         if self.should_snapshot:  # type: ignore[attr-defined]
             self.sensor_module._snapshot_telemetry.raw_observation.assert_called_once_with(  # type: ignore[attr-defined]
@@ -98,7 +97,7 @@ class HabitatSalienceSMTest(unittest.TestCase):
             self.sensor_module._snapshot_telemetry.raw_observation.assert_not_called()  # type: ignore[attr-defined]
 
     def test_step_returns_no_percept(self) -> None:
-        self.assertIsNone(self.sensor_module.step(MagicMock()))
+        self.assertIsNone(self.sensor_module.step(self.ctx, MagicMock()))
 
     @patch("tbp.monty.frameworks.models.salience.sensor_module.on_object_observation")
     def test_step_proposes_goals_properly(
@@ -119,7 +118,7 @@ class HabitatSalienceSMTest(unittest.TestCase):
             "depth": np.zeros((64, 64)),
         }
 
-        self.sensor_module.step(data)
+        self.sensor_module.step(self.ctx, data)
         goals = self.sensor_module.propose_goal_states()
 
         self.sensor_module._salience_strategy.assert_called_once_with(  # type: ignore[attr-defined]
@@ -130,7 +129,7 @@ class HabitatSalienceSMTest(unittest.TestCase):
             sentinel.center_location, locations
         )
         self.sensor_module._weight_salience.assert_called_once_with(
-            sentinel.salience_map, sentinel.ior_weights
+            self.ctx, sentinel.salience_map, sentinel.ior_weights
         )
 
         self.assertEqual(len(goals), locations.shape[0])
@@ -163,12 +162,12 @@ class HabitatSalienceSMTest(unittest.TestCase):
 class HabitatSalienceSMPrivateTest(unittest.TestCase):
     def setUp(self) -> None:
         self.sensor_module = HabitatSalienceSM(
-            rng=np.random.RandomState(42),
             sensor_module_id="test",
             salience_strategy=MagicMock(),
             return_inhibitor=MagicMock(),
             snapshot_telemetry=MagicMock(),
         )
+        self.ctx = RuntimeContext(rng=np.random.RandomState())
 
     def test_normalize_salience_does_clips_uniform_salience_between_0_and_1(
         self,
@@ -195,12 +194,14 @@ class HabitatSalienceSMPrivateTest(unittest.TestCase):
             return_value=sentinel.normalized
         )
 
-        weighted = self.sensor_module._weight_salience(salience, ior_weights)
+        weighted = self.sensor_module._weight_salience(self.ctx, salience, ior_weights)
 
         self.sensor_module._decay_salience.assert_called_once_with(
             salience, ior_weights
         )
-        self.sensor_module._randomize_salience.assert_called_once_with(sentinel.decayed)
+        self.sensor_module._randomize_salience.assert_called_once_with(
+            self.ctx, sentinel.decayed
+        )
         self.sensor_module._normalize_salience.assert_called_once_with(
             sentinel.randomized
         )

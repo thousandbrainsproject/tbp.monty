@@ -14,6 +14,7 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environment_utils.graph_utils import get_edge_index
 from tbp.monty.frameworks.models.graph_matching import GraphLM, GraphMemory
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
@@ -30,7 +31,6 @@ class DisplacementGraphLM(GraphLM):
 
     def __init__(
         self,
-        rng: np.random.RandomState,
         k=None,
         match_attribute=None,
         tolerance=0.001,
@@ -40,7 +40,6 @@ class DisplacementGraphLM(GraphLM):
         """Initialize Learning Module.
 
         Args:
-            rng: The random number generator.
             k: How many nearest neighbors should nodes in graphs connect to.
             match_attribute: Which displacement to use for matching.
                 Should be in ['displacement', 'PPF'].
@@ -55,7 +54,7 @@ class DisplacementGraphLM(GraphLM):
                 thresholds based on e.g. surface normal angle difference, or principal
                 curvature magnitude difference.
         """
-        super().__init__(rng=rng)
+        super().__init__()
         self.graph_memory = DisplacementGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
             k=k,
@@ -188,7 +187,9 @@ class DisplacementGraphLM(GraphLM):
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
-    def _compute_possible_matches(self, observation, first_movement_detected=True):
+    def _compute_possible_matches(
+        self, ctx: RuntimeContext, observation, first_movement_detected=True
+    ):
         """Use the current observation to narrow down the possible matches.
 
         This is framed as a prediction problem. We take the current observation
@@ -199,6 +200,7 @@ class DisplacementGraphLM(GraphLM):
         we remove the object from the possible matches.
 
         Args:
+            ctx: The runtime context.
             observation: The current observation.
             first_movement_detected: Whether the agent has moved yet. False on the first
                 step.
@@ -222,15 +224,22 @@ class DisplacementGraphLM(GraphLM):
 
         logger.debug(f"query: {query}")
 
-        self._update_possible_matches(query=query, target=target)
+        self._update_possible_matches(ctx, query=query, target=target)
 
-    def _update_possible_matches(self, query, target, threshold=0):
+    def _update_possible_matches(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        query,
+        target,
+        threshold=0,
+    ):
         """Update the list of possible matches.
 
         This is done by excluding objects that had a prediction
         error > threshold.
 
         Args:
+            ctx: The runtime context.
             query: Incoming displacement.
             target: Whether we expect to be on the object of not after the given
                 displacement.

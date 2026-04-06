@@ -239,7 +239,6 @@ jobs:
             exit 1
           fi
 
-
   check_types_monty:
     name: check-types-monty
     runs-on:
@@ -484,8 +483,8 @@ jobs:
           unzip -qq ~/tbp/data/omniglot/python/strokes_background.zip -d ~/tbp/data/omniglot/python
           mkdir -p ~/tbp/data/worldimages
           curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar -xzf - -C ~/tbp/data
-          mkdir -p ~/tbp/results/monty/pretrained_models/pretrained_ycb_v11
-          curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v11.tgz | tar -xzf - -C ~/tbp/results/monty/pretrained_models
+          mkdir -p ~/tbp/results/monty/pretrained_models/pretrained_ycb_v12
+          curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.tgz | tar -xzf - -C ~/tbp/results/monty/pretrained_models
       - name: Test tutorials
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
@@ -520,7 +519,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: '**/uv.lock'
+          cache-dependency-glob: "**/uv.lock"
       - name: Create uv environment
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty

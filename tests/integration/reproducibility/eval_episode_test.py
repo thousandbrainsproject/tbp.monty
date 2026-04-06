@@ -123,11 +123,7 @@ class EvalEpisodeTest(unittest.TestCase):
         self.output_dir = Path(tempfile.mkdtemp())
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.training_config = hydra_config(
-                "reproducibility_supervised_training",
-                self.output_dir,
-                fixed_actions_path=(
-                    Path(__file__).parent / "supervised_training_actions.jsonl"
-                ),
+                "reproducibility_supervised_training", self.output_dir
             )
             parallel_run(self.training_config)
 

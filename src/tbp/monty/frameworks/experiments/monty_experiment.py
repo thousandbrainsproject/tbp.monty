@@ -21,6 +21,7 @@ import torch
 from omegaconf import DictConfig
 from typing_extensions import Self
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterface,
     EnvironmentInterfacePerObject,
@@ -38,6 +39,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
     SensorModule,
 )
+from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
@@ -119,7 +121,7 @@ class MontyExperiment:
         """
         self.init_loggers(self.config["logging"])
         logger.info(self.config)
-        self.model = self.init_model(
+        self.model: MontyBase = self.init_model(
             monty_config=config["monty_config"],
             model_path=self.model_path,
         )
@@ -152,7 +154,7 @@ class MontyExperiment:
             lm_class = lm_cfg["learning_module_class"]
             lm_args = lm_cfg["learning_module_args"]
             assert issubclass(lm_class, LearningModule)
-            learning_modules[lm_id] = lm_class(rng=self.rng, **lm_args)
+            learning_modules[lm_id] = lm_class(**lm_args)
             learning_modules[lm_id].learning_module_id = lm_id
 
         # Create sensor modules
@@ -162,7 +164,7 @@ class MontyExperiment:
             sm_class = sm_cfg["sensor_module_class"]
             sm_args = sm_cfg["sensor_module_args"]
             assert issubclass(sm_class, SensorModule)
-            sensor_modules[sm_id] = sm_class(rng=self.rng, **sm_args)
+            sensor_modules[sm_id] = sm_class(**sm_args)
 
         # Create motor system
         motor_system_config = monty_config.pop("motor_system_config")
@@ -485,12 +487,29 @@ class MontyExperiment:
     def run_episode(self):
         """Run one episode until model.is_done."""
         self.pre_episode()
-        for step, observation in enumerate(self.env_interface):
-            self.pre_step(step, observation)
-            self.model.step(observation)
-            self.post_step(step, observation)
+        step = 0
+        ctx = RuntimeContext(rng=self.rng)
+        while True:
+            try:
+                observations = self.env_interface.step(ctx, first=(step == 0))
+            except StopIteration:
+                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
+                #       episode termination. This is a holdover from when we used
+                #       iterators. However, this also abdicates control of the
+                #       experiment to the policy. We should find a better way to handle
+                #       this, so that the experiment can control the episode termination
+                #       fully. For example, we know how many steps the policy will take,
+                #       so the experiment can set max steps based on that knowledge
+                #       alone.
+                break
+
+            self.pre_step(step, observations)
+            self.model.step(ctx, observations)
+            self.post_step(step, observations)
             if self.model.is_done or step >= self.max_steps:
                 break
+            step += 1
+
         self.post_episode(step)
 
     def pre_episode(self):
@@ -508,7 +527,7 @@ class MontyExperiment:
 
         self.reset_episode_rng()
 
-        self.model.pre_episode(self.rng)
+        self.model.pre_episode()
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps

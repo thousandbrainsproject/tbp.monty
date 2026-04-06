@@ -10,14 +10,14 @@ from __future__ import annotations
 
 import numpy as np
 
+from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
+    BurstSamplingHypothesesUpdater,
+)
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
-)
-from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (  # noqa: E501
-    ResamplingHypothesesUpdater,
 )
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
@@ -69,12 +69,10 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         # TODO: Remove initialization logic from `pre_episode`
         self.init_pre_episode = False
 
-    def pre_episode(
-        self, rng: np.random.RandomState, primary_target, semantic_id_to_label=None
-    ) -> None:
+    def pre_episode(self, primary_target, semantic_id_to_label=None) -> None:
         if not self.init_pre_episode:
             self.init_pre_episode = True
-            return super().pre_episode(rng, primary_target, semantic_id_to_label)
+            return super().pre_episode(primary_target, semantic_id_to_label)
 
         # reset terminal state
         self._is_done = False
@@ -107,9 +105,9 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
 
 class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
     def __init__(self, *args, **kwargs):
-        # Use ResamplingHypothesesUpdater by default.
+        # Use BurstSamplingHypothesesUpdater by default.
         if not hasattr(kwargs, "hypotheses_updater_class"):
-            kwargs["hypotheses_updater_class"] = ResamplingHypothesesUpdater
+            kwargs["hypotheses_updater_class"] = BurstSamplingHypothesesUpdater
         super().__init__(*args, **kwargs)
         self.last_location = {}
 

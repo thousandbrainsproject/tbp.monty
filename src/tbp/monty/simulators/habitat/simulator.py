@@ -594,24 +594,32 @@ class HabitatSim(HabitatActuator, Simulator):
 
     @property
     def states(self) -> ProprioceptiveState:
-        """Returns proprioceptive state of the agents and sensors."""
+        """Returns proprioceptive state of the agents and sensors.
+
+        Note: A Monty RGBD sensor is represented by separate RGBA and depth sensors in
+        Habitat (and a separate semantic sensor, if enabled). Their positions and
+        rotations are identical (they belong to the same body), so we arbitrarily
+        return the position and rotation from whichever sensor we see first.
+        """
         result = ProprioceptiveState()
         for agent_index, sim_agent in enumerate(self._sim.agents):
             # Get agent and sensor poses from simulator
             agent_node = sim_agent.scene_node
-
+            agent = self._agents[agent_index]
             sensors: dict[SensorID, SensorState] = {}
             for sensor_id, sensor in agent_node.node_sensors.items():
+                monty_id = SensorID(agent.habitat_to_monty_sensor_id_map[sensor_id])
+                if monty_id in sensors:
+                    continue
                 rotation = sim_utils.quat_from_magnum(sensor.node.rotation)
-                sensors[SensorID(sensor_id)] = SensorState(
+                sensors[monty_id] = SensorState(
                     position=sensor.node.translation,
                     rotation=rotation,
                 )
 
             # Update agent/module state
-            agent_id = self._agents[agent_index].agent_id
             rotation = sim_utils.quat_from_magnum(agent_node.rotation)
-            result[agent_id] = AgentState(
+            result[agent.agent_id] = AgentState(
                 position=agent_node.translation,
                 rotation=rotation,
                 sensors=sensors,

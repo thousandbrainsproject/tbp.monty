@@ -27,7 +27,7 @@ config:
     # (sensor_module_1).
     sensor_module_configs:
       sensor_module_0:
-        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
         sensor_module_args:
           is_surface_sm: true
           sensor_module_id: patch
