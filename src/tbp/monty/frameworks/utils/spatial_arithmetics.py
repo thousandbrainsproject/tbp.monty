@@ -17,6 +17,8 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
+
 logger = logging.getLogger(__name__)
 
 
@@ -84,8 +86,6 @@ def get_angle(vec1, vec2):
     Returns:
         angle in radians
     """
-    # unit_vector_1 = vec1 / np.linalg.norm(vec1)
-    # unit_vector_2 = vec2 / np.linalg.norm(vec2)
     dot_product = np.dot(vec1, vec2)
     return np.arccos(np.clip(dot_product, -1, 1))
 
@@ -113,8 +113,8 @@ def get_angle_beefed_up(v1, v2):
     if np.all(v1 == 0) or np.all(v2 == 0):
         return np.inf
 
-    v1_u = v1 / np.linalg.norm(v1)
-    v2_u = v2 / np.linalg.norm(v2)
+    v1_u = normalize(v1)
+    v2_u = normalize(v2)
 
     result = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
