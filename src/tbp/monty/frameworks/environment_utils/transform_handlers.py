@@ -34,7 +34,6 @@ __all__ = [
     "identity_transform",
 ]
 
-
 @dataclass
 class TransformContext:
     rng: np.random.RandomState
@@ -75,7 +74,6 @@ class TransformPipeline(Transform):
     def __call__(
         self, ctx: TransformContext, observations: SensorObservation
     ) -> SensorObservation:
-        print("TRANSFORM PIPELINE CALLED")
         return self._transform(ctx, observations)
 
 
@@ -131,8 +129,6 @@ class MissingToMaxDepth(Transform):
         Returns:
             Observations, same as input, with missing data modified in place
         """
-        print("MISSING TO MAX DEPTH TRANSFORM CALLED")
-        print_dict_structure(observations)
         m = np.where(observations["depth"] <= self._threshold)
         observations["depth"][m] = self._max_depth
         return observations
@@ -186,9 +182,7 @@ class AddNoiseToRawDepthImage(Transform):
             )
             observations["depth"] += noise
         else:
-            raise NoDepthSensorPresent(
-                "NO DEPTH SENSOR PRESENT. Don't use this transform"
-            )
+            raise NoDepthSensorPresent
         return observations
 
 
@@ -370,7 +364,7 @@ class DepthTo3DLocations(Transform):
         self._inv_k = 0
         self._h = 0
         self._w = 0
-        print("IN DepthTo3DLocations INIT")
+
         # Pinhole camera, focal length fx = fy
         hfov = float(hfov * np.pi / 180.0)
 
@@ -480,12 +474,8 @@ class DepthTo3DLocations(Transform):
                     sensor. Has the same structure as "semantic_3d". Included only
                     when `self.get_all_points` is `True`.
         """
-        print("IN DEPTH TO 3D CALL")
         state = ProprioceptiveState({self._agent_id: state})
-        # for i, sensor_id in enumerate(self.sensor_ids):
-        # print(sensor_id)
-        # print(observations[self._agent_id][sensor_id].keys())
-        # agent_obs = observations[self._agent_id][sensor_id]
+
         depth_patch = observations["depth"]
 
         # We need a semantic map that masks off-object pixels. We can use the

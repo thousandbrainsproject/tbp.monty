@@ -68,8 +68,8 @@ class GaussianSmoothingTest(unittest.TestCase):
         all_equal = np.allclose(padded_img, padded_img_ground_truth, atol=1e-5)
         self.assertTrue(all_equal, "Padding values do not match.")
 
-    def test_gaussian_smoothing(self):
-        # TEST CASE 1
+    def test_gaussian_smoothing_preserves_image(self):
+
         img = np.ones((64, 64))
         gaussian_smoother = GaussianSmoothing(
             None, agent_id=AgentID("0"), sigma=15, kernel_width=15
@@ -84,7 +84,7 @@ class GaussianSmoothingTest(unittest.TestCase):
         all_equal = np.allclose(img, filtered_img, atol=1e-5)
         self.assertTrue(all_equal, "Filtered pixel values do not match.")
 
-        # TEST CASE 2
+    def test_gaussian_smoothing_on_non_uniform_image(self):
         img = np.array([[1, 3, 7, 4], [5, 5, 2, 6], [4, 9, 3, 1], [2, 8, 5, 7]])
 
         filtered_img_ground_truth = np.array(
