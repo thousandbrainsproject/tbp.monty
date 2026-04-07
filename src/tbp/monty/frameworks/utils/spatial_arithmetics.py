@@ -51,9 +51,6 @@ def project_onto_tangent_plane(v: np.ndarray, n: np.ndarray) -> np.ndarray:
 
     Returns:
         The projection of v onto the plane perpendicular to n.
-
-    Raises:
-        ValueError: If n is a near-zero vector.
     """
     n = normalize(n)
     return v - np.dot(v, n) * n
