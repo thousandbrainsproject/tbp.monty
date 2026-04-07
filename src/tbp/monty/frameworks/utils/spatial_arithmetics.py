@@ -17,8 +17,6 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
-
 logger = logging.getLogger(__name__)
 
 
