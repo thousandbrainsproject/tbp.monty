@@ -6,9 +6,9 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from tbp.monty.frameworks.models.states import State
+from tbp.monty.cmp import Message
 
 
-class FakeState(State):
+class FakeMessage(Message):
     def __init__(self):
         pass

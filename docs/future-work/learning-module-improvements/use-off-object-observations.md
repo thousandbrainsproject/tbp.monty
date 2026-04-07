@@ -18,7 +18,7 @@ Currently we have methods to move the sensor back onto the object, however we do
 *Example of a sensor moving off of an object and observing nothing.*
 
 To address this, we need to update how these observations are processed such that:
-1. These observations are formulated as an appropriate "null"-type observation - there is no surface to observe, and so there should be no morphological features. However, there would still be a location (e.g. where the finger tip is hovering, or an eye looking into the far distance), and there can be non-morphological features like color. In the `State` class, this would likely involve setting the morphological features to a `None` type value.
+1. These observations are formulated as an appropriate "null"-type observation - there is no surface to observe, and so there should be no morphological features. However, there would still be a location (e.g. where the finger tip is hovering, or an eye looking into the far distance), and there can be non-morphological features like color. In the `Message` class, this would likely involve setting the morphological features to a `None` type value.
 2. These observations are still passed to the learning module.
 3. If a hypothesis predicts an observation, then the learning module's evidence update appropriately results in negative evidence, as no object model should ever store a "null" feature that would match this observation.
 
