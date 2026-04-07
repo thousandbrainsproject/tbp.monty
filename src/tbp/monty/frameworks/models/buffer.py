@@ -13,7 +13,7 @@ import copy
 import json
 import logging
 import time
-from typing import Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar
 
 import numpy as np
 import numpy.typing as npt
@@ -23,6 +23,9 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
+
+if TYPE_CHECKING:
+    from tbp.monty.cmp import Message
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +42,7 @@ class FeatureAtLocationBuffer:
         self.locations = {}
         self.features = {}
         self.on_object = []
-        self.input_states = []
+        self.input_percepts = []
 
         self.displacements = {}
 
@@ -101,39 +104,39 @@ class FeatureAtLocationBuffer:
     def append(self, list_of_data):
         """Add an observation to the buffer. Must be features at locations.
 
-        TODO S: Store state objects instead of list of data?
-        A provisional version of this is implemented below, as the GSG uses State
-        objects for computations.
+        TODO S: Store messages instead of list of data?
+        A provisional version of this is implemented below, as the GSG uses
+        messages for computations.
         """
         any_obs_on_obj = False
-        for state in list_of_data:
-            input_channel = state.sender_id
+        for msg in list_of_data:
+            input_channel = msg.sender_id
 
-            self.channel_sender_types[input_channel] = state.sender_type
+            self.channel_sender_types[input_channel] = msg.sender_type
 
-            self._add_loc_to_location_buffer(input_channel, state.location)
+            self._add_loc_to_location_buffer(input_channel, msg.location)
             if input_channel not in self.features:
                 self.features[input_channel] = {}
-            for attr in state.morphological_features:
-                attr_val = state.morphological_features[attr]
+            for attr in msg.morphological_features:
+                attr_val = msg.morphological_features[attr]
                 self._add_attr_to_feature_buffer(input_channel, attr, attr_val)
             # TODO S: separate non-morphological features from morphological features?
             # May cause problems with graph.x array representation. Could be added when
             # using separate models for features and morphology
-            for attr in state.non_morphological_features:
-                attr_val = state.non_morphological_features[attr]
+            for attr in msg.non_morphological_features:
+                attr_val = msg.non_morphological_features[attr]
                 self._add_attr_to_feature_buffer(input_channel, attr, attr_val)
-            for attr in state.displacement:
-                attr_val = state.displacement[attr]
+            for attr in msg.displacement:
+                attr_val = msg.displacement[attr]
                 self._add_disp_to_displacement_buffer(input_channel, attr, attr_val)
-            on_obj = state.get_on_object()
+            on_obj = msg.get_on_object()
             self._add_attr_to_feature_buffer(input_channel, "on_object", on_obj)
             if on_obj:
                 any_obs_on_obj = True
         self.on_object.append(any_obs_on_obj)  # TODO S: remove?
 
-    def append_input_states(self, input_state):
-        self.input_states.append(input_state)
+    def append_input_percepts(self, input_percept: Message) -> None:
+        self.input_percepts.append(input_percept)
 
     def update_stats(self, stats, update_time=True, append=True, init_list=True):
         """Update statistics for this step in the episode."""
@@ -253,24 +256,24 @@ class FeatureAtLocationBuffer:
         on_object_ids = np.where(self.features[input_channel]["on_object"])[0]
         return np.array(self.locations[input_channel])[on_object_ids]
 
-    def get_all_input_states(self):
-        """Get all the input states that the buffer's parent LM has observed.
+    def get_all_input_percepts(self) -> list[Message]:
+        """Get all the percept inputs that the buffer's parent LM has observed.
 
         Returns:
-            All the input states that the buffer's parent LM has observed.
+            All the percept inputs that the buffer's parent LM has observed.
         """
-        return self.input_states
+        return self.input_percepts
 
-    def get_previous_input_states(self):
-        """Get previous State inputs received by the buffer's parent LM.
+    def get_previous_input_percepts(self):
+        """Get previous percept inputs received by the buffer's parent LM.
 
         i.e. in the last time step.
 
         Returns:
-            The previous input states.
+            The previous percept inputs.
         """
-        if len(self.input_states) > 1:
-            return self.input_states[-2]
+        if len(self.input_percepts) > 1:
+            return self.input_percepts[-2]
         return None
 
     def get_nth_displacement(self, n, input_channel):
@@ -399,28 +402,28 @@ class FeatureAtLocationBuffer:
         # TODO: rename, this is including exploration steps
         return np.sum(self.stats["lm_processed_steps"])
 
-    def get_num_goal_states_generated(self):
-        """Return number of goal states generated by the LM's GSG since episode start.
+    def get_num_goals_generated(self):
+        """Return number of goals generated by the LM's GSG since episode start.
 
         Note: use the length, not the sum.
         """
         return len(self.stats["goal_state_achieved"])
 
     def get_matching_step_when_output_goal_set(self):
-        """Return matching step when last goal-state was generated.
+        """Return matching step when last goal was generated.
 
-        Return the LM matching step associated with the last time a goal-state was
+        Return the LM matching step associated with the last time a goal was
         generated.
         """
         return self.stats["matching_step_when_output_goal_set"][-1]
 
     def get_num_steps_post_output_goal_generated(self):
-        """Return number of steps since last output goal-state.
+        """Return number of steps since last output goal.
 
         Return the number of Monty-matching steps that have elapsed since the last
-        time an output goal-state was generated.
+        time an output goal was generated.
         """
-        if self.get_num_goal_states_generated() == 0:
+        if self.get_num_goals_generated() == 0:
             # No previous jumps attempted, so this is just the number
             # of Monty matching steps that have taken place in the episode
             return self.get_num_matching_steps()
@@ -458,7 +461,7 @@ class FeatureAtLocationBuffer:
 
         # If we reach here, no sensory channels were found but channels exist
         # This means we have channels but none are SMs that output CMP-compliant
-        # State observations (e.g., only view_finder, LM)
+        # Message observations (e.g., only view_finder, LM)
         raise ValueError(
             f"No sensory input channels found in buffer. "
             f"Available channels: {all_channels}. "
