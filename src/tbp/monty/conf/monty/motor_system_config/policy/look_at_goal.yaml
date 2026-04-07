@@ -1,0 +1,5 @@
+# @package experiment.config.monty_config.motor_system_config.policy_selector.policy
+
+_target_: tbp.monty.frameworks.models.salience.motor_policy.LookAtGoal
+agent_id: agent_id_0
+sensor_module_id: view_finder
