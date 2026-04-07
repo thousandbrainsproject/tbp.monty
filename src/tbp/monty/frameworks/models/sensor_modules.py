@@ -322,16 +322,14 @@ class ObservationProcessor:
             rgba = rgba_feat[center_row_col, center_row_col]
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
-        # if "mock_obs" in self._features:
-        #     mock_obs = np.array([.1, .2, .3, .4, .5, .6, .7, .8, .9])
-        #     features["mock_obs"] = mock_obs
         if "local_binary_pattern" in self._features:
             patch = rgba_feat[:, :, :3]
             gray = rgb2gray(patch)
-            gray = (gray * 255).astype(np.uint8) # LBP should be done with ints
-            lbp = local_binary_pattern(gray, P=8, R=1, method="uniform")
-            n_bins = 10
-
+            gray = (gray * 255).astype(np.uint8)
+            P = 8
+            R = 1
+            lbp = local_binary_pattern(gray, P, R, method="ror")
+            n_bins = int(lbp.max() + 1)
             hist, _ = np.histogram(
                 lbp.ravel(),
                 bins=n_bins,

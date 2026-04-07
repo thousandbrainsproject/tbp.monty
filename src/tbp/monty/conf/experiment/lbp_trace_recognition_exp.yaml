@@ -1,6 +1,6 @@
 defaults:
   - config/eval
-  - config/logging/detailed_evidence_lm # changed to turn off wandb logging and increase logging for debugging
+  - config/logging/csv # changed to turn off wandb logging and increase logging for debugging
   - config/monty/patch_and_view_lbp_trace@config.monty_config
   - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
   - config/monty/learning_modules/lower_max_nneighbors_1lm@config.monty_config.learning_module_configs
@@ -12,7 +12,7 @@ defaults:
 
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:
-  model_name_or_path: /home/tristan_weldon/tbp/results/monty/pretrained_models/my_trained_models/supervised_pre_training_lbp_trace/pretrained
+  model_name_or_path: /home/tristan_weldon/tbp/results/monty/pretrained_models/my_trained_models/spt_lbp_ror_distinct/pretrained
   n_eval_epochs: ${benchmarks.rotations_all_count}
   logging:
     wandb_group: benchmark_experiments

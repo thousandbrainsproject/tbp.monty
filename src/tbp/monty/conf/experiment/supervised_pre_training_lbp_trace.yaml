@@ -18,8 +18,8 @@ config:
   n_train_epochs: ${benchmarks.rotations_all_count}
   logging:
     output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
-    #python_log_level: INFO
-    run_name: supervised_pre_training_lbp_trace
+    python_log_level: INFO
+    run_name: spt_lbp_ror_distinct
   monty_config:
     monty_args:
       num_exploratory_steps: 500
@@ -41,8 +41,7 @@ config:
               pose_vectors: ${np.list_eval:[np.pi / 8, np.pi * 2, np.pi * 2]}
               principal_curvatures_log: [1, 1]
               hsv: [0.1, 1, 1]
-              local_binary_pattern: 1 # LBP_PARAMS
-              #mock_obs: [1, 1, 1, 1, 1, 1, 1, 1, 1]
+              local_binary_pattern: ${np.ones:256} # LBP_PARAMS
           # NOTE: Learning works with any LM type. For instance you can use
           # the following code to run learning with the EvidenceGraphLM:
           # learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
