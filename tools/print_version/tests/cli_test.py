@@ -57,7 +57,3 @@ class TestPrintVersionScript(unittest.TestCase):
         with patch.object(sys, "argv", test_args):
             with self.assertRaises(SystemExit):
                 main()
-
-
-if __name__ == "__main__":
-    unittest.main()
