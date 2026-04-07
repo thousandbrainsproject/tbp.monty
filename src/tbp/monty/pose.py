@@ -12,6 +12,8 @@ import numpy as np
 from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
+
 # A type alias for a 1D array of `float`
 FloatVector = np.ndarray
 # FloatVector = np.ndarray[tuple[int], np.dtype[np.float64]]
@@ -164,7 +166,7 @@ class Location:  # noqa: PLW1641
         self._v[2] = z
 
     @property
-    def position(self) -> tuple[float]:
+    def position(self) -> VectorXYZ:  # was: tuple[float]:
         """This `Location` as an (_x_, _y_, _z_) tuple."""
         return tuple(self._v)
 
@@ -345,6 +347,16 @@ class Location:  # noqa: PLW1641
 
         Returns:
             The new `Location` object.
+
+        Examples:
+            >>> fwd = Location.from_scalars(x=3, y=-5, z=8)
+            >>> fwd
+            Location(frame=None, x=3.0, y=-5.0, z=8.0)
+            >>> inv = fwd.inverse()
+            >>> inv
+            Location(frame=None, x=-3.0, y=5.0, z=-8.0)
+            >>> inv.inverse() == fwd
+            True
         """
         v = -self._v
         return Location(self.frame, v)
@@ -385,7 +397,7 @@ class Location:  # noqa: PLW1641
 class Orientation:  # noqa: PLW1641
     r"""An orientation (rotation) in a given _reference frame_.
 
-    Rotation amounts are expressed in radians.
+    Rotation angles are expressed in radians.
 
     Examples:
         >>> an_orientation = Orientation()
@@ -415,32 +427,22 @@ class Orientation:  # noqa: PLW1641
         False
         >>> an_orientation == b_orientation
         True
-        >>> an_orientation.approx_equal(b_orientation)
-        True
-        >>> _ = an_orientation.pitch(np.pi/2)  # up 90°
-        >>> _ = b_orientation.yaw(-np.pi/2)  # right 90°
-        >>> _round_tuple(an_orientation.rotation)
-        (0.707107, 0.707107, 0.0, 0.0)
-        >>> _round_tuple(b_orientation.rotation)
-        (0.707107, 0.0, -0.707107, 0.0)
-
-        >>> an_orientation.pitch(-np.pi/2)  # down 90°
-        Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
-        >>> _round_tuple(an_orientation.rotation) == (1.0, 0.0, 0.0, 0.0)
-        True
-        >>> _ = an_orientation.pitch(_deg(45)).yaw(_deg(90))  # up 45°, left 90°
-        >>> _round_tuple(an_orientation.rotation) == (1.0, 0.0, 0.0, 0.0)
+        >>> an_orientation.pitch(np.pi/2)  # up 90°
+        Orientation(frame=None, w=0.707107, x=0.707107, y=0.0, z=0.0)
+        >>> b_orientation.yaw(-np.pi/2)  # right 90°
+        Orientation(frame=None, w=0.707107, x=0.0, y=-0.707107, z=0.0)
+        >>> an_orientation == b_orientation
         False
-        >>> _ = an_orientation.yaw(_deg(-90)).pitch(_deg(-45))  # right 90°, down 45°
-        >>> _round_tuple(an_orientation.rotation) == (1.0, 0.0, 0.0, 0.0)
+
+        >>> an_orientation.pitch(_deg(-90))  # down 90°
+        Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
+        >>> an_orientation == Orientation()
         True
 
-        >>> b_orientation
-        Orientation(frame=None, w=0.707107, x=0.0, y=-0.707107, z=0.0)
-        >>> b_orientation.inverse()
-        Orientation(frame=None, w=-0.707107, x=0.0, y=-0.707107, z=0.0)
-        >>> b_orientation.inverse().inverse()
-        Orientation(frame=None, w=0.707107, x=0.0, y=-0.707107, z=0.0)
+        >>> an_orientation.pitch(_deg(45)).yaw(_deg(90))  # up 45°, left 90°
+        Orientation(frame=None, w=0.653281, x=0.270598, y=0.653281, z=0.270598)
+        >>> an_orientation.yaw(_deg(-90)).pitch(_deg(-45))  # right 90°, down 45°
+        Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
     """  # noqa: E501
 
     def __init__(
@@ -481,6 +483,18 @@ class Orientation:  # noqa: PLW1641
             Orientation(frame=None, w=0.957662, x=0.126079, y=0.256605, z=-0.033783)
             >>> print(b_orientation)
             (0.957662, 0.126079, 0.256605, -0.033783)
+
+            >>> an_orientation == b_orientation
+            False
+            >>> an_orientation.approx_equal(b_orientation)
+            True
+            >>> b_orientation.rotation
+            (0.957662, 0.126079, 0.256605, -0.033783)
+            >>> _round_tuple(an_orientation.rotation)
+            (0.957662, 0.126079, 0.256605, -0.033783)
+            >>> an_orientation.as_array()
+            array([ 0.9576622 ,  0.12607862,  0.25660481, -0.03378266])
+
             >>> b_orientation.pitch(_deg(-15)).yaw(_deg(-30))  # down 15°, right 30°
             Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
         """  # noqa: E501
@@ -544,7 +558,7 @@ class Orientation:  # noqa: PLW1641
         return self._q[3]
 
     @property
-    def rotation(self) -> tuple[float]:
+    def rotation(self) -> QuaternionWXYZ:  # was: tuple[float]:
         """This `Orientation` as a (_w_, _x_, _y_, _z_) tuple."""
         return tuple(self._q)
 
@@ -613,14 +627,6 @@ class Orientation:  # noqa: PLW1641
             Orientation(frame=None, w=0.0, x=0.707107, y=-0.707107, z=0.0)
             >>> a == b
             False
-            >>> c = Orientation.from_scalars(w=0.0, x=0.707107, y=-0.707107)
-            >>> c
-            Orientation(frame=None, w=0.0, x=0.707107, y=-0.707107, z=0.0)
-            >>> b == c
-            False
-            >>> b.approx_equal(c)
-            True
-
             >>> b.roll(_deg(-90))
             Orientation(frame=None, w=0.0, x=1.0, y=0.0, z=0.0)
             >>> a == b
@@ -710,6 +716,16 @@ class Orientation:  # noqa: PLW1641
 
         Returns:
             The new `Orientation` object.
+
+        Examples:
+            >>> fwd = Orientation()
+            >>> fwd.yaw(-np.pi/2)  # right 90°
+            Orientation(frame=None, w=0.707107, x=0.0, y=-0.707107, z=0.0)
+            >>> inv = fwd.inverse()
+            >>> inv
+            Orientation(frame=None, w=-0.707107, x=0.0, y=-0.707107, z=0.0)
+            >>> inv.inverse() == fwd
+            True
         """
         xyzw = self._r_inv.as_quat()
         wxyz: FloatVector = xyzw[..., [3, 0, 1, 2]]
@@ -883,6 +899,7 @@ class Pose:  # noqa: PLW1641
             False
             >>> world_frame == global_frame
             True
+
             >>> global_frame.label = "Global"
             >>> global_frame
             Pose(frame=None, location=(0.0, 0.0, 0.0), orientation=(1.0, 0.0, 0.0, 0.0), label='Global')
