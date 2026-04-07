@@ -17,6 +17,7 @@ from unittest.mock import patch
 import numpy as np
 import numpy.testing as nptest
 
+from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
 from tbp.monty.frameworks.actions.actions import (
@@ -35,8 +36,7 @@ from tbp.monty.frameworks.models.motor_policies import (
     SurfacePolicyCurvatureInformed,
 )
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
-from tbp.monty.frameworks.models.states import State
-from tests.unit.frameworks.models.fakes.state import FakeState
+from tests.unit.frameworks.models.fakes.cmp import FakeMessage
 
 
 class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
@@ -54,7 +54,7 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
         )
         self.location = np.array([1.0, 2.0, 3.0])
         self.tangent_norm = np.array([0, 1, 0])
-        self.state = State(
+        self.percept = Message(
             location=self.location,
             morphological_features={
                 "pose_vectors": np.array(
@@ -88,7 +88,8 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
                 RuntimeContext(rng=np.random.RandomState(42)),
                 Observations(),
                 MotorSystemState(),
-                self.state,
+                self.percept,
+                None,
             )
 
         self.assertEqual(len(self.policy.tangent_locs), 1)
@@ -99,7 +100,7 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
     def test_appends_none_to_tangent_norms_if_last_action_is_orient_vertical_but_no_pose_vectors_in_state(  # noqa: E501
         self,
     ):
-        del self.state.morphological_features["pose_vectors"]
+        del self.percept.morphological_features["pose_vectors"]
         self.policy.last_surface_policy_action = OrientVertical(
             agent_id=self.agent_id,
             rotation_degrees=90,
@@ -112,7 +113,8 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
                 RuntimeContext(rng=np.random.RandomState(42)),
                 Observations(),
                 MotorSystemState(),
-                self.state,
+                self.percept,
+                None,
             )
 
         self.assertEqual(len(self.policy.tangent_locs), 1)
@@ -131,7 +133,8 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
                 RuntimeContext(rng=np.random.RandomState(42)),
                 Observations(),
                 MotorSystemState(),
-                self.state,
+                self.percept,
+                None,
             )
 
         self.assertEqual(self.policy.tangent_locs, [])
@@ -182,7 +185,7 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
         observations = Observations()
         returned_actions: list[Action] = []
         for _ in range(2 * cycle_length):
-            result = policy(ctx, observations, MotorSystemState(), FakeState())
+            result = policy(ctx, observations, MotorSystemState(), FakeMessage(), None)
             assert len(result.actions) == 1, "Expected one action"
             returned_actions.append(result.actions[0])
 
