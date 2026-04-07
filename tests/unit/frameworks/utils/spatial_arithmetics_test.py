@@ -24,6 +24,7 @@ finite_vectors = arrays(
     shape=3,
     elements=st.floats(min_value=-1e6, max_value=1e6),
 )
+non_zero_magnitude_vectors = finite_vectors.filter(lambda v: np.linalg.norm(v) >= 1e-12)
 
 
 class NormalizeTest(unittest.TestCase):
@@ -70,19 +71,31 @@ class NormalizeTest(unittest.TestCase):
         self.assertAlmostEqual(np.linalg.norm(result), 1.0)
 
 
+@st.composite
+def perpendicular_vectors(draw):
+    random_base = normalize(draw(non_zero_magnitude_vectors))
+    n = normalize(draw(non_zero_magnitude_vectors))
+    v = np.cross(random_base, n)
+    return v, n
+
+
 class ProjectOntoTangentPlaneTest(unittest.TestCase):
     """Unit tests for the project_onto_tangent_plane function."""
 
-    def test_parallel_to_normal(self):
-        """Projecting n onto its own tangent plane removes all of n, leaving zero."""
-        n = normalize(np.array([0.0, 0.0, 1.0]))
-        result = project_onto_tangent_plane(n, n)
+    @given(
+        a_vector=non_zero_magnitude_vectors,
+        a_scalar=st.floats(
+            min_value=-1e3, max_value=1e3, allow_infinity=False, allow_nan=False
+        ),
+    )
+    def test_a_vector_parallel_to_normal(self, a_vector, a_scalar):
+        parallel_vector = a_scalar * a_vector
+        result = project_onto_tangent_plane(parallel_vector, a_vector)
         np.testing.assert_array_almost_equal(result, [0.0, 0.0, 0.0])
 
-    def test_perpendicular_to_normal(self):
-        """Projecting v perpendicular to n onto n's tangent plane leaves v unchanged."""
-        v = np.array([1.0, 0.0, 0.0])
-        n = np.array([0.0, 0.0, 1.0])
+    @given(perpendicular_vectors())
+    def test_a_vector_perpendicular_to_normal(self, perpendicular_vectors):
+        v, n = perpendicular_vectors
         result = project_onto_tangent_plane(v, n)
         np.testing.assert_array_almost_equal(result, v)
 
@@ -118,7 +131,3 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
         once = project_onto_tangent_plane(v, n)
         twice = project_onto_tangent_plane(once, n)
         np.testing.assert_array_almost_equal(twice, once)
-
-
-if __name__ == "__main__":
-    unittest.main()
