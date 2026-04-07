@@ -87,7 +87,7 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
         np.testing.assert_array_almost_equal(result, v)
 
     def test_general_oblique_case(self):
-        """An oblique vector loses only its normal component; the in-plane part is preserved.
+        """An oblique vector loses only its normal component.
 
         Leaving this here because it's a good readable example, but redundant to
         test_result_orthogonal_to_normal which tests the general case.
@@ -99,14 +99,14 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
 
     @given(finite_vectors, finite_vectors)
     def test_result_orthogonal_to_normal(self, v, n):
-        """The result must always lie in the plane, i.e., be orthogonal to n for any input."""
+        """The OG test."""
         assume(np.linalg.norm(n) >= 1e-12)
         result = project_onto_tangent_plane(v, n)
         self.assertAlmostEqual(np.dot(result, normalize(n)), 0.0, places=6)
 
     @given(finite_vectors)
     def test_zero_input_produces_zero_output(self, n):
-        """The zero vector has no component in any direction, so the result must be zero."""
+        """Projecting zero vector to anything is zero."""
         assume(np.linalg.norm(n) >= 1e-12)
         result = project_onto_tangent_plane(np.zeros(3), n)
         np.testing.assert_array_almost_equal(result, np.zeros(3))
