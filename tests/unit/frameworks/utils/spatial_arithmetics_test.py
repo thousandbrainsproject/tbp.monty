@@ -74,17 +74,24 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
     """Unit tests for the project_onto_tangent_plane function."""
 
     def test_parallel_to_normal(self):
+        """Projecting n onto its own tangent plane removes all of n, leaving zero."""
         n = normalize(np.array([0.0, 0.0, 1.0]))
         result = project_onto_tangent_plane(n, n)
         np.testing.assert_array_almost_equal(result, [0.0, 0.0, 0.0])
 
     def test_perpendicular_to_normal(self):
+        """Projecting v perpendicular to n onto n's tangent plane leaves v unchanged."""
         v = np.array([1.0, 0.0, 0.0])
         n = np.array([0.0, 0.0, 1.0])
         result = project_onto_tangent_plane(v, n)
         np.testing.assert_array_almost_equal(result, v)
 
     def test_general_oblique_case(self):
+        """An oblique vector loses only its normal component; the in-plane part is preserved.
+
+        Leaving this here because it's a good readable example, but redundant to
+        test_result_orthogonal_to_normal which tests the general case.
+        """
         v = np.array([1.0, 1.0, 0.0])
         n = np.array([0.0, 0.0, 1.0])
         result = project_onto_tangent_plane(v, n)
@@ -92,18 +99,21 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
 
     @given(finite_vectors, finite_vectors)
     def test_result_orthogonal_to_normal(self, v, n):
+        """The result must always lie in the plane, i.e., be orthogonal to n for any input."""
         assume(np.linalg.norm(n) >= 1e-12)
         result = project_onto_tangent_plane(v, n)
         self.assertAlmostEqual(np.dot(result, normalize(n)), 0.0, places=6)
 
     @given(finite_vectors)
     def test_zero_input_produces_zero_output(self, n):
+        """The zero vector has no component in any direction, so the result must be zero."""
         assume(np.linalg.norm(n) >= 1e-12)
         result = project_onto_tangent_plane(np.zeros(3), n)
         np.testing.assert_array_almost_equal(result, np.zeros(3))
 
     @given(finite_vectors, finite_vectors)
     def test_idempotent(self, v, n):
+        """Projecting an already-projected vector is no-op."""
         assume(np.linalg.norm(n) >= 1e-12)
         once = project_onto_tangent_plane(v, n)
         twice = project_onto_tangent_plane(once, n)
