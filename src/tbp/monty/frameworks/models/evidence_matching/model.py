@@ -35,26 +35,6 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
         """Initialize and reset LM."""
         super().__init__(*args, **kwargs)
 
-    def _pass_infos_to_motor_system(self):
-        """Pass processed observations and goal states to the motor system.
-
-        Currently there is no complex connectivity or hierarchy, and all generated
-        goal states are considered bound for the motor system. TODO M change this.
-        """
-        super()._pass_infos_to_motor_system()
-
-        best_goal_state = None
-        best_goal_confidence = -np.inf
-        for current_goal_state in self.gsg_outputs:
-            if (
-                current_goal_state is not None
-                and current_goal_state.confidence > best_goal_confidence
-            ):
-                best_goal_state = current_goal_state
-                best_goal_confidence = current_goal_state.confidence
-
-        self.motor_system.set_driving_goal_state(best_goal_state)
-
     def _combine_votes(self, votes_per_lm):
         """Combine evidence from different LMs.
 
@@ -97,7 +77,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                             # NOTE: rotation votes are not being used right now.
                             transformed_lm_states_for_object = []
                             for s in lm_states_for_object:
-                                # need to make a copy because the same vote state may be
+                                # need to make a copy because the same vote may be
                                 # transformed in different ways depending on the
                                 # receiving LMs' poses
                                 new_s = copy.deepcopy(s)

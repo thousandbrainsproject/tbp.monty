@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from tbp.monty.cmp import Message
 from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
 )
@@ -22,7 +23,6 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
 )
-from tbp.monty.frameworks.models.states import State
 
 __all__ = ["MontyForNoResetEvidenceGraphMatching", "NoResetEvidenceGraphLM"]
 
@@ -121,32 +121,32 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         self.evidence = {}
         self.last_location = {}
 
-    def _add_displacements(self, obs: list[State]) -> list[State]:
-        """Add displacements to the current observation.
+    def _add_displacements(self, percepts: list[Message]) -> list[Message]:
+        """Add displacements to the current percept.
 
         For each input channel, this function computes the displacement vector by
         subtracting the current location from the last observed location. It then
-        updates `self.last_location` for use in the next step. If any observation
+        updates `self.last_location` for use in the next step. If any percept
         has a recorded previous location, we assume movement has occurred.
 
         In this unsupervised inference setting, the displacement is set to zero
         at the beginning of the first episode when the last location is not set.
 
         Args:
-            obs: A list of observations to which displacements will be
+            percepts: A list of percepts to which displacements will be
                 added.
 
         Returns:
-            The list of observations, each updated with a displacement vector.
+            The list of percepts, each updated with a displacement vector.
         """
-        for o in obs:
-            if o.sender_id in self.last_location:
-                displacement = o.location - self.last_location[o.sender_id]
+        for p in percepts:
+            if p.sender_id in self.last_location:
+                displacement = p.location - self.last_location[p.sender_id]
             else:
                 displacement = np.zeros(3)
-            o.set_displacement(displacement)
-            self.last_location[o.sender_id] = o.location
-        return obs
+            p.set_displacement(displacement)
+            self.last_location[p.sender_id] = p.location
+        return percepts
 
     def _agent_moved_since_reset(self):
         """Overwrites the logic of whether the agent has moved since the last reset.

@@ -324,12 +324,15 @@ class GaussianBlurRGB(Transform):
             )
 
     def __call__(
-        self, observations: Observations, _ctx: TransformContext
+        self,
+        observations: Observations,
+        ctx: TransformContext,  # noqa: ARG002
     ) -> Observations:
         """Apply Gaussian blur to RGB image.
 
         Args:
             observations: Observations to modify in place.
+            ctx: Transform context.
 
         Returns:
             Observations, same as input, with blurred RGB values.
@@ -528,7 +531,7 @@ class DepthTo3DLocations(Transform):
 
         Args:
             observations: Observations returned by the environment interface.
-            state: Optionally supplied CMP-compliant state of the object.
+            state: Optionally supplied proprioceptive state.
 
         Returns:
             The original Observations, with the following possibly added:

@@ -7,23 +7,26 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
+from tbp.monty.cmp import Message
 
 
-def get_state_from_channel(states, channel_name):
-    """Given a list of states, return the state of the specified channel.
+def get_percept_from_channel(percepts: list[Message], channel_name: str) -> Message:
+    """Given a list of percepts, return the percept of the specified channel.
 
     Args:
-        states: List of states
-        channel_name: The name of the channel to return the state for
+        percepts: List of percepts
+        channel_name: The name of the channel to return the percept for
 
     Returns:
-        The state of the specified channel
+        The percept of the specified channel
 
     Raises:
-        ValueError: If the channel name is not found in the states
+        ValueError: If the channel name is not found in the percepts
     """
-    for state in states:
-        if state.sender_id == channel_name:
-            return state
+    for percept in percepts:
+        if percept.sender_id == channel_name:
+            return percept
 
-    raise ValueError(f"Channel {channel_name} not found in states")
+    raise ValueError(f"Channel {channel_name} not found in percepts")

@@ -19,6 +19,7 @@ import numpy.typing as npt
 from scipy.spatial import KDTree
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
@@ -33,9 +34,8 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
     HypothesesUpdater,
     HypothesesUpdaterTelemetry,
 )
-from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
+from tbp.monty.frameworks.models.goal_generation import EvidenceGoalGenerator
 from tbp.monty.frameworks.models.graph_matching import GraphLM
-from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.evidence_matching import (
     ChannelMapper,
     evidence_update_threshold,
@@ -137,7 +137,7 @@ class EvidenceGraphLM(GraphLM):
             voxel. All locations that fall into the same voxel will be averaged and
             represented as one value. num_model_voxels_per_dim should not be too large
             since the memory requirements grow cubically with this number.
-        gsg: The goal-state-generator to associate with the LM.
+        gsg: The goal generator to associate with the LM.
         hypotheses_updater_class: The type of hypotheses updater to associate with the
             LM.
         hypotheses_updater_args: Dictionary of configuration parameters for the
@@ -172,7 +172,7 @@ class EvidenceGraphLM(GraphLM):
         max_nodes_per_graph=2000,
         num_model_voxels_per_dim=50,  # -> voxel size = 6mm3 (0.006)
         use_multithreading=True,
-        gsg: EvidenceGoalStateGenerator | None = None,
+        gsg: EvidenceGoalGenerator | None = None,
         hypotheses_updater_class: type[HypothesesUpdater] = DefaultHypothesesUpdater,
         hypotheses_updater_args: dict | None = None,
         *args,
@@ -384,7 +384,7 @@ class EvidenceGraphLM(GraphLM):
                 if len(interesting_hyp[0]) > 0:
                     possible_states[graph_id] = []
                     for hyp_id in interesting_hyp[0]:
-                        vote = State(
+                        vote = Message(
                             location=self.possible_locations[graph_id][
                                 hyp_id
                             ],  # location rel. body
@@ -448,7 +448,7 @@ class EvidenceGraphLM(GraphLM):
         # object_loc_rel_body = (
         #     self.buffer.get_current_location(input_channel="first") - mlh["location"]
         # )
-        return State(
+        return Message(
             # Same as input location from patch (rel body)
             # NOTE: Just for common format at the moment, movement information will be
             # taken from the sensor. For higher level LMs, we may want to transmit the
@@ -617,12 +617,12 @@ class EvidenceGraphLM(GraphLM):
         graph_ids, graph_evidences = self.get_evidence_for_each_graph()
 
         # If all hypothesis spaces are empty return None for both mlh ids. The gsg will
-        # not generate a goal state.
+        # not generate a goal.
         if len(graph_ids) == 0:
             return None, None
 
         # If we have a single hypothesis space, return the second object id as None.
-        # The gsg will focus on pose to generate a goal state.
+        # The gsg will focus on pose to generate a goal.
         if len(graph_ids) == 1:
             return graph_ids[0], None
 
@@ -925,13 +925,13 @@ class EvidenceGraphLM(GraphLM):
 
         mapper.resize_channel_to(new_hypotheses.input_channel, len(new_evidence))
 
-    def _update_evidence_with_vote(self, state_votes, graph_id):
+    def _update_evidence_with_vote(self, votes: list[Message], graph_id):
         """Use incoming votes to update all hypotheses."""
-        # Extract information from list of State classes into np.arrays for efficient
+        # Extract information from list of Message classes into np.arrays for efficient
         # matrix operations and KDTree search.
-        graph_location_vote = np.zeros((len(state_votes), 3))
-        vote_evidences = np.zeros(len(state_votes))
-        for n, vote in enumerate(state_votes):
+        graph_location_vote = np.zeros((len(votes), 3))
+        vote_evidences = np.zeros(len(votes))
+        for n, vote in enumerate(votes):
             graph_location_vote[n] = vote.location
             vote_evidences[n] = vote.confidence
 
