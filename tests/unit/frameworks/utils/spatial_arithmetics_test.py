@@ -90,17 +90,24 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
         result = project_onto_tangent_plane(v, n)
         np.testing.assert_array_almost_equal(result, [1.0, 1.0, 0.0])
 
-    def test_result_orthogonal_to_normal(self):
-        v = np.array([3.0, -2.0, 5.0])
-        n = normalize(np.array([1.0, 1.0, 1.0]))
+    @given(finite_vectors, finite_vectors)
+    def test_result_orthogonal_to_normal(self, v, n):
+        assume(np.linalg.norm(n) >= 1e-12)
         result = project_onto_tangent_plane(v, n)
-        self.assertAlmostEqual(np.dot(result, n), 0.0)
+        self.assertAlmostEqual(np.dot(result, normalize(n)), 0.0, places=6)
 
-    def test_zero_vector_input(self):
-        v = np.array([0.0, 0.0, 0.0])
-        n = np.array([0.0, 0.0, 1.0])
-        result = project_onto_tangent_plane(v, n)
-        np.testing.assert_array_almost_equal(result, [0.0, 0.0, 0.0])
+    @given(finite_vectors)
+    def test_zero_input_produces_zero_output(self, n):
+        assume(np.linalg.norm(n) >= 1e-12)
+        result = project_onto_tangent_plane(np.zeros(3), n)
+        np.testing.assert_array_almost_equal(result, np.zeros(3))
+
+    @given(finite_vectors, finite_vectors)
+    def test_idempotent(self, v, n):
+        assume(np.linalg.norm(n) >= 1e-12)
+        once = project_onto_tangent_plane(v, n)
+        twice = project_onto_tangent_plane(once, n)
+        np.testing.assert_array_almost_equal(twice, once)
 
 
 if __name__ == "__main__":
