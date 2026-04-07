@@ -18,7 +18,7 @@ from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.simulators.mujoco.simulator import (
-    PRIMITIVE_OBJECT_TYPES,
+    PRIMITIVE_OBJECTS,
     MuJoCoSimulator,
 )
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
 
 # Parameters for add primitive object tests
-SHAPE_PARAMS = [param(s, id=s) for s in PRIMITIVE_OBJECT_TYPES]
+SHAPE_PARAMS = [param(s, id=s) for s in PRIMITIVE_OBJECTS]
 
 AGENT_ID = AgentID("agent_id_0")
 

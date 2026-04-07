@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 # Map of names to MuJoCo primitive object types
-PRIMITIVE_OBJECT_TYPES = {
+PRIMITIVE_OBJECTS = {
     "box": mjtGeom.mjGEOM_BOX,
     "capsule": mjtGeom.mjGEOM_CAPSULE,
     "cylinder": mjtGeom.mjGEOM_CYLINDER,
@@ -165,7 +165,7 @@ class MuJoCoSimulator(Simulator):
     ) -> ObjectInfo:
         obj_name = f"{name}_{self._object_count}"
 
-        if name in PRIMITIVE_OBJECT_TYPES:
+        if name in PRIMITIVE_OBJECTS:
             self._add_primitive_object(obj_name, name, position, rotation, scale)
         else:
             self._add_loadable_object(obj_name, name, position, rotation, scale)
@@ -265,7 +265,7 @@ class MuJoCoSimulator(Simulator):
         world_body: MjsBody = self.spec.worldbody
 
         try:
-            geom_type = PRIMITIVE_OBJECT_TYPES[shape_type]
+            geom_type = PRIMITIVE_OBJECTS[shape_type]
         except KeyError:
             raise UnknownShapeType(f"Unknown MuJoCo primitive: {shape_type}") from None
 
