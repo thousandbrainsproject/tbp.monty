@@ -10,18 +10,20 @@ experiment:
         min_train_steps: 3
         max_total_steps: 2500
       motor_system_config:
-        policy:
-          action_sampler:
-            _target_: tbp.monty.frameworks.actions.action_samplers.ConstantSampler
-            actions:
-            - ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}
-            - ${monty.class:tbp.monty.frameworks.actions.actions.LookDown}
-            - ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
-            - ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}
-            rotation_degrees: 5.0
-          _target_: tbp.monty.frameworks.models.motor_policies.InformedPolicy
-          use_goal_state_driven_actions: true
-          agent_id: agent_id_0
+        policy_selector:
+          policy:
+            action_sampler:
+              _target_: tbp.monty.frameworks.actions.action_samplers.ConstantSampler
+              actions:
+              - ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.LookDown}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}
+              rotation_degrees: 5.0
+            _target_: tbp.monty.frameworks.models.motor_policies.InformedPolicy
+            use_goal_driven_actions: true
+            agent_id: agent_id_0
+          _target_: tbp.monty.frameworks.models.motor_policy_selectors.SinglePolicySelector
         _target_: tbp.monty.frameworks.models.motor_system.MotorSystem
       learning_module_configs:
         learning_module_0:
@@ -37,7 +39,7 @@ experiment:
             num_model_voxels_per_dim: 200
             max_nodes_per_graph: 2000
             gsg:
-              _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
+              _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
               goal_tolerances:
                 location: 0.015
               elapsed_steps_factor: 10
@@ -61,7 +63,7 @@ experiment:
             num_model_voxels_per_dim: 200
             max_nodes_per_graph: 2000
             gsg:
-              _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
+              _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
               goal_tolerances:
                 location: 0.015
               elapsed_steps_factor: 10
