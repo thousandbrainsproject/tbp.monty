@@ -13,6 +13,8 @@ import dataclasses
 import unittest
 from typing import Any, NamedTuple
 
+from omegaconf import OmegaConf
+
 from tbp.monty.frameworks.utils import dataclass_utils
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 
@@ -410,6 +412,28 @@ class ConfigToDictBasicTest(unittest.TestCase):
         self.assertIsInstance(dict_result["value"], FakeNamedTuple)
         self.assertDictEqual(dataclass_result, expected)
         self.assertIsInstance(dataclass_result["value"], FakeNamedTuple)
+
+    def test_with_dictconfig(self):
+        dict_config = OmegaConf.create(
+            {
+                "name": 0,
+                "value": {
+                    "items": [1, 2, 3],
+                    "labels": ["a", "b"],
+                },
+            }
+        )
+        expected = {
+            "name": 0,
+            "value": {
+                "items": [1, 2, 3],
+                "labels": ["a", "b"],
+            },
+        }
+        dict_result = dataclass_utils.config_to_dict(dict_config)
+        self.assertDictEqual(dict_result, expected)
+        self.assertIsInstance(dict_result["value"]["items"], list)
+        self.assertIsInstance(dict_result["value"]["labels"], list)
 
 
 class ConfigToDictNestedTest(unittest.TestCase):

@@ -15,6 +15,7 @@ import importlib
 from inspect import Parameter, signature
 from typing import Any, Callable, ClassVar, Protocol
 
+from omegaconf import DictConfig, OmegaConf
 from typing_extensions import TypeIs
 
 
@@ -168,8 +169,8 @@ def create_dataclass_args(
     return dataclasses.make_dataclass(dataclass_name, _fields, bases=bases, frozen=True)
 
 
-def config_to_dict(config: Dataclass | dict[str, Any]) -> dict[str, Any]:
-    """Convert config composed of mixed dataclass and dict elements to pure dict.
+def config_to_dict(config: Dataclass | dict[str, Any] | DictConfig) -> dict[str, Any]:
+    """Convert config composed of mixed dataclass, dict, and OmegaConf elements.
 
     We want to convert configs composed of mixed dataclass and dict elements to
     pure dicts without dataclasses for backward compatibility.
@@ -184,8 +185,11 @@ def config_to_dict(config: Dataclass | dict[str, Any]) -> dict[str, Any]:
         Pure dict version of config.
 
     Raises:
-        TypeError: If the object is not a dict or dataclass instance.
+        TypeError: If the object is not a supported config type.
     """
+    if isinstance(config, DictConfig):
+        return OmegaConf.to_container(config, resolve=True)
+
     if is_config_like(config):
         return _config_to_dict_inner(config)
 
