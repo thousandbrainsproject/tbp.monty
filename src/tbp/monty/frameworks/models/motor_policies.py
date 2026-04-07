@@ -2137,4 +2137,5 @@ def projected_vec_from_angle(angle):
     """
     assert abs(angle) < np.pi + 0.01, f"-pi : +pi bound angles only : {angle}"
 
+    # TODO: consider using an np.array
     return [np.cos(angle - np.pi / 2), np.sin(angle + np.pi / 2), 0]
