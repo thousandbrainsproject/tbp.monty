@@ -315,7 +315,3 @@ class HabitatActuatorsTest(unittest.TestCase):
 
         self.mock_agent.act.assert_called_once_with(action_name)
         self.assertEqual(self.action_space[action_name].actuation.amount, 39)
-
-
-if __name__ == "__main__":
-    unittest.main()

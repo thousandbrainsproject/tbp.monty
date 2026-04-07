@@ -252,7 +252,3 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
             (exp.output_dir / "detailed_run_stats.json").exists(),
             "Expected detailed_run_stats.json file to be created",
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

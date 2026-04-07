@@ -118,7 +118,3 @@ class SensorModuleTest(unittest.TestCase):
         with exp:
             exp.run()
             # TODO: test that only new features are given to LM
-
-
-if __name__ == "__main__":
-    unittest.main()
