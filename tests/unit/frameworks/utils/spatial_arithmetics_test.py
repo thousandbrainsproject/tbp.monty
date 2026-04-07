@@ -14,7 +14,10 @@ from hypothesis import assume, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
-from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    normalize,
+    project_onto_tangent_plane,
+)
 
 finite_vectors = arrays(
     dtype=np.float64,
@@ -65,25 +68,6 @@ class NormalizeTest(unittest.TestCase):
         assume(np.linalg.norm(v) >= 1e-12)
         result = normalize(v)
         self.assertAlmostEqual(np.linalg.norm(result), 1.0)
-
-
-# Copyright 2025-2026 Thousand Brains Project
-#
-# Copyright may exist in Contributors' modifications
-# and/or contributions to the work.
-#
-# Use of this source code is governed by the MIT
-# license that can be found in the LICENSE file or at
-# https://opensource.org/licenses/MIT.
-
-import unittest
-
-import numpy as np
-
-from tbp.monty.frameworks.utils.spatial_arithmetics import (
-    normalize,
-    project_onto_tangent_plane,
-)
 
 
 class ProjectOntoTangentPlaneTest(unittest.TestCase):
