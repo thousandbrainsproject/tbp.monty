@@ -249,17 +249,17 @@ class GaussianSmoothing(Transform):
             )
         return observations
 
-    def _create_kernel(self) -> np.ndarray:
+    def _create_kernel(self, _pad_size: int, _kernel_width: int, _sigma: float) -> np.ndarray:
         """Create a normalized gaussian kernel.
 
         Returns:
             normalized gaussian kernel. Array of size (kernel_width, kernel_width).
         """
-        x = np.linspace(-self._pad_size, self._pad_size, self._kernel_width)
+        x = np.linspace(_pad_size, _pad_size, _kernel_width)
         kernel_1d = (
             1.0
-            / (np.sqrt(2 * np.pi) * self._sigma)
-            * np.exp(-np.square(x) / (2 * self._sigma**2))
+            / (np.sqrt(2 * np.pi) * _sigma)
+            * np.exp(-np.square(x) / (2 * _sigma**2))
         )
         kernel_2d = np.outer(kernel_1d, kernel_1d)
         return kernel_2d / np.sum(kernel_2d)
