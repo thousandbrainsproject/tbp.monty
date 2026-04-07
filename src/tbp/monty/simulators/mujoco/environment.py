@@ -40,13 +40,12 @@ class MuJoCoEnvironment(SimulatedObjectEnvironment):
 
     def step(
         self,
-        # TODO: rename to actions?
-        action: Sequence[Action],
+        actions: Sequence[Action],
     ) -> tuple[Observations, ProprioceptiveState]:
-        return self._sim.step(action)
+        return self._sim.step(actions)
 
     def close(self) -> None:
-        return self._sim.close()
+        self._sim.close()
 
     def add_object(
         self,
