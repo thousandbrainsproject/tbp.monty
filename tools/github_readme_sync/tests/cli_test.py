@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 
 import sys
-import unittest
 from unittest.mock import patch
 
 import pytest

@@ -20,7 +20,6 @@ pytest.importorskip(
 import copy
 import shutil
 import tempfile
-import unittest
 from typing import Any
 
 import hydra
