@@ -1588,7 +1588,7 @@ def plot_evidence_transitions(
 
     Currently this shares code with the detection of when the LM is on a new
     object; this will be refactored in the next PR (TODO) alongside the
-    goal-state-generator class.
+    goal generator class.
 
     Args:
         episode: Episode number.

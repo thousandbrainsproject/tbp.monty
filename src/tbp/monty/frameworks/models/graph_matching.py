@@ -16,6 +16,7 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -30,10 +31,9 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     LMMemory,
 )
 from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
-from tbp.monty.frameworks.models.goal_state_generation import GraphGoalStateGenerator
+from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
-from tbp.monty.frameworks.models.states import GoalState
 
 __all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
 
@@ -76,6 +76,7 @@ class MontyForGraphMatching(MontyBase):
             sm.pre_episode()
 
         self.motor_system.pre_episode()
+        self._goals = []
 
         logger.debug(
             f"Models in memory: {self.learning_modules[0].get_all_known_object_ids()}"
@@ -538,7 +539,7 @@ class GraphLM(LearningModule):
 
         if initialize_base_modules:
             self.graph_memory = GraphMemory(k=None, graph_delta_thresholds=None)
-            self.gsg = GraphGoalStateGenerator(self)
+            self.gsg = GraphGoalGenerator(self)
             self.gsg.parent_lm = self
 
         self.mode: ExperimentMode | None = (
@@ -598,7 +599,7 @@ class GraphLM(LearningModule):
         first_movement_detected = self._agent_moved_since_reset()
         buffer_data = self._add_displacements(observations)
         self.buffer.append(buffer_data)
-        self.buffer.append_input_states(observations)
+        self.buffer.append_input_percepts(observations)
 
         if first_movement_detected:
             logger.debug("performing matching step.")
@@ -626,7 +627,7 @@ class GraphLM(LearningModule):
         """Step without trying to recognize object (updating possible matches)."""
         buffer_data = self._add_displacements(observations)
         self.buffer.append(buffer_data)
-        self.buffer.append_input_states(observations)
+        self.buffer.append_input_percepts(observations)
 
     def post_episode(self):
         """If training, update memory after each episode."""
@@ -679,13 +680,13 @@ class GraphLM(LearningModule):
         """
         pass
 
-    def propose_goal_states(self) -> list[GoalState]:
-        """Return the goal-states proposed by this LM's GSG.
+    def propose_goals(self) -> list[Goal]:
+        """Return the goals proposed by this LM's GSG.
 
         Only returned if the LM/GSG was stepped, otherwise returns empty list.
         """
         if self.buffer.get_last_obs_processed() and self.gsg is not None:
-            return self.gsg.output_goal_states()
+            return self.gsg.output_goals()
 
         return []
 
@@ -1016,20 +1017,20 @@ class GraphLM(LearningModule):
             o.set_displacement(displacement)
         return obs
 
-    def _select_features_to_use(self, states):
-        """Extract the features from observations that are specified in tolerances.
+    def _select_features_to_use(self, percepts: list[Message]):
+        """Extract the features from percepts that are specified in tolerances.
 
         TODO: requires self.tolerances
-        TODO S: if keeping the dict format, move this function to State class
+        TODO S: if keeping the dict format, move this function to Message class
 
         Returns:
             Features to use.
         """
         features_to_use = {}
-        for state in states:
-            input_channel = state.sender_id
+        for percept in percepts:
+            input_channel = percept.sender_id
             features_to_use[input_channel] = {}
-            for feature in state.morphological_features:
+            for feature in percept.morphological_features:
                 # in evidence matching pose_vectors are always added to tolerances
                 # since they are requires for matching.
                 if (
@@ -1037,12 +1038,12 @@ class GraphLM(LearningModule):
                     or feature == "pose_fully_defined"
                 ):
                     features_to_use[input_channel][feature] = (
-                        state.morphological_features[feature]
+                        percept.morphological_features[feature]
                     )
-            for feature in state.non_morphological_features:
+            for feature in percept.non_morphological_features:
                 if feature in self.tolerances[input_channel]:
                     features_to_use[input_channel][feature] = (
-                        state.non_morphological_features[feature]
+                        percept.non_morphological_features[feature]
                     )
 
         return features_to_use
@@ -1466,7 +1467,7 @@ class GraphMemory(LMMemory):
             Features and locations with missing features removed.
         """
         # NOTE: Could use any feature here but using pose_fully_defined since it
-        # is one dimensional and a required feature in each State.
+        # is one dimensional and a required feature in each Message.
         missing_features = np.isnan(features["pose_fully_defined"]).flatten()
         # Remove missing features (contain nan values)
         locations = locations[~missing_features]

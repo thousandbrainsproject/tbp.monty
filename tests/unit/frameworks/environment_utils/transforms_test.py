@@ -9,11 +9,52 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
+from unittest.mock import Mock
 
 import numpy as np
+import pytest
+from hypothesis import given
+from hypothesis import strategies as st
+from hypothesis.extra.numpy import arrays
 
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environment_utils.transforms import GaussianSmoothing
+from tbp.monty.frameworks.environment_utils.transforms import (
+    GaussianBlurRGB,
+    GaussianSmoothing,
+)
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    AgentObservations,
+    Observations,
+    SensorObservation,
+)
+from tbp.monty.frameworks.sensors import SensorID
+
+AGENT_ID = AgentID("0")
+SENSOR_ID = SensorID("0")
+
+MAX_KERNEL = 15
+BLUR_KERNEL_SIZES = [n for n in range(MAX_KERNEL + 1) if n == 0 or n % 2 == 1]
+
+
+@st.composite
+def rgba_and_blur_params(draw):
+    """Generate a random RGBA float32 image with valid blur parameters.
+
+    Returns:
+        Tuple of (rgba array, sigma, kernel_size).
+    """
+    height = draw(st.integers(1, 128))
+    width = draw(st.integers(1, 128))
+    rgba = draw(
+        arrays(
+            dtype=np.float32,
+            shape=(height, width, 4),
+            elements=st.floats(min_value=0.0, max_value=255.0, width=32),
+        )
+    )
+    sigma = draw(st.floats(min_value=0.1, max_value=10.0))
+    kernel_size = draw(st.sampled_from(BLUR_KERNEL_SIZES))
+    return rgba, sigma, kernel_size
 
 
 class GaussianSmoothingTest(unittest.TestCase):
@@ -109,6 +150,107 @@ class GaussianSmoothingTest(unittest.TestCase):
 
         all_equal = np.allclose(filtered_img, filtered_img_ground_truth, atol=1e-5)
         self.assertTrue(all_equal, "Filtered pixel values do not match.")
+
+
+class GaussianBlurRGBTest(unittest.TestCase):
+    def test_negative_kernel_size_raises(self):
+        with pytest.raises(ValueError, match="kernel_size must be non-negative"):
+            GaussianBlurRGB(agent_id=AGENT_ID, kernel_size=-1)
+
+    def test_even_kernel_size_raises(self):
+        with pytest.raises(ValueError, match="kernel_size must be odd or 0"):
+            GaussianBlurRGB(agent_id=AGENT_ID, kernel_size=4)
+
+    def test_non_positive_sigma_with_auto_kernel_raises(self):
+        with pytest.raises(
+            ValueError, match="sigma must be positive when kernel_size is 0"
+        ):
+            GaussianBlurRGB(agent_id=AGENT_ID, sigma=0, kernel_size=0)
+
+    def test_empty_sensor_ids_raises(self):
+        with pytest.raises(ValueError, match="sensor_ids must not be empty"):
+            GaussianBlurRGB(agent_id=AGENT_ID, sensor_ids=[])
+
+    def test_sensor_id_not_in_agent(self):
+        obs = Observations()
+        obs[AGENT_ID] = AgentObservations()
+        gaussian_smoother = GaussianBlurRGB(
+            agent_id=AGENT_ID, sensor_ids=[SENSOR_ID], sigma=15, kernel_size=15
+        )
+        with pytest.raises(KeyError, match="not found in observations"):
+            gaussian_smoother(obs, ctx=Mock())
+
+    def test_rgba_not_in_sensor_observations(self):
+        obs = Observations()
+        obs[AGENT_ID] = AgentObservations()
+        obs[AGENT_ID][SENSOR_ID] = SensorObservation()
+        gaussian_smoother = GaussianBlurRGB(agent_id=AGENT_ID, sigma=15, kernel_size=15)
+        with pytest.raises(KeyError, match="no 'rgba' key"):
+            gaussian_smoother(obs, ctx=Mock())
+
+    @given(
+        height=st.integers(min_value=1, max_value=256),
+        width=st.integers(min_value=1, max_value=256),
+        fill_value=st.integers(min_value=0, max_value=255),
+        sigma=st.floats(min_value=0.1, max_value=10.0),
+        kernel_size=st.sampled_from(BLUR_KERNEL_SIZES),
+    )
+    def test_blur_solid_image_returns_identical(
+        self, height, width, fill_value, sigma, kernel_size
+    ):
+        """Convolution with any normalized kernel preserves a constant signal."""
+        rgba_img = np.full((height, width, 4), fill_value, dtype=np.uint8)
+        obs = Observations()
+        obs[AGENT_ID] = AgentObservations()
+        obs[AGENT_ID][SENSOR_ID] = SensorObservation({"rgba": rgba_img.copy()})
+        gaussian_smoother = GaussianBlurRGB(
+            agent_id=AGENT_ID, sigma=sigma, kernel_size=kernel_size
+        )
+        result_img = gaussian_smoother(obs, ctx=Mock())[AGENT_ID][SENSOR_ID]["rgba"]
+
+        self.assertEqual(result_img.shape, rgba_img.shape)
+        np.testing.assert_array_equal(result_img, rgba_img)
+
+    @given(params=rgba_and_blur_params())
+    def test_blur_preserves_alpha(self, params):
+        """Gaussian blur operates only on RGB; the alpha channel is unchanged."""
+        rgba, sigma, kernel_size = params
+        alpha_before = rgba[:, :, 3].copy()
+        obs = Observations()
+        obs[AGENT_ID] = AgentObservations()
+        obs[AGENT_ID][SENSOR_ID] = SensorObservation({"rgba": rgba})
+        gaussian_smoother = GaussianBlurRGB(
+            agent_id=AGENT_ID, sigma=sigma, kernel_size=kernel_size
+        )
+        result = gaussian_smoother(obs, ctx=Mock())[AGENT_ID][SENSOR_ID]["rgba"]
+
+        self.assertEqual(result.shape, rgba.shape)
+        np.testing.assert_array_equal(result[:, :, 3], alpha_before)
+
+    @given(params=rgba_and_blur_params())
+    def test_blur_reduces_total_variation(self, params):
+        """Gaussian blur is a low-pass filter, so total variation cannot increase."""
+        rgba, sigma, kernel_size = params
+
+        def total_variation(img):
+            img = img.astype(np.float64)
+            return np.sum(np.abs(np.diff(img, axis=0))) + np.sum(
+                np.abs(np.diff(img, axis=1))
+            )
+
+        obs = Observations()
+        obs[AGENT_ID] = AgentObservations()
+        obs[AGENT_ID][SENSOR_ID] = SensorObservation({"rgba": rgba.copy()})
+        gaussian_smoother = GaussianBlurRGB(
+            agent_id=AGENT_ID, sigma=sigma, kernel_size=kernel_size
+        )
+        result_rgba = gaussian_smoother(obs, ctx=Mock())[AGENT_ID][SENSOR_ID]["rgba"]
+        result_rgb = result_rgba[:, :, :3]
+
+        input_tv = total_variation(rgba[:, :, :3])
+        result_tv = total_variation(result_rgb)
+
+        self.assertTrue(result_tv < input_tv or np.allclose(result_tv, input_tv))
 
 
 if __name__ == "__main__":

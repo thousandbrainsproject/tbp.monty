@@ -152,8 +152,8 @@ Now we specify the learning module config. We define five learning modules with 
     evidence_threshold_config: 80%
     x_percent_threshold: 20
     gsg:
-      _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
-      # Tolerance(s) when determining goal-state success
+      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+      # Tolerance(s) when determining goal success
       goal_tolerances:
         location: 0.015 # distance in meters
       min_post_goal_success_steps: 5 # Number of necessary steps for a hypothesis

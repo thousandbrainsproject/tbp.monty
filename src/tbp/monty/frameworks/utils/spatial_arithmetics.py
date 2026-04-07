@@ -22,6 +22,25 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
 logger = logging.getLogger(__name__)
 
 
+def normalize(v: np.ndarray, epsilon: float = 1e-12) -> np.ndarray:
+    """Normalize a vector to unit length.
+
+    Args:
+        v: Input vector to normalize.
+        epsilon: Small epsilon value below which the vector is considered zero.
+
+    Returns:
+        Unit vector in the direction of v.
+
+    Raises:
+        ValueError: If the vector has near-zero length (norm < epsilon).
+    """
+    n = float(np.linalg.norm(v))
+    if n < epsilon:
+        raise ValueError(f"Cannot normalize near-zero vector (norm={n:.2e})")
+    return v / n
+
+
 def rotations_to_quats(rotations, invert=False):
     # We get euler rotations from feature LM
     if rotations.ndim == 2:

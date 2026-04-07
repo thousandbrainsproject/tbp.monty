@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Protocol, Sequence
 
+import cv2
 import numpy as np
 import numpy.typing as npt
 import quaternion as qt
@@ -25,6 +26,7 @@ from tbp.monty.frameworks.sensors import SensorID
 __all__ = [
     "AddNoiseToRawDepthImage",
     "DepthTo3DLocations",
+    "GaussianBlurRGB",
     "GaussianSmoothing",
     "MissingToMaxDepth",
     "Transform",
@@ -275,6 +277,100 @@ class GaussianSmoothing(Transform):
         return filtered_img
 
 
+class GaussianBlurRGB(Transform):
+    """Apply Gaussian blur to RGB image."""
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sigma: float = 1.0,
+        kernel_size: int = 0,
+        sensor_ids: list[SensorID] | None = None,
+    ):
+        """Initialize the transform.
+
+        Args:
+            agent_id: Agent ID where the transform should be applied.
+            sigma: Standard deviation for Gaussian blur. Default is 1.0.
+            kernel_size: Kernel size for blur. If 0 (default), OpenCV auto-computes
+                from sigma using `6*sigma + 1` rounded to nearest odd. If specified,
+                must be odd.
+            sensor_ids: Optional list of sensor IDs to apply to. If None, applies
+                to all sensors of the agent.
+
+        Raises:
+            ValueError: If sensor_ids is an empty list.
+            ValueError: If kernel_size is even (when not 0).
+        """
+        self.agent_id = agent_id
+        self.sigma = sigma
+        self.kernel_size = kernel_size
+        self.sensor_ids = sensor_ids
+
+        if sensor_ids is not None and len(sensor_ids) == 0:
+            raise ValueError("sensor_ids must not be empty; use None for all sensors")
+        if self.kernel_size < 0:
+            raise ValueError(
+                f"The kernel_size must be non-negative, got {kernel_size}."
+            )
+        if self.kernel_size != 0 and self.kernel_size % 2 == 0:
+            raise ValueError(
+                f"The kernel_size must be odd or 0 (for auto-compute), "
+                f"got {kernel_size}."
+            )
+        if self.kernel_size == 0 and self.sigma <= 0:
+            raise ValueError(
+                f"The sigma must be positive when kernel_size is 0, got {sigma}."
+            )
+
+    def __call__(
+        self,
+        observations: Observations,
+        ctx: TransformContext,  # noqa: ARG002
+    ) -> Observations:
+        """Apply Gaussian blur to RGB image.
+
+        Args:
+            observations: Observations to modify in place.
+            ctx: Transform context.
+
+        Returns:
+            Observations, same as input, with blurred RGB values.
+
+        Raises:
+            KeyError: If sensor is not found in observations or has no 'rgba' key.
+        """
+        agent_obs = observations[self.agent_id]
+        sensors_to_process = (
+            self.sensor_ids if self.sensor_ids else list(agent_obs.keys())
+        )
+
+        for sensor_id in sensors_to_process:
+            if sensor_id not in agent_obs:
+                raise KeyError(
+                    f"Sensor '{sensor_id}' not found in observations for agent "
+                    f"'{self.agent_id}'"
+                )
+            if "rgba" not in agent_obs[sensor_id]:
+                raise KeyError(
+                    f"Sensor '{sensor_id}' has no 'rgba' key in observations"
+                )
+
+            rgba = agent_obs[sensor_id]["rgba"]
+            rgb_image = rgba[:, :, :3]
+            alpha_channel = rgba[:, :, 3:4]
+
+            blurred_rgb = cv2.GaussianBlur(
+                rgb_image, (self.kernel_size, self.kernel_size), self.sigma
+            )
+
+            agent_obs[sensor_id]["rgba"] = np.concatenate(
+                [blurred_rgb, alpha_channel], axis=2
+            )
+
+        return observations
+
+
 class DepthTo3DLocations(Transform):
     """Transform semantic and depth observations from 2D into 3D.
 
@@ -435,7 +531,7 @@ class DepthTo3DLocations(Transform):
 
         Args:
             observations: Observations returned by the environment interface.
-            state: Optionally supplied CMP-compliant state of the object.
+            state: Optionally supplied proprioceptive state.
 
         Returns:
             The original Observations, with the following possibly added:
