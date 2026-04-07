@@ -121,11 +121,11 @@ config:
           x_percent_threshold: 20
           # Update all hypotheses with evidence > 80% of the max hypothesis evidence
           evidence_threshold_config: 80%
-          # Config for goal state generator of LM which is used for model-based action
+          # Config for goal generator of LM which is used for model-based action
           # suggestions, such as hypothesis-testing actions.
           gsg:
-            _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
-            # Tolerance(s) when determining goal-state success
+            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+            # Tolerance(s) when determining goal success
             goal_tolerances:
               location: 0.015 # distance in meters
             # Number of necessary steps for a hypothesis-testing action to be considered
@@ -234,11 +234,11 @@ config:
           x_percent_threshold: 20
           # Update all hypotheses with evidence > 80% of the max hypothesis evidence
           evidence_threshold_config: 80%
-          # Config for goal state generator of LM which is used for model-based action
+          # Config for goal generator of LM which is used for model-based action
           # suggestions, such as hypothesis-testing actions.
           gsg:
-            _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
-            # Tolerance(s) when determining goal-state success
+            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+            # Tolerance(s) when determining goal success
             goal_tolerances:
               location: 0.015 # distance in meters
             # Number of necessary steps for a hypothesis-testing action to be considered
@@ -271,7 +271,7 @@ config:
 
 ```
 
-Note that we have changed the Monty experiment class and the logging config. We also opted for a policy whereby learning-modules generate actions to test hypotheses by producing "goal-states" for the low-level motor system.
+Note that we have changed the Monty experiment class and the logging config. We also opted for a policy whereby learning-modules generate actions to test hypotheses by producing "goals" for the low-level motor system.
 
 # Running the Experiment
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 import numpy as np
 import quaternion as qt
 
+from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
@@ -26,13 +27,12 @@ from tbp.monty.frameworks.models.salience.strategies import (
     UniformSalienceStrategy,
 )
 from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
-from tbp.monty.frameworks.models.states import GoalState, State
 from tbp.monty.frameworks.sensors import SensorID
 
-__all__ = ["HabitatSalienceSM"]
+__all__ = ["SalienceSM"]
 
 
-class HabitatSalienceSM(SensorModule):
+class SalienceSM(SensorModule):
     def __init__(
         self,
         sensor_module_id: str,
@@ -55,7 +55,7 @@ class HabitatSalienceSM(SensorModule):
             SnapshotTelemetry() if snapshot_telemetry is None else snapshot_telemetry
         )
 
-        self._goals: list[GoalState] = []
+        self._goals: list[Goal] = []
         # TODO: Goes away once experiment code is extracted
         self.is_exploring = False
 
@@ -80,8 +80,8 @@ class HabitatSalienceSM(SensorModule):
         ctx: RuntimeContext,
         observation: SensorObservation,
         motor_only_step: bool = False,  # noqa: ARG002
-    ) -> State | None:
-        """Generate goal states for the current step.
+    ) -> Message | None:
+        """Generate goal for the current step.
 
         Args:
             ctx: The runtime context.
@@ -107,7 +107,7 @@ class HabitatSalienceSM(SensorModule):
         salience = self._weight_salience(ctx, on_object.salience, ior_weights)
 
         self._goals = [
-            GoalState(
+            Goal(
                 location=on_object.locations[i],
                 morphological_features=None,
                 non_morphological_features=None,
@@ -168,5 +168,5 @@ class HabitatSalienceSM(SensorModule):
         self._snapshot_telemetry.reset()
         self.is_exploring = False
 
-    def propose_goal_states(self) -> list[GoalState]:
+    def propose_goals(self) -> list[Goal]:
         return self._goals

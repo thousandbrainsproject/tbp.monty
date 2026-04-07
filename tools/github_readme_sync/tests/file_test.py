@@ -113,7 +113,3 @@ class TestFindMarkdownFiles(unittest.TestCase):
             self.assertEqual(result_basenames, expected_basenames)
         finally:
             os.chdir(original_cwd)
-
-
-if __name__ == "__main__":
-    unittest.main()

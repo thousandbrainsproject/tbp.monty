@@ -1,0 +1,25 @@
+# @package experiment.config
+
+do_train: true
+train_env_interface_args:
+  parent_to_child_mapping: null
+  object_names:
+  - 021_logo_tbp
+  - 022_logo_numenta
+  object_init_sampler:
+    positions:
+    - - 0.0
+      - 1.5
+      - 0.0
+    - - -0.03
+      - 1.5
+      - 0.0
+    - - 0.03
+      - 1.5
+      - 0.0
+    rotations:
+    - - 0.0
+      - 0.0
+      - 0.0
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}

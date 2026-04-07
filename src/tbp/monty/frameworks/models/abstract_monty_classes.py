@@ -15,17 +15,20 @@ from typing import Dict, TypedDict
 import numpy as np
 import numpy.typing as npt
 
+from tbp.monty.cmp import Goal
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.models.motor_system_state import AgentState
-from tbp.monty.frameworks.models.states import GoalState
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    ProprioceptiveState,
+)
 from tbp.monty.frameworks.sensors import SensorID
 
 __all__ = [
     "AgentObservations",
-    "GoalStateGenerator",
+    "GoalGenerator",
     "LMMemory",
     "LearningModule",
     "Monty",
@@ -63,38 +66,58 @@ class Observations(Dict[AgentID, AgentObservations]):
 
 
 class Monty(metaclass=abc.ABCMeta):
-    ###
-    # Methods that specify the algorithm
-    ###
-    def _matching_step(self, ctx: RuntimeContext, observation):
+    def _matching_step(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ):
         """Step format for matching observations to graph.
 
         Used during training or evaluation.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
         """
-        self.aggregate_sensory_inputs(ctx, observation)
+        self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
         self._step_learning_modules(ctx)
         self._vote()
-        self._pass_goal_states()
-        self._pass_infos_to_motor_system()
-        self._step_motor_system(ctx, observation)
+        self._pass_goals()
+        self._step_motor_system(ctx, observations, proprioceptive_state)
         self._set_step_type_and_check_if_done()
         self._post_step()
 
-    def _exploratory_step(self, ctx: RuntimeContext, observation):
+    def _exploratory_step(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ):
         """Step format for adding data to an existing model.
 
         Used only during training.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
         """
-        self.aggregate_sensory_inputs(ctx, observation)
+        self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
         self._step_learning_modules(ctx)
-        self._pass_goal_states()
-        self._pass_infos_to_motor_system()
-        self._step_motor_system(ctx, observation)
+        self._pass_goals()
+        self._step_motor_system(ctx, observations, proprioceptive_state)
         self._set_step_type_and_check_if_done()
         self._post_step()
 
     @abc.abstractmethod
-    def step(self, ctx: RuntimeContext, observations: Observations) -> list[Action]:
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ) -> list[Action]:
         """Take a matching, exploratory, or custom user-defined step.
 
         Step taken depends on the value of self.step_type.
@@ -102,6 +125,7 @@ class Monty(metaclass=abc.ABCMeta):
         Args:
             ctx: The runtime context.
             observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
 
         Returns:
             The actions to take.
@@ -110,7 +134,10 @@ class Monty(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def motor_only_step(
-        self, ctx: RuntimeContext, observations: Observations
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
         """Take a step of the sensors and motor system only.
 
@@ -119,6 +146,7 @@ class Monty(metaclass=abc.ABCMeta):
         Args:
             ctx: The runtime context.
             observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
 
         Returns:
             The actions to take.
@@ -126,8 +154,19 @@ class Monty(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def aggregate_sensory_inputs(self, ctx: RuntimeContext, observation):
-        """Receive data from environment, organize on a per sensor module basis."""
+    def aggregate_sensory_inputs(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ):
+        """Receive data from environment, organize on a per sensor module basis.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
+        """
         pass
 
     @abc.abstractmethod
@@ -147,21 +186,27 @@ class Monty(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def _pass_goal_states(self):
-        """Pass goal states in the network between learning-modules.
+    def _pass_goals(self):
+        """Pass goals in the network between learning-modules.
 
-        Aggregate any goal states for sending to the motor-system.
+        Aggregate any goals for sending to the motor-system.
         """
         pass
 
     @abc.abstractmethod
-    def _pass_infos_to_motor_system(self):
-        """Pass input observations and goal states to the motor system."""
-        pass
+    def _step_motor_system(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ):
+        """Step the motor system.
 
-    @abc.abstractmethod
-    def _step_motor_system(self, ctx: RuntimeContext, observation):
-        """Step the motor system."""
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
+        """
         pass
 
     @abc.abstractmethod
@@ -278,8 +323,8 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def propose_goal_states(self) -> list[GoalState]:
-        """Return the goal-states proposed by this LM's GSG if they exist."""
+    def propose_goals(self) -> list[Goal]:
+        """Return the goals proposed by this LM's GSG if they exist."""
         pass
 
     @abc.abstractmethod
@@ -347,25 +392,25 @@ class ObjectModel(metaclass=abc.ABCMeta):
         pass
 
 
-class GoalStateGenerator(metaclass=abc.ABCMeta):
-    """Generate goal-states that other learning modules and motor-systems will attempt.
+class GoalGenerator(metaclass=abc.ABCMeta):
+    """Generate goals that other learning modules and motor-systems will attempt.
 
-    Generate goal-states potentially (in the case of LMs) by outputting their own
-    sub-goal-states. Provides a mechanism for implementing hierarchical action policies
+    Generate goals potentially (in the case of LMs) by outputting their own
+    sub-goals. Provides a mechanism for implementing hierarchical action policies
     that are informed by world models/hypotheses.
     """
 
     @abc.abstractmethod
-    def set_driving_goal_state(self):
-        """Set the driving goal state.
+    def set_driving_goal(self):
+        """Set the driving goal.
 
         e.g., from a human operator or a high-level LM.
         """
         pass
 
     @abc.abstractmethod
-    def output_goal_states(self) -> list[GoalState]:
-        """Return output goal-states."""
+    def output_goals(self) -> list[Goal]:
+        """Return output goals."""
         pass
 
     @abc.abstractmethod
@@ -408,6 +453,6 @@ class SensorModule(metaclass=abc.ABCMeta):
         """This method is called before each episode."""
         pass
 
-    def propose_goal_states(self) -> list[GoalState]:
-        """Return the goal-states proposed by this Sensor Module."""
+    def propose_goals(self) -> list[Goal]:
+        """Return the goals proposed by this Sensor Module."""
         return []

@@ -9,10 +9,10 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from tbp.monty.cmp import Goal
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
-from tbp.monty.frameworks.models.states import GoalState
 
 __all__ = ["FakeLearningModule"]
 
@@ -55,7 +55,7 @@ class FakeLearningModule(LearningModule):
     def set_experiment_mode(self, mode: ExperimentMode):
         pass
 
-    def propose_goal_states(self) -> list[GoalState]:
+    def propose_goals(self) -> list[Goal]:
         return []
 
     def get_output(self):
