@@ -1,5 +1,5 @@
 # Copyright 2025-2026 Thousand Brains Project
-# Copyright 2022-2024 Numenta Inc.
+# Copyright 2021-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -284,7 +284,7 @@ class HabitatTransformTest(unittest.TestCase):
     def test_semantic_3d_global_agent_rotation(self):
         agent_position = np.array([0.0, 0.0, 0.0])
         x, y, z, w = Rotation.from_euler("xyz", [30, 45, -10], degrees=True).as_quat()
-        # quaternion package uses w, x, y, z convention
+
         agent_rotation = qt.quaternion(w, x, y, z)
         sensor_position = np.array([0.0, 0.0, 0.0])
         sensor_rotation = qt.quaternion(1.0, 0.0, 0.0, 0.0)
