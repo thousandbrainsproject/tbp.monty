@@ -8,7 +8,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import json
 import logging
 import re
 from pathlib import Path
@@ -37,7 +36,11 @@ from tbp.monty.frameworks.environments.environment import (
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.sensors import Resolution2D
-from tbp.monty.math import QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
+from tbp.monty.simulators.mujoco.objects import (
+    ObjectMetadata,
+    load_object_metadata,
+)
 from tbp.monty.simulators.simulator import Simulator
 
 logger = logging.getLogger(__name__)
@@ -52,12 +55,23 @@ PRIMITIVE_OBJECTS = {
     "sphere": mjtGeom.mjGEOM_SPHERE,
 }
 
-
 DEFAULT_RESOLUTION = Resolution2D((64, 64))
 
 
-class UnknownShapeType(RuntimeError):
-    """Raised when an unknown shape is requested."""
+class UnknownObjectType(RuntimeError):
+    """An unknown object type is requested."""
+
+
+class MissingObjectModel(RuntimeError):
+    """An object type is missing an object model file."""
+
+
+class MissingObjectTexture(RuntimeError):
+    """An object type is missing a texture file."""
+
+
+class DataPathNotConfigured(RuntimeError):
+    """The simulator data_path is not configured and a custom object is requested."""
 
 
 class MuJoCoSimulator(Simulator):
@@ -157,8 +171,8 @@ class MuJoCoSimulator(Simulator):
     def add_object(
         self,
         name: str,
-        position: VectorXYZ = (0.0, 0.0, 0.0),
-        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
+        position: VectorXYZ = ZERO_VECTOR,
+        rotation: QuaternionWXYZ = IDENTITY_QUATERNION,
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
@@ -181,7 +195,7 @@ class MuJoCoSimulator(Simulator):
     def _add_loadable_object(
         self,
         obj_name: str,
-        shape_type: str,
+        object_type: str,
         position: VectorXYZ,
         rotation: QuaternionWXYZ,
         scale: VectorXYZ,
@@ -195,48 +209,69 @@ class MuJoCoSimulator(Simulator):
         the scene.
 
         Arguments:
-            obj_name: Identifier for the object in the scene, must be unique.
-            shape_type: Type of object to add, determines directory to look in.
+            obj_name: Name for the object in the scene.
+            object_type: Type of object to add, determines directory to look in.
             position: Initial position of the object.
             rotation: Initial orientation of the object.
             scale: Initial scale of the object.
 
         Raises:
-            UnknownShapeType: When the shape_type is unknown.
+            DataPathNotConfigured: if data_path is not configured
+            UnknownObjectType: When the directory for the object_type is missing.
+            MissingObjectTexture: When the texture map is missing.
+            MissingObjectModel: When the object is missing.
         """
-        path = self.data_path / shape_type
+        if not self.data_path:
+            raise DataPathNotConfigured(
+                "Cannot load custom objects in simulator, "
+                "'data_path' is not configured."
+            )
+        path = self.data_path / object_type
+        texture_path = path / "texture_map.png"
+        model_path = path / "textured.obj"
 
         if not path.exists():
-            raise UnknownShapeType(f"Unknown object type: {shape_type}")
+            raise UnknownObjectType(f"Unknown object type: {object_type}")
+        if not texture_path.exists():
+            raise MissingObjectTexture(
+                f"The {object_type} is missing 'texture_map.png'."
+            )
+        if not model_path.exists():
+            raise MissingObjectModel(f"The {object_type} is missing 'textured.obj'.")
 
         # MuJoCo doesn't seem to be able to load the referenced texture from the
         # 'texture.obj' file directly, so we have to load the texture separately and
         # create a material for it that we can add to the mesh.
+        # TODO: we should probably check to see if these are already defined, e.g.
+        #   when adding multiple copies of the same object_type to a scene.
         self.spec.add_texture(
-            name=f"{shape_type}_tex",
+            name=f"{object_type}_tex",
             type=mjtTexture.mjTEXTURE_2D,
-            file=f"{path / 'texture_map.png'}",
+            file=texture_path,
         )
         mat = self.spec.add_material(
-            name=f"{shape_type}_mat",
+            name=f"{object_type}_mat",
         )
-        mat.textures[mjtTextureRole.mjTEXROLE_RGB] = f"{shape_type}_tex"
+        mat.textures[mjtTextureRole.mjTEXROLE_RGB] = f"{object_type}_tex"
 
         metadata_path = path / "metadata.json"
-        metadata = json.load(metadata_path.open())
+        if metadata_path.exists():
+            metadata = load_object_metadata(metadata_path, object_type)
+        else:
+            metadata = ObjectMetadata()
 
         self.spec.add_mesh(
-            name=f"{shape_type}_mesh",
-            file=f"{path / 'textured.obj'}",
-            refquat=metadata["refquat"],
-            refpos=metadata["refpos"],
+            name=f"{object_type}_mesh",
+            file=model_path,
+            refquat=metadata.refquat,
+            refpos=metadata.refpos,
         )
 
         self.spec.worldbody.add_geom(
             name=obj_name,
             type=mjtGeom.mjGEOM_MESH,
-            meshname=f"{shape_type}_mesh",
-            material=f"{shape_type}_mat",
+            meshname=f"{object_type}_mesh",
+            material=f"{object_type}_mat",
             size=scale,
             pos=position,
             quat=rotation,
@@ -245,7 +280,7 @@ class MuJoCoSimulator(Simulator):
     def _add_primitive_object(
         self,
         obj_name: str,
-        shape_type: str,
+        object_type: str,
         position: VectorXYZ,
         rotation: QuaternionWXYZ,
         scale: VectorXYZ,
@@ -253,21 +288,23 @@ class MuJoCoSimulator(Simulator):
         """Adds a built-in MuJoCo primitive geom to the scene spec.
 
         Arguments:
-            obj_name: Identifier for the object in the scene, must be unique.
-            shape_type: The primitive shape to add.
+            obj_name: Name for the object in the scene.
+            object_type: The primitive object type to add.
             position: Initial position of the object.
             rotation: Initial orientation of the object.
             scale: Initial scale of the object.
 
         Raises:
-            UnknownShapeType: When the shape_type is unknown.
+            UnknownObjectType: When the shape_type is unknown.
         """
         world_body: MjsBody = self.spec.worldbody
 
         try:
-            geom_type = PRIMITIVE_OBJECTS[shape_type]
+            geom_type = PRIMITIVE_OBJECTS[object_type]
         except KeyError:
-            raise UnknownShapeType(f"Unknown MuJoCo primitive: {shape_type}") from None
+            raise UnknownObjectType(
+                f"Unknown MuJoCo primitive: {object_type}"
+            ) from None
 
         # TODO: should we encapsulate primitive objects into bodies?
         world_body.add_geom(
