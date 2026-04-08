@@ -20,11 +20,11 @@ experiment:
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: 3
-    model_name_or_path: /home/tristan_weldon/tbp/results/monty/pretrained_models/my_trained_models/ror_lbp_distinct_pretraining/pretrained
+    model_name_or_path: /home/tristan_weldon/tbp/results/monty/pretrained_models/my_trained_models/uniform_lbp_distinct_pretraining/pretrained
     n_eval_epochs: ${constants.rotations_all_count}
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG
     logging:
-      run_name: lbp_ror_10distinct_eval
+      run_name: uniform_lbp_10distinct_eval

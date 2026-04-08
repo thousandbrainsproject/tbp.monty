@@ -144,7 +144,6 @@ class ObservationProcessor:
         "mean_curvature_sc",
         "curvature_for_TM",
         "coords_for_TM",
-        # "mock_obs",
         "local_binary_pattern",
     ]
 
@@ -197,7 +196,6 @@ class ObservationProcessor:
         sensor_frame_data = observation["sensor_frame_data"]
         world_camera = observation["world_camera"]
         rgba_feat = observation["rgba"]
-        # mock_obs = [.1, .2, .3, .4, .5, .6, .7, .8, .9]
         depth_feat = (
             observation["depth"]
             .reshape(observation["depth"].size, 1)
@@ -327,8 +325,8 @@ class ObservationProcessor:
             gray = (gray * 255).astype(np.uint8)
             p = 8
             r = 1
-            lbp = local_binary_pattern(gray, p, r, method="ror")
-            n_bins = int(lbp.max() + 1)
+            lbp = local_binary_pattern(gray, p, r, method="uniform")
+            n_bins = p + 2
             hist, _ = np.histogram(
                 lbp.ravel(),
                 bins=n_bins,

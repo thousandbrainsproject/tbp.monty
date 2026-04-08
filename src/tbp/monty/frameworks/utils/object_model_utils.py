@@ -128,14 +128,10 @@ def already_in_list(
                         redundant_point = False
                         break
 
-                elif feature == "distance":
+                elif feature in {"distance", "local_binary_pattern"}:
                     pass
-                    # Already dealt with in vectorized form
-
-                elif feature == "local_binary_pattern":
-                    pass
-                    # Case for local binary pattern features.
-                    # A histogram distance metric makes more sense here
+                    # Distance already dealt with in vectorized form
+                    # LBP will need dealt with as a vector
 
                 else:
                     delta_change = np.abs(

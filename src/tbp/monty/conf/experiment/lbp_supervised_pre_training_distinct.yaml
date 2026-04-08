@@ -26,4 +26,4 @@ experiment:
     seed: 42
     supervised_lm_ids: all
     logging:
-      run_name: ror_lbp_distinct_pretraining
+      run_name: uniform_lbp_distinct_pretraining
