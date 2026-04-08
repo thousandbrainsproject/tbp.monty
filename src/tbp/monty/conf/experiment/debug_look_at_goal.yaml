@@ -9,7 +9,7 @@ defaults:
   - /environment: habitat_dist_agent
   - /env_interface: test_eval_1obj_cube
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0
-  - /logging: detailed_info_monty_runs
+  - /logging: detailed_debug_monty_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
@@ -25,4 +25,13 @@ experiment:
     seed: 42
     supervised_lm_ids: []
     logging:
-      run_name: look_at_goal
+      run_name: debug_look_at_goal
+
+    monty_config:
+        sensor_module_configs:
+            sensor_module_1:
+              sensor_module_class: ${monty.class:tbp.monty.frameworks.models.salience.sensor_module.SalienceSM}
+              sensor_module_args:
+                sensor_module_id: view_finder
+                save_raw_obs: true
+
