@@ -39,4 +39,4 @@ env_init_args:
         - 0.0
         - 1.5
         - 0.2
-env_init_func: ${monty.class:tbp.monty.simulators.mujoco.environment.MuJoCoEnvironment}
+env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}

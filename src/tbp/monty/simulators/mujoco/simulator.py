@@ -13,6 +13,7 @@ import re
 from pathlib import Path
 from typing import Callable, Sequence
 
+import quaternion as qt
 from mujoco import (
     MjData,
     MjModel,
@@ -32,6 +33,7 @@ from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
     SemanticID,
+    SimulatedObjectEnvironment,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
@@ -74,7 +76,7 @@ class DataPathNotConfigured(RuntimeError):
     """The simulator data_path is not configured and a custom object is requested."""
 
 
-class MuJoCoSimulator(Simulator):
+class MuJoCoSimulator(Simulator, SimulatedObjectEnvironment):
     """Simulator implementation for MuJoCo.
 
     MuJoCo's data model consists of three parts, a spec defining the scene, a
@@ -91,7 +93,7 @@ class MuJoCoSimulator(Simulator):
         data_path: str | Path | None = None,
     ) -> None:
         if not agents:
-            agents = []
+            agents: Sequence[Callable[[MuJoCoSimulator], Agent]] = []
 
         self.spec = MjSpec()
         self.model: MjModel = self.spec.compile()
@@ -179,6 +181,15 @@ class MuJoCoSimulator(Simulator):
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:
+        # TODO: remove this once object init samplers return the correct types
+        if isinstance(rotation, qt.quaternion):
+            rotation = (
+                rotation.w,
+                rotation.x,
+                rotation.y,
+                rotation.z,
+            )
+
         obj_name = f"{name}_{self._object_count}"
 
         if name in PRIMITIVE_OBJECTS:
