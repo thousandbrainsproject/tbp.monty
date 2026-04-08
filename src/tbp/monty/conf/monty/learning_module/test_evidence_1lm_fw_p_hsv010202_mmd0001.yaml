@@ -1,0 +1,14 @@
+# @package experiment.config.monty_config.learning_module_configs
+
+learning_module_0:
+  learning_module_args:
+    feature_weights:
+      patch:
+        hsv: ${np.array:[0.1, 0.2, 0.2]}
+    tolerances:
+      patch:
+        hsv: ${np.array:[0.1, 1, 1]}
+        pose_vectors: ${np.array:[20, 20, 20]}
+        principal_curvatures_log: ${np.ones:2}
+    max_match_distance: 0.001
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}

@@ -50,7 +50,3 @@ class TactoSensorTest(unittest.TestCase):
         self.assertIsInstance(specs[0], habitat_sim.sensor.CameraSensorSpec)
         self.assertAlmostEqual(specs[0].near, DIGIT.camera["cam0"].znear)
         self.assertAlmostEqual(float(specs[0].hfov), DIGIT.camera["cam0"].yfov)
-
-
-if __name__ == "__main__":
-    unittest.main()

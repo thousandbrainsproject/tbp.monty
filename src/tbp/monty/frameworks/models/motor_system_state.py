@@ -15,13 +15,14 @@ import numpy as np
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.math import VectorXYZ
 
 
 @dataclass
 class SensorState:
     """The proprioceptive state of a sensor."""
 
-    position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
+    position: VectorXYZ
     """The sensor's position."""
     rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
     """The sensor's rotation."""
@@ -37,16 +38,10 @@ class AgentState:
     When part of an AgentState, the SensorState's position and rotation are relative to
     the agent's position and rotation.
     """
-    position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
+    position: VectorXYZ
     """The agent's position."""
     rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
     """The agent's rotation."""
-    motor_only_step: bool = False
-    """Control flow parameter. Processing will bypass the learning module if True.
-
-    TODO: Remove once we refactor Monty main processing loop to no longer need
-    control flow parameters in motor system state.
-    """
 
 
 class ProprioceptiveState(Dict[AgentID, AgentState]):

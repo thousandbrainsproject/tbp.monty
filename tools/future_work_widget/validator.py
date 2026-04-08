@@ -141,6 +141,10 @@ class FutureWorkRecord(BaseModel):
             max_length=10,
         ),
     ]
+    hidden: Annotated[
+        bool | None,
+        Field(default=None, description="Whether to hide this item from documentation"),
+    ]
 
     @classmethod
     def _allowed_values(

@@ -19,12 +19,16 @@ import quaternion as qt
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule, SensorObservation, AgentObservations
+from tbp.monty.cmp import Message
+from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    SensorModule,
+    SensorObservation,
+)
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     SensorState,
 )
-from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.sensor_processing import (
     log_sign,
@@ -46,10 +50,10 @@ __all__ = [
     "MessageNoise",
     "NoMessageNoise",
     "ObservationProcessor",
-    "PassthroughStateFilter",
+    "PassthroughPerceptFilter",
+    "PerceptFilter",
     "Probe",
     "SnapshotTelemetry",
-    "StateFilter",
     "SurfaceNormalMethod",
 ]
 
@@ -59,9 +63,9 @@ logger = logging.getLogger(__name__)
 class SnapshotTelemetry:
     """Keeps track of raw observation snapshot telemetry."""
 
-    def __init__(self):
-        self.poses = []
-        self.raw_observations = []
+    def __init__(self) -> None:
+        self.poses: list[dict[str, np.ndarray]] = []
+        self.raw_observations: list[SensorObservation] = []
 
     def reset(self):
         """Reset the snapshot telemetry."""
@@ -69,7 +73,10 @@ class SnapshotTelemetry:
         self.poses = []
 
     def raw_observation(
-        self, raw_observation, rotation: qt.quaternion, position: np.ndarray
+        self,
+        raw_observation: SensorObservation,
+        rotation: qt.quaternion,
+        position: np.ndarray,
     ):
         """Record a snapshot of a raw observation and its pose information.
 
@@ -86,7 +93,9 @@ class SnapshotTelemetry:
             )
         )
 
-    def state_dict(self) -> dict[str, list[np.ndarray]]:
+    def state_dict(
+        self,
+    ) -> dict[str, list[SensorObservation] | list[dict[str, np.ndarray]]]:
         """Returns recorded raw observation snapshots.
 
         Returns:
@@ -176,14 +185,14 @@ class ObservationProcessor:
         self._surface_normal_method = surface_normal_method
         self._weight_curvature = weight_curvature
 
-    def process(self, observation: SensorObservation) -> State:
+    def process(self, observation: SensorObservation) -> Message:
         """Processes observation.
 
         Args:
             observation: Habitat observation.
 
         Returns:
-            Cortical Message.
+            A Percept.
         """
         obs_3d = observation["semantic_3d"]
         sensor_frame_data = observation["sensor_frame_data"]
@@ -233,14 +242,14 @@ class ObservationProcessor:
         if "on_object" in self._features:
             morphological_features["on_object"] = float(on_object)
 
-        # Sensor module returns features at a location in the form of a State class.
+        # Sensor module returns features at a location in the form of a Message class.
         # use_state is a bool indicating whether the input is "interesting",
         # which indicates that it merits processing by the learning module; by default
         # it will always be True so long as the surface normal and principal curvature
         # directions were valid; certain SMs and policies used separately can also set
         # it to False under appropriate conditions
 
-        observed_state = State(
+        percept = Message(
             location=np.array([x, y, z]),
             morphological_features=morphological_features,
             non_morphological_features=features,
@@ -250,9 +259,9 @@ class ObservationProcessor:
             sender_type="SM",
         )
         # This is just for logging! Do not use _ attributes for matching
-        observed_state._semantic_id = semantic_id
+        percept._semantic_id = semantic_id
 
-        return observed_state
+        return percept
 
     def _extract_and_add_features(
         self,
@@ -400,7 +409,7 @@ class Probe(SensorModule):
 
         self.is_exploring = False
         self.sensor_module_id = sensor_module_id
-        self.state = None
+        self.state: SensorState | None = None
         self.save_raw_obs = save_raw_obs
 
         self._snapshot_telemetry = SnapshotTelemetry()
@@ -416,16 +425,16 @@ class Probe(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
-        self.motor_only_step = agent.motor_only_step
 
     def step(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
-        data,
-    ) -> State | None:
+        observation: SensorObservation,
+        motor_only_step: bool = False,  # noqa: ARG002
+    ) -> Message | None:
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data, self.state.rotation, self.state.position
+                observation, self.state.rotation, self.state.position
             )
 
         return None
@@ -437,24 +446,24 @@ class Probe(SensorModule):
 
 
 class MessageNoise(Protocol):
-    def __call__(self, state: State, rng: np.random.RandomState) -> State: ...
+    def __call__(self, percept: Message, rng: np.random.RandomState) -> Message: ...
 
 
 class NoMessageNoise(MessageNoise):
-    def __call__(self, state: State, rng: np.random.RandomState) -> State:  # noqa: ARG002
+    def __call__(self, percept: Message, rng: np.random.RandomState) -> Message:  # noqa: ARG002
         """No noise function.
 
         Returns:
-            State with no noise added.
+            Percept with no noise added.
         """
-        return state
+        return percept
 
 
 class DefaultMessageNoise(MessageNoise):
     def __init__(self, noise_params: dict[str, Any]):
         self.noise_params = noise_params
 
-    def __call__(self, state: State, rng: np.random.RandomState) -> State:
+    def __call__(self, percept: Message, rng: np.random.RandomState) -> Message:
         """Add noise to features specified in noise_params.
 
         Noise params should have structure {"features":
@@ -468,15 +477,15 @@ class DefaultMessageNoise(MessageNoise):
         noise is just added onto the perceived feature value.
 
         Args:
-            state: State to add noise to.
+            percept: Percept to add noise to.
             rng: Random number generator.
 
         Returns:
-            State with noise added.
+            Percept with noise added.
         """
         if "features" in self.noise_params:
             for key in self.noise_params["features"]:
-                if key in state.morphological_features:
+                if key in percept.morphological_features:
                     if key == "pose_vectors":
                         # apply randomly sampled rotation to xyz axes with standard
                         # deviation specified in noise_params
@@ -488,30 +497,30 @@ class DefaultMessageNoise(MessageNoise):
                         noise_rotation = Rotation.from_euler(
                             "xyz", noise_angles, degrees=True
                         )
-                        state.morphological_features[key] = noise_rotation.apply(
-                            state.morphological_features[key]
+                        percept.morphological_features[key] = noise_rotation.apply(
+                            percept.morphological_features[key]
                         )
                     else:
-                        state.morphological_features[key] = (
+                        percept.morphological_features[key] = (
                             self.add_noise_to_feat_value(
                                 feat_name=key,
-                                feat_val=state.morphological_features[key],
+                                feat_val=percept.morphological_features[key],
                                 rng=rng,
                             )
                         )
-                elif key in state.non_morphological_features:
-                    state.non_morphological_features[key] = (
+                elif key in percept.non_morphological_features:
+                    percept.non_morphological_features[key] = (
                         self.add_noise_to_feat_value(
                             feat_name=key,
-                            feat_val=state.non_morphological_features[key],
+                            feat_val=percept.non_morphological_features[key],
                             rng=rng,
                         )
                     )
         if "location" in self.noise_params:
             noise = rng.normal(0, self.noise_params["location"], 3)
-            state.location = state.location + noise
+            percept.location = percept.location + noise
 
-        return state
+        return percept
 
     def add_noise_to_feat_value(self, feat_name, feat_val, rng: np.random.RandomState):
         if isinstance(feat_val, bool):
@@ -596,16 +605,16 @@ class CameraSM(SensorModule):
         else:
             self._message_noise = NoMessageNoise()
         if delta_thresholds:
-            self._state_filter: StateFilter = FeatureChangeFilter(
+            self._percept_filter: PerceptFilter = FeatureChangeFilter(
                 delta_thresholds=delta_thresholds
             )
         else:
-            self._state_filter = PassthroughStateFilter()
+            self._percept_filter = PassthroughPerceptFilter()
         self._snapshot_telemetry = SnapshotTelemetry()
         # Tests check sm.features, not sure if this should be exposed
         self.features = features
-        self.processed_obs = []
-        self.states = []
+        self.processed_obs: list[dict[str, Any]] = []
+        self.states: list[SensorState] = []
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
@@ -617,7 +626,7 @@ class CameraSM(SensorModule):
 
     def pre_episode(self) -> None:
         self._snapshot_telemetry.reset()
-        self._state_filter.reset()
+        self._percept_filter.reset()
         self.is_exploring = False
         self.processed_obs = []
         self.states = []
@@ -631,97 +640,101 @@ class CameraSM(SensorModule):
             rotation=agent.rotation * sensor.rotation,
         )
         #START
-        self.agent_state = agent
+        #self.agent_state = agent
         #END
-        self.motor_only_step = agent.motor_only_step
+        #self.motor_only_step = agent.motor_only_step
 
     def state_dict(self):
         state_dict = self._snapshot_telemetry.state_dict()
         state_dict.update(processed_observations=self.processed_obs)
         return state_dict
 
-    def step(self, ctx: RuntimeContext, data) -> State | None:
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observation: SensorObservation,
+        motor_only_step: bool = False,
+    ) -> Message | None:
         """Turn raw observations into dict of features at location.
 
         Args:
             ctx: The runtime context.
-            data: Raw observations.
+            observation: Raw sensor observation.
+            motor_only_step: Whether the current step is a motor-only step.
 
         Returns:
-            State with features and morphological features. Noise may be added.
-            use_state flag may be set.
+            Percept with features and morphological features. Noise may be
+            added. The `use_state` flag may be set.
         """
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data, self.state.rotation, self.state.position
+                observation, self.state.rotation, self.state.position
             )
 
-        print("IN SENSOR MODULE STEP METHOD")
+        # print("IN SENSOR MODULE STEP METHOD")
         # RAL Change the call
-        print_dict_structure(data)
-        tf_context = TransformContext(None, self.agent_state)
+        # print_dict_structure(data)
+        # tf_context = TransformContext(None, self.agent_state)
 
-        self.transform_pipeline(tf_context, data)
+        # self.transform_pipeline(tf_context, data)
 
 
-        observed_state = self._observation_processor.process(data)
+        # observed_state = self._observation_processor.process(data)
+        # percept = self._observation_processor.process(observation)
 
-        if observed_state.use_state:
-            observed_state = self._message_noise(observed_state, rng=ctx.rng)
+        if percept.use_state:
+            percept = self._message_noise(percept, rng=ctx.rng)
 
-        if self.motor_only_step:
-            # Set interesting-features flag to False, as should not be passed to
-            # LM, even in e.g. pre-training experiments that might otherwise do so
-            observed_state.use_state = False
+        if motor_only_step:
+            percept.use_state = False
 
-        observed_state = self._state_filter(observed_state)
+        percept = self._percept_filter(percept)
 
         if not self.is_exploring:
-            self.processed_obs.append(observed_state.__dict__)
+            self.processed_obs.append(percept.__dict__)
             self.states.append(self.state)
 
-        return observed_state
+        return percept
 
 
-class StateFilter(Protocol):
-    def __call__(self, state: State) -> State: ...
+class PerceptFilter(Protocol):
+    def __call__(self, percept: Message) -> Message: ...
     def reset(self) -> None: ...
 
 
-
-class PassthroughStateFilter(StateFilter):
-    def __call__(self, state: State) -> State:
-        """Passthrough state filter. Never sets `state.use_state` to False.
+class PassthroughPerceptFilter(PerceptFilter):
+    def __call__(self, percept: Message) -> Message:
+        """Passthrough percept filter. Never sets `percept.use_state` to False.
 
         Returns:
-            State unchanged.
+            Percept unchanged.
         """
-        return state
+        return percept
 
     def reset(self) -> None:
         pass
 
 
-class FeatureChangeFilter(StateFilter):
+class FeatureChangeFilter(PerceptFilter):
     def __init__(self, delta_thresholds: dict[str, Any]):
         self._delta_thresholds = delta_thresholds
-        self._last_state = None
+        self._last_percept = None
         self._last_sent_n_steps_ago = 0
 
     def reset(self):
         """Reset buffer and is_exploring flag."""
-        self._last_state = None
+        self._last_percept = None
 
-    def _check_feature_change(self, state: State) -> bool:
+    def _check_feature_change(self, percept: Message) -> bool:
         """Check feature change between last transmitted observation.
 
         Args:
-            state: State to check for feature change.
+            percept: Percept to check for feature change.
 
         Returns:
             True if the features have changed significantly.
         """
-        if not state.get_on_object():
+        if not percept.get_on_object():
             # Even for the surface-agent sensor, do not return a feature for LM
             # processing that is not on the object
             logger.debug("No new point because not on object")
@@ -729,8 +742,8 @@ class FeatureChangeFilter(StateFilter):
 
         for feature in self._delta_thresholds:
             if feature not in ["n_steps", "distance"]:
-                last_feat = self._last_state.get_feature_by_name(feature)
-                current_feat = state.get_feature_by_name(feature)
+                last_feat = self._last_percept.get_feature_by_name(feature)
+                current_feat = percept.get_feature_by_name(feature)
 
             if feature == "n_steps":
                 if self._last_sent_n_steps_ago >= self._delta_thresholds[feature]:
@@ -738,7 +751,7 @@ class FeatureChangeFilter(StateFilter):
                     return True
             elif feature == "distance":
                 distance = np.linalg.norm(
-                    np.array(self._last_state.location) - np.array(state.location)
+                    np.array(self._last_percept.location) - np.array(percept.location)
                 )
 
                 if distance > self._delta_thresholds[feature]:
@@ -782,38 +795,38 @@ class FeatureChangeFilter(StateFilter):
                     return True
         return False
 
-    def __call__(self, state: State) -> State:
-        """Sets `state.use_state` to False if features haven't changed significantly.
+    def __call__(self, percept: Message) -> Message:
+        """Sets `percept.use_state` to False if features haven't changed significantly.
 
         Args:
-            state: State to check for feature change.
+            percept: Percept to check for feature change.
 
         Returns:
-            State with `state.use_state` set to False if features haven't changed
-            significantly.
+            Percept with `percept.use_state` set to False if features haven't
+            changed significantly.
         """
-        if not state.use_state:
+        if not percept.use_state:
             # If we already know the features are uninteresting (e.g. invalid surface
             # normal due to <3/4 of the object in view, or motor only-step), then
             # don't bother with the below
-            return state
+            return percept
 
-        if not self._last_state:  # first step
-            self._last_state = state
+        if not self._last_percept:  # first step
+            self._last_percept = percept  # type: ignore[assignment]
             self._last_sent_n_steps_ago = 0
-            return state
+            return percept
 
-        significant_feature_change = self._check_feature_change(state)
+        significant_feature_change = self._check_feature_change(percept)
 
         # Save bool which will tell us whether to pass the information to LMs
-        state.use_state = significant_feature_change
+        percept.use_state = significant_feature_change
 
         if significant_feature_change:
             # As per original implementation : only update the "last feature" when a
             # significant change has taken place
-            self._last_state = state
+            self._last_percept = percept
             self._last_sent_n_steps_ago = 0
         else:
             self._last_sent_n_steps_ago += 1
 
-        return state
+        return percept

@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Mapping
 
 import numpy as np
+import numpy.typing as npt
 import quaternion as qt
 import scipy.ndimage
 from scipy.spatial.transform import Rotation as rot  # noqa: N813
@@ -21,16 +22,24 @@ from typing_extensions import Protocol
 from tbp.monty.frameworks.actions.actions import Action, LookDown, MoveForward, TurnLeft
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.environment import SemanticID
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 from tbp.monty.frameworks.sensors import SensorID
 
 __all__ = [
+    "GOOD_VIEW_DISTANCE_DEFAULT",
+    "GOOD_VIEW_PERCENTAGE_DEFAULT",
     "GetGoodView",
+    "GetGoodViewFactory",
     "PositioningProcedure",
+    "PositioningProcedureFactory",
     "PositioningProcedureResult",
 ]
 
 logger = logging.getLogger(__name__)
+
+GOOD_VIEW_PERCENTAGE_DEFAULT = 0.5
+GOOD_VIEW_DISTANCE_DEFAULT = 0.03
 
 
 @dataclass
@@ -59,12 +68,14 @@ class PositioningProcedure(Protocol):
     """
 
     @staticmethod
-    def depth_at_center(agent_id: AgentID, observation: Any, sensor_id: str) -> float:
+    def depth_at_center(
+        agent_id: AgentID, observations: Observations, sensor_id: SensorID
+    ) -> float:
         """Determine the depth of the central pixel for the sensor.
 
         Args:
             agent_id: The ID of the agent to use.
-            observation: The observation to use.
+            observations: The observations to use.
             sensor_id: The ID of the sensor to use.
 
         Returns:
@@ -72,8 +83,8 @@ class PositioningProcedure(Protocol):
         """
         # TODO: A lot of assumptions are made here about the shape of the observation.
         #       This should be made robust.
-        observation_shape = observation[agent_id][sensor_id]["depth"].shape
-        return observation[agent_id][sensor_id]["depth"][
+        observation_shape = observations[agent_id][sensor_id]["depth"].shape
+        return observations[agent_id][sensor_id]["depth"][
             observation_shape[0] // 2, observation_shape[1] // 2
         ]
 
@@ -95,8 +106,23 @@ class PositioningProcedure(Protocol):
         pass
 
 
+class PositioningProcedureFactory(Protocol):
+    """Factory for creating positioning procedures."""
+
+    def create(self, target_semantic_id: SemanticID) -> PositioningProcedure:
+        """Create a positioning procedure.
+
+        Args:
+            target_semantic_id: The semantic ID of the target object.
+
+        Returns:
+            A positioning procedure.
+        """
+
+
 def get_perc_on_obj_semantic(
-    semantic_obs, semantic_id: SemanticID | Literal["any"] = "any"
+    semantic_obs: npt.NDArray[np.int_],
+    semantic_id: SemanticID | Literal["any"] = "any",
 ):
     """Get the percentage of pixels in the observation that land on the target object.
 
@@ -272,7 +298,7 @@ class GetGoodView(PositioningProcedure):
             idx_loc_to_look_at[0], idx_loc_to_look_at[1], :3
         ]
         camera_location = state[self._agent_id].sensors[self._sensor_id].position
-        agent_location = state[self._agent_id].position
+        agent_location = np.array(state[self._agent_id].position)
         # Get the location of the object relative to sensor.
         return location_to_look_at - (camera_location + agent_location)
 
@@ -464,3 +490,37 @@ class GetGoodView(PositioningProcedure):
         sensor_rotation = agent_state.sensors[self._sensor_id].rotation
         # Derive sensor's rotation relative to the world.
         return agent_rotation * sensor_rotation
+
+
+class GetGoodViewFactory(PositioningProcedureFactory):
+    """Factory for creating GetGoodView positioning procedures."""
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sensor_id: SensorID,
+        allow_translation: bool = True,
+        good_view_distance: float = GOOD_VIEW_DISTANCE_DEFAULT,
+        good_view_percentage: float = GOOD_VIEW_PERCENTAGE_DEFAULT,
+        max_orientation_attempts: int = 1,
+        multiple_objects_present: bool = False,
+    ):
+        self._agent_id = agent_id
+        self._allow_translation = allow_translation
+        self._good_view_distance = good_view_distance
+        self._good_view_percentage = good_view_percentage
+        self._max_orientation_attempts = max_orientation_attempts
+        self._multiple_objects_present = multiple_objects_present
+        self._sensor_id = sensor_id
+
+    def create(self, target_semantic_id: SemanticID) -> GetGoodView:
+        return GetGoodView(
+            agent_id=self._agent_id,
+            good_view_distance=self._good_view_distance,
+            good_view_percentage=self._good_view_percentage,
+            multiple_objects_present=self._multiple_objects_present,
+            sensor_id=self._sensor_id,
+            target_semantic_id=target_semantic_id,
+            allow_translation=self._allow_translation,
+            max_orientation_attempts=self._max_orientation_attempts,
+        )

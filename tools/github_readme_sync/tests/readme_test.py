@@ -741,6 +741,40 @@ This is a test document.""",
         finally:
             Path(tmp_path).unlink()
 
+    def test_convert_csv_to_html_table_hides_hidden_columns(self):
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as tmp:
+            writer = csv.writer(tmp)
+            writer.writerow(
+                [
+                    "Experiment",
+                    "Correct (%)|align right",
+                    "Num Episodes|align right|hidden",
+                ]
+            )
+            writer.writerow(["randrot_noise_10distinctobj_surf_agent", "100.00", "100"])
+            writer.writerow(["base_10simobj_surf_agent", "98.57", "140"])
+            tmp_path = tmp.name
+
+        try:
+            result = self.readme.convert_csv_to_html_table(f"!table[{tmp_path}]", "")
+
+            expected = (
+                '<div class="data-table"><table>\n'
+                "<thead>\n"
+                "<tr><th>Experiment</th><th>Correct (%)</th></tr>\n"
+                "</thead>\n"
+                "<tbody>\n"
+                "<tr><td>randrot_noise_10distinctobj_surf_agent</td>"
+                '<td style="text-align:right">100.00</td></tr>\n'
+                "<tr><td>base_10simobj_surf_agent</td>"
+                '<td style="text-align:right">98.57</td></tr>\n'
+                "</tbody>\n"
+                "</table></div>"
+            )
+            self.assertEqual(result, expected)
+        finally:
+            Path(tmp_path).unlink()
+
     def test_convert_csv_to_html_table_relative_path(self):
         # Create a temporary directory structure
         with tempfile.TemporaryDirectory() as tmp_dir_str:
@@ -831,7 +865,3 @@ This is a test document.""",
         self.assertIn("<h1>Test Content</h1>", sanitized_html)
         self.assertIn("<p>This is a test paragraph</p>", sanitized_html)
         self.assertIn("<p>More content after the script</p>", sanitized_html)
-
-
-if __name__ == "__main__":
-    unittest.main()

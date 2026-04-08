@@ -1,0 +1,7 @@
+# @package experiment.config.monty_config.motor_system_config
+
+defaults:
+- policy: informed_5_goal0
+- policy_selector: single_policy_selector
+
+_target_: tbp.monty.frameworks.models.motor_system.MotorSystem

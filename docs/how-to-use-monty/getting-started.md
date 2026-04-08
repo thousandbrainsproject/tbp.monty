@@ -53,6 +53,9 @@ Monty requires Conda to install its dependencies. For instructions on how to ins
 
 To setup Monty, **use the conda commands below**. Make sure to `cd` into the `tbp.monty` directory before running these commands.
 
+> [!NOTE]
+> It is recommended to install Conda outside the `tbp.monty` repository (for example at `~/miniconda3`).
+
 Note that the commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture, and whether you are using the zsh shell or another shell.
 
 > [!NOTE]

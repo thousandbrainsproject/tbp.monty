@@ -12,11 +12,17 @@ from __future__ import annotations
 import logging
 from typing import ClassVar
 
+from tbp.monty.cmp import Goal
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
-from tbp.monty.frameworks.models.abstract_monty_classes import Monty, RuntimeContext
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    Monty,
+    Observations,
+    RuntimeContext,
+)
 from tbp.monty.frameworks.models.motor_system import MotorSystem
-from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 
 __all__ = ["MontyBase"]
 
@@ -131,26 +137,48 @@ class MontyBase(Monty):
                 "sensor_module id; no more, no less!"
             )
 
-    ###
-    # Basic methods that specify the algorithm
-    ###
+        self._actions: list[Action] = []
+        self._goals: list[Goal] = []
 
-    def step(self, ctx: RuntimeContext, observation):
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ) -> list[Action]:
         # For the base class, just use matching step. Note that matching_step and
         # exploratory_step are fully implemented by the abstract class.
         if self.step_type == "matching_step":
-            self._matching_step(ctx, observation)
+            self._matching_step(ctx, observations, proprioceptive_state)
         elif self.step_type == "exploratory_step":
-            self._exploratory_step(ctx, observation)
+            self._exploratory_step(ctx, observations, proprioceptive_state)
         else:
             raise ValueError(f"step type {self.step_type} not found in base monty")
+        # TODO: Once this works, refactor to be more functional and less side-effect
+        #       driven. For now, we're minimizing changes to the existing side-effect
+        #       driven pattern and return `self._actions` that got updated at some
+        #       point during the step method calls above.
+        return self._actions
 
-    def aggregate_sensory_inputs(self, ctx: RuntimeContext, observation):
+    def aggregate_sensory_inputs(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ):
         sensor_module_outputs = []
         for sensor_module in self.sensor_modules:
-            raw_obs = self.get_observations(observation, sensor_module.sensor_module_id)
-            sensor_module.update_state(self.get_agent_state())
-            sm_output = sensor_module.step(ctx, raw_obs)
+            raw_obs = self.get_observations(
+                observations, sensor_module.sensor_module_id
+            )
+            # TODO: To get rid of agent access here, we need to make
+            # proprioceptive_state a flat data structure where they keys are agent
+            # IDs and sensor IDs. Also, sensor module should be given only its
+            # proprioceptive state.
+            agent_id = self.sm_to_agent_dict[sensor_module.sensor_module_id]
+            agent_state = proprioceptive_state[agent_id]
+            sensor_module.update_state(agent_state)
+            sm_output = sensor_module.step(ctx, raw_obs, self.is_motor_only_step)
             sensor_module_outputs.append(sm_output)
         # Aggregate LM outputs here to be input to higher level LM at next step
         learning_module_outputs = []
@@ -161,12 +189,13 @@ class MontyBase(Monty):
         # TODO: Maybe combine the two?
         self.learning_module_outputs = learning_module_outputs
 
-    def pass_features_directly_to_motor_system(self, ctx: RuntimeContext, observation):
-        """Pass features directly to motor system without stepping LMs."""
-        self.aggregate_sensory_inputs(ctx, observation)
-        self._pass_input_obs_to_motor_system(  # TODO: not part of MontyBase
-            get_first_sensory_state(self.sensor_module_outputs)
-        )
+    def motor_only_step(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ) -> list[Action]:
+        self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
         self.total_steps += 1
         self.episode_steps += 1
         # For each of the learning modules, update the list of processed
@@ -178,6 +207,8 @@ class MontyBase(Monty):
             self.learning_modules[ii].stepwise_targets_list.append(
                 self.learning_modules[ii].stepwise_target_object
             )
+        self._step_motor_system(ctx, observations, proprioceptive_state)
+        return self._actions
 
     def check_reached_max_matching_steps(self, max_steps):
         """Check if max_steps was reached and deal with time_out.
@@ -271,29 +302,42 @@ class MontyBase(Monty):
                 voting_data = [votes_per_lm[j] for j in self.lm_to_lm_vote_matrix[i]]
                 self.learning_modules[i].receive_votes(voting_data)
 
-    def _pass_goal_states(self) -> None:
-        """Pass goal states between learning modules.
+    def _pass_goals(self) -> None:
+        """Pass goals between learning modules.
 
         Currently we just aggregate these for later passing to the (single) motor
         system.
 
-        TODO M implement more complex, hierarchical passing of goal-states.
+        TODO M implement more complex, hierarchical passing of goals.
         """
-        self.gsg_outputs = []  # NB we reset these at each step to ensure the goal
-        # states do not persist unless this is expected by the GSGs. NOTE we may need
+        self._goals = []  # NB we reset these at each step to ensure the goals
+        # do not persist unless this is expected by the GSGs. NOTE we may need
         # to revisit this with heterarchy if we have some LMs that are being stepped
         # at higher frequencies than others.
+        # Note: self._goals does not get reset here during motor-only steps. This
+        # means goals can get sent to the motor system that were proposed in the last
+        # non-motor-only step.
 
         for lm in self.learning_modules:
-            goal_states = lm.propose_goal_states()
-            self.gsg_outputs.extend(goal_states)
+            goals = lm.propose_goals()
+            self._goals.extend(goals)
         for sm in self.sensor_modules:
-            goal_states = sm.propose_goal_states()
-            self.gsg_outputs.extend(goal_states)
+            goals = sm.propose_goals()
+            self._goals.extend(goals)
 
-    def _pass_infos_to_motor_system(self):
-        """Pass input observations and goal states to the motor system."""
-        pass
+    def _step_motor_system(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ) -> None:
+        self._actions = self.motor_system(
+            ctx,
+            observations,
+            proprioceptive_state,
+            self.sensor_module_outputs[0],
+            self._goals,
+        )
 
     def _set_step_type_and_check_if_done(self):
         """Check terminal conditions and decide if we change the step type.
@@ -342,6 +386,9 @@ class MontyBase(Monty):
         for sm in self.sensor_modules:
             sm.pre_episode()
 
+        self.motor_system.pre_episode()
+        self._goals = []
+
     def post_episode(self):
         for lm in self.learning_modules:
             lm.post_episode()
@@ -366,7 +413,7 @@ class MontyBase(Monty):
         sm_dict = {
             i: module.state_dict() for i, module in enumerate(self.sensor_modules)
         }
-        motor_system_dict = self.motor_system._policy.state_dict()
+        motor_system_dict = self.motor_system.state_dict()
 
         return dict(
             lm_dict=lm_dict,
@@ -421,19 +468,9 @@ class MontyBase(Monty):
         agent_obs = observations[agent_id]
         return agent_obs[sensor_module_id]
 
-    def get_agent_state(self):
-        """Get state of agent (dict).
-
-        Returns:
-            State of the agent.
-        """
-        # TODO: This is left in place for now to keep PR scope limited, but should be
-        #       refactored in the future to simplify this access pattern.
-        return self.motor_system._policy.get_agent_state(self.motor_system._state)
-
     @property
     def is_motor_only_step(self):
-        return self.motor_system._policy.is_motor_only_step(self.motor_system._state)
+        return self.motor_system.motor_only_step
 
     @property
     def is_done(self):

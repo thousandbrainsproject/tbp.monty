@@ -11,8 +11,12 @@ from __future__ import annotations
 import numpy as np
 import quaternion as qt
 
+from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    SensorModule,
+    SensorObservation,
+)
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
     on_object_observation,
@@ -23,13 +27,12 @@ from tbp.monty.frameworks.models.salience.strategies import (
     UniformSalienceStrategy,
 )
 from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
-from tbp.monty.frameworks.models.states import GoalState, State
 from tbp.monty.frameworks.sensors import SensorID
 
-__all__ = ["HabitatSalienceSM"]
+__all__ = ["SalienceSM"]
 
 
-class HabitatSalienceSM(SensorModule):
+class SalienceSM(SensorModule):
     def __init__(
         self,
         sensor_module_id: str,
@@ -52,7 +55,7 @@ class HabitatSalienceSM(SensorModule):
             SnapshotTelemetry() if snapshot_telemetry is None else snapshot_telemetry
         )
 
-        self._goals: list[GoalState] = []
+        self._goals: list[Goal] = []
         # TODO: Goes away once experiment code is extracted
         self.is_exploring = False
 
@@ -71,33 +74,40 @@ class HabitatSalienceSM(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
-        self.motor_only_step = agent.motor_only_step
 
-    def step(self, ctx: RuntimeContext, data) -> State | None:
-        """Generate goal states for the current step.
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observation: SensorObservation,
+        motor_only_step: bool = False,  # noqa: ARG002
+    ) -> Message | None:
+        """Generate goal for the current step.
 
         Args:
             ctx: The runtime context.
-            data: Raw sensor observations
+            observation: Sensor observation.
+            motor_only_step: Whether the current step is a motor-only step.
 
         Returns:
             A Percept, if one is generated.
         """
         if self._save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
-                data, self.state.rotation, self.state.position
+                observation, self.state.rotation, self.state.position
             )
 
-        salience_map = self._salience_strategy(rgba=data["rgba"], depth=data["depth"])
+        salience_map = self._salience_strategy(
+            rgba=observation["rgba"], depth=observation["depth"]
+        )
 
-        on_object = on_object_observation(data, salience_map)
+        on_object = on_object_observation(observation, salience_map)
         ior_weights = self._return_inhibitor(
             on_object.center_location, on_object.locations
         )
         salience = self._weight_salience(ctx, on_object.salience, ior_weights)
 
         self._goals = [
-            GoalState(
+            Goal(
                 location=on_object.locations[i],
                 morphological_features=None,
                 non_morphological_features=None,
@@ -158,5 +168,5 @@ class HabitatSalienceSM(SensorModule):
         self._snapshot_telemetry.reset()
         self.is_exploring = False
 
-    def propose_goal_states(self) -> list[GoalState]:
+    def propose_goals(self) -> list[Goal]:
         return self._goals

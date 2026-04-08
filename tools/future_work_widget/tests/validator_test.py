@@ -280,7 +280,3 @@ class TestFutureWorkRecord(unittest.TestCase):
 
         errors = cm.exception.errors()
         self.assertTrue(any("Invalid contributor username" in e["msg"] for e in errors))
-
-
-if __name__ == "__main__":
-    unittest.main()

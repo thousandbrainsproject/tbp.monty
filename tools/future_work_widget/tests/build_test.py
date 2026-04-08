@@ -391,7 +391,3 @@ class TestBuild(unittest.TestCase):
                 error_message = result.errors[0].message
                 for fragment in case["expected_error_fragments"]:
                     self.assertIn(fragment, error_message)
-
-
-if __name__ == "__main__":
-    unittest.main()
