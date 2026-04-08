@@ -12,6 +12,7 @@ import logging
 
 import numpy as np
 import torch
+from numpy.typing import ArrayLike
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_angle_torch,
@@ -23,6 +24,19 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 logger = logging.getLogger(__name__)
 
 
+def is_orthogonal(v1: ArrayLike, v2: ArrayLike, tolerance: float = 1e-6) -> bool:
+    dot = np.dot(v1, v2)
+    return np.allclose(dot, 0.0, atol=tolerance)
+
+
+def is_coplanar(
+    basis_1: ArrayLike, basis_2: ArrayLike, vector: ArrayLike, tolerance: float = 1e-6
+) -> bool:
+    plane_normal = np.cross(basis_1, basis_2)
+    out_of_plane_magnitude = abs(np.dot(vector, plane_normal))
+    return np.allclose(out_of_plane_magnitude, 0.0, atol=tolerance)
+
+
 def directional_curvature(
     movement_direction: np.ndarray,
     k1: float,
@@ -32,14 +46,14 @@ def directional_curvature(
 ) -> float:
     """Compute normal curvature in a given direction via Euler's curvature formula.
 
-    Returns the scalar normal curvature of the surface along ``movement_direction``,
+    Returns the scalar normal curvature of the surface along `movement_direction`,
     given the two principal curvatures and their directions.
 
     k(theta) = k1 * cos^2(theta) + k2 * sin^2(theta)
 
-    where theta is the angle between ``movement_direction`` and ``pc1_dir``.
+    where theta is the angle between `movement_direction` and `pc1_dir`.
 
-    This formula is only valid when ``pc1_dir`` and ``pc2_dir`` are the principal
+    This formula is only valid when `pc1_dir` and `pc2_dir` are the principal
     curvature directions and not for arbitrary orthonormal vectors.
 
     Reference: Weisstein, Eric W. "Euler Curvature Formula." MathWorld.
@@ -60,31 +74,17 @@ def directional_curvature(
             movement_direction does not lie in the plane spanned by pc1_dir
             and pc2_dir.
     """
-    # Should we add something like check_orthogonal() instead of below?
-    #     def check_orthogonal(v1, v2, tol=1e-6):
-    #         dot = np.dot(v1, v2)
-    #         if abs(dot) > tol:
-    #             raise ValueError(
-    #                 f"Vectors must be orthogonal (dot product = {dot:.6f})"
-    #             )
-    #
-    if abs(np.dot(pc1_dir, pc2_dir)) > 1e-6:
-        raise ValueError(
-            f"pc1_dir and pc2_dir must be orthogonal "
-            f"(dot product = {np.dot(pc1_dir, pc2_dir):.6f})"
-        )
+    if not is_orthogonal(pc1_dir, pc2_dir):
+        raise ValueError("The pc1_dir and pc2_dir must be orthogonal.")
 
-    if np.linalg.norm(movement_direction) < 1e-12:
+    if np.allclose(np.linalg.norm(movement_direction), 0.0):
         return 0.0
 
     move_hat = normalize(movement_direction)
 
-    plane_normal = np.cross(pc1_dir, pc2_dir)
-    out_of_plane_magnitude = abs(np.dot(move_hat, plane_normal))
-    if out_of_plane_magnitude > 1e-6:
+    if not is_coplanar(pc1_dir, pc2_dir, move_hat):
         raise ValueError(
-            f"movement_direction must lie in the plane of pc1_dir and pc2_dir "
-            f"({out_of_plane_magnitude=:.6f})"
+            "The movement_direction must lie in the plane of pc1_dir and pc2_dir."
         )
 
     cos_theta_squared = np.dot(move_hat, pc1_dir) ** 2
