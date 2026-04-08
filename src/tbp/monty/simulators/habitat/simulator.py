@@ -272,7 +272,7 @@ class HabitatSim(HabitatActuator, Simulator):
         obj = rigid_mgr.add_object_by_template_handle(obj_handle)
 
         # Update pose
-        obj.translation = position
+        obj.translation = mn.Vector3d(position)
         if isinstance(rotation, (list, tuple)):
             rotation = qt.quaternion(*rotation)
         obj.rotation = sim_utils.quat_to_magnum(rotation)
