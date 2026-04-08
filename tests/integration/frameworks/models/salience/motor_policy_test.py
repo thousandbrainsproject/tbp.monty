@@ -37,28 +37,31 @@ from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
 from tbp.monty.simulators.habitat.agents import MultiSensorAgent
 from tbp.monty.simulators.habitat.environment import HabitatEnvironment
 
-"""
-Test I want to write:
-
-Initialize an experiment / episode with cube (or plane) that has a large face that
-sits on the X-Y plane. Then supply the policy with goals that are on that plane.
-Enact the actions returned by the policy, and verify that the observation after
-a goal is attempted is very close to the goal. Note: we must supply goals one after
-another -- i.e., not just checking that we can go from having the agent/sensor at
-its starting orientation to a single goal orientation.
-
-I believe this is sufficient for verifying that the policy math is working.
-
-Another todo is to check whether we can look at goals that are behind the agent. I
-am not 100% confident that the conversion to euler angles that happens within the
-policy (which is actually necessary) will work correctly in that case.
-"""
-
 AGENT_ID = AgentID("agent_id_0")
 VIEW_FINDER_SENSOR_ID = SensorID("view_finder")
 
+CUBE_LOCATION = [0.0, 1.5, -0.1]
+CUBE_FACE_CENTER_X = 0.0
+CUBE_FACE_CENTER_Y = 1.5
+CUBE_FACE_CENTER_Z = 0.0
+CUBE_WIDTH = 0.2  # meters
+CUBE_EDGE_PADDING_LENGTH = 0.01  # meters
+
 
 class LookAtGoalTest(unittest.TestCase):
+    """Tests saccading to correct goal location.
+
+    Initializes an experiment / episode with a cube that has a large face that
+    sits on the X-Y plane. Then supplies the policy with goals that are on that plane.
+    Enacts the actions returned by the policy, and verifies that the observation after
+    a goal is attempted is very close to the goal. Note: we must supply goals one after
+    another -- i.e., not just checking that we can go from having the agent/sensor at
+    its starting orientation to a single goal orientation.
+
+    Another todo is to check whether we can look at goals that are behind the agent. I
+    am not 100% confident that the conversion to euler angles that happens within the
+    policy (which is actually necessary) will work correctly in that case.
+    """
     @classmethod
     def setUpClass(cls):
         cls.view_finder_shape = [64, 64]
@@ -80,7 +83,7 @@ class LookAtGoalTest(unittest.TestCase):
             "objects": [
                 {
                     "name": "cubeSolid",
-                    "position": [0.0, 1.5, -0.1],
+                    "position": CUBE_LOCATION,
                 }
             ],
             "data_path": None,
@@ -102,7 +105,7 @@ class LookAtGoalTest(unittest.TestCase):
             ),
         ]
         object_init_sampler = Predefined(
-            positions=[[0.0, 1.5, -0.1]],
+            positions=[CUBE_LOCATION],
             rotations=[[0.0, 0.0, 0.0]],
         )
         object_names = ["cubeSolid"]
@@ -125,9 +128,15 @@ class LookAtGoalTest(unittest.TestCase):
         cls.env.close()
 
     @given(
-        x=st.floats(min_value=-0.09, max_value=0.09),
-        y=st.floats(min_value=1.41, max_value=1.59),
-        z=st.just(0.0),
+        x=st.floats(
+            min_value=CUBE_FACE_CENTER_X - CUBE_WIDTH / 2 + CUBE_EDGE_PADDING_LENGTH,
+            max_value=CUBE_FACE_CENTER_X + CUBE_WIDTH / 2 - CUBE_EDGE_PADDING_LENGTH,
+        ),
+        y=st.floats(
+            min_value=CUBE_FACE_CENTER_Y - CUBE_WIDTH / 2 + CUBE_EDGE_PADDING_LENGTH,
+            max_value=CUBE_FACE_CENTER_Y + CUBE_WIDTH / 2 - CUBE_EDGE_PADDING_LENGTH,
+        ),
+        z=st.just(CUBE_FACE_CENTER_Z),
     )
     def test_saccades_to_goal_location(self, x, y, z):
         tolerance = 0.01  # 1 cm tolerance (euclidean distance)

@@ -43,25 +43,21 @@ class LookAtGoal(MotorPolicy):
 
     """
 
-    def __init__(self, agent_id: AgentID, sensor_module_id: SensorID):
+    def __init__(self, agent_id: AgentID, sensor_id: SensorID):
         """Initialize the look at policy.
 
         Args:
             agent_id: The agent ID
-            sensor_module_id: The sensor module ID
+            sensor_id: The sensor ID
         """
-        # Question: Hydra and AgentID/SensorID types?
         self._agent_id = agent_id
-        self._sensor_module_id = sensor_module_id
-
+        self._sensor_id = sensor_id
 
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
         pass
 
-
     def pre_episode(self, motor_system: MotorSystem) -> None:
         pass
-
 
     def state_dict(self) -> dict[str, Any]:
         return {}
@@ -80,10 +76,9 @@ class LookAtGoal(MotorPolicy):
             ctx: The runtime context.
             observations: The observations from the environment.
             state: The current state of the motor system.
-                Defaults to None.
             percept: The percept from (as of this writing) the first sensor
                 module.
-            goal: The (optional) goal to consider.
+            goal: The goal to look at.
 
         Returns:
             The motor policy result.
@@ -97,20 +92,24 @@ class LookAtGoal(MotorPolicy):
         # Collect necessary agent and sensor pose information.
         agent_state: AgentState = state[self._agent_id]
         agent_pos_rel_world = agent_state.position
-        agent_rot_rel_world = Rotation.from_quat([
-            agent_state.rotation.x,
-            agent_state.rotation.y,
-            agent_state.rotation.z,
-            agent_state.rotation.w,
-        ])
+        agent_rot_rel_world = Rotation.from_quat(
+            [
+                agent_state.rotation.x,
+                agent_state.rotation.y,
+                agent_state.rotation.z,
+                agent_state.rotation.w,
+            ]
+        )
 
-        sensor_state: SensorState = agent_state.sensors[self._sensor_module_id]
-        sensor_rot_rel_agent = Rotation.from_quat([
-            sensor_state.rotation.x,
-            sensor_state.rotation.y,
-            sensor_state.rotation.z,
-            sensor_state.rotation.w,
-        ])
+        sensor_state: SensorState = agent_state.sensors[self._sensor_id]
+        sensor_rot_rel_agent = Rotation.from_quat(
+            [
+                sensor_state.rotation.x,
+                sensor_state.rotation.y,
+                sensor_state.rotation.z,
+                sensor_state.rotation.w,
+            ]
+        )
 
         # Get the target location in world and agent coordinates.
         target_rel_world = goal.location
@@ -140,6 +139,5 @@ class LookAtGoal(MotorPolicy):
 
         # For logging purposes only.
         goal.info["attempted"] = True
-
 
         return MotorPolicyResult(actions)
