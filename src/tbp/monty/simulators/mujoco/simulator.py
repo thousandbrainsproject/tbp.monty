@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 import re
 from pathlib import Path
-from typing import Sequence
+from typing import Callable, Sequence
 
 from mujoco import (
     MjData,
@@ -37,7 +37,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.sensors import Resolution2D
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
-from tbp.monty.simulators.mujoco.environment import AgentPartial
 from tbp.monty.simulators.mujoco.objects import (
     ObjectMetadata,
     load_object_metadata,
@@ -88,9 +87,12 @@ class MuJoCoSimulator(Simulator):
 
     def __init__(
         self,
-        agents: Sequence[AgentPartial],
-        data_path: str | Path | None,
+        agents: Sequence[Callable[[MuJoCoSimulator], Agent]] | None = None,
+        data_path: str | Path | None = None,
     ) -> None:
+        if not agents:
+            agents = []
+
         self.spec = MjSpec()
         self.model: MjModel = self.spec.compile()
         self.data = MjData(self.model)

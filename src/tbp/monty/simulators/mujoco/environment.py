@@ -27,13 +27,11 @@ from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
 if TYPE_CHECKING:
     from pathlib import Path
 
-AgentPartial = Callable[[MuJoCoSimulator], Agent]
-
 
 class MuJoCoEnvironment(SimulatedObjectEnvironment):
     def __init__(
         self,
-        agents: Sequence[AgentPartial],
+        agents: Sequence[Callable[[MuJoCoSimulator], Agent]],
         data_path: str | Path | None,
     ):
         self._sim = MuJoCoSimulator(agents, data_path)

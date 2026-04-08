@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import unittest
+from functools import partial
 from typing import Any
 from unittest.mock import Mock
 
@@ -17,11 +18,11 @@ import pytest
 import quaternion as qt
 
 from tbp.monty.frameworks.actions.actions import LookUp
-from tbp.monty.frameworks.agents import AgentConfig, AgentID
-from tbp.monty.frameworks.sensors import SensorConfig
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.sensors import SensorConfig, SensorID
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR
 from tbp.monty.simulators.mujoco.agents import NoopAgent
-from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
+from tbp.monty.simulators.mujoco.simulator import DEFAULT_RESOLUTION, MuJoCoSimulator
 
 AGENT_ID = AgentID("agent_id_0")
 
@@ -36,12 +37,7 @@ class NoopAgentTest(unittest.TestCase):
         agent_args.update({"position": agent_pos, "rotation": agent_quat})
 
         sim = MuJoCoSimulator(
-            agent_configs=[
-                AgentConfig(
-                    agent_type=NoopAgent,
-                    agent_args=agent_args,
-                )
-            ],
+            agents=[partial(NoopAgent, **agent_args)],
             data_path=None,
         )
         agent_state = sim.states[AGENT_ID]
@@ -51,20 +47,15 @@ class NoopAgentTest(unittest.TestCase):
 
     def test_noop_agent_observation(self) -> None:
         sim = MuJoCoSimulator(
-            agent_configs=[
-                AgentConfig(
-                    agent_type=NoopAgent,
-                    agent_args=self.default_agent_args,
-                )
-            ],
+            agents=[partial(NoopAgent, **self.default_agent_args)],
             data_path=None,
         )
         with sim:
             sim.add_object("box", position=(0.0, 0.0, -5.0))
 
             obs = sim.observations[AGENT_ID]
-            depth = obs["patch"]["depth"]
-            rgba = obs["patch"]["rgba"]
+            depth = obs[SensorID("patch")]["depth"]
+            rgba = obs[SensorID("patch")]["rgba"]
 
             # We don't want to assert on the specifics of the data, since they may
             # be sensitive to rendering differences, but we want to get a rough idea
@@ -82,14 +73,10 @@ class NoopAgentTest(unittest.TestCase):
     def test_agent_that_does_not_understand_an_action(self) -> None:
         """Ensure the simulator works with an agent that doesn't respond to actions."""
         agent_mock = Mock(id=AGENT_ID)
+        agent_mock.max_sensor_resolution = DEFAULT_RESOLUTION
         AgentMockClass = Mock(return_value=agent_mock)  # noqa: N806
         sim = MuJoCoSimulator(
-            agent_configs=[
-                AgentConfig(
-                    agent_type=AgentMockClass,
-                    agent_args=self.default_agent_args,
-                )
-            ],
+            agents=[partial(AgentMockClass, **self.default_agent_args)],
             data_path=None,
         )
 
@@ -106,14 +93,10 @@ class NoopAgentTest(unittest.TestCase):
 
         agent_mock = Mock(id=AGENT_ID)
         agent_mock.actuate_look_up = Mock(side_effect=actuate_look_up)
+        agent_mock.max_sensor_resolution = DEFAULT_RESOLUTION
         AgentMockClass = Mock(return_value=agent_mock)  # noqa: N806
         sim = MuJoCoSimulator(
-            agent_configs=[
-                AgentConfig(
-                    agent_type=AgentMockClass,
-                    agent_args=self.default_agent_args,
-                )
-            ],
+            agents=[partial(AgentMockClass, **self.default_agent_args)],
             data_path=None,
         )
         action = LookUp(AGENT_ID, rotation_degrees=5.0)
@@ -134,7 +117,7 @@ class NoopAgentTest(unittest.TestCase):
                 "patch": SensorConfig(
                     position=ZERO_VECTOR,
                     rotation=IDENTITY_QUATERNION,
-                    resolution=(64, 64),
+                    resolution=DEFAULT_RESOLUTION,
                     zoom=1.0,
                 ),
             },
