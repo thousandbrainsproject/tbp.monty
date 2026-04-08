@@ -10,7 +10,7 @@
 import unittest
 
 import numpy as np
-from hypothesis import assume, given
+from hypothesis import assume, example, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -99,30 +99,10 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
         result = project_onto_tangent_plane(a_vector, a_normal)
         np.testing.assert_array_almost_equal(result, a_vector)
 
-    def test_general_oblique_case(self):
-        """An oblique vector loses only its normal component.
-
-        Leaving this here because it's a good readable example, but redundant to
-        test_result_orthogonal_to_normal which tests the general case.
-        """
-        v = np.array([1.0, 1.0, 0.0])
-        n = np.array([0.0, 0.0, 1.0])
-        result = project_onto_tangent_plane(v, n)
-        np.testing.assert_array_almost_equal(result, [1.0, 1.0, 0.0])
-
-    @given(finite_vectors, finite_vectors)
-    def test_result_orthogonal_to_normal(self, v, n):
-        """The OG test."""
-        assume(np.linalg.norm(n) >= 1e-12)
-        result = project_onto_tangent_plane(v, n)
-        self.assertAlmostEqual(np.dot(result, normalize(n)), 0.0, places=6)
-
-    @given(finite_vectors)
-    def test_zero_input_produces_zero_output(self, n):
-        """Projecting zero vector to anything is zero."""
-        assume(np.linalg.norm(n) >= 1e-12)
-        result = project_onto_tangent_plane(np.zeros(3), n)
-        np.testing.assert_array_almost_equal(result, np.zeros(3))
+    @given(a_vector=finite_vectors, a_normal=non_zero_magnitude_vectors)
+    def test_result_orthogonal_to_normal(self, a_vector, a_normal):
+        result = project_onto_tangent_plane(a_vector, a_normal)
+        np.testing.assert_almost_equal(np.dot(result, normalize(a_normal)), 0.0)
 
     @given(finite_vectors, finite_vectors)
     def test_idempotent(self, v, n):
