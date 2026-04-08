@@ -779,6 +779,8 @@ class FeatureChangeFilter(PerceptFilter):
                         f"new point because of {feature} angle : {angle_between}"
                     )
                     return True
+            elif feature == "local_binary_pattern":
+                pass
 
             else:
                 delta_change = np.abs(last_feat - current_feat)

@@ -132,26 +132,10 @@ def already_in_list(
                     pass
                     # Already dealt with in vectorized form
 
-                # Case for local binary pattern features.
-                # A histogram distance metric makes more sense here
                 elif feature == "local_binary_pattern":
-                    delta_change = np.abs(
-                        features[feature][feature_idx] - features[feature][query_id]
-                    )
-                    if len(delta_change.shape) > 0:
-                        for i, dc in enumerate(delta_change):
-                            if dc > graph_delta_thresholds[feature][i]:
-                                logger.debug(
-                                    f"Interesting point because of {feature} : {dc}"
-                                )
-                                redundant_point = False
-                                break
-                    elif delta_change > graph_delta_thresholds[feature]:
-                        logger.debug(
-                            f"Interesting point because of {feature} : {delta_change}"
-                        )
-                        redundant_point = False
-                        break
+                    pass
+                    # Case for local binary pattern features.
+                    # A histogram distance metric makes more sense here
 
                 else:
                     delta_change = np.abs(
