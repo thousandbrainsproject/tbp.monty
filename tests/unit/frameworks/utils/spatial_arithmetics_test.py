@@ -10,7 +10,7 @@
 import unittest
 
 import numpy as np
-from hypothesis import assume, example, given
+from hypothesis import assume, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -104,10 +104,8 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
         result = project_onto_tangent_plane(a_vector, a_normal)
         np.testing.assert_almost_equal(np.dot(result, normalize(a_normal)), 0.0)
 
-    @given(finite_vectors, finite_vectors)
-    def test_idempotent(self, v, n):
-        """Projecting an already-projected vector is no-op."""
-        assume(np.linalg.norm(n) >= 1e-12)
-        once = project_onto_tangent_plane(v, n)
-        twice = project_onto_tangent_plane(once, n)
+    @given(a_vector=finite_vectors, a_normal=non_zero_magnitude_vectors)
+    def test_idempotent(self, a_vector, a_normal):
+        once = project_onto_tangent_plane(a_vector, a_normal)
+        twice = project_onto_tangent_plane(once, a_normal)
         np.testing.assert_array_almost_equal(twice, once)
