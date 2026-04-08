@@ -42,7 +42,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 )
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.dataclass_utils import (
-    config_to_dict,
     get_subset_of_args,
 )
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
@@ -386,7 +385,7 @@ class MontyExperiment:
         if len(self.wandb_handlers) > 0:
             wandb_args = get_subset_of_args(logging_config, WandbWrapper.__init__)
             wandb_args.update(
-                config=config_to_dict(self.config),
+                config=dict(self.config),
                 run_name=wandb_args["run_name"] + "_" + wandb_args["wandb_id"],
             )
             monty_handlers.append(WandbWrapper(**wandb_args))
