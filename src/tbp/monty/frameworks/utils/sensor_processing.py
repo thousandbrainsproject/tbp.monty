@@ -74,11 +74,10 @@ def directional_curvature(
             f"(dot product = {np.dot(pc1_dir, pc2_dir):.6f})"
         )
 
-    movement_norm = np.linalg.norm(movement_direction)
-    if movement_norm < 1e-12:
+    if np.linalg.norm(movement_direction) < 1e-12:
         return 0.0
 
-    move_hat = movement_direction / movement_norm
+    move_hat = normalize(movement_direction)
 
     plane_normal = np.cross(pc1_dir, pc2_dir)
     out_of_plane_magnitude = abs(np.dot(move_hat, plane_normal))
