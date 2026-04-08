@@ -36,8 +36,6 @@ def perpendicular_vectors(draw):
 
 
 class NormalizeTest(unittest.TestCase):
-    """Unit tests for the normalize function."""
-
     @given(finite_vectors)
     def test_preserves_direction(self, v):
         norm = np.linalg.norm(v)
@@ -80,8 +78,6 @@ class NormalizeTest(unittest.TestCase):
 
 
 class ProjectOntoTangentPlaneTest(unittest.TestCase):
-    """Unit tests for the project_onto_tangent_plane function."""
-
     @given(
         a_vector=non_zero_magnitude_vectors,
         a_scalar=st.floats(
