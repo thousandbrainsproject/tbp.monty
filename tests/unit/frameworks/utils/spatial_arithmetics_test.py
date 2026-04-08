@@ -95,9 +95,9 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
 
     @given(perpendicular_vectors())
     def test_a_vector_perpendicular_to_normal(self, perpendicular_vectors):
-        v, n = perpendicular_vectors
-        result = project_onto_tangent_plane(v, n)
-        np.testing.assert_array_almost_equal(result, v)
+        a_vector, a_normal = perpendicular_vectors
+        result = project_onto_tangent_plane(a_vector, a_normal)
+        np.testing.assert_array_almost_equal(result, a_vector)
 
     def test_general_oblique_case(self):
         """An oblique vector loses only its normal component.
