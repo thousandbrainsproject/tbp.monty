@@ -104,7 +104,7 @@ class MuJoCoSimulator(Simulator):
         else:
             # This only really comes up in test contexts, but if we don't have
             # any agents, we can't calculate the maximum sensor resolution, so
-            # we need to just us a default value.
+            # we need to just use a default value.
             self._render_resolution = DEFAULT_RESOLUTION
 
         # Track how many objects we add to the environment.
