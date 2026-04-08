@@ -60,6 +60,14 @@ def directional_curvature(
             movement_direction does not lie in the plane spanned by pc1_dir
             and pc2_dir.
     """
+    # Should we add something like check_orthogonal() instead of below?
+    #     def check_orthogonal(v1, v2, tol=1e-6):
+    #         dot = np.dot(v1, v2)
+    #         if abs(dot) > tol:
+    #             raise ValueError(
+    #                 f"Vectors must be orthogonal (dot product = {dot:.6f})"
+    #             )
+    #
     if abs(np.dot(pc1_dir, pc2_dir)) > 1e-6:
         raise ValueError(
             f"pc1_dir and pc2_dir must be orthogonal "
