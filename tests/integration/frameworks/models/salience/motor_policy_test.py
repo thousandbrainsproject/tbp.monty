@@ -12,7 +12,10 @@ import unittest
 
 import numpy as np
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
+from tbp.monty.cmp import Goal
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterfacePerObject,
@@ -51,17 +54,22 @@ am not 100% confident that the conversion to euler angles that happens within th
 policy (which is actually necessary) will work correctly in that case.
 """
 
-class MotorPolicyTest(unittest.TestCase):
-    def setUp(self):
-        self.view_finder_shape = [64, 64]
+AGENT_ID = AgentID("agent_id_0")
+VIEW_FINDER_SENSOR_ID = SensorID("view_finder")
+
+
+class LookAtGoalTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.view_finder_shape = [64, 64]
         env_init_args = {
             "agents": {
                 "agent_args": {
-                    "agent_id": AgentID("agent_id_0"),
-                    "sensor_ids": [SensorID("patch"), SensorID("view_finder")],
+                    "agent_id": AGENT_ID,
+                    "sensor_ids": [SensorID("patch"), VIEW_FINDER_SENSOR_ID],
                     "height": 0.0,
                     "position": [0.0, 1.5, 0.2],
-                    "resolutions": [[64, 64], self.view_finder_shape],
+                    "resolutions": [[64, 64], cls.view_finder_shape],
                     "positions": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
                     "rotations": [[1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]],
                     "semantics": [False, False],
@@ -79,14 +87,14 @@ class MotorPolicyTest(unittest.TestCase):
             "scene_id": None,
             "seed": 42,
         }
-        env = HabitatEnvironment(**env_init_args)
+        cls.env = HabitatEnvironment(**env_init_args)
 
         transforms = [
-            MissingToMaxDepth(AgentID("agent_id_0"), max_depth=1, threshold=0.0),
+            MissingToMaxDepth(AGENT_ID, max_depth=1, threshold=0.0),
             DepthTo3DLocations(
-                AgentID("agent_id_0"),
-                sensor_ids=[SensorID("patch"), SensorID("view_finder")],
-                resolutions=[[64, 64], self.view_finder_shape],
+                AGENT_ID,
+                sensor_ids=[SensorID("patch"), VIEW_FINDER_SENSOR_ID],
+                resolutions=[[64, 64], cls.view_finder_shape],
                 zooms=[10.0, 1.0],
                 world_coord=True,
                 get_all_points=True,
@@ -99,19 +107,57 @@ class MotorPolicyTest(unittest.TestCase):
         )
         object_names = ["cubeSolid"]
 
-        self.env_interface = EnvironmentInterfacePerObject(
+        cls.env_interface = EnvironmentInterfacePerObject(
             object_names=object_names,
             object_init_sampler=object_init_sampler,
-            env=env,
+            env=cls.env,
             transform=transforms,
             experiment_mode=ExperimentMode.EVAL,
             rng=np.random.default_rng(42),
             seed=42,
         )
 
-        self.motor_policy = LookAtGoal(AgentID("agent_id_0"), SensorID("sensor_id_0"))
+        cls.motor_policy = LookAtGoal(AGENT_ID, VIEW_FINDER_SENSOR_ID)
+        cls.observations, cls.proprioceptive_state = cls.env_interface.step([])
 
-    def test_motor_policy(self):
-        pass
-        # Flow: give policy a goal (and mock other args), get actions.
-        # Step actions with env. Check observations central pixel.
+    @classmethod
+    def tearDownClass(cls):
+        cls.env.close()
+
+    @given(
+        x=st.floats(min_value=-0.09, max_value=0.09),
+        y=st.floats(min_value=1.41, max_value=1.59),
+        z=st.just(0.0),
+    )
+    def test_saccades_to_goal_location(self, x, y, z):
+        tolerance = 0.01  # 1 cm tolerance (euclidean distance)
+        goal_location = np.array([x, y, z])
+        goal = Goal(
+            location=goal_location,
+            morphological_features=None,
+            non_morphological_features=None,
+            confidence=1.0,
+            use_state=True,
+            sender_id="view_finder",
+            sender_type="SM",
+            goal_tolerances=None,
+            info=None,
+        )
+        policy_result = self.motor_policy(
+            ctx=None,
+            observations=self.observations,
+            state=self.proprioceptive_state,
+            percept=None,
+            goal=goal,
+        )
+        self.observations, self.proprioceptive_state = self.env_interface.step(
+            policy_result.actions
+        )
+
+        semantic_3d = self.observations[AGENT_ID][VIEW_FINDER_SENSOR_ID]["semantic_3d"]
+        xyz = semantic_3d[:, :3].reshape(self.view_finder_shape + [3])
+        central_xyz = xyz[
+            self.view_finder_shape[0] // 2, self.view_finder_shape[1] // 2
+        ]
+        distance = np.linalg.norm(central_xyz - goal_location)
+        self.assertLess(distance, tolerance)
