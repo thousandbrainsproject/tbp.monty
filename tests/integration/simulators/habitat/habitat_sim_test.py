@@ -822,7 +822,3 @@ class HabitatSimTest(unittest.TestCase):
             obs = sim.observations
             camera_obs = obs[agent_id][sensor_id]["semantic"].tolist()
             self.assertListEqual(expected_2x_zoom, camera_obs)
-
-
-if __name__ == "__main__":
-    unittest.main()

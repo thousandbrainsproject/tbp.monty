@@ -20,7 +20,6 @@ pytest.importorskip(
 import copy
 import shutil
 import tempfile
-import unittest
 from typing import Any
 
 import hydra
@@ -132,7 +131,3 @@ class NoResetEvidenceLMTest(BaseGraphTest):
 
     def tearDown(self):
         shutil.rmtree(self.output_dir)
-
-
-if __name__ == "__main__":
-    unittest.main()

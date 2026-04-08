@@ -607,7 +607,3 @@ class GetSubsetArgsTest(unittest.TestCase):
 
         expected_subset_args = dict(field2=3, field3="b")
         self.assertEqual(subset_args, expected_subset_args)
-
-
-if __name__ == "__main__":
-    unittest.main()

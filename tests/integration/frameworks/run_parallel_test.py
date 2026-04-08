@@ -192,7 +192,3 @@ class RunParallelTest(unittest.TestCase):
         self.assertTrue(pcsv_gt.equals(scsv_gt))
 
         shutil.rmtree(self.output_dir)
-
-
-if __name__ == "__main__":
-    unittest.main()

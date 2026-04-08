@@ -28,7 +28,8 @@ experiment:
       run_name: ""
     monty_config:
       motor_system_config:
-        policy:
-          alpha: 0.0
-          action_sampler:
-            translation_distance: 0.05
+        policy_selector:
+          policy:
+            alpha: 0.0
+            action_sampler:
+              translation_distance: 0.05

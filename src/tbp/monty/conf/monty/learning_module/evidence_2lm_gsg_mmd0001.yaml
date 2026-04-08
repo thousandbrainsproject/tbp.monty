@@ -16,7 +16,7 @@ learning_module_0:
     hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
     evidence_threshold_config: all
     gsg:
-      _target_: tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator
+      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
       goal_tolerances:
         location: 0.15
       elapsed_steps_factor: 10

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -105,7 +105,3 @@ class ParseEpisodeSpecTest(unittest.TestCase):
             parse_episode_spec(":1", total=0)
         with self.assertRaises(ValueError):
             parse_episode_spec("0:", total=0)
-
-
-if __name__ == "__main__":
-    unittest.main()

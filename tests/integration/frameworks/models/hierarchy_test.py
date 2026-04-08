@@ -286,7 +286,3 @@ class HierarchyTest(unittest.TestCase):
                 eval_stats.columns,
                 "Prediction error is not logged.",
             )
-
-
-if __name__ == "__main__":
-    unittest.main()
