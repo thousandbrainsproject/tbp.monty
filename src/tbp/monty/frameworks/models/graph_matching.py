@@ -1144,7 +1144,6 @@ class GraphMemory(LMMemory):
                     )
                 else:
                     logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
-                    #print(f"building graph for {input_channel} with features {input_channel_features}")
                     self._build_graph(
                         input_channel_locations,
                         input_channel_features,

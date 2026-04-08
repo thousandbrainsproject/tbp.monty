@@ -33,9 +33,14 @@ class DefaultFeatureEvidenceCalculator:
         b: np.ndarray,
         epsilon: float = 1e-10,
     ) -> np.ndarray:
-        """Compute chi-square distance between each row of a and vector b."""
+        """Compute chi-square distance between each row of a and vector b.
+
+        Returns:
+            A vector of chi-square distances as floats in the range [0, 1] between each
+            row of a and b.
+        """
         return 0.5 * np.sum(((a - b) ** 2) / (a + b + epsilon), axis=1)
-    
+
     @staticmethod
     def calculate(
         channel_feature_array: np.ndarray,
@@ -107,6 +112,9 @@ class DefaultFeatureEvidenceCalculator:
             ],
             axis=0,
         )
+        # local binary pattern features are stored as normalized histograms
+        # we compute a distance between each node's lbp feature vector and the query lbp
+        # feature vector
         if "local_binary_pattern" in feature_vectors:
             lbp_feature_vector = feature_vectors["local_binary_pattern"]
             query_lbp_fv = feature_list[lbp_feature_vector]

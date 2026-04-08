@@ -16,9 +16,8 @@ from typing import Any, ClassVar, Protocol
 import numpy as np
 import quaternion as qt
 from scipy.spatial.transform import Rotation
-from skimage.color import rgb2hsv
+from skimage.color import rgb2gray, rgb2hsv
 from skimage.feature import local_binary_pattern
-from skimage.color import rgb2gray
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
@@ -145,7 +144,7 @@ class ObservationProcessor:
         "mean_curvature_sc",
         "curvature_for_TM",
         "coords_for_TM",
-        #"mock_obs",
+        # "mock_obs",
         "local_binary_pattern",
     ]
 
@@ -198,7 +197,7 @@ class ObservationProcessor:
         sensor_frame_data = observation["sensor_frame_data"]
         world_camera = observation["world_camera"]
         rgba_feat = observation["rgba"]
-        #mock_obs = [.1, .2, .3, .4, .5, .6, .7, .8, .9]
+        # mock_obs = [.1, .2, .3, .4, .5, .6, .7, .8, .9]
         depth_feat = (
             observation["depth"]
             .reshape(observation["depth"].size, 1)
@@ -326,9 +325,9 @@ class ObservationProcessor:
             patch = rgba_feat[:, :, :3]
             gray = rgb2gray(patch)
             gray = (gray * 255).astype(np.uint8)
-            P = 8
-            R = 1
-            lbp = local_binary_pattern(gray, P, R, method="ror")
+            p = 8
+            r = 1
+            lbp = local_binary_pattern(gray, p, r, method="ror")
             n_bins = int(lbp.max() + 1)
             hist, _ = np.histogram(
                 lbp.ravel(),

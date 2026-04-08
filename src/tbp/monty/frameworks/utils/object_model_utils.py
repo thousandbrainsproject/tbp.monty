@@ -93,7 +93,6 @@ def already_in_list(
         # according to all of these comparisons, then the point can be considered
         # to be in the list
         redundant_point = True
-        redundant_lbp = False
         # TODO: What to do when a feature is received that is not in
         # graph_delta_thresholds? Currently it will not be considered when looking at
         # redundancy of the point.
@@ -133,9 +132,8 @@ def already_in_list(
                     pass
                     # Already dealt with in vectorized form
 
-                # LBP_TODO: add conditional check to see if LBP feature is different enough to be considered interesting.
-                # This could probably be done also using chi2 distance of < some small amount determined through LBP benchmarking tool.
-
+                # Case for local binary pattern features.
+                # A histogram distance metric makes more sense here
                 elif feature == "local_binary_pattern":
                     delta_change = np.abs(
                         features[feature][feature_idx] - features[feature][query_id]

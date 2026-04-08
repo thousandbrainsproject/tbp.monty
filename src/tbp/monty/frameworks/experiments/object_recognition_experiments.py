@@ -28,7 +28,7 @@ __all__ = ["MontyGeneralizationExperiment", "MontyObjectRecognitionExperiment"]
 logger = logging.getLogger(__name__)
 
 
-class MontyObjectRecognitionExperiment(MontyExperiment):
+class MontyObjectRecognitionExperiment( v):
     """Experiment customized for object-pose recognition with a single object.
 
     Adds additional logging of the target object and pose for each episode and
