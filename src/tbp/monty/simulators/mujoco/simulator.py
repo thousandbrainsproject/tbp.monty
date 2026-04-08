@@ -247,7 +247,7 @@ class MuJoCoSimulator(Simulator):
         self.spec.add_texture(
             name=f"{object_type}_tex",
             type=mjtTexture.mjTEXTURE_2D,
-            file=texture_path,
+            file=str(texture_path),
         )
         mat = self.spec.add_material(
             name=f"{object_type}_mat",
@@ -262,7 +262,7 @@ class MuJoCoSimulator(Simulator):
 
         self.spec.add_mesh(
             name=f"{object_type}_mesh",
-            file=model_path,
+            file=str(model_path),
             refquat=metadata.refquat,
             refpos=metadata.refpos,
         )
