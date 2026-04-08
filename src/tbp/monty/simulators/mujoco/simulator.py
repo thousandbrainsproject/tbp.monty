@@ -27,7 +27,7 @@ from mujoco import (
 from typing_extensions import Self, override
 
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.agents import Agent, AgentConfig, AgentID
+from tbp.monty.frameworks.agents import Agent, AgentID
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
@@ -37,6 +37,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.sensors import Resolution2D
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
+from tbp.monty.simulators.mujoco.environment import AgentPartial
 from tbp.monty.simulators.mujoco.objects import (
     ObjectMetadata,
     load_object_metadata,
@@ -87,7 +88,7 @@ class MuJoCoSimulator(Simulator):
 
     def __init__(
         self,
-        agent_configs: Sequence[AgentConfig],
+        agents: Sequence[AgentPartial],
         data_path: str | Path | None,
     ) -> None:
         self.spec = MjSpec()
@@ -95,11 +96,11 @@ class MuJoCoSimulator(Simulator):
         self.data = MjData(self.model)
 
         self.data_path = Path(data_path) if data_path else None
-        self._agent_configs = agent_configs
+        self._agent_partials = agents
         self._agents: dict[AgentID, Agent] = {}
         self._create_agents()
 
-        if agent_configs:
+        if self._agents:
             self._render_resolution = self._max_sensor_resolution()
         else:
             # This only really comes up in test contexts, but if we don't have
@@ -138,10 +139,9 @@ class MuJoCoSimulator(Simulator):
         )
 
     def _create_agents(self) -> None:
-        for agent_config in self._agent_configs:
-            agent_type = agent_config["agent_type"]
-            agent_args = agent_config["agent_args"]
-            agent = agent_type(simulator=self, **agent_args)
+        self._agents = {}
+        for agent_partial in self._agent_partials:
+            agent = agent_partial(self)
             self._agents[agent.id] = agent
 
     def _max_sensor_resolution(self) -> Resolution2D:
@@ -154,10 +154,10 @@ class MuJoCoSimulator(Simulator):
             max_width, max_height
         """
         max_width = max_height = 0
-        for agent_cfg in self._agent_configs:
-            for sensor_cfg in agent_cfg["agent_args"]["sensor_configs"].values():
-                max_width = max(max_width, sensor_cfg["resolution"][0])
-                max_height = max(max_height, sensor_cfg["resolution"][1])
+        for agent in self._agents.values():
+            width, height = agent.max_sensor_resolution
+            max_width = max(max_width, width)
+            max_height = max(max_height, height)
         return Resolution2D((max_width, max_height))
 
     def remove_all_objects(self) -> None:

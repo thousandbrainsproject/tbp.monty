@@ -8,13 +8,15 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, NewType, Protocol, TypedDict
+from typing import TYPE_CHECKING, NewType, Protocol
+
+from tbp.monty.frameworks.sensors import Resolution2D
 
 if TYPE_CHECKING:
     from tbp.monty.frameworks.models.abstract_monty_classes import AgentObservations
     from tbp.monty.frameworks.models.motor_system_state import AgentState
 
-__all__ = ["Agent", "AgentConfig", "AgentID"]
+__all__ = ["Agent", "AgentID"]
 
 AgentID = NewType("AgentID", str)
 
@@ -23,6 +25,13 @@ class Agent(Protocol):
     """Protocol for an agent that interacts with an environment."""
 
     id: AgentID
+
+    @property
+    def max_sensor_resolution(self) -> Resolution2D:
+        """Returns the maximum width and heights of the sensors.
+
+        Note: the maximum width and maximum height may come from separate sensors.
+        """
 
     @property
     def observations(self) -> AgentObservations:
@@ -34,10 +43,3 @@ class Agent(Protocol):
 
     def reset(self) -> None:
         """Resets the agent to its initial state."""
-
-
-class AgentConfig(TypedDict):
-    """The configuration for an agent, mapping to our configs in Hydra."""
-
-    agent_type: type[Agent]
-    agent_args: dict  # TODO: be more specific

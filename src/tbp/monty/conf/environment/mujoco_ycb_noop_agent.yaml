@@ -3,8 +3,9 @@
 env_init_args:
   data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/ycb}
   agents:
-    agent_args:
-      agent_id: ${monty.agent_id:agent_id_0}
+    - _target_: tbp.monty.simulators.mujoco.agents.NoopAgent
+      _partial_: true
+      agent_id: agent_id_0
       sensor_configs:
         patch:
           position:
@@ -38,5 +39,4 @@ env_init_args:
         - 0.0
         - 1.5
         - 0.2
-    agent_type: ${monty.class:tbp.monty.simulators.mujoco.agents.NoopAgent}
 env_init_func: ${monty.class:tbp.monty.simulators.mujoco.environment.MuJoCoEnvironment}

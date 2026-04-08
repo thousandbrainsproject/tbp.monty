@@ -22,7 +22,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
-from tbp.monty.frameworks.sensors import SensorConfig, SensorID
+from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
 from tbp.monty.frameworks.utils.transform_utils import (
     rotation_as_quat,
     rotation_from_quat,
@@ -98,6 +98,14 @@ class Embodiment(Agent):
                 resolution=sensor_cfg["resolution"],
                 fovy=DEFAULT_CAMERA_FOVY / sensor_cfg["zoom"],
             )
+
+    @property
+    def max_sensor_resolution(self) -> Resolution2D:
+        max_width = max_height = 0
+        for sensor_cfg in self._sensor_configs.values():
+            max_width = max(max_width, sensor_cfg["resolution"][0])
+            max_height = max(max_height, sensor_cfg["resolution"][1])
+        return Resolution2D((max_width, max_height))
 
     @property
     def position(self) -> VectorXYZ:
@@ -203,6 +211,10 @@ class NoopAgent(Agent):
             simulator, agent_id, sensor_configs, position, rotation
         )
         self.id = agent_id
+
+    @property
+    def max_sensor_resolution(self) -> Resolution2D:
+        return self._embodiment.max_sensor_resolution
 
     @property
     def state(self) -> AgentState:

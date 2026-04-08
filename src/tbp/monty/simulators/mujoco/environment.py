@@ -8,12 +8,12 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Callable, Sequence
 
 import quaternion as qt
 
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.agents import AgentConfig
+from tbp.monty.frameworks.agents import Agent
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     SemanticID,
@@ -27,16 +27,16 @@ from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
 if TYPE_CHECKING:
     from pathlib import Path
 
+AgentPartial = Callable[[MuJoCoSimulator], Agent]
+
 
 class MuJoCoEnvironment(SimulatedObjectEnvironment):
     def __init__(
         self,
-        agents: AgentConfig,
+        agents: Sequence[AgentPartial],
         data_path: str | Path | None,
     ):
-        # TODO: Change the configurations to support multiple agents
-        agent_configs = [agents]
-        self._sim = MuJoCoSimulator(agent_configs, data_path)
+        self._sim = MuJoCoSimulator(agents, data_path)
 
     def step(
         self,
@@ -69,7 +69,7 @@ class MuJoCoEnvironment(SimulatedObjectEnvironment):
         ).object_id
 
     def remove_all_objects(self) -> None:
-        return self._sim.remove_all_objects()
+        self._sim.remove_all_objects()
 
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         return self._sim.reset()
