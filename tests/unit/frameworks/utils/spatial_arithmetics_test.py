@@ -27,6 +27,14 @@ finite_vectors = arrays(
 non_zero_magnitude_vectors = finite_vectors.filter(lambda v: np.linalg.norm(v) >= 1e-12)
 
 
+@st.composite
+def perpendicular_vectors(draw):
+    random_base = normalize(draw(non_zero_magnitude_vectors))
+    n = normalize(draw(non_zero_magnitude_vectors))
+    v = np.cross(random_base, n)
+    return v, n
+
+
 class NormalizeTest(unittest.TestCase):
     """Unit tests for the normalize function."""
 
@@ -71,14 +79,6 @@ class NormalizeTest(unittest.TestCase):
         self.assertAlmostEqual(np.linalg.norm(result), 1.0)
 
 
-@st.composite
-def perpendicular_vectors(draw):
-    random_base = normalize(draw(non_zero_magnitude_vectors))
-    n = normalize(draw(non_zero_magnitude_vectors))
-    v = np.cross(random_base, n)
-    return v, n
-
-
 class ProjectOntoTangentPlaneTest(unittest.TestCase):
     """Unit tests for the project_onto_tangent_plane function."""
 
@@ -94,18 +94,18 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
         np.testing.assert_array_almost_equal(result, [0.0, 0.0, 0.0])
 
     @given(perpendicular_vectors())
-    def test_a_vector_perpendicular_to_normal(self, perpendicular_vectors):
-        a_vector, a_normal = perpendicular_vectors
+    def test_a_vector_perpendicular_to_normal(self, orthogonal_vectors):
+        a_vector, a_normal = orthogonal_vectors
         result = project_onto_tangent_plane(a_vector, a_normal)
         np.testing.assert_array_almost_equal(result, a_vector)
 
     @given(a_vector=finite_vectors, a_normal=non_zero_magnitude_vectors)
-    def test_result_orthogonal_to_normal(self, a_vector, a_normal):
+    def test_result_is_orthogonal_to_normal(self, a_vector, a_normal):
         result = project_onto_tangent_plane(a_vector, a_normal)
-        np.testing.assert_almost_equal(np.dot(result, normalize(a_normal)), 0.0)
+        np.testing.assert_array_almost_equal(np.dot(result, normalize(a_normal)), 0.0)
 
     @given(a_vector=finite_vectors, a_normal=non_zero_magnitude_vectors)
-    def test_idempotent(self, a_vector, a_normal):
+    def test_projection_is_idempotent(self, a_vector, a_normal):
         once = project_onto_tangent_plane(a_vector, a_normal)
         twice = project_onto_tangent_plane(once, a_normal)
         np.testing.assert_array_almost_equal(twice, once)
