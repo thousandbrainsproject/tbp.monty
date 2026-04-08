@@ -41,7 +41,7 @@ def normalize(v: ArrayLike, epsilon: float = 1e-12) -> np.ndarray:
     return v / n
 
 
-def project_onto_tangent_plane(v: np.ndarray, n: np.ndarray) -> np.ndarray:
+def project_onto_tangent_plane(v: ArrayLike, n: ArrayLike) -> np.ndarray:
     """Project a vector onto the tangent plane perpendicular to a normal.
 
     Removes the component of v that is parallel to n, leaving only the
