@@ -62,6 +62,7 @@ class LookAtGoalTest(unittest.TestCase):
     am not 100% confident that the conversion to euler angles that happens within the
     policy (which is actually necessary) will work correctly in that case.
     """
+
     @classmethod
     def setUpClass(cls):
         cls.view_finder_shape = [64, 64]
