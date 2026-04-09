@@ -209,7 +209,7 @@ class GlobalLocationAveragingTest(unittest.TestCase):
     def setUp(self):
         self.buffer = FeatureAtLocationBuffer()
 
-    def test_global_location_is_average_of_sm_channels(self):
+    def test_last_location_is_average_of_sm_channels(self):
         state_sm0 = create_mock_message(
             sender_id="SM_0",
             sender_type="SM",
@@ -231,9 +231,9 @@ class GlobalLocationAveragingTest(unittest.TestCase):
         self.buffer.append([state_sm0, state_sm1, state_lm])
         # Only SM locations are averaged; LM locations are excluded
         expected_avg = (state_sm0.location + state_sm1.location) / 2
-        np.testing.assert_array_equal(self.buffer.global_location, expected_avg)
+        np.testing.assert_array_equal(self.buffer.last_location, expected_avg)
 
-    def test_global_location_single_channel(self):
+    def test_last_location_single_channel(self):
         state_a = create_mock_message(
             sender_id="SM_0",
             sender_type="SM",
@@ -242,7 +242,7 @@ class GlobalLocationAveragingTest(unittest.TestCase):
         )
         self.buffer.append([state_a])
         np.testing.assert_array_equal(
-            self.buffer.global_location, np.array([1.0, 2.0, 3.0])
+            self.buffer.last_location, np.array([1.0, 2.0, 3.0])
         )
 
     def test_stores_displacement_from_first_observation(self):

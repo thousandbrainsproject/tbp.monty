@@ -1009,9 +1009,9 @@ class GraphLM(LearningModule):
             Percepts with displacements.
         """
         sm_percepts = [p for p in percepts if p.sender_type == "SM"]
-        if self.buffer.global_location is not None:
+        if self.buffer.last_location is not None:
             current_location = np.mean([p.location for p in sm_percepts], axis=0)
-            displacement = current_location - self.buffer.global_location
+            displacement = current_location - self.buffer.last_location
         else:
             displacement = np.zeros(3)
         for p in percepts:

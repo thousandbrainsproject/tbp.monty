@@ -419,9 +419,9 @@ class DisplacementGraphLM(GraphLM):
             # TODO S: Make sure result of get_current_location() and get_current_pose()
             # is on object (should always be atm).
             current_location = np.mean([p.location for p in sm_percepts], axis=0)
-            displacement = current_location - self.buffer.global_location
+            displacement = current_location - self.buffer.last_location
 
-            pos1 = torch.tensor(self.buffer.global_location)
+            pos1 = torch.tensor(self.buffer.last_location)
             pos2 = torch.tensor(current_location)
             norm1 = torch.tensor(
                 # element 0 of current pose is location, element 1 is surface normal

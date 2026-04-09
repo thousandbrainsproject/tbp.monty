@@ -44,7 +44,7 @@ class FeatureAtLocationBuffer:
         self.on_object = []
         self.input_percepts = []
 
-        self.global_location = None
+        self.last_location = None
         self.displacements = {}
 
         self.channel_sender_types = {}
@@ -544,7 +544,7 @@ class FeatureAtLocationBuffer:
             for attr in sm_percepts[0].displacement:
                 self._add_displacement(attr, sm_percepts[0].displacement[attr])
 
-        self.global_location = current_location.copy()
+        self.last_location = current_location.copy()
 
     def _add_displacement(
         self,
