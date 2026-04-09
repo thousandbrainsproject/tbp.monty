@@ -17,6 +17,7 @@ from hypothesis.extra.numpy import arrays
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     normalize,
     project_onto_tangent_plane,
+    TangentFrame,
 )
 
 finite_vectors = arrays(
@@ -102,3 +103,27 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
         once = project_onto_tangent_plane(a_vector, a_normal)
         twice = project_onto_tangent_plane(once, a_normal)
         np.testing.assert_array_almost_equal(twice, once)
+
+
+class TangentFrameTest(unittest.TestCase):
+    def _assert_orthonormal_frame(self, frame, normal):
+        """Assert (basis_u, basis_v, normal) form an orthonormal right-handed frame."""
+        u, v = frame.basis_u, frame.basis_v
+        # Check unit norm
+        np.testing.assert_array_almost_equal(np.linalg.norm(u), 1.0)
+        np.testing.assert_array_almost_equal(np.linalg.norm(v), 1.0)
+        np.testing.assert_array_almost_equal(np.linalg.norm(normal), 1.0)
+
+        # Check orthogonality
+        np.testing.assert_array_almost_equal(np.dot(u, v), 0.0)
+        np.testing.assert_array_almost_equal(np.dot(u, normal), 0.0)
+        np.testing.assert_array_almost_equal(np.dot(v, normal), 0.0)
+
+        # Check right-handedness
+        np.testing.assert_array_almost_equal(np.cross(u, v), normal)
+        np.testing.assert_array_almost_equal(np.cross(v, u), -normal)
+
+    def test_construction_with_y_aligned_normal_triggers_fallback(self):
+        n = normalize(np.array([0.0, 1.0, 0.01]))
+        frame = TangentFrame(n)
+        self._assert_orthonormal_frame(frame, n)
