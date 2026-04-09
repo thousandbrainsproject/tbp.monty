@@ -731,7 +731,7 @@ class Orientation:  # noqa: PLW1641
         wxyz: FloatVector = xyzw[..., [3, 0, 1, 2]]
         return Orientation(self.frame, wxyz)
 
-    def in_frame(self, frame: Pose = None) -> Orientation:
+    def in_frame(self, frame: Pose | None = None) -> Orientation:
         """Create a copy of this `Orientation` relative to another frame-of-reference.
 
         Returns:
@@ -976,6 +976,34 @@ class Pose:  # noqa: PLW1641
         xyz: FloatVector = orientation.apply(location.as_array())
         label: str = "" if self.frame is None else self.frame.label
         return self.new_frame(xyz, wxyz, label)
+
+    def in_frame(self, frame: Pose | None = None, label: str = "") -> Pose:
+        """Create a copy of this `Pose` relative to another frame-of-reference.
+
+        Returns:
+            The new `Pose` object.
+
+        Examples:
+            >>> agent_frame = Pose(label="Agent")
+            >>> agent_frame.location.move_by([0.0, 0.13, -0.7])
+            Location(frame=None, x=0.0, y=0.13, z=-0.7)
+            >>> agent_frame.orientation.yaw(_deg(30))
+            Orientation(frame=None, w=0.965926, x=0.0, y=0.258819, z=0.0)
+            >>> agent_frame
+            Pose(frame=None, location=(0.0, 0.13, -0.7), orientation=(0.965926, 0.0, 0.258819, 0.0), label='Agent')
+
+            >>> sensor_frame = agent_frame.new_frame(label="Sensor")
+            >>> sensor_frame.orientation.pitch(_deg(-15))
+            Orientation(frame='Agent', w=0.991445, x=-0.130526, y=0.0, z=0.0)
+            >>> sensor_frame
+            Pose(frame='Agent', location=(0.0, 0.0, 0.0), orientation=(0.991445, -0.130526, 0.0, 0.0), label='Sensor')
+
+            >>> sensor_frame.in_frame(None)
+            Pose(frame=None, location=(0.0, 0.13, -0.7), orientation=(0.957662, -0.126079, 0.256605, 0.033783), label='')
+        """  # noqa: E501
+        location = self.location.in_frame(frame)
+        orientation = self.orientation.in_frame(frame)
+        return Pose(frame, location, orientation, label)
 
 
 if __name__ == "__main__":
