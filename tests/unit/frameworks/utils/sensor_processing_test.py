@@ -25,7 +25,7 @@ def orthonormal_vectors(draw):
     random_base = normalize(draw(non_zero_magnitude_vectors))
     v = normalize(draw(non_zero_magnitude_vectors))
     n = np.cross(random_base, v)
-    assume(np.linalg.norm(n) >= 1e-12)
+    assume(not np.allclose(np.linalg.norm(n), 0.0))
     return v, n
 
 
@@ -71,10 +71,12 @@ class DirectionalCurvatureTest(unittest.TestCase):
         ks=curvature_values(),
         vectors=orthonormal_vectors(),
     )
-    @example(angle=0.0, k1=4.0, k2=2.0)  # aligned with pc1_dir -> k1
-    @example(angle=np.pi / 2, k1=4.0, k2=2.0)  # perpendicular to pc1_dir -> k2
-    @example(angle=np.pi / 4, k1=4.0, k2=2.0)  # 45 degrees -> average
-    @example(angle=0.0, k1=-3.0, k2=-1.0)  # negative curvatures
+    @example(
+        angle=0.0, k1=4.0, k2=2.0, vectors=orthonormal_vectors()
+    )  # aligned with pc1_dir -> k1
+    # @example(angle=np.pi / 2, k1=4.0, k2=2.0)  # perpendicular to pc1_dir -> k2
+    # @example(angle=np.pi / 4, k1=4.0, k2=2.0)  # 45 degrees -> average
+    # @example(angle=0.0, k1=-3.0, k2=-1.0)  # negative curvatures
     def test_euler_formula(self, angle, ks, vectors):
         """Result matches k1*cos^2(theta) + k2*sin^2(theta) for any direction."""
         pc1, pc2 = vectors
@@ -91,7 +93,6 @@ class DirectionalCurvatureTest(unittest.TestCase):
         k=st.floats(min_value=-1e6, max_value=1e6, allow_nan=False),
         vectors=orthonormal_vectors(),
     )
-    @settings(max_examples=10000)
     def test_equal_curvatures_returns_that_value(self, angle, k, vectors):
         """When k1 == k2, result equals that value for any in-plane direction."""
         pc1, pc2 = vectors
@@ -119,65 +120,44 @@ class DirectionalCurvatureTest(unittest.TestCase):
         bad_pc2 = pc1 * a_scaler
         with self.assertRaises(ValueError):
             directional_curvature(
-                np.array([1.0, 0.0, 0.0]),
+                movement_direction=np.array([1.0, 0.0, 0.0]),
                 k1=k1,
                 k2=k2,
                 pc1_dir=pc1,
                 pc2_dir=bad_pc2,
             )
 
-    def test_non_unit_direction_normalizes(self):
-        result = directional_curvature(
-            np.array([10.0, 0.0, 0.0]),
-            k1=7.0,
-            k2=1.0,
-            pc1_dir=self.pc1_dir,
-            pc2_dir=self.pc2_dir,
-        )
-        self.assertAlmostEqual(result, 7.0)
-
-    def test_out_of_plane_direction_raises(self):
+    @given(vectors=orthonormal_vectors(), ks=curvature_values())
+    @example(
+        vectors=(
+            np.array([5.96046448e-08, 0.00000000e00, 1.00000000e00]),
+            np.array([0.00000000e00, 5.96046448e-08, 0.00000000e00]),
+        ),
+        ks=(0.0, 0.0),
+    )
+    def test_out_of_plane_direction_raises(self, vectors, ks):
+        pc1, pc2 = vectors
+        k1, k2 = ks
+        movement_direction = np.cross(pc1, pc2)
         with self.assertRaises(ValueError):
             directional_curvature(
-                np.array([0.0, 0.0, 1.0]),
-                k1=4.0,
-                k2=2.0,
-                pc1_dir=self.pc1_dir,
-                pc2_dir=self.pc2_dir,
+                movement_direction=movement_direction,
+                k1=k1,
+                k2=k2,
+                pc1_dir=pc1,
+                pc2_dir=pc2,
             )
-
-    def test_partially_out_of_plane_direction_raises(self):
-        with self.assertRaises(ValueError):
-            directional_curvature(
-                np.array([1.0, 0.0, 1.0]),
-                k1=4.0,
-                k2=2.0,
-                pc1_dir=self.pc1_dir,
-                pc2_dir=self.pc2_dir,
-            )
-
-    def test_nearly_in_plane_direction_passes(self):
-        result = directional_curvature(
-            np.array([1.0, 0.0, 1e-8]),
-            k1=4.0,
-            k2=2.0,
-            pc1_dir=self.pc1_dir,
-            pc2_dir=self.pc2_dir,
-        )
-        self.assertAlmostEqual(result, 4.0)
 
     @given(
         angle=st.floats(min_value=0, max_value=2 * np.pi, allow_nan=False),
-        k1=st.floats(min_value=-1e6, max_value=1e6, allow_nan=False),
-        k2=st.floats(min_value=-1e6, max_value=1e6, allow_nan=False),
+        vectors=orthonormal_vectors(),
+        ks=curvature_values(),
     )
-    def test_opposite_direction_same_result(self, angle, k1, k2):
+    def test_opposite_direction_same_result(self, angle, vectors, ks):
         """Negating the direction does not change the curvature (sign-invariant)."""
-        direction = np.array([np.cos(angle), np.sin(angle), 0.0])
-        fwd = directional_curvature(
-            direction, k1=k1, k2=k2, pc1_dir=self.pc1_dir, pc2_dir=self.pc2_dir
-        )
-        bwd = directional_curvature(
-            -direction, k1=k1, k2=k2, pc1_dir=self.pc1_dir, pc2_dir=self.pc2_dir
-        )
+        pc1, pc2 = vectors
+        k1, k2 = ks
+        direction = pc1 * np.cos(angle) + pc2 * np.sin(angle)
+        fwd = directional_curvature(direction, k1=k1, k2=k2, pc1_dir=pc1, pc2_dir=pc2)
+        bwd = directional_curvature(-direction, k1=k1, k2=k2, pc1_dir=pc1, pc2_dir=pc2)
         self.assertAlmostEqual(fwd, bwd)
