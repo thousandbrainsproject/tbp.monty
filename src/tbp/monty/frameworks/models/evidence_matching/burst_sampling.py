@@ -86,8 +86,7 @@ class BurstSamplingHypothesesUpdater:
 
     The burst sampling process is governed by four main parameters:
       - `sampling_multiplier`: Determines the number of hypotheses to sample during
-        bursts as a multiplier of the total number of available informed hypotheses.
-        This value has a range of [0, 1].
+        bursts as a multiplier of the object graph nodes.
       - `deletion_trigger_slope`: Hypotheses below this threshold are deleted.
       - `sampling_burst_duration`: The number of consecutive steps in each burst.
       - `burst_trigger_slope`: The threshold for triggering a sampling burst. This
@@ -96,12 +95,16 @@ class BurstSamplingHypothesesUpdater:
 
     To reproduce the behavior of `DefaultHypothesesUpdater` sampling a fixed number of
     hypotheses only at the beginning of the episode, you can set:
-        - `sampling_multiplier=1`
+        - `sampling_multiplier=2` (or `umbilical_num_poses` if PC undefined)
         - `deletion_trigger_slope=-np.inf` (no deletion is allowed)
         - `sampling_burst_duration=1` (sample the full burst over a single step)
         - `burst_trigger_slope=-np.inf` (never trigger additional bursts)
 
     These parameters will trigger a single-step burst at the first step of the episode.
+    Note that if the PC of the first observation is undetermined,
+    `sampling_multiplier` should be set to the value of `umbilical_num_poses` to
+    reproduce the exact results of `DefaultHypothesesUpdater`. In practice, this is
+    difficult to predict because it relies on the first sampled observation.
     """
 
     def __init__(
@@ -156,9 +159,9 @@ class BurstSamplingHypothesesUpdater:
                 select if features should be used for matching. Defaults to the default
                 selector.
             sampling_multiplier: Determines the number of hypotheses to sample during
-                bursts as a multiplier of the total number of available informed
-                hypotheses (graph nodes * hyps per node). Value of 0.0 results
-                in no sampling. Value must be in the range [0, 1]. Defaults to 0.4.
+                bursts as a multiplier of the object graph nodes. Value of 0.0 results
+                in no sampling. Value can be greater than 1 but not to exceed the
+                `num_hyps_per_node` of the current step. Defaults to 0.4.
             deletion_trigger_slope: Hypotheses below this threshold are deleted.
                 Expected range matches the range of step evidence change, i.e.,
                 [-1.0, 2.0]. Defaults to 0.5.
@@ -232,9 +235,9 @@ class BurstSamplingHypothesesUpdater:
             use_features_for_matching=self.use_features_for_matching,
         )
 
-        # Sampling multiplier should be in the range [0, 1]
-        if self.sampling_multiplier < 0 or self.sampling_multiplier > 1:
-            raise ValueError("sampling_multiplier should be in the range [0, 1]")
+        # Sampling multiplier should not be less than 0 (no sampling)
+        if self.sampling_multiplier < 0:
+            raise ValueError("sampling_multiplier should be >= 0")
 
         self.reset()
 
@@ -431,8 +434,8 @@ class BurstSamplingHypothesesUpdater:
         Notes:
             This function takes into account the following parameters:
               - `sampling_multiplier`: The number of hypotheses to sample during bursts.
-                This is defined as a multiplier of the total available informed
-                hypotheses.
+                This is defined as a multiplier of the number of nodes in the object
+                graph.
               - `deletion_trigger_slope`: This dictates how many hypotheses to
                 delete. Hypotheses below this threshold are deleted.
               - `sampling_burst_steps`: The remaining number of burst steps. This value
@@ -451,12 +454,14 @@ class BurstSamplingHypothesesUpdater:
                 ).shape[0]
                 channel_num_hyps_per_node = self._num_hyps_per_node(features[channel])
 
-                # Calculate the number of informed hypotheses for this channel
-                channel_informed = round(
-                    channel_num_nodes
-                    * channel_num_hyps_per_node
-                    * self.sampling_multiplier
+                # This makes sure that we do not request more than the available
+                # number of informed hypotheses
+                capped_multiplier = min(
+                    self.sampling_multiplier, channel_num_hyps_per_node
                 )
+
+                # Calculate the total number of informed hypotheses to be sampled
+                channel_informed = round(channel_num_nodes * capped_multiplier)
 
                 # Ensure divisible by this channel's num_hyps_per_node
                 channel_informed -= channel_informed % channel_num_hyps_per_node
