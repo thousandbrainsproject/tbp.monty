@@ -10,7 +10,7 @@
 import unittest
 
 import numpy as np
-from hypothesis import assume, given
+from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -36,16 +36,14 @@ def perpendicular_vectors(draw):
 
 
 class NormalizeTest(unittest.TestCase):
-    @given(finite_vectors)
+    @given(non_zero_magnitude_vectors)
     def test_preserves_direction(self, v):
         norm = np.linalg.norm(v)
-        assume(norm >= 1e-12)
         result = normalize(v)
         np.testing.assert_array_almost_equal(result * norm, v)
 
-    @given(finite_vectors)
+    @given(non_zero_magnitude_vectors)
     def test_idempotent(self, v):
-        assume(np.linalg.norm(v) >= 1e-12)
         once = normalize(v)
         twice = normalize(once)
         np.testing.assert_array_almost_equal(twice, once)
@@ -70,9 +68,8 @@ class NormalizeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             normalize(v, epsilon=epsilon)
 
-    @given(finite_vectors)
+    @given(non_zero_magnitude_vectors)
     def test_result_has_unit_norm(self, v):
-        assume(np.linalg.norm(v) >= 1e-12)
         result = normalize(v)
         self.assertAlmostEqual(np.linalg.norm(result), 1.0)
 
