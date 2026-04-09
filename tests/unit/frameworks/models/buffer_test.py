@@ -512,7 +512,3 @@ class BufferEncoderTest(unittest.TestCase):
                 json.loads(json.dumps(action, cls=BufferEncoder)),
                 json.loads(json.dumps(action, cls=ActionJSONEncoder)),
             )
-
-
-if __name__ == "__main__":
-    unittest.main()

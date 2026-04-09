@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -99,7 +99,3 @@ class RotationFromQuatTest(unittest.TestCase):
         result = rotation_from_quat(self.quats_scalar_first[0])
         expected = self.rotations[0]
         np.testing.assert_array_equal(result.as_quat(), expected.as_quat())
-
-
-if __name__ == "__main__":
-    unittest.main()

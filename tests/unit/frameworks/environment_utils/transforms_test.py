@@ -251,7 +251,3 @@ class GaussianBlurRGBTest(unittest.TestCase):
         result_tv = total_variation(result_rgb)
 
         self.assertTrue(result_tv < input_tv or np.allclose(result_tv, input_tv))
-
-
-if __name__ == "__main__":
-    unittest.main()

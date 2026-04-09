@@ -122,7 +122,3 @@ class TestGenerateIndex(unittest.TestCase):
 
         self.assertEqual(entry["title"], "test doc")
         self.assertEqual(entry["path1"], "safe_category")
-
-
-if __name__ == "__main__":
-    unittest.main()
