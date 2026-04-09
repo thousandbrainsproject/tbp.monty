@@ -542,7 +542,7 @@ jobs:
         run: |
           export MUJOCO_GL=egl
           mkdir -p test_results/pytest
-          uv run pytest --cov --cov-context=test --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
+          uv run --frozen pytest --cov --cov-context=test --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v4
