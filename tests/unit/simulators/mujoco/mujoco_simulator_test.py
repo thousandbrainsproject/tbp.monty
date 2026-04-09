@@ -20,12 +20,13 @@ from unittest_parametrize import ParametrizedTestCase, parametrize
 from tbp.monty.frameworks.actions.actions import LookUp
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR
-from tbp.monty.simulators.mujoco import MissingObjectModel, UnknownObjectType
 from tbp.monty.simulators.mujoco.simulator import (
     DEFAULT_RESOLUTION,
     PRIMITIVE_OBJECTS,
+    MissingObjectModel,
     MissingObjectTexture,
     MuJoCoSimulator,
+    UnknownObjectType,
 )
 
 # Parameters for add primitive object tests
@@ -127,8 +128,8 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
                 sim.model.geom("sphere_0").size, np.array([3.0, 3.0, 3.0])
             )
 
-    def test_custom_object_loading(self) -> None:
-        """Test custom object loading."""
+    def test_custom_object_adding(self) -> None:
+        """Test adding a custom object to the scene."""
         with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
             sim.add_object("valid_object")
 
@@ -140,6 +141,36 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
             assert np.allclose(
                 mesh.refquat, [np.sin(np.pi / 4), np.cos(np.pi / 4), 0.0, 0.0]
             )
+
+    def test_duplicate_custom_objects_share_meshes(self) -> None:
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
+            sim.add_object("valid_object")
+            sim.add_object("valid_object")
+
+            geom0 = sim.spec.geom("valid_object_0")
+            assert geom0.type == mjtGeom.mjGEOM_MESH
+
+            geom1 = sim.spec.geom("valid_object_1")
+            assert geom1.type == mjtGeom.mjGEOM_MESH
+
+            mesh0 = sim.spec.mesh(geom0.meshname)
+            mesh1 = sim.spec.mesh(geom1.meshname)
+            assert mesh0 == mesh1
+
+    def test_adding_custom_objects_after_removing_all(self):
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
+            sim.add_object("valid_object")
+
+            geom0 = sim.spec.geom("valid_object_0")
+            assert geom0.type == mjtGeom.mjGEOM_MESH
+
+            sim.remove_all_objects()
+            assert sim.spec.geom("valid_object_0") is None
+
+            sim.add_object("valid_object")
+            geom0 = sim.spec.geom("valid_object_0")
+            assert geom0.type == mjtGeom.mjGEOM_MESH
+            assert sim.spec.mesh(geom0.meshname) is not None
 
     def test_custom_object_missing(self) -> None:
         with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim, pytest.raises(

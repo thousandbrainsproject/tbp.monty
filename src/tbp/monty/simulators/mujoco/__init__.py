@@ -8,4 +8,6 @@
 # https://opensource.org/licenses/MIT.
 
 # Import this to make specifying the simulator in configs less repetitive
-from .simulator import *
+from .simulator import MuJoCoSimulator
+
+__all__ = ["MuJoCoSimulator"]

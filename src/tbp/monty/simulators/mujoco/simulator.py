@@ -98,11 +98,12 @@ class MuJoCoSimulator(Simulator, SimulatedObjectEnvironment):
         self.spec = MjSpec()
         self.model: MjModel = self.spec.compile()
         self.data = MjData(self.model)
-
         self.data_path = Path(data_path) if data_path else None
+
         self._agent_partials = agents
         self._agents: dict[AgentID, Agent] = {}
         self._create_agents()
+        self._loaded_custom_types: set[str] = set()
 
         if self._agents:
             self._render_resolution = self._max_sensor_resolution()
@@ -170,6 +171,7 @@ class MuJoCoSimulator(Simulator, SimulatedObjectEnvironment):
         self._create_agents()
         self._recompile()
         self._object_count = 0
+        self._loaded_custom_types = set()
 
     @override
     def add_object(
@@ -227,6 +229,25 @@ class MuJoCoSimulator(Simulator, SimulatedObjectEnvironment):
             position: Initial position of the object.
             rotation: Initial orientation of the object.
             scale: Initial scale of the object.
+        """
+        if object_type not in self._loaded_custom_types:
+            self._load_custom_object(object_type)
+
+        self.spec.worldbody.add_geom(
+            name=obj_name,
+            type=mjtGeom.mjGEOM_MESH,
+            meshname=f"{object_type}_mesh",
+            material=f"{object_type}_mat",
+            size=scale,
+            pos=position,
+            quat=rotation,
+        )
+        self._loaded_custom_types.add(object_type)
+
+    def _load_custom_object(self, object_type: str) -> None:
+        """Loads a custom object from the data_path into the spec.
+
+        This should only be done once per custom object type.
 
         Raises:
             DataPathNotConfigured: if data_path is not configured
@@ -278,16 +299,6 @@ class MuJoCoSimulator(Simulator, SimulatedObjectEnvironment):
             file=str(model_path),
             refquat=metadata.refquat,
             refpos=metadata.refpos,
-        )
-
-        self.spec.worldbody.add_geom(
-            name=obj_name,
-            type=mjtGeom.mjGEOM_MESH,
-            meshname=f"{object_type}_mesh",
-            material=f"{object_type}_mat",
-            size=scale,
-            pos=position,
-            quat=rotation,
         )
 
     def _add_primitive_object(
