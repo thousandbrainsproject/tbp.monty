@@ -195,7 +195,7 @@ class MuJoCoSimulator(Simulator, SimulatedObjectEnvironment):
         if name in PRIMITIVE_OBJECTS:
             self._add_primitive_object(obj_name, name, position, rotation, scale)
         else:
-            self._add_loadable_object(obj_name, name, position, rotation, scale)
+            self._add_custom_object(obj_name, name, position, rotation, scale)
         self._object_count += 1
 
         self._recompile()
@@ -205,7 +205,7 @@ class MuJoCoSimulator(Simulator, SimulatedObjectEnvironment):
             semantic_id=semantic_id,
         )
 
-    def _add_loadable_object(
+    def _add_custom_object(
         self,
         obj_name: str,
         object_type: str,
@@ -213,7 +213,7 @@ class MuJoCoSimulator(Simulator, SimulatedObjectEnvironment):
         rotation: QuaternionWXYZ,
         scale: VectorXYZ,
     ):
-        """Adds an objected loaded from the data_path to the scene.
+        """Adds a custom object loaded from the data_path to the scene.
 
         This assumes that each object's files are stored in a directory in the
         `data_path` matching the shape_type. It should contain the mesh in

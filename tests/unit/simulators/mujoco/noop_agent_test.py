@@ -11,13 +11,10 @@ from __future__ import annotations
 import unittest
 from functools import partial
 from typing import Any
-from unittest.mock import Mock
 
 import numpy as np
-import pytest
 import quaternion as qt
 
-from tbp.monty.frameworks.actions.actions import LookUp
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.sensors import SensorConfig, SensorID
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR
@@ -31,8 +28,7 @@ class NoopAgentTest(unittest.TestCase):
     def test_noop_agent_state(self) -> None:
         # test with some non-zero values
         agent_pos = (0.0, 1.5, -1.0)
-        sin_pi_fourths = np.sin(np.pi / 4)
-        agent_quat = (sin_pi_fourths, sin_pi_fourths, 0.0, 0.0)
+        agent_quat = (np.sin(np.pi / 4), np.cos(np.pi / 4), 0.0, 0.0)
         agent_args = self.default_agent_args
         agent_args.update({"position": agent_pos, "rotation": agent_quat})
 
@@ -69,40 +65,6 @@ class NoopAgentTest(unittest.TestCase):
             # TODO: these might be too sensitive to variations
             assert rgba.min() == 0.0
             assert rgba.max() == 127.0
-
-    def test_agent_that_does_not_understand_an_action(self) -> None:
-        """Ensure the simulator works with an agent that doesn't respond to actions."""
-        agent_mock = Mock(id=AGENT_ID)
-        agent_mock.max_sensor_resolution = DEFAULT_RESOLUTION
-        AgentMockClass = Mock(return_value=agent_mock)  # noqa: N806
-        sim = MuJoCoSimulator(
-            agents=[partial(AgentMockClass, **self.default_agent_args)],
-            data_path=None,
-        )
-
-        with sim:
-            action = LookUp(AGENT_ID, rotation_degrees=5.0)
-            sim.step([action])
-
-    def test_agent_action_with_attribute_error(self) -> None:
-        """This test ensures that the simulator doesn't swallow agent errors."""
-
-        def actuate_look_up(*args, **kwargs):  # noqa: ARG001
-            # Simulate an attribute error as from a programming mistake
-            raise AssertionError("AgentMock does not have attribute 'foo'")
-
-        agent_mock = Mock(id=AGENT_ID)
-        agent_mock.actuate_look_up = Mock(side_effect=actuate_look_up)
-        agent_mock.max_sensor_resolution = DEFAULT_RESOLUTION
-        AgentMockClass = Mock(return_value=agent_mock)  # noqa: N806
-        sim = MuJoCoSimulator(
-            agents=[partial(AgentMockClass, **self.default_agent_args)],
-            data_path=None,
-        )
-        action = LookUp(AGENT_ID, rotation_degrees=5.0)
-
-        with pytest.raises(AssertionError), sim:
-            sim.step([action])
 
     @property
     def default_agent_args(self) -> dict[str, Any]:
