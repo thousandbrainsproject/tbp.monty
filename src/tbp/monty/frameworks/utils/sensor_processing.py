@@ -29,6 +29,10 @@ def is_orthogonal(v1: ArrayLike, v2: ArrayLike, tolerance: float = 1e-6) -> bool
     return np.allclose(dot, 0.0, atol=tolerance)
 
 
+def is_unit_vector(vector: ArrayLike, tolerance: float = 1e-6) -> bool:
+    return np.allclose(np.linalg.norm(vector), 1.0, atol=tolerance)
+
+
 def is_coplanar(
     basis_1: ArrayLike, basis_2: ArrayLike, vector: ArrayLike, tolerance: float = 1e-6
 ) -> bool:
@@ -76,6 +80,9 @@ def directional_curvature(
     """
     if not is_orthogonal(pc1_dir, pc2_dir):
         raise ValueError("The pc1_dir and pc2_dir must be orthogonal.")
+
+    if not (is_unit_vector(pc1_dir) and is_unit_vector(pc2_dir)):
+        raise ValueError("The pc1_dir and pc2_dir must be unit vectors.")
 
     if np.allclose(np.linalg.norm(movement_direction), 0.0):
         return 0.0

@@ -24,7 +24,9 @@ finite_vectors = arrays(
     shape=3,
     elements=st.floats(min_value=-1e6, max_value=1e6),
 )
-non_zero_magnitude_vectors = finite_vectors.filter(lambda v: np.linalg.norm(v) >= 1e-12)
+non_zero_magnitude_vectors = finite_vectors.filter(
+    lambda v: not np.allclose(np.linalg.norm(v), 0.0)
+)
 
 
 @st.composite

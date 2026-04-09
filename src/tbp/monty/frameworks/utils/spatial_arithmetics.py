@@ -21,11 +21,11 @@ from scipy.spatial.transform import Rotation
 logger = logging.getLogger(__name__)
 
 
-def normalize(v: ArrayLike, epsilon: float = 1e-12) -> np.ndarray:
+def normalize(vector: ArrayLike, epsilon: float = 1e-12) -> np.ndarray:
     """Normalize a vector to unit length.
 
     Args:
-        v: Input vector to normalize.
+        vector: Input vector to normalize.
         epsilon: Small epsilon value below which the vector is considered zero.
 
     Returns:
@@ -34,11 +34,11 @@ def normalize(v: ArrayLike, epsilon: float = 1e-12) -> np.ndarray:
     Raises:
         ValueError: If the vector has near-zero length (norm < epsilon).
     """
-    v = np.asarray(v)
-    n = np.linalg.norm(v)
+    vector = np.asarray(vector)
+    n = np.linalg.norm(vector)
     if n < epsilon:
         raise ValueError(f"Cannot normalize near-zero vector (norm={n:.2e})")
-    return v / n
+    return vector / n
 
 
 def project_onto_tangent_plane(v: ArrayLike, n: ArrayLike) -> np.ndarray:
