@@ -530,8 +530,9 @@ class FeatureAtLocationBuffer:
     def _store_displacement_and_location(self, percepts: list[Message]) -> None:
         """Store the global displacement and location from the current step.
 
-        Computes the average location across SM input channels and stores
-        any displacement present on the first SM percept.
+        Computes the average location across SM input channels (to be used for
+        calculating the next displacement) and stores any displacement present on
+        the first SM percept.
 
         Args:
             percepts: List of Message objects from the current step.
@@ -558,9 +559,7 @@ class FeatureAtLocationBuffer:
             val: Value of the displacement.
         """
         if name not in self.displacements:
-            self.displacements[name] = np.full(
-                (len(self.locations), len(val)), np.nan
-            )
+            self.displacements[name] = np.full((len(self.locations), len(val)), np.nan)
 
         padded_vals = self._pad_to_target_length(
             existing_vals=self.displacements[name],
