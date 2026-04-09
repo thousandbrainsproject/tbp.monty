@@ -341,7 +341,3 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         np.testing.assert_array_equal(selection.remove_ids, expected_remove)
         np.testing.assert_array_equal(selection.maintain_mask, expected_keep_mask)
         np.testing.assert_array_equal(selection.remove_mask, expected_remove_mask)
-
-
-if __name__ == "__main__":
-    unittest.main()

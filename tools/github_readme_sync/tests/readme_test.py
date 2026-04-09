@@ -865,7 +865,3 @@ This is a test document.""",
         self.assertIn("<h1>Test Content</h1>", sanitized_html)
         self.assertIn("<p>This is a test paragraph</p>", sanitized_html)
         self.assertIn("<p>More content after the script</p>", sanitized_html)
-
-
-if __name__ == "__main__":
-    unittest.main()
