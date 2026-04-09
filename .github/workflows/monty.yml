@@ -523,7 +523,7 @@ jobs:
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: astral-sh/setup-uv@v5
         with:
-          enable-cache: true
+          enable-cache: false
           cache-dependency-glob: "**/uv.lock"
       - name: Create uv environment
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
