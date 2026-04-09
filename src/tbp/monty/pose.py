@@ -394,6 +394,9 @@ class Location:  # noqa: PLW1641
         return self._v
 
 
+IDENTITY_MATRIX = np.identity(3, dtype=float)
+"""3x3 identity matrix for default Orientation"""
+
 class Orientation:  # noqa: PLW1641
     r"""An orientation (rotation) in a given _reference frame_.
 
@@ -499,6 +502,35 @@ class Orientation:  # noqa: PLW1641
             Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
         """  # noqa: E501
         return Orientation(frame, (w, x, y, z))
+
+    @staticmethod
+    def from_matrix(
+        frame: Pose | None = None,
+        matrix: ArrayLike = IDENTITY_MATRIX,
+    ) -> Orientation:
+        r"""Create a `Orientation` from a rotation matrix.
+
+        Returns:
+            The new `Orientation` object.
+
+        Examples:
+            >>> Orientation.from_matrix()
+            Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
+
+            >>> an_orientation = Orientation.from_matrix(matrix=[
+            ...     [0, -1,  0],
+            ...     [1,  0,  0],
+            ...     [0,  0,  1]
+            ... ])
+            >>> an_orientation
+            Orientation(frame=None, w=0.707107, x=0.0, y=0.0, z=0.707107)
+            >>> an_orientation.roll(_deg(-90))
+            Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
+        """
+        r: Rotation = Rotation.from_matrix(matrix)
+        xyzw = r.as_quat()
+        wxyz: FloatVector = xyzw[..., [3, 0, 1, 2]]
+        return Orientation(frame, wxyz)
 
     @property
     def frame(self) -> Pose | None:
