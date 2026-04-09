@@ -191,7 +191,7 @@ class GraphLearningTest(BaseGraphTest):
                 self.assertEqual(
                     step + 1,
                     len(
-                        exp.model.learning_modules[0].buffer.global_displacements[
+                        exp.model.learning_modules[0].buffer.displacements[
                             "displacement"
                         ]
                     ),

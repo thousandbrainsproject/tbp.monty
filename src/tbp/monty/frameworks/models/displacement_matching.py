@@ -117,7 +117,7 @@ class DisplacementGraphLM(GraphLM):
             )
             r_euler, _, r = self.get_object_rotation(
                 sensed_displacements=np.array(
-                    self.buffer.global_displacements["displacement"][1:]
+                    self.buffer.displacements["displacement"][1:]
                 ),
                 model_displacements=model_displacements,
                 get_reverse_r=False,

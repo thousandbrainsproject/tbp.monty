@@ -565,7 +565,7 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
             lm_dict.update(logger_args)
             lm_dict.update({"locations": lm.buffer.locations})
             lm_dict.update(lm.buffer.features)
-            lm_dict.update({"displacements": lm.buffer.global_displacements})
+            lm_dict.update({"displacements": lm.buffer.displacements})
             lm_dict.update(lm.buffer.stats)
             lm_dict.update(mode=model.experiment_mode.value)
             lm_dict.update({"stepwise_targets_list": lm.stepwise_targets_list})

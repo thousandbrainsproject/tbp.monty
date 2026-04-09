@@ -45,7 +45,7 @@ class FeatureAtLocationBuffer:
         self.input_percepts = []
 
         self.global_location = None
-        self.global_displacements = {}
+        self.displacements = {}
 
         self.channel_sender_types = {}
 
@@ -131,7 +131,7 @@ class FeatureAtLocationBuffer:
             self._add_attr_to_feature_buffer(input_channel, "on_object", on_obj)
             if on_obj:
                 any_obs_on_obj = True
-        self._store_global_displacement_and_location(percepts)
+        self._store_displacement_and_location(percepts)
 
         self.on_object.append(any_obs_on_obj)  # TODO S: remove?
 
@@ -285,7 +285,7 @@ class FeatureAtLocationBuffer:
         Returns:
             The nth displacement.
         """
-        return self.global_displacements["displacement"][n]
+        return self.displacements["displacement"][n]
 
     def current_displacement(self) -> npt.NDArray[np.float64]:
         """Get the current displacement.
@@ -301,7 +301,7 @@ class FeatureAtLocationBuffer:
         Returns:
             The current ppf.
         """
-        return copy.deepcopy(self.global_displacements["ppf"][-1])
+        return copy.deepcopy(self.displacements["ppf"][-1])
 
     def first_displacement_len(self) -> float:
         """Get length of first observed displacement.
@@ -311,9 +311,9 @@ class FeatureAtLocationBuffer:
         Returns:
             The length of the first observed displacement.
         """
-        if "ppf" in self.global_displacements:
-            return self.global_displacements["ppf"][1][0]
-        return np.linalg.norm(self.global_displacements["displacement"][1])
+        if "ppf" in self.displacements:
+            return self.displacements["ppf"][1][0]
+        return np.linalg.norm(self.displacements["displacement"][1])
 
     def get_all_features_on_object(self):
         """Get all observed features that were on the object.
@@ -527,7 +527,7 @@ class FeatureAtLocationBuffer:
         self.locations[input_channel] = padded_locs
         self.locations[input_channel][-1] = location
 
-    def _store_global_displacement_and_location(self, percepts: list[Message]) -> None:
+    def _store_displacement_and_location(self, percepts: list[Message]) -> None:
         """Store the global displacement and location from the current step.
 
         Computes the average location across SM input channels and stores
@@ -542,11 +542,11 @@ class FeatureAtLocationBuffer:
         first_percept = sm_percepts[0]
         if getattr(first_percept, "displacement", None):
             for attr in sm_percepts[0].displacement:
-                self._add_global_displacement(attr, sm_percepts[0].displacement[attr])
+                self._add_displacement(attr, sm_percepts[0].displacement[attr])
 
         self.global_location = current_location.copy()
 
-    def _add_global_displacement(
+    def _add_displacement(
         self,
         name: Literal["displacement", "ppf"],
         val: npt.NDArray[np.float64],
@@ -557,18 +557,18 @@ class FeatureAtLocationBuffer:
             name: Name of the displacement (e.g. "displacement", "ppf").
             val: Value of the displacement.
         """
-        if name not in self.global_displacements:
-            self.global_displacements[name] = np.full(
+        if name not in self.displacements:
+            self.displacements[name] = np.full(
                 (len(self.locations), len(val)), np.nan
             )
 
         padded_vals = self._pad_to_target_length(
-            existing_vals=self.global_displacements[name],
+            existing_vals=self.displacements[name],
             target_length=len(self) + 1,
             new_val_len=val.shape[0],
         )
-        self.global_displacements[name] = padded_vals
-        self.global_displacements[name][-1] = val
+        self.displacements[name] = padded_vals
+        self.displacements[name][-1] = val
 
     def _pad_to_target_length(
         self,
