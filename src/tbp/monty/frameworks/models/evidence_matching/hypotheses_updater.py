@@ -321,7 +321,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             )
             self._initialized_channels[graph_id].add(channel)
 
-        return Hypotheses.concatenate([hypotheses] + new_hyps)
+        return Hypotheses.concatenate([hypotheses, *new_hyps])
 
     def _get_all_informed_possible_poses(
         self, graph_id: str, sensed_channel_features: dict, input_channel: str
