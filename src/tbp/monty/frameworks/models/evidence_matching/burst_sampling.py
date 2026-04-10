@@ -365,32 +365,29 @@ class BurstSamplingHypothesesUpdater:
         )
         tracker.update(hypotheses_update.evidence)
 
-        # Telemetry update
-        burst_sampling_telemetry = asdict(
-            BurstSamplingTelemetry(
-                displacer_telemetry=displacer_telemetry,
-                added_ids=(
-                    np.arange(len(hypotheses_update.evidence))[
-                        -len(informed_hypotheses.evidence) :
-                    ]
-                    if len(informed_hypotheses.evidence) > 0
-                    else np.array([], dtype=np.int_)
-                ),
-                ages=tracker.hyp_ages(),
-                evidence_slopes=tracker.calculate_slopes(),
-                removed_ids=hypotheses_selection.remove_ids,
-                max_slope=self.max_slope,
-            )
-        )
-
         # Still return prediction error.
         # TODO: make this nicer like dependent on log_level.
-        if not self.include_telemetry:
+        if self.include_telemetry:
+            telemetry = asdict(
+                BurstSamplingTelemetry(
+                    displacer_telemetry=displacer_telemetry,
+                    added_ids=(
+                        np.arange(len(hypotheses_update.evidence))[
+                            -len(informed_hypotheses.evidence) :
+                        ]
+                        if len(informed_hypotheses.evidence) > 0
+                        else np.array([], dtype=np.int_)
+                    ),
+                    ages=tracker.hyp_ages(),
+                    evidence_slopes=tracker.calculate_slopes(),
+                    removed_ids=hypotheses_selection.remove_ids,
+                    max_slope=self.max_slope,
+                )
+            )
+        else:
             telemetry = {
                 "mlh_prediction_error": displacer_telemetry.mlh_prediction_error,
             }
-        else:
-            telemetry = burst_sampling_telemetry
 
         return hypotheses_update, telemetry
 
