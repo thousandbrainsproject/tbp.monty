@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import quaternion as qt
 
-from tbp.monty.cmp import Goal, Message
+from tbp.monty.cmp import Goal
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
@@ -79,22 +79,27 @@ class SalienceSM(SensorModule):
         self,
         ctx: RuntimeContext,
         observation: SensorObservation,
-        motor_only_step: bool = False,  # noqa: ARG002
-    ) -> Message | None:
+        motor_only_step: bool = False,
+    ) -> None:
         """Generate goal for the current step.
+
+        If `motor_only_step` is True, this method will return without using the
+        salience strategy, stepping the return inhibitor, or modifying `self._goals`
+        in any way.
 
         Args:
             ctx: The runtime context.
             observation: Sensor observation.
             motor_only_step: Whether the current step is a motor-only step.
 
-        Returns:
-            A Percept, if one is generated.
         """
         if self._save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
                 observation, self.state.rotation, self.state.position
             )
+
+        if motor_only_step:
+            return
 
         salience_map = self._salience_strategy(
             rgba=observation["rgba"], depth=observation["depth"]
@@ -119,8 +124,6 @@ class SalienceSM(SensorModule):
             )
             for i in range(len(on_object.locations))
         ]
-
-        return None
 
     def _weight_salience(
         self,

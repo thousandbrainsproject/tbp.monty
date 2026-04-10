@@ -16,6 +16,7 @@ import torch
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_angle,
     get_right_hand_angle,
+    normalize,
 )
 
 logger = logging.getLogger(__name__)
@@ -337,10 +338,8 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
     ):
         surface_normals_to_use = np.logical_not(surface_normals_to_use)
     # Take the mean of all surface normals pointing in the same half sphere spanned by
-    # the cds.
-    norm_mean = np.mean(surface_normals[surface_normals_to_use], axis=0)
-    # Make sure the mean vector still has unit length.
-    normed_norm_mean = norm_mean / np.linalg.norm(norm_mean)
+    # the cds and make sure the mean vector still has unit length.
+    norm_mean = normalize(np.mean(surface_normals[surface_normals_to_use], axis=0))
 
     if sum(pose_fully_defined) < len(pose_fully_defined) // 2:
         # print(
@@ -348,23 +347,21 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
         # )
         # Just take 1st one. Shouldn't matter since cd should not be used anyways if
         # not pose_fully_defined. Only has a small effect on sampled possible poses.
-        pv_means = np.hstack([normed_norm_mean, cds1[0], cds2[0]])
+        pv_means = np.hstack([norm_mean, cds1[0], cds2[0]])
         use_cds_to_update = False
     else:
         # Find cds pointing in opposing directions and invert them. This is needed
         # because the curvature directions are ambiguous and both directions are
         # equivalent. If we average over opposing directions, we will get noise.
-        cd1_dirs = get_right_hand_angle(cds1, cds2[0], normed_norm_mean) < 0
+        cd1_dirs = get_right_hand_angle(cds1, cds2[0], norm_mean) < 0
         cds1[cd1_dirs] = -cds1[cd1_dirs]
-        cd1_mean = np.mean(cds1, axis=0)
-        normed_cd1_mean = cd1_mean / np.linalg.norm(cd1_mean)
+        cd1_mean = normalize(np.mean(cds1, axis=0))
         # Get the second cd by calculating a vector orthogonal to cd1 and surface normal
-        cd2_mean = np.cross(normed_norm_mean, normed_cd1_mean)
-        normed_cd2_mean = cd2_mean / np.linalg.norm(cd2_mean)
-        if get_right_hand_angle(normed_cd1_mean, cd2_mean, normed_norm_mean) < 0:
-            normed_cd2_mean = -normed_cd2_mean
+        cd2_mean = normalize(np.cross(norm_mean, cd1_mean))
+        if get_right_hand_angle(cd1_mean, cd2_mean, norm_mean) < 0:
+            cd2_mean = -cd2_mean
         use_cds_to_update = True
-        pv_means = np.hstack([normed_norm_mean, normed_cd1_mean, normed_cd2_mean])
+        pv_means = np.hstack([norm_mean, cd1_mean, cd2_mean])
 
     assert not np.any(np.isnan(pv_means)), "NaN in pose vector mean"
     return pv_means, use_cds_to_update
