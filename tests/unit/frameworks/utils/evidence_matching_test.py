@@ -27,9 +27,9 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         """Test that hypotheses are correctly initialized."""
         self.tracker.add_hyp(2)
         self.assertEqual(self.tracker.total_size(), 2)
-        self.assertEqual(self.tracker.evidence_buffer.shape, (2, 3))
-        self.assertTrue(np.all(np.isnan(self.tracker.evidence_buffer)))
-        self.assertTrue(np.all(self.tracker.hyp_age == 0))
+        self.assertEqual(self.tracker._evidence_buffer.shape, (2, 3))
+        self.assertTrue(np.all(np.isnan(self.tracker._evidence_buffer)))
+        self.assertTrue(np.all(self.tracker._hyp_age == 0))
 
     def test_update_correctly_shifts_and_sets_values(self) -> None:
         """Test that update correctly shifts previous values and adds new ones."""
@@ -39,8 +39,8 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         self.tracker.update(np.array([3.0, 4.0]))
 
         expected = np.array([[1.0, 2.0, 3.0], [2.0, 3.0, 4.0]])
-        np.testing.assert_array_equal(self.tracker.evidence_buffer, expected)
-        np.testing.assert_array_equal(self.tracker.hyp_age, [3, 3])
+        np.testing.assert_array_equal(self.tracker._evidence_buffer, expected)
+        np.testing.assert_array_equal(self.tracker._hyp_age, [3, 3])
 
     def test_update_more_than_window_size_slides_correctly(self) -> None:
         """Test that only the most recent values within window_size affect slope."""
@@ -55,7 +55,7 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
 
         # Final buffer should be [5.0, 4.0, 3.0]
         expected_buffer = np.array([[5.0, 4.0, 3.0]])
-        np.testing.assert_array_equal(self.tracker.evidence_buffer, expected_buffer)
+        np.testing.assert_array_equal(self.tracker._evidence_buffer, expected_buffer)
 
         # Slopes: (3.0 - 4.0) + (4.0 - 5.0) = (-1) + (-1) = -2 / 2 = -1.0
         slopes = self.tracker.calculate_slopes()
@@ -73,7 +73,7 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         self.tracker.update(np.array([1.0, 2.0, 3.0]))
         self.tracker.remove_hyp(np.array([1]))
         self.assertEqual(self.tracker.total_size(), 2)
-        np.testing.assert_array_equal(self.tracker.evidence_buffer[:, -1], [1.0, 3.0])
+        np.testing.assert_array_equal(self.tracker._evidence_buffer[:, -1], [1.0, 3.0])
 
     def test_clear_hyp_removes_all_hypotheses(self) -> None:
         """Test that clear_hyp completely removes all hypotheses."""
@@ -88,8 +88,8 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
 
         # Confirm the buffer and age arrays are empty
         self.assertEqual(self.tracker.total_size(), 0)
-        self.assertEqual(self.tracker.evidence_buffer.shape[0], 0)
-        self.assertEqual(self.tracker.hyp_age.shape[0], 0)
+        self.assertEqual(self.tracker._evidence_buffer.shape[0], 0)
+        self.assertEqual(self.tracker._hyp_age.shape[0], 0)
 
     def test_calculate_slopes_correctly(self) -> None:
         """Test slope calculation over the sliding window."""
@@ -105,7 +105,7 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
     def test_removable_indices_mask_matches_min_age(self) -> None:
         """Test that the removable mask reflects min_age cutoff."""
         self.tracker.add_hyp(3)
-        self.tracker.hyp_age[:] = [1, 2, 3]
+        self.tracker._hyp_age[:] = [1, 2, 3]
         mask = self.tracker.removable_indices_mask()
         np.testing.assert_array_equal(mask, [False, True, True])
 
@@ -119,7 +119,7 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         self.tracker.update(np.array([3.0, 2.0, 1.0, 1.0]))
 
         # Force ages so only last hyp is too young to remove.
-        self.tracker.hyp_age = np.array([3, 3, 3, 1], dtype=int)
+        self.tracker._hyp_age = np.array([3, 3, 3, 1], dtype=int)
 
         selection = self.tracker.select_hypotheses(slope_threshold=-0.5)
 
