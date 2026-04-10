@@ -353,7 +353,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
         if self.num_distractors > 0:
             self.add_distractor_objects(
-                primary_target_obj,
+                primary_target_obj.object_id,
                 init_params,
                 primary_target_name=self.object_names[idx],
             )
