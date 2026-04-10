@@ -13,7 +13,7 @@ from unittest.mock import Mock
 
 import numpy as np
 import pytest
-from hypothesis import given
+from hypothesis import assume, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -233,10 +233,13 @@ class GaussianBlurRGBTest(unittest.TestCase):
         rgba, sigma, kernel_size = params
 
         def total_variation(img):
-            img = img.astype(np.float64)
+            img = img.astype(np.float32)
             return np.sum(np.abs(np.diff(img, axis=0))) + np.sum(
                 np.abs(np.diff(img, axis=1))
             )
+
+        input_tv = total_variation(rgba[:, :, :3])
+        assume(input_tv > 0.0) # Exclude solid images
 
         obs = Observations()
         obs[AGENT_ID] = AgentObservations()
@@ -245,9 +248,6 @@ class GaussianBlurRGBTest(unittest.TestCase):
             agent_id=AGENT_ID, sigma=sigma, kernel_size=kernel_size
         )
         result_rgba = gaussian_smoother(obs, ctx=Mock())[AGENT_ID][SENSOR_ID]["rgba"]
-        result_rgb = result_rgba[:, :, :3]
+        result_tv = total_variation(result_rgba[:, :, :3])
 
-        input_tv = total_variation(rgba[:, :, :3])
-        result_tv = total_variation(result_rgb)
-
-        self.assertTrue(result_tv < input_tv or np.allclose(result_tv, input_tv))
+        self.assertLessEqual(result_tv, input_tv)
