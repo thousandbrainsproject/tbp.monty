@@ -77,7 +77,7 @@ class LookAtGoal(MotorPolicy):
             state: The current state of the motor system.
             percept: The percept from (as of this writing) the first sensor
                 module.
-            goal: The goal to look at.
+            goal: The goal to look at (in world reference frame).
 
         Returns:
             The motor policy result.
