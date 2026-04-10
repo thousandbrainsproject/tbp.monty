@@ -43,7 +43,6 @@ from tbp.monty.simulators.mujoco.objects import (
     ObjectMetadata,
     load_object_metadata,
 )
-from tbp.monty.simulators.simulator import Simulator
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +75,7 @@ class DataPathNotConfigured(RuntimeError):
     """The simulator data_path is not configured and a custom object is requested."""
 
 
-class MuJoCoSimulator(Simulator, SimulatedObjectEnvironment):
+class MuJoCoSimulator(SimulatedObjectEnvironment):
     """Simulator implementation for MuJoCo.
 
     MuJoCo's data model consists of three parts, a spec defining the scene, a
