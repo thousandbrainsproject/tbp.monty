@@ -277,8 +277,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # MuJoCo doesn't seem to be able to load the referenced texture from the
         # 'texture.obj' file directly, so we have to load the texture separately and
         # create a material for it that we can add to the mesh.
-        # TODO: we should probably check to see if these are already defined, e.g.
-        #   when adding multiple copies of the same object_type to a scene.
         self.spec.add_texture(
             name=f"{object_type}_tex",
             type=mjtTexture.mjTEXTURE_2D,
