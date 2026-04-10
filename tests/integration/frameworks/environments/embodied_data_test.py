@@ -9,18 +9,10 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import pytest
-
-pytest.importorskip(
-    "magnum",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 import unittest
 from pathlib import Path
 from typing import Sequence
 
-import magnum
 import numpy as np
 import numpy.typing as npt
 import quaternion as qt
@@ -37,6 +29,8 @@ from tbp.monty.frameworks.environments.embodied_data import (
 )
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
+    ObjectInfo,
+    SemanticID,
     SimulatedObjectEnvironment,
 )
 from tbp.monty.frameworks.environments.object_init_samplers import (
@@ -83,66 +77,52 @@ class FakeEnvironmentRel(SimulatedObjectEnvironment):
     def __init__(self):
         self._current_state = 0
 
+    @property
+    def observations(self) -> Observations:
+        return Observations(
+            {
+                AGENT_ID: AgentObservations(
+                    {
+                        SENSOR_ID: SensorObservation(
+                            raw=EXPECTED_STATES[self._current_state]
+                        )
+                    }
+                )
+            }
+        )
+
+    @property
+    def state(self) -> ProprioceptiveState:
+        return ProprioceptiveState(
+            {
+                AGENT_ID: AgentState(
+                    sensors={},
+                    position=(0, 0, 0),
+                    rotation=qt.quaternion(1, 0, 0, 0),
+                )
+            }
+        )
+
     def add_object(
         self,
         *args,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
-    ) -> ObjectID:
-        return ObjectID(-1)
+    ) -> ObjectInfo:
+        return ObjectInfo(ObjectID(-1), SemanticID(-1))
 
     def step(
         self,
         actions: Sequence[Action],  # noqa: ARG002
     ) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
-        obs = Observations(
-            {
-                AGENT_ID: AgentObservations(
-                    {
-                        SENSOR_ID: SensorObservation(
-                            {"raw": EXPECTED_STATES[self._current_state]}
-                        )
-                    }
-                )
-            }
-        )
-        proprioceptive_state = ProprioceptiveState(
-            {
-                AGENT_ID: AgentState(
-                    sensors={},
-                    position=magnum.Vector3(0, 0, 0),
-                    rotation=qt.quaternion(1, 0, 0, 0),
-                )
-            }
-        )
-        return obs, proprioceptive_state
+        return self.observations, self.state
 
     def remove_all_objects(self):
         pass
 
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self._current_state = 0
-        obs = Observations(
-            {
-                AGENT_ID: AgentObservations(
-                    {
-                        SENSOR_ID: SensorObservation(
-                            {"raw": EXPECTED_STATES[self._current_state]}
-                        )
-                    }
-                )
-            }
-        )
-        proprioceptive_state = ProprioceptiveState(
-            {
-                AGENT_ID: AgentState(
-                    sensors={},
-                    position=magnum.Vector3(0, 0, 0),
-                    rotation=qt.quaternion(1, 0, 0, 0),
-                )
-            }
-        )
-        return obs, proprioceptive_state
+        return self.observations, self.state
 
     def close(self):
         self._current_state = None
@@ -152,62 +132,48 @@ class FakeEnvironmentAbs(SimulatedObjectEnvironment):
     def __init__(self):
         self._current_state = 0
 
-    def add_object(self, *_, **__) -> ObjectID:
-        return ObjectID(-1)
+    def add_object(self, *_, **__) -> ObjectInfo:
+        return ObjectInfo(ObjectID(-1), SemanticID(-1))
+
+    @property
+    def observations(self) -> Observations:
+        return Observations(
+            {
+                AGENT_ID: AgentObservations(
+                    {
+                        SENSOR_ID: SensorObservation(
+                            raw=EXPECTED_STATES[self._current_state]
+                        )
+                    }
+                )
+            }
+        )
+
+    @property
+    def state(self) -> ProprioceptiveState:
+        return ProprioceptiveState(
+            {
+                AGENT_ID: AgentState(
+                    sensors={},
+                    position=(0, 0, 0),
+                    rotation=qt.quaternion(1, 0, 0, 0),
+                )
+            }
+        )
 
     def step(
         self,
         actions: Sequence[Action],  # noqa: ARG002
     ) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
-        obs = Observations(
-            {
-                AGENT_ID: AgentObservations(
-                    {
-                        SENSOR_ID: SensorObservation(
-                            {"raw": EXPECTED_STATES[self._current_state]}
-                        )
-                    }
-                )
-            }
-        )
-        proprioceptive_state = ProprioceptiveState(
-            {
-                AGENT_ID: AgentState(
-                    sensors={},
-                    position=magnum.Vector3(0, 0, 0),
-                    rotation=qt.quaternion(1, 0, 0, 0),
-                )
-            }
-        )
-        return obs, proprioceptive_state
+        return self.observations, self.state
 
     def remove_all_objects(self):
         pass
 
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self._current_state = 0
-        obs = Observations(
-            {
-                AGENT_ID: AgentObservations(
-                    {
-                        SENSOR_ID: SensorObservation(
-                            {"raw": EXPECTED_STATES[self._current_state]}
-                        )
-                    }
-                )
-            }
-        )
-        proprioceptive_state = ProprioceptiveState(
-            {
-                AGENT_ID: AgentState(
-                    sensors={},
-                    position=magnum.Vector3(0, 0, 0),
-                    rotation=qt.quaternion(1, 0, 0, 0),
-                )
-            }
-        )
-        return obs, proprioceptive_state
+        return self.observations, self.state
 
     def close(self):
         self._current_state = None
@@ -299,7 +265,7 @@ class EnvironmentInterfacePerObjectTest(unittest.TestCase):
                 rng=rng,
                 seed=seed,
                 experiment_mode=ExperimentMode.EVAL,
-                object_names=("object_a", "object_b"),
+                object_names=("object_a", "object_b"),  # type: ignore[arg-type]
                 object_init_sampler=Default(),
             )
 
