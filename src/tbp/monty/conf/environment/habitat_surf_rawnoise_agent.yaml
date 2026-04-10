@@ -12,7 +12,7 @@ env_init_args:
   data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/ycb}
   agents:
     agent_args:
-      agent_id: ${monty.agent_id:agent_id_0}
+      agent_id: agent_id_0
       sensor_ids:
       - patch
       - view_finder
@@ -51,4 +51,3 @@ env_init_args:
       action_space_type: surface_agent
     agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
 env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
-

@@ -118,7 +118,3 @@ class MontyRunTest(unittest.TestCase):
             exp_log = json.load(f)
 
         self.assertListEqual(exp_log, EXPECTED_LOG)
-
-
-if __name__ == "__main__":
-    unittest.main()

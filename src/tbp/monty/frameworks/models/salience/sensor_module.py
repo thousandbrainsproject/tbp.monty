@@ -11,6 +11,7 @@ from __future__ import annotations
 import numpy as np
 import quaternion as qt
 
+from tbp.monty.cmp import Goal
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
@@ -26,7 +27,6 @@ from tbp.monty.frameworks.models.salience.strategies import (
     UniformSalienceStrategy,
 )
 from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
-from tbp.monty.frameworks.models.states import GoalState, State
 from tbp.monty.frameworks.sensors import SensorID
 
 __all__ = ["SalienceSM"]
@@ -55,7 +55,7 @@ class SalienceSM(SensorModule):
             SnapshotTelemetry() if snapshot_telemetry is None else snapshot_telemetry
         )
 
-        self._goals: list[GoalState] = []
+        self._goals: list[Goal] = []
         # TODO: Goes away once experiment code is extracted
         self.is_exploring = False
 
@@ -79,22 +79,27 @@ class SalienceSM(SensorModule):
         self,
         ctx: RuntimeContext,
         observation: SensorObservation,
-        motor_only_step: bool = False,  # noqa: ARG002
-    ) -> State | None:
-        """Generate goal states for the current step.
+        motor_only_step: bool = False,
+    ) -> None:
+        """Generate goal for the current step.
+
+        If `motor_only_step` is True, this method will return without using the
+        salience strategy, stepping the return inhibitor, or modifying `self._goals`
+        in any way.
 
         Args:
             ctx: The runtime context.
             observation: Sensor observation.
             motor_only_step: Whether the current step is a motor-only step.
 
-        Returns:
-            A Percept, if one is generated.
         """
         if self._save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
                 observation, self.state.rotation, self.state.position
             )
+
+        if motor_only_step:
+            return
 
         salience_map = self._salience_strategy(
             rgba=observation["rgba"], depth=observation["depth"]
@@ -107,7 +112,7 @@ class SalienceSM(SensorModule):
         salience = self._weight_salience(ctx, on_object.salience, ior_weights)
 
         self._goals = [
-            GoalState(
+            Goal(
                 location=on_object.locations[i],
                 morphological_features=None,
                 non_morphological_features=None,
@@ -119,8 +124,6 @@ class SalienceSM(SensorModule):
             )
             for i in range(len(on_object.locations))
         ]
-
-        return None
 
     def _weight_salience(
         self,
@@ -168,5 +171,5 @@ class SalienceSM(SensorModule):
         self._snapshot_telemetry.reset()
         self.is_exploring = False
 
-    def propose_goal_states(self) -> list[GoalState]:
+    def propose_goals(self) -> list[Goal]:
         return self._goals

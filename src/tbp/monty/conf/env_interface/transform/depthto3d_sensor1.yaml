@@ -2,7 +2,7 @@
 
 transform:
 - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
-  agent_id: ${monty.agent_id:agent_id_0}
+  agent_id: agent_id_0
   sensor_ids:
   - patch
   resolutions: ${np.array:[[10, 10]]}

@@ -12,7 +12,7 @@ env_init_args:
   data_path: null
   agents:
     agent_args:
-      agent_id: ${monty.agent_id:agent_id_0}
+      agent_id: agent_id_0
       sensor_ids:
       - patch_0
       - patch_1

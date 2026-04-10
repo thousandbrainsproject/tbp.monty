@@ -19,6 +19,7 @@ import pytest
 import quaternion as qt
 from parameterized import parameterized_class
 
+from tbp.monty.cmp import Goal
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
@@ -27,7 +28,6 @@ from tbp.monty.frameworks.models.salience.on_object_observation import (
 from tbp.monty.frameworks.models.salience.sensor_module import (
     SalienceSM,
 )
-from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.sensors import SensorID
 
 
@@ -119,7 +119,7 @@ class SalienceSMTest(unittest.TestCase):
         }
 
         self.sensor_module.step(self.ctx, data)
-        goals = self.sensor_module.propose_goal_states()
+        goals = self.sensor_module.propose_goals()
 
         self.sensor_module._salience_strategy.assert_called_once_with(  # type: ignore[attr-defined]
             rgba=data["rgba"], depth=data["depth"]
@@ -134,7 +134,7 @@ class SalienceSMTest(unittest.TestCase):
 
         self.assertEqual(len(goals), locations.shape[0])
         for i, g in enumerate(goals):
-            expected_goal = GoalState(
+            expected_goal = Goal(
                 location=locations[i],
                 confidence=salience[i],
                 use_state=True,

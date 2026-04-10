@@ -15,9 +15,47 @@ import sys
 
 import numpy as np
 import torch
+from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
 logger = logging.getLogger(__name__)
+
+
+def normalize(v: ArrayLike, epsilon: float = 1e-12) -> np.ndarray:
+    """Normalize a vector to unit length.
+
+    Args:
+        v: Input vector to normalize.
+        epsilon: Small epsilon value below which the vector is considered zero.
+
+    Returns:
+        Unit vector in the direction of v.
+
+    Raises:
+        ValueError: If the vector has near-zero length (norm < epsilon).
+    """
+    v = np.asarray(v)
+    n = np.linalg.norm(v)
+    if n < epsilon:
+        raise ValueError(f"Cannot normalize near-zero vector (norm={n:.2e})")
+    return v / n
+
+
+def project_onto_tangent_plane(v: ArrayLike, n: ArrayLike) -> np.ndarray:
+    """Project a vector onto the tangent plane perpendicular to a normal.
+
+    Removes the component of v that is parallel to n, leaving only the
+    component that lies in the plane perpendicular to n.
+
+    Args:
+        v: Vector to project.
+        n: Normal vector defining the tangent plane. Normalized internally.
+
+    Returns:
+        The projection of v onto the plane perpendicular to n.
+    """
+    n = normalize(n)
+    return v - np.dot(v, n) * n
 
 
 def rotations_to_quats(rotations, invert=False):
@@ -84,8 +122,6 @@ def get_angle(vec1, vec2):
     Returns:
         angle in radians
     """
-    # unit_vector_1 = vec1 / np.linalg.norm(vec1)
-    # unit_vector_2 = vec2 / np.linalg.norm(vec2)
     dot_product = np.dot(vec1, vec2)
     return np.arccos(np.clip(dot_product, -1, 1))
 
@@ -113,8 +149,8 @@ def get_angle_beefed_up(v1, v2):
     if np.all(v1 == 0) or np.all(v2 == 0):
         return np.inf
 
-    v1_u = v1 / np.linalg.norm(v1)
-    v2_u = v2 / np.linalg.norm(v2)
+    v1_u = normalize(v1)
+    v2_u = normalize(v2)
 
     result = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
