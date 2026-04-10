@@ -23,6 +23,17 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         """Set up a new tracker for each test."""
         self.tracker = EvidenceSlopeTracker(window_size=3, min_age=2)
 
+    def test_empty_tracker_returns_valid_results(self) -> None:
+        """Test that methods work on a tracker with no hypotheses."""
+        self.assertEqual(self.tracker.total_size(), 0)
+        np.testing.assert_array_equal(
+            self.tracker.removable_indices_mask(), np.array([], dtype=bool)
+        )
+        np.testing.assert_array_equal(self.tracker.hyp_ages(), np.array([], dtype=int))
+        np.testing.assert_array_equal(
+            self.tracker.calculate_slopes(), np.array([], dtype=np.float64)
+        )
+
     def test_add_hypotheses_initializes(self) -> None:
         """Test that hypotheses are correctly initialized."""
         self.tracker.add_hyp(2)

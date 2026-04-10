@@ -31,11 +31,11 @@ class EvidenceSlopeTracker:
             slopes < mean(slopes) for `to_remove` instead of using `np.argsort`.
 
     Attributes:
-        window_size: Number of past values to consider for slope calculation.
-        min_age: Minimum number of updates before a hypothesis can be considered for
+        _window_size: Number of past values to consider for slope calculation.
+        _min_age: Minimum number of updates before a hypothesis can be considered for
             removal.
-        evidence_buffer: Hypothesis evidence buffer of shape (N, window_size).
-        hyp_age: Hypothesis age counters of shape (N,).
+        _evidence_buffer: Hypothesis evidence buffer of shape (N, window_size).
+        _hyp_age: Hypothesis age counters of shape (N,).
     """
 
     def __init__(self, window_size: int = 10, min_age: int = 5) -> None:
@@ -47,8 +47,10 @@ class EvidenceSlopeTracker:
         """
         self._window_size = window_size
         self._min_age = min_age
-        self._evidence_buffer: npt.NDArray[np.float64] | None = None
-        self._hyp_age: npt.NDArray[np.int_] | None = None
+        self._evidence_buffer: npt.NDArray[np.float64] = np.empty(
+            (0, window_size), dtype=np.float64
+        )
+        self._hyp_age: npt.NDArray[np.int_] = np.empty(0, dtype=int)
 
     def total_size(self) -> int:
         """Returns the number of tracked hypotheses.
@@ -56,8 +58,6 @@ class EvidenceSlopeTracker:
         Returns:
             Number of hypotheses currently tracked.
         """
-        if self._evidence_buffer is None:
-            return 0
         return self._evidence_buffer.shape[0]
 
     def removable_indices_mask(self) -> npt.NDArray[np.bool_]:
@@ -77,12 +77,8 @@ class EvidenceSlopeTracker:
         new_data = np.full((num_new_hyp, self._window_size), np.nan)
         new_age = np.zeros(num_new_hyp, dtype=int)
 
-        if self._evidence_buffer is None:
-            self._evidence_buffer = new_data
-            self._hyp_age = new_age
-        else:
-            self._evidence_buffer = np.vstack((self._evidence_buffer, new_data))
-            self._hyp_age = np.concatenate((self._hyp_age, new_age))
+        self._evidence_buffer = np.vstack((self._evidence_buffer, new_data))
+        self._hyp_age = np.concatenate((self._hyp_age, new_age))
 
     def hyp_ages(self) -> npt.NDArray[np.int_]:
         """Returns the ages of all hypotheses."""
@@ -95,11 +91,8 @@ class EvidenceSlopeTracker:
             values: Array of new evidence values.
 
         Raises:
-            ValueError: If no hypotheses exist or the number of values is incorrect.
+            ValueError: If the number of values doesn't match the number of hypotheses.
         """
-        if self._evidence_buffer is None:
-            raise ValueError("No hypotheses exist yet.")
-
         if values.shape[0] != self.total_size():
             raise ValueError(
                 f"Expected {self.total_size()} values, but got {len(values)}"
@@ -151,8 +144,8 @@ class EvidenceSlopeTracker:
 
     def clear_hyp(self) -> None:
         """Clears all hypotheses."""
-        if self._evidence_buffer is not None:
-            self.remove_hyp(np.arange(self.total_size()))
+        self._evidence_buffer = np.empty((0, self._window_size), dtype=np.float64)
+        self._hyp_age = np.empty(0, dtype=int)
 
     def select_hypotheses(self, slope_threshold: float) -> HypothesesSelection:
         """Returns a hypotheses selection given a slope threshold.
@@ -167,13 +160,7 @@ class EvidenceSlopeTracker:
 
         Returns:
             A selection of hypotheses to maintain.
-
-        Raises:
-            ValueError: If no hypotheses exist.
         """
-        if self._evidence_buffer is None:
-            raise ValueError("No hypotheses exist yet.")
-
         slopes = self.calculate_slopes()
         removable_mask = self.removable_indices_mask()
 
