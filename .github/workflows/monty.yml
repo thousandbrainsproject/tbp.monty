@@ -523,7 +523,7 @@ jobs:
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: astral-sh/setup-uv@v5
         with:
-          enable-cache: false
+          enable-cache: true
           cache-dependency-glob: "**/uv.lock"
       - name: Create uv environment
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
@@ -534,7 +534,6 @@ jobs:
           uv pip install setuptools==81.0.0
           # Need to install torch separately because torch-scatter doesn't declare it properly
           uv pip install torch==1.13.1
-          uv lock --dry-run
           uv sync --locked --extra dev --extra simulator_mujoco
       - name: Run tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
