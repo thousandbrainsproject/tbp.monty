@@ -143,6 +143,13 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
             )
 
     def test_duplicate_custom_objects_share_meshes(self) -> None:
+        """Test adding multiple custom objects that share the same mesh.
+
+        MuJoCo won't allow adding the same meshes, materials, or textures
+        more than once. This test confirms that we can successfully add multiple
+        objects that use the same mesh without trying to re-add the mesh, material,
+        and texture.
+        """
         with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
             sim.add_object("valid_object")
             sim.add_object("valid_object")
@@ -158,6 +165,15 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
             assert mesh0 == mesh1
 
     def test_adding_custom_objects_after_removing_all(self):
+        """Test adding a custom object after removing all objects.
+
+        The current implementation of `remove_all_objects` works by creating
+        a new empty MjSpec object and then adding back the agents, which invalidates
+        all the existing objects, meshes, materials, and textures.
+
+        This test confirms that trying to add a custom object after removing all
+        objects works, and re-adds the mesh, material, and texture.
+        """
         with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
             sim.add_object("valid_object")
 
@@ -216,7 +232,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
             sim.step([action])
 
     def test_agent_action_with_attribute_error(self) -> None:
-        """This test ensures that the simulator doesn't swallow agent errors."""
+        """Ensures the simulator doesn't swallow agent errors from actuator methods."""
 
         def actuate_look_up(*args, **kwargs):  # noqa: ARG001
             # Simulate an attribute error as from a programming mistake
