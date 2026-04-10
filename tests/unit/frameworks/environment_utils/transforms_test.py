@@ -239,7 +239,7 @@ class GaussianBlurRGBTest(unittest.TestCase):
             )
 
         input_tv = total_variation(rgba[:, :, :3])
-        assume(input_tv > 0.0) # Exclude solid images
+        assume(input_tv > 0.0)  # Exclude solid images
 
         obs = Observations()
         obs[AGENT_ID] = AgentObservations()
