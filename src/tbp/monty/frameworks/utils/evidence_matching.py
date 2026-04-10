@@ -138,14 +138,14 @@ class EvidenceSlopeTracker:
         # Return the average slope for each tracked hypothesis, ignoring Nan
         return np.nansum(diffs, axis=1) / valid_steps
 
-    def remove_hyp(self, hyp_ids: npt.NDArray[np.int_]) -> None:
+    def remove_hyp(self, hyp_idxs: npt.NDArray[np.int_]) -> None:
         """Removes specific hypotheses by index.
 
         Args:
-            hyp_ids: Array of hypothesis indices to remove.
+            hyp_idxs: Array of hypothesis indices to remove.
         """
         mask = np.ones(self.total_size(), dtype=bool)
-        mask[hyp_ids] = False
+        mask[hyp_idxs] = False
         self._evidence_buffer = self._evidence_buffer[mask]
         self._hyp_age = self._hyp_age[mask]
 

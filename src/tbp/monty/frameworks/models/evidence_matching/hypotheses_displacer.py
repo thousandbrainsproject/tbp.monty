@@ -147,10 +147,10 @@ class DefaultHypothesesDisplacer:
         search_locations = possible_hypotheses.locations + rotated_displacements
 
         # Get indices of hypotheses with evidence > threshold
-        hyp_ids_to_test = np.where(
+        hyp_idxs_to_test = np.where(
             possible_hypotheses.evidence >= evidence_update_threshold
         )[0]
-        num_hypotheses_to_test = hyp_ids_to_test.shape[0]
+        num_hypotheses_to_test = hyp_idxs_to_test.shape[0]
         if num_hypotheses_to_test > 0:
             logger.info(
                 f"Testing {num_hypotheses_to_test} out of "
@@ -167,8 +167,8 @@ class DefaultHypothesesDisplacer:
                 new_evidence = self._calculate_evidence_for_new_locations(
                     graph_id=graph_id,
                     input_channel=channel,
-                    search_locations=search_locations[hyp_ids_to_test],
-                    channel_possible_poses=possible_hypotheses.poses[hyp_ids_to_test],
+                    search_locations=search_locations[hyp_idxs_to_test],
+                    channel_possible_poses=possible_hypotheses.poses[hyp_idxs_to_test],
                     channel_features=features[channel],
                 )
                 min_update = np.clip(np.min(new_evidence), 0, np.inf)
@@ -176,7 +176,7 @@ class DefaultHypothesesDisplacer:
                 channel_evidence = (
                     np.ones_like(possible_hypotheses.evidence) * min_update
                 )
-                channel_evidence[hyp_ids_to_test] = new_evidence
+                channel_evidence[hyp_idxs_to_test] = new_evidence
                 total_evidence_to_add += channel_evidence
 
             # Prediction error from summed evidence
