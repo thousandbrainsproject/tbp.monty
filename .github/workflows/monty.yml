@@ -16,7 +16,7 @@ on:
       - checks_requested
 
 env:
-  UV_PYTHON: 3.10 # version of Python to use in `uv` environment
+  UV_PYTHON: 3.10.17 # version of Python to use in `uv` environment
 
 jobs:
   build_sphinx_monty:

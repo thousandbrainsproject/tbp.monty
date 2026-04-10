@@ -9,6 +9,6 @@ Some notes on how to set up this environment.
 
 ```sh
 # The --seed is needed so we can build the torch packages
-uv venv -p 3.10 --seed
+uv venv -p 3.10.17 --seed
 uv sync --extra dev --extra simulator_mujoco
 ```
