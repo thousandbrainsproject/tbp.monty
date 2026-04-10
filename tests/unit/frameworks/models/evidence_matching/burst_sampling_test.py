@@ -257,9 +257,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.updater.sampling_burst_steps = 3
         self.updater.sampling_multiplier = sampling_multiplier
         channel_features = {"pose_fully_defined": pose_fully_defined}
-        num_hyps_per_node = self.updater._num_hyps_per_node(
-            channel_features=channel_features
-        )
+        num_hyps_per_node = self.updater._num_hyps_per_node(features=channel_features)
 
         self.mock_graph_memory.get_input_channels_in_graph = Mock(
             return_value=["patch"]
@@ -270,14 +268,14 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
         tracker = EvidenceSlopeTracker(min_age=0)
 
-        _, informed_per_channel = self.updater._sample_count(
+        _, informed_samples_per_channel = self.updater._sample_count(
             features={"patch": channel_features},
             graph_id="object1",
             input_channels=["patch"],
             tracker=tracker,
         )
 
-        informed_count = informed_per_channel["patch"]
+        informed_count = informed_samples_per_channel["patch"]
 
         # The number of required hypotheses cannot be negative
         self.assertGreaterEqual(informed_count, 0)
@@ -307,14 +305,14 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
         tracker = EvidenceSlopeTracker(min_age=0)
 
-        _, informed_per_channel = self.updater._sample_count(
+        _, informed_samples_per_channel = self.updater._sample_count(
             features={"patch": {"pose_fully_defined": pose_fully_defined}},
             graph_id="object1",
             input_channels=["patch"],
             tracker=tracker,
         )
 
-        self.assertEqual(informed_per_channel, {})
+        self.assertEqual(informed_samples_per_channel, {})
 
     def test_burst_lasts_exactly_sampling_burst_duration_steps(self) -> None:
         """Test that burst lasts for exactly sampling_burst_duration steps.
@@ -561,7 +559,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         result = self.updater._sample_informed(
             features={"patch": {"pose_fully_defined": pose_fully_defined}},
             graph_id="object1",
-            informed_per_channel={"patch": 0},
+            samples_per_channel={"patch": 0},
             tracker=tracker,
         )
 
@@ -604,7 +602,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         result = self.updater._sample_informed(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
-            informed_per_channel={"patch": informed_count},
+            samples_per_channel={"patch": informed_count},
             tracker=tracker,
         )
 
@@ -676,7 +674,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         result = updater._sample_informed(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
-            informed_per_channel={"patch": informed_count},
+            samples_per_channel={"patch": informed_count},
             tracker=EvidenceSlopeTracker(),
         )
 
@@ -721,7 +719,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
                 },
             },
             graph_id="object1",
-            informed_per_channel={"patch": informed_count},
+            samples_per_channel={"patch": informed_count},
             tracker=EvidenceSlopeTracker(),
         )
 
@@ -771,7 +769,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             )
         )
 
-        _, informed_per_channel = self.updater._sample_count(
+        _, informed_samples_per_channel = self.updater._sample_count(
             features={
                 "channel_a": {"pose_fully_defined": True},
                 "channel_b": {"pose_fully_defined": True},
@@ -785,8 +783,10 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             capped = min(sampling_multiplier, num_hyps_per_node)
             expected = round(num_nodes * capped)
             expected -= expected % num_hyps_per_node
-            self.assertEqual(informed_per_channel[channel], expected)
-            self.assertEqual(informed_per_channel[channel] % num_hyps_per_node, 0)
+            self.assertEqual(informed_samples_per_channel[channel], expected)
+            self.assertEqual(
+                informed_samples_per_channel[channel] % num_hyps_per_node, 0
+            )
 
     @given(
         num_nodes=st.integers(min_value=2, max_value=10),
@@ -819,7 +819,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         result = self.updater._sample_informed(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
-            informed_per_channel={"patch": informed_count},
+            samples_per_channel={"patch": informed_count},
             tracker=EvidenceSlopeTracker(),
         )
 
