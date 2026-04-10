@@ -243,7 +243,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             pos=position,
             quat=rotation,
         )
-        self._loaded_custom_types.add(object_type)
 
     def _load_custom_object(self, object_type: str) -> None:
         """Loads a custom object from the data_path into the spec.
@@ -299,6 +298,8 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             refquat=metadata.refquat,
             refpos=metadata.refpos,
         )
+
+        self._loaded_custom_types.add(object_type)
 
     def _add_primitive_object(
         self,
