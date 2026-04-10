@@ -851,7 +851,7 @@ def target_data_to_dict(target):
     output_dict = {}
     output_dict["primary_target_object"] = target["object"]
     output_dict["primary_target_position"] = target["position"]
-    output_dict["primary_target_rotation_euler"] = target["euler_rotation"]
+    output_dict["primary_target_rotation_euler"] = list(target["euler_rotation"])
     output_dict["primary_target_rotation_quat"] = qt.as_float_array(target["rotation"])
     # Currently scale is applied uniformly along all dimensions
     output_dict["primary_target_scale"] = target["scale"][0]

@@ -9,10 +9,13 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Sequence, TypedDict
 
 import numpy as np
+import numpy.typing as npt
+import quaternion as qt
 from scipy.spatial.transform import Rotation
+from typing_extensions import NotRequired
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
@@ -20,8 +23,28 @@ from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 from tbp.monty.math import EulerAnglesXYZ, VectorXYZ
 
 
+class MultiObjectNames(TypedDict):
+    targets_list: Sequence[str]
+    source_object_list: Sequence[str]
+    num_distractors: int
+
+
+class ObjectInitParams(TypedDict):
+    position: VectorXYZ
+    rotation: qt.quaternion
+    scale: VectorXYZ
+    euler_rotation: npt.NDArray[np.float64] | EulerAnglesXYZ
+    quat_rotation: NotRequired[npt.NDArray[np.float64]]
+
+
 class Default:
-    def __call__(self, seed: int, mode: ExperimentMode, epoch: int, episode: int):  # noqa: ARG002
+    def __call__(
+        self,
+        seed: int,
+        mode: ExperimentMode,
+        epoch: int,  # noqa: ARG002
+        episode: int,
+    ) -> ObjectInitParams:
         seed = episode_seed(seed, mode, episode)
         rng = np.random.RandomState(seed)
         euler_rotation = rng.uniform(0, 360, 3)
@@ -31,7 +54,7 @@ class Default:
             rotation=quat_rotation,
             euler_rotation=euler_rotation,
             position=(rng.uniform(-0.5, 0.5), 0.0, 0.0),
-            scale=[1.0, 1.0, 1.0],
+            scale=(1.0, 1.0, 1.0),
         )
 
     def __eq__(self, other: object):
@@ -58,7 +81,13 @@ class Predefined(Default):
         self.scales = scales or [(1.0, 1.0, 1.0)]
         self.change_every_episode = change_every_episode
 
-    def __call__(self, seed: int, mode: ExperimentMode, epoch: int, episode: int):  # noqa: ARG002
+    def __call__(
+        self,
+        seed: int,  # noqa: ARG002
+        mode: ExperimentMode,  # noqa: ARG002
+        epoch: int,
+        episode: int,
+    ) -> ObjectInitParams:
         mod_counter = episode if self.change_every_episode else epoch
         q = Rotation.from_euler(
             "xyz",
@@ -68,7 +97,7 @@ class Predefined(Default):
         quat_rotation = scipy_to_numpy_quat(q)
         return dict(
             rotation=quat_rotation,
-            euler_rotation=list(self.rotations[mod_counter % len(self.rotations)]),
+            euler_rotation=self.rotations[mod_counter % len(self.rotations)],
             quat_rotation=q,
             position=self.positions[mod_counter % len(self.positions)],
             scale=self.scales[mod_counter % len(self.scales)],
@@ -106,7 +135,13 @@ class RandomRotation(Default):
         else:
             self.scale = (1.0, 1.0, 1.0)
 
-    def __call__(self, seed: int, mode: ExperimentMode, epoch: int, episode: int):  # noqa: ARG002
+    def __call__(
+        self,
+        seed: int,
+        mode: ExperimentMode,
+        epoch: int,  # noqa: ARG002
+        episode: int,
+    ) -> ObjectInitParams:
         seed = episode_seed(seed, mode, episode)
         rng = np.random.RandomState(seed)
         euler_rotation = rng.uniform(0, 360, 3)
