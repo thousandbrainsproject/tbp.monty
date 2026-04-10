@@ -30,9 +30,11 @@ from unittest import TestCase
 
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.utils.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.evidence_slope_tracker import (
     EvidenceSlopeTracker,
     HypothesesSelection,
+)
+from tbp.monty.frameworks.utils.evidence_matching import (
     InvalidEvidenceThresholdConfig,
 )
 

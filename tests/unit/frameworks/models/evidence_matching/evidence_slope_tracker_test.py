@@ -11,7 +11,7 @@ import unittest
 
 import numpy as np
 
-from tbp.monty.frameworks.utils.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.evidence_slope_tracker import (
     EvidenceSlopeTracker,
 )
 

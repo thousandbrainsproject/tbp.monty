@@ -17,6 +17,13 @@ import numpy.typing as npt
 from scipy.spatial.transform import Rotation
 from typing_extensions import Self
 
+from tbp.monty.frameworks.models.evidence_matching.channels import (
+    all_usable_input_channels,
+)
+from tbp.monty.frameworks.models.evidence_matching.evidence_slope_tracker import (
+    EvidenceSlopeTracker,
+    HypothesesSelection,
+)
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
     DefaultFeatureEvidenceCalculator,
     FeatureEvidenceCalculator,
@@ -37,12 +44,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
     HypothesesUpdateTelemetry,
 )
 from tbp.monty.frameworks.utils.evidence_matching import (
-    EvidenceSlopeTracker,
-    HypothesesSelection,
     InvalidEvidenceThresholdConfig,
-)
-from tbp.monty.frameworks.models.evidence_matching.channels import (
-    all_usable_input_channels,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_initial_possible_poses,
