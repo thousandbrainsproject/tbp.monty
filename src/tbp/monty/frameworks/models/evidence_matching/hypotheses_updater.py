@@ -254,7 +254,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         # We only displace existing hypotheses since the newly sampled
         # hypotheses should not be affected by the displacement from the last
         # sensory input.
-        displaced_hypotheses, telemetry_data = (
+        displaced_hypotheses, displacer_telemetry = (
             self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
                 displacement=displacement,
                 features=features,
@@ -275,7 +275,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 displaced_hypotheses, features, new_channels, graph_id
             )
 
-        telemetry = {"mlh_prediction_error": telemetry_data.mlh_prediction_error}
+        telemetry = {"mlh_prediction_error": displacer_telemetry.mlh_prediction_error}
         return displaced_hypotheses, telemetry
 
     def _initialize_new_channels(
