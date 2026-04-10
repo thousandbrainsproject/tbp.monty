@@ -32,7 +32,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
 )
-from tbp.monty.frameworks.utils.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.channels import (
     all_usable_input_channels,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (

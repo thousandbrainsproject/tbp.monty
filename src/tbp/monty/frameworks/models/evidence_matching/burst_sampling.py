@@ -40,6 +40,8 @@ from tbp.monty.frameworks.utils.evidence_matching import (
     EvidenceSlopeTracker,
     HypothesesSelection,
     InvalidEvidenceThresholdConfig,
+)
+from tbp.monty.frameworks.models.evidence_matching.channels import (
     all_usable_input_channels,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (
