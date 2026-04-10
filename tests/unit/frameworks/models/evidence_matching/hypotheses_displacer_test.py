@@ -85,7 +85,6 @@ class DefaultHypothesesDisplacerTest(TestCase):
         np.testing.assert_array_almost_equal(result.evidence, [2.5, 2.5, 2.5])
 
     def test_prediction_error_computed_from_summed_evidence(self) -> None:
-        """Test prediction error is derived from the summed multi-channel evidence."""
         num_hyps = 2
         hypotheses = Hypotheses(
             evidence=np.array([5.0, 1.0]),  # hyp 0 is MLH

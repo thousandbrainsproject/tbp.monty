@@ -91,7 +91,6 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
     """Tests for FeatureAtLocationBuffer focusing on padding and filtering behavior."""
 
     def setUp(self):
-        """Create a fresh buffer for each test."""
         self.buffer = FeatureAtLocationBuffer()
 
     def test_get_all_features_on_object_pads_with_nans(self):
@@ -268,8 +267,6 @@ class GlobalLocationAveragingTest(unittest.TestCase):
 
 
 class PadToTargetLengthTest(unittest.TestCase):
-    """Tests for FeatureAtLocationBuffer._pad_to_target_length method."""
-
     def setUp(self):
         self.buffer = FeatureAtLocationBuffer()
         # Add 3 steps to the buffer

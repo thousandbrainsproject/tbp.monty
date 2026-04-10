@@ -23,7 +23,6 @@ from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 class EvidenceLMTest(BaseGraphTest):
     def setUp(self):
-        """Code that gets executed before every test."""
         super().setUp()
 
         self.default_gsg_config = dict(
@@ -139,7 +138,6 @@ class EvidenceLMTest(BaseGraphTest):
         return graph_lm
 
     def test_symmetry_recognition(self):
-        """Test that symmetry is recognized."""
         fake_obs_test = copy.deepcopy(self.fake_obs_symmetric)
         # Get LM with object learned from fake_obs
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_symmetric)
@@ -194,7 +192,6 @@ class EvidenceLMTest(BaseGraphTest):
         )
 
     def test_same_sequence_recognition_elm(self):
-        """Test that the object is recognized with same action sequence."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
 
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)

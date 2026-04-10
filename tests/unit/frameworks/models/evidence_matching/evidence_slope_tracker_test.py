@@ -17,14 +17,10 @@ from tbp.monty.frameworks.models.evidence_matching.evidence_slope_tracker import
 
 
 class EvidenceSlopeTrackerTest(unittest.TestCase):
-    """Unit tests for the EvidenceSlopeTracker class."""
-
     def setUp(self) -> None:
-        """Set up a new tracker for each test."""
         self.tracker = EvidenceSlopeTracker(window_size=3, min_age=2)
 
     def test_empty_tracker_returns_valid_results(self) -> None:
-        """Test that methods work on a tracker with no hypotheses."""
         self.assertEqual(self.tracker.total_size(), 0)
         np.testing.assert_array_equal(
             self.tracker.removable_indices_mask(), np.array([], dtype=bool)
@@ -35,7 +31,6 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         )
 
     def test_add_hypotheses_initializes(self) -> None:
-        """Test that hypotheses are correctly initialized."""
         self.tracker.add_hyp(2)
         self.assertEqual(self.tracker.total_size(), 2)
         self.assertEqual(self.tracker._evidence_buffer.shape, (2, 3))
@@ -43,7 +38,6 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         self.assertTrue(np.all(self.tracker._hyp_age == 0))
 
     def test_update_correctly_shifts_and_sets_values(self) -> None:
-        """Test that update correctly shifts previous values and adds new ones."""
         self.tracker.add_hyp(2)
         self.tracker.update(np.array([1.0, 2.0]))
         self.tracker.update(np.array([2.0, 3.0]))
@@ -73,13 +67,11 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         self.assertAlmostEqual(slopes[0], -1.0)
 
     def test_update_raises_on_wrong_length(self) -> None:
-        """Test that update raises ValueError if the length doesn't match."""
         self.tracker.add_hyp(2)
         with self.assertRaises(ValueError):
             self.tracker.update(np.array([1.0]))
 
     def test_remove_hypotheses_removes_correct_indices(self) -> None:
-        """Test removing a specific hypothesis by index."""
         self.tracker.add_hyp(3)
         self.tracker.update(np.array([1.0, 2.0, 3.0]))
         self.tracker.remove_hyp(np.array([1]))
@@ -87,23 +79,16 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         np.testing.assert_array_equal(self.tracker._evidence_buffer[:, -1], [1.0, 3.0])
 
     def test_clear_hyp_removes_all_hypotheses(self) -> None:
-        """Test that clear_hyp completely removes all hypotheses."""
         self.tracker.add_hyp(4)
         self.tracker.update(np.array([1.0, 2.0, 3.0, 4.0]))
-
-        # Confirm hypotheses were added
         self.assertEqual(self.tracker.total_size(), 4)
 
-        # Clear them
         self.tracker.clear_hyp()
-
-        # Confirm the buffer and age arrays are empty
         self.assertEqual(self.tracker.total_size(), 0)
         self.assertEqual(self.tracker._evidence_buffer.shape[0], 0)
         self.assertEqual(self.tracker._hyp_age.shape[0], 0)
 
     def test_calculate_slopes_correctly(self) -> None:
-        """Test slope calculation over the sliding window."""
         self.tracker.add_hyp(1)
         self.tracker.update(np.array([1.0]))
         self.tracker.update(np.array([2.0]))
@@ -114,14 +99,12 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         self.assertAlmostEqual(slopes[0], expected_slope)
 
     def test_removable_indices_mask_matches_min_age(self) -> None:
-        """Test that the removable mask reflects min_age cutoff."""
         self.tracker.add_hyp(3)
         self.tracker._hyp_age[:] = [1, 2, 3]
         mask = self.tracker.removable_indices_mask()
         np.testing.assert_array_equal(mask, [False, True, True])
 
     def test_select_hypotheses_threshold_and_age(self) -> None:
-        """Test that select_hypotheses respects slope threshold and min_age."""
         self.tracker.add_hyp(4)
 
         # slopes are [1, 0, -1, -1]
