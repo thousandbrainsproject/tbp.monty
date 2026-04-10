@@ -40,7 +40,6 @@ class LookAtGoal(MotorPolicy):
     the x-axis. This setup is typical of our distant agent in which the agent
     performs TurnLeft and TurnRight, while the sensor mounted to it performs
     LookDown and LookUp.
-
     """
 
     def __init__(self, agent_id: AgentID, sensor_id: SensorID):

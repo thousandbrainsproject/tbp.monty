@@ -2,4 +2,4 @@
 
 _target_: tbp.monty.frameworks.models.salience.motor_policy.LookAtGoal
 agent_id: agent_id_0
-sensor_module_id: view_finder
+sensor_id: view_finder
