@@ -38,6 +38,10 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 
 logger = logging.getLogger(__name__)
 
+MIN_EVIDENCE = -1
+MAX_EVIDENCE = 2
+EVIDENCE_RANGE = MAX_EVIDENCE - MIN_EVIDENCE
+
 
 @dataclass
 class HypothesisDisplacerTelemetry:
@@ -183,14 +187,16 @@ class DefaultHypothesesDisplacer:
             mlh_index = np.argmax(possible_hypotheses.evidence)
             evidence_for_mlh = total_evidence_to_add[mlh_index]
 
-            # Each channel contributes evidence in range [-1, 2]. With C
-            # channels the summed range is [-C, 2C]. We map to [0, 1] by
-            # shifting by 2C and dividing by 3C (for C=1 this is the original
-            # [-1, 2] → [0, 3] → [0, 1] mapping).
+            # Each channel contributes evidence in range [MIN_EVIDENCE, MAX_EVIDENCE].
+            # With C channels the summed range is [MIN_EVIDENCE * C, MAX_EVIDENCE * C].
+            # We map to [0, 1] by shifting by (MAX_EVIDENCE * C) and dividing by
+            # (EVIDENCE_RANGE * C).
+            # for C=1 and evidence in the range [-1, 2], this is the original
+            # [-1, 2] → [0, 3] → [0, 1] mapping.
             num_channels = len(input_channels)
-            mlh_prediction_error = (-evidence_for_mlh + 2 * num_channels) / (
-                3 * num_channels
-            )
+            mlh_prediction_error = (
+                MIN_EVIDENCE * evidence_for_mlh + MAX_EVIDENCE * num_channels
+            ) / (EVIDENCE_RANGE * num_channels)
 
             # If past and present weight add up to 1, equivalent to
             # np.average and evidence will be bound to [-C, 2C] where C is the
