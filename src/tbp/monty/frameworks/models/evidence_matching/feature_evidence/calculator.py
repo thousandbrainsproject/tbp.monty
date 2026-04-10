@@ -29,8 +29,8 @@ class FeatureEvidenceCalculator(Protocol):
 class DefaultFeatureEvidenceCalculator:
     @staticmethod
     def chi_square_distance(
-        a: np.ndarray,
-        b: np.ndarray,
+        query_fv: np.ndarray,
+        node_fvs: np.ndarray,
         epsilon: float = 1e-10,
     ) -> np.ndarray:
         """Compute chi-square distance between each row of a and vector b.
@@ -39,7 +39,7 @@ class DefaultFeatureEvidenceCalculator:
             A vector of chi-square distances as floats in the range [0, 1] between each
             row of a and b.
         """
-        return 0.5 * np.sum(((a - b) ** 2) / (a + b + epsilon), axis=1)
+        return 0.5 * np.sum(((query_fv - node_fvs) ** 2) / (query_fv + node_fvs + epsilon), axis=1)
 
     @staticmethod
     def calculate(
@@ -120,8 +120,8 @@ class DefaultFeatureEvidenceCalculator:
             query_lbp_fv = feature_list[lbp_feature_vector]
             node_lbp_fv = channel_feature_array[:, lbp_feature_vector]
             chi2_dist = DefaultFeatureEvidenceCalculator.chi_square_distance(
-                node_lbp_fv,
                 query_lbp_fv,
+                node_lbp_fv
             )
             feature_differences[:, lbp_feature_vector] = chi2_dist[:, None]
         # any difference < tolerance should be positive evidence
