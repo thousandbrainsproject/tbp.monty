@@ -341,20 +341,22 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
         # Specify config for the primary target object and then add it
         init_params = self.object_params.copy()
-        init_params.pop("euler_rotation")
-        if "quat_rotation" in init_params:
-            init_params.pop("quat_rotation")
+        # TODO: Why isn't this part of ObjectInitParams?
         init_params["semantic_id"] = self.semantic_label_to_id[self.object_names[idx]]
 
         # TODO clean this up with its own specific call i.e. Law of Demeter
         primary_target_obj = self.env.add_object(
-            name=self.object_names[idx], **init_params
+            name=self.object_names[idx],
+            position=init_params["position"],
+            rotation=init_params["rotation"],
+            scale=init_params["scale"],
+            semantic_id=init_params["semantic_id"],
         )
 
         if self.num_distractors > 0:
             self.add_distractor_objects(
                 primary_target_obj,
-                init_params,
+                init_params,  # TODO: this isn't an ObjectInitParams anymore
                 primary_target_name=self.object_names[idx],
             )
 
@@ -406,10 +408,13 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
             new_obj_label = self.rng.choice(sampling_list)
             new_init_params["semantic_id"] = self.semantic_label_to_id[new_obj_label]
-            # TODO clean up the `**` unpacking used
+
             self.env.add_object(
                 name=new_obj_label,
-                **new_init_params,
+                position=new_init_params["position"],
+                rotation=new_init_params["rotation"],
+                scale=new_init_params["scale"],
+                semantic_id=new_init_params["semantic_id"],
                 primary_target_object=primary_target_obj,
             )
 
