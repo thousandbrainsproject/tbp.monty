@@ -235,7 +235,6 @@ class BurstSamplingHypothesesUpdater:
             use_features_for_matching=self.use_features_for_matching,
         )
 
-        # Sampling multiplier should not be less than 0 (no sampling)
         if self.sampling_multiplier < 0:
             raise ValueError("sampling_multiplier should be >= 0")
 
