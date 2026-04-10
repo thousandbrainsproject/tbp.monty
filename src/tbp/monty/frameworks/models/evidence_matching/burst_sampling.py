@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -391,7 +391,7 @@ class BurstSamplingHypothesesUpdater:
 
         return hypotheses_update, telemetry
 
-    def _num_hyps_per_node(self, features: dict) -> int:
+    def _num_hyps_per_node(self, features: dict[str, Any]) -> int:
         """Calculate the number of hypotheses per node.
 
         Args:
@@ -602,7 +602,7 @@ class BurstSamplingHypothesesUpdater:
 
     def _sample_from_channel(
         self,
-        features: dict,
+        features: dict[str, Any],
         count: int,
         graph_id: str,
         input_channel: str,
