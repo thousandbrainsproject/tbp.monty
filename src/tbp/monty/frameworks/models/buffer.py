@@ -542,8 +542,8 @@ class FeatureAtLocationBuffer:
 
         first_percept = sm_percepts[0]
         if getattr(first_percept, "displacement", None):
-            for attr in sm_percepts[0].displacement:
-                self._add_displacement(attr, sm_percepts[0].displacement[attr])
+            for name in sm_percepts[0].displacement:
+                self._add_displacement(name, sm_percepts[0].displacement[name])
 
         self.last_location = current_location.copy()
 
