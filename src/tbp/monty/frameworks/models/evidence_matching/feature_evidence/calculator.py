@@ -39,7 +39,8 @@ class DefaultFeatureEvidenceCalculator:
             A vector of chi-square distances as floats in the range [0, 1] between each
             row of a and b.
         """
-        return 0.5 * np.sum(((query_fv - node_fvs) ** 2) / (query_fv + node_fvs + epsilon), axis=1)
+        return 0.5 * np.sum(((query_fv - node_fvs) ** 2) /
+                            (query_fv + node_fvs + epsilon), axis=1)
 
     @staticmethod
     def calculate(
