@@ -344,7 +344,3 @@ class HabitatTransformTest(unittest.TestCase):
         )
 
         np.testing.assert_array_almost_equal(semantic_3d_obs, expected_semantic_3d)
-
-
-if __name__ == "__main__":
-    unittest.main()

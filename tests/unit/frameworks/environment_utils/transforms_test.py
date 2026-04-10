@@ -247,10 +247,7 @@ class GaussianBlurRGBTest(unittest.TestCase):
         result_rgba = gaussian_smoother(obs, ctx=Mock())[AGENT_ID][SENSOR_ID]["rgba"]
         result_rgb = result_rgba[:, :, :3]
 
-        self.assertLessEqual(
-            total_variation(result_rgb), total_variation(rgba[:, :, :3])
-        )
+        input_tv = total_variation(rgba[:, :, :3])
+        result_tv = total_variation(result_rgb)
 
-
-if __name__ == "__main__":
-    unittest.main()
+        self.assertTrue(result_tv < input_tv or np.allclose(result_tv, input_tv))

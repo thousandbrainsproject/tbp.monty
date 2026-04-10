@@ -126,7 +126,3 @@ This is the glossary content.
             "A collection of terms and definitions used in the Thousand Brains Project",
             "Description field value is incorrect",
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

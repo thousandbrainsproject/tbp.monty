@@ -17,6 +17,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_angle_torch,
     get_right_hand_angle,
     non_singular_mat,
+    normalize,
 )
 
 logger = logging.getLogger(__name__)
@@ -69,10 +70,10 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
         vecright = point_cloud[center_id + tan_len, :3] - point_cloud[center_id, :3]
         vecleft = point_cloud[center_id - tan_len, :3] - point_cloud[center_id, :3]
 
-        vecup_norm = vecup / np.linalg.norm(vecup)
-        vecdown_norm = vecdown / np.linalg.norm(vecdown)
-        vecright_norm = vecright / np.linalg.norm(vecright)
-        vecleft_norm = vecleft / np.linalg.norm(vecleft)
+        vecup_norm = normalize(vecup)
+        vecdown_norm = normalize(vecdown)
+        vecright_norm = normalize(vecright)
+        vecleft_norm = normalize(vecleft)
 
         # Check if tan_len up and right land on the object and calculate the
         # surface normal from those
@@ -123,7 +124,7 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
                 found_surface_normal = True
     norm = np.mean([norm1, norm2], axis=0)
     # Norm = np.cross(vec1_norm, vec2_norm)
-    norm = norm / np.linalg.norm(norm)
+    norm = normalize(norm)
 
     return norm, valid_sn
 
@@ -171,7 +172,7 @@ def surface_normal_ordinary_least_squares(
             # Compute surface normal from fitted weights and normalize it
             surface_normal = np.ones((3,))
             surface_normal[:2] = -w[:2].copy()
-            surface_normal = surface_normal / np.linalg.norm(surface_normal)
+            surface_normal = normalize(surface_normal)
 
             # Make sure surface normal points upwards
             if surface_normal[2] < 0:
@@ -283,7 +284,7 @@ def curvature_at_point(point_cloud, center_id, normal):
         # On the normal:
 
         # Get local reference frame (ev,fv,nv) at x:
-        nv = normal / np.linalg.norm(normal)  # In case normal is not normalized
+        nv = normalize(normal)  # In case normal is not normalized
 
         # Find two directions ev and fv orthogonal to nv:
         e = np.zeros(3)
@@ -296,7 +297,7 @@ def curvature_at_point(point_cloud, center_id, normal):
             e[2] = 1
 
         f = np.cross(nv, e)
-        fv = f / np.linalg.norm(f)
+        fv = normalize(f)
         ev = np.cross(fv, nv)
 
         x = point_cloud[adjusted_center_id]
