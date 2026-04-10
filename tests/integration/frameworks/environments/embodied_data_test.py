@@ -9,6 +9,13 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import pytest
+
+pytest.importorskip(
+    "magnum",
+    reason="Habitat Sim optional dependency not installed.",
+)
+
 import unittest
 from pathlib import Path
 from typing import Sequence

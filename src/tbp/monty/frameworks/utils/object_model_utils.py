@@ -43,7 +43,15 @@ def torch_graph_to_numpy(torch_graph):
         NumpyGraph.
     """
     numpy_graph = {}
-    for key in list(torch_graph.keys):
+
+    # Newer versions of torch_geometric change `keys` from a
+    # property to a function.
+    if callable(torch_graph.keys):
+        keys = torch_graph.keys()
+    else:
+        keys = torch_graph.keys
+
+    for key in keys:
         if isinstance(torch_graph[key], torch.Tensor):
             numpy_graph[key] = np.array(torch_graph[key])
         else:
