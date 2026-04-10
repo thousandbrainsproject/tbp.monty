@@ -33,11 +33,12 @@ class DefaultFeatureEvidenceCalculator:
         node_fvs: np.ndarray,
         epsilon: float = 1e-10,
     ) -> np.ndarray:
-        """Compute chi-square distance between each row of a and vector b.
+        """Compute chi-square distance between a node's feature vectors and
+        a query feature vector.
 
         Returns:
             A vector of chi-square distances as floats in the range [0, 1] between each
-            row of a and b.
+            node's feature vector and the query feature vector.
         """
         return 0.5 * np.sum(((query_fv - node_fvs) ** 2) /
                             (query_fv + node_fvs + epsilon), axis=1)
@@ -130,6 +131,7 @@ class DefaultFeatureEvidenceCalculator:
         feature_evidence = np.clip(tolerance_list - feature_differences, 0, np.inf)
         # normalize evidence to be in [0, 1]
         feature_evidence = feature_evidence / tolerance_list
+        # mask out the duplicative LBP evidence values due to vectorized calculations
         if "local_binary_pattern" in feature_vectors:
             lbp_feature_vector = feature_vectors["local_binary_pattern"]
 
