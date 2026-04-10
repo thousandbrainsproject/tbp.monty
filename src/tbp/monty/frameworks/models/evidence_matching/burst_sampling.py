@@ -707,9 +707,9 @@ class BurstSamplingHypothesesUpdater:
         """Compute the maximum slope over all objects.
 
         Returns:
-            The maximum global slope if finite, otherwise float("-inf")
+            The maximum global slope if finite, otherwise -np.inf
         """
-        max_slope = float("-inf")
+        max_slope = -np.inf
 
         for tracker in self.evidence_slope_trackers.values():
             if tracker.total_size() == 0:
