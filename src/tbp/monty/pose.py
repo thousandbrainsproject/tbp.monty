@@ -798,6 +798,22 @@ class Orientation:  # noqa: PLW1641
         """
         return self._q
 
+    def to_matrix(self):  # FIXME: what should this return type be?
+        """Create a rotation matrix from this `Orientation`.
+
+        Returns:
+            A 3x3 NDArray
+
+        Examples:
+            >>> an_orientation = Orientation()
+            >>> an_orientation.roll(np.pi/2)  # 90° around z-axis
+            Orientation(frame=None, w=0.707107, x=0.0, y=0.0, z=0.707107)
+            >>> matrix = an_orientation.to_matrix()
+            >>> Orientation.from_matrix(None, matrix)
+            Orientation(frame=None, w=0.707107, x=0.0, y=0.0, z=0.707107)
+        """
+        return self._r.as_matrix()
+
 
 class Pose:  # noqa: PLW1641
     r"""An object's location and orientation in a given _reference frame_.
