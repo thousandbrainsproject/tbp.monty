@@ -201,6 +201,8 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
 
         self._recompile()
 
+        if not semantic_id:
+            semantic_id = SemanticID(self._object_count)
         return ObjectInfo(
             object_id=ObjectID(self._object_count),
             semantic_id=semantic_id,
