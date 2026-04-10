@@ -345,7 +345,7 @@ class BurstSamplingHypothesesUpdater:
 
         # We only displace existing hypotheses since the newly sampled hypotheses
         # should not be affected by the displacement from the last sensory input.
-        if len(hypotheses_selection.maintain_ids):
+        if len(hypotheses_selection.ids_to_retain):
             existing_hypotheses, displacer_telemetry = (
                 self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
                     displacement=displacement,
@@ -380,7 +380,7 @@ class BurstSamplingHypothesesUpdater:
                     ),
                     ages=tracker.hyp_ages(),
                     evidence_slopes=tracker.calculate_slopes(),
-                    removed_ids=hypotheses_selection.remove_ids,
+                    removed_ids=hypotheses_selection.ids_to_remove,
                     max_slope=self.max_slope,
                 )
             )
@@ -468,7 +468,7 @@ class BurstSamplingHypothesesUpdater:
                 slope_threshold=self.deletion_trigger_slope,
             )
             if tracker.total_size() > 0
-            else HypothesesSelection(maintain_mask=[])
+            else HypothesesSelection(mask_to_retain=[])
         )
 
         return (
@@ -498,10 +498,10 @@ class BurstSamplingHypothesesUpdater:
         Returns:
             The sampled existing hypotheses.
         """
-        maintain_ids = hypotheses_selection.maintain_ids
+        ids_to_retain = hypotheses_selection.ids_to_retain
 
         # Return empty arrays for no hypotheses to sample
-        if len(maintain_ids) == 0:
+        if len(ids_to_retain) == 0:
             # Clear all hypotheses from the tracker
             tracker.clear_hyp()
 
@@ -512,14 +512,14 @@ class BurstSamplingHypothesesUpdater:
                 possible=np.zeros(0, dtype=np.bool_),
             )
 
-        # Update tracker by removing the remove_ids
-        tracker.remove_hyp(hypotheses_selection.remove_ids)
+        # Update tracker by removing the ids_to_remove
+        tracker.remove_hyp(hypotheses_selection.ids_to_remove)
 
         return Hypotheses(
-            locations=hypotheses.locations[maintain_ids],
-            poses=hypotheses.poses[maintain_ids],
-            evidence=hypotheses.evidence[maintain_ids],
-            possible=hypotheses.possible[maintain_ids],
+            locations=hypotheses.locations[ids_to_retain],
+            poses=hypotheses.poses[ids_to_retain],
+            evidence=hypotheses.evidence[ids_to_retain],
+            possible=hypotheses.possible[ids_to_retain],
         )
 
     def _sample_informed(

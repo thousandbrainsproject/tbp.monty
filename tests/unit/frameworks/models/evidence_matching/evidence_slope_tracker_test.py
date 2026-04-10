@@ -125,7 +125,7 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         expected_remove = np.array([2], dtype=int)
         expected_remove_mask = np.array([False, False, True, False], dtype=bool)
 
-        np.testing.assert_array_equal(selection.maintain_ids, expected_keep)
-        np.testing.assert_array_equal(selection.remove_ids, expected_remove)
-        np.testing.assert_array_equal(selection.maintain_mask, expected_keep_mask)
-        np.testing.assert_array_equal(selection.remove_mask, expected_remove_mask)
+        np.testing.assert_array_equal(selection.ids_to_retain, expected_keep)
+        np.testing.assert_array_equal(selection.ids_to_remove, expected_remove)
+        np.testing.assert_array_equal(selection.mask_to_retain, expected_keep_mask)
+        np.testing.assert_array_equal(selection.mask_to_remove, expected_remove_mask)

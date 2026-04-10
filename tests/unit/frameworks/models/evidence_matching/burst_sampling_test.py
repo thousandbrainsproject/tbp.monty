@@ -105,7 +105,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         tracker1.total_size = Mock(return_value=channel_size)
         tracker1.select_hypotheses = Mock(
             return_value=HypothesesSelection(
-                maintain_mask=np.array([False, True, True, False, False])
+                mask_to_retain=np.array([False, True, True, False, False])
             )
         )
         self.updater.evidence_slope_trackers = {"object1": tracker1}
@@ -441,9 +441,9 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.assertIs(self.updater.evidence_slope_trackers["new_object"], new_tracker)
 
     def test_sample_existing_returns_empty_when_no_hypotheses_maintained(self) -> None:
-        """Test that _sample_existing returns empty arrays when maintain_ids is empty.
+        """Test that _sample_existing returns empty arrays when ids_to_retain is empty.
 
-        When HypothesesSelection has no hypotheses to maintain, _sample_existing
+        When HypothesesSelection has no hypotheses to retain, _sample_existing
         should clear the tracker and return empty Hypotheses.
         """
         tracker = EvidenceSlopeTracker(min_age=0)
@@ -457,9 +457,9 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             possible=np.array([True, True, True]),
         )
 
-        # All hypotheses should be removed (empty maintain_mask)
+        # All hypotheses should be removed (empty mask_to_retain)
         hypotheses_selection = HypothesesSelection(
-            maintain_mask=np.array([False, False, False])
+            mask_to_retain=np.array([False, False, False])
         )
 
         result = self.updater._sample_existing(
