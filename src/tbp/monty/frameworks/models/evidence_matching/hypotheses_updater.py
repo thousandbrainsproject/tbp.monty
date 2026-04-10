@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import Any, ContextManager, Dict, Literal, Optional, Protocol
 
 import numpy as np
@@ -32,7 +31,6 @@ from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
-    HypothesisDisplacerTelemetry,
 )
 from tbp.monty.frameworks.utils.evidence_matching import (
     all_usable_input_channels,
@@ -49,13 +47,6 @@ logger = logging.getLogger(__name__)
 
 HypothesesUpdateTelemetry = Optional[Dict[str, Any]]
 HypothesesUpdaterTelemetry = Dict[str, Any]
-
-
-@dataclass
-class HypothesesUpdaterBaseTelemetry:
-    """Base telemetry for hypotheses updaters."""
-
-    displacer_telemetry: HypothesisDisplacerTelemetry
 
 
 class HypothesesUpdater(ContextManager[Self], Protocol):

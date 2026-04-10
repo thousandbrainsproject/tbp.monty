@@ -34,7 +34,6 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     HypothesisDisplacerTelemetry,
 )
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
-    HypothesesUpdaterBaseTelemetry,
     HypothesesUpdateTelemetry,
 )
 from tbp.monty.frameworks.utils.evidence_matching import (
@@ -53,7 +52,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 
 
 @dataclass
-class BurstSamplingTelemetry(HypothesesUpdaterBaseTelemetry):
+class BurstSamplingTelemetry:
     """Telemetry for burst sampling hypotheses updater.
 
     Stores which hypotheses were removed or added at the current step.
@@ -63,6 +62,7 @@ class BurstSamplingTelemetry(HypothesesUpdaterBaseTelemetry):
         identified by `removed_ids`.
     """
 
+    displacer_telemetry: HypothesisDisplacerTelemetry
     added_ids: npt.NDArray[np.int_]
     ages: npt.NDArray[np.int_]
     evidence_slopes: npt.NDArray[np.float64]
