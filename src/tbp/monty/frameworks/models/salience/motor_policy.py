@@ -112,8 +112,9 @@ class LookAtGoal(MotorPolicy):
 
         # Get the target location in world and agent coordinates.
         target_rel_world = goal.location
-        target_rel_agent = agent_rot_rel_world.inv().apply(
-            target_rel_world - agent_pos_rel_world
+        target_rel_agent = agent_rot_rel_world.apply(
+            target_rel_world - agent_pos_rel_world,
+            inverse=True,
         )
 
         # Compute the target's azimuth, relative to the agent. This value is used to

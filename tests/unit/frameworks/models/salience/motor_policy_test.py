@@ -10,11 +10,13 @@ from __future__ import annotations
 
 import unittest
 from typing import cast
+from unittest.mock import Mock
 
 import numpy as np
 import quaternion as qt
 from hypothesis import given
 from hypothesis import strategies as st
+from scipy.spatial.transform import Rotation
 
 from tbp.monty.cmp import Goal
 from tbp.monty.frameworks.actions.actions import LookUp, TurnLeft
@@ -26,9 +28,13 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.models.salience.motor_policy import LookAtGoal
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
+from tbp.monty.math import VectorXYZ
 
 AGENT_ID = AgentID("agent_id_0")
+FORWARD_VECTOR_REL_WORLD: VectorXYZ = (0.0, 0.0, -1.0)
 SENSOR_ID = SensorID("sensor_id_0")
+TEST_VOLUME_DISTANCE_METERS = 100.0
 
 
 class LookAtGoalTest(unittest.TestCase):
@@ -43,25 +49,34 @@ class LookAtGoalTest(unittest.TestCase):
         )
         self.motor_system_state = MotorSystemState({AGENT_ID: self.agent_state})
 
-    def test_raises_error_if_no_goal_is_provided(self):
+    def test_raises_error_if_no_goal_is_provided(self) -> None:
         policy = LookAtGoal(AGENT_ID, SENSOR_ID)
         with self.assertRaises(RuntimeError):
             policy(
-                ctx=None,
-                observations=None,
+                ctx=Mock(),
+                observations=Mock(),
                 state=MotorSystemState(),
-                percept=None,
+                percept=Mock(),
                 goal=None,
             )
 
     @given(
         goal_xyz=st.tuples(
-            st.floats(min_value=-1.0, max_value=1.0),
-            st.floats(min_value=-1.0, max_value=1.0),
-            st.floats(min_value=-1.0, max_value=1.0),
+            st.floats(
+                min_value=-TEST_VOLUME_DISTANCE_METERS,
+                max_value=TEST_VOLUME_DISTANCE_METERS,
+            ),
+            st.floats(
+                min_value=-TEST_VOLUME_DISTANCE_METERS,
+                max_value=TEST_VOLUME_DISTANCE_METERS,
+            ),
+            st.floats(
+                min_value=-TEST_VOLUME_DISTANCE_METERS,
+                max_value=TEST_VOLUME_DISTANCE_METERS,
+            ),
         )
     )
-    def test_returns_turn_left_and_look_up_oriented_at_the_goal(self, goal_xyz):
+    def test_returns_turn_left_and_look_up_oriented_at_the_goal(self, goal_xyz) -> None:
         goal = Goal(
             location=np.array(goal_xyz),
             morphological_features=None,
@@ -74,13 +89,23 @@ class LookAtGoalTest(unittest.TestCase):
             info=None,
         )
         policy = LookAtGoal(AGENT_ID, SENSOR_ID)
+        agent_pos_rel_world = self.agent_state.position
+        expected_forward_vector_rel_world = np.array(
+            [
+                goal_xyz[0] - agent_pos_rel_world[0],
+                goal_xyz[1] - agent_pos_rel_world[1],
+                goal_xyz[2] - agent_pos_rel_world[2],
+            ]
+        )
+
         result = policy(
-            ctx=None,
-            observations=None,
+            ctx=Mock(),
+            observations=Mock(),
             state=self.motor_system_state,
-            percept=None,
+            percept=Mock(),
             goal=goal,
         )
+
         self.assertEqual(len(result.actions), 2)
         first_action = result.actions[0]
         self.assertEqual(first_action.name, TurnLeft.action_name())
@@ -89,5 +114,32 @@ class LookAtGoalTest(unittest.TestCase):
         self.assertEqual(second_action.name, LookUp.action_name())
         look_up = cast("LookUp", second_action)
 
-        # TODO: The "forward" direction should be the same as the vector from the
-        #       agent's position to the goal location.
+        # Monty uses the "right-up-backward" convention, so the forward direction
+        # vector is [0, 0, -1].
+        # See: https://thousandbrainsproject.readme.io/docs/conventions
+        actuated_vector_rel_world: VectorXYZ = FORWARD_VECTOR_REL_WORLD
+        agent_rot_rel_world = Rotation.from_quat(
+            [
+                self.agent_state.rotation.x,
+                self.agent_state.rotation.y,
+                self.agent_state.rotation.z,
+                self.agent_state.rotation.w,
+            ]
+        )
+        actuated_vector_rel_world = agent_rot_rel_world.apply(actuated_vector_rel_world)
+        turn_left_rot = Rotation.from_euler(
+            "xyz", [0, turn_left.rotation_degrees, 0], degrees=True
+        )
+        actuated_vector_rel_world = turn_left_rot.apply(actuated_vector_rel_world)
+        # Note that we ignore the LookUp's constraint_degrees in this test.
+        look_up_rot = Rotation.from_euler(
+            "xyz", [look_up.rotation_degrees, 0, 0], degrees=True
+        )
+        actuated_vector_rel_world = look_up_rot.apply(actuated_vector_rel_world)
+
+        expected_forward_vector_rel_world = normalize(expected_forward_vector_rel_world)
+        np.testing.assert_array_almost_equal(
+            expected_forward_vector_rel_world,
+            actuated_vector_rel_world,
+            decimal=12,
+        )
