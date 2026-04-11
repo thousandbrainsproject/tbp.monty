@@ -13,43 +13,28 @@ import numpy as np
 import pytest
 from hypothesis import assume, example, given, settings
 from hypothesis import strategies as st
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.utils.sensor_processing import (
     directional_curvature,
 )
-from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
-
-non_zero_angle = st.floats(min_value=1e-6, max_value=2 * np.pi - 1e-6, allow_nan=False)
-
-
-@st.composite
-def unit_vector(draw):
-    theta = draw(non_zero_angle)
-    phi = draw(non_zero_angle) - np.pi
-    return np.array(
-        [
-            np.sin(theta) * np.cos(phi),
-            np.sin(theta) * np.sin(phi),
-            np.cos(theta),
-        ]
-    )
-
-
-@st.composite
-def rotation(draw):
-    theta = draw(non_zero_angle)
-    phi = draw(non_zero_angle)
-    rho = draw(non_zero_angle)
-    return Rotation.from_euler("XYZ", [theta, phi, rho])
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    normalize,
+    project_onto_tangent_plane,
+)
+from tests.unit.frameworks.utils.spatial_arithmetics_test import (
+    non_zero_magnitude_vectors,
+)
 
 
 @st.composite
 def orthonormal_vectors(draw):
-    random_base = draw(unit_vector())
-    v = draw(rotation()).apply(random_base)
-    n = normalize(np.cross(random_base, v))
-    assume(np.allclose(np.linalg.norm(n), 0.0))
+    n = normalize(draw(non_zero_magnitude_vectors))
+    raw = draw(non_zero_magnitude_vectors)
+    v = raw - n * np.dot(raw, n)
+    assume(
+        np.linalg.norm(v) > 1e-8
+    )  # I like this more than assume(not np.allclose(np.linalg.norm(v), 0.0, atol=1e-8)
+    v = normalize(v)
     return v, n
 
 
@@ -96,16 +81,34 @@ class DirectionalCurvatureTest(unittest.TestCase):
         vectors=orthonormal_vectors(),
     )
     @example(
-        angle=0.0, ks=(4.0, 2.0), vectors=orthonormal_vectors()
+        angle=0.0,
+        ks=(4.0, 2.0),
+        vectors=(
+            np.array([1.0, 0.0, 0.0]),
+            np.array([0.0, 1.0, 0.0]),
+        ),
     )  # aligned with pc1_dir -> k1
-    # @example(angle=np.pi / 2, k1=4.0, k2=2.0)  # perpendicular to pc1_dir -> k2
-    # @example(angle=np.pi / 4, k1=4.0, k2=2.0)  # 45 degrees -> average
-    # @example(angle=0.0, k1=-3.0, k2=-1.0)  # negative curvatures
+    @example(
+        angle=np.pi / 2,
+        ks=(4.0, 2.0),
+        vectors=(
+            np.array([1.0, 0.0, 0.0]),
+            np.array([0.0, 1.0, 0.0]),
+        ),
+    )  # perpendicular to pc1_dir -> k2
+    @example(angle=np.pi / 4, ks=(4.0, 2.0), vectors=(
+        np.array([1.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0]),
+    ))  # 45 degrees -> average
+    @example(angle=0.0, ks = (-3.0, -1.0), vectors =(
+            np.array([1.0, 0.0, 0.0]),
+            np.array([0.0, 1.0, 0.0]),
+    ))  # negative curvatures
     def test_euler_formula(self, angle, ks, vectors):
         """Result matches k1*cos^2(theta) + k2*sin^2(theta) for any direction."""
         pc1, pc2 = vectors
         k1, k2 = ks
-        direction = np.array([np.cos(angle), np.sin(angle), 0.0])
+        direction = pc1 * np.cos(angle) + pc2 * np.sin(angle)
         result = directional_curvature(
             direction, k1=k1, k2=k2, pc1_dir=pc1, pc2_dir=pc2
         )
@@ -152,12 +155,11 @@ class DirectionalCurvatureTest(unittest.TestCase):
             )
 
     @given(vectors=orthonormal_vectors(), ks=curvature_values())
-    @settings(max_examples=50)
     def test_out_of_plane_direction_raises(self, vectors, ks):
         pc1, pc2 = vectors
         k1, k2 = ks
         movement_direction = np.cross(pc1, pc2)
-        with pytest.raises(ValueError, match="foo"):
+        with pytest.raises(ValueError):
             directional_curvature(
                 movement_direction=movement_direction,
                 k1=k1,
