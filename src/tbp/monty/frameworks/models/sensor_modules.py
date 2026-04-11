@@ -13,7 +13,6 @@ import logging
 from enum import Enum
 from typing import Any, ClassVar, Protocol
 
-from matplotlib import transforms
 import numpy as np
 import quaternion as qt
 from scipy.spatial.transform import Rotation
@@ -21,6 +20,10 @@ from skimage.color import rgb2hsv
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.environment_utils.transform_handlers import (
+    TransformContext,
+    TransformPipeline,
+)
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
     SensorObservation,
@@ -39,9 +42,6 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     surface_normal_total_least_squares,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
-from tbp.monty.psu.transform_middleware_test import TEST_OBS
-from tbp.monty.frameworks.environment_utils.transform_handlers import TransformPipeline, TransformContext
-from tbp.monty.psu.introspection_utils import print_dict_structure
 
 __all__ = [
     "CameraSM",
@@ -639,10 +639,7 @@ class CameraSM(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
-        #START
         self.agent_state = agent
-        #END
-        #self.motor_only_step = agent.motor_only_step
 
     def state_dict(self):
         state_dict = self._snapshot_telemetry.state_dict()
@@ -671,15 +668,11 @@ class CameraSM(SensorModule):
                 observation, self.state.rotation, self.state.position
             )
 
-        # print("IN SENSOR MODULE STEP METHOD")
-        # RAL Change the call
-        # print_dict_structure(data)
-        tf_context = TransformContext(None, self.agent_state)
+
+        tf_context = TransformContext(ctx.rng, self.agent_state)
 
         self.transform_pipeline(tf_context, observation)
 
-
-        #observed_state = self._observation_processor.process(data)
         percept = self._observation_processor.process(observation)
 
         if percept.use_state:

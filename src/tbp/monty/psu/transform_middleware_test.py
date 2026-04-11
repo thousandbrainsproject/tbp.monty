@@ -11,19 +11,19 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import dataclass
 
-from tbp.monty.frameworks.environment_utils import transforms
+import numpy as np
+
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.frameworks.environment_utils import transforms
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Observations,
     SensorObservation,
 )
-import numpy as np
-
-from dataclasses import dataclass
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.frameworks.sensors import SensorID
 
 AGENT_ID = AgentID("camera")
 SENSOR_ID = SensorID("sensor_01")

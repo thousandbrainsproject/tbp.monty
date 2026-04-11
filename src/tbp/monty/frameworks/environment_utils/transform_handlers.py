@@ -17,21 +17,20 @@ import numpy as np
 import quaternion as qt
 import scipy
 
-from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.sensors import SensorID
-from tbp.monty.psu.introspection_utils import print_dict_structure
 
 __all__ = [
     "AddNoiseToRawDepthImage",
     "DepthTo3DLocations",
+    "GaussianBlurRGB",
     "GaussianSmoothing",
     "MissingToMaxDepth",
     "Transform",
     "TransformContext",
-    "TransformPipeline",
     "TransformMiddleware",
+    "TransformPipeline",
     "identity_transform",
 ]
 
@@ -97,7 +96,6 @@ class MissingToMaxDepth(Transform):
     def __init__(
         self,
         next_transform: Transform,
-        agent_id: AgentID,
         max_depth: float,
         threshold: float = 0,
     ) -> None:
@@ -111,10 +109,8 @@ class MissingToMaxDepth(Transform):
                 missing. Defaults to 0.
         """
         self._next_transform = next_transform
-        self._agent_id = agent_id
         self._max_depth = max_depth
         self._threshold = threshold
-
     def __call__(
         self, ctx: TransformContext, observations: SensorObservation
     ) -> SensorObservation:
@@ -139,7 +135,7 @@ class AddNoiseToRawDepthImage(Transform):
     """Add gaussian noise to raw sensory input."""
 
     def __init__(
-        self, next_transform: Transform, agent_id: AgentID, sigma: float
+        self, next_transform: Transform, sigma: float
     ) -> None:
         """Initialize the transform.
 
@@ -150,7 +146,6 @@ class AddNoiseToRawDepthImage(Transform):
             sigma: standard deviation of noise distribution.
         """
         self._next_transform = next_transform
-        self._agent_id = agent_id
         self._sigma = sigma
 
     def __call__(
@@ -174,7 +169,6 @@ class AddNoiseToRawDepthImage(Transform):
         Raises:
             NoDepthSensorPresent: if no depth sensor is present.
         """
-
         if "depth" in observations:
             noise = rng.normal(
                 0,
@@ -198,7 +192,6 @@ class GaussianSmoothing(Transform):
     def __init__(
         self,
         next_transform: Transform,
-        agent_id: AgentID,
         sigma: float = 2,
         kernel_width: int = 3,
     ) -> None:
@@ -212,13 +205,12 @@ class GaussianSmoothing(Transform):
             kernel_width: width of the smoothing kernel. Default is 3.
         """
         self._next_transform = next_transform
-        self._agent_id = agent_id
         self._sigma = sigma
         self._kernel_width = kernel_width
         self._pad_size = kernel_width // 2
         self._kernel = self._create_kernel(
-                    self._pad_size, 
-                    self._kernel_width, 
+                    self._pad_size,
+                    self._kernel_width,
                     self._sigma
                 )
 
@@ -240,7 +232,6 @@ class GaussianSmoothing(Transform):
         Raises:
             NoDepthSensorPresent: if no depth sensor is present.
         """
-        # loop over sensor modules
         if "depth" in observations:
             depth_img = observations["depth"].copy()
             padded_img = self._get_padded_img(depth_img, pad_type="edge")
@@ -316,9 +307,8 @@ class GaussianBlurRGB(Transform):
 
     def __init__(
         self,
-        agent_id: AgentID,
-        sensor_id: SensorID,
         next_transform: Transform,
+        sensor_id: SensorID,
         sigma: float = 1.0,
         kernel_size: int = 0,
     ):
@@ -337,11 +327,9 @@ class GaussianBlurRGB(Transform):
             ValueError: If kernel_size is even (when not 0).
         """
         self._next_transform = next_transform
-        self._agent_id = agent_id
         self._sigma = sigma
         self._kernel_size = kernel_size
         self._sensor_id = sensor_id
-        print("In BLUR RGB")
         if sensor_id is not None and len(sensor_id) == 0:
             raise ValueError("sensor_ids must not be empty; use None for all sensors")
         if self._kernel_size < 0:
@@ -367,7 +355,6 @@ class GaussianBlurRGB(Transform):
     def call(
         self,
         observations: SensorObservation,
-        ctx: TransformContext,  # noqa: ARG002
     ) -> SensorObservation:
         """Apply Gaussian blur to RGB image.
 
@@ -446,7 +433,6 @@ class DepthTo3DLocations(Transform):
     def __init__(
         self,
         next_transform: Transform,
-        agent_id: AgentID,
         sensor_id: SensorID,
         resolutions: tuple[int, int],
         zooms: float = 1.0,
@@ -484,7 +470,6 @@ class DepthTo3DLocations(Transform):
         )
         # Inverse K
         self._inv_k = np.linalg.inv(k)
-        self._agent_id = agent_id
         self._sensor_id = sensor_id
         self._world_coord = world_coord
         self._get_all_points = get_all_points
@@ -572,7 +557,6 @@ class DepthTo3DLocations(Transform):
                     when `self.get_all_points` is `True`.
         """
         depth_patch = observations["depth"]
-
         # We need a semantic map that masks off-object pixels. We can use the
         # ground-truth semantic map if it's available. Otherwise, we generate one
         # from the depth map and (temporarily) add it to the observation dict.
