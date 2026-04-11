@@ -14,9 +14,9 @@ from scipy.spatial.transform import Rotation
 
 from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
-# A type alias for a 1D array of `float`
-FloatVector = np.ndarray
 # FloatVector = np.ndarray[tuple[int], np.dtype[np.float64]]
+FloatVector = np.ndarray
+"""A type alias for a 1D array of `float`"""
 
 
 def _deg(d: float) -> float:
@@ -302,7 +302,7 @@ class Location:  # noqa: PLW1641
         return self
 
     def apply(self, vectors: ArrayLike) -> FloatVector:
-        """Apply this `Location` to _vectors_.
+        """Apply this `Location` to translate _vectors_.
 
         Returns:
             The translated `array([`_x'_, _y'_, _z'_`])`
@@ -394,8 +394,11 @@ class Location:  # noqa: PLW1641
         return self._v
 
 
-IDENTITY_MATRIX = np.identity(3, dtype=float)
-"""3x3 identity matrix for default Orientation"""
+IDENTITY_ROTATION = Rotation.identity()
+"""A neutral SciPy `Rotatiaon` object."""
+
+IDENTITY_ROTATION_MATRIX = np.identity(3, dtype=float)
+"""A 3x3 identity matrix for default Orientation."""
 
 class Orientation:  # noqa: PLW1641
     r"""An orientation (rotation) in a given _reference frame_.
@@ -465,7 +468,7 @@ class Orientation:  # noqa: PLW1641
         y: float = 0.0,
         z: float = 0.0,
     ) -> Orientation:
-        r"""Create a `Orientation` from scalar components.
+        r"""Create an `Orientation` from scalar components.
 
         Returns:
             The new `Orientation` object.
@@ -504,11 +507,36 @@ class Orientation:  # noqa: PLW1641
         return Orientation(frame, (w, x, y, z))
 
     @staticmethod
+    def from_rotation(
+        frame: Pose | None = None,
+        r: Rotation = IDENTITY_ROTATION,
+    ) -> Orientation:
+        r"""Create an `Orientation` from a SciPy `Rotation`.
+
+        Returns:
+            The new `Orientation` object.
+
+        Examples:
+            >>> Orientation.from_rotation()
+            Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
+
+            >>> r = Rotation.from_rotvec(np.pi/2 * np.array([0, 0, 1]))
+            >>> an_orientation = Orientation.from_rotation(None, r)
+            >>> an_orientation
+            Orientation(frame=None, w=0.707107, x=0.0, y=0.0, z=0.707107)
+            >>> an_orientation.roll(_deg(-90))
+            Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
+        """
+        orientation = Orientation(frame)
+        orientation._r = r  # cache Rotation property (sets `self._q`)
+        return orientation
+
+    @staticmethod
     def from_matrix(
         frame: Pose | None = None,
-        matrix: ArrayLike = IDENTITY_MATRIX,
+        matrix: ArrayLike = IDENTITY_ROTATION_MATRIX,
     ) -> Orientation:
-        r"""Create a `Orientation` from a rotation matrix.
+        r"""Create an `Orientation` from a rotation matrix.
 
         Returns:
             The new `Orientation` object.
@@ -517,7 +545,7 @@ class Orientation:  # noqa: PLW1641
             >>> Orientation.from_matrix()
             Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
 
-            >>> an_orientation = Orientation.from_matrix(matrix=[
+            >>> an_orientation = Orientation.from_matrix(None, [
             ...     [0, -1,  0],
             ...     [1,  0,  0],
             ...     [0,  0,  1]
@@ -528,9 +556,7 @@ class Orientation:  # noqa: PLW1641
             Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
         """
         r: Rotation = Rotation.from_matrix(matrix)
-        xyzw = r.as_quat()
-        wxyz: FloatVector = xyzw[..., [3, 0, 1, 2]]
-        return Orientation(frame, wxyz)
+        return Orientation.from_rotation(frame, r)
 
     @property
     def frame(self) -> Pose | None:
@@ -694,7 +720,7 @@ class Orientation:  # noqa: PLW1641
         return self
 
     def apply(self, vectors: ArrayLike) -> FloatVector:
-        """Apply this `Orientation` to _vectors_.
+        """Apply this `Orientation` to rotate _vectors_.
 
         Returns:
             The rotated `array([`_x'_, _y'_, _z'_`])`
@@ -797,6 +823,23 @@ class Orientation:  # noqa: PLW1641
             `array([`_w_, _x_, _y_, _z_`])`
         """
         return self._q
+
+    def to_rotation(self) -> Rotation:
+        """Create a SciPy `Rotation` from this `Orientation`.
+
+        Returns:
+            A new `Rotation`
+
+        Examples:
+            >>> an_orientation = Orientation()
+            >>> an_orientation.roll(np.pi/2)  # 90° around z-axis
+            Orientation(frame=None, w=0.707107, x=0.0, y=0.0, z=0.707107)
+            >>> r = an_orientation.to_rotation()
+            >>> Orientation.from_rotation(None, r)
+            Orientation(frame=None, w=0.707107, x=0.0, y=0.0, z=0.707107)
+        """
+        xyzw = self._r.as_quat()
+        return Rotation.from_quat(xyzw)
 
     def to_matrix(self):  # FIXME: what should this return type be?
         """Create a rotation matrix from this `Orientation`.
