@@ -640,7 +640,7 @@ class CameraSM(SensorModule):
             rotation=agent.rotation * sensor.rotation,
         )
         #START
-        #self.agent_state = agent
+        self.agent_state = agent
         #END
         #self.motor_only_step = agent.motor_only_step
 
@@ -674,13 +674,13 @@ class CameraSM(SensorModule):
         # print("IN SENSOR MODULE STEP METHOD")
         # RAL Change the call
         # print_dict_structure(data)
-        # tf_context = TransformContext(None, self.agent_state)
+        tf_context = TransformContext(None, self.agent_state)
 
-        # self.transform_pipeline(tf_context, data)
+        self.transform_pipeline(tf_context, observation)
 
 
-        # observed_state = self._observation_processor.process(data)
-        # percept = self._observation_processor.process(observation)
+        #observed_state = self._observation_processor.process(data)
+        percept = self._observation_processor.process(observation)
 
         if percept.use_state:
             percept = self._message_noise(percept, rng=ctx.rng)

@@ -12,12 +12,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+import cv2
 import numpy as np
 import quaternion as qt
 import scipy
 
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.models.abstract_monty_classes import Observations, SensorObservation
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.psu.introspection_utils import print_dict_structure
@@ -308,6 +309,90 @@ class GaussianSmoothing(Transform):
                 normalized_kernel = self._kernel / norm_factor
                 filtered_img[i, j] = np.nansum(normalized_kernel * img_subset)
         return filtered_img
+
+
+class GaussianBlurRGB(Transform):
+    """Apply Gaussian blur to RGB image."""
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sensor_id: SensorID,
+        sigma: float = 1.0,
+        kernel_size: int = 0,
+    ):
+        """Initialize the transform.
+
+        Args:
+            agent_id: Agent ID where the transform should be applied.
+            sensor_id: Sensor ID to apply the transform to.
+            sigma: Standard deviation for Gaussian blur. Default is 1.0.
+            kernel_size: Kernel size for blur. If 0 (default), OpenCV auto-computes
+                from sigma using `6*sigma + 1` rounded to nearest odd. If specified,
+                must be odd.
+
+        Raises:
+            ValueError: If sensor_id is an empty list.
+            ValueError: If kernel_size is even (when not 0).
+        """
+        self._agent_id = agent_id
+        self._sigma = sigma
+        self._kernel_size = kernel_size
+        self._sensor_id = sensor_id
+        print("In BLUR RGB")
+        if sensor_id is not None and len(sensor_id) == 0:
+            raise ValueError("sensor_ids must not be empty; use None for all sensors")
+        if self._kernel_size < 0:
+            raise ValueError(
+                f"The kernel_size must be non-negative, got {kernel_size}."
+            )
+        if self._kernel_size != 0 and self._kernel_size % 2 == 0:
+            raise ValueError(
+                f"The kernel_size must be odd or 0 (for auto-compute), "
+                f"got {kernel_size}."
+            )
+        if self._kernel_size == 0 and self._sigma <= 0:
+            raise ValueError(
+                f"The sigma must be positive when kernel_size is 0, got {sigma}."
+            )
+
+    def __call__(
+        self,
+        observations: SensorObservation,
+        ctx: TransformContext,  # noqa: ARG002
+    ) -> SensorObservation:
+        """Apply Gaussian blur to RGB image.
+
+        Args:
+            observations: Observations to modify in place.
+            ctx: Transform context.
+
+        Returns:
+            Observations, same as input, with blurred RGB values.
+
+        Raises:
+            KeyError: If sensor is not found in observations or has no 'rgba' key.
+        """
+        if "rgba" not in observations:
+            raise KeyError(
+                f"Sensor '{self._sensor_id}' has no 'rgba' key in observations"
+            )
+
+
+        rgba = observations["rgba"]
+        rgb_image = rgba[:, :, :3]
+        alpha_channel = rgba[:, :, 3:4]
+
+        blurred_rgb = cv2.GaussianBlur(
+            rgb_image, (self._kernel_size, self._kernel_size), self._sigma
+        )
+
+        observations["rgba"] = np.concatenate(
+            [blurred_rgb, alpha_channel], axis=2
+        )
+
+        return observations
+
 
 
 class DepthTo3DLocations(Transform):
