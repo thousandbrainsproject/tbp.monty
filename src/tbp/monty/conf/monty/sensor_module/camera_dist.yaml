@@ -23,7 +23,7 @@ sensor_module_0:
       transforms:
         - _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformMiddleware
           transform: ${monty.class:tbp.monty.frameworks.environment_utils.transform_handlers.DepthTo3DLocations}
-          agent_id: ${monty.agent_id:agent_id_0}
+          agent_id: test
           sensor_id: patch
           # env_init_args[agents][0].agent_args.sensor_ids
           resolutions: [64, 64] # env_init_args[agents][0].agent_args.resolutions
@@ -35,14 +35,14 @@ sensor_module_0:
 
         - _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformMiddleware
           transform: ${monty.class:tbp.monty.frameworks.environment_utils.transform_handlers.MissingToMaxDepth}
-          agent_id: ${monty.agent_id:agent_id_0}
+          agent_id: test
           max_depth: 1
         - _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformMiddleware
           transform: ${monty.class:tbp.monty.frameworks.environment_utils.transform_handlers.GaussianSmoothing}
-          agent_id: ${monty.agent_id:agent_id_0}
+          agent_id: test
         - _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformMiddleware
-          transform: ${monty.class:tbp.monty.frameworks.environment_utils.transform_handlers.BlurRGB}
-          agent_id: ${monty.agent_id:agent_id_0}
+          transform: ${monty.class:tbp.monty.frameworks.environment_utils.transform_handlers.GaussianBlurRGB}
+          agent_id: test
           sensor_id: patch
           sigma: 2
           kernel_size: 3

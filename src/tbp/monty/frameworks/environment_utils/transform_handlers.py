@@ -318,6 +318,7 @@ class GaussianBlurRGB(Transform):
         self,
         agent_id: AgentID,
         sensor_id: SensorID,
+        next_transform: Transform,
         sigma: float = 1.0,
         kernel_size: int = 0,
     ):
@@ -335,6 +336,7 @@ class GaussianBlurRGB(Transform):
             ValueError: If sensor_id is an empty list.
             ValueError: If kernel_size is even (when not 0).
         """
+        self._next_transform = next_transform
         self._agent_id = agent_id
         self._sigma = sigma
         self._kernel_size = kernel_size
@@ -357,6 +359,12 @@ class GaussianBlurRGB(Transform):
             )
 
     def __call__(
+        self, ctx: TransformContext, observations: SensorObservation
+    ) -> SensorObservation:
+        observations = self.call(observations)
+        return self._next_transform(ctx, observations)
+
+    def call(
         self,
         observations: SensorObservation,
         ctx: TransformContext,  # noqa: ARG002
