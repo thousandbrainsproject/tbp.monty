@@ -19,7 +19,7 @@ import scipy
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
-from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.psu.introspection_utils import print_dict_structure
 
@@ -38,7 +38,7 @@ __all__ = [
 @dataclass
 class TransformContext:
     rng: np.random.RandomState
-    state: ProprioceptiveState | None = None
+    state: AgentState | None = None
 
 
 class Transform(Protocol):
@@ -491,7 +491,7 @@ class DepthTo3DLocations(Transform):
         return self._next_transform(ctx, observations)
 
     def call(
-        self, observations: SensorObservation, state: ProprioceptiveState | None = None
+        self, observations: SensorObservation, state: AgentState | None = None
     ) -> SensorObservation:
         """Apply the depth-to-3D-locations transform to sensor observations.
 
@@ -563,8 +563,6 @@ class DepthTo3DLocations(Transform):
                     sensor. Has the same structure as "semantic_3d". Included only
                     when `self.get_all_points` is `True`.
         """
-        state = ProprioceptiveState({self._agent_id: state})
-
         depth_patch = observations["depth"]
 
         # We need a semantic map that masks off-object pixels. We can use the
@@ -626,11 +624,10 @@ class DepthTo3DLocations(Transform):
 
         if self._world_coord and state is not None:
             # Get agent and sensor states from state dictionary
-            agent_state = state[self._agent_id]
-            depth_state = agent_state.sensors[SensorID(self._sensor_id)]
-            agent_rotation = agent_state.rotation
+            depth_state = state.sensors[SensorID(self._sensor_id)]
+            agent_rotation = state.rotation
             agent_rotation_matrix = qt.as_rotation_matrix(agent_rotation)
-            agent_position = agent_state.position
+            agent_position = state.position
             sensor_rotation = depth_state.rotation
             sensor_position = depth_state.position
             # --- Apply camera transformations to get world coordinates ---
