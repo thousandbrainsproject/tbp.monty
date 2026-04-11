@@ -103,7 +103,6 @@ class MissingToMaxDepth(Transform):
 
         Args:
             next_transform: The next transform in the chain.
-            agent_id: agent id of the agent where the transform should be applied.
             max_depth: numeric that will replace missing
             threshold: (optional) numeric, anything less than this is counted as
                 missing. Defaults to 0.
@@ -141,7 +140,6 @@ class AddNoiseToRawDepthImage(Transform):
 
         Args:
             next_transform: The next transform in the chain.
-            agent_id: agent id of the agent where the transform should be applied.
                 Transform will be applied to all depth sensors of the agent.
             sigma: standard deviation of noise distribution.
         """
@@ -199,7 +197,6 @@ class GaussianSmoothing(Transform):
 
         Args:
             next_transform: The next transform in the chain.
-            agent_id: agent id of the agent where the transform should be applied.
                 Transform will be applied to all depth sensors of the agent.
             sigma: sigma of gaussian smoothing kernel. Default is 2.
             kernel_width: width of the smoothing kernel. Default is 3.
@@ -409,11 +406,12 @@ class DepthTo3DLocations(Transform):
         ]
 
     Attributes:
-        agent_id: Agent ID to get observations from
+        next_transform: The next transform in the chain.
+        sensor_id: Sensor ID to apply the transform to.
         resolution: Camera resolution (H, W)
-        zoom: Camera zoom factor. Defaul 1.0 (no zoom)
+        zooms: Camera zoom factor. Defaul 1.0 (no zoom)
         hfov: Camera HFOV, default 90 degrees
-        semantic_sensor: Semantic sensor id. Default "semantic"
+        use_semantic_sensor: Whether to use the semantic sensor. Default False.
         depth_sensor: Depth sensor id. Default "depth"
         world_coord: Whether to return 3D locations in world coordinates.
             If enabled, then :meth:`__call__` must be called with
@@ -421,7 +419,7 @@ class DepthTo3DLocations(Transform):
             Default True.
         get_all_points: Whether to return all 3D coordinates or only the ones
             that land on an object.
-        depth_clip_sensors: List of sensor indices to which to apply a clipping
+        is_depth_clip_sensors: List of sensor indices to which to apply a clipping
             transform where all values > clip_value are set to
             clip_value. Empty list ~ apply to none of them.
         clip_value: depth parameter for the clipping transform
