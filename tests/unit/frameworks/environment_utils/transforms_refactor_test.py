@@ -32,12 +32,12 @@ class GaussianSmoothingTest(unittest.TestCase):
         )
 
         self.assertTrue(
-            (gaussian_smoother.kernel.shape == kernel_ground_truth.shape),
+            (gaussian_smoother._kernel.shape == kernel_ground_truth.shape),
             "Kernel shapes do not match.",
         )
 
         all_equal = np.allclose(
-            gaussian_smoother.kernel, kernel_ground_truth, atol=1e-5
+            gaussian_smoother._kernel, kernel_ground_truth, atol=1e-5
         )
         self.assertTrue(all_equal, "Kernel values do not match.")
 
@@ -58,7 +58,7 @@ class GaussianSmoothingTest(unittest.TestCase):
         gaussian_smoother = GaussianSmoothing(
             None, agent_id=AgentID("0"), sigma=5, kernel_width=7
         )
-        padded_img = gaussian_smoother.get_padded_img(img, pad_type="edge")
+        padded_img = gaussian_smoother._get_padded_img(img, pad_type="edge")
 
         self.assertTrue(
             (padded_img.shape == padded_img_ground_truth.shape),
@@ -74,8 +74,8 @@ class GaussianSmoothingTest(unittest.TestCase):
         gaussian_smoother = GaussianSmoothing(
             None, agent_id=AgentID("0"), sigma=15, kernel_width=15
         )
-        padded_img = gaussian_smoother.get_padded_img(img, pad_type="empty")
-        filtered_img = gaussian_smoother.conv2d(padded_img, kernel_renorm=True)
+        padded_img = gaussian_smoother._get_padded_img(img, pad_type="empty")
+        filtered_img = gaussian_smoother._conv2d(padded_img, kernel_renorm=True)
 
         self.assertTrue(
             (img.shape == filtered_img.shape), "Filtered image shapes do not match."
@@ -99,8 +99,8 @@ class GaussianSmoothingTest(unittest.TestCase):
         gaussian_smoother = GaussianSmoothing(
             None, agent_id=AgentID("0"), sigma=2, kernel_width=3
         )
-        padded_img = gaussian_smoother.get_padded_img(img, pad_type="empty")
-        filtered_img = gaussian_smoother.conv2d(padded_img, kernel_renorm=True)
+        padded_img = gaussian_smoother._get_padded_img(img, pad_type="empty")
+        filtered_img = gaussian_smoother._conv2d(padded_img, kernel_renorm=True)
 
         self.assertTrue(
             (filtered_img.shape == filtered_img_ground_truth.shape),

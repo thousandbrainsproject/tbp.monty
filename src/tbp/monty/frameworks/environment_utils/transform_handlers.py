@@ -215,7 +215,11 @@ class GaussianSmoothing(Transform):
         self._sigma = sigma
         self._kernel_width = kernel_width
         self._pad_size = kernel_width // 2
-        self._kernel = self._create_kernel()
+        self._kernel = self._create_kernel(
+                    self._pad_size, 
+                    self._kernel_width, 
+                    self._sigma
+                )
 
     def __call__(
         self, ctx: TransformContext, observations: SensorObservation
@@ -255,7 +259,7 @@ class GaussianSmoothing(Transform):
         Returns:
             normalized gaussian kernel. Array of size (kernel_width, kernel_width).
         """
-        x = np.linspace(_pad_size, _pad_size, _kernel_width)
+        x = np.linspace(-_pad_size, _pad_size, _kernel_width)
         kernel_1d = (
             1.0
             / (np.sqrt(2 * np.pi) * _sigma)
