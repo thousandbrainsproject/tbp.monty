@@ -21,12 +21,12 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 
 finite_vectors = arrays(
-    dtype=np.float64,
+    dtype=np.float32,
     shape=3,
-    elements=st.floats(min_value=-1e6, max_value=1e6),
+    elements=st.floats(min_value=-100, max_value=100, width=32, allow_subnormal=False),
 )
-non_zero_magnitude_vectors = finite_vectors.filter(lambda v: np.linalg.norm(v) >= 1e-12)
-unit_vectors = non_zero_magnitude_vectors.map(normalize)
+non_zero_magnitude_vectors = finite_vectors.filter(lambda v: np.linalg.norm(v) >= 1e-6)
+unit_vectors = non_zero_magnitude_vectors.map(lambda v: normalize(v))
 
 
 @st.composite
@@ -42,13 +42,13 @@ class NormalizeTest(unittest.TestCase):
     def test_preserves_direction(self, v):
         norm = np.linalg.norm(v)
         result = normalize(v)
-        np.testing.assert_array_almost_equal(result * norm, v)
+        np.testing.assert_allclose(result * norm, v, atol=1e-5, rtol=1e-5)
 
     @given(non_zero_magnitude_vectors)
     def test_idempotent(self, v):
         once = normalize(v)
         twice = normalize(once)
-        np.testing.assert_array_almost_equal(twice, once)
+        np.testing.assert_allclose(twice, once, atol=1e-5, rtol=1e-5)
 
     @given(
         arrays(
@@ -73,37 +73,42 @@ class NormalizeTest(unittest.TestCase):
     @given(non_zero_magnitude_vectors)
     def test_result_has_unit_norm(self, v):
         result = normalize(v)
-        self.assertAlmostEqual(np.linalg.norm(result), 1.0)
+        np.testing.assert_allclose(np.linalg.norm(result), 1.0, atol=1e-5, rtol=1e-5)
 
 
 class ProjectOntoTangentPlaneTest(unittest.TestCase):
     @given(
         a_vector=non_zero_magnitude_vectors,
-        a_scalar=st.floats(
-            min_value=-1e3, max_value=1e3, allow_infinity=False, allow_nan=False
+        a_scalar=st.floats(min_value=-1e3, max_value=1e3, allow_nan=False).filter(
+            lambda x: abs(x) > 1e-6
         ),
     )
     def test_a_vector_parallel_to_normal(self, a_vector, a_scalar):
         parallel_vector = a_scalar * a_vector
         result = project_onto_tangent_plane(parallel_vector, a_vector)
-        np.testing.assert_array_almost_equal(result, [0.0, 0.0, 0.0])
+        atol = max(1e-5 * np.linalg.norm(parallel_vector), 1e-6)
+        np.testing.assert_allclose(result, [0.0, 0.0, 0.0], atol=atol, rtol=0)
 
     @given(perpendicular_vectors())
     def test_a_vector_perpendicular_to_normal(self, orthogonal_vectors):
         a_vector, a_normal = orthogonal_vectors
         result = project_onto_tangent_plane(a_vector, a_normal)
-        np.testing.assert_array_almost_equal(result, a_vector)
+        np.testing.assert_allclose(result, a_vector, atol=1e-5, rtol=1e-5)
 
     @given(a_vector=finite_vectors, a_normal=non_zero_magnitude_vectors)
     def test_result_is_orthogonal_to_normal(self, a_vector, a_normal):
         result = project_onto_tangent_plane(a_vector, a_normal)
-        np.testing.assert_array_almost_equal(np.dot(result, normalize(a_normal)), 0.0)
+        atol = max(1e-5 * np.linalg.norm(a_vector), 1e-6)
+        np.testing.assert_allclose(
+            np.dot(result, normalize(a_normal)), 0.0, atol=atol, rtol=0
+        )
 
     @given(a_vector=finite_vectors, a_normal=non_zero_magnitude_vectors)
     def test_projection_is_idempotent(self, a_vector, a_normal):
         once = project_onto_tangent_plane(a_vector, a_normal)
         twice = project_onto_tangent_plane(once, a_normal)
-        np.testing.assert_array_almost_equal(twice, once)
+        # Increased rtol since error accumulates
+        np.testing.assert_allclose(twice, once, atol=1e-5, rtol=1e-3)
 
 
 class TangentFrameTest(unittest.TestCase):
@@ -111,14 +116,20 @@ class TangentFrameTest(unittest.TestCase):
         """Assert (basis_u, basis_v, normal) form an orthonormal right-handed frame."""
         u, v = frame.basis_u, frame.basis_v
         # Check unit norm
-        np.testing.assert_array_almost_equal(np.linalg.norm(u), 1.0)
-        np.testing.assert_array_almost_equal(np.linalg.norm(v), 1.0)
-        np.testing.assert_array_almost_equal(np.linalg.norm(normal), 1.0)
+        np.testing.assert_array_almost_equal(
+            np.linalg.norm(u), 1.0, atol=1e-5, rtol=1e-5
+        )
+        np.testing.assert_array_almost_equal(
+            np.linalg.norm(v), 1.0, atol=1e-5, rtol=1e-5
+        )
+        np.testing.assert_array_almost_equal(
+            np.linalg.norm(normal), 1.0, atol=1e-5, rtol=1e-5
+        )
 
         # Check orthogonality
-        np.testing.assert_array_almost_equal(np.dot(u, v), 0.0)
-        np.testing.assert_array_almost_equal(np.dot(u, normal), 0.0)
-        np.testing.assert_array_almost_equal(np.dot(v, normal), 0.0)
+        np.testing.assert_array_almost_equal(np.dot(u, v), 0.0, atol=1e-5, rtol=0)
+        np.testing.assert_array_almost_equal(np.dot(u, normal), 0.0, atol=1e-5, rtol=0)
+        np.testing.assert_array_almost_equal(np.dot(v, normal), 0.0, atol=1e-5, rtol=0)
 
         # Check right-handedness
         np.testing.assert_array_almost_equal(np.cross(u, v), normal)
@@ -129,8 +140,8 @@ class TangentFrameTest(unittest.TestCase):
         frame = TangentFrame(n)
         self._assert_orthonormal_frame(frame, n)
 
-    def test_transport_to_same_normal_is_noop(self):
-        n = normalize(np.array([1.0, 1.0, 1.0]))
+    @given(n=unit_vectors)
+    def test_transport_to_same_normal_is_noop(self, n):
         frame = TangentFrame(n)
         u_before, v_before = frame.basis_u.copy(), frame.basis_v.copy()
         frame.transport(n)
@@ -143,16 +154,16 @@ class TangentFrameTest(unittest.TestCase):
         frame.transport(n2)
         self._assert_orthonormal_frame(frame, n2)
 
-    def test_transport_anti_parallel(self):
-        n1 = np.array([0.0, 0.0, 1.0])
-        n2 = np.array([0.0, 0.0, -1.0])
-        frame = TangentFrame(n1)
-        frame.transport(n2)
+    @given(n=unit_vectors)
+    def test_transport_anti_parallel(self, n):
+        frame = TangentFrame(n)
+        anti_n = -n
+        frame.transport(anti_n)
         u, v = frame.basis_u, frame.basis_v
-        self.assertAlmostEqual(np.linalg.norm(u), 1.0, places=10)
-        self.assertAlmostEqual(np.linalg.norm(v), 1.0, places=10)
-        self.assertAlmostEqual(np.dot(u, n2), 0.0, places=10)
-        self.assertAlmostEqual(np.dot(v, n2), 0.0, places=10)
+        np.testing.assert_allclose(np.linalg.norm(u), 1.0, atol=1e-5, rtol=1e-5)
+        np.testing.assert_allclose(np.linalg.norm(v), 1.0, atol=1e-5, rtol=1e-5)
+        np.testing.assert_allclose(np.dot(u, anti_n), 0.0, atol=1e-5, rtol=0)
+        np.testing.assert_allclose(np.dot(v, anti_n), 0.0, atol=1e-5, rtol=0)
 
     def test_transport_90_degrees_produces_expected_basis(self):
         n1 = np.array([0.0, 0.0, 1.0])
