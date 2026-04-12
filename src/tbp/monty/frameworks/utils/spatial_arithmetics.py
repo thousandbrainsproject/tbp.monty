@@ -136,26 +136,21 @@ class TangentFrame:
             new_normal: Unit surface normal at the new point.
         """
         old_normal = self._normal
-        # cos_angle = 1 means 0 deg (normals identical),
-        # cos_angle = -1 means 180 deg (normals opposite).
-        cos_angle = np.clip(np.dot(old_normal, new_normal), -1.0, 1.0)
 
-        normals_are_parallel = np.allclose(abs(cos_angle), 1.0)
-        if normals_are_parallel:
-            if cos_angle < 0:
+        if is_parallel(old_normal, new_normal):
+            if np.dot(old_normal, new_normal) < 0:
                 self._v = -self._v
             self._normal = new_normal.copy()
             return
 
-        # Construct the rotation matrix to apply to the basis vectors
-        rotation_axis = np.cross(old_normal, new_normal)
-        rotation_axis = normalize(rotation_axis)
-        rotation_angle = np.arccos(cos_angle)
-        rotation = Rotation.from_rotvec(rotation_axis * rotation_angle)
+        # Construct Rotation object to apply to the basis vectors
+        cos_angle = np.clip(np.dot(old_normal, new_normal), -1.0, 1.0)
+        rotation_axis = normalize(np.cross(old_normal, new_normal))
+        rotation = Rotation.from_rotvec(rotation_axis * np.arccos(cos_angle))
 
         self._u = rotation.apply(self._u)
 
-        # Reset u and v to ensure the basis remains orthonormal.
+        # Reset u and v to ensure the basis remains orthonormal
         self._u = normalize(self._u - np.dot(self._u, new_normal) * new_normal)
         self._v = np.cross(new_normal, self._u)
 
