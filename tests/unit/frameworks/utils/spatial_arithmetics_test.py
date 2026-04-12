@@ -20,19 +20,24 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     project_onto_tangent_plane,
 )
 
-finite_vectors = arrays(
+_FLOAT32_NORM_EPSILON = np.finfo(np.float32).smallest_normal
+float32_array = arrays(
     dtype=np.float32,
     shape=3,
-    elements=st.floats(min_value=-100, max_value=100, width=32, allow_subnormal=False),
+    elements=st.floats(min_value=-1e6, max_value=1e6, width=32),
 )
-non_zero_magnitude_vectors = finite_vectors.filter(lambda v: np.linalg.norm(v) >= 1e-6)
-unit_vectors = non_zero_magnitude_vectors.map(lambda v: normalize(v))
+# Open to normalizable_vectors for naming (for semantic meaning)
+# nondegenerate is more math-term
+nondegenerate_vectors = float32_array.filter(
+    lambda v: np.linalg.norm(v) >= _FLOAT32_NORM_EPSILON
+)
+unit_vectors = nondegenerate_vectors.map(lambda v: normalize(v))
 
 
 @st.composite
 def perpendicular_vectors(draw):
-    random_base = normalize(draw(non_zero_magnitude_vectors))
-    n = normalize(draw(non_zero_magnitude_vectors))
+    random_base = normalize(draw(nondegenerate_vectors))
+    n = normalize(draw(nondegenerate_vectors))
     v = np.cross(random_base, n)
     return v, n
 
@@ -40,47 +45,44 @@ def perpendicular_vectors(draw):
 # TODO: go through tests to see if any can use non_parallel_vectors pair
 @st.composite
 def non_parallel_vectors(draw):
-    v1 = normalize(draw(non_zero_magnitude_vectors))
-    v2 = normalize(draw(non_zero_magnitude_vectors))
+    v1 = normalize(draw(nondegenerate_vectors))
+    v2 = normalize(draw(nondegenerate_vectors))
     cos_angle = abs(np.dot(v1, v2))
     assume(cos_angle < 0.999)
     return v1, v2
 
 
 class NormalizeTest(unittest.TestCase):
-    @given(non_zero_magnitude_vectors)
+    @given(nondegenerate_vectors)
     def test_preserves_direction(self, v):
         norm = np.linalg.norm(v)
         result = normalize(v)
         np.testing.assert_allclose(result * norm, v, atol=1e-5, rtol=1e-5)
 
-    @given(non_zero_magnitude_vectors)
+    @given(nondegenerate_vectors)
     def test_idempotent(self, v):
         once = normalize(v)
         twice = normalize(once)
         np.testing.assert_allclose(twice, once, atol=1e-5, rtol=1e-5)
 
-    @given(
-        arrays(
-            dtype=np.float64,
-            shape=3,
-            elements=st.floats(min_value=-1e-13, max_value=1e-13),
-        )
-    )
-    def test_near_zero_vector_raises(self, v):
+    def test_zero_vector_raises(self):
+        zero_float32 = np.zeros(3, dtype=np.float32)
+        zero_float64 = np.zeros(3, dtype=np.float64)
         with self.assertRaises(ValueError):
-            normalize(v)
+            normalize(zero_float32)
+        with self.assertRaises(ValueError):
+            normalize(zero_float64)
 
     @given(
-        epsilon=st.floats(min_value=1e-12, max_value=1e-2),
+        epsilon=st.floats(min_value=_FLOAT32_NORM_EPSILON, max_value=1e-2),
         scale=st.floats(min_value=0.01, max_value=0.99),
     )
-    def test_custom_epsilon(self, epsilon, scale):
-        v = np.array([epsilon * scale, 0.0, 0.0])
+    def test_custom_epsilon_raises_below_threshold(self, epsilon, scale):
+        v = np.array([epsilon * scale, 0.0, 0.0], dtype=np.float32)
         with self.assertRaises(ValueError):
             normalize(v, epsilon=epsilon)
 
-    @given(non_zero_magnitude_vectors)
+    @given(nondegenerate_vectors)
     def test_result_has_unit_norm(self, v):
         result = normalize(v)
         np.testing.assert_allclose(np.linalg.norm(result), 1.0, atol=1e-5, rtol=1e-5)
@@ -88,7 +90,7 @@ class NormalizeTest(unittest.TestCase):
 
 class ProjectOntoTangentPlaneTest(unittest.TestCase):
     @given(
-        a_vector=non_zero_magnitude_vectors,
+        a_vector=nondegenerate_vectors,
         a_scalar=st.floats(min_value=-1e3, max_value=1e3, allow_nan=False).filter(
             lambda x: abs(x) > 1e-6
         ),
@@ -105,7 +107,7 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
         result = project_onto_tangent_plane(a_vector, a_normal)
         np.testing.assert_allclose(result, a_vector, atol=1e-5, rtol=1e-5)
 
-    @given(a_vector=finite_vectors, a_normal=non_zero_magnitude_vectors)
+    @given(a_vector=float32_array, a_normal=nondegenerate_vectors)
     def test_result_is_orthogonal_to_normal(self, a_vector, a_normal):
         result = project_onto_tangent_plane(a_vector, a_normal)
         atol = max(1e-5 * np.linalg.norm(a_vector), 1e-6)
