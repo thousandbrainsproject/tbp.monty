@@ -26,6 +26,7 @@ finite_vectors = arrays(
     elements=st.floats(min_value=-1e6, max_value=1e6),
 )
 non_zero_magnitude_vectors = finite_vectors.filter(lambda v: np.linalg.norm(v) >= 1e-12)
+unit_vectors = non_zero_magnitude_vectors.map(normalize)
 
 
 @st.composite
@@ -136,9 +137,8 @@ class TangentFrameTest(unittest.TestCase):
         np.testing.assert_array_almost_equal(frame.basis_u, u_before)
         np.testing.assert_array_almost_equal(frame.basis_v, v_before)
 
-    def test_transport_preserves_orthonormality(self):
-        n1 = np.array([0.0, 0.0, 1.0])
-        n2 = normalize(np.array([0.1, 0.0, 1.0]))
+    @given(n1=unit_vectors, n2=unit_vectors)
+    def test_transport_preserves_orthonormality(self, n1, n2):
         frame = TangentFrame(n1)
         frame.transport(n2)
         self._assert_orthonormal_frame(frame, n2)

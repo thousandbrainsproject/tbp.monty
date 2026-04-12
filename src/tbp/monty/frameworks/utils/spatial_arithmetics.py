@@ -41,11 +41,12 @@ def normalize(v: ArrayLike, epsilon: float = 1e-12) -> np.ndarray:
     return v / n
 
 
-def is_parallel(v1: ArrayLike, v2: ArrayLike, tolerance: float = 1e-10) -> bool:
+def is_parallel(v1: ArrayLike, v2: ArrayLike, tolerance: float = 1e-12) -> bool:
     """True when v1 and v2 point in the same or opposite direction.
 
-    Assumes unit-length inputs. The default tolerance of 1e-10 on
-    1 - |cos(theta)| corresponds to an angular separation of ~0.0008 degrees.
+    Assumes unit-length inputs. The default tolerance of 1e-12 on
+    1 - |cos(theta)| corresponds to an angular separation of ~0.000081 degrees,
+    matching the epsilon used by normalize() to prevent division by near-zero.
 
     Args:
         v1: First unit vector.
