@@ -107,43 +107,42 @@ class TangentFrame:
         return self._v
 
     def transport(self, new_normal: np.ndarray) -> None:
-        # """Parallel-transport the frame to a new surface normal.
+        """Parallel-transport the frame to a new surface normal.
 
-        # As the sensor moves along a curved surface, the tangent plane
-        # rotates with the curvature (e.g. around a cylinder). Parallel
-        # transport transforms the basis (u, v) by exactly the rotation needed
-        # to stay in the new tangent plane. This is analogous to "unrolling"
-        # the curved surface.
+        As the sensor moves along a curved surface, the tangent plane
+        rotates with the curvature (e.g. around a cylinder). Parallel
+        transport transforms the basis (u, v) by exactly the rotation needed
+        to stay in the new tangent plane. This is analogous to "unrolling"
+        the curved surface.
 
-        # Args:
-        #     new_normal: Unit surface normal at the new point.
-        # """
-        # old_normal = self._normal
-        # # cos_angle = 1 means 0 deg (normals identical),
-        # # cos_angle = -1 means 180 deg (normals opposite).
-        # cos_angle = np.clip(np.dot(old_normal, new_normal), -1.0, 1.0)
+        Args:
+            new_normal: Unit surface normal at the new point.
+        """
+        old_normal = self._normal
+        # cos_angle = 1 means 0 deg (normals identical),
+        # cos_angle = -1 means 180 deg (normals opposite).
+        cos_angle = np.clip(np.dot(old_normal, new_normal), -1.0, 1.0)
 
-        # normals_are_parallel = np.allclose(abs(cos_angle), 1.0)
-        # if normals_are_parallel:
-        #     if cos_angle < 0:
-        #         self._v = -self._v
-        #     self._normal = new_normal.copy()
-        #     return
+        normals_are_parallel = np.allclose(abs(cos_angle), 1.0)
+        if normals_are_parallel:
+            if cos_angle < 0:
+                self._v = -self._v
+            self._normal = new_normal.copy()
+            return
 
-        # # Construct the rotation matrix to apply to the basis vectors
-        # rotation_axis = np.cross(old_normal, new_normal)
-        # rotation_axis = normalize(rotation_axis)
-        # rotation_angle = np.arccos(cos_angle)
-        # rotation = Rotation.from_rotvec(rotation_axis * rotation_angle)
+        # Construct the rotation matrix to apply to the basis vectors
+        rotation_axis = np.cross(old_normal, new_normal)
+        rotation_axis = normalize(rotation_axis)
+        rotation_angle = np.arccos(cos_angle)
+        rotation = Rotation.from_rotvec(rotation_axis * rotation_angle)
 
-        # self._u = rotation.apply(self._u)
+        self._u = rotation.apply(self._u)
 
-        # # Reset u and v to ensure the basis remains orthonormal.
-        # self._u = normalize(self._u - np.dot(self._u, new_normal) * new_normal)
-        # self._v = np.cross(new_normal, self._u)
+        # Reset u and v to ensure the basis remains orthonormal.
+        self._u = normalize(self._u - np.dot(self._u, new_normal) * new_normal)
+        self._v = np.cross(new_normal, self._u)
 
-        # self._normal = new_normal.copy()
-        pass
+        self._normal = new_normal.copy()
 
 
 def rotations_to_quats(rotations, invert=False):
