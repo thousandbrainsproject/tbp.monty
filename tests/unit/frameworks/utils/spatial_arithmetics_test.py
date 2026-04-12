@@ -10,7 +10,7 @@
 import unittest
 
 import numpy as np
-from hypothesis import given
+from hypothesis import assume, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -35,6 +35,16 @@ def perpendicular_vectors(draw):
     n = normalize(draw(non_zero_magnitude_vectors))
     v = np.cross(random_base, n)
     return v, n
+
+
+# TODO: go through tests to see if any can use non_parallel_vectors pair
+@st.composite
+def non_parallel_vectors(draw):
+    v1 = normalize(draw(non_zero_magnitude_vectors))
+    v2 = normalize(draw(non_zero_magnitude_vectors))
+    cos_angle = abs(np.dot(v1, v2))
+    assume(cos_angle < 0.999)
+    return v1, v2
 
 
 class NormalizeTest(unittest.TestCase):
@@ -103,8 +113,9 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
             np.dot(result, normalize(a_normal)), 0.0, atol=atol, rtol=0
         )
 
-    @given(a_vector=finite_vectors, a_normal=non_zero_magnitude_vectors)
-    def test_projection_is_idempotent(self, a_vector, a_normal):
+    @given(non_parallel_vectors())
+    def test_projection_is_idempotent(self, vectors):
+        a_vector, a_normal = vectors
         once = project_onto_tangent_plane(a_vector, a_normal)
         twice = project_onto_tangent_plane(once, a_normal)
         # Increased rtol since error accumulates
