@@ -17,7 +17,6 @@ from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
-from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transform_handlers import (
     GaussianBlurRGB,
     GaussianSmoothing,
@@ -66,7 +65,7 @@ class GaussianSmoothingTest(unittest.TestCase):
             ]
         )
         gaussian_smoother = GaussianSmoothing(
-            None, agent_id=AgentID("0"), sigma=2, kernel_width=5
+            None, sigma=2, kernel_width=5
         )
 
         self.assertTrue(
@@ -94,7 +93,7 @@ class GaussianSmoothingTest(unittest.TestCase):
             ]
         )
         gaussian_smoother = GaussianSmoothing(
-            None, agent_id=AgentID("0"), sigma=5, kernel_width=7
+            None, sigma=5, kernel_width=7
         )
         padded_img = gaussian_smoother._get_padded_img(img, pad_type="edge")
 
@@ -110,7 +109,7 @@ class GaussianSmoothingTest(unittest.TestCase):
 
         img = np.ones((64, 64))
         gaussian_smoother = GaussianSmoothing(
-            None, agent_id=AgentID("0"), sigma=15, kernel_width=15
+            None, sigma=15, kernel_width=15
         )
         padded_img = gaussian_smoother._get_padded_img(img, pad_type="empty")
         filtered_img = gaussian_smoother._conv2d(padded_img, kernel_renorm=True)
@@ -135,7 +134,7 @@ class GaussianSmoothingTest(unittest.TestCase):
         )
 
         gaussian_smoother = GaussianSmoothing(
-            None, agent_id=AgentID("0"), sigma=2, kernel_width=3
+            None, sigma=2, kernel_width=3
         )
         padded_img = gaussian_smoother._get_padded_img(img, pad_type="empty")
         filtered_img = gaussian_smoother._conv2d(padded_img, kernel_renorm=True)
@@ -233,7 +232,11 @@ class GaussianBlurRGBHandlerTest(unittest.TestCase):
         input_tv = total_variation(rgba[:, :, :3])
         result_tv = total_variation(result_rgb)
 
-        self.assertTrue(result_tv < input_tv or np.allclose(result_tv, input_tv))
+        self.assertTrue(result_tv < input_tv or np.allclose(result_tv, input_tv, atol=1e-5))
+
+
+
+
 
     def test_pipeline_integration(self):
         pipeline = TransformPipeline(

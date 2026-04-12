@@ -10,6 +10,7 @@
 
 import copy
 import unittest
+from unittest.mock import Mock
 
 import numpy as np
 import quaternion as qt
@@ -30,7 +31,6 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.sensors import SensorID
 
-AGENT_ID = AgentID("camera")
 SENSOR_ID = SensorID("sensor_01")
 
 TEST_OBS = SensorObservation(
@@ -91,7 +91,7 @@ class HabitatTransformTest(unittest.TestCase):
         """Test replacing 0 with user specified max_range."""
         max_depth = 20
         transform = MissingToMaxDepth(
-            None, agent_id=AGENT_ID, max_depth=max_depth, threshold=0
+            None, max_depth=max_depth, threshold=0
         )
 
         # Make a copy since this transform modifies the observation in place
@@ -112,7 +112,7 @@ class HabitatTransformTest(unittest.TestCase):
     def test_semantic_3d_local(self):
         resolution = TEST_OBS["depth"].shape
         # Replace 0 depth with max depth
-        md_transform = MissingToMaxDepth(None, agent_id=AGENT_ID, max_depth=100)
+        md_transform = MissingToMaxDepth(None, max_depth=100)
         md_obs = md_transform.call(TEST_OBS)
 
         # Create a mock agent state with identity position/rotation
@@ -129,8 +129,7 @@ class HabitatTransformTest(unittest.TestCase):
 
         # Create the 3D projection transform
         transform = DepthTo3DLocations(
-            None,
-            agent_id=AGENT_ID,
+            Mock(),
             sensor_id=SENSOR_ID,
             resolutions=resolution,
             use_semantic_sensor=True,
@@ -177,7 +176,7 @@ class HabitatTransformTest(unittest.TestCase):
         self, agent_position, agent_rotation, sensor_position, sensor_rotation
         ):
         resolution = TEST_OBS["depth"].shape
-        md_transform = MissingToMaxDepth(None, agent_id=AGENT_ID, max_depth=100)
+        md_transform = MissingToMaxDepth(None, max_depth=100)
         md_obs = md_transform.call(TEST_OBS)
 
         agent_state = AgentState(
@@ -190,10 +189,8 @@ class HabitatTransformTest(unittest.TestCase):
                         )
                     },
                 )
-        mock_state = ProprioceptiveState({AGENT_ID: agent_state})
         transform = DepthTo3DLocations(
             None,
-            agent_id=AGENT_ID,
             sensor_id=SENSOR_ID,
             resolutions=resolution,
             world_coord=True,
@@ -201,7 +198,7 @@ class HabitatTransformTest(unittest.TestCase):
             use_semantic_sensor=True,
         )
 
-        obs = transform.call(md_obs, state=mock_state[AGENT_ID])
+        obs = transform.call(md_obs, state=agent_state)
         transformed_sensor_obs = obs
         depth_obs = transformed_sensor_obs["depth"]
         semantic_obs = transformed_sensor_obs["semantic"]
