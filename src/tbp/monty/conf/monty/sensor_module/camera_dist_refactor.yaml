@@ -18,6 +18,35 @@ sensor_module_0:
     - gaussian_curvature_sc
     - mean_curvature_sc
     save_raw_obs: true
+    transform_pipeline:
+      _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformPipeline
+      transforms:
+        - _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformMiddleware
+          transform: ${monty.class:tbp.monty.frameworks.environment_utils.transform_handlers.DepthTo3DLocations}
+          sensor_id: patch
+          # env_init_args[agents][0].agent_args.sensor_ids
+          resolutions: [64, 64] # env_init_args[agents][0].agent_args.resolutions
+          world_coord: true
+          zooms: 10.0 # env_init_args[agents][0].agent_args.zooms
+          get_all_points: true
+          use_semantic_sensor: false
+          is_depth_clip_sensors: true
+        - _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformMiddleware
+          transform: ${monty.class:tbp.monty.frameworks.environment_utils.transform_handlers.MissingToMaxDepth}
+          max_depth: 1
+        - _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformMiddleware
+          transform: ${monty.class:tbp.monty.frameworks.environment_utils.transform_handlers.GaussianSmoothing}
+          sigma: 6
+          kernel_width: 8
+        - _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformMiddleware
+          transform: ${monty.class:tbp.monty.frameworks.environment_utils.transform_handlers.GaussianBlurRGB}
+          sensor_id: patch
+          sigma: 4
+          kernel_size: 5
+        - _target_: tbp.monty.frameworks.environment_utils.transform_handlers.TransformMiddleware
+          transform: ${monty.class:tbp.monty.frameworks.environment_utils.transform_handlers.AddNoiseToRawDepthImage}
+          sigma: 4
+
 sensor_module_1:
   sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
   sensor_module_args:
