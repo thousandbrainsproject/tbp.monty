@@ -15,9 +15,9 @@ from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    TangentFrame,
     normalize,
     project_onto_tangent_plane,
-    TangentFrame,
 )
 
 finite_vectors = arrays(
@@ -126,4 +126,53 @@ class TangentFrameTest(unittest.TestCase):
     def test_construction_with_y_aligned_normal_triggers_fallback(self):
         n = normalize(np.array([0.0, 1.0, 0.01]))
         frame = TangentFrame(n)
+        self._assert_orthonormal_frame(frame, n)
+
+    def test_transport_to_same_normal_is_noop(self):
+        n = normalize(np.array([1.0, 1.0, 1.0]))
+        frame = TangentFrame(n)
+        u_before, v_before = frame.basis_u.copy(), frame.basis_v.copy()
+        frame.transport(n)
+        np.testing.assert_array_almost_equal(frame.basis_u, u_before)
+        np.testing.assert_array_almost_equal(frame.basis_v, v_before)
+
+    def test_transport_preserves_orthonormality(self):
+        n1 = np.array([0.0, 0.0, 1.0])
+        n2 = normalize(np.array([0.1, 0.0, 1.0]))
+        frame = TangentFrame(n1)
+        frame.transport(n2)
+        self._assert_orthonormal_frame(frame, n2)
+
+    def test_transport_anti_parallel(self):
+        n1 = np.array([0.0, 0.0, 1.0])
+        n2 = np.array([0.0, 0.0, -1.0])
+        frame = TangentFrame(n1)
+        frame.transport(n2)
+        u, v = frame.basis_u, frame.basis_v
+        self.assertAlmostEqual(np.linalg.norm(u), 1.0, places=10)
+        self.assertAlmostEqual(np.linalg.norm(v), 1.0, places=10)
+        self.assertAlmostEqual(np.dot(u, n2), 0.0, places=10)
+        self.assertAlmostEqual(np.dot(v, n2), 0.0, places=10)
+
+    def test_transport_90_degrees_produces_expected_basis(self):
+        n1 = np.array([0.0, 0.0, 1.0])
+        n2 = np.array([0.0, 1.0, 0.0])
+        frame = TangentFrame(n1)
+
+        np.testing.assert_array_almost_equal(frame.basis_u, [1, 0, 0])
+        np.testing.assert_array_almost_equal(frame.basis_v, [0, 1, 0])
+
+        frame.transport(n2)
+
+        np.testing.assert_array_almost_equal(frame.basis_u, [1, 0, 0])
+        np.testing.assert_array_almost_equal(frame.basis_v, [0, 0, -1])
+
+    def test_accumulated_transports_stay_orthonormal(self):
+        rng = np.random.RandomState(42)
+        n = normalize(rng.randn(3))
+        frame = TangentFrame(n)
+        for _ in range(100):
+            n_new = normalize(n + 0.05 * rng.randn(3))
+            frame.transport(n_new)
+            n = n_new
         self._assert_orthonormal_frame(frame, n)
