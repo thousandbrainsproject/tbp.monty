@@ -41,6 +41,23 @@ def normalize(v: ArrayLike, epsilon: float = 1e-12) -> np.ndarray:
     return v / n
 
 
+def is_parallel(v1: ArrayLike, v2: ArrayLike, tolerance: float = 1e-10) -> bool:
+    """True when v1 and v2 point in the same or opposite direction.
+
+    Assumes unit-length inputs. The default tolerance of 1e-10 on
+    1 - |cos(theta)| corresponds to an angular separation of ~0.0008 degrees.
+
+    Args:
+        v1: First unit vector.
+        v2: Second unit vector.
+        tolerance: Maximum value of 1 - |cos(theta)| to consider parallel.
+
+    Returns:
+        True if v1 and v2 are parallel (same or opposite direction).
+    """
+    return 1.0 - abs(np.dot(v1, v2)) < tolerance
+
+
 def project_onto_tangent_plane(v: ArrayLike, n: ArrayLike) -> np.ndarray:
     """Project a vector onto the tangent plane perpendicular to a normal.
 
