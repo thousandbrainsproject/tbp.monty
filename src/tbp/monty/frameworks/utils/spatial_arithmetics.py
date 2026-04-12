@@ -151,7 +151,7 @@ class TangentFrame:
         self._u = rotation.apply(self._u)
 
         # Reset u and v to ensure the basis remains orthonormal
-        self._u = normalize(self._u - np.dot(self._u, new_normal) * new_normal)
+        self._u = normalize(project_onto_tangent_plane(self._u, new_normal))
         self._v = np.cross(new_normal, self._u)
 
         self._normal = new_normal.copy()
