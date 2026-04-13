@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import logging
-import re
 from pathlib import Path
 from typing import Callable, Sequence
 
@@ -364,10 +363,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
                 action.act(agent)
             except AttributeError as exc:
                 # Only catch missing actuate methods, propagate any other errors
-                # TODO: In Python>=3.10, use exc.name to determine the missing method
-                #   directly instead of relying on a regex match on the message string.
-                match = re.search(r"attribute 'actuate_.*'", str(exc))
-                if match:
+                if exc.name.startswith("actuate_"):
                     logger.warning(f"{agent} does not understand {action}")
                     continue
                 raise
