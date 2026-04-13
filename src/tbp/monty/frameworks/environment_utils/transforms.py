@@ -22,7 +22,6 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.sensors import SensorID
-from tbp.monty.psu.introspection_utils import print_dict_structure
 
 __all__ = [
     "AddNoiseToRawDepthImage",
@@ -39,6 +38,7 @@ __all__ = [
 class TransformContext:
     rng: np.random.RandomState
     state: ProprioceptiveState | None = None
+
 
 class Transform(Protocol):
     """A transform that can be applied to observations."""
@@ -85,7 +85,7 @@ class MissingToMaxDepth(Transform):
         self.threshold = threshold
 
     def __call__(
-        self, observations: Observations, ctx: TransformContext
+        self, observations: Observations, _ctx: TransformContext
     ) -> Observations:
         return self.call(observations)
 
@@ -184,7 +184,7 @@ class GaussianSmoothing(Transform):
         self.kernel = self.create_kernel()
 
     def __call__(
-        self, observations: Observations, ctx: TransformContext
+        self, observations: Observations, _ctx: TransformContext
     ) -> Observations:
         return self.call(observations)
 
@@ -547,8 +547,6 @@ class DepthTo3DLocations(Transform):
                     when `self.get_all_points` is `True`.
         """
         for i, sensor_id in enumerate(self.sensor_ids):
-            print(sensor_id)
-            print(observations[self.agent_id][sensor_id])
             agent_obs = observations[self.agent_id][sensor_id]
             depth_patch = agent_obs["depth"]
 

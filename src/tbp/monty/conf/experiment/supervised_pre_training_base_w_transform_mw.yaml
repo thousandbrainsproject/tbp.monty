@@ -4,7 +4,7 @@ defaults:
   - /monty: graph_exp500_e3_t3_tot2500
   - /monty/motor_system_config: naive_scan_5
   - /monty/learning_module: displacement_delta_d0001
-  - /monty/sensor_module: camera_dist_refactor
+  - /monty/sensor_module: camera_dist_w_transform_mw.yaml
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_dist_agent_semantics0
   - /env_interface: train_distinctobj_predefined

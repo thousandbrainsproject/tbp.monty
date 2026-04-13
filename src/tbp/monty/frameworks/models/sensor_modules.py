@@ -639,7 +639,7 @@ class CameraSM(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
-        self.agent_state = agent
+        self.agent_state = agent # Need agent state for context in transform pipeline
 
     def state_dict(self):
         state_dict = self._snapshot_telemetry.state_dict()
@@ -652,7 +652,7 @@ class CameraSM(SensorModule):
         observation: SensorObservation,
         motor_only_step: bool = False,
     ) -> Message | None:
-        """Turn raw observations into dict of features at location.
+        """Transform raw observations and turn into dict of features at location.
 
         Args:
             ctx: The runtime context.
@@ -668,9 +668,7 @@ class CameraSM(SensorModule):
                 observation, self.state.rotation, self.state.position
             )
 
-
         tf_context = TransformContext(ctx.rng, self.agent_state)
-
         self.transform_pipeline(tf_context, observation)
 
         percept = self._observation_processor.process(observation)
