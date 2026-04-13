@@ -140,7 +140,7 @@ class AddNoiseToRawDepthImage(Transform):
 
         Args:
             next_transform: The next transform in the chain.
-                Transform will be applied to all depth sensors of the agent.
+                Transform will be applied to the sensor observation.
             sigma: standard deviation of noise distribution.
         """
         self._next_transform = next_transform
@@ -197,7 +197,7 @@ class GaussianSmoothing(Transform):
 
         Args:
             next_transform: The next transform in the chain.
-                Transform will be applied to all depth sensors of the agent.
+                Transform will be applied to the sensor observation.
             sigma: sigma of gaussian smoothing kernel. Default is 2.
             kernel_width: width of the smoothing kernel. Default is 3.
         """
@@ -312,7 +312,7 @@ class GaussianBlurRGB(Transform):
         """Initialize the transform.
 
         Args:
-            agent_id: Agent ID where the transform should be applied.
+            next_transform: The next transform in the chain.
             sensor_id: Sensor ID to apply the transform to.
             sigma: Standard deviation for Gaussian blur. Default is 1.0.
             kernel_size: Kernel size for blur. If 0 (default), OpenCV auto-computes
@@ -320,7 +320,7 @@ class GaussianBlurRGB(Transform):
                 must be odd.
 
         Raises:
-            ValueError: If sensor_id is an empty list.
+            ValueError: If sensor_id is empty.
             ValueError: If kernel_size is even (when not 0).
         """
         self._next_transform = next_transform
@@ -363,7 +363,7 @@ class GaussianBlurRGB(Transform):
             Observations, same as input, with blurred RGB values.
 
         Raises:
-            KeyError: If sensor is not found in observations or has no 'rgba' key.
+            KeyError: If observations has no 'rgba' key.
         """
         if "rgba" not in observations:
             raise KeyError(
@@ -409,19 +409,17 @@ class DepthTo3DLocations(Transform):
         next_transform: The next transform in the chain.
         sensor_id: Sensor ID to apply the transform to.
         resolution: Camera resolution (H, W)
-        zooms: Camera zoom factor. Defaul 1.0 (no zoom)
+        zooms: Camera zoom factor. Default 1.0 (no zoom)
         hfov: Camera HFOV, default 90 degrees
         use_semantic_sensor: Whether to use the semantic sensor. Default False.
-        depth_sensor: Depth sensor id. Default "depth"
         world_coord: Whether to return 3D locations in world coordinates.
             If enabled, then :meth:`__call__` must be called with
             the agent and sensor states in addition to observations.
             Default True.
         get_all_points: Whether to return all 3D coordinates or only the ones
             that land on an object.
-        is_depth_clip_sensors: List of sensor indices to which to apply a clipping
-            transform where all values > clip_value are set to
-            clip_value. Empty list ~ apply to none of them.
+        is_depth_clip_sensors: Whether to apply depth clipping for surface-agent
+            style sensing.
         clip_value: depth parameter for the clipping transform
 
     Warning:
@@ -518,8 +516,8 @@ class DepthTo3DLocations(Transform):
            list. More specifically, we know which sensor is the surface agent
            since it's index will be in self.depth_clip_sensors. We only apply
            depth clipping to the surface agent.
-         - surface agents also have their depth and semantic data clipped to a
-           a very short range from the sensor. This is done to more closely model
+                 - surface agents also have their depth and semantic data clipped to
+                     a very short range from the sensor. This is done to more closely model
            a finger which has short reach.
          - `use_semantic_sensor` is currently only used with multi-object
            experiments, and when this is `True`, the observation dict will have
@@ -538,11 +536,11 @@ class DepthTo3DLocations(Transform):
         to the original Observations.
 
         Args:
-            observations: Observations returned by the environment interface.
+            observations: Sensor observations returned by the environment interface.
             state: Optionally supplied CMP-compliant state of the object.
 
         Returns:
-            The original Observations, with the following possibly added:
+            The original sensor observation, with the following possibly added:
                 - "semantic_3d": 3D coordinates for each pixel. If `self.world_coord`
                     is `True` (default), then the coordinates are in the world's
                     reference frame and are in the sensor's reference frame otherwise.
@@ -697,7 +695,7 @@ class DepthTo3DLocations(Transform):
 
         To figure out if we have two disjoint sets of depth values we look at the
         histogram and check for empty bins in the middle. The center of the empty
-        part if the histogram will be defined as the threshold.
+        part of the histogram will be defined as the threshold.
 
         If we do have a bimodal depth distribution, we effectively have two surfaces.
         This could be the mug's handle vs the mug's body, or the front lip of a mug
