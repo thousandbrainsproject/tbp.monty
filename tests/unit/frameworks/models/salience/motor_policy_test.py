@@ -38,6 +38,12 @@ TEST_VOLUME_DISTANCE_METERS = 100.0
 
 
 class LookAtGoalTest(unittest.TestCase):
+    """This test class makes some simplifying assumptions.
+
+    - The agent starts at the origin with identity rotation.
+    - The sensor also starts at the origin with identity rotation.
+    - Note that the agent and the sensor are collocated.
+    """
     def setUp(self):
         identity_pose = {
             "position": (0, 0, 0),
@@ -49,7 +55,9 @@ class LookAtGoalTest(unittest.TestCase):
         )
         self.motor_system_state = MotorSystemState({AGENT_ID: self.agent_state})
 
-    def test_raises_error_if_no_goal_is_provided(self) -> None:
+    def test_raises_error_if_no_goal_is_provided_if_not_suppressing_runtime_errors(
+        self,
+    ) -> None:
         policy = LookAtGoal(AGENT_ID, SENSOR_ID)
         with self.assertRaises(RuntimeError):
             policy(
@@ -59,6 +67,65 @@ class LookAtGoalTest(unittest.TestCase):
                 percept=Mock(),
                 goal=None,
             )
+
+    def test_returns_empty_result_if_no_goal_is_provided_if_suppressing_runtime_errors(
+        self,
+    ) -> None:
+        policy = LookAtGoal(AGENT_ID, SENSOR_ID, suppress_runtime_errors=True)
+        result = policy(
+            ctx=Mock(),
+            observations=Mock(),
+            state=MotorSystemState(),
+            percept=Mock(),
+            goal=None,
+        )
+        self.assertEqual(result.actions, [])
+
+    def test_raises_error_if_goal_collocated_with_sensor_and_not_suppressing_runtime_errors(  # noqa: E501
+        self,
+    ) -> None:
+        policy = LookAtGoal(AGENT_ID, SENSOR_ID)
+        with self.assertRaises(RuntimeError):
+            policy(
+                ctx=Mock(),
+                observations=Mock(),
+                state=self.motor_system_state,
+                percept=Mock(),
+                goal=Goal(
+                    location=np.array([0, 0, 0]),
+                    morphological_features=None,
+                    non_morphological_features=None,
+                    confidence=1.0,
+                    use_state=True,
+                    sender_id="test",
+                    sender_type="SM",
+                    goal_tolerances=None,
+                    info=None,
+                ),
+            )
+
+    def test_returns_empty_result_if_goal_collocated_with_sensor_and_suppressing_runtime_errors(  # noqa: E501
+        self,
+    ) -> None:
+        policy = LookAtGoal(AGENT_ID, SENSOR_ID, suppress_runtime_errors=True)
+        result = policy(
+            ctx=Mock(),
+            observations=Mock(),
+            state=self.motor_system_state,
+            percept=Mock(),
+            goal=Goal(
+                location=np.array([0, 0, 0]),
+                morphological_features=None,
+                non_morphological_features=None,
+                confidence=1.0,
+                use_state=True,
+                sender_id="test",
+                sender_type="SM",
+                goal_tolerances=None,
+                info=None,
+            ),
+        )
+        self.assertEqual(result.actions, [])
 
     @given(
         goal_xyz=st.tuples(
@@ -77,7 +144,11 @@ class LookAtGoalTest(unittest.TestCase):
         )
     )
     def test_returns_turn_left_and_look_up_oriented_at_the_goal(self, goal_xyz) -> None:
-        """Note: this test assumes that the agent starts with identity rotation."""
+        """This test comes with some caveats.
+
+        It ignores cases for generated goals collocated with the sensor. Those cases are
+        tested elsewhere.
+        """
         goal = Goal(
             location=np.array(goal_xyz),
             morphological_features=None,
@@ -90,12 +161,12 @@ class LookAtGoalTest(unittest.TestCase):
             info=None,
         )
         policy = LookAtGoal(AGENT_ID, SENSOR_ID)
-        agent_pos_rel_world = self.agent_state.position
+        sensor_pos_rel_world = self.sensor_state.position
         expected_forward_vector_rel_world = np.array(
             [
-                goal_xyz[0] - agent_pos_rel_world[0],
-                goal_xyz[1] - agent_pos_rel_world[1],
-                goal_xyz[2] - agent_pos_rel_world[2],
+                goal_xyz[0] - sensor_pos_rel_world[0],
+                goal_xyz[1] - sensor_pos_rel_world[1],
+                goal_xyz[2] - sensor_pos_rel_world[2],
             ]
         )
         if np.isclose(np.linalg.norm(expected_forward_vector_rel_world), 0.0):
@@ -133,4 +204,3 @@ class LookAtGoalTest(unittest.TestCase):
             actuated_vector_rel_world,
             decimal=12,
         )
-        print("suces")

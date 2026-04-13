@@ -131,6 +131,10 @@ class LookAtGoal(MotorPolicy):
             inverse=True,
         )
 
+        # TODO: Add check and raise or log and return no actions
+        # if np.isclose(np.linalg.norm(target_rel_sensor), 0.0):
+        #    return
+
         # Compute the target's azimuth, relative to the agent. This value is used to
         # compute the yaw action to be performed by the agent.
         agent_yaw = -np.arctan2(target_rel_agent[0], -target_rel_agent[2])
