@@ -232,7 +232,10 @@ class GaussianBlurRGBHandlerTest(unittest.TestCase):
         input_tv = total_variation(rgba[:, :, :3])
         result_tv = total_variation(result_rgb)
 
-        self.assertTrue(result_tv < input_tv or np.allclose(result_tv, input_tv, atol=1e-5))
+        self.assertTrue(
+            result_tv < input_tv
+            or np.allclose(result_tv, input_tv, atol=1e-5)
+        )
 
 
 

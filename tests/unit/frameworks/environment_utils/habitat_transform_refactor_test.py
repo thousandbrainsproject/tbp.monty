@@ -16,7 +16,6 @@ import numpy as np
 import quaternion as qt
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transform_handlers import (
     DepthTo3DLocations,
     MissingToMaxDepth,
@@ -26,7 +25,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 )
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
-    ProprioceptiveState,
     SensorState,
 )
 from tbp.monty.frameworks.sensors import SensorID

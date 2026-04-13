@@ -568,6 +568,7 @@ class CameraSM(SensorModule):
             features: Which features to extract. In [on_object, rgba, surface_normal,
                 principal_curvatures, curvature_directions, gaussian_curvature,
                 mean_curvature]
+            transform_pipeline: Head of the observation transform pipeline.
             save_raw_obs: Whether to save raw sensory input for logging.
             pc1_is_pc2_threshold: Maximum difference between pc1 and pc2 to be
                 classified as being roughly the same (ignore curvature directions).
@@ -639,7 +640,7 @@ class CameraSM(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
-        self.agent_state = agent # Need agent state for context in transform pipeline
+        self.agent_state = agent  # Need agent state for context in transform pipeline
 
     def state_dict(self):
         state_dict = self._snapshot_telemetry.state_dict()

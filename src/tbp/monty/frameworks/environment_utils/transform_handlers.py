@@ -242,7 +242,12 @@ class GaussianSmoothing(Transform):
             )
         return observations
 
-    def _create_kernel(self, _pad_size: int, _kernel_width: int, _sigma: float) -> np.ndarray:
+    def _create_kernel(
+        self,
+        _pad_size: int,
+        _kernel_width: int,
+        _sigma: float,
+        ) -> np.ndarray:
         """Create a normalized gaussian kernel.
 
         Returns:
@@ -257,9 +262,17 @@ class GaussianSmoothing(Transform):
         kernel_2d = np.outer(kernel_1d, kernel_1d)
         return kernel_2d / np.sum(kernel_2d)
 
-    def _get_padded_img(self, img: np.ndarray, pad_type: str = "edge") -> np.ndarray:
+    def _get_padded_img(
+        self,
+        img: np.ndarray,
+        pad_type: str = "edge",
+    ) -> np.ndarray:
         if pad_type == "edge":
-            padded_img = np.pad(img.astype(float), pad_width=self._pad_size, mode="edge")
+            padded_img = np.pad(
+                img.astype(float),
+                pad_width=self._pad_size,
+                mode="edge",
+            )
         elif pad_type == "empty":
             padded_img = np.pad(
                 img.astype(float),
@@ -517,8 +530,8 @@ class DepthTo3DLocations(Transform):
            since it's index will be in self.depth_clip_sensors. We only apply
            depth clipping to the surface agent.
                  - surface agents also have their depth and semantic data clipped to
-                     a very short range from the sensor. This is done to more closely model
-           a finger which has short reach.
+                    a very short range from the sensor. This is done to more closely
+                    model a finger which has short reach.
          - `use_semantic_sensor` is currently only used with multi-object
            experiments, and when this is `True`, the observation dict will have
            an item called "semantic". In the future, we would like to include
