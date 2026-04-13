@@ -1084,20 +1084,16 @@ class Pose:  # noqa: PLW1641
             Pose(frame=None, location=(0.0, 0.13, -0.7), orientation=(0.965926, 0.0, 0.258819, 0.0), label='Agent')
 
             >>> sensor_frame = agent_frame.new_frame(label="Sensor")
+            >>> sensor_frame.location.move_by([0.05, -0.03, 0.0])
+            Location(frame='Agent', x=0.05, y=-0.03, z=0.0)
             >>> sensor_frame.orientation.pitch(_deg(-15))
             Orientation(frame='Agent', w=0.991445, x=-0.130526, y=0.0, z=0.0)
             >>> sensor_frame
-            Pose(frame='Agent', location=(0.0, 0.0, 0.0), orientation=(0.991445, -0.130526, 0.0, 0.0), label='Sensor')
+            Pose(frame='Agent', location=(0.05, -0.03, 0.0), orientation=(0.991445, -0.130526, 0.0, 0.0), label='Sensor')
 
             >>> sensor_frame.in_frame(None)
-            Pose(frame=None, location=(0.0, 0.13, -0.7), orientation=(0.957662, -0.126079, 0.256605, 0.033783), label='')
+            Pose(frame=None, location=(0.043301, 0.1, -0.725), orientation=(0.957662, -0.126079, 0.256605, 0.033783), label='')
         """  # noqa: E501
         location = self.location.in_frame(frame)
         orientation = self.orientation.in_frame(frame)
         return Pose(frame, location, orientation, label)
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()
