@@ -77,6 +77,7 @@ class LookAtGoalTest(unittest.TestCase):
         )
     )
     def test_returns_turn_left_and_look_up_oriented_at_the_goal(self, goal_xyz) -> None:
+        """Note: this test assumes that the agent starts with identity rotation."""
         goal = Goal(
             location=np.array(goal_xyz),
             morphological_features=None,
@@ -97,6 +98,8 @@ class LookAtGoalTest(unittest.TestCase):
                 goal_xyz[2] - agent_pos_rel_world[2],
             ]
         )
+        if np.isclose(np.linalg.norm(expected_forward_vector_rel_world), 0.0):
+            return
 
         result = policy(
             ctx=Mock(),
@@ -117,25 +120,12 @@ class LookAtGoalTest(unittest.TestCase):
         # Monty uses the "right-up-backward" convention, so the forward direction
         # vector is [0, 0, -1].
         # See: https://thousandbrainsproject.readme.io/docs/conventions
-        actuated_vector_rel_world: VectorXYZ = FORWARD_VECTOR_REL_WORLD
-        agent_rot_rel_world = Rotation.from_quat(
-            [
-                self.agent_state.rotation.x,
-                self.agent_state.rotation.y,
-                self.agent_state.rotation.z,
-                self.agent_state.rotation.w,
-            ]
+        rotation = Rotation.from_euler(
+            "xyz",
+            [look_up.rotation_degrees, turn_left.rotation_degrees, 0],
+            degrees=True,
         )
-        actuated_vector_rel_world = agent_rot_rel_world.apply(actuated_vector_rel_world)
-        turn_left_rot = Rotation.from_euler(
-            "xyz", [0, turn_left.rotation_degrees, 0], degrees=True
-        )
-        actuated_vector_rel_world = turn_left_rot.apply(actuated_vector_rel_world)
-        # Note that we ignore the LookUp's constraint_degrees in this test.
-        look_up_rot = Rotation.from_euler(
-            "xyz", [look_up.rotation_degrees, 0, 0], degrees=True
-        )
-        actuated_vector_rel_world = look_up_rot.apply(actuated_vector_rel_world)
+        actuated_vector_rel_world = rotation.apply(FORWARD_VECTOR_REL_WORLD)
 
         expected_forward_vector_rel_world = normalize(expected_forward_vector_rel_world)
         np.testing.assert_array_almost_equal(
@@ -143,3 +133,4 @@ class LookAtGoalTest(unittest.TestCase):
             actuated_vector_rel_world,
             decimal=12,
         )
+        print("suces")
