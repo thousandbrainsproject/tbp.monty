@@ -82,7 +82,7 @@ All spatial quantities are in the agent's local coordinate frame.
 | 0-2   | position_error [x, y, z]   | direction to goal in agent's local frame   |
 | 3-5   | rotation_error [roll, pitch, yaw]   | orientation error (normalized angles)   |
 | 6-8   | local_normal   | surface normal in agent's local frame   |
-| 9   | on_object   | whether sensor sees object surface   |
+| 9   | on_object   | whether sensor on object surface   |
 | 10   | alignment   | dot(goal_direction, surface_normal)   |
 | 11   | distance   | Euclidean distance to goal   |
 | 12   | norm_depth   | normalized depth to nearest surface   |
