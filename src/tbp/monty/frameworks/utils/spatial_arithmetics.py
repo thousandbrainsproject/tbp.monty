@@ -44,7 +44,7 @@ def normalize(v: ArrayLike, epsilon: float = None) -> np.ndarray:
     return v / n
 
 
-def is_parallel(v1: ArrayLike, v2: ArrayLike, tolerance: float = 1e-12) -> bool:
+def is_parallel(v1: ArrayLike, v2: ArrayLike, tolerance: float = 1e-6) -> bool:
     """True when v1 and v2 point in the same or opposite direction.
 
     Assumes unit-length inputs. The default tolerance of 1e-12 on
@@ -97,25 +97,25 @@ class TangentFrame:
     def __init__(self, surface_normal: np.ndarray) -> None:
         """Initialize an orthonormal (u, v) basis in the tangent plane of a surface.
 
-        A surface normal defines a tangent plane but not a unique basis. Here,
-        we arbitrarily choose v to be close to world_up, unless the surface normal
-        is nearly parallel to the world_up. Then, u is computed as the horizontal
-        tangent direction via cross products.
+        A surface normal defines a tangent plane but not a unique basis. We choose
+        `basis_u` as the cross product of `world_up` and the `surface_normal`, giving
+        a horizontal tangent direction. `basis_v` follows as the cross product of
+        the `surface_normal` and `basis_u`.
+
+        If the `surface_normal` is nearly parallel to world_up (|cos(theta)| > 0.95),
+        we fall back to using [0, 0, 1] to avoid a degenerate cross product.
 
         Args:
             surface_normal: Unit surface normal at the initial point.
         """
-        world_up = np.array([0, 1, 0])
+        world_up = np.array([0.0, 1.0, 0.0], dtype=np.float32)
+        self._normal = normalize(surface_normal)
 
-        if abs(np.dot(world_up, surface_normal)) > 0.95:
-            world_up = np.array([0, 0, 1])
+        if abs(np.dot(world_up, self._normal)) > 0.95:
+            world_up = np.array([0.0, 0.0, 1.0], dtype=np.float32)
 
-        self._u = np.cross(world_up, surface_normal)
-        self._u = normalize(self._u)
-
-        self._v = np.cross(surface_normal, self._u)
-
-        self._normal = surface_normal.copy()
+        self._u = normalize(np.cross(world_up, self._normal))
+        self._v = normalize(np.cross(self._normal, self._u))
 
     @property
     def basis_u(self) -> np.ndarray:

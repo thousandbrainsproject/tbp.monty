@@ -149,8 +149,10 @@ class TangentFrameTest(unittest.TestCase):
         """Assert (basis_u, basis_v, normal) form an orthonormal right-handed frame."""
         u, v = frame.basis_u, frame.basis_v
         # Check unit norm
-        np.testing.assert_allclose(np.linalg.norm(u), 1.0, atol=1e-5, rtol=1e-5)
-        np.testing.assert_allclose(np.linalg.norm(v), 1.0, atol=1e-5, rtol=1e-5)
+        np.testing.assert_allclose(
+            np.linalg.norm(u), 1.0, atol=_FLOAT32_TOL, rtol=_FLOAT32_TOL
+        )
+        np.testing.assert_allclose(np.linalg.norm(v), 1.0, atol=_FLOAT32_TOL, rtol=)
         np.testing.assert_allclose(np.linalg.norm(normal), 1.0, atol=1e-5, rtol=1e-5)
 
         # Check orthogonality
@@ -163,7 +165,7 @@ class TangentFrameTest(unittest.TestCase):
         np.testing.assert_allclose(np.cross(v, u), -normal)
 
     def test_construction_with_y_aligned_normal_triggers_fallback(self):
-        n = normalize(np.array([0.0, 1.0, 0.01]))
+        n = normalize(np.array([0.0, 1.0, 0.01], dtype=np.float32))
         frame = TangentFrame(n)
         self._assert_orthonormal_frame(frame, n)
 
