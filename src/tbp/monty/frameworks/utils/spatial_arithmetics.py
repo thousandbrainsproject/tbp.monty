@@ -41,6 +41,23 @@ def normalize(v: ArrayLike, epsilon: float = 1e-12) -> np.ndarray:
     return v / n
 
 
+def project_onto_tangent_plane(v: ArrayLike, n: ArrayLike) -> np.ndarray:
+    """Project a vector onto the tangent plane perpendicular to a normal.
+
+    Removes the component of v that is parallel to n, leaving only the
+    component that lies in the plane perpendicular to n.
+
+    Args:
+        v: Vector to project.
+        n: Normal vector defining the tangent plane. Normalized internally.
+
+    Returns:
+        The projection of v onto the plane perpendicular to n.
+    """
+    n = normalize(n)
+    return v - np.dot(v, n) * n
+
+
 def rotations_to_quats(rotations, invert=False):
     # We get euler rotations from feature LM
     if rotations.ndim == 2:
