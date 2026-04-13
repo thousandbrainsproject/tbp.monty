@@ -408,10 +408,16 @@ class RLMotorPolicy(SurfacePolicyCurvatureInformed):
 # ══════════════════════════════════════════════════════════
 # MAIN POLICY OVERRIDE
 # ══════════════════════════════════════════════════════════
-    def call_vote(self) -> Optional[Action]:
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        state: MotorSystemState,
+        percept: Message,
+    ) -> MotorPolicyResult:
         """Main policy method called by Monty each timestep.
 
-        Override of SurfacePolicyCurvatureInformed.call_vote().
+        Override of SurfacePolicyCurvatureInformed __call__.
 
         Decision flow:
             1. Check if LM has sent a goal state
@@ -421,7 +427,7 @@ class RLMotorPolicy(SurfacePolicyCurvatureInformed):
             5. If no goal → standard Monty behavior
 
         Returns:
-            Monty Action object, or result of parent's call_vote.
+            Return a motor policy result containing the next actions to take.
         """
 
 ```
