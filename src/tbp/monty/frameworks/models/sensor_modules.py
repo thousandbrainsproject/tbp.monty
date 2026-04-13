@@ -20,6 +20,10 @@ from skimage.color import rgb2hsv
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.environment_utils.transform_handlers import (
+    TransformContext,
+    TransformPipeline,
+)
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
     SensorObservation,
@@ -550,6 +554,7 @@ class CameraSM(SensorModule):
         self,
         sensor_module_id: str,
         features: list[str],
+        transform_pipeline: TransformPipeline | None = None,
         save_raw_obs: bool = False,
         pc1_is_pc2_threshold: int = 10,
         noise_params: dict[str, Any] | None = None,
@@ -613,6 +618,11 @@ class CameraSM(SensorModule):
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
+        self.transform_pipeline = (
+            transform_pipeline
+            if transform_pipeline is not None
+            else TransformPipeline([])
+        )
 
     def pre_episode(self) -> None:
         self._snapshot_telemetry.reset()
@@ -629,6 +639,7 @@ class CameraSM(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
+        self.agent_state = agent
 
     def state_dict(self):
         state_dict = self._snapshot_telemetry.state_dict()
@@ -656,6 +667,11 @@ class CameraSM(SensorModule):
             self._snapshot_telemetry.raw_observation(
                 observation, self.state.rotation, self.state.position
             )
+
+
+        tf_context = TransformContext(ctx.rng, self.agent_state)
+
+        self.transform_pipeline(tf_context, observation)
 
         percept = self._observation_processor.process(observation)
 
