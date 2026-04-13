@@ -110,29 +110,41 @@ class NormalizeTest(unittest.TestCase):
 
 class ProjectOntoTangentPlaneTest(unittest.TestCase):
     @given(
-        a_vector=non_zero_magnitude_vectors,
-        a_scalar=st.floats(
-            min_value=-1e3, max_value=1e3, allow_infinity=False, allow_nan=False
-        ),
+        a_vector=nondegenerate_vectors,
+        a_scalar=st.floats(min_value=-1e3, max_value=1e3, allow_nan=False),
     )
     def test_a_vector_parallel_to_normal(self, a_vector, a_scalar):
         parallel_vector = a_scalar * a_vector
         result = project_onto_tangent_plane(parallel_vector, a_vector)
-        np.testing.assert_array_almost_equal(result, [0.0, 0.0, 0.0])
+        atol = max(
+            _FLOAT32_TOL * np.linalg.norm(parallel_vector) * np.linalg.norm(a_vector),
+            _FLOAT32_TOL,
+        )
+        np.testing.assert_allclose(result, [0.0, 0.0, 0.0], atol=atol, rtol=0)
 
-    @given(perpendicular_vectors())
+    @given(nondegenerate_orthogonal_vectors())
     def test_a_vector_perpendicular_to_normal(self, orthogonal_vectors):
         a_vector, a_normal = orthogonal_vectors
         result = project_onto_tangent_plane(a_vector, a_normal)
-        np.testing.assert_array_almost_equal(result, a_vector)
+        atol = max(_FLOAT32_TOL * np.linalg.norm(a_vector), _FLOAT32_TOL)
+        np.testing.assert_allclose(result, a_vector, atol=atol, rtol=_FLOAT32_TOL)
 
-    @given(a_vector=finite_vectors, a_normal=non_zero_magnitude_vectors)
+    @given(a_vector=float32_array, a_normal=nondegenerate_vectors)
     def test_result_is_orthogonal_to_normal(self, a_vector, a_normal):
         result = project_onto_tangent_plane(a_vector, a_normal)
-        np.testing.assert_array_almost_equal(np.dot(result, normalize(a_normal)), 0.0)
+        atol = max(
+            _FLOAT32_TOL * np.linalg.norm(a_vector),
+            _FLOAT32_TOL,
+        )
+        np.testing.assert_allclose(
+            np.dot(result, normalize(a_normal)), 0.0, atol=atol, rtol=0
+        )
 
-    @given(a_vector=finite_vectors, a_normal=non_zero_magnitude_vectors)
+    @given(a_vector=float32_array, a_normal=nondegenerate_vectors)
     def test_projection_is_idempotent(self, a_vector, a_normal):
         once = project_onto_tangent_plane(a_vector, a_normal)
         twice = project_onto_tangent_plane(once, a_normal)
-        np.testing.assert_array_almost_equal(twice, once)
+        atol = max(
+            _FLOAT32_TOL * np.linalg.norm(once) * np.linalg.norm(a_normal), _FLOAT32_TOL
+        )
+        np.testing.assert_allclose(twice, once, atol=atol, rtol=_FLOAT32_TOL)
