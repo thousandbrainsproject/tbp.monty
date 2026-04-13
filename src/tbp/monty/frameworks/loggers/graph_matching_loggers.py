@@ -586,6 +586,9 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
         buffer_data["motor_system"]["action_details"] = dict(
             model.motor_system._telemetry_surface_action_details.__dict__
         )
+        buffer_data["motor_system"]["selected_goals"] = (
+            model.motor_system._selected_goals
+        )
 
         self.data["DETAILED"][episodes] = buffer_data
 

@@ -137,7 +137,4 @@ class LookAtGoal(MotorPolicy):
             LookUp(agent_id=self._agent_id, rotation_degrees=np.degrees(sensor_pitch)),
         ]
 
-        # For logging purposes only.
-        goal.info["attempted"] = True
-
         return MotorPolicyResult(actions)
