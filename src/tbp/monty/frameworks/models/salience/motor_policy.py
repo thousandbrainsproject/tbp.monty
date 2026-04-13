@@ -42,15 +42,26 @@ class LookAtGoal(MotorPolicy):
     LookDown and LookUp.
     """
 
-    def __init__(self, agent_id: AgentID, sensor_id: SensorID):
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sensor_id: SensorID,
+        suppress_runtime_errors: bool = False,
+    ):
         """Initialize the look at policy.
 
         Args:
             agent_id: The agent ID
             sensor_id: The sensor ID
+            suppress_runtime_errors: Whether to suppress runtime errors. Runtime errors
+                can be raised when goal is None or invalid. When in an experimental
+                mode, we want to raise runtime errors by default. When in a production
+                mode, we want to suppress runtime errors by default. Currently, we run
+                a lot of experiments, so the current default is to raise runtime errors.
         """
         self._agent_id = agent_id
         self._sensor_id = sensor_id
+        self._suppress_runtime_errors = suppress_runtime_errors
 
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
         pass
@@ -86,6 +97,9 @@ class LookAtGoal(MotorPolicy):
             RuntimeError: If no goal is provided.
         """
         if goal is None:
+            if self._suppress_runtime_errors:
+                logger.warning("No goal provided")
+                return MotorPolicyResult([])
             raise RuntimeError("No goal provided")
 
         # Collect necessary agent and sensor pose information.
