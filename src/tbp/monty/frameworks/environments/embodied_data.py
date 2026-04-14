@@ -340,7 +340,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
         semantic_id = self.semantic_label_to_id[self.object_names[idx]]
         # TODO clean this up with its own specific call i.e. Law of Demeter
-        primary_target_obj = self.env.add_object(
+        primary_target = self.env.add_object(
             name=self.object_names[idx],
             position=self.object_params["position"],
             rotation=self.object_params["rotation"],
@@ -350,7 +350,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
         if self.num_distractors > 0:
             self.add_distractor_objects(
-                primary_target_obj.object_id,
+                primary_target.object_id,
                 primary_target_name=self.object_names[idx],
             )
 

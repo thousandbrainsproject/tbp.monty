@@ -35,7 +35,7 @@ class Agent(Protocol):
 
     @property
     def observations(self) -> AgentObservations:
-        """Returns the current observations of the agent."""
+        """Returns the current observations of the sensors coupled to this agent."""
 
     @property
     def state(self) -> AgentState:

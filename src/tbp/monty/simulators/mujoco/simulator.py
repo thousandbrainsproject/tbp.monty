@@ -102,13 +102,10 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self._create_agents()
         self._loaded_custom_types: set[str] = set()
 
+        # Start with a default resolution in case we don't have agents, e.g. in tests.
+        self._render_resolution = DEFAULT_RESOLUTION
         if self._agents:
             self._render_resolution = self._max_sensor_resolution()
-        else:
-            # This only really comes up in test contexts, but if we don't have
-            # any agents, we can't calculate the maximum sensor resolution, so
-            # we need to just use a default value.
-            self._render_resolution = DEFAULT_RESOLUTION
 
         # Track how many objects we add to the environment.
         # Note: We can't use the `model.ngeoms` for this since that will include parts
