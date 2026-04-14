@@ -10,7 +10,6 @@
 
 from __future__ import annotations
 
-import copy
 import logging
 from pprint import pformat
 from typing import Mapping, Sequence, cast
@@ -339,22 +338,19 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             raise IndexError(f"idx must satisfy 0 <= idx < {self.n_objects}, got {idx}")
         self.env.remove_all_objects()
 
-        # Specify config for the primary target object and then add it
-        init_params = self.object_params.copy()
-        init_params.pop("euler_rotation")
-        if "quat_rotation" in init_params:
-            init_params.pop("quat_rotation")
-        init_params["semantic_id"] = self.semantic_label_to_id[self.object_names[idx]]
-
+        semantic_id = self.semantic_label_to_id[self.object_names[idx]]
         # TODO clean this up with its own specific call i.e. Law of Demeter
         primary_target_obj = self.env.add_object(
-            name=self.object_names[idx], **init_params
+            name=self.object_names[idx],
+            position=self.object_params["position"],
+            rotation=self.object_params["rotation"],
+            scale=self.object_params["scale"],
+            semantic_id=semantic_id,
         )
 
         if self.num_distractors > 0:
             self.add_distractor_objects(
                 primary_target_obj.object_id,
-                init_params,
                 primary_target_name=self.object_names[idx],
             )
 
@@ -380,7 +376,6 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
     def add_distractor_objects(
         self,
         primary_target_obj: ObjectID,
-        init_params: ObjectInitParams,
         primary_target_name: str,
     ):
         """Add arbitrarily many "distractor" objects to the environment.
@@ -388,9 +383,6 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         Args:
             primary_target_obj : The ID of the object which is the primary target in
                 the scene.
-            init_params: Parameters used to initialize the object, e.g.
-                orientation; for now, these are identical to the primary target
-                except for the object ID.
             primary_target_name: name of the primary target object
         """
         # Sample distractor objects from those that are not the primary target; this
@@ -402,14 +394,14 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         ]
 
         for __ in range(self.num_distractors):
-            new_init_params = copy.deepcopy(init_params)
-
             new_obj_label = self.rng.choice(sampling_list)
-            new_init_params["semantic_id"] = self.semantic_label_to_id[new_obj_label]
-            # TODO clean up the `**` unpacking used
+            semantic_id = self.semantic_label_to_id[new_obj_label]
             self.env.add_object(
                 name=new_obj_label,
-                **new_init_params,
+                position=self.object_params["position"],
+                rotation=self.object_params["rotation"],
+                scale=self.object_params["scale"],
+                semantic_id=semantic_id,
                 primary_target_object=primary_target_obj,
             )
 
