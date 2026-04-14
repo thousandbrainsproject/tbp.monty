@@ -230,6 +230,16 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             rotation: Initial orientation of the object.
             scale: Initial scale of the object.
         """
+        if scale != (1.0, 1.0, 1.0):
+            # TODO: In order to support this, we need to update the
+            #  object loading code to set the scale on the "mesh" object,
+            #  which also means we need to track loaded objects with the
+            #  scale included.
+            raise NotImplementedError(
+                "Custom objects do not currently support "
+                "'scale' other than (1.0, 1.0, 1.0)."
+            )
+
         if object_type not in self._loaded_custom_types:
             self._load_custom_object(object_type)
 
@@ -238,7 +248,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             type=mjtGeom.mjGEOM_MESH,
             meshname=f"{object_type}_mesh",
             material=f"{object_type}_mat",
-            size=scale,
             pos=position,
             quat=rotation,
         )

@@ -188,6 +188,12 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
             assert geom0.type == mjtGeom.mjGEOM_MESH
             assert sim.spec.mesh(geom0.meshname) is not None
 
+    def test_custom_object_with_scale(self):
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim, pytest.raises(
+            NotImplementedError
+        ):
+            sim.add_object("valid_object", scale=(2.0, 2.0, 2.0))
+
     def test_custom_object_missing(self) -> None:
         with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim, pytest.raises(
             UnknownObjectType
