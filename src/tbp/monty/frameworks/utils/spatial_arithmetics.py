@@ -44,21 +44,26 @@ def normalize(v: ArrayLike, epsilon: float = None) -> np.ndarray:
     return v / n
 
 
-def is_parallel(v1: ArrayLike, v2: ArrayLike, tolerance: float = 1e-6) -> bool:
+def is_parallel(v1: ArrayLike, v2: ArrayLike, tolerance: float = None) -> bool:
     """True when v1 and v2 point in the same or opposite direction.
 
-    Assumes unit-length inputs. The default tolerance of 1e-12 on
-    1 - |cos(theta)| corresponds to an angular separation of ~0.000081 degrees,
-    matching the epsilon used by normalize() to prevent division by near-zero.
+    Assumes unit-length inputs. The metric 1 - |cos(theta)| is compared
+    against a tolerance derived from the input dtype's machine epsilon,
+    so the threshold adapts to float32 vs float64 precision.
 
     Args:
         v1: First unit vector.
         v2: Second unit vector.
         tolerance: Maximum value of 1 - |cos(theta)| to consider parallel.
+                  Defaults to machine epsilon of v1's dtype.
 
     Returns:
         True if v1 and v2 are parallel (same or opposite direction).
     """
+    v1 = np.asarray(v1)
+    if tolerance is None:
+        # tolerance needs to be "loose" enough after already going through some operations
+        tolerance = 10 * np.finfo(v1.dtype).eps  # FLOAT32_TOL
     return 1.0 - abs(np.dot(v1, v2)) < tolerance
 
 
@@ -141,23 +146,16 @@ class TangentFrame:
         """
         old_normal = self._normal
 
-        if is_parallel(old_normal, new_normal):
-            if np.dot(old_normal, new_normal) < 0:
-                self._v = -self._v
-            self._normal = new_normal.copy()
-            return
+        if not is_parallel(old_normal, new_normal):
+            cos_angle = np.clip(np.dot(old_normal, new_normal), -1.0, 1.0)
+            rotation_axis = normalize(np.cross(old_normal, new_normal))
+            rotation = Rotation.from_rotvec(rotation_axis * np.arccos(cos_angle))
+            self._u = rotation.apply(self._u)
+        elif np.dot(old_normal, new_normal) < 0:
+            self._v = -self._v
 
-        # Construct Rotation object to apply to the basis vectors
-        cos_angle = np.clip(np.dot(old_normal, new_normal), -1.0, 1.0)
-        rotation_axis = normalize(np.cross(old_normal, new_normal))
-        rotation = Rotation.from_rotvec(rotation_axis * np.arccos(cos_angle))
-
-        self._u = rotation.apply(self._u)
-
-        # Reset u and v to ensure the basis remains orthonormal
         self._u = normalize(project_onto_tangent_plane(self._u, new_normal))
         self._v = np.cross(new_normal, self._u)
-
         self._normal = new_normal.copy()
 
 

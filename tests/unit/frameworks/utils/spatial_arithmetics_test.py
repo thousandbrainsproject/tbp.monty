@@ -20,12 +20,19 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     project_onto_tangent_plane,
 )
 
+# TODO: consolidate the below into a single constant (the tol one)
+# name suggestions: TOL or TOLERANCE? (to 1e-6)
+
 # Machine Epsilon for values on order of 1
+# Actually only used to really define FLOAT32_TOL, can be removed
 _FLOAT32_EPS = np.finfo(np.float32).eps  # 1.1920929e-07
 _FLOAT32_TOL = (
     10 * _FLOAT32_EPS
 )  # give few ULP for slack for accumulated rounding error
+
+# only used in one place, doesn't need to be used
 _FLOAT32_NORM_EPSILON = np.finfo(np.float32).smallest_normal  # 1.1754944e-38
+
 
 float32_array = arrays(
     dtype=np.float32,
@@ -35,7 +42,7 @@ float32_array = arrays(
 # Open to normalizable_vectors for naming (for semantic meaning)
 # nondegenerate is more math-term
 nondegenerate_vectors = float32_array.filter(
-    lambda v: np.linalg.norm(v) >= _FLOAT32_NORM_EPSILON
+    lambda v: np.linalg.norm(v) >= _FLOAT32_EPS
 )
 unit_vectors = nondegenerate_vectors.map(lambda v: normalize(v))
 
@@ -53,14 +60,6 @@ def nondegenerate_orthogonal_vectors(draw):
     return v, n
 
 
-# TODO: go through tests to see if any can use non_parallel_vectors pair
-@st.composite
-def non_parallel_vectors(draw):
-    v1 = normalize(draw(nondegenerate_vectors))
-    v2 = normalize(draw(nondegenerate_vectors))
-    cos_angle = abs(np.dot(v1, v2))
-    assume(cos_angle < 0.999)
-    return v1, v2
 
 
 class NormalizeTest(unittest.TestCase):
@@ -139,43 +138,67 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
         once = project_onto_tangent_plane(a_vector, a_normal)
         twice = project_onto_tangent_plane(once, a_normal)
         atol = max(
-            _FLOAT32_TOL * np.linalg.norm(once) * np.linalg.norm(a_normal), _FLOAT32_TOL
+            _FLOAT32_TOL * np.linalg.norm(a_vector), _FLOAT32_TOL
         )
         np.testing.assert_allclose(twice, once, atol=atol, rtol=_FLOAT32_TOL)
 
 
 class TangentFrameTest(unittest.TestCase):
-    def _assert_orthonormal_frame(self, frame, normal):
+    def _assert_orthonormal_frame(self, frame, normal, tol=_FLOAT32_TOL):
         """Assert (basis_u, basis_v, normal) form an orthonormal right-handed frame."""
         u, v = frame.basis_u, frame.basis_v
         # Check unit norm
-        np.testing.assert_allclose(
-            np.linalg.norm(u), 1.0, atol=_FLOAT32_TOL, rtol=_FLOAT32_TOL
-        )
-        np.testing.assert_allclose(np.linalg.norm(v), 1.0, atol=_FLOAT32_TOL, rtol=)
-        np.testing.assert_allclose(np.linalg.norm(normal), 1.0, atol=1e-5, rtol=1e-5)
+        np.testing.assert_allclose(np.linalg.norm(u), 1.0, atol=tol, rtol=tol)
+        np.testing.assert_allclose(np.linalg.norm(v), 1.0, atol=tol, rtol=tol)
+        np.testing.assert_allclose(np.linalg.norm(normal), 1.0, atol=tol, rtol=tol)
 
         # Check orthogonality
-        np.testing.assert_allclose(np.dot(u, v), 0.0, atol=1e-5, rtol=0)
-        np.testing.assert_allclose(np.dot(u, normal), 0.0, atol=1e-5, rtol=0)
-        np.testing.assert_allclose(np.dot(v, normal), 0.0, atol=1e-5, rtol=0)
+        np.testing.assert_allclose(np.dot(u, v), 0.0, atol=tol, rtol=0)
+        np.testing.assert_allclose(np.dot(u, normal), 0.0, atol=tol, rtol=0)
+        np.testing.assert_allclose(np.dot(v, normal), 0.0, atol=tol, rtol=0)
 
         # Check right-handedness
-        np.testing.assert_allclose(np.cross(u, v), normal)
-        np.testing.assert_allclose(np.cross(v, u), -normal)
+        np.testing.assert_allclose(np.cross(u, v), normal, atol=tol, rtol=tol)
+        np.testing.assert_allclose(np.cross(v, u), -normal, atol=tol, rtol=tol)
 
     def test_construction_with_y_aligned_normal_triggers_fallback(self):
         n = normalize(np.array([0.0, 1.0, 0.01], dtype=np.float32))
         frame = TangentFrame(n)
         self._assert_orthonormal_frame(frame, n)
 
+    def test_transport_90_degrees_produces_expected_basis(self):
+        n1 = np.array([0.0, 0.0, 1.0], dtype=np.float32)
+        n2 = np.array([0.0, 1.0, 0.0], dtype=np.float32)
+        expected_u = np.array([1.0, 0.0, 0.0], dtype=np.float32)
+        expected_v = np.array([0.0, 1.0, 0.0], dtype=np.float32)
+        expected_u_transported = np.array([1.0, 0.0, 0.0], dtype=np.float32)
+        expected_v_transported = np.array([0.0, 0.0, -1.0], dtype=np.float32)
+
+        frame = TangentFrame(n1)
+        np.testing.assert_array_almost_equal(frame.basis_u, expected_u)
+        np.testing.assert_array_almost_equal(frame.basis_v, expected_v)
+
+        frame.transport(n2)
+        np.testing.assert_array_almost_equal(frame.basis_u, expected_u_transported)
+        np.testing.assert_array_almost_equal(frame.basis_v, expected_v_transported)
+
+    def test_accumulated_transports_stay_orthonormal(self):
+        rng = np.random.RandomState(42)
+        n = normalize(rng.randn(3))
+        frame = TangentFrame(n)
+        for _ in range(100):
+            n_new = normalize(n + 0.05 * rng.randn(3))
+            frame.transport(n_new)
+            n = n_new
+        self._assert_orthonormal_frame(frame, n, tol=_FLOAT32_TOL)
+
     @given(n=unit_vectors)
     def test_transport_to_same_normal_is_noop(self, n):
         frame = TangentFrame(n)
         u_before, v_before = frame.basis_u.copy(), frame.basis_v.copy()
         frame.transport(n)
-        np.testing.assert_allclose(frame.basis_u, u_before, atol=1e-5, rtol=1e-5)
-        np.testing.assert_allclose(frame.basis_v, v_before, atol=1e-5, rtol=1e-5)
+        np.testing.assert_allclose(frame.basis_u, u_before, atol=_FLOAT32_TOL, rtol=_FLOAT32_TOL)
+        np.testing.assert_allclose(frame.basis_v, v_before, atol=_FLOAT32_TOL, rtol=_FLOAT32_TOL)
 
     @given(n1=unit_vectors, n2=unit_vectors)
     def test_transport_preserves_orthonormality(self, n1, n2):
@@ -190,28 +213,5 @@ class TangentFrameTest(unittest.TestCase):
         frame.transport(anti_n)
         u, v = frame.basis_u, frame.basis_v
         # Consider using is_orthornomal?
-        np.testing.assert_allclose(np.dot(u, anti_n), 0.0, atol=1e-5, rtol=0)
-        np.testing.assert_allclose(np.dot(v, anti_n), 0.0, atol=1e-5, rtol=0)
-
-    def test_transport_90_degrees_produces_expected_basis(self):
-        n1 = np.array([0.0, 0.0, 1.0])
-        n2 = np.array([0.0, 1.0, 0.0])
-        frame = TangentFrame(n1)
-
-        np.testing.assert_array_almost_equal(frame.basis_u, [1, 0, 0])
-        np.testing.assert_array_almost_equal(frame.basis_v, [0, 1, 0])
-
-        frame.transport(n2)
-
-        np.testing.assert_array_almost_equal(frame.basis_u, [1, 0, 0])
-        np.testing.assert_array_almost_equal(frame.basis_v, [0, 0, -1])
-
-    def test_accumulated_transports_stay_orthonormal(self):
-        rng = np.random.RandomState(42)
-        n = normalize(rng.randn(3))
-        frame = TangentFrame(n)
-        for _ in range(100):
-            n_new = normalize(n + 0.05 * rng.randn(3))
-            frame.transport(n_new)
-            n = n_new
-        self._assert_orthonormal_frame(frame, n)
+        np.testing.assert_allclose(np.dot(u, anti_n), 0.0, atol=_FLOAT32_TOL, rtol=0)
+        np.testing.assert_allclose(np.dot(v, anti_n), 0.0, atol=_FLOAT32_TOL, rtol=0)
