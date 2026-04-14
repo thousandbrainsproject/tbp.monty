@@ -362,7 +362,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
                 action.act(agent)
             except AttributeError as exc:
                 # Only catch missing actuate methods, propagate any other errors
-                if exc.name.startswith("actuate_"):
+                if exc.name and exc.name.startswith("actuate_"):
                     logger.warning(f"{agent} does not understand {action}")
                     continue
                 raise
