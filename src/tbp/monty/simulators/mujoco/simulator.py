@@ -12,7 +12,6 @@ import logging
 from pathlib import Path
 from typing import Callable, Sequence
 
-import quaternion as qt
 from mujoco import (
     MjData,
     MjModel,
@@ -181,15 +180,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:
-        # TODO: remove this once object init samplers return the correct types
-        if isinstance(rotation, qt.quaternion):
-            rotation = (
-                rotation.w,
-                rotation.x,
-                rotation.y,
-                rotation.z,
-            )
-
         obj_name = f"{name}_{self._object_count}"
 
         if name in PRIMITIVE_OBJECTS:
