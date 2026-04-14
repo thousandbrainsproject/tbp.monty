@@ -32,6 +32,18 @@ from tbp.monty.frameworks.sensors import SensorID
 logger = logging.getLogger(__name__)
 
 
+class NoGoalProvided(RuntimeError):
+    """Raised when no goal is provided."""
+
+    pass
+
+
+class GoalCollocatedWithSensor(RuntimeError):
+    """Raised when a goal is collocated with a sensor."""
+
+    pass
+
+
 class LookAtGoal(MotorPolicy):
     """A policy that looks at a target.
 
@@ -48,7 +60,6 @@ class LookAtGoal(MotorPolicy):
         self,
         agent_id: AgentID,
         sensor_id: SensorID,
-        suppress_runtime_errors: bool = False,
     ):
         """Initialize the look at policy.
 
@@ -63,12 +74,10 @@ class LookAtGoal(MotorPolicy):
         """
         self._agent_id = agent_id
         self._sensor_id = sensor_id
-        self._suppress_runtime_errors = suppress_runtime_errors
 
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
         self._agent_id = state_dict["agent_id"]
         self._sensor_id = state_dict["sensor_id"]
-        self._suppress_runtime_errors = state_dict["suppress_runtime_errors"]
 
     def pre_episode(self, motor_system: MotorSystem) -> None:
         pass
@@ -77,12 +86,11 @@ class LookAtGoal(MotorPolicy):
         return {
             "agent_id": self._agent_id,
             "sensor_id": self._sensor_id,
-            "suppress_runtime_errors": self._suppress_runtime_errors,
         }
 
     def __call__(
         self,
-        ctx: RuntimeContext,  # noqa: ARG002
+        ctx: RuntimeContext,
         observations: Observations,  # noqa: ARG002
         state: MotorSystemState,
         percept: Message,  # noqa: ARG002
@@ -102,13 +110,14 @@ class LookAtGoal(MotorPolicy):
             The motor policy result.
 
         Raises:
-            RuntimeError: If no goal is provided.
+            NoGoalProvided: If no goal is provided.
+            GoalCollocatedWithSensor: If the goal is collocated with the sensor.
         """
         if goal is None:
-            if self._suppress_runtime_errors:
+            if ctx.suppress_runtime_errors:
                 logger.warning("No goal provided")
                 return MotorPolicyResult([])
-            raise RuntimeError("No goal provided")
+            raise NoGoalProvided
 
         # Collect necessary agent and sensor pose information.
         agent_state: AgentState = state[self._agent_id]
@@ -146,10 +155,10 @@ class LookAtGoal(MotorPolicy):
             inverse=True,
         )
         if np.isclose(np.linalg.norm(target_rel_sensor), 0.0):
-            if self._suppress_runtime_errors:
+            if ctx.suppress_runtime_errors:
                 logger.warning("Goal is collocated with sensor")
                 return MotorPolicyResult([])
-            raise RuntimeError("Goal is collocated with sensor")
+            raise GoalCollocatedWithSensor
 
         # Compute the target's azimuth, relative to the agent. This value is used to
         # compute the yaw action to be performed by the agent.

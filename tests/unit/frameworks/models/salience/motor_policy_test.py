@@ -19,6 +19,7 @@ from hypothesis import strategies as st
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.cmp import Goal
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import LookUp, TurnLeft
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.motor_system_state import (
@@ -26,7 +27,11 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     SensorState,
 )
-from tbp.monty.frameworks.models.salience.motor_policy import LookAtGoal
+from tbp.monty.frameworks.models.salience.motor_policy import (
+    GoalCollocatedWithSensor,
+    LookAtGoal,
+    NoGoalProvided,
+)
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
 from tbp.monty.math import VectorXYZ
@@ -60,9 +65,11 @@ class LookAtGoalTest(unittest.TestCase):
         self,
     ) -> None:
         policy = LookAtGoal(AGENT_ID, SENSOR_ID)
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(NoGoalProvided):
             policy(
-                ctx=Mock(),
+                ctx=RuntimeContext(
+                    rng=np.random.RandomState(42), suppress_runtime_errors=False
+                ),
                 observations=Mock(),
                 state=MotorSystemState(),
                 percept=Mock(),
@@ -72,9 +79,11 @@ class LookAtGoalTest(unittest.TestCase):
     def test_returns_empty_result_if_no_goal_is_provided_if_suppressing_runtime_errors(
         self,
     ) -> None:
-        policy = LookAtGoal(AGENT_ID, SENSOR_ID, suppress_runtime_errors=True)
+        policy = LookAtGoal(AGENT_ID, SENSOR_ID)
         result = policy(
-            ctx=Mock(),
+            ctx=RuntimeContext(
+                rng=np.random.RandomState(42), suppress_runtime_errors=True
+            ),
             observations=Mock(),
             state=MotorSystemState(),
             percept=Mock(),
@@ -86,9 +95,11 @@ class LookAtGoalTest(unittest.TestCase):
         self,
     ) -> None:
         policy = LookAtGoal(AGENT_ID, SENSOR_ID)
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(GoalCollocatedWithSensor):
             policy(
-                ctx=Mock(),
+                ctx=RuntimeContext(
+                    rng=np.random.RandomState(42), suppress_runtime_errors=False
+                ),
                 observations=Mock(),
                 state=self.motor_system_state,
                 percept=Mock(),
@@ -108,9 +119,11 @@ class LookAtGoalTest(unittest.TestCase):
     def test_returns_empty_result_if_goal_collocated_with_sensor_and_suppressing_runtime_errors(  # noqa: E501
         self,
     ) -> None:
-        policy = LookAtGoal(AGENT_ID, SENSOR_ID, suppress_runtime_errors=True)
+        policy = LookAtGoal(AGENT_ID, SENSOR_ID)
         result = policy(
-            ctx=Mock(),
+            ctx=RuntimeContext(
+                rng=np.random.RandomState(42), suppress_runtime_errors=True
+            ),
             observations=Mock(),
             state=self.motor_system_state,
             percept=Mock(),
@@ -174,7 +187,9 @@ class LookAtGoalTest(unittest.TestCase):
             return
 
         result = policy(
-            ctx=Mock(),
+            ctx=RuntimeContext(
+                rng=np.random.RandomState(42), suppress_runtime_errors=False
+            ),
             observations=Mock(),
             state=self.motor_system_state,
             percept=Mock(),
