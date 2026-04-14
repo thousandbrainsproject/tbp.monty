@@ -38,8 +38,10 @@ class LookAtGoal(MotorPolicy):
     This class assumes a system similar to a 2-DOF gimbal in which the "outer" part
     can yaw left/right about the y-axis and the "inner" part can pitch up/down about
     the x-axis. This setup is typical of our distant agent in which the agent
-    performs TurnLeft and TurnRight, while the sensor mounted to it performs
-    LookDown and LookUp.
+    turns left/right and sensor mounted to it looks up/down.
+
+    Note that this code only uses TurnLeft and LookUp. Turning right or looking down
+    are performed using negative degrees with TurnLeft and LookUp, respectively.
     """
 
     def __init__(
@@ -131,9 +133,17 @@ class LookAtGoal(MotorPolicy):
             inverse=True,
         )
 
-        # TODO: Add check and raise or log and return no actions
-        # if np.isclose(np.linalg.norm(target_rel_sensor), 0.0):
-        #    return
+        # Check that the goal is not collocated with the sensor.
+        sensor_pos_rel_agent = np.array(sensor_state.position)
+        target_rel_sensor = sensor_rot_rel_agent.apply(
+            target_rel_agent - sensor_pos_rel_agent,
+            inverse=True,
+        )
+        if np.isclose(np.linalg.norm(target_rel_sensor), 0.0):
+            if self._suppress_runtime_errors:
+                logger.warning("Goal is collocated with sensor")
+                return MotorPolicyResult([])
+            raise RuntimeError("Goal is collocated with sensor")
 
         # Compute the target's azimuth, relative to the agent. This value is used to
         # compute the yaw action to be performed by the agent.
