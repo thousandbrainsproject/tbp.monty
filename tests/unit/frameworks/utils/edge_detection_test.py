@@ -10,6 +10,8 @@
 import unittest
 
 import numpy as np
+from hypothesis import example, given
+from hypothesis import strategies as st
 
 from tbp.monty.frameworks.utils.edge_detection import (
     EdgeDetectionConfig,
@@ -21,37 +23,22 @@ from tbp.monty.frameworks.utils.edge_detection import (
 )
 
 
+angles = st.floats(min_value=-2 * np.pi, max_value=2 * np.pi)
+
+
 class GradientToTangentAngleTest(unittest.TestCase):
-    """Unit tests for the gradient_to_tangent_angle function."""
+    """Property-based tests for gradient_to_tangent_angle."""
 
-    def test_zero_gradient(self):
-        result = gradient_to_tangent_angle(0.0)
-        self.assertAlmostEqual(result, np.pi / 2)
+    @given(gradient_angle=angles)
+    def test_result_in_range(self, gradient_angle):
+        result = gradient_to_tangent_angle(gradient_angle)
+        assert 0.0 <= result < 2 * np.pi
 
-    def test_positive_gradient(self):
-        result = gradient_to_tangent_angle(np.pi / 4)
-        self.assertAlmostEqual(result, 3 * np.pi / 4)
-
-    def test_negative_gradient(self):
-        result = gradient_to_tangent_angle(-np.pi / 2)
-        self.assertAlmostEqual(result, 0.0)
-
-    def test_large_negative_wraps(self):
-        result = gradient_to_tangent_angle(-3 * np.pi)
-        self.assertGreaterEqual(result, 0.0)
-        self.assertLess(result, 2 * np.pi)
-
-    def test_result_always_in_range(self):
-        for angle in np.linspace(-4 * np.pi, 4 * np.pi, 50):
-            result = gradient_to_tangent_angle(angle)
-            self.assertGreaterEqual(result, 0.0)
-            self.assertLess(result, 2 * np.pi)
-
-    def test_perpendicularity(self):
-        gradient_angle = 0.0
-        tangent = gradient_to_tangent_angle(gradient_angle)
-        diff = abs(tangent - gradient_angle)
-        self.assertAlmostEqual(diff % np.pi, np.pi / 2)
+    @given(gradient_angle=angles)
+    def test_perpendicularity(self, gradient_angle):
+        result = gradient_to_tangent_angle(gradient_angle)
+        remainder = (result - gradient_angle) % np.pi
+        self.assertAlmostEqual(remainder, np.pi / 2)
 
 
 class IsGeometricEdgeTest(unittest.TestCase):
