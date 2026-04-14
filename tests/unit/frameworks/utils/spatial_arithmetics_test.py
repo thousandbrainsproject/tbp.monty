@@ -21,14 +21,22 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
 
-vectors_3d = arrays(
-    dtype=np.float32,
-    shape=3,
-    elements=st.floats(min_value=-1e6, max_value=1e6, width=32),
-)
-non_zero_magnitude_vectors = vectors_3d.filter(
-    lambda v: np.linalg.norm(v) > DEFAULT_TOLERANCE
-)
+
+@st.composite
+def vectors_3d(draw, min_value=-1e6, max_value=1e6):
+    return draw(
+        arrays(
+            dtype=np.float32,
+            shape=3,
+            elements=st.floats(min_value=min_value, max_value=max_value, width=32),
+        )
+    )
+
+
+def non_zero_magnitude_vectors(min_value=-1e6, max_value=1e6):
+    return vectors_3d(min_value=min_value, max_value=max_value).filter(
+        lambda v: np.linalg.norm(v) > DEFAULT_TOLERANCE
+    )
 
 
 @st.composite
@@ -41,14 +49,14 @@ def nonzero_orthogonal_vectors(draw):
 
 
 class NormalizeTest(unittest.TestCase):
-    @given(non_zero_magnitude_vectors)
+    @given(non_zero_magnitude_vectors())
     def test_preserves_direction(self, v):
         norm = np.linalg.norm(v)
         result = normalize(v)
         tol = max(DEFAULT_TOLERANCE * norm, DEFAULT_TOLERANCE)
         npt.assert_allclose(result * norm, v, atol=tol, rtol=tol)
 
-    @given(non_zero_magnitude_vectors)
+    @given(non_zero_magnitude_vectors())
     def test_idempotent(self, v):
         once = normalize(v)
         twice = normalize(once)
@@ -68,7 +76,7 @@ class NormalizeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             normalize(v, epsilon=epsilon)
 
-    @given(non_zero_magnitude_vectors)
+    @given(non_zero_magnitude_vectors())
     def test_result_has_unit_norm(self, v):
         result = normalize(v)
         npt.assert_allclose(
@@ -78,7 +86,7 @@ class NormalizeTest(unittest.TestCase):
 
 class ProjectOntoTangentPlaneTest(unittest.TestCase):
     @given(
-        a_vector=non_zero_magnitude_vectors,
+        a_vector=non_zero_magnitude_vectors(),
         a_scalar=st.floats(min_value=-1e3, max_value=1e3, allow_nan=False),
     )
     def test_a_vector_parallel_to_normal(self, a_vector, a_scalar):
@@ -98,13 +106,13 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
         tol = max(DEFAULT_TOLERANCE * np.linalg.norm(a_vector), DEFAULT_TOLERANCE)
         npt.assert_allclose(result, a_vector, atol=tol, rtol=DEFAULT_TOLERANCE)
 
-    @given(a_vector=vectors_3d, a_normal=non_zero_magnitude_vectors)
+    @given(a_vector=vectors_3d(), a_normal=non_zero_magnitude_vectors())
     def test_result_is_orthogonal_to_normal(self, a_vector, a_normal):
         result = project_onto_tangent_plane(a_vector, a_normal)
         tol = max(DEFAULT_TOLERANCE * np.linalg.norm(a_vector), DEFAULT_TOLERANCE)
         npt.assert_allclose(np.dot(result, normalize(a_normal)), 0.0, atol=tol)
 
-    @given(a_vector=vectors_3d, a_normal=non_zero_magnitude_vectors)
+    @given(a_vector=vectors_3d(), a_normal=non_zero_magnitude_vectors())
     def test_projection_is_idempotent(self, a_vector, a_normal):
         once = project_onto_tangent_plane(a_vector, a_normal)
         twice = project_onto_tangent_plane(once, a_normal)
