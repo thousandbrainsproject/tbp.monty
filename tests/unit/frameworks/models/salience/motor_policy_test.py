@@ -44,6 +44,7 @@ class LookAtGoalTest(unittest.TestCase):
     - The sensor also starts at the origin with identity rotation.
     - Note that the agent and the sensor are collocated.
     """
+
     def setUp(self):
         identity_pose = {
             "position": (0, 0, 0),
