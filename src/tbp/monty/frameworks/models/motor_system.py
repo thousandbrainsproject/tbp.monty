@@ -60,9 +60,6 @@ class MotorSystem:
             z_defined_pc=[],
         )
 
-        # TODO: Get rid of this once we have another path for telemetry.
-        self._selected_goals: list[Goal | None] = []
-
     @property
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
@@ -82,7 +79,6 @@ class MotorSystem:
             avoidance_heading=[],
             z_defined_pc=[],
         )
-        self._selected_goals = []
 
     def state_dict(self) -> dict[str, Any]:
         return self._policy_selector.state_dict()
@@ -111,11 +107,10 @@ class MotorSystem:
             The action to take.
         """
         motor_system_state = MotorSystemState(proprioceptive_state)
-        policy, goal = self._policy_selector(goals)
+        policy_result = self._policy_selector(
+            ctx, observations, motor_system_state, percept, goals
+        )
 
-        self._selected_goals.append(goal)
-
-        policy_result = policy(ctx, observations, motor_system_state, percept, goal)
         self.motor_only_step = policy_result.motor_only_step
 
         state_copy = motor_system_state.convert_motor_state()
