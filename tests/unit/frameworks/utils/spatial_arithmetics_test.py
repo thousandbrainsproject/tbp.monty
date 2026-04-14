@@ -33,16 +33,19 @@ def vectors_3d(draw, min_value=-1e6, max_value=1e6):
     )
 
 
-def non_zero_magnitude_vectors(min_value=-1e6, max_value=1e6):
-    return vectors_3d(min_value=min_value, max_value=max_value).filter(
-        lambda v: np.linalg.norm(v) > DEFAULT_TOLERANCE
+@st.composite
+def non_zero_magnitude_vectors(draw, min_value=-1e6, max_value=1e6):
+    return draw(
+        vectors_3d(min_value=min_value, max_value=max_value).filter(
+            lambda v: np.linalg.norm(v) > DEFAULT_TOLERANCE
+        )
     )
 
 
 @st.composite
 def nonzero_orthogonal_vectors(draw):
-    random_base = normalize(draw(non_zero_magnitude_vectors))
-    n = normalize(draw(non_zero_magnitude_vectors))
+    random_base = normalize(draw(non_zero_magnitude_vectors()))
+    n = normalize(draw(non_zero_magnitude_vectors()))
     v = np.cross(random_base, n)
     assume(np.linalg.norm(v) > DEFAULT_TOLERANCE)
     return v, n
