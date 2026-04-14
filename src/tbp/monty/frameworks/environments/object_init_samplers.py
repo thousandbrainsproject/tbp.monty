@@ -9,18 +9,19 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Sequence, TypedDict
+from typing import Sequence, TypedDict, cast
 
 import numpy as np
 import numpy.typing as npt
-import quaternion as qt
 from scipy.spatial.transform import Rotation
 from typing_extensions import NotRequired
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
-from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
-from tbp.monty.math import EulerAnglesXYZ, VectorXYZ
+from tbp.monty.frameworks.utils.transform_utils import (
+    rotation_as_quat,
+)
+from tbp.monty.math import EulerAnglesXYZ, QuaternionWXYZ, VectorXYZ
 
 
 class MultiObjectNames(TypedDict):
@@ -31,7 +32,7 @@ class MultiObjectNames(TypedDict):
 
 class ObjectInitParams(TypedDict):
     position: VectorXYZ
-    rotation: qt.quaternion
+    rotation: QuaternionWXYZ
     scale: VectorXYZ
     euler_rotation: npt.NDArray[np.float64] | EulerAnglesXYZ
     quat_rotation: NotRequired[npt.NDArray[np.float64]]
@@ -48,20 +49,13 @@ class Default:
         seed = episode_seed(seed, mode, episode)
         rng = np.random.RandomState(seed)
         euler_rotation = rng.uniform(0, 360, 3)
-        q = Rotation.from_euler("xyz", euler_rotation, degrees=True).as_quat()
-        quat_rotation = scipy_to_numpy_quat(q)
+        q = Rotation.from_euler("xyz", euler_rotation, degrees=True)
         return dict(
-            rotation=quat_rotation,
+            rotation=cast("QuaternionWXYZ", tuple(rotation_as_quat(q))),
             euler_rotation=euler_rotation,
             position=(rng.uniform(-0.5, 0.5), 0.0, 0.0),
             scale=(1.0, 1.0, 1.0),
         )
-
-    def __eq__(self, other: object):
-        return self.__dict__ == other.__dict__
-
-    def __hash__(self):
-        return hash(self.__dict__)
 
 
 class Predefined(Default):
@@ -74,7 +68,7 @@ class Predefined(Default):
     ):
         # NOTE: added param change_every_episode. This is so if I want to run an
         # experiment and specify an exact list of objects, with specific poses per
-        # object, I can set this to True. Otherwise I have to loop over all objects
+        # object, I can set this to True. Otherwise, I have to loop over all objects
         # for every pose specified.
         self.positions = positions or [(0.0, 1.5, 0.0)]
         self.rotations = rotations or [(0.0, 0.0, 0.0), (45.0, 0.0, 0.0)]
@@ -93,12 +87,11 @@ class Predefined(Default):
             "xyz",
             self.rotations[mod_counter % len(self.rotations)],
             degrees=True,
-        ).as_quat()
-        quat_rotation = scipy_to_numpy_quat(q)
+        )
         return dict(
-            rotation=quat_rotation,
+            rotation=cast("QuaternionWXYZ", tuple(rotation_as_quat(q))),
             euler_rotation=self.rotations[mod_counter % len(self.rotations)],
-            quat_rotation=q,
+            quat_rotation=q.as_quat(),
             position=self.positions[mod_counter % len(self.positions)],
             scale=self.scales[mod_counter % len(self.scales)],
         )
@@ -145,12 +138,11 @@ class RandomRotation(Default):
         seed = episode_seed(seed, mode, episode)
         rng = np.random.RandomState(seed)
         euler_rotation = rng.uniform(0, 360, 3)
-        q = Rotation.from_euler("xyz", euler_rotation, degrees=True).as_quat()
-        quat_rotation = scipy_to_numpy_quat(q)
+        q = Rotation.from_euler("xyz", euler_rotation, degrees=True)
         return dict(
-            rotation=quat_rotation,
+            rotation=cast("QuaternionWXYZ", tuple(rotation_as_quat(q))),
             euler_rotation=euler_rotation,
-            quat_rotation=q,
+            quat_rotation=q.as_quat(),
             position=self.position,
             scale=self.scale,
         )
