@@ -59,7 +59,7 @@ class Transform(Protocol):
 
 
 def identity_transform(
-    ctx: TransformContext, observations: SensorObservation
+    _ctx: TransformContext, observations: SensorObservation
 ) -> SensorObservation:
     return observations
 
