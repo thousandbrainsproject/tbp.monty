@@ -188,6 +188,7 @@ class LookAtGoalTest(unittest.TestCase):
         second_action = result.actions[1]
         self.assertEqual(second_action.name, LookUp.action_name())
         look_up = cast("LookUp", second_action)
+        self.assertLessEqual(abs(look_up.rotation_degrees), look_up.constraint_degrees)
 
         # Monty uses the "right-up-backward" convention, so the forward direction
         # vector is [0, 0, -1].
