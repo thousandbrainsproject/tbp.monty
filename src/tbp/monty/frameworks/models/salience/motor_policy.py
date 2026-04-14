@@ -66,13 +66,19 @@ class LookAtGoal(MotorPolicy):
         self._suppress_runtime_errors = suppress_runtime_errors
 
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
-        pass
+        self._agent_id = state_dict["agent_id"]
+        self._sensor_id = state_dict["sensor_id"]
+        self._suppress_runtime_errors = state_dict["suppress_runtime_errors"]
 
     def pre_episode(self, motor_system: MotorSystem) -> None:
         pass
 
     def state_dict(self) -> dict[str, Any]:
-        return {}
+        return {
+            "agent_id": self._agent_id,
+            "sensor_id": self._sensor_id,
+            "suppress_runtime_errors": self._suppress_runtime_errors,
+        }
 
     def __call__(
         self,
