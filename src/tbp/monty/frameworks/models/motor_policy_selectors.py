@@ -11,8 +11,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Protocol
 
-from tbp.monty.cmp import Goal
-from tbp.monty.frameworks.models.motor_policies import MotorPolicy
+from tbp.monty.cmp import Goal, Message
+from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_policies import MotorPolicy, MotorPolicyResult
+from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 
 if TYPE_CHECKING:
     from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -25,28 +28,48 @@ __all__ = [
 
 
 class MotorPolicySelector(Protocol):
-    def pre_episode(self, motor_system: MotorSystem) -> None:
-        pass
+    def pre_episode(self, motor_system: MotorSystem) -> None: ...
 
-    def state_dict(self) -> dict[str, Any]:
-        pass
+    def state_dict(self) -> dict[str, Any]: ...
 
-    def __call__(self, goals: list[Goal]) -> tuple[MotorPolicy, Goal | None]:
-        pass
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        state: MotorSystemState,
+        percept: Message,
+        goals: list[Goal],
+    ) -> MotorPolicyResult: ...
 
 
 class SinglePolicySelector(MotorPolicySelector):
     def __init__(self, policy: MotorPolicy):
         self._policy = policy
+        # TODO: Get rid of this once we have another path for telemetry.
+        self._selected_goals: list[Goal | None] = []
 
     def pre_episode(self, motor_system: MotorSystem) -> None:
         self._policy.pre_episode(motor_system)
+        self._selected_goals = []
 
     def state_dict(self) -> dict[str, Any]:
-        return self._policy.state_dict()
+        return {
+            "policy": self._policy.state_dict(),
+            "selected_goals": self._selected_goals,
+        }
 
-    def __call__(self, goals: list[Goal]) -> tuple[MotorPolicy, Goal | None]:
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        state: MotorSystemState,
+        percept: Message,
+        goals: list[Goal],
+    ) -> MotorPolicyResult:
         if goals:
             sorted_goals = sorted(goals, key=lambda x: x.confidence, reverse=True)
-            return self._policy, sorted_goals[0]
-        return self._policy, None
+            goal = sorted_goals[0]
+        else:
+            goal = None
+        self._selected_goals.append(goal)
+        return self._policy(ctx, observations, state, percept, goal)
