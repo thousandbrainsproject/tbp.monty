@@ -34,8 +34,8 @@ def orthonormal_vectors(draw):
 
 @st.composite
 def curvature_values(draw):
-    k1 = draw(st.floats(min_value=-1e3, max_value=1e3, allow_nan=False))
-    k2 = draw(st.floats(min_value=-1e3, max_value=1e3, allow_nan=False))
+    k1 = draw(st.floats(min_value=-1e3, max_value=1e3))
+    k2 = draw(st.floats(min_value=-1e3, max_value=1e3))
     assume(k1 >= k2)
     return k1, k2
 
