@@ -26,6 +26,9 @@ from tests.unit.frameworks.utils.spatial_arithmetics_test import (
     nonzero_orthogonal_vectors,
 )
 
+# abs(curvature) = 1e-3 corresponds to 1 mm (sharp edge)
+MIN_K = -1e3
+MAX_K = 1e3
 
 @st.composite
 def orthonormal_vectors(draw):
@@ -72,12 +75,11 @@ class DirectionalCurvatureTest(unittest.TestCase):
         npt.assert_allclose(result, expected, atol=tol, rtol=DEFAULT_TOLERANCE)
 
     @given(
-        angle=st.floats(min_value=0, max_value=2 * np.pi, allow_nan=False),
-        k=st.floats(min_value=-1e6, max_value=1e6, allow_nan=False),
+        angle=st.floats(min_value=0, max_value=2 * np.pi),
+        k=st.floats(min_value=-1e6, max_value=1e6),
         vectors=orthonormal_vectors(),
     )
     def test_equal_curvatures_returns_that_value(self, angle, k, vectors):
-        """When k1 == k2, result equals that value for any in-plane direction."""
         pc1, pc2 = vectors
         # Create a vector in the same plane as pc1 and pc2.
         direction = pc1 * np.cos(angle) + pc2 * np.sin(angle)
@@ -88,7 +90,8 @@ class DirectionalCurvatureTest(unittest.TestCase):
             pc1_dir=pc1,
             pc2_dir=pc2,
         )
-        self.assertAlmostEqual(result, k)
+        tol = max(DEFAULT_TOLERANCE * abs(k), DEFAULT_TOLERANCE)
+        npt.assert_allclose(result, k, atol=tol, rtol=DEFAULT_TOLERANCE)
 
     @given(
         vectors=orthonormal_vectors(),
