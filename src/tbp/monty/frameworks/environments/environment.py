@@ -98,7 +98,7 @@ class ObjectEnvironment(Protocol):
                 guarantee). Used when adding multiple objects. Defaults to None.
 
         Returns:
-            The ID of the added object.
+            ObjectInfo structure for the added object.
         """
         ...
 
