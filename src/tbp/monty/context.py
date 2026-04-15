@@ -17,7 +17,15 @@ class RuntimeContext:
     """Monty's runtime context.
 
     The RuntimeContext carries runtime-scoped values used throughout Monty.
+
+    Attributes:
+        rng: The random number generator.
+        suppress_runtime_errors: Whether to suppress runtime errors. Runtime errors
+            can be raised when goal is None or invalid. When in an experimental
+            mode, we want to raise runtime errors by default. When in a production
+            mode, we want to suppress runtime errors by default. Currently, we run
+            a lot of experiments, so the current default is to raise runtime errors.
     """
 
     rng: np.random.RandomState
-    """Random number generator."""
+    suppress_runtime_errors: bool = False

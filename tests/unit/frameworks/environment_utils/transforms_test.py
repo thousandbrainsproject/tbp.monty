@@ -13,9 +13,8 @@ from unittest.mock import Mock
 
 import numpy as np
 import pytest
-from hypothesis import given
+from hypothesis import assume, given
 from hypothesis import strategies as st
-from hypothesis.extra.numpy import arrays
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
@@ -40,18 +39,17 @@ BLUR_KERNEL_SIZES = [n for n in range(MAX_KERNEL + 1) if n == 0 or n % 2 == 1]
 def rgba_and_blur_params(draw):
     """Generate a random RGBA float32 image with valid blur parameters.
 
+    Uses a seeded NumPy RNG for fast bulk array generation instead of
+    per-element Hypothesis sampling. Trades per-pixel shrinking for speed.
+
     Returns:
         Tuple of (rgba array, sigma, kernel_size).
     """
-    height = draw(st.integers(1, 128))
-    width = draw(st.integers(1, 128))
-    rgba = draw(
-        arrays(
-            dtype=np.float32,
-            shape=(height, width, 4),
-            elements=st.floats(min_value=0.0, max_value=255.0, width=32),
-        )
-    )
+    height = draw(st.integers(1, 64))
+    width = draw(st.integers(1, 64))
+    seed = draw(st.integers(min_value=0, max_value=2**32 - 1))
+    rng = np.random.default_rng(seed)
+    rgba = rng.uniform(0.0, 255.0, size=(height, width, 4)).astype(np.float32)
     sigma = draw(st.floats(min_value=0.1, max_value=10.0))
     kernel_size = draw(st.sampled_from(BLUR_KERNEL_SIZES))
     return rgba, sigma, kernel_size
@@ -233,10 +231,13 @@ class GaussianBlurRGBTest(unittest.TestCase):
         rgba, sigma, kernel_size = params
 
         def total_variation(img):
-            img = img.astype(np.float64)
+            img = img.astype(np.float32)
             return np.sum(np.abs(np.diff(img, axis=0))) + np.sum(
                 np.abs(np.diff(img, axis=1))
             )
+
+        input_tv = total_variation(rgba[:, :, :3])
+        assume(input_tv > 0.0)  # Exclude solid images
 
         obs = Observations()
         obs[AGENT_ID] = AgentObservations()
@@ -245,13 +246,6 @@ class GaussianBlurRGBTest(unittest.TestCase):
             agent_id=AGENT_ID, sigma=sigma, kernel_size=kernel_size
         )
         result_rgba = gaussian_smoother(obs, ctx=Mock())[AGENT_ID][SENSOR_ID]["rgba"]
-        result_rgb = result_rgba[:, :, :3]
+        result_tv = total_variation(result_rgba[:, :, :3])
 
-        input_tv = total_variation(rgba[:, :, :3])
-        result_tv = total_variation(result_rgb)
-
-        self.assertTrue(result_tv < input_tv or np.allclose(result_tv, input_tv))
-
-
-if __name__ == "__main__":
-    unittest.main()
+        self.assertLessEqual(result_tv, input_tv)

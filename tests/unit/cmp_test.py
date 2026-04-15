@@ -61,7 +61,3 @@ class EncodeGoalTest(unittest.TestCase):
             json.loads(json.dumps(self.goal, cls=BufferEncoder)),
             json.loads(json.dumps(self.goal_dict, cls=BufferEncoder)),
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

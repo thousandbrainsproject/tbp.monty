@@ -87,7 +87,3 @@ class TestColors(unittest.TestCase):
         self.assertEqual(colors.CYAN, "")
         self.assertEqual(colors.BLUE, "")
         self.assertEqual(colors.RESET, "")
-
-
-if __name__ == "__main__":
-    unittest.main()

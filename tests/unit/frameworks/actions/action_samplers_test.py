@@ -485,7 +485,3 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 <= action.rotation_degrees
                 <= self.max_rotation_degrees
             )
-
-
-if __name__ == "__main__":
-    unittest.main()

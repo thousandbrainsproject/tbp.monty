@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 
 import sys
-import unittest
 from unittest.mock import patch
 
 import pytest
@@ -38,7 +37,3 @@ class TestCLIArgumentErrors:
         with patch.object(sys, "argv", test_args):
             with pytest.raises(SystemExit):
                 main()
-
-
-if __name__ == "__main__":
-    unittest.main()

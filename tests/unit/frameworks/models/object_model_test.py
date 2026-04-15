@@ -315,7 +315,3 @@ class ObjectModelTest(unittest.TestCase):
                 self.dummy_locs,
                 self.dummy_features,
             )
-
-
-if __name__ == "__main__":
-    unittest.main()

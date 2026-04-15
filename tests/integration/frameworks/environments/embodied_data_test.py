@@ -17,11 +17,13 @@ import magnum
 import numpy as np
 import numpy.typing as npt
 import quaternion as qt
+from omegaconf import OmegaConf
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterface,
+    EnvironmentInterfacePerObject,
     OmniglotEnvironmentInterface,
     SaccadeOnImageEnvironmentInterface,
     SaccadeOnImageFromStreamEnvironmentInterface,
@@ -29,6 +31,10 @@ from tbp.monty.frameworks.environments.embodied_data import (
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     SimulatedObjectEnvironment,
+)
+from tbp.monty.frameworks.environments.object_init_samplers import (
+    Default,
+    MultiObjectNames,
 )
 from tbp.monty.frameworks.environments.two_d_data import (
     SaccadeOnImageEnvironment,
@@ -204,6 +210,91 @@ class FakeOmniglotEnvironment(FakeEnvironmentAbs):
     def __init__(self):
         super().__init__()
         self.alphabet_names = ["name_one", "name_two", "name_three"]
+
+
+class EnvironmentInterfacePerObjectTest(unittest.TestCase):
+    def test_accepts_plain_list_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        env_interface = EnvironmentInterfacePerObject(
+            env=FakeEnvironmentAbs(),
+            rng=rng,
+            seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
+            object_names=["object_a", "object_b", "object_a"],
+            object_init_sampler=Default(),
+        )
+
+        self.assertEqual(
+            ["object_a", "object_b", "object_a"], env_interface.object_names
+        )
+        self.assertEqual(["object_a", "object_b"], env_interface.source_object_list)
+        self.assertEqual(0, env_interface.num_distractors)
+
+    def test_accepts_hydra_list_config_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        env_interface = EnvironmentInterfacePerObject(
+            env=FakeEnvironmentAbs(),
+            rng=rng,
+            seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
+            object_names=OmegaConf.create(["object_a", "object_b", "object_a"]),
+            object_init_sampler=Default(),
+        )
+
+        self.assertEqual(
+            ["object_a", "object_b", "object_a"], env_interface.object_names
+        )
+        self.assertEqual(["object_a", "object_b"], env_interface.source_object_list)
+        self.assertEqual(0, env_interface.num_distractors)
+
+    def test_accepts_mapping_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        env_interface = EnvironmentInterfacePerObject(
+            env=FakeEnvironmentAbs(),
+            rng=rng,
+            seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
+            object_names=MultiObjectNames(
+                targets_list=["object_a", "object_c"],
+                source_object_list=[
+                    "object_a",
+                    "object_b",
+                    "object_c",
+                    "object_b",
+                ],
+                num_distractors=2,
+            ),
+            object_init_sampler=Default(),
+        )
+
+        self.assertEqual(["object_a", "object_c"], env_interface.object_names)
+        self.assertEqual(
+            ["object_a", "object_b", "object_c"], env_interface.source_object_list
+        )
+        self.assertEqual(2, env_interface.num_distractors)
+
+    def test_rejects_tuple_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        with self.assertRaisesRegex(
+            TypeError,
+            "Object names must be a list, ListConfig, or a mapping",
+        ):
+            EnvironmentInterfacePerObject(
+                env=FakeEnvironmentAbs(),
+                rng=rng,
+                seed=seed,
+                experiment_mode=ExperimentMode.EVAL,
+                object_names=("object_a", "object_b"),
+                object_init_sampler=Default(),
+            )
 
 
 class EmbodiedDataTest(unittest.TestCase):
@@ -460,7 +551,3 @@ class EmbodiedDataTest(unittest.TestCase):
                 break
 
             i += 1
-
-
-if __name__ == "__main__":
-    unittest.main()

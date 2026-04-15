@@ -251,7 +251,3 @@ class GraphBuildingTest(unittest.TestCase):
                     "feature at location graph should not contain edges.",
                 )
             exp.run()
-
-
-if __name__ == "__main__":
-    unittest.main()
