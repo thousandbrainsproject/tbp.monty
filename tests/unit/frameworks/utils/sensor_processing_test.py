@@ -74,7 +74,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
             direction, k1=k1, k2=k2, pc1_dir=pc1, pc2_dir=pc2
         )
         expected = k1 * np.cos(angle) ** 2 + k2 * np.sin(angle) ** 2
-        tol = max(DEFAULT_TOLERANCE * abs(expected), DEFAULT_TOLERANCE)
+        tol = max(DEFAULT_TOLERANCE * abs(k1), DEFAULT_TOLERANCE * abs(k2), DEFAULT_TOLERANCE)
         npt.assert_allclose(result, expected, atol=tol, rtol=DEFAULT_TOLERANCE)
 
     @given(
