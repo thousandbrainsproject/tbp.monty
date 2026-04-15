@@ -42,7 +42,7 @@ def is_coplanar(
 
 
 def directional_curvature(
-    movement_direction: np.ndarray,
+    movement_direction: ArrayLike,
     k1: float,
     k2: float,
     pc1_dir: np.ndarray,
