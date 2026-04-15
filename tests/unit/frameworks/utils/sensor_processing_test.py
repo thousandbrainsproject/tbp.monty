@@ -48,10 +48,6 @@ def regime_params(draw, min_kp, max_kp):
     Draws a product kp in [min_kp, max_kp], then factors it into curvature k
     and projection p = kp/k. A random sign is applied to the projection.
 
-    Args:
-        min_kp: Lower bound for |k * p|.
-        max_kp: Upper bound for |k * p|.
-
     Returns:
         Tuple of (tangent_projection, curvature).
     """
