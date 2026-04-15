@@ -19,23 +19,17 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     normalize,
-    project_onto_tangent_plane,
 )
+from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
-    non_zero_magnitude_vectors,
+    nonzero_orthogonal_vectors,
 )
 
 
 @st.composite
 def orthonormal_vectors(draw):
-    n = normalize(draw(non_zero_magnitude_vectors))
-    raw = draw(non_zero_magnitude_vectors)
-    v = raw - n * np.dot(raw, n)
-    assume(
-        np.linalg.norm(v) > 1e-8
-    )  # I like this more than assume(not np.allclose(np.linalg.norm(v), 0.0, atol=1e-8)
-    v = normalize(v)
-    return v, n
+    v, n = draw(nonzero_orthogonal_vectors())
+    return normalize(v), n
 
 
 @st.composite
@@ -47,8 +41,6 @@ def curvature_values(draw):
 
 
 class DirectionalCurvatureTest(unittest.TestCase):
-    """Unit tests for the directional_curvature function."""
-
     @given(vectors=orthonormal_vectors(), ks=curvature_values())
     def test_zero_direction_returns_zero(self, vectors, ks):
         pc1, pc2 = vectors
