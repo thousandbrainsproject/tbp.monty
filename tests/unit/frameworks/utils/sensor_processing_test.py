@@ -12,7 +12,7 @@ import unittest
 import numpy as np
 import numpy.testing as npt
 import pytest
-from hypothesis import assume, example, given, settings
+from hypothesis import assume, given
 from hypothesis import strategies as st
 
 from tbp.monty.frameworks.utils.sensor_processing import (
