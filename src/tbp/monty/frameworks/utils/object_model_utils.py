@@ -46,6 +46,7 @@ def torch_graph_to_numpy(torch_graph):
 
     # Newer versions of torch_geometric change `keys` from a
     # property to a function.
+    # TODO: remove check and use keys property once upgraded to Python 3.10
     if callable(torch_graph.keys):
         keys = torch_graph.keys()
     else:
