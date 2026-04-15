@@ -6,34 +6,35 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+
 from __future__ import annotations
 
-import unittest
-
-import numpy as np
 import pytest
-from hypothesis import given
-from hypothesis import strategies as st
-
-from tbp.monty.cmp import Goal
-from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentInterfacePerObject,
-)
-from tbp.monty.frameworks.environments.object_init_samplers import Predefined
-from tbp.monty.frameworks.models.salience.motor_policy import LookAtGoal
-from tbp.monty.frameworks.sensors import SensorID
 
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
 )
 
+import unittest
+
+import numpy as np
+from hypothesis import given
+from hypothesis import strategies as st
+
+from tbp.monty.cmp import Goal
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
     MissingToMaxDepth,
 )
+from tbp.monty.frameworks.environments.embodied_data import (
+    EnvironmentInterfacePerObject,
+)
+from tbp.monty.frameworks.environments.object_init_samplers import Predefined
 from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
+from tbp.monty.frameworks.models.salience.motor_policy import LookAtGoal
+from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.simulators.habitat.agents import MultiSensorAgent
 from tbp.monty.simulators.habitat.environment import HabitatEnvironment
 
