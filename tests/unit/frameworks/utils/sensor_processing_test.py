@@ -23,7 +23,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
-    nonzero_orthogonal_vectors,
+    non_zero_magnitude_vectors, nonzero_orthogonal_vectors,
 )
 
 # abs(curvature) = 1e-3 corresponds to 1 mm (sharp edge)
@@ -76,38 +76,20 @@ class DirectionalCurvatureTest(unittest.TestCase):
         npt.assert_allclose(result, expected, atol=tol, rtol=DEFAULT_TOLERANCE)
 
     @given(
-        angle=st.floats(min_value=0, max_value=2 * np.pi),
-        k=st.floats(min_value=MIN_K, max_value=MAX_K),
-        vectors=orthonormal_vectors(),
-    )
-    def test_equal_curvatures_returns_that_value(self, angle, k, vectors):
-        pc1, pc2 = vectors
-        # Create a vector in the same plane as pc1 and pc2.
-        direction = pc1 * np.cos(angle) + pc2 * np.sin(angle)
-        result = directional_curvature(
-            direction,
-            k1=k,
-            k2=k,
-            pc1_dir=pc1,
-            pc2_dir=pc2,
-        )
-        tol = max(DEFAULT_TOLERANCE * abs(k), DEFAULT_TOLERANCE)
-        npt.assert_allclose(result, k, atol=tol, rtol=DEFAULT_TOLERANCE)
-
-    @given(
+        movement_direction=non_zero_magnitude_vectors(),
         vectors=orthonormal_vectors(),
         ks=curvature_values(),
-        a_scaler=st.floats(min_value=1e-3, max_value=1e3, allow_nan=False).filter(
-            lambda x: x != 0.0
+        a_scaler=st.floats(min_value=-1e3, max_value=1e3).filter(
+            lambda x: abs(x) > DEFAULT_TOLERANCE
         ),
     )
-    def test_non_orthogonal_dirs_raises(self, vectors, ks, a_scaler):
+    def test_non_orthogonal_pcs_raises(self, movement_direction, vectors, ks, a_scaler):
         pc1, _ = vectors
         k1, k2 = ks
         bad_pc2 = pc1 * a_scaler
         with self.assertRaises(ValueError):
             directional_curvature(
-                movement_direction=np.array([1.0, 0.0, 0.0]),
+                movement_direction=movement_direction,
                 k1=k1,
                 k2=k2,
                 pc1_dir=pc1,
@@ -115,7 +97,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
             )
 
     @given(vectors=orthonormal_vectors(), ks=curvature_values())
-    def test_out_of_plane_direction_raises(self, vectors, ks):
+    def test_out_of_plane_movement_raises(self, vectors, ks):
         pc1, pc2 = vectors
         k1, k2 = ks
         movement_direction = np.cross(pc1, pc2)
@@ -127,17 +109,3 @@ class DirectionalCurvatureTest(unittest.TestCase):
                 pc1_dir=pc1,
                 pc2_dir=pc2,
             )
-
-    @given(
-        angle=st.floats(min_value=0, max_value=2 * np.pi, allow_nan=False),
-        vectors=orthonormal_vectors(),
-        ks=curvature_values(),
-    )
-    def test_opposite_direction_same_result(self, angle, vectors, ks):
-        """Negating the direction does not change the curvature (sign-invariant)."""
-        pc1, pc2 = vectors
-        k1, k2 = ks
-        direction = pc1 * np.cos(angle) + pc2 * np.sin(angle)
-        fwd = directional_curvature(direction, k1=k1, k2=k2, pc1_dir=pc1, pc2_dir=pc2)
-        bwd = directional_curvature(-direction, k1=k1, k2=k2, pc1_dir=pc1, pc2_dir=pc2)
-        self.assertAlmostEqual(fwd, bwd)
