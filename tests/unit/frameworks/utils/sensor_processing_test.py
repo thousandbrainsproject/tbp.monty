@@ -23,12 +23,14 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
-    non_zero_magnitude_vectors, nonzero_orthogonal_vectors,
+    non_zero_magnitude_vectors,
+    nonzero_orthogonal_vectors,
 )
 
 # abs(curvature) = 1e-3 corresponds to 1 mm (sharp edge)
 MIN_K = -1e3
 MAX_K = 1e3
+
 
 @st.composite
 def orthonormal_vectors(draw):
@@ -87,7 +89,8 @@ class DirectionalCurvatureTest(unittest.TestCase):
         pc1, _ = vectors
         k1, k2 = ks
         bad_pc2 = pc1 * a_scaler
-        with pytest.raises(ValueError):
+        expected_msg = r"The pc1_dir and pc2_dir must be orthogonal\."
+        with pytest.raises(ValueError, match=expected_msg):
             directional_curvature(
                 movement_direction=movement_direction,
                 k1=k1,
@@ -101,7 +104,11 @@ class DirectionalCurvatureTest(unittest.TestCase):
         pc1, pc2 = vectors
         k1, k2 = ks
         movement_direction = np.cross(pc1, pc2)
-        with pytest.raises(ValueError):
+        expected_msg = (
+            r"The movement_direction must lie in the plane"
+            r" of pc1_dir and pc2_dir\."
+        )
+        with pytest.raises(ValueError, match=expected_msg):
             directional_curvature(
                 movement_direction=movement_direction,
                 k1=k1,
