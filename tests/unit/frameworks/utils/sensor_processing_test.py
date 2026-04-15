@@ -38,8 +38,8 @@ def orthonormal_vectors(draw):
 
 @st.composite
 def curvature_values(draw):
-    k1 = draw(st.floats(min_value=-1e3, max_value=1e3))
-    k2 = draw(st.floats(min_value=-1e3, max_value=1e3))
+    k1 = draw(st.floats(min_value=MIN_K, max_value=MAX_K))
+    k2 = draw(st.floats(min_value=MIN_K, max_value=MAX_K))
     assume(k1 >= k2)
     return k1, k2
 
@@ -59,13 +59,14 @@ class DirectionalCurvatureTest(unittest.TestCase):
         npt.assert_allclose(result, 0.0, atol=DEFAULT_TOLERANCE)
 
     @given(
-        angle=st.floats(min_value=0, max_value=2 * np.pi, allow_nan=False),
+        angle=st.floats(min_value=0, max_value=2 * np.pi),
         ks=curvature_values(),
         vectors=orthonormal_vectors(),
     )
     def test_euler_formula(self, angle, ks, vectors):
         pc1, pc2 = vectors
         k1, k2 = ks
+        # Create a vector in the same plane as pc1 and pc2.
         direction = pc1 * np.cos(angle) + pc2 * np.sin(angle)
         result = directional_curvature(
             direction, k1=k1, k2=k2, pc1_dir=pc1, pc2_dir=pc2
@@ -76,7 +77,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
 
     @given(
         angle=st.floats(min_value=0, max_value=2 * np.pi),
-        k=st.floats(min_value=-1e6, max_value=1e6),
+        k=st.floats(min_value=MIN_K, max_value=MAX_K),
         vectors=orthonormal_vectors(),
     )
     def test_equal_curvatures_returns_that_value(self, angle, k, vectors):
