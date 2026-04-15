@@ -91,8 +91,6 @@ class TangentFrame:
             rotation_axis = normalize(np.cross(old_normal, new_normal))
             rotation = Rotation.from_rotvec(rotation_axis * np.arccos(cos_angle))
             self._u = rotation.apply(self._u)
-        elif np.dot(old_normal, new_normal) < 0:
-            self._v = -self._v
 
         # Re-orthonormalize to prevent cumulative floating point error
         self._u = normalize(project_onto_tangent_plane(self._u, new_normal))

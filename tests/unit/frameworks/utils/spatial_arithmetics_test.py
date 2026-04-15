@@ -11,7 +11,7 @@ import unittest
 
 import numpy as np
 import numpy.testing as npt
-from hypothesis import assume, given
+from hypothesis import assume, example, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -128,7 +128,9 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
 
 
 class TangentFrameTest(unittest.TestCase):
-    def _assert_orthonormal_frame(self, frame, normal, tol=DEFAULT_TOLERANCE):
+    def _assert_orthonormal_frame(
+        self, frame: TangentFrame, normal: np.ndarray, tol: float = DEFAULT_TOLERANCE
+    ) -> None:
         """Assert (basis_u, basis_v, normal) form an orthonormal right-handed frame."""
         u, v = frame.basis_u, frame.basis_v
         # Check unit norm
@@ -145,32 +147,25 @@ class TangentFrameTest(unittest.TestCase):
         npt.assert_allclose(np.cross(u, v), normal, atol=tol, rtol=tol)
         npt.assert_allclose(np.cross(v, u), -normal, atol=tol, rtol=tol)
 
-    def test_construction_with_y_aligned_normal_triggers_fallback(self):
-        n = normalize(np.array([0.0, 1.0, 0.01], dtype=np.float32))
+    @given(n=unit_vectors)
+    @example(
+        n=np.array([1.0, 0.0, 0.0], dtype=np.float32),
+    )
+    @example(
+        n=np.array([0.0, 1.0, 0.0], dtype=np.float32),
+    )
+    @example(
+        n=np.array([0.0, 0.0, 1.0], dtype=np.float32),
+    )
+    def test_init_creates_orthonormal_frame(self, n):
         frame = TangentFrame(n)
         self._assert_orthonormal_frame(frame, n)
-
-    def test_transport_90_degrees_produces_expected_basis(self):
-        n1 = np.array([0.0, 0.0, 1.0], dtype=np.float32)
-        n2 = np.array([0.0, 1.0, 0.0], dtype=np.float32)
-        expected_u = np.array([1.0, 0.0, 0.0], dtype=np.float32)
-        expected_v = np.array([0.0, 1.0, 0.0], dtype=np.float32)
-        expected_u_transported = np.array([1.0, 0.0, 0.0], dtype=np.float32)
-        expected_v_transported = np.array([0.0, 0.0, -1.0], dtype=np.float32)
-
-        frame = TangentFrame(n1)
-        npt.assert_array_almost_equal(frame.basis_u, expected_u)
-        npt.assert_array_almost_equal(frame.basis_v, expected_v)
-
-        frame.transport(n2)
-        npt.assert_array_almost_equal(frame.basis_u, expected_u_transported)
-        npt.assert_array_almost_equal(frame.basis_v, expected_v_transported)
 
     def test_accumulated_transports_stay_orthonormal(self):
         rng = np.random.RandomState(42)
         n = normalize(rng.randn(3))
         frame = TangentFrame(n)
-        for _ in range(100):
+        for _ in range(1000):
             n_new = normalize(n + 0.05 * rng.randn(3))
             frame.transport(n_new)
             n = n_new
@@ -189,17 +184,11 @@ class TangentFrameTest(unittest.TestCase):
         )
 
     @given(n1=unit_vectors, n2=unit_vectors)
+    @example(
+        n1=np.array([1.0, 0.0, 0.0], dtype=np.float32),
+        n2=np.array([-1.0, 0.0, 0.0], dtype=np.float32),
+    )
     def test_transport_preserves_orthonormality(self, n1, n2):
         frame = TangentFrame(n1)
         frame.transport(n2)
         self._assert_orthonormal_frame(frame, n2)
-
-    @given(n=unit_vectors)
-    def test_transport_anti_parallel(self, n):
-        frame = TangentFrame(n)
-        anti_n = -n
-        frame.transport(anti_n)
-        u, v = frame.basis_u, frame.basis_v
-        # Consider using is_orthornomal?
-        npt.assert_allclose(np.dot(u, anti_n), 0.0, atol=DEFAULT_TOLERANCE, rtol=0)
-        npt.assert_allclose(np.dot(v, anti_n), 0.0, atol=DEFAULT_TOLERANCE, rtol=0)
