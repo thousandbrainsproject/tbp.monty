@@ -18,7 +18,7 @@ from hypothesis import strategies as st
 from tbp.monty.frameworks.utils.sensor_processing import (
     arc_length_corrected_displacement,
     compute_arc_from_tangent_projection,
-    directional_curvature,
+    directional_curvature, FLAT_THRESHOLD,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     normalize,
@@ -55,8 +55,8 @@ def regime_params(draw, min_kp, max_kp):
     return sign * p, k
 
 
-flat_params = regime_params(min_kp=0, max_kp=0.0009)
-guard_params = regime_params(min_kp=1.0, max_kp=5.0)
+flat_params = regime_params(min_kp=0, max_kp=FLAT_THRESHOLD - DEFAULT_TOLERANCE)
+guard_params = regime_params(min_kp=1.0, max_kp=2.0)
 
 
 @st.composite
