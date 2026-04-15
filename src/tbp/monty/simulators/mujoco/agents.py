@@ -165,8 +165,6 @@ class Embodiment(Agent):
             rgba_data = renderer.render()
 
             renderer.enable_depth_rendering()
-            # TODO: do we need to do this between rendering?
-            renderer.update_scene(self.sim.data, camera=f"{self.id}.{sensor_id}")
             depth_data = renderer.render()
             renderer.disable_depth_rendering()
 
