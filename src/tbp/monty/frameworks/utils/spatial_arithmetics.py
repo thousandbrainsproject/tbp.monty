@@ -141,14 +141,12 @@ def is_parallel(
     """True when v1 and v2 point in the same or opposite direction.
 
     Assumes unit-length inputs. The metric 1 - |cos(theta)| is compared
-    against a tolerance derived from the input dtype's machine epsilon,
-    so the threshold adapts to float32 vs float64 precision.
+    against tolerance.
 
     Args:
         v1: First unit vector.
         v2: Second unit vector.
         tolerance: Maximum value of 1 - |cos(theta)| to consider parallel.
-                  Defaults to machine epsilon of v1's dtype.
 
     Returns:
         True if v1 and v2 are parallel (same or opposite direction).
