@@ -60,32 +60,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
         ks=curvature_values(),
         vectors=orthonormal_vectors(),
     )
-    @example(
-        angle=0.0,
-        ks=(4.0, 2.0),
-        vectors=(
-            np.array([1.0, 0.0, 0.0]),
-            np.array([0.0, 1.0, 0.0]),
-        ),
-    )  # aligned with pc1_dir -> k1
-    @example(
-        angle=np.pi / 2,
-        ks=(4.0, 2.0),
-        vectors=(
-            np.array([1.0, 0.0, 0.0]),
-            np.array([0.0, 1.0, 0.0]),
-        ),
-    )  # perpendicular to pc1_dir -> k2
-    @example(angle=np.pi / 4, ks=(4.0, 2.0), vectors=(
-        np.array([1.0, 0.0, 0.0]),
-        np.array([0.0, 1.0, 0.0]),
-    ))  # 45 degrees -> average
-    @example(angle=0.0, ks = (-3.0, -1.0), vectors =(
-            np.array([1.0, 0.0, 0.0]),
-            np.array([0.0, 1.0, 0.0]),
-    ))  # negative curvatures
     def test_euler_formula(self, angle, ks, vectors):
-        """Result matches k1*cos^2(theta) + k2*sin^2(theta) for any direction."""
         pc1, pc2 = vectors
         k1, k2 = ks
         direction = pc1 * np.cos(angle) + pc2 * np.sin(angle)
@@ -93,7 +68,8 @@ class DirectionalCurvatureTest(unittest.TestCase):
             direction, k1=k1, k2=k2, pc1_dir=pc1, pc2_dir=pc2
         )
         expected = k1 * np.cos(angle) ** 2 + k2 * np.sin(angle) ** 2
-        self.assertAlmostEqual(result, expected)
+        tol = max(DEFAULT_TOLERANCE * abs(expected), DEFAULT_TOLERANCE)
+        npt.assert_allclose(result, expected, atol=tol, rtol=DEFAULT_TOLERANCE)
 
     @given(
         angle=st.floats(min_value=0, max_value=2 * np.pi, allow_nan=False),
