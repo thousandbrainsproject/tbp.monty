@@ -57,6 +57,9 @@ PRIMITIVE_OBJECTS = {
 DEFAULT_RESOLUTION = Resolution2D((64, 64))
 
 
+MuJoCoAgentFactory = Callable[["MuJoCoSimulator"], Agent]
+
+
 class UnknownObjectType(RuntimeError):
     """An unknown object type is requested."""
 
@@ -73,6 +76,10 @@ class DataPathNotConfigured(RuntimeError):
     """The simulator data_path is not configured and a custom object is requested."""
 
 
+class ActuateMethodMissing(RuntimeError):
+    """The simulator applied an action to an agent that lacks that actuate method."""
+
+
 class MuJoCoSimulator(SimulatedObjectEnvironment):
     """Simulator implementation for MuJoCo.
 
@@ -86,16 +93,18 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
 
     def __init__(
         self,
-        agents: Sequence[Callable[[MuJoCoSimulator], Agent]] | None = None,
+        agents: Sequence[MuJoCoAgentFactory] | None = None,
         data_path: str | Path | None = None,
+        raise_actuate_missing: bool = True,
     ) -> None:
         if not agents:
-            agents: Sequence[Callable[[MuJoCoSimulator], Agent]] = []
+            agents: Sequence[MuJoCoAgentFactory] = []
 
         self.spec = MjSpec()
         self.model: MjModel = self.spec.compile()
         self.data = MjData(self.model)
         self.data_path = Path(data_path) if data_path else None
+        self._raise_actuate_missing = raise_actuate_missing
 
         self._agent_partials = agents
         self._agents: dict[AgentID, Agent] = {}
@@ -360,7 +369,10 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             except AttributeError as exc:
                 # Only catch missing actuate methods, propagate any other errors
                 if exc.name and exc.name.startswith("actuate_"):
-                    logger.warning(f"{agent} does not understand {action}")
+                    msg = f"{exc.obj} does not understand '{exc.name}'"
+                    if self._raise_actuate_missing:
+                        raise ActuateMethodMissing(msg) from None
+                    logger.warning(msg)
                     continue
                 raise
         mj_forward(self.model, self.data)
