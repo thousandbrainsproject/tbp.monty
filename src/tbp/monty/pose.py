@@ -12,8 +12,6 @@ import numpy as np
 from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.math import QuaternionWXYZ, VectorXYZ
-
 # FloatVector = np.ndarray[tuple[int], np.dtype[np.float64]]
 FloatVector = np.ndarray
 """A type alias for a 1D array of `float`"""
@@ -45,7 +43,8 @@ def _round_scalar(n: float, ndigits: int = 6) -> float:
     return 0.0 if n == 0.0 else n
 
 
-def _round_tuple(t: tuple[float, ...], ndigits: int = 6) -> tuple[float, ...]:
+def _round_tuple(t: ArrayLike, ndigits: int = 6) -> tuple[float, ...]:
+    t = np.asarray(t, dtype=float)
     return tuple(_round_scalar(n, ndigits) for n in t)
 
 
@@ -78,8 +77,6 @@ class Location:  # noqa: PLW1641
         >>> a_location.z = -2
         >>> a_location.z
         -2.0
-        >>> a_location.position
-        (3.0, 5.0, -2.0)
         >>> a_location.as_array()
         array([ 3.,  5., -2.])
 
@@ -168,13 +165,8 @@ class Location:  # noqa: PLW1641
     def z(self, z: float) -> None:
         self._v[2] = z
 
-    @property
-    def position(self) -> VectorXYZ:  # was: tuple[float]:
-        """This `Location` as an (_x_, _y_, _z_) tuple."""
-        return tuple(self._v)
-
     def __str__(self) -> str:
-        return str(_round_tuple(self.position))
+        return str(_round_tuple(self._v))
 
     def __repr__(self) -> str:
         return (
@@ -209,7 +201,7 @@ class Location:  # noqa: PLW1641
         if self is other:
             return True
         if isinstance(other, self.__class__):
-            return self.frame == other.frame and self.position == other.position
+            return self.frame == other.frame and np.all(self._v == other._v)
         return False
 
     def approx_equal(self, other: object) -> bool:
@@ -217,7 +209,7 @@ class Location:  # noqa: PLW1641
             return True
         if isinstance(other, self.__class__):
             return self.frame == other.frame and (
-                _round_tuple(self.position) == _round_tuple(other.position)
+                _round_tuple(self._v) == _round_tuple(other._v)
             )
         return False
 
@@ -434,8 +426,6 @@ class Orientation:  # noqa: PLW1641
         0.0
         >>> an_orientation.z
         0.0
-        >>> an_orientation.rotation
-        (1.0, 0.0, 0.0, 0.0)
         >>> an_orientation.as_array()
         array([1., 0., 0., 0.])
 
@@ -507,9 +497,9 @@ class Orientation:  # noqa: PLW1641
             False
             >>> an_orientation.approx_equal(b_orientation)
             True
-            >>> b_orientation.rotation
+            >>> print(b_orientation)
             (0.957662, 0.126079, 0.256605, -0.033783)
-            >>> _round_tuple(an_orientation.rotation)
+            >>> print(an_orientation)
             (0.957662, 0.126079, 0.256605, -0.033783)
             >>> an_orientation.as_array()
             array([ 0.9576622 ,  0.12607862,  0.25660481, -0.03378266])
@@ -628,13 +618,8 @@ class Orientation:  # noqa: PLW1641
     def z(self) -> float:
         return self._q[3]
 
-    @property
-    def rotation(self) -> QuaternionWXYZ:  # was: tuple[float]:
-        """This `Orientation` as a (_w_, _x_, _y_, _z_) tuple."""
-        return tuple(self._q)
-
     def __str__(self) -> str:
-        return str(_round_tuple(self.rotation))
+        return str(_round_tuple(self._q))
 
     def __repr__(self) -> str:
         return (
@@ -658,16 +643,15 @@ class Orientation:  # noqa: PLW1641
         if self is other:
             return True
         if isinstance(other, self.__class__):
-            return self.frame == other.frame and self.rotation == other.rotation
+            return self.frame == other.frame and np.all(self._q == other._q)
         return False
 
     def approx_equal(self, other: object) -> bool:
         if self is other:
             return True
         if isinstance(other, self.__class__):
-            # return self.frame == other.frame and self._r.approx_equal(other._r)
-            return self.frame == other.frame and (
-                _round_tuple(self.rotation) == _round_tuple(other.rotation)
+            return (self.frame == other.frame) and (
+                _round_tuple(self._q) == _round_tuple(other._q)
             )
         return False
 
