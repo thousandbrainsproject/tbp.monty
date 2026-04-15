@@ -29,23 +29,18 @@ from tests.unit.frameworks.utils.spatial_arithmetics_test import (
     nonzero_orthogonal_vectors,
 )
 
-# Max realistic tangent-plane displacement per step (meters). Objects are
-# ~10 cm; typical step size is 4 mm, max random step is 5 cm.
-_MAX_PROJECTION = 0.05
-
-# Max realistic surface curvature (1/m). Ranges from flat (0) to sharp
-# features (r = 1 cm => k = 100). Negative for concave surfaces.
-_MAX_CURVATURE = 100
+# Max tangent-plane displacement per step (meters).
+MAX_PROJECTION = 0.05
 
 # abs(curvature) = 1e-3 corresponds to 1 mm (sharp edge)
 MIN_K = -1e3
 MAX_K = 1e3
 
 projections = st.floats(
-    min_value=-_MAX_PROJECTION, max_value=_MAX_PROJECTION
+    min_value=-MAX_PROJECTION, max_value=MAX_PROJECTION
 ) | st.just(0.0)
 curvatures = st.floats(
-    min_value=-_MAX_CURVATURE, max_value=_MAX_CURVATURE
+    min_value=-MAX_K, max_value=MAX_K
 ) | st.just(0.0)
 
 
@@ -53,8 +48,8 @@ curvatures = st.floats(
 def regime_params(draw, min_kp, max_kp):
     """Generate (tangent_projection, curvature) with |k*p| in [min_kp, max_kp]."""
     kp = draw(st.floats(min_value=min_kp, max_value=max_kp))
-    min_k = max(kp / _MAX_PROJECTION, 0.01)
-    k = draw(st.floats(min_value=min_k, max_value=_MAX_CURVATURE))
+    min_k = max(kp / MAX_PROJECTION, 0.01)
+    k = draw(st.floats(min_value=min_k, max_value=MAX_K))
     p = kp / k
     sign = draw(st.sampled_from([-1, 1]))
     return sign * p, k
