@@ -18,10 +18,12 @@ import torch
 from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.math import DEFAULT_TOLERANCE
+
 logger = logging.getLogger(__name__)
 
 
-def normalize(v: ArrayLike, epsilon: float = 1e-12) -> np.ndarray:
+def normalize(v: ArrayLike, epsilon: float = DEFAULT_TOLERANCE) -> np.ndarray:
     """Normalize a vector to unit length.
 
     Args:
@@ -29,7 +31,7 @@ def normalize(v: ArrayLike, epsilon: float = 1e-12) -> np.ndarray:
         epsilon: Small epsilon value below which the vector is considered zero.
 
     Returns:
-        Unit vector in the direction of v.
+        Unit vector in the direction of v in v's dtype.
 
     Raises:
         ValueError: If the vector has near-zero length (norm < epsilon).
