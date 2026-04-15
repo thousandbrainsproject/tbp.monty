@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
+from unittest.mock import Mock
 
 import numpy as np
 import numpy.testing as npt
@@ -23,11 +24,11 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
-    non_zero_magnitude_vectors,
     nonzero_orthogonal_vectors,
 )
 
-# abs(curvature) = 1e-3 corresponds to 1 mm (sharp edge)
+# Curvature is reciprocal of the radius, thus 1e3 corresponds
+# to 1 mm radius (sharp edge)
 MIN_K = -1e3
 MAX_K = 1e3
 
@@ -75,36 +76,34 @@ class DirectionalCurvatureTest(unittest.TestCase):
         )
         expected = k1 * np.cos(angle) ** 2 + k2 * np.sin(angle) ** 2
         tol = max(
-            DEFAULT_TOLERANCE * abs(k1), DEFAULT_TOLERANCE * abs(k2), DEFAULT_TOLERANCE
+            DEFAULT_TOLERANCE * abs(k1),
+            DEFAULT_TOLERANCE * abs(k2),
+            DEFAULT_TOLERANCE,
         )
         npt.assert_allclose(result, expected, atol=tol, rtol=DEFAULT_TOLERANCE)
 
     @given(
-        movement_direction=non_zero_magnitude_vectors(),
         vectors=orthonormal_vectors(),
-        ks=curvature_values(),
         a_scaler=st.floats(min_value=-1e3, max_value=1e3).filter(
             lambda x: abs(x) > DEFAULT_TOLERANCE
         ),
     )
-    def test_non_orthogonal_pcs_raises(self, movement_direction, vectors, ks, a_scaler):
+    def test_non_orthogonal_pcs_raises(self, vectors, a_scaler):
         pc1, _ = vectors
-        k1, k2 = ks
         bad_pc2 = pc1 * a_scaler
         expected_msg = r"The pc1_dir and pc2_dir must be orthogonal\."
         with pytest.raises(ValueError, match=expected_msg):
             directional_curvature(
-                movement_direction=movement_direction,
-                k1=k1,
-                k2=k2,
+                movement_direction=Mock(),
+                k1=Mock(),
+                k2=Mock(),
                 pc1_dir=pc1,
                 pc2_dir=bad_pc2,
             )
 
-    @given(vectors=orthonormal_vectors(), ks=curvature_values())
-    def test_out_of_plane_movement_raises(self, vectors, ks):
+    @given(vectors=orthonormal_vectors())
+    def test_out_of_plane_movement_raises(self, vectors):
         pc1, pc2 = vectors
-        k1, k2 = ks
         movement_direction = np.cross(pc1, pc2)
         expected_msg = (
             r"The movement_direction must lie in the plane"
@@ -113,8 +112,31 @@ class DirectionalCurvatureTest(unittest.TestCase):
         with pytest.raises(ValueError, match=expected_msg):
             directional_curvature(
                 movement_direction=movement_direction,
-                k1=k1,
-                k2=k2,
+                k1=Mock(),
+                k2=Mock(),
                 pc1_dir=pc1,
                 pc2_dir=pc2,
+            )
+
+    @given(vectors=orthonormal_vectors())
+    def test_pcs_not_unit_vectors_raises(self, vectors):
+        pc1, pc2 = vectors
+        scaled_pc1 = pc1 * 2.0
+        with pytest.raises(ValueError, match="must be unit vectors"):
+            directional_curvature(
+                movement_direction=Mock(),
+                k1=Mock(),
+                k2=Mock(),
+                pc1_dir=scaled_pc1,
+                pc2_dir=pc2,
+            )
+
+        scaled_pc2 = pc2 * 2.0
+        with pytest.raises(ValueError, match="must be unit vectors"):
+            directional_curvature(
+                movement_direction=Mock(),
+                k1=Mock(),
+                k2=Mock(),
+                pc1_dir=pc1,
+                pc2_dir=scaled_pc2,
             )
