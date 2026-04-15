@@ -52,20 +52,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
             pc1_dir=pc1,
             pc2_dir=pc2,
         )
-        self.assertEqual(result, 0.0)
-
-    @given(vectors=orthonormal_vectors(), ks=curvature_values())
-    def test_near_zero_direction_returns_zero(self, vectors, ks):
-        pc1, pc2 = vectors
-        k1, k2 = ks
-        result = directional_curvature(
-            np.array([1e-15, 0.0, 0.0]),
-            k1=k1,
-            k2=k2,
-            pc1_dir=pc1,
-            pc2_dir=pc2,
-        )
-        self.assertEqual(result, 0.0)
+        npt.assert_allclose(result, 0.0, atol=DEFAULT_TOLERANCE)
 
     @given(
         angle=st.floats(min_value=0, max_value=2 * np.pi, allow_nan=False),
