@@ -10,6 +10,7 @@
 import unittest
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 from hypothesis import assume, example, given, settings
 from hypothesis import strategies as st
