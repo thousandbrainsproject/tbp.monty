@@ -25,11 +25,12 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 
 logger = logging.getLogger(__name__)
 
+FLAT_THRESHOLD = 0.001
 
 def compute_arc_from_tangent_projection(
     tangent_projection: float,
     curvature: float,
-    threshold: float = 0.001,
+    threshold: float = FLAT_THRESHOLD,
 ) -> float:
     """Correct displacement to true arc length on a curved surface.
 
@@ -75,6 +76,8 @@ def compute_arc_from_tangent_projection(
     kp = abs_k * abs_p
 
     if kp < threshold:
+        # When |k * p| < 0.001, the difference in arcsin(k*p) and k*p
+        # is negligible and no arc-length correction is needed
         return tangent_projection
 
     if kp >= 1.0:
