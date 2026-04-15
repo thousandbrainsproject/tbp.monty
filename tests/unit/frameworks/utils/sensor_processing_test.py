@@ -16,6 +16,8 @@ from hypothesis import assume, given
 from hypothesis import strategies as st
 
 from tbp.monty.frameworks.utils.sensor_processing import (
+    arc_length_corrected_displacement,
+    compute_arc_from_tangent_projection,
     directional_curvature,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
@@ -27,9 +29,39 @@ from tests.unit.frameworks.utils.spatial_arithmetics_test import (
     nonzero_orthogonal_vectors,
 )
 
+# Max realistic tangent-plane displacement per step (meters). Objects are
+# ~10 cm; typical step size is 4 mm, max random step is 5 cm.
+_MAX_PROJECTION = 0.05
+
+# Max realistic surface curvature (1/m). Ranges from flat (0) to sharp
+# features (r = 1 cm => k = 100). Negative for concave surfaces.
+_MAX_CURVATURE = 100
+
 # abs(curvature) = 1e-3 corresponds to 1 mm (sharp edge)
 MIN_K = -1e3
 MAX_K = 1e3
+
+projections = st.floats(
+    min_value=-_MAX_PROJECTION, max_value=_MAX_PROJECTION
+) | st.just(0.0)
+curvatures = st.floats(
+    min_value=-_MAX_CURVATURE, max_value=_MAX_CURVATURE
+) | st.just(0.0)
+
+
+@st.composite
+def regime_params(draw, min_kp, max_kp):
+    """Generate (tangent_projection, curvature) with |k*p| in [min_kp, max_kp]."""
+    kp = draw(st.floats(min_value=min_kp, max_value=max_kp))
+    min_k = max(kp / _MAX_PROJECTION, 0.01)
+    k = draw(st.floats(min_value=min_k, max_value=_MAX_CURVATURE))
+    p = kp / k
+    sign = draw(st.sampled_from([-1, 1]))
+    return sign * p, k
+
+
+flat_params = regime_params(min_kp=0, max_kp=0.0009)
+guard_params = regime_params(min_kp=1.0, max_kp=5.0)
 
 
 @st.composite
@@ -44,6 +76,83 @@ def curvature_values(draw):
     k2 = draw(st.floats(min_value=MIN_K, max_value=MAX_K))
     assume(k1 >= k2)
     return k1, k2
+
+
+class ComputeArcFromTangentProjectionTest(unittest.TestCase):
+    def test_known_correction(self):
+        # k=1, p=0.5 => arcsin(0.5)/1 = pi/6
+        result = compute_arc_from_tangent_projection(0.5, curvature=1.0)
+        npt.assert_allclose(result, np.pi / 6)
+
+    def test_kp_at_threshold_triggers_correction(self):
+        # k=1.0, p=0.001 => kp = 0.001, which is NOT < 0.001, so correction fires
+        result = compute_arc_from_tangent_projection(0.001, curvature=1.0)
+        expected = np.arcsin(0.001) / 1.0
+        npt.assert_allclose(result, expected)
+
+    def test_boundary_near_threshold(self):
+        # threshold = 0.001
+        # case kp < 0.001
+        p_below = 0.0009
+        k = 1.0
+        self.assertEqual(compute_arc_from_tangent_projection(p_below, k), p_below)
+
+        # case kp = 0.001
+        p_at = 0.001
+        result = compute_arc_from_tangent_projection(p_at, k)
+        npt.assert_allclose(result, np.arcsin(0.001) / 1.0)
+        self.assertNotEqual(result, p_at)
+
+    def test_boundary_near_domain_guard(self):
+        # kp = 1.0 is the guard
+        # case kp < 1.0
+        p_below = 0.999
+        k = 1.0
+        result = compute_arc_from_tangent_projection(p_below, k)
+        npt.assert_allclose(result, np.arcsin(0.999) / 1.0)
+        self.assertNotEqual(result, p_below)
+
+        # case kp = 1.0
+        p_at = 1.0
+        self.assertEqual(compute_arc_from_tangent_projection(p_at, k), p_at)
+
+        # case kp > 1.0
+        p_above = 1.1
+        self.assertEqual(compute_arc_from_tangent_projection(p_above, k), p_above)
+
+    @given(tangent_projection=projections, curvature=curvatures)
+    def test_sign_preservation(self, tangent_projection, curvature):
+        result = compute_arc_from_tangent_projection(tangent_projection, curvature)
+        if tangent_projection > 0:
+            self.assertGreater(result, 0)
+        elif tangent_projection < 0:
+            self.assertLess(result, 0)
+        else:
+            self.assertEqual(result, 0)
+
+    @given(tangent_projection=projections, curvature=curvatures)
+    def test_negating_projection_negates_result(self, tangent_projection, curvature):
+        pos = compute_arc_from_tangent_projection(tangent_projection, curvature)
+        neg = compute_arc_from_tangent_projection(-tangent_projection, curvature)
+        npt.assert_allclose(neg, -pos)
+
+    @given(tangent_projection=projections, curvature=curvatures)
+    def test_curvature_sign_does_not_affect_result(self, tangent_projection, curvature):
+        pos_k = compute_arc_from_tangent_projection(tangent_projection, curvature)
+        neg_k = compute_arc_from_tangent_projection(tangent_projection, -curvature)
+        self.assertEqual(pos_k, neg_k)
+
+    @given(params=flat_params)
+    def test_flat_bypass_returns_projection(self, params):
+        tangent_projection, curvature = params
+        result = compute_arc_from_tangent_projection(tangent_projection, curvature)
+        self.assertEqual(result, tangent_projection)
+
+    @given(params=guard_params)
+    def test_domain_guard_returns_projection(self, params):
+        tangent_projection, curvature = params
+        result = compute_arc_from_tangent_projection(tangent_projection, curvature)
+        self.assertEqual(result, tangent_projection)
 
 
 class DirectionalCurvatureTest(unittest.TestCase):
@@ -74,9 +183,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
             direction, k1=k1, k2=k2, pc1_dir=pc1, pc2_dir=pc2
         )
         expected = k1 * np.cos(angle) ** 2 + k2 * np.sin(angle) ** 2
-        tol = max(
-            DEFAULT_TOLERANCE * abs(k1), DEFAULT_TOLERANCE * abs(k2), DEFAULT_TOLERANCE
-        )
+        tol = max(DEFAULT_TOLERANCE * abs(k1), DEFAULT_TOLERANCE * abs(k2), DEFAULT_TOLERANCE)
         npt.assert_allclose(result, expected, atol=tol, rtol=DEFAULT_TOLERANCE)
 
     @given(
@@ -118,3 +225,160 @@ class DirectionalCurvatureTest(unittest.TestCase):
                 pc1_dir=pc1,
                 pc2_dir=pc2,
             )
+
+
+class ArcLengthCorrectedDisplacementTest(unittest.TestCase):
+    """Unit tests for the arc_length_corrected_displacement function."""
+
+    def setUp(self):
+        self.basis_u = np.array([1.0, 0.0, 0.0])
+        self.basis_v = np.array([0.0, 1.0, 0.0])
+        # Principal directions aligned with basis vectors
+        self.pose_vectors = np.array(
+            [
+                [0.0, 0.0, 1.0],  # row 0: normal (unused by function)
+                [1.0, 0.0, 0.0],  # row 1: principal dir 1
+                [0.0, 1.0, 0.0],  # row 2: principal dir 2
+            ]
+        )
+
+    @given(
+        du=st.floats(min_value=-1, max_value=1),
+        dv=st.floats(min_value=-1, max_value=1),
+        k1=st.floats(min_value=-100, max_value=100),
+        k2=st.floats(min_value=-100, max_value=100),
+    )
+    def test_arc_length_corrected_displacement_properties(self, du, dv, k1, k2):
+        principal_curvatures = np.array([k1, k2])
+        arc_u, arc_v = arc_length_corrected_displacement(
+            du,
+            dv,
+            self.basis_u,
+            self.basis_v,
+            principal_curvatures,
+            self.pose_vectors,
+        )
+
+        # 1. Sign preservation
+        if du > 0:
+            self.assertGreater(arc_u, 0)
+        elif du < 0:
+            self.assertLess(arc_u, 0)
+        else:
+            self.assertEqual(arc_u, 0)
+
+        if dv > 0:
+            self.assertGreater(arc_v, 0)
+        elif dv < 0:
+            self.assertLess(arc_v, 0)
+        else:
+            self.assertEqual(arc_v, 0)
+
+        # 2. Arc length >= chord length (absolute)
+        self.assertGreaterEqual(abs(arc_u), abs(du) - 1e-10)
+        self.assertGreaterEqual(abs(arc_v), abs(dv) - 1e-10)
+
+        # 3. Symmetry with respect to displacement
+        arc_u_neg, arc_v_neg = arc_length_corrected_displacement(
+            -du,
+            -dv,
+            self.basis_u,
+            self.basis_v,
+            principal_curvatures,
+            self.pose_vectors,
+        )
+        self.assertAlmostEqual(arc_u_neg, -arc_u)
+        self.assertAlmostEqual(arc_v_neg, -arc_v)
+
+        # 4. Symmetry with respect to curvature sign (f(p, k) == f(p, -k))
+        arc_u_nk, arc_v_nk = arc_length_corrected_displacement(
+            du,
+            dv,
+            self.basis_u,
+            self.basis_v,
+            -principal_curvatures,
+            self.pose_vectors,
+        )
+        self.assertEqual(arc_u_nk, arc_u)
+        self.assertEqual(arc_v_nk, arc_v)
+
+    def test_zero_curvature_returns_unchanged(self):
+        result = arc_length_corrected_displacement(
+            0.5,
+            0.3,
+            self.basis_u,
+            self.basis_v,
+            np.array([0.0, 0.0]),
+            self.pose_vectors,
+        )
+        self.assertAlmostEqual(result[0], 0.5)
+        self.assertAlmostEqual(result[1], 0.3)
+
+    def test_axes_corrected_independently(self):
+        # k1=1.0 along basis_u, k2=0.0 along basis_v
+        arc_u, arc_v = arc_length_corrected_displacement(
+            0.5,
+            0.5,
+            self.basis_u,
+            self.basis_v,
+            np.array([1.0, 0.0]),
+            self.pose_vectors,
+        )
+        # u axis should be corrected (k=1, p=0.5 => arcsin(0.5)/1 = pi/6)
+        self.assertAlmostEqual(arc_u, np.pi / 6)
+        # v axis has zero curvature, unchanged
+        self.assertAlmostEqual(arc_v, 0.5)
+
+    def test_symmetric_curvature_corrects_both(self):
+        # k1 = k2 = 1.0, so both axes get same correction
+        arc_u, arc_v = arc_length_corrected_displacement(
+            0.5,
+            0.5,
+            self.basis_u,
+            self.basis_v,
+            np.array([1.0, 1.0]),
+            self.pose_vectors,
+        )
+        expected = np.pi / 6
+        self.assertAlmostEqual(arc_u, expected)
+        self.assertAlmostEqual(arc_v, expected)
+
+    def test_zero_displacement_returns_zero(self):
+        arc_u, arc_v = arc_length_corrected_displacement(
+            0.0,
+            0.0,
+            self.basis_u,
+            self.basis_v,
+            np.array([5.0, 5.0]),
+            self.pose_vectors,
+        )
+        self.assertEqual(arc_u, 0.0)
+        self.assertEqual(arc_v, 0.0)
+
+    def test_negative_displacement_preserved(self):
+        arc_u, arc_v = arc_length_corrected_displacement(
+            -0.5,
+            0.5,
+            self.basis_u,
+            self.basis_v,
+            np.array([1.0, 1.0]),
+            self.pose_vectors,
+        )
+        self.assertAlmostEqual(arc_u, -np.pi / 6)
+        self.assertAlmostEqual(arc_v, np.pi / 6)
+
+    def test_arc_at_least_as_long_as_chord(self):
+        arc_u, arc_v = arc_length_corrected_displacement(
+            0.3,
+            0.4,
+            self.basis_u,
+            self.basis_v,
+            np.array([2.0, 2.0]),
+            self.pose_vectors,
+        )
+        self.assertGreaterEqual(abs(arc_u), 0.3)
+        self.assertGreaterEqual(abs(arc_v), 0.4)
+
+
+if __name__ == "__main__":
+    unittest.main()
