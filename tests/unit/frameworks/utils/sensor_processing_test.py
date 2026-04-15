@@ -87,7 +87,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
         pc1, _ = vectors
         k1, k2 = ks
         bad_pc2 = pc1 * a_scaler
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             directional_curvature(
                 movement_direction=movement_direction,
                 k1=k1,
