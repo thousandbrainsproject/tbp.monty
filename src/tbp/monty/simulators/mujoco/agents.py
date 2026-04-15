@@ -10,13 +10,13 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 import numpy as np
 import quaternion as qt
 from mujoco import MjsBody, mjtJoint
 
-from tbp.monty.frameworks.agents import Agent, AgentID
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     SensorObservation,
@@ -38,6 +38,30 @@ logger = logging.getLogger(__name__)
 # The default field of view value for zoom 1.0
 # Note: this value is the half-FOV rather than the full FOV
 DEFAULT_CAMERA_FOVY: float = 45.0
+
+
+class Agent(Protocol):
+    """Protocol for an agent that interacts with an environment."""
+
+    id: AgentID
+
+    @property
+    def max_sensor_resolution(self) -> Resolution2D:
+        """Returns the maximum width and heights of the sensors.
+
+        Note: the maximum width and maximum height may come from separate sensors.
+        """
+
+    @property
+    def observations(self) -> AgentObservations:
+        """Returns the current observations of the sensors coupled to this agent."""
+
+    @property
+    def state(self) -> AgentState:
+        """Returns the current proprioceptive state of the agent."""
+
+    def reset(self) -> None:
+        """Resets the agent to its initial state."""
 
 
 class Embodiment(Agent):

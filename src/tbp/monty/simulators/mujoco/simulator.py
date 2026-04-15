@@ -26,7 +26,7 @@ from mujoco import (
 from typing_extensions import Self, override
 
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.agents import Agent, AgentID
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
@@ -37,6 +37,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.sensors import Resolution2D
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
+from tbp.monty.simulators.mujoco.agents import Agent
 from tbp.monty.simulators.mujoco.objects import (
     ObjectMetadata,
     load_object_metadata,
