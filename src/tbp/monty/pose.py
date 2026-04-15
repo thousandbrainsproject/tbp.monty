@@ -31,6 +31,9 @@ def _deg(d: float) -> float:
     Pi / 12 | 15
     Pi / 36 | 5
 
+    Args:
+        d: The angle in degrees
+
     Returns:
         The angle in radians
     """
@@ -304,6 +307,10 @@ class Location:  # noqa: PLW1641
     def apply(self, vectors: ArrayLike) -> FloatVector:
         """Apply this `Location` to translate _vectors_.
 
+        Args:
+            vectors: The `array([`_x_, _y_, _z_`])`
+                or `array([[`_x_, _y_, _z_`], ...])` to translate.
+
         Returns:
             The translated `array([`_x'_, _y'_, _z'_`])`
             or `array([[`_x'_, _y'_, _z'_`], ...])`
@@ -367,6 +374,11 @@ class Location:  # noqa: PLW1641
         Returns:
             The new `Location` object.
 
+        Args:
+            frame: The `Pose` representing the target frame,
+                or `None` for the world frame.
+                Default: `None`.
+
         Raises:
             ValueError:
                 When this `Location` is not in the frame hierarchy.
@@ -399,6 +411,7 @@ IDENTITY_ROTATION = Rotation.identity()
 
 IDENTITY_ROTATION_MATRIX = np.identity(3, dtype=float)
 """A 3x3 identity matrix for default Orientation."""
+
 
 class Orientation:  # noqa: PLW1641
     r"""An orientation (rotation) in a given _reference frame_.
@@ -722,6 +735,10 @@ class Orientation:  # noqa: PLW1641
     def apply(self, vectors: ArrayLike) -> FloatVector:
         """Apply this `Orientation` to rotate _vectors_.
 
+        Args:
+            vectors: The `array([`_x_, _y_, _z_`])`
+                or `array([[`_x_, _y_, _z_`], ...])` to rotate.
+
         Returns:
             The rotated `array([`_x'_, _y'_, _z'_`])`
             or `array([[`_x'_, _y'_, _z'_`], ...])`
@@ -794,6 +811,11 @@ class Orientation:  # noqa: PLW1641
 
         Returns:
             The new `Orientation` object.
+
+        Args:
+            frame: The `Pose` representing the target frame,
+                or `None` for the world frame.
+                Default: `None`.
 
         Raises:
             ValueError:
@@ -998,7 +1020,10 @@ class Pose:  # noqa: PLW1641
             True
         """  # noqa: E501
         return Pose(
-            self.frame, self.location, self.orientation, self.label
+            self.frame,
+            self.location,
+            self.orientation,
+            self.label,
             # self.frame, self.location.copy(), self.orientation.copy(), self.label
         )
 
@@ -1073,6 +1098,13 @@ class Pose:  # noqa: PLW1641
 
         Returns:
             The new `Pose` object.
+
+        Args:
+            frame: The `Pose` representing the target frame,
+                or `None` for the world frame.
+                Default: `None`.
+            label: The label string displayed for this `Pose`.
+                Default: `""`.
 
         Examples:
             >>> agent_frame = Pose(label="Agent")
