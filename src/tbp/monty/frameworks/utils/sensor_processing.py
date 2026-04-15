@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 FLAT_THRESHOLD = 0.001
 
+
 def compute_arc_from_tangent_projection(
     tangent_projection: float,
     curvature: float,
@@ -218,7 +219,6 @@ def arc_length_corrected_displacement(
         compute_arc_from_tangent_projection(du, k_u),
         compute_arc_from_tangent_projection(dv, k_v),
     )
-
 
 
 def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
