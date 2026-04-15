@@ -43,7 +43,7 @@ def nonzero_magnitude_vectors(draw, min_value=-1e6, max_value=1e6):
     )
 
 
-unit_vectors = nonzero_magnitude_vectors.map(lambda v: normalize(v))
+unit_vectors = nonzero_magnitude_vectors().map(lambda v: normalize(v))
 
 
 @st.composite
