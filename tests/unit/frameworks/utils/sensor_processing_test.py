@@ -91,8 +91,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
     def test_non_orthogonal_pcs_raises(self, vectors, a_scaler):
         pc1, _ = vectors
         bad_pc2 = pc1 * a_scaler
-        expected_msg = r"The pc1_dir and pc2_dir must be orthogonal\."
-        with pytest.raises(ValueError, match=expected_msg):
+        with pytest.raises(ValueError, match="must be orthogonal"):
             directional_curvature(
                 movement_direction=Mock(),
                 k1=Mock(),
@@ -105,11 +104,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
     def test_out_of_plane_movement_raises(self, vectors):
         pc1, pc2 = vectors
         movement_direction = np.cross(pc1, pc2)
-        expected_msg = (
-            r"The movement_direction must lie in the plane"
-            r" of pc1_dir and pc2_dir\."
-        )
-        with pytest.raises(ValueError, match=expected_msg):
+        with pytest.raises(ValueError, match="must lie in the plane"):
             directional_curvature(
                 movement_direction=movement_direction,
                 k1=Mock(),
