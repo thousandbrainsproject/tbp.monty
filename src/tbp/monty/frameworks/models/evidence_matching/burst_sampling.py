@@ -562,15 +562,6 @@ class BurstSamplingHypothesesUpdater:
             The sampled informed hypotheses.
 
         """
-        # Return empty arrays for no hypotheses to sample
-        if sum(samples_per_channel.values()) == 0:
-            return Hypotheses(
-                locations=np.zeros((0, 3)),
-                poses=np.zeros((0, 3, 3)),
-                evidence=np.zeros(0),
-                possible=np.zeros(0, dtype=np.bool_),
-            )
-
         sampled_hypotheses = []
         for channel, sample_count in samples_per_channel.items():
             if sample_count == 0:
@@ -584,6 +575,7 @@ class BurstSamplingHypothesesUpdater:
                 )
             )
 
+        # Return empty arrays for no hypotheses to sample
         if not sampled_hypotheses:
             return Hypotheses(
                 locations=np.zeros((0, 3)),
