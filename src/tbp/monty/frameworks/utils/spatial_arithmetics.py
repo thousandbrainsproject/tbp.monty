@@ -244,7 +244,7 @@ def get_angle_beefed_up(v1, v2):
     if v1 is None or v2 is None:
         return np.inf
 
-    if np.all(v1 == 0) or np.all(v2 == 0):
+    if np.linalg.norm(v1) < DEFAULT_TOLERANCE or np.linalg.norm(v2) < DEFAULT_TOLERANCE:
         return np.inf
 
     v1_u = normalize(v1)
