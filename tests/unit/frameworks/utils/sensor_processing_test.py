@@ -18,7 +18,6 @@ from hypothesis import strategies as st
 
 from tbp.monty.frameworks.utils.sensor_processing import (
     FLAT_THRESHOLD,
-    arc_length_corrected_displacement,
     compute_arc_from_tangent_projection,
     directional_curvature,
 )
@@ -27,7 +26,6 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
-    nonzero_magnitude_vectors,
     nonzero_orthogonal_vectors,
 )
 
