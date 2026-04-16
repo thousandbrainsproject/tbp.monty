@@ -98,7 +98,17 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         data_path: str | Path | None = None,
         raise_actuate_missing: bool = True,
     ) -> None:
-        if not agents:
+        """Constructs a MuJoCo simulated environment.
+
+        Args:
+            agents: the agents to set up in the environment.
+              These are provided by Hydra as partially applied constructors that
+              are missing the `simulator` argument.
+            data_path: the path to where custom object data should be loaded from.
+            raise_actuate_missing: whether to raise an exception when an agent
+              does not have an actuate method for an Action.
+        """
+        if agents is None:
             agents: Sequence[MuJoCoAgentFactory] = []
 
         self.spec = MjSpec()
@@ -137,7 +147,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # Step the simulation so all objects are in their initial positions.
         mj_forward(self.model, self.data)
 
-    def _create_renderer(self):
+    def _create_renderer(self) -> None:
         """Create a new MuJoCo renderer, closing the existing one if needed."""
         if self.renderer:
             self.renderer.close()
@@ -366,7 +376,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         for action in actions:
             agent = self._agents[action.agent_id]
             try:
-                action.act(agent)
+                action.act(agent)  # type: ignore[attr-defined]
             except AttributeError as exc:
                 # Only catch missing actuate methods, propagate any other errors
                 if exc.name and exc.name.startswith("actuate_"):

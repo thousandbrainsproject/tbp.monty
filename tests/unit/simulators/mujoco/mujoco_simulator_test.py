@@ -40,8 +40,6 @@ CUSTOM_OBJECT_DATA_PATH = (
 
 
 class MuJoCoSimulatorTestCase(ParametrizedTestCase):
-    """Tests for the MuJoCo simulator."""
-
     def test_initial_scene_is_empty(self) -> None:
         with MuJoCoSimulator() as sim:
             assert sim.model.ngeom == 0

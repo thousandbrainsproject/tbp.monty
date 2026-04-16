@@ -22,10 +22,15 @@ class InvalidObjectMetadata(Exception):
 class ObjectMetadata:
     """Contains the metadata for initializing a custom object."""
 
-    # TODO: Consider better names for these, as these names are the parameter names
-    #  from the MuJoCo function that adds the object.
     refpos: VectorXYZ = ZERO_VECTOR
+    """Reference position relative to which the 3D vertex coordinates are defined.
+    This vector is subtracted from the positions."""
+
     refquat: QuaternionWXYZ = IDENTITY_QUATERNION
+    """Reference orientation relative to which the 3D vertex coordinates and normals
+    are defined. The conjugate of this quaternion is used to rotate the positions and
+    normals. The model compiler normalizes the quaternion automatically.
+    """
 
 
 class ObjectMetadataDecoder(json.JSONDecoder):
