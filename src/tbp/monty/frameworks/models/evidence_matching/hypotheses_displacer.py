@@ -189,14 +189,15 @@ class DefaultHypothesesDisplacer:
 
             # Each channel contributes evidence in range [MIN_EVIDENCE, MAX_EVIDENCE].
             # With C channels the summed range is [MIN_EVIDENCE * C, MAX_EVIDENCE * C].
-            # We map to [0, 1] by shifting by (MAX_EVIDENCE * C) and dividing by
+            # We map to [1, 0] (inverted, since high evidence = low prediction error)
+            # by negating, shifting by (MAX_EVIDENCE * C), and dividing by
             # (EVIDENCE_RANGE * C).
-            # for C=1 and evidence in the range [-1, 2], this is the original
-            # [-1, 2] → [0, 3] → [0, 1] mapping.
+            # For C=1 and evidence in the range [-1, 2], this maps
+            # [-1, 2] -> [1, 0] (e.g. evidence -1 -> error 1, evidence 2 -> error 0).
             num_channels = len(input_channels)
-            mlh_prediction_error = (
-                MIN_EVIDENCE * evidence_for_mlh + MAX_EVIDENCE * num_channels
-            ) / (EVIDENCE_RANGE * num_channels)
+            mlh_prediction_error = (MAX_EVIDENCE * num_channels - evidence_for_mlh) / (
+                EVIDENCE_RANGE * num_channels
+            )
 
             # If past and present weight add up to 1, equivalent to
             # np.average and evidence will be bound to [-C, 2C] where C is the
