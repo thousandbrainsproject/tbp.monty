@@ -35,7 +35,7 @@ def _deg(d: float) -> float:
     Returns:
         The angle in radians
     """
-    return d * np.pi / 180
+    return np.deg2rad(d)  # d * np.pi / 180
 
 
 def _round_scalar(n: float, ndigits: int = 6) -> float:
