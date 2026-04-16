@@ -15,7 +15,6 @@ from unittest.mock import Mock
 import numpy as np
 import quaternion as qt
 from hypothesis import given
-from hypothesis import strategies as st
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.cmp import Goal
@@ -35,6 +34,9 @@ from tbp.monty.frameworks.models.salience.motor_policy import (
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
 from tbp.monty.math import VectorXYZ
+from tests.unit.frameworks.utils.spatial_arithmetics_test import (
+    nonzero_magnitude_vectors,
+)
 
 AGENT_ID = AgentID("agent_id_0")
 FORWARD_VECTOR_REL_WORLD: VectorXYZ = (0.0, 0.0, -1.0)
@@ -142,20 +144,10 @@ class LookAtGoalTest(unittest.TestCase):
         self.assertEqual(result.actions, [])
 
     @given(
-        goal_xyz=st.tuples(
-            st.floats(
-                min_value=-TEST_VOLUME_DISTANCE_METERS,
-                max_value=TEST_VOLUME_DISTANCE_METERS,
-            ),
-            st.floats(
-                min_value=-TEST_VOLUME_DISTANCE_METERS,
-                max_value=TEST_VOLUME_DISTANCE_METERS,
-            ),
-            st.floats(
-                min_value=-TEST_VOLUME_DISTANCE_METERS,
-                max_value=TEST_VOLUME_DISTANCE_METERS,
-            ),
-        )
+        goal_xyz=nonzero_magnitude_vectors(
+            min_value=-TEST_VOLUME_DISTANCE_METERS,
+            max_value=TEST_VOLUME_DISTANCE_METERS,
+        ),
     )
     def test_returns_turn_left_and_look_up_oriented_at_the_goal(self, goal_xyz) -> None:
         """This test comes with some caveats.
