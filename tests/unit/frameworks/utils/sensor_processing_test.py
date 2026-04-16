@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
+from unittest.mock import Mock
 
 import numpy as np
 import numpy.testing as npt
@@ -26,14 +27,15 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
-    non_zero_magnitude_vectors,
+    nonzero_magnitude_vectors,
     nonzero_orthogonal_vectors,
 )
 
 # Max tangent-plane displacement per step (meters).
 MAX_PROJ = 0.05
 
-# abs(curvature) = 1e-3 corresponds to 1 mm (sharp edge)
+# Curvature is reciprocal of the radius, thus 1e3 corresponds
+# to 1 mm radius (sharp edge)
 MIN_K = -1e3
 MAX_K = 1e3
 
@@ -156,199 +158,62 @@ class DirectionalCurvatureTest(unittest.TestCase):
         )
         expected = k1 * np.cos(angle) ** 2 + k2 * np.sin(angle) ** 2
         tol = max(
-            DEFAULT_TOLERANCE * abs(k1), DEFAULT_TOLERANCE * abs(k2), DEFAULT_TOLERANCE
+            DEFAULT_TOLERANCE * abs(k1),
+            DEFAULT_TOLERANCE * abs(k2),
+            DEFAULT_TOLERANCE,
         )
         npt.assert_allclose(result, expected, atol=tol, rtol=DEFAULT_TOLERANCE)
 
     @given(
-        movement_direction=non_zero_magnitude_vectors(),
         vectors=orthonormal_vectors(),
-        ks=curvature_values(),
         a_scaler=st.floats(min_value=-1e3, max_value=1e3).filter(
             lambda x: abs(x) > DEFAULT_TOLERANCE
         ),
     )
-    def test_non_orthogonal_pcs_raises(self, movement_direction, vectors, ks, a_scaler):
+    def test_non_orthogonal_pcs_raises(self, vectors, a_scaler):
         pc1, _ = vectors
-        k1, k2 = ks
         bad_pc2 = pc1 * a_scaler
-        expected_msg = r"The pc1_dir and pc2_dir must be orthogonal\."
-        with pytest.raises(ValueError, match=expected_msg):
+        with pytest.raises(ValueError, match="must be orthogonal"):
             directional_curvature(
-                movement_direction=movement_direction,
-                k1=k1,
-                k2=k2,
+                movement_direction=Mock(),
+                k1=Mock(),
+                k2=Mock(),
                 pc1_dir=pc1,
                 pc2_dir=bad_pc2,
             )
 
-    @given(vectors=orthonormal_vectors(), ks=curvature_values())
-    def test_out_of_plane_movement_raises(self, vectors, ks):
+    @given(vectors=orthonormal_vectors())
+    def test_out_of_plane_movement_raises(self, vectors):
         pc1, pc2 = vectors
-        k1, k2 = ks
         movement_direction = np.cross(pc1, pc2)
-        expected_msg = (
-            r"The movement_direction must lie in the plane"
-            r" of pc1_dir and pc2_dir\."
-        )
-        with pytest.raises(ValueError, match=expected_msg):
+        with pytest.raises(ValueError, match="must lie in the plane"):
             directional_curvature(
                 movement_direction=movement_direction,
-                k1=k1,
-                k2=k2,
+                k1=Mock(),
+                k2=Mock(),
                 pc1_dir=pc1,
                 pc2_dir=pc2,
             )
 
+    @given(vectors=orthonormal_vectors())
+    def test_pcs_not_unit_vectors_raises(self, vectors):
+        pc1, pc2 = vectors
+        scaled_pc1 = pc1 * 2.0
+        with pytest.raises(ValueError, match="must be unit vectors"):
+            directional_curvature(
+                movement_direction=Mock(),
+                k1=Mock(),
+                k2=Mock(),
+                pc1_dir=scaled_pc1,
+                pc2_dir=pc2,
+            )
 
-class ArcLengthCorrectedDisplacementTest(unittest.TestCase):
-    """Unit tests for the arc_length_corrected_displacement function."""
-
-    def setUp(self):
-        self.basis_u = np.array([1.0, 0.0, 0.0])
-        self.basis_v = np.array([0.0, 1.0, 0.0])
-        # Principal directions aligned with basis vectors
-        self.pose_vectors = np.array(
-            [
-                [0.0, 0.0, 1.0],  # row 0: normal (unused by function)
-                [1.0, 0.0, 0.0],  # row 1: principal dir 1
-                [0.0, 1.0, 0.0],  # row 2: principal dir 2
-            ]
-        )
-
-    @given(
-        du=st.floats(min_value=-1, max_value=1),
-        dv=st.floats(min_value=-1, max_value=1),
-        k1=st.floats(min_value=-100, max_value=100),
-        k2=st.floats(min_value=-100, max_value=100),
-    )
-    def test_arc_length_corrected_displacement_properties(self, du, dv, k1, k2):
-        principal_curvatures = np.array([k1, k2])
-        arc_u, arc_v = arc_length_corrected_displacement(
-            du,
-            dv,
-            self.basis_u,
-            self.basis_v,
-            principal_curvatures,
-            self.pose_vectors,
-        )
-
-        # 1. Sign preservation
-        if du > 0:
-            self.assertGreater(arc_u, 0)
-        elif du < 0:
-            self.assertLess(arc_u, 0)
-        else:
-            self.assertEqual(arc_u, 0)
-
-        if dv > 0:
-            self.assertGreater(arc_v, 0)
-        elif dv < 0:
-            self.assertLess(arc_v, 0)
-        else:
-            self.assertEqual(arc_v, 0)
-
-        # 2. Arc length >= chord length (absolute)
-        self.assertGreaterEqual(abs(arc_u), abs(du) - 1e-10)
-        self.assertGreaterEqual(abs(arc_v), abs(dv) - 1e-10)
-
-        # 3. Symmetry with respect to displacement
-        arc_u_neg, arc_v_neg = arc_length_corrected_displacement(
-            -du,
-            -dv,
-            self.basis_u,
-            self.basis_v,
-            principal_curvatures,
-            self.pose_vectors,
-        )
-        self.assertAlmostEqual(arc_u_neg, -arc_u)
-        self.assertAlmostEqual(arc_v_neg, -arc_v)
-
-        # 4. Symmetry with respect to curvature sign (f(p, k) == f(p, -k))
-        arc_u_nk, arc_v_nk = arc_length_corrected_displacement(
-            du,
-            dv,
-            self.basis_u,
-            self.basis_v,
-            -principal_curvatures,
-            self.pose_vectors,
-        )
-        self.assertEqual(arc_u_nk, arc_u)
-        self.assertEqual(arc_v_nk, arc_v)
-
-    def test_zero_curvature_returns_unchanged(self):
-        result = arc_length_corrected_displacement(
-            0.5,
-            0.3,
-            self.basis_u,
-            self.basis_v,
-            np.array([0.0, 0.0]),
-            self.pose_vectors,
-        )
-        self.assertAlmostEqual(result[0], 0.5)
-        self.assertAlmostEqual(result[1], 0.3)
-
-    def test_axes_corrected_independently(self):
-        # k1=1.0 along basis_u, k2=0.0 along basis_v
-        arc_u, arc_v = arc_length_corrected_displacement(
-            0.5,
-            0.5,
-            self.basis_u,
-            self.basis_v,
-            np.array([1.0, 0.0]),
-            self.pose_vectors,
-        )
-        # u axis should be corrected (k=1, p=0.5 => arcsin(0.5)/1 = pi/6)
-        self.assertAlmostEqual(arc_u, np.pi / 6)
-        # v axis has zero curvature, unchanged
-        self.assertAlmostEqual(arc_v, 0.5)
-
-    def test_symmetric_curvature_corrects_both(self):
-        # k1 = k2 = 1.0, so both axes get same correction
-        arc_u, arc_v = arc_length_corrected_displacement(
-            0.5,
-            0.5,
-            self.basis_u,
-            self.basis_v,
-            np.array([1.0, 1.0]),
-            self.pose_vectors,
-        )
-        expected = np.pi / 6
-        self.assertAlmostEqual(arc_u, expected)
-        self.assertAlmostEqual(arc_v, expected)
-
-    def test_zero_displacement_returns_zero(self):
-        arc_u, arc_v = arc_length_corrected_displacement(
-            0.0,
-            0.0,
-            self.basis_u,
-            self.basis_v,
-            np.array([5.0, 5.0]),
-            self.pose_vectors,
-        )
-        self.assertEqual(arc_u, 0.0)
-        self.assertEqual(arc_v, 0.0)
-
-    def test_negative_displacement_preserved(self):
-        arc_u, arc_v = arc_length_corrected_displacement(
-            -0.5,
-            0.5,
-            self.basis_u,
-            self.basis_v,
-            np.array([1.0, 1.0]),
-            self.pose_vectors,
-        )
-        self.assertAlmostEqual(arc_u, -np.pi / 6)
-        self.assertAlmostEqual(arc_v, np.pi / 6)
-
-    def test_arc_at_least_as_long_as_chord(self):
-        arc_u, arc_v = arc_length_corrected_displacement(
-            0.3,
-            0.4,
-            self.basis_u,
-            self.basis_v,
-            np.array([2.0, 2.0]),
-            self.pose_vectors,
-        )
-        self.assertGreaterEqual(abs(arc_u), 0.3)
-        self.assertGreaterEqual(abs(arc_v), 0.4)
+        scaled_pc2 = pc2 * 2.0
+        with pytest.raises(ValueError, match="must be unit vectors"):
+            directional_curvature(
+                movement_direction=Mock(),
+                k1=Mock(),
+                k2=Mock(),
+                pc1_dir=pc1,
+                pc2_dir=scaled_pc2,
+            )

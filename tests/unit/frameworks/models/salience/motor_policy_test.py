@@ -35,7 +35,7 @@ from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
 from tbp.monty.math import VectorXYZ
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
-    non_zero_magnitude_vectors,
+    nonzero_magnitude_vectors,
 )
 
 AGENT_ID = AgentID("agent_id_0")
@@ -144,7 +144,7 @@ class LookAtGoalTest(unittest.TestCase):
         self.assertEqual(result.actions, [])
 
     @given(
-        goal_xyz=non_zero_magnitude_vectors(
+        goal_xyz=nonzero_magnitude_vectors(
             min_value=-TEST_VOLUME_DISTANCE_METERS,
             max_value=TEST_VOLUME_DISTANCE_METERS,
         ),
