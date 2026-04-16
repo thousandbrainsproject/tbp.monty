@@ -423,7 +423,7 @@ class BurstSamplingHypothesesUpdater:
         Returns:
             A tuple containing the hypotheses selection and a dictionary mapping
             each channel to the number of informed hypotheses to sample from it.
-            Hypotheses selection are maintained from existing ones while new
+            Hypotheses selection are retained from existing ones while new
             hypotheses will be initialized, informed by pose sensory information.
 
         Notes:
@@ -461,7 +461,7 @@ class BurstSamplingHypothesesUpdater:
 
                 informed_samples_per_channel[channel] = sample_count
 
-        # Returns a selection of hypotheses to maintain/delete
+        # Returns a selection of hypotheses to retain/delete
         hypotheses_selection = (
             tracker.select_hypotheses(
                 slope_threshold=self.deletion_trigger_slope,
@@ -485,11 +485,11 @@ class BurstSamplingHypothesesUpdater:
 
         Note that we are not sampling the existing hypotheses in a probabilistic
         sense (e.g., random or seed-generation). Instead, those are deterministically
-        determined using the slope tracker and the deletion threshold, then maintained
+        determined using the slope tracker and the deletion threshold, then retained
         by filtering the list of existing hypotheses.
 
         Args:
-            hypotheses_selection: The selection of hypotheses to maintain/remove.
+            hypotheses_selection: The selection of hypotheses to retain/remove.
             hypotheses: Hypothesis space for the graph_id.
             tracker: Slope tracker for the evidence values of a
                 graph_id

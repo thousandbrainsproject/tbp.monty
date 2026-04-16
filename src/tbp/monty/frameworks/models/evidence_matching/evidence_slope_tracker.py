@@ -151,7 +151,7 @@ class EvidenceSlopeTracker:
     def select_hypotheses(self, slope_threshold: float) -> HypothesesSelection:
         """Returns a hypotheses selection given a slope threshold.
 
-        A hypothesis is maintained if:
+        A hypothesis is retained if:
           - Its slope is >= the threshold, OR
           - It is not yet removable due to age.
 
@@ -160,7 +160,7 @@ class EvidenceSlopeTracker:
                 hypothesis.
 
         Returns:
-            A selection of hypotheses to maintain.
+            A selection of hypotheses to retain.
         """
         slopes = self.calculate_slopes()
         removable_mask = self.removable_indices_mask()

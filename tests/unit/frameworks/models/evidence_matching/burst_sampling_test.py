@@ -440,7 +440,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.assertIn("new_object", self.updater.evidence_slope_trackers)
         self.assertIs(self.updater.evidence_slope_trackers["new_object"], new_tracker)
 
-    def test_sample_existing_returns_empty_when_no_hypotheses_maintained(self) -> None:
+    def test_sample_existing_returns_empty_when_no_hypotheses_retained(self) -> None:
         """Test that _sample_existing returns empty arrays when ids_to_retain is empty.
 
         When HypothesesSelection has no hypotheses to retain, _sample_existing
