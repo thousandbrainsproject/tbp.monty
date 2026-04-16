@@ -118,6 +118,7 @@ def evidence_update_threshold(
         "'median', 'all', 'x_percent_threshold']"
     )
 
+
 logger = logging.getLogger(__name__)
 
 
