@@ -679,7 +679,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         )
 
         # Should have 4 hypotheses
-        self.assertEqual(result.evidence.shape[0], informed_count)
+        self.assertEqual(result.count, informed_count)
 
         # Feature calculator should have been called
         mock_calculator.calculate.assert_called_once()

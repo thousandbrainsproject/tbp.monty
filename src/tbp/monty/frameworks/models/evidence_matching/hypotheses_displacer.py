@@ -158,7 +158,7 @@ class DefaultHypothesesDisplacer:
         if num_hypotheses_to_test > 0:
             logger.info(
                 f"Testing {num_hypotheses_to_test} out of "
-                f"{possible_hypotheses.evidence.shape[0]} hypotheses for {graph_id} "
+                f"{possible_hypotheses.count} hypotheses for {graph_id} "
                 f"(evidence > {evidence_update_threshold})"
             )
 

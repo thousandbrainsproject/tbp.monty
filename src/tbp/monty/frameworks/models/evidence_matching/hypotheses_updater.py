@@ -239,7 +239,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             )
             return None, {}
 
-        if hypotheses.evidence.shape[0] == 0:
+        if hypotheses.count == 0:
             all_hyps = []
             for channel in input_channels_to_use:
                 channel_hyps = self._get_initial_hypothesis_space(

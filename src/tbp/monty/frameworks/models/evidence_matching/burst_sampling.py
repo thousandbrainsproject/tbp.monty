@@ -587,7 +587,7 @@ class BurstSamplingHypothesesUpdater:
         hypotheses = Hypotheses.concatenate(sampled_hypotheses)
 
         # Add hypotheses to slope trackers
-        tracker.add_hyp(hypotheses.evidence.shape[0])
+        tracker.add_hyp(hypotheses.count)
 
         return hypotheses
 

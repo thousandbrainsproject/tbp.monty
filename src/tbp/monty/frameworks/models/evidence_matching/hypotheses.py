@@ -40,3 +40,8 @@ class Hypotheses:
             poses=np.vstack([h.poses for h in hyps]),
             possible=np.hstack([h.possible for h in hyps]),
         )
+
+    @property
+    def count(self):
+        """Return the number of hypotheses."""
+        return self.evidence.shape[0]
