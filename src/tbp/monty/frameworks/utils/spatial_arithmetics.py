@@ -12,6 +12,7 @@ from __future__ import annotations
 import copy
 import logging
 import sys
+from typing import Sequence
 
 import numpy as np
 import torch
@@ -19,6 +20,7 @@ from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.math import DEFAULT_TOLERANCE
+from tbp.monty.pose import Location, Orientation
 
 logger = logging.getLogger(__name__)
 
@@ -306,6 +308,34 @@ def check_orthonormal(matrix):
             f"{np.mean(np.abs(np.linalg.norm(matrix, axis=1) - [1, 1, 1]))}"
         )
     return is_orthogonal and is_normal
+
+
+# FIXME: We may need a distinct Displacement class, but for now we're abusing Location.
+def align_orthonormal_displacement(
+    b0: Sequence[Location], b1: Sequence[Location]
+) -> Orientation:
+    m0 = np.array(
+        [
+            [b0[0].x, b0[0].y, b0[0].z],
+            [b0[1].x, b0[1].y, b0[1].z],
+            [b0[2].x, b0[2].y, b0[2].z],
+        ]
+    )
+    r0 = Orientation.from_matrix(matrix=m0)
+    m1 = np.array(
+        [
+            b1[0].as_array(),  # [b1[0].x, b1[0].y, b1[0].z],
+            b1[1].as_array(),  # [b1[1].x, b1[1].y, b1[1].z],
+            b1[2].as_array(),  # [b1[2].x, b1[2].y, b1[2].z]
+        ]
+    )
+    r1 = Orientation.from_matrix(None, m1)
+    return align_rotations(r0, r1)
+
+
+# FIXME: We may need a distinct Rotation class, but for now we're abusing Orientation.
+def align_rotations(from_r0: Orientation, to_r1: Orientation) -> Orientation:
+    return from_r0.inverse() * to_r1
 
 
 def align_orthonormal_vectors(m1, m2, as_scipy=True):
