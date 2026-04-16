@@ -27,7 +27,7 @@ jobs:
           fi
           
           pattern="^test!:.+"
-          if [[ ! $PR_TITLE =~ $pattern ]]; then
+          if [[ $PR_TITLE =~ $pattern ]]; then
             echo "This PR title indicates it is only changing tests, and"
             echo "that those changes are breaking changes. Changes that"
             echo "only change files in 'tests' cannot produce breaking"
