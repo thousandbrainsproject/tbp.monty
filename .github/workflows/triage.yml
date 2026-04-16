@@ -18,6 +18,8 @@ jobs:
           # run backticked strings in the title.
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
+          set -e
+          
           pattern="^(build|chore|ci|docs|feat|fix|perf|refactor|revert|rfc|style|test)!?:.+"
           if [[ ! $PR_TITLE =~ $pattern ]]; then
             echo "This PR title is missing a Conventional Commits label."
