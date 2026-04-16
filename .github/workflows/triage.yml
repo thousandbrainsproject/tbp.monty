@@ -13,9 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check PR title format
+        env:
+          # Store in an environment variable to prevent trying to
+          # run backticked strings in the title.
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           pattern="^(build|chore|ci|docs|feat|fix|perf|refactor|revert|rfc|style|test)!?:.+"
-          if [[ ! "${{ github.event.pull_request.title }}" =~ $pattern ]]; then
+          if [[ ! $PR_TITLE =~ $pattern ]]; then
             echo "This PR title is missing a Conventional Commits label."
             echo "A maintainer will update it appropriately during triage."
             echo "See https://thousandbrainsproject.readme.io/docs/triage#title-1"
@@ -23,7 +27,7 @@ jobs:
           fi
           
           pattern="^test!:.+"
-          if [[ ! "${{ github.event.pull_request.title }}" =~ $pattern ]]; then
+          if [[ ! $PR_TITLE =~ $pattern ]]; then
             echo "This PR title indicates it is only changing tests, and"
             echo "that those changes are breaking changes. Changes that"
             echo "only change files in 'tests' cannot produce breaking"
