@@ -43,7 +43,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
     HypothesesUpdateTelemetry,
 )
-from tbp.monty.frameworks.utils.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     InvalidEvidenceThresholdConfig,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (

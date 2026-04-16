@@ -34,7 +34,7 @@ from tbp.monty.frameworks.models.evidence_matching.evidence_slope_tracker import
     EvidenceSlopeTracker,
     HypothesesSelection,
 )
-from tbp.monty.frameworks.utils.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     InvalidEvidenceThresholdConfig,
 )
 
