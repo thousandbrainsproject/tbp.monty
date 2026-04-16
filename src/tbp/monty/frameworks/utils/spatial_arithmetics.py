@@ -23,6 +23,81 @@ from tbp.monty.math import DEFAULT_TOLERANCE
 logger = logging.getLogger(__name__)
 
 
+class TangentFrame:
+    """Orthonormal tangent frame on a surface.
+
+    Maintains a right-handed (u, v, n) basis where n is the surface normal,
+    u is the horizontal tangent direction, and v is the vertical tangent
+    direction. As the sensor moves across a curved surface, `transport()`
+    rotates the tangent frame to match the new normal.
+
+    See:
+        https://en.wikipedia.org/wiki/Parallel_transport
+
+    Args:
+        surface_normal: Unit surface normal at the initial point.
+    """
+
+    def __init__(self, surface_normal: np.ndarray) -> None:
+        """Initialize an orthonormal (u, v) basis in the tangent plane of a surface.
+
+        A surface normal defines a tangent plane but not a unique basis. We choose
+        `basis_u` as the cross product of `some_axis` and the `surface_normal`, giving
+        a horizontal tangent direction. `basis_v` follows as the cross product of
+        the `surface_normal` and `basis_u`.
+
+        If the `surface_normal` is nearly parallel to some_axis (|cos(theta)| > 0.95),
+        we fall back to using [0, 0, 1] to avoid a degenerate cross product.
+
+        Args:
+            surface_normal: Unit surface normal at the initial point.
+        """
+        # some_axis is arbitrarily chosen
+        some_axis = np.array([0.0, 1.0, 0.0], dtype=np.float32)
+        self._normal = normalize(surface_normal)
+
+        if is_parallel(some_axis, self._normal):
+            some_axis = np.array([0.0, 0.0, 1.0], dtype=np.float32)
+
+        self._u = normalize(np.cross(some_axis, self._normal))
+        self._v = normalize(np.cross(self._normal, self._u))
+
+    @property
+    def basis_u(self) -> np.ndarray:
+        """Horizontal tangent basis vector."""
+        return self._u
+
+    @property
+    def basis_v(self) -> np.ndarray:
+        """Vertical tangent basis vector."""
+        return self._v
+
+    def transport(self, new_normal: np.ndarray) -> None:
+        """Parallel-transport the frame to a new surface normal.
+
+        As the sensor moves along a curved surface, the tangent plane
+        rotates with the curvature (e.g. around a cylinder). Parallel
+        transport transforms the basis (u, v) by exactly the rotation needed
+        to stay in the new tangent plane. This is analogous to "unrolling"
+        the curved surface.
+
+        Args:
+            new_normal: Unit surface normal at the new point.
+        """
+        old_normal = self._normal
+
+        if not is_parallel(old_normal, new_normal):
+            cos_angle = np.clip(np.dot(old_normal, new_normal), -1.0, 1.0)
+            rotation_axis = normalize(np.cross(old_normal, new_normal))
+            rotation = Rotation.from_rotvec(rotation_axis * np.arccos(cos_angle))
+            self._u = rotation.apply(self._u)
+
+        # Re-orthonormalize to prevent cumulative floating point error
+        self._u = normalize(project_onto_tangent_plane(self._u, new_normal))
+        self._v = np.cross(new_normal, self._u)
+        self._normal = new_normal.copy()
+
+
 def normalize(v: ArrayLike, epsilon: float = DEFAULT_TOLERANCE) -> np.ndarray:
     """Normalize a vector to unit length.
 
@@ -58,6 +133,27 @@ def project_onto_tangent_plane(v: ArrayLike, n: ArrayLike) -> np.ndarray:
     """
     n = normalize(n)
     return v - np.dot(v, n) * n
+
+
+def is_parallel(
+    v1: ArrayLike, v2: ArrayLike, tolerance: float = DEFAULT_TOLERANCE
+) -> bool:
+    """True when v1 and v2 point in the same or opposite direction.
+
+    Assumes unit-length inputs. The metric 1 - |cos(theta)| is compared
+    against tolerance.
+
+    Args:
+        v1: First unit vector.
+        v2: Second unit vector.
+        tolerance: Maximum value of 1 - |cos(theta)| to consider parallel.
+
+    Returns:
+        True if v1 and v2 are parallel (same or opposite direction).
+    """
+    v1 = np.asarray(v1)
+    v2 = np.asarray(v2)
+    return 1.0 - abs(np.dot(v1, v2)) < tolerance
 
 
 def rotations_to_quats(rotations, invert=False):
@@ -148,7 +244,7 @@ def get_angle_beefed_up(v1, v2):
     if v1 is None or v2 is None:
         return np.inf
 
-    if np.all(v1 == 0) or np.all(v2 == 0):
+    if np.linalg.norm(v1) < DEFAULT_TOLERANCE or np.linalg.norm(v2) < DEFAULT_TOLERANCE:
         return np.inf
 
     v1_u = normalize(v1)
