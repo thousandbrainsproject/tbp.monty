@@ -26,9 +26,9 @@ jobs:
           if [[ ! "${{ github.event.pull_request.title }}" =~ $pattern ]]; then
             echo "This PR title indicates it is only changing tests, and"
             echo "that those changes are breaking changes. Changes that"
-            echo "only change files in `tests` cannot produce breaking"
+            echo "only change files in 'tests' cannot produce breaking"
             echo "changes."
-            echo "  If this PR has non-test changes, then `test` is not the"
+            echo "  If this PR has non-test changes, then 'test' is not the"
             echo "correct label for this PR."
             exit 1
           fi
