@@ -31,7 +31,3 @@ class GradientToTangentAngleTest(unittest.TestCase):
         result = gradient_to_tangent_angle(gradient_angle)
         remainder = (result - gradient_angle) % np.pi
         self.assertAlmostEqual(remainder, np.pi / 2)
-
-
-if __name__ == "__main__":
-    unittest.main()
