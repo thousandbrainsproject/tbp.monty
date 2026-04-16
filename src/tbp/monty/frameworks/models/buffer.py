@@ -23,6 +23,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
+from tbp.monty.frameworks.utils.dataclass_utils import is_dataclass_instance
 
 if TYPE_CHECKING:
     from tbp.monty.cmp import Message
@@ -732,6 +733,8 @@ class BufferEncoder(json.JSONEncoder):
         encoder = self._find(obj)
         if encoder is not None:
             return encoder(obj)
+        if is_dataclass_instance(obj):
+            return obj.__dict__
         return super().default(obj)
 
 

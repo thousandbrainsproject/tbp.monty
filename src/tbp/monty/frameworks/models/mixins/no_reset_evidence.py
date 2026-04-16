@@ -46,12 +46,6 @@ class HypothesesUpdaterChannelTelemetry:
     """Rotation errors relative to the target pose."""
 
 
-BufferEncoder.register(
-    HypothesesUpdaterChannelTelemetry,
-    lambda telemetry: asdict(telemetry),
-)
-
-
 HypothesesUpdaterGraphTelemetry = Dict[str, HypothesesUpdaterChannelTelemetry]
 """HypothesesUpdaterChannelTelemetry indexed by input channel."""
 

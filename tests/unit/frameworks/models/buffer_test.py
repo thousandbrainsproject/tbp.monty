@@ -32,6 +32,8 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.buffer import BufferEncoder, FeatureAtLocationBuffer
 from tests.unit.frameworks.models.fakes.encoder_classes import (
     FakeClass,
+    FakeDataclass1,
+    FakeDataclass2,
     FakeMixin,
     FakeSubclass1,
     FakeSubclass2,
@@ -448,3 +450,25 @@ class BufferEncoderTest(unittest.TestCase):
                 json.loads(json.dumps(action, cls=BufferEncoder)),
                 json.loads(json.dumps(action, cls=ActionJSONEncoder)),
             )
+
+    def test_encodes_dataclass_instances_as_dicts_by_default(self):
+        dataclass = FakeDataclass1(data=[1, 2, 3])
+        self.assertEqual(
+            json.loads(json.dumps(dataclass, cls=BufferEncoder)),
+            dataclass.__dict__,
+        )
+
+    def test_default_dataclass_encoding_overridden_by_registered_dataclass_encoder(
+        self,
+    ):
+        dataclass_1 = FakeDataclass1(data=[1, 2, 3])
+        dataclass_2 = FakeDataclass2(data=[1, 2, 3])
+        BufferEncoder.register(FakeDataclass2, lambda _: "CUSTOM_ENCODING")
+        self.assertEqual(
+            json.loads(json.dumps(dataclass_1, cls=BufferEncoder)),
+            dataclass_1.__dict__,
+        )
+        self.assertEqual(
+            json.loads(json.dumps(dataclass_2, cls=BufferEncoder)),
+            "CUSTOM_ENCODING",
+        )

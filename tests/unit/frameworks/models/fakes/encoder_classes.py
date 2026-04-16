@@ -6,6 +6,10 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
+import dataclasses
+from typing import Any
 
 
 class FakeClass:
@@ -31,3 +35,13 @@ class FakeSubclass3(FakeSubclass2):
 
 class FakeSubclass4(FakeMixin, FakeSubclass3):
     pass
+
+
+@dataclasses.dataclass
+class FakeDataclass1:
+    data: Any | None = None
+
+
+@dataclasses.dataclass
+class FakeDataclass2:
+    data: Any | None = None
