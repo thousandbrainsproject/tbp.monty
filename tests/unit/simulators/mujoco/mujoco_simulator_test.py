@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -8,50 +8,61 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING
+from functools import partial
+from pathlib import Path
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
-from mujoco import MjSpec
-from unittest_parametrize import ParametrizedTestCase, param, parametrize
+from mujoco import mjtGeom
+from unittest_parametrize import ParametrizedTestCase, parametrize
 
-from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
-
-if TYPE_CHECKING:
-    from xml.etree.ElementTree import Element
+from tbp.monty.frameworks.actions.actions import LookUp
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR
+from tbp.monty.simulators.mujoco.simulator import (
+    DEFAULT_RESOLUTION,
+    PRIMITIVE_OBJECTS,
+    MissingObjectModel,
+    MissingObjectTexture,
+    MuJoCoSimulator,
+    UnknownObjectType,
+)
 
 # Parameters for add primitive object tests
-SHAPES = ["box", "capsule", "cylinder", "ellipsoid", "sphere"]
-SHAPE_PARAMS = [param(s, id=s) for s in SHAPES]
+SHAPE_PARAMS = [(s, v) for s, v in PRIMITIVE_OBJECTS.items()]
+
+AGENT_ID = AgentID("agent_id_0")
+
+CUSTOM_OBJECT_DATA_PATH = (
+    Path(__file__).parents[2] / "resources" / "test_custom_objects"
+)
 
 
 class MuJoCoSimulatorTestCase(ParametrizedTestCase):
-    """Tests for the MuJoCo simulator."""
-
     def test_initial_scene_is_empty(self) -> None:
-        sim = MuJoCoSimulator()
-        self.assert_counts_equal(sim, 0)
+        with MuJoCoSimulator() as sim:
+            assert sim.model.ngeom == 0
+            assert len(sim.spec.geoms) == 0
 
     @parametrize(
-        "shape",
+        "shape,shape_type",
         SHAPE_PARAMS,
     )
-    def test_add_primitive_object(self, shape: str) -> None:
-        sim = MuJoCoSimulator()
-        sim.add_object(shape)
+    def test_add_primitive_object(self, shape: str, shape_type: mjtGeom) -> None:
+        with MuJoCoSimulator() as sim:
+            sim.add_object(shape)
 
-        self.assert_counts_equal(sim, 1)
-        # 1. Check that the spec was updated
-        geom_elems = self.parse_spec_geoms(sim.spec)
-        if shape != "sphere":
-            # Sphere is the default and so its type doesn't end up in the resulting XML
-            assert geom_elems[0].attrib["type"] == f"{shape}"
-        assert geom_elems[0].attrib["name"] == f"{shape}_0"
+            assert sim.model.ngeom == 1
+            assert len(sim.spec.geoms) == 1
+            # 1. Check that the spec was updated
+            geom = sim.spec.geom(f"{shape}_0")
+            assert geom.type == shape_type
+            assert geom.name == f"{shape}_0"
 
-        # 2. Check that the model was updated
-        # This raises if it doesn't exist
-        sim.model.geom(f"{shape}_0")
+            # 2. Check that the model was updated
+            # This raises if it doesn't exist
+            sim.model.geom(f"{shape}_0")
 
     def test_multiple_objects_have_different_ids(self) -> None:
         """Test that multiple objects have different IDs.
@@ -61,62 +72,185 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         scene. So, several objects should be numbered in the order they were added.
         """
         shapes = ["box", "box", "box"]
-        sim = MuJoCoSimulator()
-        for shape in shapes:
-            sim.add_object(shape)
+        with MuJoCoSimulator() as sim:
+            for shape in shapes:
+                sim.add_object(shape)
 
-        self.assert_counts_equal(sim, len(shapes))
-        geom_elems = self.parse_spec_geoms(sim.spec)
-        for i, shape in enumerate(shapes):
-            # Objects should appear in the spec XML in the same order as they were added
-            assert geom_elems[i].attrib["name"] == f"{shape}_{i}"
-            # Raises if geom doesn't exist with ID
-            sim.model.geom(f"{shape}_{i}")
+            count = len(shapes)
+            assert sim.model.ngeom == count
+            assert len(sim.spec.geoms) == count
+            for i, shape in enumerate(shapes):
+                geom = sim.spec.geom(f"{shape}_{i}")
+                assert geom is not None
+                # Raises if geom doesn't exist with ID
+                sim.model.geom(f"{shape}_{i}")
 
     def test_remove_all_objects(self) -> None:
-        sim = MuJoCoSimulator()
-        sim.add_object("box")
-        sim.add_object("capsule")
+        with MuJoCoSimulator() as sim:
+            sim.add_object("box")
+            sim.add_object("capsule")
 
-        self.assert_counts_equal(sim, 2)
-        sim.remove_all_objects()
-        self.assert_counts_equal(sim, 0)
+            assert sim.model.ngeom == 2
+            assert len(sim.spec.geoms) == 2
+            assert sim.spec.geom("box_0") is not None
+            assert sim.spec.geom("capsule_1") is not None
+
+            sim.remove_all_objects()
+            assert sim.model.ngeom == 0
+            assert len(sim.spec.geoms) == 0
+            assert sim.spec.geom("box_0") is None
+            assert sim.spec.geom("capsule_1") is None
 
     def test_primitive_object_positioning(self) -> None:
-        sim = MuJoCoSimulator()
-        sim.add_object("box", position=(1.0, 1.0, 2.0))
+        with MuJoCoSimulator() as sim:
+            sim.add_object("box", position=(1.0, 1.0, 2.0))
 
-        assert np.allclose(sim.model.geom("box_0").pos, np.array([1.0, 1.0, 2.0]))
-        geom_elems = self.parse_spec_geoms(sim.spec)
-        assert geom_elems[0].attrib["pos"] == "1 1 2"
+            geom = sim.spec.geom("box_0")
+            assert geom.type == mjtGeom.mjGEOM_BOX
+            assert np.allclose(geom.pos, np.array([1.0, 1.0, 2.0]))
 
     def test_primitive_box_scaling(self) -> None:
-        sim = MuJoCoSimulator()
-        sim.add_object("box", scale=(3.0, 3.0, 3.0))
+        with MuJoCoSimulator() as sim:
+            sim.add_object("box", scale=(3.0, 3.0, 3.0))
 
-        assert np.allclose(sim.model.geom("box_0").size, np.array([3.0, 3.0, 3.0]))
-        geom_elems = self.parse_spec_geoms(sim.spec)
-        assert geom_elems[0].attrib["size"] == "3 3 3"
+            geom = sim.spec.geom("box_0")
+            assert geom.type == mjtGeom.mjGEOM_BOX
+            assert np.allclose(geom.size, np.array([3.0, 3.0, 3.0]))
 
     def test_primitive_sphere_scaling(self) -> None:
         """Test that scaling works correctly on a sphere."""
-        sim = MuJoCoSimulator()
-        sim.add_object("sphere", scale=(3.0, 3.0, 3.0))
+        with MuJoCoSimulator() as sim:
+            sim.add_object("sphere", scale=(3.0, 3.0, 3.0))
 
-        assert np.allclose(sim.model.geom("sphere_0").size, np.array([3.0, 3.0, 3.0]))
-        geom_elems = self.parse_spec_geoms(sim.spec)
-        assert geom_elems[0].attrib["size"] == "3"
+            assert np.allclose(
+                sim.model.geom("sphere_0").size, np.array([3.0, 3.0, 3.0])
+            )
 
-    @staticmethod
-    def assert_counts_equal(sim: MuJoCoSimulator, count: int) -> None:
-        assert sim.model.ngeom == count
-        assert len(sim.spec.geoms) == count
+    def test_custom_object_adding(self) -> None:
+        """Test adding a custom object to the scene."""
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
+            sim.add_object("valid_object")
 
-    @staticmethod
-    def parse_spec_geoms(spec: MjSpec) -> list[Element]:
-        spec_xml = spec.to_xml()
-        parsed_xml = ET.fromstring(spec_xml)  # noqa: S314
-        world_body = parsed_xml.find("worldbody")
-        if world_body is None:
-            pytest.fail("Couldn't find <worldbody> in MuJoCo spec")
-        return world_body.findall("geom")
+            geom = sim.spec.geom("valid_object_0")
+            assert geom.type == mjtGeom.mjGEOM_MESH
+
+            mesh = sim.spec.mesh(geom.meshname)
+            assert np.allclose(mesh.refpos, [1.0, 1.0, 1.0])
+            assert np.allclose(
+                mesh.refquat, [np.sin(np.pi / 4), np.cos(np.pi / 4), 0.0, 0.0]
+            )
+
+    def test_duplicate_custom_objects_share_meshes(self) -> None:
+        """Test adding multiple custom objects that share the same mesh.
+
+        MuJoCo won't allow adding the same meshes, materials, or textures
+        more than once. This test confirms that we can successfully add multiple
+        objects that use the same mesh without trying to re-add the mesh, material,
+        and texture.
+        """
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
+            sim.add_object("valid_object")
+            sim.add_object("valid_object")
+
+            geom0 = sim.spec.geom("valid_object_0")
+            assert geom0.type == mjtGeom.mjGEOM_MESH
+
+            geom1 = sim.spec.geom("valid_object_1")
+            assert geom1.type == mjtGeom.mjGEOM_MESH
+
+            mesh0 = sim.spec.mesh(geom0.meshname)
+            mesh1 = sim.spec.mesh(geom1.meshname)
+            assert mesh0 == mesh1
+
+    def test_adding_custom_objects_after_removing_all(self):
+        """Test adding a custom object after removing all objects.
+
+        The current implementation of `remove_all_objects` works by creating
+        a new empty MjSpec object and then adding back the agents, which invalidates
+        all the existing objects, meshes, materials, and textures.
+
+        This test confirms that trying to add a custom object after removing all
+        objects works, and re-adds the mesh, material, and texture.
+        """
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
+            sim.add_object("valid_object")
+
+            geom0 = sim.spec.geom("valid_object_0")
+            assert geom0.type == mjtGeom.mjGEOM_MESH
+
+            sim.remove_all_objects()
+            assert sim.spec.geom("valid_object_0") is None
+
+            sim.add_object("valid_object")
+            geom0 = sim.spec.geom("valid_object_0")
+            assert geom0.type == mjtGeom.mjGEOM_MESH
+            assert sim.spec.mesh(geom0.meshname) is not None
+
+    def test_custom_object_with_scale(self):
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim, pytest.raises(
+            NotImplementedError
+        ):
+            sim.add_object("valid_object", scale=(2.0, 2.0, 2.0))
+
+    def test_custom_object_missing(self) -> None:
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim, pytest.raises(
+            UnknownObjectType
+        ):
+            sim.add_object("invalid_object")
+
+    def test_custom_object_missing_texture(self) -> None:
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim, pytest.raises(
+            MissingObjectTexture
+        ):
+            sim.add_object("missing_texture")
+
+    def test_custom_object_missing_model(self) -> None:
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim, pytest.raises(
+            MissingObjectModel
+        ):
+            sim.add_object("missing_model")
+
+    def test_custom_object_missing_metadata(self) -> None:
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
+            sim.add_object("missing_metadata")
+
+            geom = sim.spec.geom("missing_metadata_0")
+            assert geom.type == mjtGeom.mjGEOM_MESH
+
+            mesh = sim.spec.mesh(geom.meshname)
+            assert np.allclose(mesh.refpos, ZERO_VECTOR)
+            assert np.allclose(mesh.refquat, IDENTITY_QUATERNION)
+
+    def test_agent_that_does_not_understand_an_action(self) -> None:
+        """Ensure the simulator works with an agent that doesn't respond to actions."""
+        agent_mock = Mock(id=AGENT_ID)
+        agent_mock.max_sensor_resolution = DEFAULT_RESOLUTION
+        AgentMockClass = Mock(return_value=agent_mock)  # noqa: N806
+        sim = MuJoCoSimulator(
+            agents=[partial(AgentMockClass)],
+            data_path=None,
+        )
+
+        with sim:
+            action = LookUp(AGENT_ID, rotation_degrees=5.0)
+            sim.step([action])
+
+    def test_agent_action_with_attribute_error(self) -> None:
+        """Ensures the simulator doesn't swallow agent errors from actuator methods."""
+
+        def actuate_look_up(*args, **kwargs):  # noqa: ARG001
+            # Simulate an attribute error as from a programming mistake
+            raise AssertionError("AgentMock does not have attribute 'foo'")
+
+        agent_mock = Mock(id=AGENT_ID)
+        agent_mock.actuate_look_up = Mock(side_effect=actuate_look_up)
+        agent_mock.max_sensor_resolution = DEFAULT_RESOLUTION
+        AgentMockClass = Mock(return_value=agent_mock)  # noqa: N806
+        sim = MuJoCoSimulator(
+            agents=[partial(AgentMockClass)],
+            data_path=None,
+        )
+        action = LookUp(AGENT_ID, rotation_degrees=5.0)
+
+        with pytest.raises(AssertionError), sim:
+            sim.step([action])

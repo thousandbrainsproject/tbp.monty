@@ -33,7 +33,7 @@ from tbp.monty.frameworks.models.salience.motor_policy import (
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
-from tbp.monty.math import VectorXYZ
+from tbp.monty.math import DEFAULT_TOLERANCE, VectorXYZ
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
     nonzero_magnitude_vectors,
 )
@@ -208,8 +208,9 @@ class LookAtGoalTest(unittest.TestCase):
         actuated_vector_rel_world = rotation.apply(FORWARD_VECTOR_REL_WORLD)
 
         expected_forward_vector_rel_world = normalize(expected_forward_vector_rel_world)
-        np.testing.assert_array_almost_equal(
+        np.testing.assert_allclose(
             expected_forward_vector_rel_world,
             actuated_vector_rel_world,
-            decimal=12,
+            atol=DEFAULT_TOLERANCE,
+            rtol=0,
         )
