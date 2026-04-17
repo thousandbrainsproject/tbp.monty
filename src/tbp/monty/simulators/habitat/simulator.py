@@ -66,9 +66,9 @@ from tbp.monty.frameworks.environments.environment import (
     ObjectID,
     ObjectInfo,
     SemanticID,
+    SimulatedObjectEnvironment,
 )
 from tbp.monty.math import QuaternionWXYZ, VectorXYZ
-from tbp.monty.simulators.simulator import Simulator
 
 DEFAULT_SCENE = "NONE"
 DEFAULT_PHYSICS_CONFIG = str(files(resources) / "default.physics_config.json")
@@ -84,7 +84,7 @@ PRIMITIVE_OBJECT_TYPES = {
 }
 
 
-class HabitatSim(HabitatActuator, Simulator):
+class HabitatSim(HabitatActuator, SimulatedObjectEnvironment):
     """habitat-sim interface for tbp.monty.
 
     This class wraps `habitat-sim <https://aihabitat.org/docs/habitat-sim>`_
