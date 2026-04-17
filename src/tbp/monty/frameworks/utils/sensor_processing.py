@@ -12,6 +12,7 @@ import logging
 
 import numpy as np
 import torch
+from numpy.typing import ArrayLike
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_angle_torch,
@@ -21,6 +22,81 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def is_orthogonal(v1: ArrayLike, v2: ArrayLike, tolerance: float = 1e-6) -> bool:
+    dot = np.dot(v1, v2)
+    return np.allclose(dot, 0.0, atol=tolerance)
+
+
+def is_unit_vector(vector: ArrayLike, tolerance: float = 1e-6) -> bool:
+    return np.allclose(np.linalg.norm(vector), 1.0, atol=tolerance)
+
+
+def is_coplanar(
+    basis_1: ArrayLike, basis_2: ArrayLike, vector: ArrayLike, tolerance: float = 1e-6
+) -> bool:
+    plane_normal = np.cross(basis_1, basis_2)
+    out_of_plane_magnitude = abs(np.dot(vector, plane_normal))
+    return np.allclose(out_of_plane_magnitude, 0.0, atol=tolerance)
+
+
+def directional_curvature(
+    movement_direction: ArrayLike,
+    k1: float,
+    k2: float,
+    pc1_dir: np.ndarray,
+    pc2_dir: np.ndarray,
+) -> float:
+    """Compute normal curvature in a given direction via Euler's curvature formula.
+
+    Returns the scalar normal curvature of the surface along `movement_direction`,
+    given the two principal curvatures and their directions.
+
+    k(theta) = k1 * cos^2(theta) + k2 * sin^2(theta)
+
+    where theta is the angle between `movement_direction` and `pc1_dir`.
+
+    This formula is only valid when `pc1_dir` and `pc2_dir` are the principal
+    curvature directions and not for arbitrary orthonormal vectors.
+
+    Reference: Weisstein, Eric W. "Euler Curvature Formula." MathWorld.
+    https://mathworld.wolfram.com/EulerCurvatureFormula.html
+
+    Args:
+        movement_direction: Direction vector (will be normalized).
+        k1: First principal curvature (corresponds to pc1_dir).
+        k2: Second principal curvature (corresponds to pc2_dir).
+        pc1_dir: First principal curvature direction (unit vector in tangent plane).
+        pc2_dir: Second principal curvature direction (unit vector in tangent plane).
+
+    Returns:
+        Normal curvature in the given direction.
+
+    Raises:
+        ValueError: If pc1_dir and pc2_dir are not orthogonal, or if
+            movement_direction does not lie in the plane spanned by pc1_dir
+            and pc2_dir.
+    """
+    if not is_orthogonal(pc1_dir, pc2_dir):
+        raise ValueError("The pc1_dir and pc2_dir must be orthogonal.")
+
+    if not (is_unit_vector(pc1_dir) and is_unit_vector(pc2_dir)):
+        raise ValueError("The pc1_dir and pc2_dir must be unit vectors.")
+
+    if np.allclose(np.linalg.norm(movement_direction), 0.0):
+        return 0.0
+
+    move_hat = normalize(movement_direction)
+
+    if not is_coplanar(pc1_dir, pc2_dir, move_hat):
+        raise ValueError(
+            "The movement_direction must lie in the plane of pc1_dir and pc2_dir."
+        )
+
+    cos_theta_squared = np.dot(move_hat, pc1_dir) ** 2
+    sin_theta_squared = 1.0 - cos_theta_squared
+    return k1 * cos_theta_squared + k2 * sin_theta_squared
 
 
 def surface_normal_naive(point_cloud, patch_radius_frac=2.5):

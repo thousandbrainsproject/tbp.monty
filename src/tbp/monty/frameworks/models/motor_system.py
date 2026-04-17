@@ -107,8 +107,10 @@ class MotorSystem:
             The action to take.
         """
         motor_system_state = MotorSystemState(proprioceptive_state)
-        policy, goal = self._policy_selector(goals)
-        policy_result = policy(ctx, observations, motor_system_state, percept, goal)
+        policy_result = self._policy_selector(
+            ctx, observations, motor_system_state, percept, goals
+        )
+
         self.motor_only_step = policy_result.motor_only_step
 
         state_copy = motor_system_state.convert_motor_state()
