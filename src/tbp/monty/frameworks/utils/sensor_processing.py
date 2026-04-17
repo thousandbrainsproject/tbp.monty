@@ -176,6 +176,51 @@ def directional_curvature(
     return k1 * cos_theta_squared + k2 * sin_theta_squared
 
 
+def arc_length_corrected_displacement(
+    du: float,
+    dv: float,
+    basis_u: np.ndarray,
+    basis_v: np.ndarray,
+    principal_curvatures: np.ndarray,
+    curvature_pose_vectors: np.ndarray,
+) -> tuple[float, float]:
+    """Convert chord-length displacements to arc-length along each basis axis.
+
+    Uses Euler's formula to find the normal curvature in each basis direction,
+    then corrects the flat-plane displacement to the corresponding arc length.
+
+    Args:
+        du: Displacement along basis_u (chord length).
+        dv: Displacement along basis_v (chord length).
+        basis_u: First tangent-frame basis vector.
+        basis_v: Second tangent-frame basis vector.
+        principal_curvatures: Array [k1, k2] of principal curvature magnitudes.
+        curvature_pose_vectors: Pose matrix whose rows [1] and [2] are the
+            principal curvature directions.
+
+    Returns:
+        (arc_u, arc_v): Arc-length-corrected displacements.
+    """
+    k_u = directional_curvature(
+        basis_u,
+        principal_curvatures[0],
+        principal_curvatures[1],
+        curvature_pose_vectors[1],
+        curvature_pose_vectors[2],
+    )
+    k_v = directional_curvature(
+        basis_v,
+        principal_curvatures[0],
+        principal_curvatures[1],
+        curvature_pose_vectors[1],
+        curvature_pose_vectors[2],
+    )
+    return (
+        compute_arc_from_tangent_projection(du, k_u),
+        compute_arc_from_tangent_projection(dv, k_v),
+    )
+
+
 def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
     """Estimate surface normal.
 
