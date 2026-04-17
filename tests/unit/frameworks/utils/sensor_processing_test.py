@@ -13,12 +13,12 @@ from unittest.mock import Mock
 import numpy as np
 import numpy.testing as npt
 import pytest
-from hypothesis import assume, given
+from hypothesis import assume, given, example
 from hypothesis import strategies as st
 
 from tbp.monty.frameworks.utils.sensor_processing import (
     FLAT_THRESHOLD,
-    compute_arc_from_tangent_projection,
+    arc_from_projection,
     directional_curvature,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
@@ -60,7 +60,7 @@ def regime_params(draw, min_kp, max_kp):
 
 
 flat_params = regime_params(min_kp=0, max_kp=FLAT_THRESHOLD - DEFAULT_TOLERANCE)
-guard_params = regime_params(min_kp=1.0 + DEFAULT_TOLERANCE, max_kp=2.0)
+out_of_bound_params = regime_params(min_kp=1.0 + DEFAULT_TOLERANCE, max_kp=2.0)
 
 
 @st.composite
@@ -80,21 +80,25 @@ def curvature_values(draw):
 class ComputeArcFromTangentProjectionTest(unittest.TestCase):
     def test_known_correction(self):
         # k=1, p=0.5 => arcsin(0.5)/1 = pi/6 (~0.52)
-        result = compute_arc_from_tangent_projection(0.5, curvature=1.0)
+        result = arc_from_projection(0.5, curvature=1.0)
         npt.assert_allclose(result, np.pi / 6)
 
-    def test_domain_guard_at_boundary(self):
+    def test_out_of_bounds_params_edge_case(self):
         # kp = 1.0 exactly: guard fires, returns projection unchanged
-        assert compute_arc_from_tangent_projection(1.0, curvature=1.0) == 1.0
+        assert arc_from_projection(1.0, curvature=1.0) == 1.0
 
     @given(tangent_projection=projections, curvature=curvatures)
     def test_corrected_length_geq_projection(self, tangent_projection, curvature):
-        result = compute_arc_from_tangent_projection(tangent_projection, curvature)
+        result = arc_from_projection(tangent_projection, curvature)
         assert abs(result) >= abs(tangent_projection)
 
     @given(tangent_projection=projections, curvature=curvatures)
+    @example(
+        tangent_projection=0.0,
+        curvature=2.0
+    )
     def test_sign_preservation(self, tangent_projection, curvature):
-        result = compute_arc_from_tangent_projection(tangent_projection, curvature)
+        result = arc_from_projection(tangent_projection, curvature)
         if tangent_projection > 0.0:
             assert result > 0.0
         elif tangent_projection < 0:
@@ -104,26 +108,26 @@ class ComputeArcFromTangentProjectionTest(unittest.TestCase):
 
     @given(tangent_projection=projections, curvature=curvatures)
     def test_negating_projection_negates_result(self, tangent_projection, curvature):
-        pos = compute_arc_from_tangent_projection(tangent_projection, curvature)
-        neg = compute_arc_from_tangent_projection(-tangent_projection, curvature)
+        pos = arc_from_projection(tangent_projection, curvature)
+        neg = arc_from_projection(-tangent_projection, curvature)
         assert neg == -1.0 * pos
 
     @given(tangent_projection=projections, curvature=curvatures)
     def test_curvature_sign_does_not_affect_result(self, tangent_projection, curvature):
-        pos_k = compute_arc_from_tangent_projection(tangent_projection, curvature)
-        neg_k = compute_arc_from_tangent_projection(tangent_projection, -curvature)
+        pos_k = arc_from_projection(tangent_projection, curvature)
+        neg_k = arc_from_projection(tangent_projection, -curvature)
         assert pos_k == neg_k
 
     @given(params=flat_params)
     def test_flat_bypass_returns_projection(self, params):
         tangent_projection, curvature = params
-        result = compute_arc_from_tangent_projection(tangent_projection, curvature)
+        result = arc_from_projection(tangent_projection, curvature)
         assert result == tangent_projection
 
-    @given(params=guard_params)
-    def test_domain_guard_returns_projection(self, params):
+    @given(params=out_of_bound_params)
+    def test_out_of_bounds_returns_projection(self, params):
         tangent_projection, curvature = params
-        result = compute_arc_from_tangent_projection(tangent_projection, curvature)
+        result = arc_from_projection(tangent_projection, curvature)
         assert result == tangent_projection
 
 

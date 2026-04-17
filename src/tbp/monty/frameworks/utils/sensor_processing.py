@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 FLAT_THRESHOLD = 0.001
 
 
-def compute_arc_from_tangent_projection(
+def arc_from_projection(
     tangent_projection: float,
     curvature: float,
     threshold: float = FLAT_THRESHOLD,
@@ -88,7 +88,7 @@ def compute_arc_from_tangent_projection(
         # curvature is not uniform (the surface curves back), and the system will
         # underestimate 2D distance traveled. The higher-level solution is a policy
         # that takes smaller steps in 3D space to better estimate movements in 2D space.
-        logger.debug(
+        logger.warning(
             "Arc correction skipped: |k*p| = %.4f >= 1.0 "
             "(tangent_projection=%.6f, curvature=%.6f)",
             kp,
