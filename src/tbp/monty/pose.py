@@ -8,12 +8,17 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
-from numpy.typing import ArrayLike
+import numpy.typing as npt
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR
+
 # FloatVector = np.ndarray[tuple[int], np.dtype[np.float64]]
-FloatVector = np.ndarray
+# FloatVector = np.ndarray
+FloatVector = npt.NDArray[Any]
 """A type alias for a 1D array of `float`"""
 
 
@@ -39,11 +44,21 @@ def _deg(d: float) -> float:
 
 
 def _round_scalar(n: float, ndigits: int = 6) -> float:
+    """Round a `float` to `ndigits` places and normalize zeros.
+
+    Returns:
+        The rounded `float` value.
+    """
     n = round(n, ndigits)
     return 0.0 if n == 0.0 else n
 
 
-def _round_tuple(t: ArrayLike, ndigits: int = 6) -> tuple[float, ...]:
+def _round_tuple(t: npt.ArrayLike, ndigits: int = 6) -> tuple[float, ...]:
+    """Round an array of `float` to `ndigits` places and normalize zeros.
+
+    Returns:
+        A tuple of rounded `float` values.
+    """
     t = np.asarray(t, dtype=float)
     return tuple(_round_scalar(n, ndigits) for n in t)
 
@@ -100,9 +115,7 @@ class Location:  # noqa: PLW1641
         Location(frame=None, x=-3.0, y=-8.0, z=0.0)
     """
 
-    def __init__(
-        self, frame: Pose | None = None, xyz: ArrayLike = (0.0, 0.0, 0.0)
-    ) -> None:
+    def __init__(self, frame: Pose | None = None, xyz: npt.ArrayLike = ZERO_VECTOR) -> None:
         self._frame: Pose | None = frame
         self._v: FloatVector = np.asarray(xyz, dtype=float)
 
@@ -287,7 +300,7 @@ class Location:  # noqa: PLW1641
         self.z += dz
         return self
 
-    def move_by(self, offset: ArrayLike) -> Location:
+    def move_by(self, offset: npt.ArrayLike) -> Location:
         """Move by [_dx_, _dy_, _dz_] `offset`.
 
         Returns:
@@ -296,7 +309,7 @@ class Location:  # noqa: PLW1641
         self._v += np.asarray(offset, dtype=float)
         return self
 
-    def apply(self, vectors: ArrayLike) -> FloatVector:
+    def apply(self, vectors: npt.ArrayLike) -> FloatVector:
         """Apply this `Location` to translate _vectors_.
 
         Args:
@@ -398,10 +411,10 @@ class Location:  # noqa: PLW1641
         return self._v
 
 
-IDENTITY_ROTATION = Rotation.identity()
+IDENTITY_ROTATION: Rotation = Rotation.identity()
 """A neutral SciPy `Rotatiaon` object."""
 
-IDENTITY_ROTATION_MATRIX = np.identity(3, dtype=float)
+IDENTITY_ROTATION_MATRIX: FloatVector = np.identity(3, dtype=float)
 """A 3x3 identity matrix for default Orientation."""
 
 
@@ -455,7 +468,7 @@ class Orientation:  # noqa: PLW1641
     """  # noqa: E501
 
     def __init__(
-        self, frame: Pose | None = None, wxyz: ArrayLike = (1.0, 0.0, 0.0, 0.0)
+        self, frame: Pose | None = None, wxyz: npt.ArrayLike = IDENTITY_QUATERNION
     ) -> None:
         self._frame: Pose | None = frame
         wxyz = np.asarray(wxyz, dtype=float)
@@ -537,7 +550,7 @@ class Orientation:  # noqa: PLW1641
     @staticmethod
     def from_matrix(
         frame: Pose | None = None,
-        matrix: ArrayLike = IDENTITY_ROTATION_MATRIX,
+        matrix: npt.ArrayLike = IDENTITY_ROTATION_MATRIX,
     ) -> Orientation:
         r"""Create an `Orientation` from a rotation matrix.
 
@@ -716,7 +729,7 @@ class Orientation:  # noqa: PLW1641
         self._r *= Rotation.from_euler("z", d_psi)
         return self
 
-    def apply(self, vectors: ArrayLike) -> FloatVector:
+    def apply(self, vectors: npt.ArrayLike) -> FloatVector:
         """Apply this `Orientation` to rotate _vectors_.
 
         Args:
@@ -786,9 +799,7 @@ class Orientation:  # noqa: PLW1641
             >>> inv.inverse() == fwd
             True
         """
-        xyzw = self._r_inv.as_quat()
-        wxyz: FloatVector = xyzw[..., [3, 0, 1, 2]]
-        return Orientation(self.frame, wxyz)
+        return Orientation.from_rotation(self.frame, self._r_inv)
 
     def in_frame(self, frame: Pose | None = None) -> Orientation:
         """Create a copy of this `Orientation` relative to another frame-of-reference.
@@ -813,9 +824,7 @@ class Orientation:  # noqa: PLW1641
             rr: Rotation = origin.orientation._r
             r = rr * r
             origin = origin.frame
-        xyzw = r.as_quat()
-        wxyz: FloatVector = xyzw[..., [3, 0, 1, 2]]
-        return Orientation(origin, wxyz)
+        return Orientation.from_rotation(origin, r)
 
     def as_array(self) -> FloatVector:
         """This `Orientation` as an NDArray (quaternion).
@@ -847,11 +856,11 @@ class Orientation:  # noqa: PLW1641
         xyzw = self._r.as_quat()
         return Rotation.from_quat(xyzw)
 
-    def to_matrix(self):  # FIXME: what should this return type be?
+    def to_matrix(self) -> npt.NDArray[Any]:  # FIXME: what should this return type be?
         """Create a rotation matrix from this `Orientation`.
 
         Returns:
-            A 3x3 NDArray
+            A 3x3 `NDArray`
 
         Examples:
             >>> an_orientation = Orientation()
@@ -1021,8 +1030,8 @@ class Pose:  # noqa: PLW1641
 
     def new_frame(
         self,
-        position: ArrayLike = (0.0, 0.0, 0.0),
-        rotation: ArrayLike = (1.0, 0.0, 0.0, 0.0),
+        position: npt.ArrayLike = ZERO_VECTOR,
+        rotation: npt.ArrayLike = IDENTITY_QUATERNION,
         label: str = "",
     ) -> Pose:
         return Pose(
@@ -1032,10 +1041,10 @@ class Pose:  # noqa: PLW1641
             label,
         )
 
-    def new_location(self, xyz: ArrayLike = (0.0, 0.0, 0.0)) -> Location:
+    def new_location(self, xyz: npt.ArrayLike = ZERO_VECTOR) -> Location:
         return Location(self, xyz)
 
-    def new_orientation(self, wxyz: ArrayLike = (1.0, 0.0, 0.0, 0.0)) -> Orientation:
+    def new_orientation(self, wxyz: npt.ArrayLike = IDENTITY_QUATERNION) -> Orientation:
         return Orientation(self, wxyz)
 
     def inverse(self) -> Pose:
