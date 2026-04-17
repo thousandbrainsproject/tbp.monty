@@ -314,6 +314,16 @@ def check_orthonormal(matrix):
 def align_orthonormal_displacement(
     b0: Sequence[Location], b1: Sequence[Location]
 ) -> Orientation:
+    """Calculate the rotation that aligns two sets of basis vectors.
+
+    Returns:
+        The rotation from `b0` to `b1`.
+
+    Raises:
+        TypeError: If `b0` or `b1` are not 3 orthonormal basis vectors.
+    """
+    if not (len(b0) == 3 and len(b1) == 3):
+        raise TypeError("3 orthonormal basis vectors required.")
     m0 = np.array(
         [
             [b0[0].x, b0[0].y, b0[0].z],
@@ -335,6 +345,11 @@ def align_orthonormal_displacement(
 
 # FIXME: We may need a distinct Rotation class, but for now we're abusing Orientation.
 def align_rotations(from_r0: Orientation, to_r1: Orientation) -> Orientation:
+    """Calculate the rotation that aligns `Orientations`.
+
+    Returns:
+        The rotation from `from_r0` to `to_r1`.
+    """
     return from_r0.inverse() * to_r1
 
 
