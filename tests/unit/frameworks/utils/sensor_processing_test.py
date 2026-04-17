@@ -13,7 +13,7 @@ from unittest.mock import Mock
 import numpy as np
 import numpy.testing as npt
 import pytest
-from hypothesis import assume, given, example
+from hypothesis import assume, example, given
 from hypothesis import strategies as st
 
 from tbp.monty.frameworks.utils.sensor_processing import (
@@ -93,10 +93,7 @@ class ComputeArcFromTangentProjectionTest(unittest.TestCase):
         assert abs(result) >= abs(tangent_projection)
 
     @given(tangent_projection=projections, curvature=curvatures)
-    @example(
-        tangent_projection=0.0,
-        curvature=2.0
-    )
+    @example(tangent_projection=0.0, curvature=2.0)
     def test_sign_preservation(self, tangent_projection, curvature):
         result = arc_from_projection(tangent_projection, curvature)
         if tangent_projection > 0.0:
