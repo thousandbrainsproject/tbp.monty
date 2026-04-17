@@ -64,9 +64,7 @@ class GaussianSmoothingTest(unittest.TestCase):
                 [0.02324684, 0.03382395, 0.03832756, 0.03382395, 0.02324684],
             ]
         )
-        gaussian_smoother = GaussianSmoothing(
-            None, sigma=2, kernel_width=5
-        )
+        gaussian_smoother = GaussianSmoothing(None, sigma=2, kernel_width=5)
 
         self.assertTrue(
             (gaussian_smoother._kernel.shape == kernel_ground_truth.shape),
@@ -92,9 +90,7 @@ class GaussianSmoothingTest(unittest.TestCase):
                 [4.0, 4.0, 4.0, 4.0, 5.0, 6.0, 6.0, 6.0, 6.0],
             ]
         )
-        gaussian_smoother = GaussianSmoothing(
-            None, sigma=5, kernel_width=7
-        )
+        gaussian_smoother = GaussianSmoothing(None, sigma=5, kernel_width=7)
         padded_img = gaussian_smoother._get_padded_img(img, pad_type="edge")
 
         self.assertTrue(
@@ -108,9 +104,7 @@ class GaussianSmoothingTest(unittest.TestCase):
     def test_gaussian_smoothing_preserves_image(self):
 
         img = np.ones((64, 64))
-        gaussian_smoother = GaussianSmoothing(
-            None, sigma=15, kernel_width=15
-        )
+        gaussian_smoother = GaussianSmoothing(None, sigma=15, kernel_width=15)
         padded_img = gaussian_smoother._get_padded_img(img, pad_type="empty")
         filtered_img = gaussian_smoother._conv2d(padded_img, kernel_renorm=True)
 
@@ -133,9 +127,7 @@ class GaussianSmoothingTest(unittest.TestCase):
             ]
         )
 
-        gaussian_smoother = GaussianSmoothing(
-            None, sigma=2, kernel_width=3
-        )
+        gaussian_smoother = GaussianSmoothing(None, sigma=2, kernel_width=3)
         padded_img = gaussian_smoother._get_padded_img(img, pad_type="empty")
         filtered_img = gaussian_smoother._conv2d(padded_img, kernel_renorm=True)
 
@@ -233,13 +225,8 @@ class GaussianBlurRGBHandlerTest(unittest.TestCase):
         result_tv = total_variation(result_rgb)
 
         self.assertTrue(
-            result_tv < input_tv
-            or np.allclose(result_tv, input_tv, atol=1e-5)
+            result_tv < input_tv or np.allclose(result_tv, input_tv, atol=1e-5)
         )
-
-
-
-
 
     def test_pipeline_integration(self):
         pipeline = TransformPipeline(

@@ -32,34 +32,34 @@ from tbp.monty.frameworks.sensors import SensorID
 SENSOR_ID = SensorID("sensor_01")
 
 TEST_OBS = SensorObservation(
-                    {
-                        "semantic": np.array(
-                            [
-                                [0, 0, 0, 0, 0, 0, 0, 0],
-                                [0, 0, 0, 0, 0, 0, 0, 0],
-                                [0, 0, 5, 5, 5, 5, 0, 0],
-                                [0, 0, 5, 5, 5, 5, 0, 0],
-                                [0, 0, 5, 5, 5, 5, 0, 0],
-                                [0, 0, 5, 5, 5, 5, 0, 0],
-                                [0, 0, 0, 0, 0, 0, 0, 0],
-                                [0, 0, 0, 0, 0, 0, 0, 0],
-                            ],
-                            dtype=int,
-                        ),
-                        "depth": np.array(
-                            [
-                                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                                [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
-                                [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
-                                [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
-                                [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
-                                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                            ]
-                        ),
-                    }
-                )
+    {
+        "semantic": np.array(
+            [
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 5, 5, 5, 5, 0, 0],
+                [0, 0, 5, 5, 5, 5, 0, 0],
+                [0, 0, 5, 5, 5, 5, 0, 0],
+                [0, 0, 5, 5, 5, 5, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+            ],
+            dtype=int,
+        ),
+        "depth": np.array(
+            [
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
+                [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
+                [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
+                [0.0, 0.0, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            ]
+        ),
+    }
+)
 
 
 EXPECTED_SEMANTIC_XY = np.array(
@@ -88,9 +88,7 @@ class HabitatTransformTest(unittest.TestCase):
     def test_max_depth_transform(self):
         """Test replacing 0 with user specified max_range."""
         max_depth = 20
-        transform = MissingToMaxDepth(
-            None, max_depth=max_depth, threshold=0
-        )
+        transform = MissingToMaxDepth(None, max_depth=max_depth, threshold=0)
 
         # Make a copy since this transform modifies the observation in place
         observation_copy = copy.deepcopy(TEST_OBS)
@@ -101,9 +99,7 @@ class HabitatTransformTest(unittest.TestCase):
 
         # Check that the same indices get set to max_depth and only max_depth
         transformed_obs = transform.call(observation_copy)
-        unique_0_replacements = np.unique(
-            transformed_obs["depth"][m]
-        )
+        unique_0_replacements = np.unique(transformed_obs["depth"][m])
         self.assertEqual(len(unique_0_replacements), 1)
         self.assertEqual(unique_0_replacements[0], max_depth)
 
@@ -172,21 +168,21 @@ class HabitatTransformTest(unittest.TestCase):
 
     def setup_test_data(
         self, agent_position, agent_rotation, sensor_position, sensor_rotation
-        ):
+    ):
         resolution = TEST_OBS["depth"].shape
         md_transform = MissingToMaxDepth(None, max_depth=100)
         md_obs = md_transform.call(TEST_OBS)
 
         agent_state = AgentState(
-                    position=agent_position,
-                    rotation=agent_rotation,
-                    sensors={
-                        SENSOR_ID: SensorState(
-                            position=sensor_position,
-                            rotation=sensor_rotation,
-                        )
-                    },
+            position=agent_position,
+            rotation=agent_rotation,
+            sensors={
+                SENSOR_ID: SensorState(
+                    position=sensor_position,
+                    rotation=sensor_rotation,
                 )
+            },
+        )
         transform = DepthTo3DLocations(
             None,
             sensor_id=SENSOR_ID,

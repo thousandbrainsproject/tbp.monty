@@ -34,6 +34,7 @@ __all__ = [
     "identity_transform",
 ]
 
+
 @dataclass
 class TransformContext:
     rng: np.random.RandomState
@@ -85,6 +86,7 @@ class TransformMiddleware:
     def __call__(self, next_transform: Transform) -> Transform:
         return self._transform(next_transform, **self._kwargs)
 
+
 class MissingToMaxDepth(Transform):
     """Return max depth when no mesh is present at a location.
 
@@ -110,6 +112,7 @@ class MissingToMaxDepth(Transform):
         self._next_transform = next_transform
         self._max_depth = max_depth
         self._threshold = threshold
+
     def __call__(
         self, ctx: TransformContext, observations: SensorObservation
     ) -> SensorObservation:
@@ -133,9 +136,7 @@ class MissingToMaxDepth(Transform):
 class AddNoiseToRawDepthImage(Transform):
     """Add gaussian noise to raw sensory input."""
 
-    def __init__(
-        self, next_transform: Transform, sigma: float
-    ) -> None:
+    def __init__(self, next_transform: Transform, sigma: float) -> None:
         """Initialize the transform.
 
         Args:
@@ -206,10 +207,8 @@ class GaussianSmoothing(Transform):
         self._kernel_width = kernel_width
         self._pad_size = kernel_width // 2
         self._kernel = self._create_kernel(
-                    self._pad_size,
-                    self._kernel_width,
-                    self._sigma
-                )
+            self._pad_size, self._kernel_width, self._sigma
+        )
 
     def __call__(
         self, ctx: TransformContext, observations: SensorObservation
@@ -232,9 +231,7 @@ class GaussianSmoothing(Transform):
         if "depth" in observations:
             depth_img = observations["depth"].copy()
             padded_img = self._get_padded_img(depth_img, pad_type="edge")
-            filtered_img = scipy.signal.convolve(
-                padded_img, self._kernel, mode="valid"
-            )
+            filtered_img = scipy.signal.convolve(padded_img, self._kernel, mode="valid")
             observations["depth"] = filtered_img
         else:
             raise NoDepthSensorPresent(
@@ -247,7 +244,7 @@ class GaussianSmoothing(Transform):
         _pad_size: int,
         _kernel_width: int,
         _sigma: float,
-        ) -> np.ndarray:
+    ) -> np.ndarray:
         """Create a normalized gaussian kernel.
 
         Returns:
@@ -383,7 +380,6 @@ class GaussianBlurRGB(Transform):
                 f"Sensor '{self._sensor_id}' has no 'rgba' key in observations"
             )
 
-
         rgba = observations["rgba"]
         rgb_image = rgba[:, :, :3]
         alpha_channel = rgba[:, :, 3:4]
@@ -392,12 +388,9 @@ class GaussianBlurRGB(Transform):
             rgb_image, (self._kernel_size, self._kernel_size), self._sigma
         )
 
-        observations["rgba"] = np.concatenate(
-            [blurred_rgb, alpha_channel], axis=2
-        )
+        observations["rgba"] = np.concatenate([blurred_rgb, alpha_channel], axis=2)
 
         return observations
-
 
 
 class DepthTo3DLocations(Transform):
@@ -610,9 +603,7 @@ class DepthTo3DLocations(Transform):
             )
 
         # Approximate true world coordinates
-        x, y = np.meshgrid(
-            np.linspace(-1, 1, self._w), np.linspace(1, -1, self._h)
-        )
+        x, y = np.meshgrid(np.linspace(-1, 1, self._w), np.linspace(1, -1, self._h))
         x = x.reshape(1, self._h, self._w)
         y = y.reshape(1, self._h, self._w)
 
@@ -660,9 +651,7 @@ class DepthTo3DLocations(Transform):
 
             # Add point-cloud data expressed in sensor coordinate frame. Used for
             # surface normal extraction
-            observations["sensor_frame_data"] = (
-                sensor_frame_data
-            )
+            observations["sensor_frame_data"] = sensor_frame_data
         else:
             detected = semantic.any(axis=0)
             xyz = xyz.transpose(1, 0)
@@ -820,7 +809,6 @@ class DepthTo3DLocations(Transform):
             surface_patch = depth_patch > th
 
         return surface_patch * semantic_patch
-
 
 
 class NoDepthSensorPresent(RuntimeError):
