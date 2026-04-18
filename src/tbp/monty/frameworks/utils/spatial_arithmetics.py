@@ -354,8 +354,12 @@ def align_rotations(from_r0: Orientation, to_r1: Orientation) -> Orientation:
     Examples:
         >>> Orientation().yaw(np.deg2rad(-30))
         Orientation(frame=None, w=0.965926, x=0.0, y=-0.258819, z=0.0)
+        >>> Orientation().yaw(np.deg2rad(-30)).inverse()
+        Orientation(frame=None, w=-0.965926, x=0.0, y=-0.258819, z=0.0)
         >>> Orientation().yaw(np.deg2rad(30))
         Orientation(frame=None, w=0.965926, x=0.0, y=0.258819, z=0.0)
+        >>> Orientation().yaw(np.deg2rad(30)).inverse()
+        Orientation(frame=None, w=-0.965926, x=0.0, y=0.258819, z=0.0)
 
         >>> r0 = Orientation().yaw(np.deg2rad(45))
         >>> r1 = Orientation().yaw(np.deg2rad(15))
