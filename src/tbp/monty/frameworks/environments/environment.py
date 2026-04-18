@@ -82,7 +82,7 @@ class ObjectEnvironment(Protocol):
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
-    ) -> ObjectID:
+    ) -> ObjectInfo:
         """Add an object to the environment.
 
         Args:
@@ -98,7 +98,7 @@ class ObjectEnvironment(Protocol):
                 guarantee). Used when adding multiple objects. Defaults to None.
 
         Returns:
-            The ID of the added object.
+            ObjectInfo structure for the added object.
         """
         ...
 

@@ -25,11 +25,23 @@ from unittest_parametrize import ParametrizedTestCase, param, parametrize
 EXPERIMENT_DIR = (
     Path(__file__).parents[2] / "src" / "tbp" / "monty" / "conf" / "experiment"
 )
-EXPERIMENTS = [x.stem for x in EXPERIMENT_DIR.glob("*.yaml")]
+EXPERIMENTS = [
+    x.stem
+    for x in EXPERIMENT_DIR.glob("*.yaml")
+    # Exclude MuJoCo experiments
+    # TODO: Revert once we convert to MuJoCo
+    if not x.stem.endswith("mujoco")
+]
 EXPERIMENT_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots"
 
 TUTORIALS_DIR = EXPERIMENT_DIR / "tutorial"
-TUTORIALS = [x.stem for x in TUTORIALS_DIR.glob("*.yaml")]
+TUTORIALS = [
+    x.stem
+    for x in TUTORIALS_DIR.glob("*.yaml")
+    # Exclude MuJoCo tutorials
+    # TODO: Revert once we convert to MuJoCo
+    if not x.stem.endswith("mujoco")
+]
 TUTORIAL_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots" / "tutorial"
 
 
