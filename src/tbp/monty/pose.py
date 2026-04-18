@@ -25,14 +25,14 @@ FloatVector = npt.NDArray[Any]
 def _deg(d: float) -> float:
     """Convert degrees to radians.
 
-    Radians | Degrees
-    --------|--------
-    Pi      | 180
-    Pi / 2  | 90
-    Pi / 4  | 45
-    Pi / 6  | 30
-    Pi / 12 | 15
-    Pi / 36 | 5
+    | Radians | Degrees |    sin    |    cos    |
+    |---------|---------|-----------|-----------|
+    | Pi      |     180 |  0.000000 | -1.000000 |
+    | Pi / 2  |      90 |  1.000000 |  0.000000 |
+    | Pi / 4  |      45 |  0.707107 |  0.707107 |
+    | Pi / 6  |      30 |  0.500000 |  0.866025 |
+    | Pi / 12 |      15 |  0.258819 |  0.965926 |
+    | Pi / 36 |       5 |  0.087156 |  0.996194 |
 
     Args:
         d: The angle in degrees
