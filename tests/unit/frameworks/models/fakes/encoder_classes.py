@@ -45,3 +45,9 @@ class FakeDataclass1:
 @dataclasses.dataclass
 class FakeDataclass2:
     data: Any | None = None
+
+
+@dataclasses.dataclass
+class FakeDataclass3:
+    dataclass_1: FakeDataclass1
+    dataclass_2: FakeDataclass2

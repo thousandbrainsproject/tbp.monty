@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import copy
+import dataclasses
 import json
 import logging
 import time
@@ -734,7 +735,7 @@ class BufferEncoder(json.JSONEncoder):
         if encoder is not None:
             return encoder(obj)
         if is_dataclass_instance(obj):
-            return obj.__dict__
+            return {f.name: getattr(obj, f.name) for f in dataclasses.fields(obj)}
         return super().default(obj)
 
 
