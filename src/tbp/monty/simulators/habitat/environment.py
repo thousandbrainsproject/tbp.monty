@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Sequence
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
+    ObjectInfo,
     SemanticID,
     SimulatedObjectEnvironment,
 )
@@ -133,7 +134,7 @@ class HabitatEnvironment(SimulatedObjectEnvironment):
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
-    ) -> ObjectID:
+    ) -> ObjectInfo:
         return self._env.add_object(
             name,
             position,
@@ -141,7 +142,7 @@ class HabitatEnvironment(SimulatedObjectEnvironment):
             scale,
             semantic_id,
             primary_target_object,
-        ).object_id
+        )
 
     def step(
         self, actions: Sequence[Action]
