@@ -14,7 +14,6 @@ from typing import ClassVar
 
 import numpy as np
 import torch
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
@@ -34,6 +33,7 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
+from tbp.monty.geometry import Rotation
 
 __all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
 

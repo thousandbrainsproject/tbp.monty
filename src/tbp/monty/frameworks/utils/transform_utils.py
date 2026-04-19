@@ -11,7 +11,8 @@
 import numpy as np
 import quaternion as qt
 from numpy.typing import ArrayLike
-from scipy.spatial.transform import Rotation
+
+from tbp.monty.geometry import Rotation, to_scalar_first, to_scalar_last
 
 
 def numpy_to_scipy_quat(quat):
@@ -50,9 +51,7 @@ def rotation_as_quat(rot: Rotation, scalar_first: bool = True) -> np.ndarray:
 
     """
     quat = rot.as_quat()
-    if scalar_first:
-        return quat[..., [3, 0, 1, 2]]
-    return quat
+    return quat if scalar_first else to_scalar_last(quat)
 
 
 def rotation_from_quat(quat: ArrayLike, scalar_first: bool = True) -> Rotation:
@@ -72,6 +71,4 @@ def rotation_from_quat(quat: ArrayLike, scalar_first: bool = True) -> Rotation:
         The scipy rotation object.
     """
     quat = np.asarray(quat)
-    if scalar_first:
-        quat = quat[..., [1, 2, 3, 0]]
-    return Rotation.from_quat(quat)
+    return Rotation.from_quat(quat if scalar_first else to_scalar_first(quat))

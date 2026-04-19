@@ -28,14 +28,13 @@ pytest.importorskip(
 
 from unittest import TestCase
 
-from scipy.spatial.transform import Rotation
-
 from tbp.monty.frameworks.utils.evidence_matching import (
     ChannelMapper,
     EvidenceSlopeTracker,
     HypothesesSelection,
     InvalidEvidenceThresholdConfig,
 )
+from tbp.monty.geometry import Rotation
 
 
 class BurstSamplingHypothesesUpdaterTest(TestCase):

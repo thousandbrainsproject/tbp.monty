@@ -14,7 +14,6 @@ from typing import Any, Dict, cast
 
 import numpy as np
 import numpy.typing as npt
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.models.buffer import BufferEncoder
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
@@ -24,6 +23,7 @@ from tbp.monty.frameworks.utils.logging_utils import (
     compute_pose_error,
     compute_pose_errors,
 )
+from tbp.monty.geometry import Rotation
 
 
 @dataclass

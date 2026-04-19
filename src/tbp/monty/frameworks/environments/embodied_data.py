@@ -494,9 +494,9 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.current_object = idx
         self.primary_target = {
             "object": self.object_names[idx],
-            "rotation": qt.quaternion(0, 0, 0, 1),
+            "rotation": qt.quaternion(1, 0, 0, 0),
             "euler_rotation": np.array([0, 0, 0]),
-            "quat_rotation": [0, 0, 0, 1],
+            "quat_rotation": [1, 0, 0, 0],
             "position": np.array([0, 0, 0]),
             "scale": [1.0, 1.0, 1.0],
         }
@@ -592,9 +592,9 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         target_object_formatted = "_".join(target_object.split("_")[1:])
         self.primary_target = {
             "object": target_object_formatted,
-            "rotation": qt.quaternion(0, 0, 0, 1),
+            "rotation": qt.quaternion(1, 0, 0, 0),
             "euler_rotation": np.array([0, 0, 0]),
-            "quat_rotation": [0, 0, 0, 1],
+            "quat_rotation": [1, 0, 0, 0],
             "position": np.array([0, 0, 0]),
             "scale": [1.0, 1.0, 1.0],
         }
@@ -667,9 +667,9 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         # targets corresponding to the current scene ?
         self.primary_target = {
             "object": "no_label",
-            "rotation": qt.quaternion(0, 0, 0, 1),
+            "rotation": qt.quaternion(1, 0, 0, 0),
             "euler_rotation": np.array([0, 0, 0]),
-            "quat_rotation": [0, 0, 0, 1],
+            "quat_rotation": [1, 0, 0, 0],
             "position": np.array([0, 0, 0]),
             "scale": [1.0, 1.0, 1.0],
         }

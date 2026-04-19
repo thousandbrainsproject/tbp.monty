@@ -13,7 +13,6 @@ from typing import Sequence, TypedDict, cast
 
 import numpy as np
 import numpy.typing as npt
-from scipy.spatial.transform import Rotation
 from typing_extensions import NotRequired
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -21,6 +20,7 @@ from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.utils.transform_utils import (
     rotation_as_quat,
 )
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import EulerAnglesXYZ, QuaternionWXYZ, VectorXYZ
 
 

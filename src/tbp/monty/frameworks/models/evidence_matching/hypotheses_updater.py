@@ -14,7 +14,6 @@ from dataclasses import asdict, dataclass
 from typing import Any, ContextManager, Dict, Literal, Optional, Protocol
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 from typing_extensions import Self
 
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
@@ -44,6 +43,7 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_multiple_orthonormal_vectors,
 )
+from tbp.monty.geometry import Rotation
 
 logger = logging.getLogger(__name__)
 

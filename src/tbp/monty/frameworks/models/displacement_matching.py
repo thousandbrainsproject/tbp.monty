@@ -12,13 +12,13 @@ import logging
 
 import numpy as np
 import torch
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.graph_matching import GraphLM, GraphMemory
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import is_in_ranges
 from tbp.monty.frameworks.utils.sensor_processing import point_pair_features
+from tbp.monty.geometry import Rotation
 
 __all__ = ["DisplacementGraphLM", "DisplacementGraphMemory"]
 

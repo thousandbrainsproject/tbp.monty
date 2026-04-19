@@ -13,7 +13,6 @@ import logging
 from typing import Any
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
@@ -28,6 +27,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     SensorState,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.geometry import Rotation
 
 logger = logging.getLogger(__name__)
 
@@ -124,20 +124,20 @@ class LookAtGoal(MotorPolicy):
         agent_pos_rel_world = agent_state.position
         agent_rot_rel_world = Rotation.from_quat(
             [
+                agent_state.rotation.w,
                 agent_state.rotation.x,
                 agent_state.rotation.y,
                 agent_state.rotation.z,
-                agent_state.rotation.w,
             ]
         )
 
         sensor_state: SensorState = agent_state.sensors[self._sensor_id]
         sensor_rot_rel_agent = Rotation.from_quat(
             [
+                sensor_state.rotation.w,
                 sensor_state.rotation.x,
                 sensor_state.rotation.y,
                 sensor_state.rotation.z,
-                sensor_state.rotation.w,
             ]
         )
 
