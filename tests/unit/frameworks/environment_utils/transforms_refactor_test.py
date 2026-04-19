@@ -102,7 +102,6 @@ class GaussianSmoothingTest(unittest.TestCase):
         self.assertTrue(all_equal, "Padding values do not match.")
 
     def test_gaussian_smoothing_preserves_image(self):
-
         img = np.ones((64, 64))
         gaussian_smoother = GaussianSmoothing(None, sigma=15, kernel_width=15)
         padded_img = gaussian_smoother._get_padded_img(img, pad_type="empty")
