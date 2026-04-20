@@ -39,45 +39,6 @@ class EdgeDetectionConfig:
     max_center_offset: int | None = None
 
 
-def is_geometric_edge(
-    depth_patch: np.ndarray,
-    edge_theta: float,
-    depth_threshold: float = 0.01,
-) -> bool:
-    """Check if detected edge is a geometric edge (depth discontinuity).
-
-    Geometric edges occur at object boundaries or surface creases where depth
-    changes abruptly. Texture edges will be detected wherever there is an abrupt
-    discontinuity in image intensity. We will use detected geometric edges to identify
-    candidate texture edges that do not correspond to a 2D surface (such as where the
-    red handle of a mug is seen against the black background of a simulator's void).
-    This function computes the depth gradient perpendicular to the detected edge
-    direction and checks if it exceeds a threshold.
-
-    Args:
-        depth_patch: Depth image patch (same size as RGB patch used for edge
-            detection). Values should be in consistent units (e.g., meters).
-        edge_theta: Edge tangent angle in radians from RGB edge detection.
-        depth_threshold: Maximum allowed depth gradient magnitude for texture
-            edges. Edges with perpendicular depth gradient above this value
-            are classified as geometric.
-
-    Returns:
-        True if edge is geometric, False if texture edge.
-    """
-    depth_dx = cv2.Sobel(depth_patch, cv2.CV_32F, 1, 0, ksize=3)
-    depth_dy = cv2.Sobel(depth_patch, cv2.CV_32F, 0, 1, ksize=3)
-
-    edge_normal_angle = edge_theta + np.pi / 2
-    nx = np.cos(edge_normal_angle)
-    ny = np.sin(edge_normal_angle)
-
-    cy, cx = depth_patch.shape[0] // 2, depth_patch.shape[1] // 2
-    depth_gradient_perp = abs(nx * depth_dx[cy, cx] + ny * depth_dy[cy, cx])
-
-    return depth_gradient_perp > depth_threshold
-
-
 def gradient_to_tangent_angle(gradient_angle: float) -> float:
     """Convert gradient direction to edge tangent direction and wrap to [0, 2*pi).
 
@@ -91,40 +52,6 @@ def gradient_to_tangent_angle(gradient_angle: float) -> float:
     """
     tangent_angle = gradient_angle + np.pi / 2
     return (tangent_angle + 2 * np.pi) % (2 * np.pi)
-
-
-def edge_angle_to_2d_pose(
-    theta: float,
-    world_camera: np.ndarray,
-) -> np.ndarray:
-    """Build 2D pose vectors from an edge angle.
-
-    Returns the standard basis rotated by the edge angle in the world
-    xy-plane. When the camera is tilted, the camera's image x-axis is
-    projected into the xy-plane to determine the reference direction.
-
-    Args:
-        theta: Edge angle in radians in image coordinates (y-down), measured
-            counterclockwise from the image x-axis.
-        world_camera: 4x4 world-to-camera transformation matrix.
-
-    Returns:
-        3x3 array whose rows are [normal, edge_tangent, edge_perp].
-        Normal is always [0, 0, 1]; tangent and perp lie in the z=0 plane.
-    """
-    R = world_camera[:3, :3]  # noqa: N806
-    image_x_world = R.T @ np.array([1.0, 0.0, 0.0])
-    ref_angle = np.arctan2(image_x_world[1], image_x_world[0])
-    world_theta = ref_angle - theta
-
-    cos_t, sin_t = np.cos(world_theta), np.sin(world_theta)
-    return np.array(
-        [
-            [0.0, 0.0, 1.0],
-            [cos_t, sin_t, 0.0],
-            [-sin_t, cos_t, 0.0],
-        ]
-    )
 
 
 @dataclass
@@ -157,7 +84,9 @@ class StructureTensor:
     def coherence(self) -> float:
         """Edge quality in [0, 1]: 1 means perfectly oriented, 0 means isotropic."""
         lambda_min, lambda_max = self.eigenvalues
-        return (lambda_max - lambda_min) / (lambda_max + lambda_min + DIVISION_BY_ZERO_GUARD)
+        return (lambda_max - lambda_min) / (
+            lambda_max + lambda_min + DIVISION_BY_ZERO_GUARD
+        )
 
     @property
     def edge_orientation(self) -> float:
@@ -355,7 +284,9 @@ def compute_edge_features(
 
     gray = cv2.cvtColor(patch, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0
     Ix, Iy = _compute_sobel_gradients(gray)  # noqa: N806
-    tensor_per_pixel = _compute_per_pixel_structure_tensors(Ix, Iy, edge_detection_config)
+    tensor_per_pixel = _compute_per_pixel_structure_tensors(
+        Ix, Iy, edge_detection_config
+    )
 
     weights, total_weight = _compute_center_weights(
         gray.shape, Ix, Iy, edge_detection_config
