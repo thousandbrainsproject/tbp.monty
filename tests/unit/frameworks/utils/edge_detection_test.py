@@ -33,6 +33,7 @@ def structure_tensors(draw, max_value=100.0, allow_zero_matrix=True):
     """Generate valid PSD structure tensors.
 
     Args:
+        draw: Hypothesis draw function (injected by @st.composite).
         max_value: Maximum value for Jxx, Jyy.
         allow_zero_matrix: If True, allows zero/near-zero tensors.
 
@@ -40,19 +41,19 @@ def structure_tensors(draw, max_value=100.0, allow_zero_matrix=True):
         PSD StructureTensor satisfying Jxy^2 <= Jxx * Jyy.
     """
     min_val = 0.0 if allow_zero_matrix else DEFAULT_TOLERANCE
-    Jxx = draw(
+    Jxx = draw(  # noqa: N806
         st.floats(min_value=min_val, max_value=max_value).filter(
             lambda x: abs(x) > DEFAULT_TOLERANCE
         )
     )
-    Jyy = draw(
+    Jyy = draw(  # noqa: N806
         st.floats(min_value=min_val, max_value=max_value).filter(
             lambda x: abs(x) > DEFAULT_TOLERANCE
         )
     )
     # Cauchy-Schwarz bound: |Jxy| <= sqrt(Jxx * Jyy) guarantees det(J) >= 0
-    max_Jxy = np.sqrt(Jxx * Jyy)
-    Jxy = draw(
+    max_Jxy = np.sqrt(Jxx * Jyy)  # noqa: N806
+    Jxy = draw(  # noqa: N806
         st.floats(min_value=-max_Jxy, max_value=max_Jxy).filter(
             lambda x: abs(x) > DEFAULT_TOLERANCE
         )
@@ -101,7 +102,11 @@ HORIZONTAL_EDGE_PATCH = make_rgb_patch(PATCH_SIZE, "horizontal_edge")
 
 @st.composite
 def edge_patch(draw, patterns=None):
-    """Generate a canonical-pattern RGB patch at the fixed PATCH_SIZE."""
+    """Generate a canonical-pattern RGB patch at the fixed PATCH_SIZE.
+
+    Returns:
+        An RGB patch array of shape (PATCH_SIZE, PATCH_SIZE, 3).
+    """
     if patterns is None:
         patterns = ["uniform", "vertical_edge", "horizontal_edge", "diagonal_edge"]
     pattern = draw(st.sampled_from(patterns))
@@ -120,8 +125,8 @@ def center_weight_inputs(draw):
     """
     h, w = PATCH_SIZE, PATCH_SIZE
     g = draw(a_scalar)
-    Ix = np.full((h, w), g, dtype=np.float32)
-    Iy = np.full((h, w), g, dtype=np.float32)
+    Ix = np.full((h, w), g, dtype=np.float32)  # noqa: N806
+    Iy = np.full((h, w), g, dtype=np.float32)  # noqa: N806
     radius = draw(st.floats(min_value=1.0, max_value=20.0))
     sigma_r = draw(st.floats(min_value=0.5, max_value=10.0))
     config = EdgeDetectionConfig(radius=radius, sigma_r=sigma_r)
@@ -138,7 +143,7 @@ def center_check_inputs(draw):
     Returns:
         Tuple of (weights, total_weight, gradient_theta, max_center_offset).
     """
-    shape, Ix, Iy, config = draw(center_weight_inputs())
+    shape, Ix, Iy, config = draw(center_weight_inputs())  # noqa: N806
     weights, total_weight = _compute_center_weights(shape, Ix, Iy, config)
     assume(total_weight > 0)
     gradient_theta = draw(angles)
@@ -239,8 +244,8 @@ class StructureTensorTest(unittest.TestCase):
 class ComputeCenterWeightsTest(unittest.TestCase):
     def test_zero_gradients_give_zero_weight(self):
         h, w = PATCH_SIZE, PATCH_SIZE
-        Ix = np.zeros((h, w), dtype=np.float32)
-        Iy = np.zeros((h, w), dtype=np.float32)
+        Ix = np.zeros((h, w), dtype=np.float32)  # noqa: N806
+        Iy = np.zeros((h, w), dtype=np.float32)  # noqa: N806
         weights, total_weight = _compute_center_weights(
             (h, w), Ix, Iy, EdgeDetectionConfig()
         )
@@ -249,8 +254,8 @@ class ComputeCenterWeightsTest(unittest.TestCase):
 
     def test_center_pixel_has_maximum_weight(self):
         h, w = PATCH_SIZE, PATCH_SIZE
-        Ix = np.ones((h, w), dtype=np.float32)
-        Iy = np.ones((h, w), dtype=np.float32)
+        Ix = np.ones((h, w), dtype=np.float32)  # noqa: N806
+        Iy = np.ones((h, w), dtype=np.float32)  # noqa: N806
         config = EdgeDetectionConfig(radius=1000.0)
         weights, _ = _compute_center_weights((h, w), Ix, Iy, config)
         r0, c0 = h // 2, w // 2
@@ -258,8 +263,8 @@ class ComputeCenterWeightsTest(unittest.TestCase):
 
     def test_pixel_just_outside_radius_is_zero(self):
         h, w = PATCH_SIZE, PATCH_SIZE
-        Ix = np.ones((h, w), dtype=np.float32)
-        Iy = np.ones((h, w), dtype=np.float32)
+        Ix = np.ones((h, w), dtype=np.float32)  # noqa: N806
+        Iy = np.ones((h, w), dtype=np.float32)  # noqa: N806
         config = EdgeDetectionConfig(radius=2.0)
         weights, _ = _compute_center_weights((h, w), Ix, Iy, config)
         r0, c0 = h // 2, w // 2
@@ -267,25 +272,25 @@ class ComputeCenterWeightsTest(unittest.TestCase):
 
     @given(inputs=center_weight_inputs())
     def test_weights_nonnegative(self, inputs):
-        shape, Ix, Iy, config = inputs
+        shape, Ix, Iy, config = inputs  # noqa: N806
         weights, _ = _compute_center_weights(shape, Ix, Iy, config)
         assert np.all(weights >= 0.0)
 
     @given(inputs=center_weight_inputs())
     def test_total_weight_equals_sum_of_weights(self, inputs):
-        shape, Ix, Iy, config = inputs
+        shape, Ix, Iy, config = inputs  # noqa: N806
         weights, total_weight = _compute_center_weights(shape, Ix, Iy, config)
         np.testing.assert_allclose(total_weight, np.sum(weights))
 
     @given(inputs=center_weight_inputs())
     def test_output_shape_matches_input(self, inputs):
-        shape, Ix, Iy, config = inputs
+        shape, Ix, Iy, config = inputs  # noqa: N806
         weights, _ = _compute_center_weights(shape, Ix, Iy, config)
         assert weights.shape == shape
 
     @given(inputs=center_weight_inputs())
     def test_pixels_beyond_radius_have_zero_weight(self, inputs):
-        shape, Ix, Iy, config = inputs
+        shape, Ix, Iy, config = inputs  # noqa: N806
         h, w = shape
         r0, c0 = h // 2, w // 2
         weights, _ = _compute_center_weights(shape, Ix, Iy, config)
@@ -295,7 +300,7 @@ class ComputeCenterWeightsTest(unittest.TestCase):
 
     @given(inputs=center_weight_inputs(), k=a_scalar)
     def test_gradient_scaling_scales_weights_quadratically(self, inputs, k):
-        shape, Ix, Iy, config = inputs
+        shape, Ix, Iy, config = inputs  # noqa: N806
         weights, total_weight = _compute_center_weights(shape, Ix, Iy, config)
         weights_scaled, total_weight_scaled = _compute_center_weights(
             shape, k * Ix, k * Iy, config
@@ -326,7 +331,7 @@ class PassesCenterCheckTest(unittest.TestCase):
         # All weight at (row=0, col=c0). With theta=pi/2, ny=1, nx=0:
         # dist_normal[0, c0] = ny*(0 - r0) = -r0 = -32, so abs(d_center) = 32 > 1.
         h, w = PATCH_SIZE, PATCH_SIZE
-        r0, c0 = h // 2, w // 2
+        c0 = w // 2
         weights = np.zeros((h, w), dtype=np.float32)
         weights[0, c0] = 1.0
         assert not _passes_center_check(weights, 1.0, np.pi / 2, 1)
@@ -335,7 +340,7 @@ class PassesCenterCheckTest(unittest.TestCase):
         # All weight at (row=r0, col=w-1). With theta=0, nx=1, ny=0:
         # dist_normal[r0, w-1] = nx*(w-1-c0) = w//2 - 1 = 31, so abs(d_center) = 31 > 1.
         h, w = PATCH_SIZE, PATCH_SIZE
-        r0, c0 = h // 2, w // 2
+        r0 = h // 2
         weights = np.zeros((h, w), dtype=np.float32)
         weights[r0, w - 1] = 1.0
         assert not _passes_center_check(weights, 1.0, 0.0, 1)
@@ -351,10 +356,10 @@ class PassesCenterCheckTest(unittest.TestCase):
         offset=st.integers(min_value=0, max_value=100),
     )
     def test_symmetric_weights_pass_any_nonneg_offset(self, inputs, theta, offset):
-        # center_weight_inputs produces radially symmetric weights (radial Gaussian * uniform
-        # gradient magnitude), so sum(weights*(cols-c0)) = 0 and sum(weights*(rows-r0)) = 0,
-        # giving d_center = 0 for any theta.
-        shape, Ix, Iy, config = inputs
+        # center_weight_inputs produces radially symmetric weights (radial Gaussian
+        # * uniform gradient magnitude), so sum(weights*(cols-c0)) = 0 and
+        # sum(weights*(rows-r0)) = 0, giving d_center = 0 for any theta.
+        shape, Ix, Iy, config = inputs  # noqa: N806
         weights, total_weight = _compute_center_weights(shape, Ix, Iy, config)
         assume(total_weight > 0)
         assert _passes_center_check(weights, total_weight, theta, offset)

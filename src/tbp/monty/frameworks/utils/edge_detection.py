@@ -56,7 +56,10 @@ def gradient_to_tangent_angle(gradient_angle: float) -> float:
 
 @dataclass
 class StructureTensor:
-    """Structure tensor at a single point: a 2x2 symmetric matrix [[Jxx, Jxy], [Jxy, Jyy]]."""
+    """Structure tensor at a single point.
+
+    A 2x2 symmetric matrix [[Jxx, Jxy], [Jxy, Jyy]].
+    """
 
     Jxx: float
     Jyy: float
