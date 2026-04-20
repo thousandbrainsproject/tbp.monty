@@ -118,7 +118,6 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
 
     def reset(self) -> None:
         super().reset()
-        self.evidence = {}
         self.last_location = None
 
     def _add_displacements(self, percepts: list[Message]) -> list[Message]:

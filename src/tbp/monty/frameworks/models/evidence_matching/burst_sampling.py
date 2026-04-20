@@ -505,12 +505,7 @@ class BurstSamplingHypothesesUpdater:
             # Clear all hypotheses from the tracker
             tracker.clear_hyp()
 
-            return Hypotheses(
-                locations=np.zeros((0, 3)),
-                poses=np.zeros((0, 3, 3)),
-                evidence=np.zeros(0),
-                possible=np.zeros(0, dtype=np.bool_),
-            )
+            return Hypotheses.empty()
 
         # Update tracker by removing the ids_to_remove
         tracker.remove_hyp(hypotheses_selection.ids_to_remove)
@@ -578,12 +573,7 @@ class BurstSamplingHypothesesUpdater:
 
         # Return empty arrays for no hypotheses to sample
         if not sampled_hypotheses:
-            return Hypotheses(
-                locations=np.zeros((0, 3)),
-                poses=np.zeros((0, 3, 3)),
-                evidence=np.zeros(0),
-                possible=np.zeros(0, dtype=np.bool_),
-            )
+            return Hypotheses.empty()
 
         hypotheses = Hypotheses.concatenate(sampled_hypotheses)
 
