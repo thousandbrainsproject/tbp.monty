@@ -365,7 +365,6 @@ class BurstSamplingHypothesesUpdater:
         )
         tracker.update(hypotheses_update.evidence)
 
-        # TODO: make this nicer like dependent on log_level.
         if self.include_telemetry:
             telemetry = asdict(
                 BurstSamplingTelemetry(
