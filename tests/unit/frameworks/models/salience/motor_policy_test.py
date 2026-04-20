@@ -175,8 +175,6 @@ class LookAtGoalTest(unittest.TestCase):
                 goal_xyz[2] - sensor_pos_rel_world[2],
             ]
         )
-        if np.isclose(np.linalg.norm(expected_forward_vector_rel_world), 0.0):
-            return
 
         result = policy(
             ctx=RuntimeContext(
