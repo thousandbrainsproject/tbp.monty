@@ -115,7 +115,9 @@ class Location:  # noqa: PLW1641
         Location(frame=None, x=-3.0, y=-8.0, z=0.0)
     """
 
-    def __init__(self, frame: Pose | None = None, xyz: npt.ArrayLike = ZERO_VECTOR) -> None:
+    def __init__(
+        self, frame: Pose | None = None, xyz: npt.ArrayLike = ZERO_VECTOR
+    ) -> None:
         self._frame: Pose | None = frame
         self._v: FloatVector = np.asarray(xyz, dtype=float)
 
@@ -465,7 +467,7 @@ class Orientation:  # noqa: PLW1641
         Orientation(frame=None, w=0.653281, x=0.270598, y=0.653281, z=0.270598)
         >>> an_orientation.yaw(_deg(-90)).pitch(_deg(-45))  # right 90°, down 45°
         Orientation(frame=None, w=1.0, x=0.0, y=0.0, z=0.0)
-    """  # noqa: E501
+    """
 
     def __init__(
         self, frame: Pose | None = None, wxyz: npt.ArrayLike = IDENTITY_QUATERNION
