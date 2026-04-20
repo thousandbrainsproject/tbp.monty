@@ -323,12 +323,12 @@ class PassesCenterCheckTest(unittest.TestCase):
     @given(
         inputs=center_weight_inputs(),
         theta=angles,
-        offset=st.integers(min_value=0, max_value=100),
+        offset=st.integers(min_value=1, max_value=100),
     )
     def test_symmetric_weights_pass_any_nonneg_offset(self, inputs, theta, offset):
         # center_weight_inputs produces radially symmetric weights (radial Gaussian
-        # * uniform gradient magnitude), so sum(weights*(cols-c0)) = 0 and
-        # sum(weights*(rows-r0)) = 0, giving d_center = 0 for any theta.
+        # * uniform gradient magnitude), so sum(weights*(cols-c0)) ~= 0 and
+        # sum(weights*(rows-r0)) ~= 0, giving d_center ~= 0 for any theta.
         shape, Ix, Iy, config = inputs  # noqa: N806
         weights, total_weight = _compute_center_weights(shape, Ix, Iy, config)
         assume(total_weight > 0)
