@@ -119,13 +119,9 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
 
         # 0,1 have higher slopes, 3 is too young
         expected_keep = np.array([0, 1, 3], dtype=int)
-        expected_keep_mask = np.array([True, True, False, True], dtype=bool)
 
         # lower slope than threshold (-1 < -0.5)
         expected_remove = np.array([2], dtype=int)
-        expected_remove_mask = np.array([False, False, True, False], dtype=bool)
 
         np.testing.assert_array_equal(selection.ids_to_retain, expected_keep)
         np.testing.assert_array_equal(selection.ids_to_remove, expected_remove)
-        np.testing.assert_array_equal(selection.mask_to_retain, expected_keep_mask)
-        np.testing.assert_array_equal(selection.mask_to_remove, expected_remove_mask)

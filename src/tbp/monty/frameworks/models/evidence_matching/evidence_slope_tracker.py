@@ -174,9 +174,8 @@ class HypothesesSelection:
     """Encapsulates the selection of hypotheses to retain or remove.
 
     This class stores a boolean mask indicating which hypotheses should be retained.
-    From this mask, it can return the indices and masks for both the retained and
-    removed hypotheses. It also provides convenience constructors for creating a
-    selection from retain/remove masks or from retain/remove index lists.
+    From this mask, it can return the indices for both the retained and removed
+    hypotheses.
 
     Attributes:
         _mask_to_retain: Boolean mask of shape (N,) where True indicates a retained
@@ -191,16 +190,6 @@ class HypothesesSelection:
                 retained hypothesis and False indicates a removed hypothesis.
         """
         self._mask_to_retain = np.asarray(mask_to_retain, dtype=bool)
-
-    @property
-    def mask_to_retain(self) -> npt.NDArray[np.bool_]:
-        """Returns the retain mask."""
-        return self._mask_to_retain
-
-    @property
-    def mask_to_remove(self) -> npt.NDArray[np.bool_]:
-        """Returns the remove mask."""
-        return ~self._mask_to_retain
 
     @property
     def ids_to_retain(self) -> npt.NDArray[np.int_]:
