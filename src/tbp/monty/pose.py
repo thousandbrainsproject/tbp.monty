@@ -18,7 +18,8 @@ from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR
 
 # FloatVector = np.ndarray[tuple[int], np.dtype[np.float64]]
 # FloatVector = np.ndarray
-FloatVector = npt.NDArray[Any]
+# FloatVector = npt.NDArray[Any]
+FloatVector = npt.NDArray[np.float64]
 """A type alias for a 1D array of `float`"""
 
 
