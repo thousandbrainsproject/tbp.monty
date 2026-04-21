@@ -58,7 +58,7 @@ def structure_tensors(draw, max_value=100.0, allow_zero_matrix=True):
             lambda x: abs(x) > DEFAULT_TOLERANCE
         )
     )
-    return StructureTensor(Jxx=Jxx, Jyy=Jyy, Jxy=Jxy)
+    return StructureTensor(xx=Jxx, yy=Jyy, xy=Jxy)
 
 
 PATCH_SIZE = 64
@@ -98,6 +98,7 @@ def make_rgb_patch(size: int, pattern: str) -> np.ndarray:
 
 VERTICAL_EDGE_PATCH = make_rgb_patch(PATCH_SIZE, "vertical_edge")
 HORIZONTAL_EDGE_PATCH = make_rgb_patch(PATCH_SIZE, "horizontal_edge")
+UNIFORM_PATCH = make_rgb_patch(PATCH_SIZE, "uniform")
 
 
 @st.composite
@@ -168,7 +169,7 @@ class GradientToTangentAngleTest(unittest.TestCase):
 
 class StructureTensorTest(unittest.TestCase):
     def test_eigenvalues_match_analytical(self):
-        t = StructureTensor(Jxx=3.0, Jyy=1.0, Jxy=1.0)
+        t = StructureTensor(xx=3.0, yy=1.0, xy=1.0)
         lambda_min, lambda_max = t.eigenvalues
         np.testing.assert_allclose(
             lambda_min, 2.0 - np.sqrt(2.0), atol=DEFAULT_TOLERANCE
@@ -178,23 +179,23 @@ class StructureTensorTest(unittest.TestCase):
         )
 
     @given(t=structure_tensors())
-    @example(t=StructureTensor(Jxx=0.0, Jyy=0.0, Jxy=0.0))
+    @example(t=StructureTensor(xx=0.0, yy=0.0, xy=0.0))
     def test_eigenvalues_ordered(self, t):
         lambda_min, lambda_max = t.eigenvalues
         assert lambda_min <= lambda_max
 
     @given(t=structure_tensors())
-    @example(t=StructureTensor(Jxx=0.0, Jyy=9.0, Jxy=0.0))
+    @example(t=StructureTensor(xx=0.0, yy=9.0, xy=0.0))
     def test_edge_strength_nonnegative(self, t):
         assert t.edge_strength >= 0.0
 
     @given(t=structure_tensors())
-    @example(t=StructureTensor(Jxx=4.0, Jyy=0.0, Jxy=0.0))
+    @example(t=StructureTensor(xx=4.0, yy=0.0, xy=0.0))
     def test_coherence_in_unit_interval(self, t):
         assert 0.0 <= t.coherence <= 1.0
 
     @given(t=structure_tensors())
-    @example(t=StructureTensor(Jxx=4.0, Jyy=0.0, Jxy=0.0))
+    @example(t=StructureTensor(xx=4.0, yy=0.0, xy=0.0))
     def test_edge_angle_range(self, t):
         assert 0.0 <= t.edge_angle <= np.pi
 
@@ -202,33 +203,33 @@ class StructureTensorTest(unittest.TestCase):
     def test_eigenvalue_trace_equals_jxx_plus_jyy(self, t):
         lambda_min, lambda_max = t.eigenvalues
         np.testing.assert_allclose(
-            lambda_min + lambda_max, t.Jxx + t.Jyy, atol=DEFAULT_TOLERANCE
+            lambda_min + lambda_max, t.xx + t.yy, atol=DEFAULT_TOLERANCE
         )
 
     @given(t=structure_tensors())
     def test_eigenvalue_product_equals_determinant(self, t):
         lambda_min, lambda_max = t.eigenvalues
         np.testing.assert_allclose(
-            lambda_min * lambda_max, t.Jxx * t.Jyy - t.Jxy**2, atol=DEFAULT_TOLERANCE
+            lambda_min * lambda_max, t.xx * t.yy - t.xy**2, atol=DEFAULT_TOLERANCE
         )
 
     @given(k=a_scalar)
     def test_isotropic_coherence_is_zero(self, k):
-        t = StructureTensor(Jxx=k, Jyy=k, Jxy=0.0)
+        t = StructureTensor(xx=k, yy=k, xy=0.0)
         np.testing.assert_allclose(t.coherence, 0.0, atol=DEFAULT_TOLERANCE)
 
     @given(t=structure_tensors(), k=a_scalar)
     def test_scaling_multiplies_edge_strength(self, t, k):
-        scaled = StructureTensor(Jxx=k * t.Jxx, Jyy=k * t.Jyy, Jxy=k * t.Jxy)
+        scaled = StructureTensor(xx=k * t.xx, yy=k * t.yy, xy=k * t.xy)
         np.testing.assert_allclose(
             scaled.edge_strength, np.sqrt(k) * t.edge_strength, atol=DEFAULT_TOLERANCE
         )
 
     @given(t=structure_tensors(), k=a_scalar)
-    @example(t=StructureTensor(Jxx=4.0, Jyy=0.0, Jxy=0.0), k=2.0)
-    @example(t=StructureTensor(Jxx=0.0, Jyy=9.0, Jxy=0.0), k=3.0)
+    @example(t=StructureTensor(xx=4.0, yy=0.0, xy=0.0), k=2.0)
+    @example(t=StructureTensor(xx=0.0, yy=9.0, xy=0.0), k=3.0)
     def test_scaling_preserves_gradient_theta(self, t, k):
-        scaled = StructureTensor(Jxx=k * t.Jxx, Jyy=k * t.Jyy, Jxy=k * t.Jxy)
+        scaled = StructureTensor(xx=k * t.xx, yy=k * t.yy, xy=k * t.xy)
         np.testing.assert_allclose(
             scaled.gradient_theta, t.gradient_theta, atol=DEFAULT_TOLERANCE
         )
@@ -337,33 +338,32 @@ class PassesCenterCheckTest(unittest.TestCase):
 
 class TestComputeEdgeFeatures:
     def test_uniform_patch_returns_zero_strength(self):
-        patch = make_rgb_patch(PATCH_SIZE, "uniform")
-        strength, coherence, orientation = compute_edge_features(patch)
-        assert strength == pytest.approx(0.0)
-        assert coherence == pytest.approx(0.0)
-        assert orientation is None
+        edge = compute_edge_features(UNIFORM_PATCH)
+        assert edge.strength == 0.0
+        assert edge.coherence == 0.0
+        assert edge.angle is None
 
     def test_vertical_edge_detected(self):
-        strength, coherence, _ = compute_edge_features(VERTICAL_EDGE_PATCH)
-        assert strength > 0.0
-        assert coherence > 0.0
+        edge = compute_edge_features(VERTICAL_EDGE_PATCH)
+        assert edge.strength > 0.0
+        assert edge.coherence > 0.0
 
     def test_vertical_edge_orientation(self):
-        _, _, theta = compute_edge_features(VERTICAL_EDGE_PATCH)
+        edge = compute_edge_features(VERTICAL_EDGE_PATCH)
         # Vertical edge tangent should be near pi/2 (range is [0, pi])
-        assert abs(theta - np.pi / 2) < 0.3
+        assert abs(edge.angle - np.pi / 2) < 0.3
 
     def test_horizontal_edge_orientation(self):
-        _, _, theta = compute_edge_features(HORIZONTAL_EDGE_PATCH)
+        edge = compute_edge_features(HORIZONTAL_EDGE_PATCH)
         # Horizontal edge tangent is always pi (structure tensor is sign-invariant)
-        assert abs(theta - np.pi) < 0.3
+        assert abs(edge.angle - np.pi) < 0.3
 
     def test_diagonal_edge_detected(self):
         patch = make_rgb_patch(PATCH_SIZE, "diagonal_edge")
-        strength, coherence, orientation = compute_edge_features(patch)
-        assert strength > 0.0
-        assert coherence > 0.0
-        assert orientation is not None
+        edge = compute_edge_features(patch)
+        assert edge.strength > 0.0
+        assert edge.coherence > 0.0
+        assert edge.angle is not None
 
     def test_default_params_used_when_none(self):
         compute_edge_features(VERTICAL_EDGE_PATCH, edge_detection_config=None)
@@ -373,21 +373,14 @@ class TestComputeEdgeFeatures:
         patch = np.zeros((PATCH_SIZE, PATCH_SIZE, 3), dtype=np.uint8)
         patch[:, PATCH_SIZE - 4 :] = 255
         config = EdgeDetectionConfig(max_center_offset=1)
-        strength, coherence, theta = compute_edge_features(patch, config)
-        assert strength == pytest.approx(0.0)
-        assert coherence == pytest.approx(0.0)
-        assert theta is None
+        edge = compute_edge_features(patch, config)
+        assert edge.strength == pytest.approx(0.0)
+        assert edge.coherence == pytest.approx(0.0)
+        assert edge.angle is None
 
     @given(patch=edge_patch())
     def test_output_ranges_valid(self, patch):
-        strength, coherence, orientation = compute_edge_features(patch)
-        assert strength >= 0.0
-        assert 0.0 <= coherence <= 1.0
-        assert orientation is None or 0.0 <= orientation <= np.pi
-
-    @given(patch=edge_patch())
-    def test_zero_strength_implies_no_edge_fields(self, patch):
-        strength, coherence, orientation = compute_edge_features(patch)
-        if strength == 0.0:
-            assert coherence == 0.0
-            assert orientation is None
+        edge = compute_edge_features(patch)
+        assert edge.strength >= 0.0
+        assert 0.0 <= edge.coherence <= 1.0
+        assert edge.angle is None or 0.0 <= edge.angle <= np.pi
