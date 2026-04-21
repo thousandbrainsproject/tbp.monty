@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import copy
+import dataclasses
 import json
 import logging
 import time
@@ -23,6 +24,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from scipy.spatial.transform import Rotation as ScipyRotation
 
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
+from tbp.monty.frameworks.utils.dataclass_utils import is_dataclass_instance
 from tbp.monty.geometry import Rotation
 
 if TYPE_CHECKING:
@@ -733,6 +735,8 @@ class BufferEncoder(json.JSONEncoder):
         encoder = self._find(obj)
         if encoder is not None:
             return encoder(obj)
+        if is_dataclass_instance(obj):
+            return {f.name: getattr(obj, f.name) for f in dataclasses.fields(obj)}
         return super().default(obj)
 
 
