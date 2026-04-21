@@ -18,53 +18,56 @@ from tbp.monty.math import DEFAULT_TOLERANCE
 
 
 def to_scalar_last(wxyz: npt.ArrayLike) -> np.ndarray:
-    # TODO(scottcanoe): Remove when no longer handling scalar-last quaternions.
     return np.asarray(wxyz)[..., [1, 2, 3, 0]]
 
 
 def to_scalar_first(xyzw: npt.ArrayLike) -> np.ndarray:
-    # TODO(scottcanoe): Remove when no longer handling scalar-last quaternions.
     return np.asarray(xyzw)[..., [3, 0, 1, 2]]
 
 
 def scipy_rotations_approx_equal(
     a: ScipyRotation,
     b: ScipyRotation,
-    atol: float = DEFAULT_TOLERANCE,
+    tol: float = DEFAULT_TOLERANCE,
     degrees: bool = False,
 ) -> bool | np.ndarray:
-    """Backport of `scipy.spatial.transform.Rotation.approx_equal` from later versions.
+    """Backport of `scipy.spatial.transform.Rotation.approx_equal`.
 
     Args:
         a: First scipy rotation.
         b: Second scipy rotation.
-        atol: Absolute tolerance.
-        degrees: Whether atol is in degrees. Default is False.
+        tol: Absolute tolerance, expressed in radians by default, or degrees if
+          `degrees` is True.
+        degrees: Whether `tol` is expressed in degrees. Default is False.
 
     Returns:
-        True if the angular delta between `a` and `b` is below threshold. False
+        True if the angular delta between `a` and `b` is within tolerance. False
         otherwise. If `a` and `b` are non-single, returns an array of booleans.
     """
     if degrees:
-        atol = np.degrees(atol)
-    return (b * a.inv()).magnitude() <= atol
+        tol = np.degrees(tol)
+    return (b * a.inv()).magnitude() <= tol
 
 
 class Rotation:
     """Rotation in 3 dimensions.
 
-    This class was created as a replacement for `scipy.spatial.transform.Rotation`
-    that better conforms to our conventions. Primarily, we wanted to be consistent about
-    using scalar-first (wxyz) order for quaternions, but scalar-last (xyzw) is scipy's
-    default mode. Consequently, this class's `from_quat` and `as_quat` implementations
-    assume scalar-first order.
+    This class was created to be a (nearly) drop-in replacement for
+    `scipy.spatial.transform.Rotation` that better conforms to our conventions.
+    Primarily, we wanted to be consistent about using scalar-first (wxyz) order for
+    quaternions, but scalar-last (xyzw) is scipy's default mode. Consequently, this
+    class's `from_quat` and `as_quat` implementations assume scalar-first order.
 
-    Since `Rotation` is mostly just a wrapper for `scipy.spatial.transform.Rotation`,
-    it API closely mirrors it's wrapped counterpart (as of scipy version 1.10.1).
-    The notable exceptions are
+    Since `Rotation` is a thin wrapper around `scipy.spatial.transform.Rotation`,
+    its API is largely inherited from scipy. The main exceptions are:
       - `from_quat` and `as_quat` assume scalar-first order.
-      - `from_scipy_rotation` and `as_scipy_rotation` methods have been implemented.
-      - The `approx_equal` method has been backported.
+      - The `approx_equal` method has been backported from future scipy versions.
+      - For consistency, `from_scipy_rotation` and `as_scipy_rotation` methods have
+        been added.
+
+    At this stage, many scipy methods have not been wrapped. They can be added
+    as needed.
+
     """
 
     _rot: ScipyRotation
@@ -76,10 +79,11 @@ class Rotation:
             rot = obj.as_scipy_rotation()
         else:
             raise TypeError(f"Invalid object type: {type(obj)}")
-        object.__setattr__(self, "_rot", rot)
+        object.__setattr__(self, "_rot", rot)  # because immutability
 
     @property
     def single(self) -> bool:
+        """Whether this instance represents a single rotation."""
         return self._rot.single
 
     @staticmethod
@@ -101,15 +105,8 @@ class Rotation:
         return self._rot.as_matrix()
 
     @staticmethod
-    def from_mrp(mrp: npt.ArrayLike) -> Rotation:
-        return Rotation(ScipyRotation.from_mrp(mrp))
-
-    def as_mrp(self) -> np.ndarray:
-        return self._rot.as_mrp()
-
-    @staticmethod
     def from_quat(quat: npt.ArrayLike) -> Rotation:
-        """Build from quaternion(s) in **WXYZ** (scalar-first) order.
+        """Build from (scalar-first) quaternion data.
 
         This methods differs substantially from
         `scipy.spatial.transform.Rotation.from_quat`. Here, we expect quaternions
@@ -123,17 +120,21 @@ class Rotation:
             A `Rotation` instance.
 
         Raises:
-            ValueError: If the wxyz is not of shape (4,) or (N, 4).
+            ValueError: If `quat` does not have shape (4,) or (N, 4).
         """
-        quat = np.asarray(quat)  # wrap this in try/except?
-        if quat.ndim not in {1, 2} or quat.shape[-1] != 4:
+        try:
+            # If the conversion to scalar-last fails because it has the wrong shape,
+            # we want to raise the same type of error scipy would.
+            quat = np.asarray(quat)
+            xyzw = to_scalar_last(quat)
+        except IndexError as e:
             raise ValueError(
-                f"Quaternion must be of shape (4,) or (N, 4), got {quat.shape}"
-            )
-        return Rotation(ScipyRotation.from_quat(quat[..., [1, 2, 3, 0]]))
+                f"Expected `quat` to have shape (4,) or (N, 4), got {np.shape(quat)}"
+            ) from e
+        return Rotation(ScipyRotation.from_quat(xyzw))
 
     def as_quat(self) -> np.ndarray:
-        """Quaternion as **WXYZ** (scalar-first). SciPy uses XYZW internally.
+        """The (scalar-first) quaternion representation.
 
         This methods differs substantially from
         `scipy.spatial.transform.Rotation.as_quat`. Here, we return quaternions
@@ -141,9 +142,9 @@ class Rotation:
         order. Scalar-last ordering will not be supported.
 
         Returns:
-            Array of shape ``(4,)`` or ``(N, 4)`` in WXYZ order.
+            Array of shape (4,) or (N, 4) in scalar-first (wxyz) order.
         """
-        return self._rot.as_quat()[..., [3, 0, 1, 2]]
+        return to_scalar_first(self._rot.as_quat())
 
     @staticmethod
     def from_rotvec(rotvec: npt.ArrayLike, degrees: bool = False) -> Rotation:
@@ -197,25 +198,14 @@ class Rotation:
     def mean(self, weights: npt.ArrayLike | None = None) -> Rotation:
         return Rotation(self._rot.mean(weights))
 
-    def reduce(
-        self,
-        left: Rotation | None = None,
-        right: Rotation | None = None,
-        return_indices: bool = False,
-    ) -> Rotation | tuple[Rotation, np.ndarray, np.ndarray]:
-        if not return_indices:
-            return Rotation(self._rot.reduce(left, right, return_indices=False))
-        result = self._rot.reduce(left, right, return_indices=True)
-        return (Rotation(result[0]), *result[1:])
-
     def approx_equal(
         self,
         other: Rotation,
-        atol: float = DEFAULT_TOLERANCE,
+        tol: float = DEFAULT_TOLERANCE,
         degrees: bool = False,
     ) -> bool | np.ndarray:
         return scipy_rotations_approx_equal(
-            self._rot, other.as_scipy_rotation(), atol=atol, degrees=degrees
+            self._rot, other.as_scipy_rotation(), tol=tol, degrees=degrees
         )
 
     def __bool__(self) -> bool:
@@ -231,10 +221,7 @@ class Rotation:
         return Rotation(self._rot * other.as_scipy_rotation())
 
     def __repr__(self) -> str:
-        if self.single:
-            x, y, z = self.as_euler("xyz", degrees=True)
-            return f"Rotation(x: {x:.3f}, y: {y:.3f}, z: {z:.3f} [deg])"
-        return f"Rotation(length: {len(self)})"
+        return repr(self._rot)
 
     def __setattr__(self, name: str, value: Any) -> None:
         raise AttributeError("Rotation is immutable")
@@ -244,5 +231,3 @@ class Rotation:
 
     def __setstate__(self, state: ScipyRotation) -> None:
         object.__setattr__(self, "_rot", state)
-
-

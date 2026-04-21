@@ -33,7 +33,6 @@ from tbp.monty.frameworks.utils.plot_utils import (
     add_patch_outline_to_view_finder,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
-from tbp.monty.frameworks.utils.transform_utils import numpy_to_scipy_quat
 from tbp.monty.geometry import Rotation
 
 

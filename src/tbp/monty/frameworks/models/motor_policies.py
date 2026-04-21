@@ -47,7 +47,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
-from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import VectorXYZ
 

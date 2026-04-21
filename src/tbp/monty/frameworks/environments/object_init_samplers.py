@@ -17,9 +17,6 @@ from typing_extensions import NotRequired
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
-from tbp.monty.frameworks.utils.transform_utils import (
-    rotation_as_quat,
-)
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import EulerAnglesXYZ, QuaternionWXYZ, VectorXYZ
 
@@ -51,7 +48,7 @@ class Default:
         euler_rotation = rng.uniform(0, 360, 3)
         q = Rotation.from_euler("xyz", euler_rotation, degrees=True)
         return dict(
-            rotation=cast("QuaternionWXYZ", tuple(rotation_as_quat(q))),
+            rotation=cast("QuaternionWXYZ", tuple(q.as_quat())),
             euler_rotation=euler_rotation,
             position=(rng.uniform(-0.5, 0.5), 0.0, 0.0),
             scale=(1.0, 1.0, 1.0),
@@ -89,7 +86,7 @@ class Predefined(Default):
             degrees=True,
         )
         return dict(
-            rotation=cast("QuaternionWXYZ", tuple(rotation_as_quat(q))),
+            rotation=cast("QuaternionWXYZ", tuple(q.as_quat())),
             euler_rotation=self.rotations[mod_counter % len(self.rotations)],
             quat_rotation=q.as_quat(),
             position=self.positions[mod_counter % len(self.positions)],
@@ -140,7 +137,7 @@ class RandomRotation(Default):
         euler_rotation = rng.uniform(0, 360, 3)
         q = Rotation.from_euler("xyz", euler_rotation, degrees=True)
         return dict(
-            rotation=cast("QuaternionWXYZ", tuple(rotation_as_quat(q))),
+            rotation=cast("QuaternionWXYZ", tuple(q.as_quat())),
             euler_rotation=euler_rotation,
             quat_rotation=q.as_quat(),
             position=self.position,

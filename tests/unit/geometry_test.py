@@ -11,19 +11,27 @@ from __future__ import annotations
 import unittest
 
 import numpy as np
-import numpy.typing as npt
+import numpy.testing as nptest
 from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 from scipy.spatial.transform import Rotation as ScipyRotation
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
-from tbp.monty.geometry import scipy_rotations_approx_equal
+from tbp.monty.geometry import (
+    Rotation,
+    scipy_rotations_approx_equal,
+    to_scalar_first,
+    to_scalar_last,
+)
 from tbp.monty.math import DEFAULT_TOLERANCE
 
 
 @st.composite
-def random_scipy_rotations(draw, num: int | None = None):
+def scipy_rotations(
+    draw,
+    num: int | None = None,
+):
     shape: int | tuple[int, ...] = (num, 3) if num is not None else 3
     return draw(
         arrays(
@@ -34,105 +42,184 @@ def random_scipy_rotations(draw, num: int | None = None):
     )
 
 
-def to_scalar_last(wxyz: npt.ArrayLike) -> np.ndarray:
-    return np.asarray(wxyz, dtype=np.float64)[..., [1, 2, 3, 0]]
+@st.composite
+def rotation_axes(draw):
+    return draw(scipy_rotations().map(lambda rot: as_axis_angle(rot)[0]))
 
 
-def to_scalar_first(xyzw: npt.ArrayLike) -> np.ndarray:
-    return np.asarray(xyzw, dtype=np.float64)[..., [3, 0, 1, 2]]
+@st.composite
+def quaternions(draw, num: int | None = None):
+    return draw(
+        scipy_rotations(num=num).map(lambda rot: to_scalar_first(rot.as_quat()))
+    )
 
 
-def set_rotation_angle(
-    rotation: ScipyRotation,
-    angle: float,
-    degrees: bool,
-) -> ScipyRotation:
-    """Change the angle amount w.r.t. the axis-angle representation.
+@st.composite
+def points_3d(
+    draw,
+    num: int | None = None,
+    min_value: float = -1e6,
+    max_value: float = 1e6,
+):
+    return draw(
+        arrays(
+            dtype=np.float64,
+            shape=(num, 3) if num is not None else 3,
+            elements=st.floats(min_value=min_value, max_value=max_value),
+        )
+    )
 
-    Note that if the rotation's axis is nearly zero, the returned rotation will
-    have the rotation axis (1, 0, 0). This is necessary since the rotation axis
-    must be normalized before being rescaled.
 
-    Args:
-        rotation: The rotation to set the amount of.
-        angle: The amount to set the rotation to.
-        degrees: Whether the angle is in degrees.
+def as_axis_angle(
+    rot: ScipyRotation,
+    epsilon: float = DEFAULT_TOLERANCE,
+) -> tuple[np.ndarray, float]:
+    # Helper for generating rotations from axis-angle representations.
+    angle = rot.magnitude()
+    rotvec = rot.as_rotvec()
+    try:
+        axis = normalize(rotvec, epsilon=epsilon)
+    except ValueError:
+        axis = np.array([1.0, 0.0, 0.0])
+    return axis, angle
 
-    Returns:
-        A new rotation that rotates about its axis by the specified amount.
-    """
-    rotvec = rotation.as_rotvec()
-    if np.linalg.norm(rotvec) >= DEFAULT_TOLERANCE:
-        rotvec = normalize(rotvec)
-    else:
-        rotvec = np.array([1.0, 0.0, 0.0])
-    angle = np.degrees(angle) if degrees else angle
-    return ScipyRotation.from_rotvec(rotvec * angle)
+
+class TestQuaternionFormatConversions(unittest.TestCase):
+    """Validate testing functions that the main tests rely on."""
+
+    def setUp(self):
+        w, x, y, z = 0, 1, 2, 3
+        self.scalar_first_1d = np.array([w, x, y, z], dtype=np.float64)
+        self.scalar_last_1d = np.array([x, y, z, w], dtype=np.float64)
+        self.scalar_first_2d = np.stack([self.scalar_first_1d] * 2)
+        self.scalar_last_2d = np.stack([self.scalar_last_1d] * 2)
+
+    def test_to_scalar_first_1d(self) -> None:
+        nptest.assert_allclose(
+            to_scalar_first(self.scalar_last_1d), self.scalar_first_1d
+        )
+
+    def test_to_scalar_first_2d(self) -> None:
+        nptest.assert_allclose(
+            to_scalar_first(self.scalar_last_2d), self.scalar_first_2d
+        )
+
+    def test_to_scalar_last_1d(self) -> None:
+        nptest.assert_allclose(
+            to_scalar_last(self.scalar_first_1d), self.scalar_last_1d
+        )
+
+    def test_to_scalar_last_2d(self) -> None:
+        nptest.assert_allclose(
+            to_scalar_last(self.scalar_first_2d), self.scalar_last_2d
+        )
 
 
 class ScipyRotationsApproxEqualTest(unittest.TestCase):
     """Test for the `scipy_rotations_approx_equal` function.
 
     TODO(scottcanoe): Add tests for non-single rotation objects.
-    TODO(scottcanoe): Figure out if there's a way to parameterize tests when
-      using hypothesis decorators.
     """
 
     @given(
-        random_scipy_rotations(),
-        random_scipy_rotations(),
-        st.booleans(),
+        a=scipy_rotations(),
+        axis=rotation_axes(),
+        angle=st.floats(min_value=0, max_value=DEFAULT_TOLERANCE - 1e-15),
     )
-    def test_result_matches_alternate_implementation(
+    def test_returns_true_if_delta_below_tolerance(
         self,
         a: ScipyRotation,
-        b: ScipyRotation,
-        degrees: bool,
+        axis: np.ndarray,
+        angle: float,
     ) -> None:
-        # Double-ledger test.
-        atol = DEFAULT_TOLERANCE if not degrees else np.degrees(DEFAULT_TOLERANCE)
-        expected = (a * b.inv()).magnitude() <= atol
-        actual = scipy_rotations_approx_equal(
-            a, b, atol=DEFAULT_TOLERANCE, degrees=degrees
-        )
+        """Finer-grained test of rotation deltas near but below tolerance.
+
+        Note that the rotation amount's upper bound is slightly lower than the
+        tested threshold due to floating-point precision. Constructing a rotation
+        with a specific rotation amount is accurate up to about 1e-15 radians.
+        """
+        rot = ScipyRotation.from_rotvec(axis * angle)
+        self.assertTrue(scipy_rotations_approx_equal(a, rot * a))
+
+    @given(
+        a=scipy_rotations(),
+        axis=rotation_axes(),
+        angle=st.floats(
+            min_value=DEFAULT_TOLERANCE + 1e-15, max_value=2 * DEFAULT_TOLERANCE
+        ),
+    )
+    def test_returns_false_if_delta_above_tolerance(
+        self,
+        a: ScipyRotation,
+        axis: np.ndarray,
+        angle: float,
+    ) -> None:
+        """Finer-grained test of rotation deltas near but above tolerance.
+
+        Note that the rotation amount's lower bound is slightly higher than the
+        tested threshold due to floating-point precision. Constructing a rotation
+        with a specific rotation amount is accurate up to about 1e-15 radians.
+        """
+        rot = ScipyRotation.from_rotvec(axis * angle)
+        b = rot * a
+        expected = (a * b.inv()).magnitude() <= DEFAULT_TOLERANCE
+        actual = scipy_rotations_approx_equal(a, b)
         self.assertEqual(actual, expected)
 
     @given(
-        a=random_scipy_rotations(),
-        rot=random_scipy_rotations(),
-        angle=st.floats(min_value=0, max_value=DEFAULT_TOLERANCE * 0.999),
+        a=scipy_rotations(),
+        b=scipy_rotations(),
     )
-    def test_returns_true_if_difference_below_tolerance(
+    def test_against_alternate_implementation_over_full_range(
         self,
         a: ScipyRotation,
-        rot: ScipyRotation,
-        angle: float,
+        b: ScipyRotation,
     ) -> None:
-        # Finer-grained test for near-boundary differences.
-        self.assertTrue(
-            scipy_rotations_approx_equal(
-                a,
-                set_rotation_angle(rot, angle, degrees=False) * a,
-                atol=DEFAULT_TOLERANCE,
-            )
-        )
+        """Double-ledger test."""
+        expected = (a * b.inv()).magnitude() <= DEFAULT_TOLERANCE
+        actual = scipy_rotations_approx_equal(a, b, tol=DEFAULT_TOLERANCE)
+        self.assertEqual(actual, expected)
 
     @given(
-        random_scipy_rotations(),
-        random_scipy_rotations(),
-        st.floats(min_value=DEFAULT_TOLERANCE * 1.001, max_value=DEFAULT_TOLERANCE * 2),
+        a=scipy_rotations(),
+        axis=rotation_axes(),
+        angle=st.floats(
+            min_value=0.9 * DEFAULT_TOLERANCE, max_value=1.1 * DEFAULT_TOLERANCE
+        ),
     )
-    def test_returns_false_if_difference_above_tolerance(
+    def test_against_alternate_implementation_near_boundary(
         self,
         a: ScipyRotation,
-        rotate: ScipyRotation,
+        axis: np.ndarray,
         angle: float,
     ) -> None:
-        # Finer-grained test for near-boundary differences.
-        self.assertFalse(
-            scipy_rotations_approx_equal(
-                a,
-                set_rotation_angle(rotate, angle, degrees=False) * a,
-                atol=DEFAULT_TOLERANCE,
-            )
+        """Double-ledger test focused on and around the tolerance threshold."""
+        b = ScipyRotation.from_rotvec(axis * angle) * a
+        expected = (a * b.inv()).magnitude() <= DEFAULT_TOLERANCE
+        actual = scipy_rotations_approx_equal(a, b, tol=DEFAULT_TOLERANCE)
+        self.assertEqual(actual, expected)
+
+
+class RotationQuaternionTest(unittest.TestCase):
+    @given(
+        quat=quaternions(),
+        xyz=points_3d(),
+    )
+    def test_from_quat_assumes_opposite_order_to_scipy(
+        self,
+        quat: np.ndarray,
+        xyz: np.ndarray,
+    ) -> None:
+        rot = Rotation.from_quat(quat)
+        scipy_rot = ScipyRotation.from_quat(to_scalar_last(quat))
+        nptest.assert_allclose(
+            rot.apply(xyz), scipy_rot.apply(xyz), atol=DEFAULT_TOLERANCE
+        )
+
+    @given(quat=quaternions())
+    def test_as_quat_returns_opposite_order_to_scipy(self, quat: np.ndarray) -> None:
+        rot = Rotation.from_quat(quat)
+        scipy_rot = ScipyRotation.from_quat(to_scalar_last(quat))
+        nptest.assert_allclose(
+            rot.as_quat(), to_scalar_first(scipy_rot.as_quat()), atol=DEFAULT_TOLERANCE
         )

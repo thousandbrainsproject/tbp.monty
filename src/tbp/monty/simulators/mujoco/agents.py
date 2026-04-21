@@ -23,10 +23,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
-from tbp.monty.frameworks.utils.transform_utils import (
-    rotation_as_quat,
-    rotation_from_quat,
-)
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
 
 if TYPE_CHECKING:
@@ -181,14 +178,12 @@ class Embodiment(Agent):
         # sensors, while individual sensor positions are calculated separately below.
         # Note: the sensor body position and rotation is returned relative to world
         # coordinates from the simulator.
-        sensor_body_rot = rotation_from_quat(
+        sensor_body_rot = Rotation.from_quat(
             self.sim.data.body(self.sensor_body_id).xquat
         )
-        agent_rotation = rotation_from_quat(self.rotation)
+        agent_rotation = Rotation.from_quat(self.rotation)
         sensor_body_rot_rel_agent = agent_rotation.inv() * sensor_body_rot
-        sensor_body_rot_quat = qt.quaternion(
-            *rotation_as_quat(sensor_body_rot_rel_agent)
-        )
+        sensor_body_rot_quat = qt.quaternion(*sensor_body_rot_rel_agent.as_quat())
 
         sensor_states = {}
         for sensor_id, sensor_cfg in self._sensor_configs.items():

@@ -56,7 +56,6 @@ from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     ProprioceptiveState,
 )
-from tbp.monty.frameworks.utils.transform_utils import numpy_to_scipy_quat
 from tbp.monty.geometry import Rotation
 
 
