@@ -25,7 +25,7 @@ sensor_module_0:
       - 2
       distance: 0.01
       local_binary_pattern: 
-      - 0.0001 # currently not used in delta thresholding - placeholder
+      - 0.03 # currently not used in delta thresholding - placeholder
     save_raw_obs: false
 sensor_module_1:
   sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}

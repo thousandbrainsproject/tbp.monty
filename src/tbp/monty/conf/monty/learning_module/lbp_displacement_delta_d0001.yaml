@@ -18,4 +18,4 @@ learning_module_0:
         - 1
         - 1
         local_binary_pattern:
-        - 0.001
+        - 0.0001

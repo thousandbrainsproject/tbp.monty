@@ -780,8 +780,28 @@ class FeatureChangeFilter(PerceptFilter):
                         f"new point because of {feature} angle : {angle_between}"
                     )
                     return True
+
             elif feature == "local_binary_pattern":
-                pass
+                lbp_delta_threshold = self._delta_thresholds[feature]
+                p = np.asarray(last_feat, dtype=np.float64)
+                q = np.asarray(current_feat, dtype=np.float64)
+                epsilon = 1e-10
+
+                # Keep values valid for sqrt and normalize to probability vectors.
+                p = np.clip(p, 0.0, None)
+                q = np.clip(q, 0.0, None)
+
+                p = p / (np.sum(p) + epsilon)
+                q = q / (np.sum(q) + epsilon)
+
+                lbp_distance = np.sqrt(0.5 * np.sum((np.sqrt(p) - np.sqrt(q)) ** 2))
+
+                if lbp_distance > lbp_delta_threshold:
+                    logger.debug(
+                        "new point because of local_binary_pattern "
+                        f"hellinger distance: {lbp_distance}"
+                    )
+                    return True
 
             else:
                 delta_change = np.abs(last_feat - current_feat)
