@@ -812,11 +812,10 @@ class PolicyPlot:
             self.object_id
         ].pos
 
-        converted_quat = self.detailed_stats[str(self.episode)]["target"][
+        quat = self.detailed_stats[str(self.episode)]["target"][
             "primary_target_rotation_quat"
         ]
-
-        object_rot = Rotation.from_quat(converted_quat)
+        object_rot = Rotation.from_quat(quat)
 
         # Update orientation and position of the learned model
         # to be consistent with [lm]["locations"] (which are in body-centric
@@ -1260,11 +1259,8 @@ def plot_learned_graph(
     # This is based on the *LM's model*, but always getting the ground-truth object,
     learned_model_cloud = lm_models["pretrained"][lm_index][object_id].pos
 
-    converted_quat = detailed_stats[str(episode)]["target"][
-        "primary_target_rotation_quat"
-    ]
-
-    object_rot = Rotation.from_quat(converted_quat)
+    quat = detailed_stats[str(episode)]["target"]["primary_target_rotation_quat"]
+    object_rot = Rotation.from_quat(quat)
 
     # Update orientation and position of the learned model to be in environmental
     # coordinates
