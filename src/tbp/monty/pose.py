@@ -384,7 +384,6 @@ class Location:  # noqa: PLW1641
         Args:
             frame: The `Pose` representing the target frame,
                 or `None` for the world frame.
-                Default: `None`.
 
         Raises:
             ValueError:
@@ -812,7 +811,6 @@ class Orientation:  # noqa: PLW1641
         Args:
             frame: The `Pose` representing the target frame,
                 or `None` for the world frame.
-                Default: `None`.
 
         Raises:
             ValueError:
@@ -1130,9 +1128,7 @@ class Pose:  # noqa: PLW1641
         Args:
             frame: The `Pose` representing the target frame,
                 or `None` for the world frame.
-                Default: `None`.
             label: The label string displayed for this `Pose`.
-                Default: `""`.
 
         Examples:
             >>> agent_frame = Pose(label="Agent")
