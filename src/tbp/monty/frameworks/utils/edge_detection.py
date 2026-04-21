@@ -20,7 +20,7 @@ from tbp.monty.math import DEFAULT_TOLERANCE
 logger = logging.getLogger(__name__)
 
 
-def gradient_to_tangent_angle(gradient_angle: float) -> float:
+def _gradient_to_tangent_angle(gradient_angle: float) -> float:
     """Convert gradient direction to edge tangent direction and wrap to [0, 2*pi).
 
     The edge tangent is perpendicular to the gradient direction.
@@ -76,7 +76,7 @@ class StructureTensor:
     @property
     def edge_angle(self) -> float:
         """Edge angle in [0, pi] radians."""
-        return gradient_to_tangent_angle(self.gradient_theta)
+        return _gradient_to_tangent_angle(self.gradient_theta)
 
 
 @dataclass
@@ -111,6 +111,9 @@ class EdgeDetector:
             sigma_r: float = 7.0
             depth_edge_threshold: float = 0.01
             max_center_offset: int | None = None
+
+        Raises:
+            ValueError: Invalid argument for gaussian_sigma.
         """
         self._gaussian_sigma = gaussian_sigma
         self._kernel_size = kernel_size
@@ -141,14 +144,13 @@ class EdgeDetector:
 
         Args:
             patch: RGB image patch.
-            edge_detection_config: Edge detection configuration parameters. If None, uses
-                default EdgeDetectionConfig.
 
         Returns:
             EdgeFeatures with:
                 - strength: Magnitude of dominant eigenvalue (0.0 if no edge)
                 - coherence: Edge quality metric in [0, 1] (0.0 if no edge)
-                - orientation: Edge orientation angle in [0, pi) radians (None if no edge)
+                - orientation: Edge orientation angle in [0, pi) radians
+                  (None if no edge)
 
         Notes:
             1. The Gaussian blur (Step 1) convolves all pixels in the patch with a
@@ -158,28 +160,20 @@ class EdgeDetector:
                 different pixels will be weighted based on their displacement from
                 the center.
         """
-        if edge_detection_config is None:
-            edge_detection_config = EdgeDetectionConfig()
+        grayscale = cv2.cvtColor(patch, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0
+        Ix, Iy = self._compute_sobel_gradients(grayscale)  # noqa: N806
+        tensor_per_pixel = self._compute_per_pixel_structure_tensors(Ix, Iy)
 
-        gray = cv2.cvtColor(patch, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0
-        Ix, Iy = _compute_sobel_gradients(gray)  # noqa: N806
-        tensor_per_pixel = _compute_per_pixel_structure_tensors(
-            Ix, Iy, edge_detection_config
-        )
-
-        weights, total_weight = _compute_center_weights(
-            gray.shape, Ix, Iy, edge_detection_config
-        )
+        weights, total_weight = self._compute_center_weights(grayscale.shape, Ix, Iy)
         if total_weight < DEFAULT_TOLERANCE:
             return EdgeFeatures(strength=0.0, coherence=0.0, angle=None)
 
-        aggregated = _aggregate_tensor(tensor_per_pixel, weights, total_weight)
+        aggregated = self._aggregate_tensor(tensor_per_pixel, weights, total_weight)
 
-        if not _passes_center_check(
+        if not self._passes_center_check(
             weights,
             total_weight,
             aggregated.gradient_theta,
-            edge_detection_config.max_center_offset,
         ):
             return EdgeFeatures(strength=0.0, coherence=0.0, angle=None)
 
@@ -189,32 +183,32 @@ class EdgeDetector:
             angle=float(aggregated.edge_angle),
         )
 
+    @staticmethod
     def _compute_sobel_gradients(
-        gray: np.ndarray,
+        grayscale: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Compute horizontal and vertical Sobel gradients.
 
         Args:
-            gray: Grayscale image patch as float32 in [0, 1].
+            grayscale: Grayscale image patch as float32 in [0, 1].
 
         Returns:
             Tuple of (Ix, Iy): horizontal and vertical gradient arrays.
         """
-        Ix = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)  # noqa: N806
-        Iy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)  # noqa: N806
+        Ix = cv2.Sobel(grayscale, cv2.CV_32F, 1, 0, ksize=3)  # noqa: N806
+        Iy = cv2.Sobel(grayscale, cv2.CV_32F, 0, 1, ksize=3)  # noqa: N806
         return Ix, Iy
 
     def _compute_per_pixel_structure_tensors(
+        self,
         Ix: np.ndarray,  # noqa: N803
         Iy: np.ndarray,  # noqa: N803
-        config: EdgeDetectionConfig,
     ) -> np.ndarray:
         """Build the smoothed per-pixel structure tensor field from Sobel gradients.
 
         Args:
             Ix: Horizontal Sobel gradients.
             Iy: Vertical Sobel gradients.
-            config: Edge detection configuration.
 
         Returns:
             Array of shape (h, w, 2, 2) where each entry is the Gaussian-smoothed
@@ -224,8 +218,8 @@ class EdgeDetector:
         Jyy = Iy * Iy  # noqa: N806  # (h, w)
         Jxy = Ix * Iy  # noqa: N806  # (h, w)
 
-        ksize = config.kernel_size
-        sigma = config.gaussian_sigma
+        ksize = self._kernel_size
+        sigma = self._gaussian_sigma
         Jxx = cv2.GaussianBlur(Jxx, (ksize, ksize), sigma)  # noqa: N806  # (h, w)
         Jyy = cv2.GaussianBlur(Jyy, (ksize, ksize), sigma)  # noqa: N806  # (h, w)
         Jxy = cv2.GaussianBlur(Jxy, (ksize, ksize), sigma)  # noqa: N806  # (h, w)
@@ -239,10 +233,10 @@ class EdgeDetector:
         return tensor_per_pixel
 
     def _compute_center_weights(
+        self,
         shape: tuple[int, int],
         Ix: np.ndarray,  # noqa: N803
         Iy: np.ndarray,  # noqa: N803
-        config: EdgeDetectionConfig,
     ) -> tuple[np.ndarray, np.floating]:
         """Build radial + gradient-strength weight map centered on the patch.
 
@@ -253,7 +247,6 @@ class EdgeDetector:
             shape: (height, width) of the patch.
             Ix: Horizontal Sobel gradients.
             Iy: Vertical Sobel gradients.
-            config: Edge detection configuration.
 
         Returns:
             Tuple of (weights, total_weight).
@@ -265,13 +258,14 @@ class EdgeDetector:
         d_squared = (rows - r0) ** 2 + (cols - c0) ** 2
         d = np.sqrt(d_squared)
 
-        w_r = np.exp(-d_squared / (2.0 * config.sigma_r**2))
-        w_r[d > config.radius] = 0.0
+        w_r = np.exp(-d_squared / (2.0 * self._sigma_r**2))
+        w_r[d > self._radius] = 0.0
         weights = w_r * (Ix**2 + Iy**2)
 
         total_weight = np.sum(weights)
         return weights, total_weight
 
+    @staticmethod
     def _aggregate_tensor(
         tensor_per_pixel: np.ndarray,
         weights: np.ndarray,
@@ -296,10 +290,10 @@ class EdgeDetector:
         )
 
     def _passes_center_check(
+        self,
         weights: np.ndarray,
         total_weight: np.floating,
         gradient_theta: float,
-        max_center_offset: int | None,
     ) -> bool:
         """Return True if the detected edge passes close enough to the patch center.
 
@@ -307,13 +301,11 @@ class EdgeDetector:
             weights: Per-pixel weights.
             total_weight: Sum of weights.
             gradient_theta: Gradient direction in radians (normal to edge).
-            max_center_offset: Maximum allowed weighted distance from center, or None
-                to skip the check.
 
         Returns:
             True if edge passes the center check (or check is disabled).
         """
-        if max_center_offset is None:
+        if self._max_center_offset is None:
             return True
 
         h, w = weights.shape
@@ -325,4 +317,4 @@ class EdgeDetector:
         dist_normal = nx * (cols - c0) + ny * (rows - r0)
         d_center = np.sum(weights * dist_normal) / total_weight
 
-        return abs(d_center) <= max_center_offset
+        return abs(d_center) <= self._max_center_offset

@@ -10,17 +10,13 @@
 import unittest
 
 import numpy as np
-import pytest
 from hypothesis import assume, example, given
 from hypothesis import strategies as st
 
 from tbp.monty.frameworks.utils.edge_detection import (
-    EdgeDetectionConfig,
+    EdgeDetector,
     StructureTensor,
-    _compute_center_weights,
-    _passes_center_check,
-    compute_edge_features,
-    gradient_to_tangent_angle,
+    _gradient_to_tangent_angle,
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
 
@@ -130,8 +126,7 @@ def center_weight_inputs(draw):
     Iy = np.full((h, w), g, dtype=np.float32)  # noqa: N806
     radius = draw(st.floats(min_value=1.0, max_value=20.0))
     sigma_r = draw(st.floats(min_value=0.5, max_value=10.0))
-    config = EdgeDetectionConfig(radius=radius, sigma_r=sigma_r)
-    return (h, w), Ix, Iy, config
+    return (h, w), Ix, Iy, radius, sigma_r
 
 
 @st.composite
@@ -144,8 +139,9 @@ def center_check_inputs(draw):
     Returns:
         Tuple of (weights, total_weight, gradient_theta, max_center_offset).
     """
-    shape, Ix, Iy, config = draw(center_weight_inputs())  # noqa: N806
-    weights, total_weight = _compute_center_weights(shape, Ix, Iy, config)
+    rng = np.random.default_rng()
+    weights = rng.uniform(0.0, 1.0, size=(PATCH_SIZE, PATCH_SIZE)).astype(np.float32)
+    total_weight = weights.sum()
     assume(total_weight > 0)
     gradient_theta = draw(angles)
     max_center_offset = draw(
@@ -157,12 +153,12 @@ def center_check_inputs(draw):
 class GradientToTangentAngleTest(unittest.TestCase):
     @given(gradient_angle=angles)
     def test_result_in_range(self, gradient_angle):
-        result = gradient_to_tangent_angle(gradient_angle)
+        result = _gradient_to_tangent_angle(gradient_angle)
         assert 0.0 <= result < 2 * np.pi
 
     @given(gradient_angle=angles)
     def test_perpendicularity(self, gradient_angle):
-        result = gradient_to_tangent_angle(gradient_angle)
+        result = _gradient_to_tangent_angle(gradient_angle)
         remainder = (result - gradient_angle) % np.pi
         np.testing.assert_allclose(remainder, np.pi / 2, atol=DEFAULT_TOLERANCE)
 
@@ -247,9 +243,10 @@ class ComputeCenterWeightsTest(unittest.TestCase):
         h, w = PATCH_SIZE, PATCH_SIZE
         Ix = np.zeros((h, w), dtype=np.float32)  # noqa: N806
         Iy = np.zeros((h, w), dtype=np.float32)  # noqa: N806
-        weights, total_weight = _compute_center_weights(
-            (h, w), Ix, Iy, EdgeDetectionConfig()
-        )
+        detector = EdgeDetector()
+
+        weights, total_weight = detector._compute_center_weights((h, w), Ix, Iy)
+
         assert total_weight == 0.0
         assert np.all(weights == 0.0)
 
@@ -257,8 +254,10 @@ class ComputeCenterWeightsTest(unittest.TestCase):
         h, w = PATCH_SIZE, PATCH_SIZE
         Ix = np.ones((h, w), dtype=np.float32)  # noqa: N806
         Iy = np.ones((h, w), dtype=np.float32)  # noqa: N806
-        config = EdgeDetectionConfig(radius=1000.0)
-        weights, _ = _compute_center_weights((h, w), Ix, Iy, config)
+        detector = EdgeDetector(radius=1000.0)
+
+        weights, _ = detector._compute_center_weights((h, w), Ix, Iy)
+
         r0, c0 = h // 2, w // 2
         assert weights[r0, c0] == np.max(weights)
 
@@ -266,46 +265,63 @@ class ComputeCenterWeightsTest(unittest.TestCase):
         h, w = PATCH_SIZE, PATCH_SIZE
         Ix = np.ones((h, w), dtype=np.float32)  # noqa: N806
         Iy = np.ones((h, w), dtype=np.float32)  # noqa: N806
-        config = EdgeDetectionConfig(radius=2.0)
-        weights, _ = _compute_center_weights((h, w), Ix, Iy, config)
+        detector = EdgeDetector(radius=2.0)
+
+        weights, _ = detector._compute_center_weights((h, w), Ix, Iy)
+
         r0, c0 = h // 2, w // 2
         assert weights[r0 + 3, c0] == 0.0
 
     @given(inputs=center_weight_inputs())
     def test_weights_nonnegative(self, inputs):
-        shape, Ix, Iy, config = inputs  # noqa: N806
-        weights, _ = _compute_center_weights(shape, Ix, Iy, config)
+        shape, Ix, Iy, radius, sigma_r = inputs  # noqa: N806
+        detector = EdgeDetector(radius=radius, sigma_r=sigma_r)
+
+        weights, _ = detector._compute_center_weights(shape, Ix, Iy)
+
         assert np.all(weights >= 0.0)
 
     @given(inputs=center_weight_inputs())
     def test_total_weight_equals_sum_of_weights(self, inputs):
-        shape, Ix, Iy, config = inputs  # noqa: N806
-        weights, total_weight = _compute_center_weights(shape, Ix, Iy, config)
+        shape, Ix, Iy, radius, sigma_r = inputs  # noqa: N806
+        detector = EdgeDetector(radius=radius, sigma_r=sigma_r)
+
+        weights, total_weight = detector._compute_center_weights(shape, Ix, Iy)
+
         np.testing.assert_allclose(total_weight, np.sum(weights))
 
     @given(inputs=center_weight_inputs())
     def test_output_shape_matches_input(self, inputs):
-        shape, Ix, Iy, config = inputs  # noqa: N806
-        weights, _ = _compute_center_weights(shape, Ix, Iy, config)
+        shape, Ix, Iy, radius, sigma_r = inputs  # noqa: N806
+        detector = EdgeDetector(radius=radius, sigma_r=sigma_r)
+
+        weights, _ = detector._compute_center_weights(shape, Ix, Iy)
+
         assert weights.shape == shape
 
     @given(inputs=center_weight_inputs())
     def test_pixels_beyond_radius_have_zero_weight(self, inputs):
-        shape, Ix, Iy, config = inputs  # noqa: N806
+        shape, Ix, Iy, radius, sigma_r = inputs  # noqa: N806
         h, w = shape
         r0, c0 = h // 2, w // 2
-        weights, _ = _compute_center_weights(shape, Ix, Iy, config)
+        detector = EdgeDetector(radius=radius, sigma_r=sigma_r)
+
+        weights, _ = detector._compute_center_weights(shape, Ix, Iy)
+
         rows, cols = np.meshgrid(np.arange(h), np.arange(w), indexing="ij")
         d = np.sqrt((rows - r0) ** 2 + (cols - c0) ** 2)
-        assert np.all(weights[d > config.radius] == 0.0)
+        assert np.all(weights[d > radius] == 0.0)
 
     @given(inputs=center_weight_inputs(), k=a_scalar)
     def test_gradient_scaling_scales_weights_quadratically(self, inputs, k):
-        shape, Ix, Iy, config = inputs  # noqa: N806
-        weights, total_weight = _compute_center_weights(shape, Ix, Iy, config)
-        weights_scaled, total_weight_scaled = _compute_center_weights(
-            shape, k * Ix, k * Iy, config
+        shape, Ix, Iy, radius, sigma_r = inputs  # noqa: N806
+        detector = EdgeDetector(radius=radius, sigma_r=sigma_r)
+
+        weights, total_weight = detector._compute_center_weights(shape, Ix, Iy)
+        weights_scaled, total_weight_scaled = detector._compute_center_weights(
+            shape, k * Ix, k * Iy
         )
+
         tol = max(DEFAULT_TOLERANCE * k**2, DEFAULT_TOLERANCE)
         np.testing.assert_allclose(
             weights_scaled, k**2 * weights, rtol=DEFAULT_TOLERANCE, atol=tol
@@ -319,7 +335,8 @@ class PassesCenterCheckTest(unittest.TestCase):
     @given(inputs=center_check_inputs())
     def test_none_offset_always_true(self, inputs):
         weights, total_weight, gradient_theta, _ = inputs
-        assert _passes_center_check(weights, total_weight, gradient_theta, None)
+        detector = EdgeDetector()
+        assert detector._passes_center_check(weights, total_weight, gradient_theta)
 
     @given(
         inputs=center_weight_inputs(),
@@ -330,57 +347,80 @@ class PassesCenterCheckTest(unittest.TestCase):
         # center_weight_inputs produces radially symmetric weights (radial Gaussian
         # * uniform gradient magnitude), so sum(weights*(cols-c0)) ~= 0 and
         # sum(weights*(rows-r0)) ~= 0, giving d_center ~= 0 for any theta.
-        shape, Ix, Iy, config = inputs  # noqa: N806
-        weights, total_weight = _compute_center_weights(shape, Ix, Iy, config)
+        shape, Ix, Iy, radius, sigma_r = inputs  # noqa: N806
+        detector = EdgeDetector(
+            radius=radius, sigma_r=sigma_r, max_center_offset=offset
+        )
+        weights, total_weight = detector._compute_center_weights(shape, Ix, Iy)
+
         assume(total_weight > 0)
-        assert _passes_center_check(weights, total_weight, theta, offset)
+        assert detector._passes_center_check(weights, total_weight, theta)
 
 
 class TestComputeEdgeFeatures:
     def test_uniform_patch_returns_zero_strength(self):
-        edge = compute_edge_features(UNIFORM_PATCH)
+        detector = EdgeDetector()
+
+        edge = detector.detect_feature(UNIFORM_PATCH)
+
         assert edge.strength == 0.0
         assert edge.coherence == 0.0
         assert edge.angle is None
 
     def test_vertical_edge_detected(self):
-        edge = compute_edge_features(VERTICAL_EDGE_PATCH)
+        detector = EdgeDetector()
+
+        edge = detector.detect_feature(VERTICAL_EDGE_PATCH)
+
         assert edge.strength > 0.0
         assert edge.coherence > 0.0
 
     def test_vertical_edge_orientation(self):
-        edge = compute_edge_features(VERTICAL_EDGE_PATCH)
+        detector = EdgeDetector()
+
+        edge = detector.detect_feature(VERTICAL_EDGE_PATCH)
+
         # Vertical edge tangent should be near pi/2 (range is [0, pi])
+        assert edge.angle is not None
         assert abs(edge.angle - np.pi / 2) < 0.3
 
     def test_horizontal_edge_orientation(self):
-        edge = compute_edge_features(HORIZONTAL_EDGE_PATCH)
+        detector = EdgeDetector()
+
+        edge = detector.detect_feature(HORIZONTAL_EDGE_PATCH)
+
         # Horizontal edge tangent is always pi (structure tensor is sign-invariant)
+        assert edge.angle is not None
         assert abs(edge.angle - np.pi) < 0.3
 
     def test_diagonal_edge_detected(self):
         patch = make_rgb_patch(PATCH_SIZE, "diagonal_edge")
-        edge = compute_edge_features(patch)
+        detector = EdgeDetector()
+
+        edge = detector.detect_feature(patch)
+
         assert edge.strength > 0.0
         assert edge.coherence > 0.0
         assert edge.angle is not None
-
-    def test_default_params_used_when_none(self):
-        compute_edge_features(VERTICAL_EDGE_PATCH, edge_detection_config=None)
 
     def test_center_offset_rejects_off_center_edge(self):
         # Edge at right boundary, not at center
         patch = np.zeros((PATCH_SIZE, PATCH_SIZE, 3), dtype=np.uint8)
         patch[:, PATCH_SIZE - 4 :] = 255
-        config = EdgeDetectionConfig(max_center_offset=1)
-        edge = compute_edge_features(patch, config)
-        assert edge.strength == pytest.approx(0.0)
-        assert edge.coherence == pytest.approx(0.0)
+        detector = EdgeDetector(max_center_offset=1)
+
+        edge = detector.detect_feature(patch)
+
+        assert edge.strength == 0.0
+        assert edge.coherence == 0.0
         assert edge.angle is None
 
     @given(patch=edge_patch())
     def test_output_ranges_valid(self, patch):
-        edge = compute_edge_features(patch)
+        detector = EdgeDetector()
+
+        edge = detector.detect_feature(patch)
+
         assert edge.strength >= 0.0
         assert 0.0 <= edge.coherence <= 1.0
         assert edge.angle is None or 0.0 <= edge.angle <= np.pi
