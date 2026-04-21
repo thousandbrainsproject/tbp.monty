@@ -18,10 +18,31 @@ from tbp.monty.math import DEFAULT_TOLERANCE
 
 
 def to_scalar_last(wxyz: npt.ArrayLike) -> np.ndarray:
+    """Convert a quaternion from scalar-first (wxyz) to scalar-last (xyzw) order.
+
+    This is a helper function for the `Rotation` class extracted for testing purposes.
+
+    Args:
+        wxyz: Array-like of shape (4,) or (N, 4) in scalar-first (wxyz) order.
+
+    Returns:
+        Array of shape (4,) or (N, 4) in scalar-last (xyzw) order.
+    """
     return np.asarray(wxyz)[..., [1, 2, 3, 0]]
 
 
 def to_scalar_first(xyzw: npt.ArrayLike) -> np.ndarray:
+    """Convert a quaternion from scalar-last (xyzw) to scalar-first (wxyz) order.
+
+    This is a helper function for the `Rotation` class extracted for testing purposes.
+
+    Args:
+        xyzw: Array-like of shape (4,) or (N, 4) in scalar-last (xyzw) order.
+
+    Returns:
+        Array of shape (4,) or (N, 4) in scalar-first (wxyz) order.
+
+    """
     return np.asarray(xyzw)[..., [3, 0, 1, 2]]
 
 
