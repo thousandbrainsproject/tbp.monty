@@ -782,6 +782,7 @@ class FeatureChangeFilter(PerceptFilter):
                     return True
 
             elif feature == "local_binary_pattern":
+                #return True
                 lbp_delta_threshold = self._delta_thresholds[feature]
                 p = np.asarray(last_feat, dtype=np.float64)
                 q = np.asarray(current_feat, dtype=np.float64)
