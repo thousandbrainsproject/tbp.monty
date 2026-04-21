@@ -828,6 +828,39 @@ class Orientation:  # noqa: PLW1641
             origin = origin.frame
         return Orientation.from_rotation(origin, r)
 
+    def rotation_to(self, target: Orientation) -> Orientation:
+        """Calculate the rotation between this `Orientation` and the `target`.
+
+        Returns:
+            The rotation to `target`.
+
+        Examples:
+            >>> Orientation().yaw(_deg(-30))
+            Orientation(frame=None, w=0.965926, x=0.0, y=-0.258819, z=0.0)
+            >>> Orientation().yaw(_deg(-30)).inverse()
+            Orientation(frame=None, w=-0.965926, x=0.0, y=-0.258819, z=0.0)
+            >>> Orientation().yaw(_deg(30))
+            Orientation(frame=None, w=0.965926, x=0.0, y=0.258819, z=0.0)
+            >>> Orientation().yaw(_deg(30)).inverse()
+            Orientation(frame=None, w=-0.965926, x=0.0, y=0.258819, z=0.0)
+
+            >>> r0 = Orientation().yaw(_deg(45))
+            >>> r1 = Orientation().yaw(_deg(15))
+            >>> r2 = r0.rotation_to(r1)
+            >>> r2
+            Orientation(frame=None, w=-0.965926, x=0.0, y=0.258819, z=0.0)
+            >>> r2.yaw(_deg(30))
+            Orientation(frame=None, w=-1.0, x=0.0, y=0.0, z=0.0)
+
+            >>> r1.rotation_to(r0)
+            Orientation(frame=None, w=-0.965926, x=0.0, y=-0.258819, z=0.0)
+            >>> r1.rotation_to(r0).to_matrix()
+            array([[ 0.8660254,  0.       ,  0.5      ],
+                   [-0.       ,  1.       ,  0.       ],
+                   [-0.5      , -0.       ,  0.8660254]])
+        """
+        return target * self.inverse()
+
     def as_array(self) -> FloatVector:
         """This `Orientation` as an NDArray (quaternion).
 
