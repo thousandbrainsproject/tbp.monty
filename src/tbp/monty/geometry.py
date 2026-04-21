@@ -244,6 +244,9 @@ class Rotation:
     def __repr__(self) -> str:
         return repr(self._rot)
 
+    def __delattr__(self, name: str) -> None:
+        raise AttributeError("Rotation is immutable")
+
     def __setattr__(self, name: str, value: Any) -> None:
         raise AttributeError("Rotation is immutable")
 

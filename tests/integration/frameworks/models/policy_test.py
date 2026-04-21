@@ -959,7 +959,7 @@ class PolicyTest(unittest.TestCase):
         target_loc_hab = set_agent_pose.location
         target_quat = set_agent_pose.rotation_quat
 
-        resulting_rot = Rotation.from_quat(target_quat)
+        resulting_rot = Rotation.from_quat(qt.as_float_array(target_quat))
 
         # As the agent faces "forward" along the negative z-axis, we use this vector
         # to visualize its orientation
