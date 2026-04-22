@@ -283,6 +283,7 @@ class InformedPolicyRandomWalk(MotorPolicy):
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
         self._undo_action = state_dict["undo_action"]
 
+
 def fixme_undo_last_action(
     last_action: Action,
 ) -> LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially:

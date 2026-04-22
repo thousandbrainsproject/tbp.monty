@@ -536,6 +536,7 @@ class JumpToGoalTest(ParametrizedTestCase):
             sensor_id=SensorID("view_finder"),
         )
 
+
 class InformedPolicyRandomWalkTest(unittest.TestCase):
     def setUp(self) -> None:
         self.agent_id = AGENT_ID

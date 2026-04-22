@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol
 
 from tbp.monty.cmp import Goal, Message
@@ -48,15 +47,6 @@ def highest_confidence_goal(goals: list[Goal]) -> Goal:
 
     """
     return sorted(goals, key=lambda x: x.confidence, reverse=True)[0]
-
-
-@dataclass
-class MotorPolicySelectorParams:
-    ctx: RuntimeContext
-    observations: Observations
-    state: MotorSystemState
-    percept: Message
-    goals: list[Goal]
 
 
 class MotorPolicySelector(Protocol):
@@ -227,9 +217,3 @@ class DistantPolicySelector(MotorPolicySelector):
     ) -> None:
         self._selected_policies.append(policy)
         self._selected_goals.append(goal)
-
-
-# class SurfacePolicySelector(MotorPolicySelector):
-#     def __init__(self, jump_to_goal: JumpToGoal, default: MotorPolicy):
-#         self._jump_to_goal = jump_to_goal
-#         self._default = default
