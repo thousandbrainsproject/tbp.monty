@@ -155,19 +155,34 @@ and **this is exactly the procedure that was executed when you ran** `python run
 
 ## Model
 
-# TODO: Fix from here on....
+The model is specified in the `/monty` section of `defaults`. In the case it is the `graph_exp1000_e3_t3_tot2500` model, which in a `MontyForGraphMatching` model with 1 000 exploratory steps, 3 minimum eval steps, 3 minimum train steps, and 2 500 maximum total steps.
 
-The model is specified in the `config.monty_config` field of the `first_experiment` pre-defined in `/experiment/config/monty/patch_and_view`. Yes, that's a config within a config. The reason for nesting configs is that the model is an ensemble of LearningModules (LMs), and SensorModules (SMs), each of which could potentially have their own configuration as well. For more details on configuring custom learning or sensor modules see [this guide](../customizing-monty.md).
+```yaml
+# @package experiment.config.monty_config
 
-For now, we will start with one of the simpler and most common versions of this complex system. The `/experiment/config/monty/patch_and_view` configuration has fields `learning_module_configs` and `sensor_module_configs` where each key is the name of an LM (or SM resp.), and each value is the full config for that model component. **Our first model has one LM and two SMs**. Why two SMs and only 1 LM? One SM provides the LM with processed observations, while the second SM serves as our experimental probe and is used solely to initialize the agent at the beginning of the experiment.
+monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
+monty_args:
+  num_exploratory_steps: 1000
+  min_eval_steps: 3
+  min_train_steps: 3
+  max_total_steps: 2500
+```
 
-Note that the `sm_to_agent_dict` field of the model config maps each SM to an "agent" (i.e. a moveable part), and only a single agent is specified, meaning that our model has one moveable part with one sensor attached to it. In particular, it has an RGBD camera attached to it.
+The model requires additional configuration in form of the motor system, learning modules, sensor modules, and the overall connectivity. These are specified respectively in the `/monty/motor_system_config`, `/monty/learning_module`, `/monty/sensor_module`, and `/monty/connectivity` sections of `defaults`. For more details on configuring custom learning or sensor modules see [this guide](../customizing-monty.md).
+
+For now, we will start with one of the simpler and most common versions of this complex system. **Our first model has one Learning Module (LM) and two Sensor Modules (SMs)**. Why two SMs and only one LM? One SM provides the LM with processed observations, while the second SM serves as our experimental probe and is used solely to initialize the agent at the beginning of the experiment.
+
+Note that in our `/monty/connectivity: 1lm_1sm` the `sm_to_agent_dict` field of the model config maps each SM to an "agent" (i.e. a moveable part), and only a single agent is specified, meaning that our model has one moveable part with one sensor attached to it. In particular, it has an RGBD camera attached to it.
+
+## Environment
+
+The environment is specified in the `/environment` section of `defaults`. In this case, we are using a Habitat simulator environment, loaded with the YCB dataset, where Monty controls a "distant" agent.
 
 ## Steps
 
 By now, we know that an experiment starts with the `run` method calling `train` and `evaluate` methods, that each of these runs one or more `epochs`, which consists of one or more `episodes`, and finally each `episode` repeatedly calls `model.step`. Now we will start unpacking each of these levels, starting with the innermost loop over `steps`.
 
-In `/experiment/config/monty/patch_and_view`, notice that the model class is specified as `${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}` (it uses the `monty.class` resolver that passes the Python class itself to the config), which is a subclass of `tbp.monty.frameworks.models.monty_base.MontyBase`, which in turn is a subclass of `tbp.monty.frameworks.models.abstract_monty_classes.Monty`. In the abstract base class `Monty`, you will see that there are two template methods for two types of steps: `_exploratory_step` and `_matching_step`. In turn, each of these steps is defined as a sequence of calls to other abstract methods, including `_set_step_type_and_check_if_done`, which is a point at which the step type can be switched. The conceptual difference between these types of steps is that **during exploratory steps, no inference is attempted**, which means no voting and no keeping track of which objects or poses are possible matches to the current observation. Each time `model.step` is called in the experimental procedure listed under the "Episodes and Epochs" heading, either `_exploratory_step` or `_matching_step` will be called. In a typical experiment, training consists of running `_matching_step` until a) an object is recognized, or b) all known objects are ruled out, or c) a step counter exceeds a threshold. Regardless of how matching-steps is terminated, the system then switches to running exploratory step so as to gather more observations and build a more complete model of an object.
+As mentioned previously, in `/monty: graph_exp1000_e3_t3_tot2500`, notice that the model class is specified as `${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}` (it uses the `monty.class` resolver that passes the Python class itself to the config), which is a subclass of `tbp.monty.frameworks.models.monty_base.MontyBase`, which in turn is a subclass of `tbp.monty.frameworks.models.abstract_monty_classes.Monty`. In the abstract base class `Monty`, you will see that there are two template methods for two types of steps: `_exploratory_step` and `_matching_step`. In turn, each of these steps is defined as a sequence of calls to other abstract methods, including `_set_step_type_and_check_if_done`, which is a point at which the step type can be switched. The conceptual difference between these types of steps is that **during exploratory steps, no inference is attempted**, which means no voting and no keeping track of which objects or poses are possible matches to the current observation. Each time `model.step` is called in the experimental procedure listed under the "Episodes and Epochs" heading, either `_exploratory_step` or `_matching_step` will be called. In a typical experiment, training consists of running `_matching_step` until a) an object is recognized, or b) all known objects are ruled out, or c) a step counter exceeds a threshold. Regardless of how matching-steps is terminated, the system then switches to running exploratory step so as to gather more observations and build a more complete model of an object.
 
 You can, of course, customize step types and when to switch between step types by defining subclasses or mixins. To set the initial step type, use `model.pre_episode`. To adjust when and how to switch step types, use `_set_step_type_and_check_if_done`.
 
@@ -175,11 +190,13 @@ You can, of course, customize step types and when to switch between step types b
 
 ## Environment Interface
 
-In the config for first_experiment, there is a comment that marks the start of environment and agent setup. Now we turn our attention to everything below that line, as this is where episode specifics are defined.
+We now turn our attention to how the experiment controls the environment and the agent, which happens via what we call an environment interface.
 
-The environment interface class is the way we interact with a simulation environment. The objects within an environment are assumed to be the same for both training and evaluation (for now), hence only one (class, args) pairing is needed. Note however that object orientations, as well as specific observations obtained from an object, will generally differ across training and evaluation.
+The environment interface class is the way we interact with a simulation environment. The objects within an environment are assumed to be the same for both training and evaluation (for now). Note, however, that object orientations, as well as specific observations obtained from an object, will generally differ across training and evaluation.
 
-The environment interface is basically the API between the environment and the model. Its job is to sample from the environment and return observations to the model (+initialize and reset the environment). Note that the next observation is decided by the last action, and the actions are selected by a `motor_system`. This motor system is shared by reference with the model. By changing the actions, the **model** controls what it observes next, just as you would expect from a sensorimotor system.
+# TODO: update from here
+
+The environment interface is basically how the experiment controls the interaction between the environment and the model. Its job is to sample from the environment and return observations to the model (+initialize and reset the environment). Note that the next observation is decided by the last action, and the actions are selected by a `motor_system`. By changing the actions, the **model** controls what it observes next, just as you would expect from a sensorimotor system.
 
 Now, finally answering our question of what happens in an episode, notice that our config uses a special type of environment interface: `EnvironmentInterfacePerObject` (note that this is a subclass of `EnvironmentInterface` which is kept as general as possible to allow for flexible subclass customization). As indicated in the docstring, this environment interface has a list of objects, and at the beginning / end of an episode, it removes the current object from the environment, increments a (cyclical) counter that determines which object is next, and places the new object in the environment. The arguments to `EnvironmentInterfacePerObject` determine which objects are added to the environment and in what pose. **In our config, we use a single list with one YCB object, a mug.**
 
