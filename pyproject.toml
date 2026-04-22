@@ -26,7 +26,6 @@ dependencies = [
     'pandas', # imported via conda (conda-forge::pandas)
     'pillow', # imported via conda (conda-forge::pillow)
     'pydantic>=2.10.6',
-    'python-statemachine==2.6.0',
     'numpy-quaternion==2023.0.3', # imported via conda (conda-forge::quaternion)
     'scikit-image', # imported via conda (conda-forge::scikit-image)
     'scikit-learn==1.3.2', # imported via conda (conda-forge::scikit-learn)
