@@ -31,6 +31,7 @@ classDiagram
 
     class Frame {
         + frame : Frame | None
+        + label : str
         + transform : Transform
         + location : Location*
         + orientation : Orientation*
