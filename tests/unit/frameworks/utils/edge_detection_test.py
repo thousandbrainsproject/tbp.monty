@@ -361,7 +361,7 @@ class TestComputeEdgeFeatures:
     def test_uniform_patch_returns_zero_strength(self):
         detector = EdgeDetector()
 
-        edge = detector.detect_feature(UNIFORM_PATCH)
+        edge = detector(UNIFORM_PATCH)
 
         assert edge.strength == 0.0
         assert edge.coherence == 0.0
@@ -370,7 +370,7 @@ class TestComputeEdgeFeatures:
     def test_vertical_edge_detected(self):
         detector = EdgeDetector()
 
-        edge = detector.detect_feature(VERTICAL_EDGE_PATCH)
+        edge = detector(VERTICAL_EDGE_PATCH)
 
         assert edge.strength > 0.0
         assert edge.coherence > 0.0
@@ -378,7 +378,7 @@ class TestComputeEdgeFeatures:
     def test_vertical_edge_orientation(self):
         detector = EdgeDetector()
 
-        edge = detector.detect_feature(VERTICAL_EDGE_PATCH)
+        edge = detector(VERTICAL_EDGE_PATCH)
 
         # Vertical edge tangent should be near pi/2 (range is [0, pi])
         assert edge.angle is not None
@@ -387,7 +387,7 @@ class TestComputeEdgeFeatures:
     def test_horizontal_edge_orientation(self):
         detector = EdgeDetector()
 
-        edge = detector.detect_feature(HORIZONTAL_EDGE_PATCH)
+        edge = detector(HORIZONTAL_EDGE_PATCH)
 
         # Horizontal edge tangent is always pi (structure tensor is sign-invariant)
         assert edge.angle is not None
@@ -397,7 +397,7 @@ class TestComputeEdgeFeatures:
         patch = make_rgb_patch(PATCH_SIZE, "diagonal_edge")
         detector = EdgeDetector()
 
-        edge = detector.detect_feature(patch)
+        edge = detector(patch)
 
         assert edge.strength > 0.0
         assert edge.coherence > 0.0
@@ -409,7 +409,7 @@ class TestComputeEdgeFeatures:
         patch[:, PATCH_SIZE - 4 :] = 255
         detector = EdgeDetector(max_center_offset=1)
 
-        edge = detector.detect_feature(patch)
+        edge = detector(patch)
 
         assert edge.strength == 0.0
         assert edge.coherence == 0.0
@@ -419,7 +419,7 @@ class TestComputeEdgeFeatures:
     def test_output_ranges_valid(self, patch):
         detector = EdgeDetector()
 
-        edge = detector.detect_feature(patch)
+        edge = detector(patch)
 
         assert edge.strength >= 0.0
         assert 0.0 <= edge.coherence <= 1.0

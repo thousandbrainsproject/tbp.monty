@@ -127,7 +127,7 @@ class EdgeDetector:
         if self._kernel_size % 2 != 1:
             raise ValueError("Kernel size must be odd.")
 
-    def detect_feature(
+    def __call__(
         self,
         patch: np.ndarray,
     ) -> EdgeFeatures:
