@@ -16,6 +16,7 @@ import json
 import logging
 import math
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, cast
 
@@ -61,11 +62,18 @@ __all__ = [
     "InformedPolicy",
     "MotorPolicy",
     "NaiveScanPolicy",
+    "NoGoalProvided",
     "SurfacePolicy",
     "SurfacePolicyCurvatureInformed",
 ]
 
 logger = logging.getLogger(__name__)
+
+
+class NoGoalProvided(RuntimeError):
+    """Raised when no goal is provided."""
+
+    pass
 
 
 @dataclass
@@ -75,6 +83,22 @@ class SurfacePolicyTelemetry:
     pc_heading: Literal["min", "max", "no", "jump"] | None = None
     avoidance_heading: bool | None = None
     z_defined_pc: tuple[np.ndarray, tuple[np.ndarray, np.ndarray]] | None = None
+
+
+class PolicyStatus(Enum):
+    """Status of a motor policy."""
+
+    READY = "ready"
+    IN_PROGRESS = "in_progress"
+
+
+@dataclass
+class MotorPolicyParams:
+    ctx: RuntimeContext
+    observations: Observations
+    state: MotorSystemState
+    percept: Message
+    goal: Goal | None
 
 
 @dataclass
@@ -87,6 +111,7 @@ class MotorPolicyResult:
     actions: list[Action] = field(default_factory=list)
     motor_only_step: bool = False
     telemetry: SurfacePolicyTelemetry | None = None
+    status: PolicyStatus = PolicyStatus.READY
 
 
 class MotorPolicy(abc.ABC):
@@ -189,6 +214,143 @@ class BasePolicy(MotorPolicy):
         pass
 
 
+class InformedPolicyRandomWalk(MotorPolicy):
+    """Random walk but the way InformedPolicy does it.
+
+    InformedPolicy random walk, is not a straightfoward random walk.
+    This policy reproduces the current behavior of what InformedPolicy would do,
+    however, there are likely better random walk policies to use.
+    """
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        action_sampler: ActionSampler,
+    ):
+        """Initialize a base policy.
+
+        Args:
+            action_sampler: The ActionSampler to use
+            agent_id: The agent ID
+        """
+        super().__init__()
+        self.agent_id = agent_id
+        self.action_sampler = action_sampler
+        self._undo_action: Action | None = None
+
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,  # noqa: ARG002
+        state: MotorSystemState,  # noqa: ARG002
+        percept: Message,
+        goal: Goal | None,  # noqa: ARG002
+    ) -> MotorPolicyResult:
+        """Return a motor policy result containing a random action.
+
+        The MotorSystemState is ignored.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            state: The current state of the motor system.
+                Defaults to None. Unused.
+            percept: The percept from (as of this writing) the first sensor
+                module.
+            goal: An (ignored) goal.
+
+        Returns:
+            A MotorPolicyResult that contains a random action.
+        """
+        if percept.get_on_object():
+            action = self.action_sampler.sample(self.agent_id, ctx.rng)
+            self._undo_action = fixme_undo_last_action(action)
+            return MotorPolicyResult([action])
+
+        if self._undo_action is not None:
+            action = self._undo_action
+            self._undo_action = fixme_undo_last_action(action)
+            return MotorPolicyResult([action])
+
+        return MotorPolicyResult([])
+
+    def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
+        self._undo_action = None
+
+    def state_dict(self) -> dict[str, Any]:
+        return {"undo_action": self._undo_action}
+
+    def load_state_dict(self, state_dict: dict[str, Any]) -> None:
+        self._undo_action = state_dict["undo_action"]
+
+def fixme_undo_last_action(
+    last_action: Action,
+) -> LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially:
+    """Returns an action that undoes last action for supported actions.
+
+    This implementation duplicates the functionality and the implicit
+    assumption in the code and configurations that InformedPolicy is working
+    with one of the following actions:
+    - LookUp
+    - LookDown
+    - TurnLeft
+    - TurnRight
+    - MoveForward
+    - MoveTangentially
+
+    For other actions, raise ValueError explicitly.
+
+    Raises:
+        TypeError: If the last action is not supported
+
+    TODO These instance checks are undesirable and should be removed in the future.
+    I am using these for now to express the implicit assumptions in the code.
+    An Action.undo of some sort would be a better solution, however it is not
+    yet clear to me what to do for actions that do not support undo.
+    """
+    if isinstance(last_action, LookDown):
+        return LookDown(
+            agent_id=last_action.agent_id,
+            rotation_degrees=-last_action.rotation_degrees,
+            constraint_degrees=last_action.constraint_degrees,
+        )
+
+    if isinstance(last_action, LookUp):
+        return LookUp(
+            agent_id=last_action.agent_id,
+            rotation_degrees=-last_action.rotation_degrees,
+            constraint_degrees=last_action.constraint_degrees,
+        )
+
+    if isinstance(last_action, TurnLeft):
+        return TurnLeft(
+            agent_id=last_action.agent_id,
+            rotation_degrees=-last_action.rotation_degrees,
+        )
+
+    if isinstance(last_action, TurnRight):
+        return TurnRight(
+            agent_id=last_action.agent_id,
+            rotation_degrees=-last_action.rotation_degrees,
+        )
+
+    if isinstance(last_action, MoveForward):
+        return MoveForward(
+            agent_id=last_action.agent_id,
+            distance=-last_action.distance,
+        )
+
+    if isinstance(last_action, MoveTangentially):
+        return MoveTangentially(
+            agent_id=last_action.agent_id,
+            distance=-last_action.distance,
+            # Same direction, negative distance
+            direction=last_action.direction,
+        )
+
+    raise TypeError(f"Invalid action: {last_action}")
+
+
 class PredefinedPolicy(MotorPolicy):
     """Policy that follows an action sequence read from file.
 
@@ -246,6 +408,269 @@ class PredefinedPolicy(MotorPolicy):
         self.episode_step = state_dict["episode_step"]
 
 
+class JumpToGoal(MotorPolicy):
+    """Policy that takes observation as input.
+
+    TODO(tslominski-tbp): Use percept.on_object to check if we're on the object instead
+    of relying on PositioningProcedure.depth_at_center for undo check.
+    """
+
+    def __init__(self, agent_id: AgentID, sensor_id: SensorID) -> None:
+        """Initialize policy.
+
+        Args:
+            agent_id: The agent ID
+            sensor_id: The sensor ID to use for depth at center calculation.
+        """
+        self._agent_id = agent_id
+        self._sensor_id = sensor_id
+
+        self._undo_action: Action | None = None
+
+        self._is_jumping: bool = False
+        self._pre_jump_state: AgentState | None = None
+        self._undo_actions: list[Action] = []
+
+    def load_state_dict(self, state_dict: dict[str, Any]) -> None:
+        # Note/TODO: Figure out what to do with (de)-serialized objects.
+        self._agent_id = state_dict["agent_id"]
+        # self._undo_action = state_dict["undo_action"]
+        self._is_undoing_jump = state_dict["is_undoing_jump"]
+        # self._pre_jump_state = state_dict["pre_jump_state"]
+        # self._undo_jump_actions = state_dict["undo_jump_actions"]
+
+    def state_dict(self) -> dict[str, Any]:
+        return {
+            "agent_id": self._agent_id,
+            "undo_action": self._undo_action,
+            "is_jumping": self._is_jumping,
+            "pre_jump_state": self._pre_jump_state,
+            "undo_jump_actions": self._undo_actions,
+        }
+
+    def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
+        self._undo_action = None
+        self._reset()
+
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        state: MotorSystemState,
+        percept: Message,  # noqa: ARG002
+        goal: Goal | None,
+    ) -> MotorPolicyResult:
+        """Return a motor policy result containing the next actions to take.
+
+        This policy should always be called twice. The first call will generate actions
+        to jump to the goal. The second call is necessary to check if we should undo the
+        jump. If undo is needed, the second call will return undo actions. Otherwise,
+        the second call will return None.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            state: The current state of the motor system.
+                Defaults to None.
+            percept: The percept from (as of this writing) the first sensor
+                module.
+            goal: The goal to jump to. Should not be None.
+
+        Returns:
+            A MotorPolicyResult that contains the actions to take or None if the policy
+            does not need to undo previous jump.
+
+        Raises:
+            NoGoalProvided: If no goal is provided (i.e., goal is None).
+
+
+        Current Behavior
+         - No matter what, if we just jumped, we check if we should undo the jump.
+           - If we need to undo the jump, we return undoing actions (status READY). -->
+           - If we don't need to undo the jump, we now consider our input goal...
+             - If goal is not None, return new jump actions (status IN_PROGRESS). -->
+             - If goal is None, return no actions (status READY). -->
+
+        Desired Future Behavior
+         - If goal is not None, return jump actions for it. We don't prioritize undoing
+           the previous jump.
+         - If goal is None
+           - If we just jumped, check if we need to undo it.
+             - If we do need to undo it, return undo actions.
+             - If we don't need to undo it, return no action / some way to indicate
+               that the result is not to be consumed.
+          - But if goal is None and we didn't just jump, that's an error.
+        """
+        if self._is_jumping:
+            result = self._maybe_undo(observations)
+            if result is not None:
+                return result
+            if not goal:
+                return MotorPolicyResult([])
+
+        if not goal:
+            if ctx.suppress_runtime_errors:
+                logger.warning("No goal provided")
+                return MotorPolicyResult([])
+            raise NoGoalProvided
+
+        return MotorPolicyResult(
+            self._jump(state, goal),
+            status=PolicyStatus.IN_PROGRESS,
+        )
+
+    def _maybe_undo(
+        self,
+        observations: Observations,
+    ) -> MotorPolicyResult | None:
+        """Handle the outcome of a jump.
+
+        Args:
+            observations: The observations from the environment.
+
+        Returns:
+            Either a `MotorPolicyResult` with undo actions, which should be immediately
+            returned by the caller, or `None` which allows the caller to continue
+            execution.
+        """
+        if self._should_undo(observations):
+            logger.debug("Returning to previous position")
+            result = MotorPolicyResult(self._undo_actions)
+            self._reset()
+            return result
+
+        logger.debug(
+            "Object visible, maintaining new pose for hypothesis-testing action"
+        )
+
+        self._reset()
+        return None
+
+    def _derive_set_agent_pose_from_goal(self, goal: Goal) -> SetAgentPose:
+        """Derive the `SetAgentPose` action from the driving goal.
+
+        TODO: The desired_object_distance should be used here to determine SetAgentPose
+        and not in the GoalGenerator.
+
+        Returns:
+            A `SetAgentPose` action.
+        """
+        target_agent_vec = goal.morphological_features["pose_vectors"][0]
+
+        yaw_angle = math.atan2(-target_agent_vec[0], -target_agent_vec[2])
+        pitch_angle = math.asin(target_agent_vec[1])
+
+        # Should rotate by pitch degrees around x, and by yaw degrees around y (and
+        # no change about z, which would correspond to roll)
+        scipy_combined_orientation = rot.from_euler(
+            "xyz",
+            [pitch_angle, yaw_angle, 0],
+            degrees=False,
+        )
+        # TODO: should be a QuaternionWXYZ
+        target_quat = scipy_to_numpy_quat(scipy_combined_orientation.as_quat())
+
+        return SetAgentPose(
+            agent_id=self._agent_id,
+            location=goal.location,
+            rotation_quat=target_quat,
+        )
+
+    def _reset(self) -> None:
+        self._is_jumping = False
+        self._pre_jump_state = None
+        self._undo_actions = []
+
+    def _jump(self, state: MotorSystemState, goal: Goal) -> list[Action]:
+        """Compute the jump and undo jump actions.
+
+        The undo jump actions are stored in `self._undo_jump_actions`.
+
+        Args:
+            state: The current state of the motor system.
+            goal: The goal to jump to.
+
+        Returns:
+            A list of jump actions to take.
+        """
+        logger.debug(
+            "Attempting a 'jump' like movement to evaluate an object hypothesis"
+        )
+
+        # Store the current location and orientation of the agent.
+        # If the hypothesis-guided jump is unsuccessful (e.g. to empty space
+        # or inside an object), we return here.
+        self._pre_jump_state = state[self._agent_id]
+
+        # Check that all sensors have identical rotations - this is because actions
+        # currently update them all together; if this changes, the code needs
+        # to be updated;
+        for ii, current_sensor in enumerate(self._pre_jump_state.sensors):
+            if ii == 0:
+                first_sensor = current_sensor
+            assert np.all(
+                self._pre_jump_state.sensors[current_sensor].rotation
+                == self._pre_jump_state.sensors[first_sensor].rotation
+            ), "Sensors are not identical in pose"
+
+        set_agent_pose = self._derive_set_agent_pose_from_goal(goal)
+
+        self._is_jumping = True
+
+        # Update observations and motor system-state based on new pose, accounting
+        # for resetting both the agent, as well as the poses of its coupled sensors.
+        # This is necessary for the distant agent, which pivots the camera around
+        # like a ball-and-socket joint; note the surface agent does not
+        # modify this from the unit quaternion and [0, 0, 0] position
+        # anyways; further note this is globally applied to all sensors.
+        actions = [
+            set_agent_pose,
+            SetSensorRotation(
+                agent_id=self._agent_id,
+                # TODO: should be a QuaternionWXYZ
+                rotation_quat=qt.one,
+            ),
+        ]
+
+        # Precompute undo actions.
+        # All sensors are updated globally by actions, and are therefore identical.
+        self._undo_actions = [
+            SetAgentPose(
+                agent_id=self._agent_id,
+                location=self._pre_jump_state.position,
+                # TODO: should be a QuaternionWXYZ
+                rotation_quat=self._pre_jump_state.rotation,
+            ),
+            SetSensorRotation(
+                agent_id=self._agent_id,
+                # TODO: should be a QuaternionWXYZ
+                rotation_quat=self._pre_jump_state.sensors[first_sensor].rotation,
+            ),
+        ]
+
+        return actions
+
+    def _should_undo(self, observations: Observations) -> bool:
+        """Check if the jump should be undone.
+
+        Args:
+            observations: The observations from the environment.
+
+        Returns:
+            True if the jump should be undone, False otherwise.
+        """
+        # TODO: Replace this with a check that the percept is on-object.
+        depth_at_center = PositioningProcedure.depth_at_center(
+            agent_id=self._agent_id,
+            observations=observations,
+            sensor_id=self._sensor_id,
+        )
+        should_undo = depth_at_center >= 1.0
+        if should_undo:
+            logger.debug("No object visible from hypothesis jump, or inside object!")
+        return should_undo
+
+
 class InformedPolicy(BasePolicy):
     """Policy that takes observation as input.
 
@@ -253,10 +678,6 @@ class InformedPolicy(BasePolicy):
     action selection. Uses percept.get_on_object() to decide whether to
     reverse the last action when the patch is off the object.
 
-    Attributes:
-        guiding_sensors: List of sensors that are used to calculate the percentage
-            on object. When using multiple sensors or a visualization sensor we may
-            want to ignore some when determining whether we need to move back.
     """
 
     def __init__(
@@ -314,12 +735,12 @@ class InformedPolicy(BasePolicy):
 
         if percept.get_on_object():
             action = self.action_sampler.sample(self.agent_id, ctx.rng)
-            self._undo_action = self.fixme_undo_last_action(action)
+            self._undo_action = fixme_undo_last_action(action)
             return MotorPolicyResult([action])
 
         if self._undo_action is not None:
             action = self._undo_action
-            self._undo_action = self.fixme_undo_last_action(action)
+            self._undo_action = fixme_undo_last_action(action)
             return MotorPolicyResult([action])
 
         return MotorPolicyResult([])
@@ -393,74 +814,6 @@ class InformedPolicy(BasePolicy):
         in the code.
         """
         pass
-
-    def fixme_undo_last_action(
-        self,
-        last_action: Action,
-    ) -> LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially:
-        """Returns an action that undoes last action for supported actions.
-
-        This implementation duplicates the functionality and the implicit
-        assumption in the code and configurations that InformedPolicy is working
-        with one of the following actions:
-        - LookUp
-        - LookDown
-        - TurnLeft
-        - TurnRight
-        - MoveForward
-        - MoveTangentially
-
-        For other actions, raise ValueError explicitly.
-
-        Raises:
-            TypeError: If the last action is not supported
-
-        TODO These instance checks are undesirable and should be removed in the future.
-        I am using these for now to express the implicit assumptions in the code.
-        An Action.undo of some sort would be a better solution, however it is not
-        yet clear to me what to do for actions that do not support undo.
-        """
-        if isinstance(last_action, LookDown):
-            return LookDown(
-                agent_id=last_action.agent_id,
-                rotation_degrees=-last_action.rotation_degrees,
-                constraint_degrees=last_action.constraint_degrees,
-            )
-
-        if isinstance(last_action, LookUp):
-            return LookUp(
-                agent_id=last_action.agent_id,
-                rotation_degrees=-last_action.rotation_degrees,
-                constraint_degrees=last_action.constraint_degrees,
-            )
-
-        if isinstance(last_action, TurnLeft):
-            return TurnLeft(
-                agent_id=last_action.agent_id,
-                rotation_degrees=-last_action.rotation_degrees,
-            )
-
-        if isinstance(last_action, TurnRight):
-            return TurnRight(
-                agent_id=last_action.agent_id,
-                rotation_degrees=-last_action.rotation_degrees,
-            )
-
-        if isinstance(last_action, MoveForward):
-            return MoveForward(
-                agent_id=last_action.agent_id,
-                distance=-last_action.distance,
-            )
-
-        if isinstance(last_action, MoveTangentially):
-            return MoveTangentially(
-                agent_id=last_action.agent_id,
-                distance=-last_action.distance,
-                # Same direction, negative distance
-                direction=last_action.direction,
-            )
-
-        raise TypeError(f"Invalid action: {last_action}")
 
     def _derive_set_agent_pose_from_goal(self, goal: Goal) -> SetAgentPose:
         """Derive the `SetAgentPose` action from the driving goal.
