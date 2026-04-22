@@ -45,6 +45,8 @@ defaults:
   # analogous to an experimenter manually moving the subject into initial
   # experimental position, e.g., placing an animal in front of a screen.
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch
+  # /env_interface/transform specifies the transform pipeline to use to process
+  # environment observations before sending them to Monty.
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0
 
   # /logging specifies the logging configuration to use. We tell Monty to use
