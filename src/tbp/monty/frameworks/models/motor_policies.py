@@ -385,7 +385,6 @@ class PredefinedPolicy(MotorPolicy):
         self.agent_id = agent_id
         self.action_list: list[Action] = PredefinedPolicy.read_action_file(file_name)
         self.episode_step = 0
-        self.use_goal_driven_actions = False
 
     def __call__(
         self,
