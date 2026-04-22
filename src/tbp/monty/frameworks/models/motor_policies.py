@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 import numpy as np
 import quaternion as qt
 from scipy.spatial.transform import Rotation as rot  # noqa: N813
-from statemachine import State, StateMachine
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
@@ -283,86 +282,6 @@ class InformedPolicyRandomWalk(MotorPolicy):
 
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
         self._undo_action = state_dict["undo_action"]
-
-class InformedPolicyRandomWalkStateMachine(StateMachine):
-    # main states
-    initial = State(initial=True)
-    ready = State()
-
-    # internal states
-    no_action = State()
-    sample_action = State()
-    undo_action = State()
-
-    call = (
-        initial.to(sample_action, cond="on_object")
-        | initial.to(no_action, cond="off_object")
-        | ready.to(sample_action, cond="on_object")
-        | ready.to(undo_action, cond="off_object")
-    )
-    result = sample_action.to(ready) | undo_action.to(ready) | no_action.to(initial)
-
-    def __init__(
-        self,
-        agent_id: AgentID,
-        action_sampler: ActionSampler,
-    ):
-        """Initialize a base policy.
-
-        Args:
-            action_sampler: The ActionSampler to use
-            agent_id: The agent ID
-        """
-        super().__init__()
-        self.agent_id = agent_id
-        self.action_sampler = action_sampler
-        self._undo_action: Action | None = None
-
-    def on_object(self, params: MotorPolicyParams) -> bool:
-        return params.percept.get_on_object()
-
-    def off_object(self, params: MotorPolicyParams) -> bool:
-        return not params.percept.get_on_object()
-
-    def before_call(self, params: MotorPolicyParams) -> None:
-        self._params = params
-
-    def before_result(self, result: MotorPolicyResult) -> None:
-        self._result = result
-
-    def on_enter_no_action(self) -> None:
-        self.result(MotorPolicyResult([]))
-
-    def on_enter_sample_action(self) -> None:
-        action = self.action_sampler.sample(self.agent_id, self._params.ctx.rng)
-        self._undo_action = fixme_undo_last_action(action)
-        self.result(MotorPolicyResult([action]))
-
-    def on_enter_undo_action(self) -> None:
-        action = self._undo_action
-        self._undo_action = fixme_undo_last_action(action)
-        self.result(MotorPolicyResult([action]))
-
-    def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
-        self._undo_action = None
-
-    def state_dict(self) -> dict[str, Any]:
-        return {"undo_action": self._undo_action}
-
-    def load_state_dict(self, state_dict: dict[str, Any]) -> None:
-        self._undo_action = state_dict["undo_action"]
-
-    def __call__(
-        self,
-        ctx: RuntimeContext,
-        observations: Observations,
-        state: MotorSystemState,
-        percept: Message,
-        goal: Goal | None,
-    ) -> MotorPolicyResult:
-        self.call(MotorPolicyParams(ctx, observations, state, percept, goal))
-        return self._result
-
 
 def fixme_undo_last_action(
     last_action: Action,

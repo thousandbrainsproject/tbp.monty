@@ -41,7 +41,7 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
-    InformedPolicyRandomWalkStateMachine,
+    InformedPolicyRandomWalk,
     JumpToGoal,
     MotorPolicyResult,
     PolicyStatus,
@@ -541,7 +541,7 @@ class InformedPolicyRandomWalkTest(unittest.TestCase):
         self.agent_id = AGENT_ID
 
     def test_returns_no_actions_status_ready_if_never_on_object(self) -> None:
-        policy = InformedPolicyRandomWalkStateMachine(self.agent_id, Mock())
+        policy = InformedPolicyRandomWalk(self.agent_id, Mock())
         percept = Mock()
         percept.get_on_object.return_value = False
         result = policy(
@@ -574,9 +574,7 @@ class InformedPolicyRandomWalkTest(unittest.TestCase):
         action_sampler_mock = Mock()
         action = LookUp(agent_id=self.agent_id, rotation_degrees=90)
         action_sampler_mock.sample.return_value = action
-        policy = InformedPolicyRandomWalkStateMachine(
-            self.agent_id, action_sampler_mock
-        )
+        policy = InformedPolicyRandomWalk(self.agent_id, action_sampler_mock)
         percept = Mock()
         percept.get_on_object.return_value = True
         rng_mock = Mock()
@@ -605,9 +603,7 @@ class InformedPolicyRandomWalkTest(unittest.TestCase):
         undo_action_mock = Mock()
         fixme_undo_last_action_mock.return_value = undo_action_mock
         action_sampler_mock.sample.return_value = action_mock
-        policy = InformedPolicyRandomWalkStateMachine(
-            self.agent_id, action_sampler_mock
-        )
+        policy = InformedPolicyRandomWalk(self.agent_id, action_sampler_mock)
         percept = Mock()
         percept.get_on_object.return_value = True
         rng_mock = Mock()
@@ -648,9 +644,7 @@ class InformedPolicyRandomWalkTest(unittest.TestCase):
         undo_of_undo_action_mock = Mock()
         fixme_undo_last_action_mock.return_value = undo_action_mock
         action_sampler_mock.sample.return_value = action_mock
-        policy = InformedPolicyRandomWalkStateMachine(
-            self.agent_id, action_sampler_mock
-        )
+        policy = InformedPolicyRandomWalk(self.agent_id, action_sampler_mock)
         percept = Mock()
         percept.get_on_object.return_value = True
         rng_mock = Mock()

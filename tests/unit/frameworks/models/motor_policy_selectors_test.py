@@ -17,7 +17,6 @@ from tbp.monty.cmp import Goal
 from tbp.monty.frameworks.models.motor_policies import MotorPolicyResult, PolicyStatus
 from tbp.monty.frameworks.models.motor_policy_selectors import (
     DistantPolicySelector,
-    DistantPolicyStateMachine,
     SinglePolicySelector,
     highest_confidence_goal,
 )
@@ -296,10 +295,6 @@ class DistantPolicySelectorTest(ParametrizedTestCase):
         We simulate needing to undo by having the jump-to-goal mock
         return a result with (non-empty) actions and IN_PROGRESS status.
         """
-        # TODO(tslominski-tbp): Just proving that the state machine works.
-        self.selector = DistantPolicyStateMachine(
-            self.jump_to_goal, self.look_at_goal, self.default_policy
-        )
         # Put the selector into a jumping state.
         init_goal = Mock(sender_type="GSG", confidence=1.0)
         init_result_mock = Mock(
