@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import dataclasses
 import inspect
 import json
 import unittest
@@ -32,6 +33,9 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.buffer import BufferEncoder, FeatureAtLocationBuffer
 from tests.unit.frameworks.models.fakes.encoder_classes import (
     FakeClass,
+    FakeDataclass1,
+    FakeDataclass2,
+    FakeDataclass3,
     FakeMixin,
     FakeSubclass1,
     FakeSubclass2,
@@ -449,6 +453,41 @@ class BufferEncoderTest(unittest.TestCase):
                 json.loads(json.dumps(action, cls=ActionJSONEncoder)),
             )
 
+    def test_encodes_dataclass_instances_as_dicts_by_default(self) -> None:
+        dataclass = FakeDataclass1(data=[1, 2, 3])
+        self.assertDictEqual(
+            json.loads(json.dumps(dataclass, cls=BufferEncoder)),
+            dataclasses.asdict(dataclass),
+        )
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_default_dataclass_encoding_overridden_by_registered_dataclass_encoder(
+        self,
+    ) -> None:
+        dataclass_1 = FakeDataclass1(data=[1, 2, 3])
+        dataclass_2 = FakeDataclass2(data=[1, 2, 3])
+        dataclass_2_sentinel = "CUSTOM_ENCODING"  # unittest.sentinel not serializable
+        BufferEncoder.register(FakeDataclass2, lambda _: dataclass_2_sentinel)
+        self.assertDictEqual(
+            json.loads(json.dumps(dataclass_1, cls=BufferEncoder)),
+            dataclasses.asdict(dataclass_1),
+        )
+        self.assertEqual(
+            json.loads(json.dumps(dataclass_2, cls=BufferEncoder)),
+            dataclass_2_sentinel,
+        )
+
+    def test_registered_encoder_for_inner_dataclass_is_invoked(self) -> None:
+        # This would fail if BufferEncoder used `dataclasses.asdict(obj)` to
+        # serialize dataclasses since `dataclasses.asdict` is recursive.
+        dataclass_1 = FakeDataclass1(data=[1, 2, 3])
+        dataclass_2 = FakeDataclass2(data=[1, 2, 3])
+        dataclass_2_sentinel = "CUSTOM_ENCODING"
+        dataclass_2_encoder = Mock(return_value=dataclass_2_sentinel)
+        BufferEncoder.register(FakeDataclass2, dataclass_2_encoder)
+        dataclass_3 = FakeDataclass3(dataclass_1=dataclass_1, dataclass_2=dataclass_2)
+
+        dct = json.loads(json.dumps(dataclass_3, cls=BufferEncoder))
+
+        self.assertEqual(dct["dataclass_1"], dataclasses.asdict(dataclass_1))
+        dataclass_2_encoder.assert_called_once_with(dataclass_2)
+        self.assertEqual(dct["dataclass_2"], dataclass_2_sentinel)

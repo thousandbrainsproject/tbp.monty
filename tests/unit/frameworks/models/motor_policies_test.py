@@ -89,6 +89,7 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
                 Observations(),
                 MotorSystemState(),
                 self.percept,
+                None,
             )
 
         self.assertEqual(len(self.policy.tangent_locs), 1)
@@ -113,6 +114,7 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
                 Observations(),
                 MotorSystemState(),
                 self.percept,
+                None,
             )
 
         self.assertEqual(len(self.policy.tangent_locs), 1)
@@ -132,6 +134,7 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
                 Observations(),
                 MotorSystemState(),
                 self.percept,
+                None,
             )
 
         self.assertEqual(self.policy.tangent_locs, [])
@@ -182,7 +185,7 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
         observations = Observations()
         returned_actions: list[Action] = []
         for _ in range(2 * cycle_length):
-            result = policy(ctx, observations, MotorSystemState(), FakeMessage())
+            result = policy(ctx, observations, MotorSystemState(), FakeMessage(), None)
             assert len(result.actions) == 1, "Expected one action"
             returned_actions.append(result.actions[0])
 
@@ -190,7 +193,3 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
             first_occurrence = returned_actions[i]
             second_occurrence = returned_actions[i + cycle_length]
             self.assertEqual(first_occurrence, second_occurrence)
-
-
-if __name__ == "__main__":
-    unittest.main()

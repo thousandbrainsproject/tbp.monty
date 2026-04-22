@@ -13,22 +13,29 @@ import unittest
 from pathlib import Path
 from typing import Sequence
 
-import magnum
 import numpy as np
 import numpy.typing as npt
 import quaternion as qt
+from omegaconf import OmegaConf
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterface,
+    EnvironmentInterfacePerObject,
     OmniglotEnvironmentInterface,
     SaccadeOnImageEnvironmentInterface,
     SaccadeOnImageFromStreamEnvironmentInterface,
 )
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
+    ObjectInfo,
+    SemanticID,
     SimulatedObjectEnvironment,
+)
+from tbp.monty.frameworks.environments.object_init_samplers import (
+    Default,
+    MultiObjectNames,
 )
 from tbp.monty.frameworks.environments.two_d_data import (
     SaccadeOnImageEnvironment,
@@ -70,66 +77,52 @@ class FakeEnvironmentRel(SimulatedObjectEnvironment):
     def __init__(self):
         self._current_state = 0
 
+    @property
+    def observations(self) -> Observations:
+        return Observations(
+            {
+                AGENT_ID: AgentObservations(
+                    {
+                        SENSOR_ID: SensorObservation(
+                            raw=EXPECTED_STATES[self._current_state]
+                        )
+                    }
+                )
+            }
+        )
+
+    @property
+    def state(self) -> ProprioceptiveState:
+        return ProprioceptiveState(
+            {
+                AGENT_ID: AgentState(
+                    sensors={},
+                    position=(0, 0, 0),
+                    rotation=qt.quaternion(1, 0, 0, 0),
+                )
+            }
+        )
+
     def add_object(
         self,
         *args,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
-    ) -> ObjectID:
-        return ObjectID(-1)
+    ) -> ObjectInfo:
+        return ObjectInfo(ObjectID(-1), SemanticID(-1))
 
     def step(
         self,
         actions: Sequence[Action],  # noqa: ARG002
     ) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
-        obs = Observations(
-            {
-                AGENT_ID: AgentObservations(
-                    {
-                        SENSOR_ID: SensorObservation(
-                            {"raw": EXPECTED_STATES[self._current_state]}
-                        )
-                    }
-                )
-            }
-        )
-        proprioceptive_state = ProprioceptiveState(
-            {
-                AGENT_ID: AgentState(
-                    sensors={},
-                    position=magnum.Vector3(0, 0, 0),
-                    rotation=qt.quaternion(1, 0, 0, 0),
-                )
-            }
-        )
-        return obs, proprioceptive_state
+        return self.observations, self.state
 
     def remove_all_objects(self):
         pass
 
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self._current_state = 0
-        obs = Observations(
-            {
-                AGENT_ID: AgentObservations(
-                    {
-                        SENSOR_ID: SensorObservation(
-                            {"raw": EXPECTED_STATES[self._current_state]}
-                        )
-                    }
-                )
-            }
-        )
-        proprioceptive_state = ProprioceptiveState(
-            {
-                AGENT_ID: AgentState(
-                    sensors={},
-                    position=magnum.Vector3(0, 0, 0),
-                    rotation=qt.quaternion(1, 0, 0, 0),
-                )
-            }
-        )
-        return obs, proprioceptive_state
+        return self.observations, self.state
 
     def close(self):
         self._current_state = None
@@ -139,62 +132,48 @@ class FakeEnvironmentAbs(SimulatedObjectEnvironment):
     def __init__(self):
         self._current_state = 0
 
-    def add_object(self, *_, **__) -> ObjectID:
-        return ObjectID(-1)
+    def add_object(self, *_, **__) -> ObjectInfo:
+        return ObjectInfo(ObjectID(-1), SemanticID(-1))
+
+    @property
+    def observations(self) -> Observations:
+        return Observations(
+            {
+                AGENT_ID: AgentObservations(
+                    {
+                        SENSOR_ID: SensorObservation(
+                            raw=EXPECTED_STATES[self._current_state]
+                        )
+                    }
+                )
+            }
+        )
+
+    @property
+    def state(self) -> ProprioceptiveState:
+        return ProprioceptiveState(
+            {
+                AGENT_ID: AgentState(
+                    sensors={},
+                    position=(0, 0, 0),
+                    rotation=qt.quaternion(1, 0, 0, 0),
+                )
+            }
+        )
 
     def step(
         self,
         actions: Sequence[Action],  # noqa: ARG002
     ) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
-        obs = Observations(
-            {
-                AGENT_ID: AgentObservations(
-                    {
-                        SENSOR_ID: SensorObservation(
-                            {"raw": EXPECTED_STATES[self._current_state]}
-                        )
-                    }
-                )
-            }
-        )
-        proprioceptive_state = ProprioceptiveState(
-            {
-                AGENT_ID: AgentState(
-                    sensors={},
-                    position=magnum.Vector3(0, 0, 0),
-                    rotation=qt.quaternion(1, 0, 0, 0),
-                )
-            }
-        )
-        return obs, proprioceptive_state
+        return self.observations, self.state
 
     def remove_all_objects(self):
         pass
 
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self._current_state = 0
-        obs = Observations(
-            {
-                AGENT_ID: AgentObservations(
-                    {
-                        SENSOR_ID: SensorObservation(
-                            {"raw": EXPECTED_STATES[self._current_state]}
-                        )
-                    }
-                )
-            }
-        )
-        proprioceptive_state = ProprioceptiveState(
-            {
-                AGENT_ID: AgentState(
-                    sensors={},
-                    position=magnum.Vector3(0, 0, 0),
-                    rotation=qt.quaternion(1, 0, 0, 0),
-                )
-            }
-        )
-        return obs, proprioceptive_state
+        return self.observations, self.state
 
     def close(self):
         self._current_state = None
@@ -204,6 +183,91 @@ class FakeOmniglotEnvironment(FakeEnvironmentAbs):
     def __init__(self):
         super().__init__()
         self.alphabet_names = ["name_one", "name_two", "name_three"]
+
+
+class EnvironmentInterfacePerObjectTest(unittest.TestCase):
+    def test_accepts_plain_list_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        env_interface = EnvironmentInterfacePerObject(
+            env=FakeEnvironmentAbs(),
+            rng=rng,
+            seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
+            object_names=["object_a", "object_b", "object_a"],
+            object_init_sampler=Default(),
+        )
+
+        self.assertEqual(
+            ["object_a", "object_b", "object_a"], env_interface.object_names
+        )
+        self.assertEqual(["object_a", "object_b"], env_interface.source_object_list)
+        self.assertEqual(0, env_interface.num_distractors)
+
+    def test_accepts_hydra_list_config_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        env_interface = EnvironmentInterfacePerObject(
+            env=FakeEnvironmentAbs(),
+            rng=rng,
+            seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
+            object_names=OmegaConf.create(["object_a", "object_b", "object_a"]),
+            object_init_sampler=Default(),
+        )
+
+        self.assertEqual(
+            ["object_a", "object_b", "object_a"], env_interface.object_names
+        )
+        self.assertEqual(["object_a", "object_b"], env_interface.source_object_list)
+        self.assertEqual(0, env_interface.num_distractors)
+
+    def test_accepts_mapping_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        env_interface = EnvironmentInterfacePerObject(
+            env=FakeEnvironmentAbs(),
+            rng=rng,
+            seed=seed,
+            experiment_mode=ExperimentMode.EVAL,
+            object_names=MultiObjectNames(
+                targets_list=["object_a", "object_c"],
+                source_object_list=[
+                    "object_a",
+                    "object_b",
+                    "object_c",
+                    "object_b",
+                ],
+                num_distractors=2,
+            ),
+            object_init_sampler=Default(),
+        )
+
+        self.assertEqual(["object_a", "object_c"], env_interface.object_names)
+        self.assertEqual(
+            ["object_a", "object_b", "object_c"], env_interface.source_object_list
+        )
+        self.assertEqual(2, env_interface.num_distractors)
+
+    def test_rejects_tuple_object_names(self):
+        seed = 42
+        rng = np.random.RandomState(seed)
+
+        with self.assertRaisesRegex(
+            TypeError,
+            "Object names must be a list, ListConfig, or a mapping",
+        ):
+            EnvironmentInterfacePerObject(
+                env=FakeEnvironmentAbs(),
+                rng=rng,
+                seed=seed,
+                experiment_mode=ExperimentMode.EVAL,
+                object_names=("object_a", "object_b"),  # type: ignore[arg-type]
+                object_init_sampler=Default(),
+            )
 
 
 class EmbodiedDataTest(unittest.TestCase):
@@ -460,7 +524,3 @@ class EmbodiedDataTest(unittest.TestCase):
                 break
 
             i += 1
-
-
-if __name__ == "__main__":
-    unittest.main()

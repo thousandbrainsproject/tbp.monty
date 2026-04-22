@@ -69,7 +69,7 @@ class SalienceSMTest(unittest.TestCase):
             snapshot_telemetry=MagicMock(),
         )
         self.default_sensor_state = SensorState(
-            position=np.array([0, 0, 0]),
+            position=(0, 0, 0),
             rotation=qt.quaternion(1, 0, 0, 0),
         )
         self.state = AgentState(

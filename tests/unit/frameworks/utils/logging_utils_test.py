@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -93,7 +93,3 @@ class TestComputePoseError(unittest.TestCase):
 
         with self.assertRaises(AttributeError):
             compute_pose_error(Rotation.identity(), "not a rotation")
-
-
-if __name__ == "__main__":
-    unittest.main()

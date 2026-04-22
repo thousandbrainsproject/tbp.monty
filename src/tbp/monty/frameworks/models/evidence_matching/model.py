@@ -35,26 +35,6 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
         """Initialize and reset LM."""
         super().__init__(*args, **kwargs)
 
-    def _pass_infos_to_motor_system(self):
-        """Pass processed observations and goals to the motor system.
-
-        Currently there is no complex connectivity or hierarchy, and all generated
-        goals are considered bound for the motor system. TODO M change this.
-        """
-        super()._pass_infos_to_motor_system()
-
-        best_goal = None
-        best_goal_confidence = -np.inf
-        for current_goal in self.gsg_outputs:
-            if (
-                current_goal is not None
-                and current_goal.confidence > best_goal_confidence
-            ):
-                best_goal = current_goal
-                best_goal_confidence = current_goal.confidence
-
-        self.motor_system.set_driving_goal(best_goal)
-
     def _combine_votes(self, votes_per_lm):
         """Combine evidence from different LMs.
 

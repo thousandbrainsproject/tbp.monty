@@ -112,17 +112,13 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def set_driving_goal(self, goal: Goal | None) -> None:
-        """Specify the goal that the motor-actuator will attempt to satisfy."""
-        pass
-
-    @abc.abstractmethod
     def __call__(
         self,
         ctx: RuntimeContext,
         observations: Observations,
         state: MotorSystemState,
         percept: Message,
+        goal: Goal | None,
     ) -> MotorPolicyResult:
         """Invoke motor policy to determine the next actions to take.
 
@@ -133,6 +129,7 @@ class MotorPolicy(abc.ABC):
                 Defaults to None.
             percept: The percept from (as of this writing) the first sensor
                 module.
+            goal: The (optional) goal to consider.
 
         Returns:
             The motor policy result.
@@ -155,7 +152,6 @@ class BasePolicy(MotorPolicy):
         super().__init__()
         self.agent_id = agent_id
         self.action_sampler = action_sampler
-        self.driving_goal = None
 
     def __call__(
         self,
@@ -163,6 +159,7 @@ class BasePolicy(MotorPolicy):
         observations: Observations,  # noqa: ARG002
         state: MotorSystemState,  # noqa: ARG002
         percept: Message,  # noqa: ARG002
+        goal: Goal | None,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return a motor policy result containing a random action.
 
@@ -175,21 +172,15 @@ class BasePolicy(MotorPolicy):
                 Defaults to None. Unused.
             percept: The percept from (as of this writing) the first sensor
                 module.
+            goal: The (optional) goal to consider.
 
         Returns:
             A MotorPolicyResult that contains a random action.
         """
         return MotorPolicyResult([self.action_sampler.sample(self.agent_id, ctx.rng)])
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
-        self.driving_goal = None
-
-    def set_driving_goal(self, goal: Goal | None) -> None:
-        self.driving_goal = goal
-
-    ###
-    # Other required abstract methods, methods called by Monty or Environment Interface
-    ###
+    def pre_episode(self, motor_system: MotorSystem) -> None:
+        pass
 
     def state_dict(self):
         return {}
@@ -232,7 +223,6 @@ class PredefinedPolicy(MotorPolicy):
         self.action_list: list[Action] = PredefinedPolicy.read_action_file(file_name)
         self.episode_step = 0
         self.use_goal_driven_actions = False
-        self.driving_goal = None
 
     def __call__(
         self,
@@ -240,6 +230,7 @@ class PredefinedPolicy(MotorPolicy):
         observations: Observations,  # noqa: ARG002
         state: MotorSystemState,  # noqa: ARG002
         percept: Message,  # noqa: ARG002
+        goal: Goal | None,  # noqa: ARG002
     ) -> MotorPolicyResult:
         actions = [self.action_list[self.episode_step % len(self.action_list)]]
         self.episode_step += 1
@@ -247,10 +238,6 @@ class PredefinedPolicy(MotorPolicy):
 
     def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
         self.episode_step = 0
-        self.driving_goal = None
-
-    def set_driving_goal(self, goal: Goal | None) -> None:
-        self.driving_goal = goal
 
     def state_dict(self) -> dict[str, Any]:
         return {"episode_step": self.episode_step}
@@ -304,6 +291,7 @@ class InformedPolicy(BasePolicy):
         observations: Observations,
         state: MotorSystemState,
         percept: Message,
+        goal: Goal | None,
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
 
@@ -314,13 +302,13 @@ class InformedPolicy(BasePolicy):
                 Defaults to None.
             percept: The percept from (as of this writing) the first sensor
                 module.
+            goal: The (optional) goal to consider.
 
         Returns:
             A MotorPolicyResult that contains the actions to take.
         """
         if self.use_goal_driven_actions:
-            assert state is not None
-            result = self._goal_driven_actions(observations, state)
+            result = self._goal_driven_actions(observations, state, goal)
             if result is not None:
                 return result
 
@@ -337,13 +325,17 @@ class InformedPolicy(BasePolicy):
         return MotorPolicyResult([])
 
     def _goal_driven_actions(
-        self, observations: Observations, state: MotorSystemState
+        self,
+        observations: Observations,
+        state: MotorSystemState,
+        goal: Goal | None,
     ) -> MotorPolicyResult | None:
         """Handle Goal-driven processing and maybe return actions to take.
 
         Args:
             observations: The observations from the environment.
             state: The current state of the motor system.
+            goal: The (optional) goal to consider.
 
         Returns:
             Either a `MotorPolicyResult`, which should be immediately returned by
@@ -354,8 +346,8 @@ class InformedPolicy(BasePolicy):
             if result is not None:
                 return result
 
-        if self.driving_goal is not None:
-            actions = self._jump(state)
+        if goal is not None:
+            actions = self._jump(state, goal)
             return MotorPolicyResult(actions)
 
         return None
@@ -505,13 +497,14 @@ class InformedPolicy(BasePolicy):
         self._pre_jump_state = None
         self._undo_jump_actions = []
 
-    def _jump(self, state: MotorSystemState) -> list[Action]:
+    def _jump(self, state: MotorSystemState, goal: Goal) -> list[Action]:
         """Compute the jump and undo jump actions.
 
         The undo jump actions are stored in `self._undo_jump_actions`.
 
         Args:
             state: The current state of the motor system.
+            goal: The goal to jump to.
 
         Returns:
             A list of jump actions to take.
@@ -536,9 +529,7 @@ class InformedPolicy(BasePolicy):
                 == self._pre_jump_state.sensors[first_sensor].rotation
             ), "Sensors are not identical in pose"
 
-        assert self.driving_goal is not None, "Driving goal is not set"
-        set_agent_pose = self._derive_set_agent_pose_from_goal(self.driving_goal)
-        self.set_driving_goal(None)
+        set_agent_pose = self._derive_set_agent_pose_from_goal(goal)
 
         self._is_jumping = True
 
@@ -640,6 +631,7 @@ class NaiveScanPolicy(InformedPolicy):
         observations: Observations,  # noqa: ARG002
         state: MotorSystemState,  # noqa: ARG002
         percept: Message,  # noqa: ARG002
+        goal: Goal | None,  # noqa: ARG002
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions in the spiral.
 
@@ -652,6 +644,7 @@ class NaiveScanPolicy(InformedPolicy):
                 Defaults to None. Unused.
             percept: The percept from (as of this writing) the first sensor
                 module.
+            goal: The (optional) goal to consider.
 
         Returns:
             A MotorPolicyResult that contains the actions to take.
@@ -886,6 +879,7 @@ class SurfacePolicy(InformedPolicy):
         observations: Observations,
         state: MotorSystemState,
         percept: Message,
+        goal: Goal | None,
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
 
@@ -896,6 +890,7 @@ class SurfacePolicy(InformedPolicy):
                 Defaults to None.
             percept: The percept from (as of this writing) the first sensor
                 module.
+            goal: The (optional) goal to consider.
 
         Returns:
             A MotorPolicyResult that contains the actions to take.
@@ -903,8 +898,7 @@ class SurfacePolicy(InformedPolicy):
         self._telemetry = SurfacePolicyTelemetry()
 
         if self.use_goal_driven_actions:
-            assert state is not None
-            result = self._goal_driven_actions(observations, state)
+            result = self._goal_driven_actions(observations, state, goal)
             if result is not None:
                 return result
 
@@ -1424,6 +1418,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         observations: Observations,
         state: MotorSystemState,
         percept: Message,
+        goal: Goal | None,
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
 
@@ -1433,6 +1428,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             state: The current state of the motor system.
             percept: The percept from (as of this writing) the first sensor
                 module.
+            goal: The (optional) goal to consider.
 
         Returns:
             A MotorPolicyResult that contains the actions to take.
@@ -1454,7 +1450,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             else:
                 self.tangent_norms.append(None)
 
-        return super().__call__(ctx, observations, state, percept)
+        return super().__call__(ctx, observations, state, percept, goal)
 
     def update_action_details(self, percept: Message) -> None:
         """Store informaton for later logging.
@@ -2141,4 +2137,5 @@ def projected_vec_from_angle(angle):
     """
     assert abs(angle) < np.pi + 0.01, f"-pi : +pi bound angles only : {angle}"
 
+    # TODO: consider using an np.array
     return [np.cos(angle - np.pi / 2), np.sin(angle + np.pi / 2), 0]
