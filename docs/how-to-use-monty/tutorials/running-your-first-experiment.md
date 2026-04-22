@@ -194,9 +194,9 @@ We now turn our attention to how the experiment controls the environment and the
 
 The environment interface class is the way we interact with a simulation environment. The objects within an environment are assumed to be the same for both training and evaluation (for now). Note, however, that object orientations, as well as specific observations obtained from an object, will generally differ across training and evaluation.
 
-# TODO: update from here
+The environment interface is basically how the experiment controls the environment during a runnign experiment. Its job is to initialize, reset, and setup the environment for each epoch and episode, pass actions from the model to the environment, and return observations to the model. Note that the next observation is decided by the last action, and the actions are selected by a `motor_system`. By changing the actions, the **model** controls what it observes next, just as you would expect from a sensorimotor system.
 
-The environment interface is basically how the experiment controls the interaction between the environment and the model. Its job is to sample from the environment and return observations to the model (+initialize and reset the environment). Note that the next observation is decided by the last action, and the actions are selected by a `motor_system`. By changing the actions, the **model** controls what it observes next, just as you would expect from a sensorimotor system.
+# TODO: Resume rewrite from here...
 
 Now, finally answering our question of what happens in an episode, notice that our config uses a special type of environment interface: `EnvironmentInterfacePerObject` (note that this is a subclass of `EnvironmentInterface` which is kept as general as possible to allow for flexible subclass customization). As indicated in the docstring, this environment interface has a list of objects, and at the beginning / end of an episode, it removes the current object from the environment, increments a (cyclical) counter that determines which object is next, and places the new object in the environment. The arguments to `EnvironmentInterfacePerObject` determine which objects are added to the environment and in what pose. **In our config, we use a single list with one YCB object, a mug.**
 
