@@ -15,9 +15,12 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_POSE_2D = np.array([[0.0, 0.0, 1.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
 
 
 def _gradient_to_tangent_angle(gradient_angle: float) -> float:
@@ -86,6 +89,9 @@ class EdgeFeatures:
     strength: float
     coherence: float
     angle: float | None
+    pose_2d: np.ndarray
+    is_geometric_edge: bool
+    has_edge: bool
 
 
 class EdgeDetector:
@@ -129,7 +135,7 @@ class EdgeDetector:
 
     def __call__(
         self,
-        patch: np.ndarray,
+        observation: SensorObservation,
     ) -> EdgeFeatures:
         """Compute edge features using center-weighted, global-aware structure tensor.
 
@@ -143,7 +149,7 @@ class EdgeDetector:
             Tensor. http://faculty.pucit.edu.pk/nazarkhan/teaching/Spring2021/CS565/Lectures/lecture6_corner_detection.pdf
 
         Args:
-            patch: RGB image patch.
+            observation: Sensor observation.
 
         Returns:
             EdgeFeatures with:
@@ -160,13 +166,22 @@ class EdgeDetector:
                 different pixels will be weighted based on their displacement from
                 the center.
         """
+        patch = observation["rgba"][:, :, :3]
+        depth = observation["depth"]
         grayscale = cv2.cvtColor(patch, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0
         Ix, Iy = self._compute_sobel_gradients(grayscale)  # noqa: N806
         tensor_per_pixel = self._compute_per_pixel_structure_tensors(Ix, Iy)
 
         weights, total_weight = self._compute_center_weights(grayscale.shape, Ix, Iy)
         if total_weight < DEFAULT_TOLERANCE:
-            return EdgeFeatures(strength=0.0, coherence=0.0, angle=None)
+            return EdgeFeatures(
+                strength=0.0,
+                coherence=0.0,
+                angle=None,
+                pose_2d=DEFAULT_POSE_2D,
+                is_geometric_edge=False,
+                has_edge=False,
+            )
 
         aggregated = self._aggregate_tensor(tensor_per_pixel, weights, total_weight)
 
@@ -175,12 +190,31 @@ class EdgeDetector:
             total_weight,
             aggregated.gradient_theta,
         ):
-            return EdgeFeatures(strength=0.0, coherence=0.0, angle=None)
+            return EdgeFeatures(
+                strength=0.0,
+                coherence=0.0,
+                angle=None,
+                pose_2d=DEFAULT_POSE_2D,
+                is_geometric_edge=False,
+                has_edge=False,
+            )
+
+        has_edge = (
+            aggregated.edge_strength > self._strength_threshold
+            and aggregated.coherence > self._coherence_threshold
+        )
+
+        pose_2d = self._angle_to_pose_2d(
+            aggregated.edge_angle, observation["world_camera"]
+        )
 
         return EdgeFeatures(
             strength=float(aggregated.edge_strength),
             coherence=float(aggregated.coherence),
             angle=float(aggregated.edge_angle),
+            pose_2d=pose_2d,
+            is_geometric_edge=self._is_geometric_edge(depth, aggregated.edge_angle),
+            has_edge=has_edge,
         )
 
     @staticmethod
@@ -318,3 +352,76 @@ class EdgeDetector:
         d_center = np.sum(weights * dist_normal) / total_weight
 
         return abs(d_center) <= self._max_center_offset
+
+    def _is_geometric_edge(
+        self,
+        depth_patch: np.ndarray,
+        edge_theta: float,
+    ) -> bool:
+        """Check if detected edge is a geometric edge (depth discontinuity).
+
+        Geometric edges occur at object boundaries or surface creases where depth
+        changes abruptly. Texture edges will be detected wherever there is an abrupt
+        discontinuity in image intensity. We will use detected geometric edges to identify
+        candidate texture edges that do not correspond to a 2D surface (such as where the
+        red handle of a mug is seen against the black background of a simulator's void).
+        This function computes the depth gradient perpendicular to the detected edge
+        direction and checks if it exceeds a threshold.
+
+        Args:
+            depth_patch: Depth image patch (same size as RGB patch used for edge
+                detection). Values should be in consistent units (e.g., meters).
+            edge_theta: Edge tangent angle in radians from RGB edge detection.
+            depth_threshold: Maximum allowed depth gradient magnitude for texture
+                edges. Edges with perpendicular depth gradient above this value
+                are classified as geometric.
+
+        Returns:
+            True if edge is geometric, False if texture edge.
+        """
+        depth_dx = cv2.Sobel(depth_patch, cv2.CV_32F, 1, 0, ksize=3)
+        depth_dy = cv2.Sobel(depth_patch, cv2.CV_32F, 0, 1, ksize=3)
+
+        edge_normal_angle = edge_theta + np.pi / 2
+        nx = np.cos(edge_normal_angle)
+        ny = np.sin(edge_normal_angle)
+
+        cy, cx = depth_patch.shape[0] // 2, depth_patch.shape[1] // 2
+        depth_gradient_perp = abs(nx * depth_dx[cy, cx] + ny * depth_dy[cy, cx])
+
+        return depth_gradient_perp > self._depth_edge_threshold
+
+    def _angle_to_pose_2d(
+        self,
+        angle: float,
+        world_camera: np.ndarray,
+    ) -> np.ndarray:
+        """Build 2D pose vectors from an edge angle.
+
+        Returns the standard basis rotated by the edge angle in the world
+        xy-plane. When the camera is tilted, the camera's image x-axis is
+        projected into the xy-plane to determine the reference direction.
+
+        Args:
+            angle: Edge angle in radians in image coordinates (y-down), measured
+                from the image x-axis toward the image y-axis (i.e., toward the
+                bottom of the image).
+            world_camera: 4x4 world-to-camera transformation matrix.
+
+        Returns:
+            3x3 array whose rows are [normal, edge_tangent, edge_perp].
+            Normal is always [0, 0, 1]; tangent and perp lie in the z=0 plane.
+        """
+        R = world_camera[:3, :3]  # noqa: N806
+        image_x_world = R.T @ np.array([1.0, 0.0, 0.0])
+        ref_angle = np.arctan2(image_x_world[1], image_x_world[0])
+        world_theta = ref_angle - angle
+
+        cos_t, sin_t = np.cos(world_theta), np.sin(world_theta)
+        return np.array(
+            [
+                [0.0, 0.0, 1.0],
+                [cos_t, sin_t, 0.0],
+                [-sin_t, cos_t, 0.0],
+            ]
+        )
