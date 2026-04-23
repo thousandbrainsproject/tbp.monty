@@ -432,12 +432,11 @@ class JumpToGoal(MotorPolicy):
         self._undo_actions: list[Action] = []
 
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
-        # Note/TODO: Figure out what to do with (de)-serialized objects.
         self._agent_id = state_dict["agent_id"]
-        # self._undo_action = state_dict["undo_action"]
+        self._undo_action = state_dict["undo_action"]
         self._is_undoing_jump = state_dict["is_undoing_jump"]
-        # self._pre_jump_state = state_dict["pre_jump_state"]
-        # self._undo_jump_actions = state_dict["undo_jump_actions"]
+        self._pre_jump_state = state_dict["pre_jump_state"]
+        self._undo_jump_actions = state_dict["undo_jump_actions"]
 
     def state_dict(self) -> dict[str, Any]:
         return {
