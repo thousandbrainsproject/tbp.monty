@@ -93,15 +93,6 @@ class PolicyStatus(Enum):
 
 
 @dataclass
-class MotorPolicyParams:
-    ctx: RuntimeContext
-    observations: Observations
-    state: MotorSystemState
-    percept: Message
-    goal: Goal | None
-
-
-@dataclass
 class MotorPolicyResult:
     """Result of a motor policy.
 
