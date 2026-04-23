@@ -6,11 +6,13 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import unittest
 
 import numpy as np
-import numpy.testing as npt
+import numpy.typing as npt
+import quaternion as qt
 from hypothesis import assume, example, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
@@ -24,10 +26,16 @@ from tbp.monty.math import DEFAULT_TOLERANCE
 
 
 @st.composite
-def vectors_3d(draw, min_value=-1e6, max_value=1e6):
+def vectors_3d(
+    draw: st.DrawFn,
+    min_value: float = -1e6,
+    max_value: float = 1e6,
+    dtype: npt.DTypeLike = np.float32,
+):
+    # TODO(scottcanoe): Reconsider np.float32 as the default dtype.
     return draw(
         arrays(
-            dtype=np.float32,
+            dtype=dtype,
             shape=3,
             elements=st.floats(min_value=min_value, max_value=max_value, width=32),
         )
@@ -35,9 +43,15 @@ def vectors_3d(draw, min_value=-1e6, max_value=1e6):
 
 
 @st.composite
-def nonzero_magnitude_vectors(draw, min_value=-1e6, max_value=1e6):
+def nonzero_magnitude_vectors(
+    draw: st.DrawFn,
+    min_value: float = -1e6,
+    max_value: float = 1e6,
+    dtype: npt.DTypeLike = np.float32,
+):
+    # TODO(scottcanoe): Reconsider np.float32 as the default dtype.
     return draw(
-        vectors_3d(min_value=min_value, max_value=max_value).filter(
+        vectors_3d(min_value=min_value, max_value=max_value, dtype=dtype).filter(
             lambda v: np.linalg.norm(v) > DEFAULT_TOLERANCE
         )
     )
@@ -47,12 +61,25 @@ unit_vectors = nonzero_magnitude_vectors().map(lambda v: normalize(v))
 
 
 @st.composite
-def nonzero_orthogonal_vectors(draw):
+def nonzero_orthogonal_vectors(draw: st.DrawFn):
     random_base = normalize(draw(nonzero_magnitude_vectors()))
     n = normalize(draw(nonzero_magnitude_vectors()))
     v = np.cross(random_base, n)
     assume(np.linalg.norm(v) > DEFAULT_TOLERANCE)
     return v, n
+
+
+@st.composite
+def quaternions(draw: st.DrawFn):
+    wxyz = draw(
+        arrays(
+            dtype=np.float64,
+            shape=4,
+            elements=st.floats(min_value=-1, max_value=1, width=32),
+        ).filter(lambda v: np.linalg.norm(v) > DEFAULT_TOLERANCE)
+    )
+    wxyz = normalize(wxyz)
+    return qt.quaternion(*wxyz)
 
 
 class NormalizeTest(unittest.TestCase):
@@ -61,13 +88,15 @@ class NormalizeTest(unittest.TestCase):
         norm = np.linalg.norm(v)
         result = normalize(v)
         tol = max(DEFAULT_TOLERANCE * norm, DEFAULT_TOLERANCE)
-        npt.assert_allclose(result * norm, v, atol=tol, rtol=tol)
+        np.testing.assert_allclose(result * norm, v, atol=tol, rtol=tol)
 
     @given(nonzero_magnitude_vectors())
     def test_idempotent(self, v):
         once = normalize(v)
         twice = normalize(once)
-        npt.assert_allclose(twice, once, atol=DEFAULT_TOLERANCE, rtol=DEFAULT_TOLERANCE)
+        np.testing.assert_allclose(
+            twice, once, atol=DEFAULT_TOLERANCE, rtol=DEFAULT_TOLERANCE
+        )
 
     def test_zero_vector_raises(self):
         v = np.zeros(3, dtype=float)
@@ -86,7 +115,7 @@ class NormalizeTest(unittest.TestCase):
     @given(nonzero_magnitude_vectors())
     def test_result_has_unit_norm(self, v):
         result = normalize(v)
-        npt.assert_allclose(
+        np.testing.assert_allclose(
             np.linalg.norm(result), 1.0, atol=DEFAULT_TOLERANCE, rtol=DEFAULT_TOLERANCE
         )
 
@@ -104,27 +133,27 @@ class ProjectOntoTangentPlaneTest(unittest.TestCase):
             DEFAULT_TOLERANCE * np.linalg.norm(a_vector),
             DEFAULT_TOLERANCE,
         )
-        npt.assert_allclose(result, [0.0, 0.0, 0.0], atol=tol)
+        np.testing.assert_allclose(result, [0.0, 0.0, 0.0], atol=tol)
 
     @given(nonzero_orthogonal_vectors())
     def test_a_vector_perpendicular_to_normal(self, orthogonal_vectors):
         a_vector, a_normal = orthogonal_vectors
         result = project_onto_tangent_plane(a_vector, a_normal)
         tol = max(DEFAULT_TOLERANCE * np.linalg.norm(a_vector), DEFAULT_TOLERANCE)
-        npt.assert_allclose(result, a_vector, atol=tol, rtol=DEFAULT_TOLERANCE)
+        np.testing.assert_allclose(result, a_vector, atol=tol, rtol=DEFAULT_TOLERANCE)
 
     @given(a_vector=vectors_3d(), a_normal=nonzero_magnitude_vectors())
     def test_result_is_orthogonal_to_normal(self, a_vector, a_normal):
         result = project_onto_tangent_plane(a_vector, a_normal)
         tol = max(DEFAULT_TOLERANCE * np.linalg.norm(a_vector), DEFAULT_TOLERANCE)
-        npt.assert_allclose(np.dot(result, normalize(a_normal)), 0.0, atol=tol)
+        np.testing.assert_allclose(np.dot(result, normalize(a_normal)), 0.0, atol=tol)
 
     @given(a_vector=vectors_3d(), a_normal=nonzero_magnitude_vectors())
     def test_projection_is_idempotent(self, a_vector, a_normal):
         once = project_onto_tangent_plane(a_vector, a_normal)
         twice = project_onto_tangent_plane(once, a_normal)
         tol = max(DEFAULT_TOLERANCE * np.linalg.norm(a_vector), DEFAULT_TOLERANCE)
-        npt.assert_allclose(twice, once, atol=tol, rtol=DEFAULT_TOLERANCE)
+        np.testing.assert_allclose(twice, once, atol=tol, rtol=DEFAULT_TOLERANCE)
 
 
 class TangentFrameTest(unittest.TestCase):
@@ -134,18 +163,18 @@ class TangentFrameTest(unittest.TestCase):
         """Assert (basis_u, basis_v, normal) form an orthonormal right-handed frame."""
         u, v = frame.basis_u, frame.basis_v
         # Check unit norm
-        npt.assert_allclose(np.linalg.norm(u), 1.0, atol=tol, rtol=tol)
-        npt.assert_allclose(np.linalg.norm(v), 1.0, atol=tol, rtol=tol)
-        npt.assert_allclose(np.linalg.norm(normal), 1.0, atol=tol, rtol=tol)
+        np.testing.assert_allclose(np.linalg.norm(u), 1.0, atol=tol, rtol=tol)
+        np.testing.assert_allclose(np.linalg.norm(v), 1.0, atol=tol, rtol=tol)
+        np.testing.assert_allclose(np.linalg.norm(normal), 1.0, atol=tol, rtol=tol)
 
         # Check orthogonality
-        npt.assert_allclose(np.dot(u, v), 0.0, atol=tol, rtol=0)
-        npt.assert_allclose(np.dot(u, normal), 0.0, atol=tol, rtol=0)
-        npt.assert_allclose(np.dot(v, normal), 0.0, atol=tol, rtol=0)
+        np.testing.assert_allclose(np.dot(u, v), 0.0, atol=tol, rtol=0)
+        np.testing.assert_allclose(np.dot(u, normal), 0.0, atol=tol, rtol=0)
+        np.testing.assert_allclose(np.dot(v, normal), 0.0, atol=tol, rtol=0)
 
         # Check right-handedness
-        npt.assert_allclose(np.cross(u, v), normal, atol=tol, rtol=tol)
-        npt.assert_allclose(np.cross(v, u), -normal, atol=tol, rtol=tol)
+        np.testing.assert_allclose(np.cross(u, v), normal, atol=tol, rtol=tol)
+        np.testing.assert_allclose(np.cross(v, u), -normal, atol=tol, rtol=tol)
 
     @given(n=unit_vectors)
     @example(
@@ -176,10 +205,10 @@ class TangentFrameTest(unittest.TestCase):
         frame = TangentFrame(n)
         u_before, v_before = frame.basis_u.copy(), frame.basis_v.copy()
         frame.transport(n)
-        npt.assert_allclose(
+        np.testing.assert_allclose(
             frame.basis_u, u_before, atol=DEFAULT_TOLERANCE, rtol=DEFAULT_TOLERANCE
         )
-        npt.assert_allclose(
+        np.testing.assert_allclose(
             frame.basis_v, v_before, atol=DEFAULT_TOLERANCE, rtol=DEFAULT_TOLERANCE
         )
 
