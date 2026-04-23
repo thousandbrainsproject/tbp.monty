@@ -14,8 +14,8 @@ defaults:
   - /monty: graph_exp1000_e3_t3_tot2500
 
   # /monty/motor_system_config specifies what motor system and motor policy to
-  # use within Monty. We use a motor system with an InformedPolicy where
-  # movement rotations are 5 degrees and we do not use goal driven actions.
+  # use within Monty. We use a motor system with an InformedPolicyRandomWalk where
+  # movement rotations are 5 degrees.
   - /monty/motor_system_config: informed_random_walk_5
 
   # /monty/learning_module is Monty's learning module configuration. We use a
