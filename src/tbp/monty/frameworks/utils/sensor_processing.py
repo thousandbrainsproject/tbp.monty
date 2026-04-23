@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import logging
 
 import numpy as np
@@ -22,6 +24,81 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 
 logger = logging.getLogger(__name__)
+
+FLAT_THRESHOLD = 0.001
+
+
+def arc_from_projection(
+    tangent_projection: float,
+    curvature: float,
+    threshold: float = FLAT_THRESHOLD,
+) -> float:
+    """Correct displacement to true arc length on a curved surface.
+
+    When a sensor moves along a curved surface, the straight-line displacement
+    measured in the tangent plane underestimates the true distance traveled
+    along the curve. This function corrects that by converting the displacement
+    projection back to the actual arc length.
+
+    The correction assumes that the surface is locally a circle. This approximation
+    holds well when curvature is approximately constant over the displacement,
+    but is inaccurate for surfaces with rapidly varying curvature.
+
+    The relationship between arc length and its tangent-plane projection on a
+    circle of curvature k is:
+
+        tangent_projection = sin(k * arc_length) / k
+        arc_length        = arcsin(k * tangent_projection) / k
+
+    Reference:
+        Do Carmo, M.P. "Differential Geometry of Curves and Surfaces",
+        2nd ed., Dover, 2016, Section 3-2.
+
+    Note:
+        The formula works for both convex and concave surfaces because the
+        arc-to-projection geometry on a circle is the same regardless of the sign
+        of curvature.
+
+    Args:
+        tangent_projection: Signed displacement component projected onto a
+            tangent-plane basis direction.
+        curvature: Normal curvature along the basis direction (from Euler's
+            formula). May be positive (convex) or negative (concave).
+        threshold: Skip correction when |k * p| < threshold (the flat
+            approximation is already accurate).
+
+    Returns:
+        Estimated signed arc length. Returns tangent_projection unchanged if
+        |k * p| < threshold (arc-chord difference is negligible) or
+        |k * p| >= 1.0 (arcsin domain guard).
+    """
+    abs_k = abs(curvature)
+    abs_p = abs(tangent_projection)
+    kp = abs_k * abs_p
+
+    if kp < threshold:
+        # When |k * p| < 0.001, the difference in arcsin(k*p) and k*p
+        # is negligible and no arc-length correction is needed
+        return tangent_projection
+
+    if kp >= 1.0:
+        # |k * p| >= 1.0 means the chord length p is greater than the radius of
+        # curvature, i.e. we move beyond the most extreme visible point of the surface,
+        # assuming uniform curvature. Either we are on a different surface, or the
+        # curvature is not uniform (the surface curves back), and the system will
+        # underestimate 2D distance traveled. The higher-level solution is a policy
+        # that takes smaller steps in 3D space to better estimate movements in 2D space.
+        logger.warning(
+            "Arc correction skipped: |k*p| = %.4f >= 1.0 "
+            "(tangent_projection=%.6f, curvature=%.6f)",
+            kp,
+            tangent_projection,
+            curvature,
+        )
+        return tangent_projection
+
+    arc_length = np.arcsin(kp) / abs_k
+    return float(np.copysign(arc_length, tangent_projection))
 
 
 def is_orthogonal(v1: ArrayLike, v2: ArrayLike, tolerance: float = 1e-6) -> bool:
@@ -97,6 +174,51 @@ def directional_curvature(
     cos_theta_squared = np.dot(move_hat, pc1_dir) ** 2
     sin_theta_squared = 1.0 - cos_theta_squared
     return k1 * cos_theta_squared + k2 * sin_theta_squared
+
+
+def arc_length_corrected_displacement(
+    du: float,
+    dv: float,
+    basis_u: np.ndarray,
+    basis_v: np.ndarray,
+    principal_curvatures: np.ndarray,
+    curvature_pose_vectors: np.ndarray,
+) -> tuple[float, float]:
+    """Convert chord-length displacements to arc-length along each basis axis.
+
+    Uses Euler's formula to find the normal curvature in each basis direction,
+    then corrects the flat-plane displacement to the corresponding arc length.
+
+    Args:
+        du: Displacement along basis_u (chord length).
+        dv: Displacement along basis_v (chord length).
+        basis_u: First tangent-frame basis vector.
+        basis_v: Second tangent-frame basis vector.
+        principal_curvatures: Array [k1, k2] of principal curvature magnitudes.
+        curvature_pose_vectors: Pose matrix whose rows [1] and [2] are the
+            principal curvature directions.
+
+    Returns:
+        (arc_u, arc_v): Arc-length-corrected displacements.
+    """
+    k_u = directional_curvature(
+        basis_u,
+        principal_curvatures[0],
+        principal_curvatures[1],
+        curvature_pose_vectors[1],
+        curvature_pose_vectors[2],
+    )
+    k_v = directional_curvature(
+        basis_v,
+        principal_curvatures[0],
+        principal_curvatures[1],
+        curvature_pose_vectors[1],
+        curvature_pose_vectors[2],
+    )
+    return (
+        arc_from_projection(du, k_u),
+        arc_from_projection(dv, k_v),
+    )
 
 
 def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
@@ -195,7 +317,7 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
             # So try a smaller tan_len
             tan_len = tan_len // 2
             if tan_len < 1:
-                norm1 = norm2 = [0, 0, 1]
+                norm1 = norm2 = np.array([0.0, 0.0, 1.0])
                 valid_sn = False
                 found_surface_normal = True
     norm = np.mean([norm1, norm2], axis=0)

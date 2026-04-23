@@ -140,9 +140,7 @@ experiment:
       sm_to_lm_matrix:
       - - 0
       - - 1
-      lm_to_lm_matrix:
-      - []
-      - - 0
+      lm_to_lm_matrix: null
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:

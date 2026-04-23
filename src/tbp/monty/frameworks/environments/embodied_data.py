@@ -15,7 +15,6 @@ from pprint import pformat
 from typing import Mapping, Sequence, cast
 
 import numpy as np
-import quaternion as qt
 from omegaconf import ListConfig
 
 from tbp.monty.frameworks.actions.actions import (
@@ -340,7 +339,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
         semantic_id = self.semantic_label_to_id[self.object_names[idx]]
         # TODO clean this up with its own specific call i.e. Law of Demeter
-        primary_target_obj = self.env.add_object(
+        primary_target = self.env.add_object(
             name=self.object_names[idx],
             position=self.object_params["position"],
             rotation=self.object_params["rotation"],
@@ -350,7 +349,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
 
         if self.num_distractors > 0:
             self.add_distractor_objects(
-                primary_target_obj,
+                primary_target.object_id,
                 primary_target_name=self.object_names[idx],
             )
 
@@ -494,7 +493,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         self.current_object = idx
         self.primary_target = {
             "object": self.object_names[idx],
-            "rotation": qt.quaternion(0, 0, 0, 1),
+            "rotation": (0.0, 0.0, 0.0, 1.0),
             "euler_rotation": np.array([0, 0, 0]),
             "quat_rotation": [0, 0, 0, 1],
             "position": np.array([0, 0, 0]),
@@ -592,7 +591,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         target_object_formatted = "_".join(target_object.split("_")[1:])
         self.primary_target = {
             "object": target_object_formatted,
-            "rotation": qt.quaternion(0, 0, 0, 1),
+            "rotation": (0.0, 0.0, 0.0, 1.0),
             "euler_rotation": np.array([0, 0, 0]),
             "quat_rotation": [0, 0, 0, 1],
             "position": np.array([0, 0, 0]),
@@ -667,7 +666,7 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         # targets corresponding to the current scene ?
         self.primary_target = {
             "object": "no_label",
-            "rotation": qt.quaternion(0, 0, 0, 1),
+            "rotation": (0.0, 0.0, 0.0, 1.0),
             "euler_rotation": np.array([0, 0, 0]),
             "quat_rotation": [0, 0, 0, 1],
             "position": np.array([0, 0, 0]),

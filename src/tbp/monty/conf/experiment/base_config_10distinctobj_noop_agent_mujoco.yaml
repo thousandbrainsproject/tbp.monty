@@ -1,0 +1,29 @@
+# @package _global_
+
+defaults:
+  - /monty: evidencegraph_exp1000_emin_t3_tot2500
+  - /monty/motor_system_config: informed_5_goal1
+  - /monty/learning_module: evidence_1lm_nn5_dod003
+  - /monty/sensor_module: camera_dist_delta
+  - /monty/connectivity: 1lm_1sm
+  - /environment: mujoco_ycb_noop_agent
+  - /env_interface: eval_distinctobj_predefined
+  - /env_interface/transform: depthto3d_res64hfov11_sensor1
+  - /logging: basic_warning_monty_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+    n_eval_epochs: ${constants.rotations_all_count}
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
+    logging:
+      run_name: base_config_10distinctobj_noop_agent_mujoco

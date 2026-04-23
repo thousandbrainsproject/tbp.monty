@@ -5,7 +5,7 @@ defaults:
   - /monty/motor_system_config: distant_5
   - /monty/learning_module: evidence_2lm_gsg
   - /monty/sensor_module: 2sm_camera_dist
-  - /monty/connectivity: 2lm_2sm
+  - /monty/connectivity: 2lm_2sm_monolithic
   - /environment: habitat_dist_agent_sensors2
   - /env_interface: eval_compositional_lvl1_predefined
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
