@@ -362,11 +362,11 @@ class EdgeDetector:
 
         Geometric edges occur at object boundaries or surface creases where depth
         changes abruptly. Texture edges will be detected wherever there is an abrupt
-        discontinuity in image intensity. We will use detected geometric edges to identify
-        candidate texture edges that do not correspond to a 2D surface (such as where the
-        red handle of a mug is seen against the black background of a simulator's void).
-        This function computes the depth gradient perpendicular to the detected edge
-        direction and checks if it exceeds a threshold.
+        discontinuity in image intensity. We will use detected geometric edges to
+        identify candidate texture edges that do not correspond to a 2D surface
+        (such as where the red handle of a mug is seen against the black background
+        of a simulator's void). This function computes the depth gradient perpendicular
+        to the detected edge direction and checks if it exceeds a threshold.
 
         Args:
             depth_patch: Depth image patch (same size as RGB patch used for edge
