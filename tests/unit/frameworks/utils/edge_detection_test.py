@@ -12,6 +12,7 @@ import unittest
 import numpy as np
 from hypothesis import assume, example, given
 from hypothesis import strategies as st
+from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.utils.edge_detection import (
     EdgeDetector,
@@ -92,6 +93,23 @@ def make_rgb_patch(size: int, pattern: str) -> np.ndarray:
     raise ValueError(f"Unknown pattern: {pattern}")
 
 
+@st.composite
+def make_depth_patch(draw, pattern: str) -> np.ndarray:
+    """Generate a depth patch.
+
+    Args:
+        draw: Hypothesis draw function (injected by @st.composite).
+    """
+    closest_depth = draw(st.floats(min_value=0.01, max_value=1.0))
+    depth_change = draw(st.floats(min_value=0.0, max_value=1.0))
+    min_depth, max_depth = closest_depth, closest_depth + depth_change
+
+    depth = np.full((PATCH_SIZE, PATCH_SIZE), min_depth, dtype=np.float32)
+    if pattern == "vertical_edge":
+        depth[:, PATCH_SIZE // 2 :] = max_depth
+    pass
+
+
 VERTICAL_EDGE_PATCH = make_rgb_patch(PATCH_SIZE, "vertical_edge")
 HORIZONTAL_EDGE_PATCH = make_rgb_patch(PATCH_SIZE, "horizontal_edge")
 UNIFORM_PATCH = make_rgb_patch(PATCH_SIZE, "uniform")
@@ -103,11 +121,53 @@ def edge_patch(draw, patterns=None):
 
     Returns:
         An RGB patch array of shape (PATCH_SIZE, PATCH_SIZE, 3).
+        pattern:
     """
     if patterns is None:
         patterns = ["uniform", "vertical_edge", "horizontal_edge", "diagonal_edge"]
     pattern = draw(st.sampled_from(patterns))
     return make_rgb_patch(PATCH_SIZE, pattern)
+
+
+@st.composite
+def camera_extrinsic_matrix(draw):
+    """Draw a random 4x4 world-to-camera matrix.
+
+    Returns:
+         world_camera: 4x4 world-to-camera matrix.
+    """
+    rng = np.random.default_rng()
+    rot_3x3 = Rotation.random(random_state=rng).as_matrix()
+    tx, ty, tz = (draw(st.floats(min_value=-100.0, max_value=100.0)) for _ in range(3))
+    world_to_cam = np.identity(4)
+    world_to_cam[:3, :3] = rot_3x3
+    world_to_cam[:3, 3] = [tx, ty, tz]
+    return world_to_cam
+
+
+@st.composite
+def sensor_observation(draw, patterns=None):
+    # Need to make an observation that minimally has:
+    # rgba (get it from make_rgb_patch)
+    # depth (added)
+    # world_camera ()
+    # for tests to work
+    # Returns observation
+    if patterns is None:
+        patterns = ["uniform", "vertical_edge", "horizontal_edge", "diagonal_edge"]
+    pattern = draw(st.sampled_from(patterns))
+    rgb = make_rgb_patch(PATCH_SIZE, pattern)
+    alpha = draw(st.floats(min_value=0.0, max_value=1.0))
+    rgba = np.concatenate([rgb, alpha, alpha], axis=-1)
+
+    depth = 0
+    world_camera = camera_extrinsic_matrix()
+    observation = {
+        "rgba": rgba,
+        "depth": depth,
+        "world_camera": world_camera,
+    }
+    return observation
 
 
 @st.composite
