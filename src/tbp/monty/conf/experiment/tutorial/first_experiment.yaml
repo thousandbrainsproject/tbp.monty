@@ -16,7 +16,7 @@ defaults:
   # /monty/motor_system_config specifies what motor system and motor policy to
   # use within Monty. We use a motor system with an InformedPolicy where
   # movement rotations are 5 degrees and we do not use goal driven actions.
-  - /monty/motor_system_config: informed_5_goal0
+  - /monty/motor_system_config: informed_random_walk_5
 
   # /monty/learning_module is Monty's learning module configuration. We use a
   # single DisplacementGraphLM learning module.
