@@ -16,7 +16,6 @@ from typing import cast
 from unittest.mock import Mock, patch
 
 import numpy as np
-import numpy.testing as nptest
 import numpy.typing as npt
 import quaternion as qt
 from hypothesis import given
@@ -120,9 +119,9 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
             )
 
         self.assertEqual(len(self.policy.tangent_locs), 1)
-        nptest.assert_array_equal(self.policy.tangent_locs[0], self.location)
+        np.testing.assert_array_equal(self.policy.tangent_locs[0], self.location)
         self.assertEqual(len(self.policy.tangent_norms), 1)
-        nptest.assert_array_equal(self.policy.tangent_norms[0], self.tangent_norm)
+        np.testing.assert_array_equal(self.policy.tangent_norms[0], self.tangent_norm)
 
     def test_appends_none_to_tangent_norms_if_last_action_is_orient_vertical_but_no_pose_vectors_in_state(  # noqa: E501
         self,
@@ -145,7 +144,7 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
             )
 
         self.assertEqual(len(self.policy.tangent_locs), 1)
-        nptest.assert_array_equal(self.policy.tangent_locs[0], self.location)
+        np.testing.assert_array_equal(self.policy.tangent_locs[0], self.location)
         self.assertEqual(self.policy.tangent_norms, [None])
 
     def test_does_not_append_to_tangent_locs_and_tangent_norms_if_last_action_is_not_orient_vertical(  # noqa: E501
@@ -291,7 +290,7 @@ class JumpToGoalTest(ParametrizedTestCase):
         set_sensor_rotation = policy_result.actions[1]
         assert isinstance(set_sensor_rotation, SetSensorRotation)
 
-        nptest.assert_array_equal(set_agent_pose.location, goal_location)
+        np.testing.assert_array_equal(set_agent_pose.location, goal_location)
         rotation = Rotation.from_quat(
             [
                 # TODO(tslominski-tbp): Needs update when we use QuaternionWXYZ like
@@ -303,10 +302,12 @@ class JumpToGoalTest(ParametrizedTestCase):
             ]
         )
         new_forward_axis = -rotation.as_matrix()[:, 2]
-        nptest.assert_allclose(new_forward_axis, goal_direction, atol=DEFAULT_TOLERANCE)
+        np.testing.assert_allclose(
+            new_forward_axis, goal_direction, atol=DEFAULT_TOLERANCE
+        )
 
         # Sensor rotation must be identity.
-        nptest.assert_allclose(
+        np.testing.assert_allclose(
             qt.as_float_array(set_sensor_rotation.rotation_quat),
             qt.as_float_array(qt.one),
             atol=DEFAULT_TOLERANCE,
@@ -387,13 +388,13 @@ class JumpToGoalTest(ParametrizedTestCase):
         assert isinstance(set_sensor_rotation, SetSensorRotation)
 
         agent_state = pre_jump_state[self.agent_id]
-        nptest.assert_array_equal(set_agent_pose.location, agent_state.position)
-        nptest.assert_array_equal(
+        np.testing.assert_array_equal(set_agent_pose.location, agent_state.position)
+        np.testing.assert_array_equal(
             qt.as_float_array(set_agent_pose.rotation_quat),
             qt.as_float_array(agent_state.rotation),
         )
         sensor_state = agent_state.sensors[SensorID("sensor_id_0")]
-        nptest.assert_array_equal(
+        np.testing.assert_array_equal(
             qt.as_float_array(set_sensor_rotation.rotation_quat),
             qt.as_float_array(sensor_state.rotation),
         )
@@ -467,7 +468,7 @@ class JumpToGoalTest(ParametrizedTestCase):
         set_sensor_rotation = policy_result.actions[1]
         assert isinstance(set_sensor_rotation, SetSensorRotation)
 
-        nptest.assert_array_equal(set_agent_pose.location, goal_location)
+        np.testing.assert_array_equal(set_agent_pose.location, goal_location)
         rotation = Rotation.from_quat(
             [
                 # TODO(tslominski-tbp): Needs update when we use QuaternionWXYZ like
@@ -479,10 +480,12 @@ class JumpToGoalTest(ParametrizedTestCase):
             ]
         )
         new_forward_axis = -rotation.as_matrix()[:, 2]
-        nptest.assert_allclose(new_forward_axis, goal_direction, atol=DEFAULT_TOLERANCE)
+        np.testing.assert_allclose(
+            new_forward_axis, goal_direction, atol=DEFAULT_TOLERANCE
+        )
 
         # Sensor rotation must be identity.
-        nptest.assert_allclose(
+        np.testing.assert_allclose(
             qt.as_float_array(set_sensor_rotation.rotation_quat),
             qt.as_float_array(qt.one),
             atol=DEFAULT_TOLERANCE,
