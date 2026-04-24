@@ -23,6 +23,8 @@ from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR
 from tbp.monty.simulators.mujoco.simulator import (
     DEFAULT_RESOLUTION,
     PRIMITIVE_OBJECTS,
+    ActuateMethodMissing,
+    DataPathNotConfigured,
     MissingObjectModel,
     MissingObjectTexture,
     MuJoCoSimulator,
@@ -192,6 +194,12 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         ):
             sim.add_object("valid_object", scale=(2.0, 2.0, 2.0))
 
+    def test_custom_object_with_no_data_path(self):
+        with MuJoCoSimulator(data_path=None) as sim, pytest.raises(
+            DataPathNotConfigured
+        ):
+            sim.add_object("valid_object")
+
     def test_custom_object_missing(self) -> None:
         with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim, pytest.raises(
             UnknownObjectType
@@ -222,17 +230,45 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
             assert np.allclose(mesh.refquat, IDENTITY_QUATERNION)
 
     def test_agent_that_does_not_understand_an_action(self) -> None:
-        """Ensure the simulator works with an agent that doesn't respond to actions."""
+        """Ensure the simulator works with an agent that doesn't respond to actions.
+
+        When configured NOT to raise errors, we want to confirm that the simulator
+        doesn't raise an exception when an agent lacks an actuate method.
+        """
         agent_mock = Mock(id=AGENT_ID)
         agent_mock.max_sensor_resolution = DEFAULT_RESOLUTION
+        # Mocks default to responding to everything, so we need to remove
+        # the method name we want the agent to not respond to.
+        del agent_mock.actuate_look_up
         AgentMockClass = Mock(return_value=agent_mock)  # noqa: N806
+        action = LookUp(AGENT_ID, rotation_degrees=5.0)
+
         sim = MuJoCoSimulator(
             agents=[partial(AgentMockClass)],
-            data_path=None,
+            raise_actuate_missing=False,
         )
-
         with sim:
-            action = LookUp(AGENT_ID, rotation_degrees=5.0)
+            sim.step([action])
+
+    def test_agent_that_does_not_understand_an_action_raises(self) -> None:
+        """Ensure the simulator raises with an agent that doesn't respond to actions.
+
+        When configured to raise on errors, we want to confirm that the simulator
+        raises the expected exception when an agent lacks an actuate method.
+        """
+        agent_mock = Mock(id=AGENT_ID)
+        agent_mock.max_sensor_resolution = DEFAULT_RESOLUTION
+        # Mocks default to responding to everything, so we need to remove
+        # the method name we want the agent to not respond to.
+        del agent_mock.actuate_look_up
+        AgentMockClass = Mock(return_value=agent_mock)  # noqa: N806
+        action = LookUp(AGENT_ID, rotation_degrees=5.0)
+
+        sim = MuJoCoSimulator(
+            agents=[partial(AgentMockClass)],
+            raise_actuate_missing=True,
+        )
+        with sim, pytest.raises(ActuateMethodMissing):
             sim.step([action])
 
     def test_agent_action_with_attribute_error(self) -> None:
@@ -240,7 +276,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
 
         def actuate_look_up(*args, **kwargs):  # noqa: ARG001
             # Simulate an attribute error as from a programming mistake
-            raise AssertionError("AgentMock does not have attribute 'foo'")
+            raise AttributeError("AgentMock does not have attribute 'foo'")
 
         agent_mock = Mock(id=AGENT_ID)
         agent_mock.actuate_look_up = Mock(side_effect=actuate_look_up)
@@ -249,8 +285,9 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         sim = MuJoCoSimulator(
             agents=[partial(AgentMockClass)],
             data_path=None,
+            raise_actuate_missing=False,
         )
         action = LookUp(AGENT_ID, rotation_degrees=5.0)
 
-        with pytest.raises(AssertionError), sim:
+        with sim, pytest.raises(AttributeError):
             sim.step([action])

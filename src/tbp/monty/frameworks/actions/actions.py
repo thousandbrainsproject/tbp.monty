@@ -118,7 +118,8 @@ class Action(Protocol):
             yield key, value
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(agent_id={self.agent_id})"
+        attrs = ", ".join([f"{k}={v}" for k, v in self.__dict__.items()])
+        return f"{self.__class__.__name__}({attrs})"
 
 
 class LookDownActionSampler(Protocol):

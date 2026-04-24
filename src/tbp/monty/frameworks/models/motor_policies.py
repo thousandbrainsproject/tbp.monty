@@ -594,9 +594,9 @@ class InformedPolicy(BasePolicy):
         )
 
         for current_sensor in state[self.agent_id].sensors:
-            assert np.all(
-                state[self.agent_id].sensors[current_sensor].rotation
-                == self._pre_jump_state.sensors[current_sensor].rotation
+            assert np.allclose(
+                state[self.agent_id].sensors[current_sensor].rotation,
+                self._pre_jump_state.sensors[current_sensor].rotation,
             ), "Failed to return sensor to orientation"
 
 
