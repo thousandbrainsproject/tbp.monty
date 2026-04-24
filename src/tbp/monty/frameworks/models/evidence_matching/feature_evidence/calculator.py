@@ -90,8 +90,6 @@ class DefaultFeatureEvidenceCalculator:
                 "pose_fully_defined",
             ]:
                 continue
-            # import pdb;
-            # breakpoint()
             if feature not in channel_query_features:
                 continue
             if hasattr(channel_query_features[feature], "__len__"):
@@ -131,11 +129,11 @@ class DefaultFeatureEvidenceCalculator:
             lbp_feature_vector = feature_vectors["local_binary_pattern"]
             query_lbp_fv = feature_list[lbp_feature_vector]
             node_lbp_fv = channel_feature_array[:, lbp_feature_vector]
-            chi2_dist = DefaultFeatureEvidenceCalculator.hellinger_distance(
+            lbp_fv_dist = DefaultFeatureEvidenceCalculator.hellinger_distance(
                 query_lbp_fv,
                 node_lbp_fv
             )
-            feature_differences[:, lbp_feature_vector] = chi2_dist[:, None]
+            feature_differences[:, lbp_feature_vector] = lbp_fv_dist[:, None]
         # any difference < tolerance should be positive evidence
         # any difference >= tolerance should be 0 evidence
         feature_evidence = np.clip(tolerance_list - feature_differences, 0, np.inf)
