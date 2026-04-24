@@ -3,7 +3,7 @@
 defaults:
   - /monty: graph_exp1000_emin_t3_tot2500
   - /monty/motor_system_config: informed_random_walk_20
-  - /monty/learning_module: evidence_1lm_nn10_dod003_dts02
+  - /monty/learning_module: evidence_1lm_nn10_dod003_dts02_gsg0
   - /monty/sensor_module: camera_dist
   - /monty/connectivity: 1lm_1sm
   - /environment: two_d_data_standard
