@@ -9,43 +9,33 @@
 
 from __future__ import annotations
 
-import logging
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock
 
 import numpy as np
-import numpy.testing as nptest
-import pytest
 from hypothesis import given
-from hypothesis import strategies as st
 
-from tbp.monty.cmp import Message
 from tbp.monty.frameworks.models.two_d_sensor_module import TwoDSensorModule
-from tbp.monty.math import DEFAULT_TOLERANCE
+from tests.unit.frameworks.utils.edge_detection_test import (
+    PATCH_SIZE,
+    sensor_observation,
+)
 
-MODULE_PATH = "tbp.monty.frameworks.models.two_d_sensor_module"
-a_3d_location = np.zeros(3)
-
-_FLAT_POSE = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]], dtype=float)
-
-def make_message() -> Message:
-    return Message(
-    )
-
-def make_module():
-    pass
-
-class TestInit(unittest.TestCase):
-    def test_initial_internal_state(self):
-        sm = make_module()
-        assert sm._previous_3d_location is None
-        assert sm._tangent_frame is None
-        assert sm._previous_2d_location is None
-
-class TestExtract2dEdge(unittest.TestCase):
-    # What to test here that isn't covered by EdgeDetetor test...
-    pass
+DEFAULT_FEATURES = [
+    "pose_vectors",
+    "principal_curvatures",
+    "edge_strength",
+    "coherence",
+]
 
 
-
-
+class TwoDSensorModuleTest(unittest.TestCase):
+    @given(obs=sensor_observation(patterns=["horizontal_edge"]))
+    def test_basic_step(self, obs):
+        obs.update(
+            semantic_3d=np.ones((PATCH_SIZE * PATCH_SIZE, 4), dtype=int),
+            sensor_frame_data=None,
+        )
+        sm = TwoDSensorModule("test", features=DEFAULT_FEATURES)
+        msg = sm.step(ctx=Mock(), observation=obs, motor_only_step=False)
+        print(msg)

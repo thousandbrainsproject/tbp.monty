@@ -117,16 +117,16 @@ def sensor_observation(draw, patterns=None):
 
     pattern = draw(st.sampled_from(patterns))
     rgb = make_rgb_patch(PATCH_SIZE, pattern)
-    alpha = np.ones((PATCH_SIZE, PATCH_SIZE, 3), dtype=np.float32)
+    alpha = np.full((PATCH_SIZE, PATCH_SIZE, 1), fill_value=255, dtype=np.uint8)
     rgba = np.concatenate([rgb, alpha], axis=-1)
 
     depth = np.ones((PATCH_SIZE, PATCH_SIZE), dtype=np.float32)
     world_camera = draw(camera_extrinsic_matrix())
-    return {
-        "rgba": rgba,
-        "depth": depth,
-        "world_camera": world_camera,
-    }
+    return SensorObservation(
+        rgba=rgba,
+        depth=depth,
+        world_camera=world_camera,
+    )
 
 
 @st.composite
