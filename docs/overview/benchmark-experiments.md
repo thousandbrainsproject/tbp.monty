@@ -157,16 +157,16 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > cd ~/tbp/data/
 >
-> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.tgz | tar -xzf -
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.tgz | tar -xzf -
 > ```
 > ```plaintext zip
 > mkdir -p ~/tbp/data/
 > 
 > cd ~/tbp/data/
 > 
-> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.zip
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.zip
 > 
-> unzip compositional_objects.zip
+> unzip compositional_objects_1.1.zip
 > ```
 >
 > To generate the pretrained models, run the following experiments in order:
@@ -179,7 +179,6 @@ Note: To obtain these results, pretraining was run without parallelization acros
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl2_comp_models
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl3_comp_models
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl4_comp_models
 > ```
 
 > [!NOTE]
