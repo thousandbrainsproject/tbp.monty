@@ -20,7 +20,7 @@ experiment:
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: 3
-    model_name_or_path: /home/tristan_weldon/tbp/results/monty/pretrained_models/my_trained_models/ltp_ror_hellinger_customobs/pretrained
+    model_name_or_path: /home/tristan_weldon/tbp/results/monty/pretrained_models/my_trained_models/textured_obs_ltp_ror_hellinger/pretrained
     n_eval_epochs: ${constants.rotations_all_count}
     min_lms_match: 1
     seed: 42
