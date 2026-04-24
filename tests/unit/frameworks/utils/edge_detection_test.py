@@ -10,16 +10,20 @@
 import unittest
 
 import numpy as np
+import pytest
 from hypothesis import assume, example, given
 from hypothesis import strategies as st
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.utils.edge_detection import (
     EdgeDetector,
     StructureTensor,
     _gradient_to_tangent_angle,
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
+
+PATCH_SIZE = 64
 
 angles = st.floats(min_value=-2 * np.pi, max_value=2 * np.pi)
 a_scalar = st.floats(min_value=DEFAULT_TOLERANCE, max_value=100.0)
@@ -58,9 +62,6 @@ def structure_tensors(draw, max_value=100.0, allow_zero_matrix=True):
     return StructureTensor(xx=Jxx, yy=Jyy, xy=Jxy)
 
 
-PATCH_SIZE = 64
-
-
 def make_rgb_patch(size: int, pattern: str) -> np.ndarray:
     """Generate a synthetic RGB uint8 patch.
 
@@ -94,42 +95,6 @@ def make_rgb_patch(size: int, pattern: str) -> np.ndarray:
 
 
 @st.composite
-def make_depth_patch(draw, pattern: str) -> np.ndarray:
-    """Generate a depth patch.
-
-    Args:
-        draw: Hypothesis draw function (injected by @st.composite).
-    """
-    closest_depth = draw(st.floats(min_value=0.01, max_value=1.0))
-    depth_change = draw(st.floats(min_value=0.0, max_value=1.0))
-    min_depth, max_depth = closest_depth, closest_depth + depth_change
-
-    depth = np.full((PATCH_SIZE, PATCH_SIZE), min_depth, dtype=np.float32)
-    if pattern == "vertical_edge":
-        depth[:, PATCH_SIZE // 2 :] = max_depth
-    pass
-
-
-VERTICAL_EDGE_PATCH = make_rgb_patch(PATCH_SIZE, "vertical_edge")
-HORIZONTAL_EDGE_PATCH = make_rgb_patch(PATCH_SIZE, "horizontal_edge")
-UNIFORM_PATCH = make_rgb_patch(PATCH_SIZE, "uniform")
-
-
-@st.composite
-def edge_patch(draw, patterns=None):
-    """Generate a canonical-pattern RGB patch at the fixed PATCH_SIZE.
-
-    Returns:
-        An RGB patch array of shape (PATCH_SIZE, PATCH_SIZE, 3).
-        pattern:
-    """
-    if patterns is None:
-        patterns = ["uniform", "vertical_edge", "horizontal_edge", "diagonal_edge"]
-    pattern = draw(st.sampled_from(patterns))
-    return make_rgb_patch(PATCH_SIZE, pattern)
-
-
-@st.composite
 def camera_extrinsic_matrix(draw):
     """Draw a random 4x4 world-to-camera matrix.
 
@@ -147,27 +112,21 @@ def camera_extrinsic_matrix(draw):
 
 @st.composite
 def sensor_observation(draw, patterns=None):
-    # Need to make an observation that minimally has:
-    # rgba (get it from make_rgb_patch)
-    # depth (added)
-    # world_camera ()
-    # for tests to work
-    # Returns observation
     if patterns is None:
         patterns = ["uniform", "vertical_edge", "horizontal_edge", "diagonal_edge"]
+
     pattern = draw(st.sampled_from(patterns))
     rgb = make_rgb_patch(PATCH_SIZE, pattern)
-    alpha = draw(st.floats(min_value=0.0, max_value=1.0))
-    rgba = np.concatenate([rgb, alpha, alpha], axis=-1)
+    alpha = np.ones((PATCH_SIZE, PATCH_SIZE, 3), dtype=np.float32)
+    rgba = np.concatenate([rgb, alpha], axis=-1)
 
-    depth = 0
-    world_camera = camera_extrinsic_matrix()
-    observation = {
+    depth = np.ones((PATCH_SIZE, PATCH_SIZE), dtype=np.float32)
+    world_camera = draw(camera_extrinsic_matrix())
+    return {
         "rgba": rgba,
         "depth": depth,
         "world_camera": world_camera,
     }
-    return observation
 
 
 @st.composite
@@ -417,47 +376,47 @@ class PassesCenterCheckTest(unittest.TestCase):
         assert detector._passes_center_check(weights, total_weight, theta)
 
 
-class TestComputeEdgeFeatures:
-    def test_uniform_patch_returns_zero_strength(self):
+class TestEdgeDetector(unittest.TestCase):
+    def test_kernel_size_is_not_odd(self):
+        with pytest.raises(ValueError, match="must be odd"):
+            EdgeDetector(kernel_size=2)
+
+    @given(obs=sensor_observation(patterns=["uniform"]))
+    def test_uniform_patch_returns_zero_strength(self, obs):
         detector = EdgeDetector()
 
-        edge = detector(UNIFORM_PATCH)
+        edge = detector(obs)
 
         assert edge.strength == 0.0
         assert edge.coherence == 0.0
         assert edge.angle is None
 
-    def test_vertical_edge_detected(self):
+    @given(obs=sensor_observation(patterns=["vertical_edge"]))
+    def test_vertical_edge_detected(self, obs):
         detector = EdgeDetector()
 
-        edge = detector(VERTICAL_EDGE_PATCH)
+        edge = detector(obs)
 
         assert edge.strength > 0.0
         assert edge.coherence > 0.0
-
-    def test_vertical_edge_orientation(self):
-        detector = EdgeDetector()
-
-        edge = detector(VERTICAL_EDGE_PATCH)
-
-        # Vertical edge tangent should be near pi/2 (range is [0, pi])
         assert edge.angle is not None
         assert abs(edge.angle - np.pi / 2) < 0.3
 
-    def test_horizontal_edge_orientation(self):
+    @given(obs=sensor_observation(patterns=["horizontal_edge"]))
+    def test_horizontal_edge_orientation(self, obs):
         detector = EdgeDetector()
 
-        edge = detector(HORIZONTAL_EDGE_PATCH)
+        edge = detector(obs)
 
         # Horizontal edge tangent is always pi (structure tensor is sign-invariant)
         assert edge.angle is not None
         assert abs(edge.angle - np.pi) < 0.3
 
-    def test_diagonal_edge_detected(self):
-        patch = make_rgb_patch(PATCH_SIZE, "diagonal_edge")
+    @given(obs=sensor_observation(patterns=["diagonal_edge"]))
+    def test_diagonal_edge_detected(self, obs):
         detector = EdgeDetector()
 
-        edge = detector(patch)
+        edge = detector(obs)
 
         assert edge.strength > 0.0
         assert edge.coherence > 0.0
@@ -466,20 +425,28 @@ class TestComputeEdgeFeatures:
     def test_center_offset_rejects_off_center_edge(self):
         # Edge at right boundary, not at center
         patch = np.zeros((PATCH_SIZE, PATCH_SIZE, 3), dtype=np.uint8)
-        patch[:, PATCH_SIZE - 4 :] = 255
-        detector = EdgeDetector(max_center_offset=1)
+        patch[:, PATCH_SIZE - 4 :, :] = 255
+        alpha = np.ones((PATCH_SIZE, PATCH_SIZE, 3), dtype=np.float32)
+        rgba = np.concatenate((patch, alpha), axis=-1)
+        obs = SensorObservation(
+            rgba=rgba,
+            depth=np.ones((PATCH_SIZE, PATCH_SIZE), dtype=np.float32),
+            world_camera=np.identity(4),
+        )
+        # Set radius to force total_weight > DEFAULT_TOLERANCE
+        detector = EdgeDetector(radius=PATCH_SIZE // 2, max_center_offset=1)
 
-        edge = detector(patch)
+        edge = detector(obs)
 
         assert edge.strength == 0.0
         assert edge.coherence == 0.0
         assert edge.angle is None
 
-    @given(patch=edge_patch())
-    def test_output_ranges_valid(self, patch):
+    @given(obs=sensor_observation())
+    def test_output_ranges_valid(self, obs):
         detector = EdgeDetector()
 
-        edge = detector(patch)
+        edge = detector(obs)
 
         assert edge.strength >= 0.0
         assert 0.0 <= edge.coherence <= 1.0
