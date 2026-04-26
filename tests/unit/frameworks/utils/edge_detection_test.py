@@ -23,7 +23,11 @@ from tbp.monty.frameworks.utils.edge_detection import (
     StructureTensor,
     _gradient_to_tangent_angle,
 )
-from tbp.monty.frameworks.utils.spatial_arithmetics import TangentFrame
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    TangentFrame,
+    normalize,
+    project_onto_tangent_plane,
+)
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.unit.frameworks.utils.spatial_arithmetics_test import unit_vectors
 
@@ -509,3 +513,127 @@ class TestEdgeDetector(unittest.TestCase):
         assert edge.strength >= 0.0
         assert 0.0 <= edge.coherence <= 1.0
         assert edge.angle is None or 0.0 <= edge.angle <= np.pi
+
+    @given(angle=angles, geometry=surface_geometry())
+    @example(
+        angle=0.0,
+        geometry=(
+            np.array([0.0, 0.0, 1.0]),
+            TangentFrame(np.array([0.0, 0.0, 1.0])),
+        ),
+    )
+    @example(
+        angle=np.pi / 2,
+        geometry=(
+            np.array([0.0, 0.0, 1.0]),
+            TangentFrame(np.array([0.0, 0.0, 1.0])),
+        ),
+    )
+    def test_angle_to_pose_2d_maps_identity_camera_to_local_tangent_frame(
+        self, angle, geometry
+    ):
+        detector = EdgeDetector()
+        world_camera = np.identity(4)
+        surface_normal_3d, tangent_frame = geometry
+
+        pose_2d = detector._angle_to_pose_2d(
+            angle,
+            world_camera,
+            surface_normal=surface_normal_3d,
+            tangent_frame=tangent_frame,
+        )
+
+        edge_world = np.array([np.cos(angle), -np.sin(angle), 0.0])
+        edge_tangent_world = project_onto_tangent_plane(edge_world, surface_normal_3d)
+        if np.linalg.norm(edge_tangent_world) < DEFAULT_TOLERANCE:
+            edge_tangent_world = tangent_frame.basis_u
+        else:
+            edge_tangent_world = normalize(edge_tangent_world)
+
+        expected_tangent_2d = np.array(
+            [
+                np.dot(edge_tangent_world, tangent_frame.basis_u),
+                np.dot(edge_tangent_world, tangent_frame.basis_v),
+                0.0,
+            ]
+        )
+
+        assert_pose_2d_is_orthonormal(pose_2d)
+        np.testing.assert_allclose(
+            pose_2d[1], expected_tangent_2d, atol=DEFAULT_TOLERANCE
+        )
+
+    def test_angle_to_pose_2d_uses_transported_tangent_frame(self):
+        detector = EdgeDetector()
+        world_camera = np.identity(4)
+        world_camera[:3, :3] = np.array(
+            [
+                [1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0],
+                [0.0, -1.0, 0.0],
+            ]
+        )
+        surface_normal = np.array([0.0, 1.0, 0.0])
+        tangent_frame = TangentFrame(np.array([0.0, 0.0, 1.0]))
+        tangent_frame.transport(surface_normal)
+
+        pose_2d = detector._angle_to_pose_2d(
+            np.pi / 2,
+            world_camera,
+            surface_normal=surface_normal,
+            tangent_frame=tangent_frame,
+        )
+
+        np.testing.assert_allclose(
+            pose_2d,
+            np.array(
+                [
+                    [0.0, 0.0, 1.0],
+                    [0.0, -1.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                ]
+            ),
+            atol=DEFAULT_TOLERANCE,
+        )
+
+    def test_angle_to_pose_2d_requires_tangent_frame(self):
+        detector = EdgeDetector()
+
+        with pytest.raises(TypeError):
+            detector._angle_to_pose_2d(
+                np.pi / 2,
+                np.identity(4),
+                surface_normal=SURFACE_NORMAL_3D,
+            )
+
+    def test_angle_to_pose_2d_falls_back_to_basis_u_for_degenerate_projection(self):
+        detector = EdgeDetector()
+        surface_normal = np.array([1.0, 0.0, 0.0])
+        tangent_frame = TangentFrame(surface_normal)
+
+        pose_2d = detector._angle_to_pose_2d(
+            0.0,
+            np.identity(4),
+            surface_normal=surface_normal,
+            tangent_frame=tangent_frame,
+        )
+
+        assert_pose_2d_is_orthonormal(pose_2d)
+        np.testing.assert_allclose(
+            pose_2d,
+            np.array(
+                [
+                    [0.0, 0.0, 1.0],
+                    [1.0, 0.0, 0.0],
+                    [-0.0, 1.0, 0.0],
+                ]
+            ),
+            atol=DEFAULT_TOLERANCE,
+        )
+
+    @given(obs=sensor_observation(patterns=["vertical_edge"]))
+    def test_edge_pose_requires_surface_normal(self, obs):
+        detector = EdgeDetector()
+
+        with pytest.raises(ValueError, match="surface_normal is required"):
+            detector(obs)
