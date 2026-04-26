@@ -27,6 +27,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import TangentFrame
 from tbp.monty.math import DEFAULT_TOLERANCE
 
 PATCH_SIZE = 64
+SURFACE_NORMAL = np.array([0.0, 0.0, 1.0])
+TANGENT_FRAME = TangentFrame(SURFACE_NORMAL)
 
 angles = st.floats(min_value=-2 * np.pi, max_value=2 * np.pi)
 a_scalar = st.floats(min_value=DEFAULT_TOLERANCE, max_value=100.0)
@@ -415,7 +417,7 @@ class TestEdgeDetector(unittest.TestCase):
     def test_uniform_patch_returns_zero_strength(self, obs):
         detector = EdgeDetector()
 
-        edge = detector(obs)
+        edge = detector(obs, SURFACE_NORMAL, TANGENT_FRAME)
 
         assert edge.strength == 0.0
         assert edge.coherence == 0.0
@@ -425,7 +427,7 @@ class TestEdgeDetector(unittest.TestCase):
     def test_vertical_edge_detected(self, obs):
         detector = EdgeDetector()
 
-        edge = detector(obs)
+        edge = detector(obs, SURFACE_NORMAL, TANGENT_FRAME)
 
         assert edge.strength > 0.0
         assert edge.coherence > 0.0
@@ -436,7 +438,7 @@ class TestEdgeDetector(unittest.TestCase):
     def test_horizontal_edge_orientation(self, obs):
         detector = EdgeDetector()
 
-        edge = detector(obs)
+        edge = detector(obs, SURFACE_NORMAL, TANGENT_FRAME)
 
         # Horizontal edge tangent is always pi (structure tensor is sign-invariant)
         assert edge.angle is not None
@@ -446,7 +448,7 @@ class TestEdgeDetector(unittest.TestCase):
     def test_diagonal_edge_detected(self, obs):
         detector = EdgeDetector()
 
-        edge = detector(obs)
+        edge = detector(obs, SURFACE_NORMAL, TANGENT_FRAME)
 
         assert edge.strength > 0.0
         assert edge.coherence > 0.0
@@ -466,7 +468,7 @@ class TestEdgeDetector(unittest.TestCase):
         # Set radius to force total_weight > DEFAULT_TOLERANCE
         detector = EdgeDetector(radius=PATCH_SIZE // 2, max_center_offset=1)
 
-        edge = detector(obs)
+        edge = detector(obs, SURFACE_NORMAL, TANGENT_FRAME)
 
         assert edge.strength == 0.0
         assert edge.coherence == 0.0
@@ -476,7 +478,7 @@ class TestEdgeDetector(unittest.TestCase):
     def test_output_ranges_valid(self, obs):
         detector = EdgeDetector()
 
-        edge = detector(obs)
+        edge = detector(obs, SURFACE_NORMAL, TANGENT_FRAME)
 
         assert edge.strength >= 0.0
         assert 0.0 <= edge.coherence <= 1.0
