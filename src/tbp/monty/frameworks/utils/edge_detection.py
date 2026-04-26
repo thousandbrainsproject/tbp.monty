@@ -16,6 +16,11 @@ import cv2
 import numpy as np
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    TangentFrame,
+    normalize,
+    project_onto_tangent_plane,
+)
 from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)
@@ -136,6 +141,8 @@ class EdgeDetector:
     def __call__(
         self,
         observation: SensorObservation,
+        surface_normal: np.ndarray | None = None,
+        tangent_frame: TangentFrame | None = None,
     ) -> EdgeFeatures:
         """Compute edge features using center-weighted, global-aware structure tensor.
 
@@ -150,6 +157,10 @@ class EdgeDetector:
 
         Args:
             observation: Sensor observation.
+            surface_normal: Surface normal at the center of the patch. Required when
+                an edge is detected and pose_2d must be computed.
+            tangent_frame: Local 2D frame used to express the projected edge. Required
+                when an edge is detected and pose_2d must be computed.
 
         Returns:
             EdgeFeatures with:
@@ -157,6 +168,10 @@ class EdgeDetector:
                 - coherence: Edge quality metric in [0, 1] (0.0 if no edge)
                 - orientation: Edge orientation angle in [0, pi) radians
                   (None if no edge)
+
+        Raises:
+            ValueError: If an edge pose must be computed but surface_normal or
+                tangent_frame is not provided.
 
         Notes:
             1. The Gaussian blur (Step 1) convolves all pixels in the patch with a
@@ -204,8 +219,16 @@ class EdgeDetector:
             and aggregated.coherence > self._coherence_threshold
         )
 
+        if surface_normal is None:
+            raise ValueError("surface_normal is required to compute 2D edge pose.")
+        if tangent_frame is None:
+            raise ValueError("tangent_frame is required to compute 2D edge pose.")
+
         pose_2d = self._angle_to_pose_2d(
-            aggregated.edge_angle, observation["world_camera"]
+            aggregated.edge_angle,
+            observation["world_camera"],
+            surface_normal=surface_normal,
+            tangent_frame=tangent_frame,
         )
 
         return EdgeFeatures(
@@ -395,33 +418,46 @@ class EdgeDetector:
         self,
         angle: float,
         world_camera: np.ndarray,
+        surface_normal: np.ndarray,
+        tangent_frame: TangentFrame,
     ) -> np.ndarray:
         """Build 2D pose vectors from an edge angle.
 
-        Returns the standard basis rotated by the edge angle in the world
-        xy-plane. When the camera is tilted, the camera's image x-axis is
-        projected into the xy-plane to determine the reference direction.
+        The image-space edge direction is projected onto the local tangent plane and
+        expressed in tangent-frame coordinates.
 
         Args:
             angle: Edge angle in radians in image coordinates (y-down), measured
                 from the image x-axis toward the image y-axis (i.e., toward the
                 bottom of the image).
-            world_camera: 4x4 world-to-camera transformation matrix.
+            world_camera: 4x4 camera-to-world transformation matrix.
+            surface_normal: Surface normal defining the local tangent plane.
+            tangent_frame: Orthonormal local basis used for the 2D model.
 
         Returns:
             3x3 array whose rows are [normal, edge_tangent, edge_perp].
-            Normal is always [0, 0, 1]; tangent and perp lie in the z=0 plane.
+            Normal is always [0, 0, 1]; tangent and perp lie in local 2D coordinates.
         """
         R = world_camera[:3, :3]  # noqa: N806
-        image_x_world = R.T @ np.array([1.0, 0.0, 0.0])
-        ref_angle = np.arctan2(image_x_world[1], image_x_world[0])
-        world_theta = ref_angle - angle
+        image_x_world = R @ np.array([1.0, 0.0, 0.0])
+        image_y_world = R @ np.array([0.0, 1.0, 0.0])
 
-        cos_t, sin_t = np.cos(world_theta), np.sin(world_theta)
+        edge_world = np.cos(angle) * image_x_world - np.sin(angle) * image_y_world
+        edge_tangent_world = project_onto_tangent_plane(edge_world, surface_normal)
+
+        if np.linalg.norm(edge_tangent_world) < DEFAULT_TOLERANCE:
+            edge_tangent_world = tangent_frame.basis_u
+        else:
+            edge_tangent_world = normalize(edge_tangent_world)
+
+        tangent_u = np.dot(edge_tangent_world, tangent_frame.basis_u)
+        tangent_v = np.dot(edge_tangent_world, tangent_frame.basis_v)
+        tangent_2d = normalize(np.array([tangent_u, tangent_v, 0.0]))
+
         return np.array(
             [
                 [0.0, 0.0, 1.0],
-                [cos_t, sin_t, 0.0],
-                [-sin_t, cos_t, 0.0],
+                tangent_2d,
+                [-tangent_2d[1], tangent_2d[0], 0.0],
             ]
         )
