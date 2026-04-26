@@ -21,7 +21,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.utils.edge_detection import (
     EdgeDetector,
     StructureTensor,
-    _gradient_to_tangent_angle,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     TangentFrame,
@@ -210,19 +209,6 @@ def center_check_inputs(draw):
         st.one_of(st.none(), st.integers(min_value=0, max_value=50))
     )
     return weights, total_weight, gradient_theta, max_center_offset
-
-
-class GradientToTangentAngleTest(unittest.TestCase):
-    @given(gradient_angle=angles)
-    def test_result_in_range(self, gradient_angle):
-        result = _gradient_to_tangent_angle(gradient_angle)
-        assert 0.0 <= result < 2 * np.pi
-
-    @given(gradient_angle=angles)
-    def test_perpendicularity(self, gradient_angle):
-        result = _gradient_to_tangent_angle(gradient_angle)
-        remainder = (result - gradient_angle) % np.pi
-        np.testing.assert_allclose(remainder, np.pi / 2, atol=DEFAULT_TOLERANCE)
 
 
 class StructureTensorTest(unittest.TestCase):
@@ -425,6 +411,28 @@ class TestEdgeDetector(unittest.TestCase):
             EdgeDetector(kernel_size=2)
 
     @given(
+        obs=sensor_observation(patterns=["vertical_edge"]),
+        geometry=surface_geometry(),
+    )
+    def test_surface_normal_is_not_none(self, obs, geometry):
+        detector = EdgeDetector()
+        _, tangent_frame = geometry
+
+        with pytest.raises(ValueError, match="surface_normal is required"):
+            detector(obs, surface_normal=None, tangent_frame=tangent_frame)
+
+    @given(
+        obs=sensor_observation(patterns=["vertical_edge"]),
+        geometry=surface_geometry(),
+    )
+    def test_tangent_frame_is_not_none(self, obs, geometry):
+        detector = EdgeDetector()
+        surface_normal_3d, _ = geometry
+
+        with pytest.raises(ValueError, match="tangent_frame is required"):
+            detector(obs, surface_normal=surface_normal_3d, tangent_frame=None)
+
+    @given(
         obs=sensor_observation(patterns=["uniform"]),
         geometry=surface_geometry(),
     )
@@ -596,16 +604,6 @@ class TestEdgeDetector(unittest.TestCase):
             atol=DEFAULT_TOLERANCE,
         )
 
-    def test_angle_to_pose_2d_requires_tangent_frame(self):
-        detector = EdgeDetector()
-
-        with pytest.raises(TypeError):
-            detector._angle_to_pose_2d(
-                np.pi / 2,
-                np.identity(4),
-                surface_normal=SURFACE_NORMAL_3D,
-            )
-
     def test_angle_to_pose_2d_falls_back_to_basis_u_for_degenerate_projection(self):
         detector = EdgeDetector()
         surface_normal = np.array([1.0, 0.0, 0.0])
@@ -630,10 +628,3 @@ class TestEdgeDetector(unittest.TestCase):
             ),
             atol=DEFAULT_TOLERANCE,
         )
-
-    @given(obs=sensor_observation(patterns=["vertical_edge"]))
-    def test_edge_pose_requires_surface_normal(self, obs):
-        detector = EdgeDetector()
-
-        with pytest.raises(ValueError, match="surface_normal is required"):
-            detector(obs)
