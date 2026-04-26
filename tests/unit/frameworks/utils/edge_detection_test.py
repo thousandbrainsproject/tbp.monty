@@ -7,6 +7,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import unittest
 
 import numpy as np
@@ -21,6 +23,7 @@ from tbp.monty.frameworks.utils.edge_detection import (
     StructureTensor,
     _gradient_to_tangent_angle,
 )
+from tbp.monty.frameworks.utils.spatial_arithmetics import TangentFrame
 from tbp.monty.math import DEFAULT_TOLERANCE
 
 PATCH_SIZE = 64
@@ -94,12 +97,39 @@ def make_rgb_patch(size: int, pattern: str) -> np.ndarray:
     raise ValueError(f"Unknown pattern: {pattern}")
 
 
+def assert_pose_2d_is_orthonormal(pose_2d: np.ndarray) -> None:
+    """Assert that pose rows form an orthonormal right-handed local 2D basis."""
+    normal, tangent, perpendicular = pose_2d
+
+    np.testing.assert_allclose(normal, [0.0, 0.0, 1.0], atol=DEFAULT_TOLERANCE)
+
+    # Check unit norm.
+    np.testing.assert_allclose(np.linalg.norm(tangent), 1.0, atol=DEFAULT_TOLERANCE)
+    np.testing.assert_allclose(
+        np.linalg.norm(perpendicular), 1.0, atol=DEFAULT_TOLERANCE
+    )
+
+    # Check orthogonality.
+    np.testing.assert_allclose(np.dot(normal, tangent), 0.0, atol=DEFAULT_TOLERANCE)
+    np.testing.assert_allclose(
+        np.dot(normal, perpendicular), 0.0, atol=DEFAULT_TOLERANCE
+    )
+    np.testing.assert_allclose(
+        np.dot(tangent, perpendicular), 0.0, atol=DEFAULT_TOLERANCE
+    )
+
+    # Check right-handedness.
+    np.testing.assert_allclose(
+        np.cross(tangent, perpendicular), normal, atol=DEFAULT_TOLERANCE
+    )
+
+
 @st.composite
 def camera_extrinsic_matrix(draw):
-    """Draw a random 4x4 world-to-camera matrix.
+    """Draw a random 4x4 camera-to-world matrix.
 
     Returns:
-         world_camera: 4x4 world-to-camera matrix.
+         world_camera: 4x4 camera-to-world matrix.
     """
     rng = np.random.default_rng()
     rot_3x3 = Rotation.random(random_state=rng).as_matrix()
