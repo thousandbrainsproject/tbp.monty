@@ -25,13 +25,20 @@ from tbp.monty.frameworks.utils.edge_detection import (
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import TangentFrame
 from tbp.monty.math import DEFAULT_TOLERANCE
+from tests.unit.frameworks.utils.spatial_arithmetics_test import unit_vectors
 
 PATCH_SIZE = 64
-SURFACE_NORMAL = np.array([0.0, 0.0, 1.0])
-TANGENT_FRAME = TangentFrame(SURFACE_NORMAL)
+SURFACE_NORMAL_3D = np.array([0.0, 0.0, 1.0])
 
 angles = st.floats(min_value=-2 * np.pi, max_value=2 * np.pi)
 a_scalar = st.floats(min_value=DEFAULT_TOLERANCE, max_value=100.0)
+
+
+@st.composite
+def surface_geometry(draw):
+    """Generate matching surface normal and tangent frame."""
+    surface_normal_3d = draw(unit_vectors)
+    return surface_normal_3d, TangentFrame(surface_normal_3d)
 
 
 @st.composite
@@ -413,42 +420,58 @@ class TestEdgeDetector(unittest.TestCase):
         with pytest.raises(ValueError, match="must be odd"):
             EdgeDetector(kernel_size=2)
 
-    @given(obs=sensor_observation(patterns=["uniform"]))
-    def test_uniform_patch_returns_zero_strength(self, obs):
+    @given(
+        obs=sensor_observation(patterns=["uniform"]),
+        geometry=surface_geometry(),
+    )
+    def test_uniform_patch_returns_zero_strength(self, obs, geometry):
         detector = EdgeDetector()
+        surface_normal_3d, tangent_frame = geometry
 
-        edge = detector(obs, SURFACE_NORMAL, TANGENT_FRAME)
+        edge = detector(obs, surface_normal_3d, tangent_frame)
 
         assert edge.strength == 0.0
         assert edge.coherence == 0.0
         assert edge.angle is None
 
-    @given(obs=sensor_observation(patterns=["vertical_edge"]))
-    def test_vertical_edge_detected(self, obs):
+    @given(
+        obs=sensor_observation(patterns=["vertical_edge"]),
+        geometry=surface_geometry(),
+    )
+    def test_vertical_edge_detected(self, obs, geometry):
         detector = EdgeDetector()
+        surface_normal_3d, tangent_frame = geometry
 
-        edge = detector(obs, SURFACE_NORMAL, TANGENT_FRAME)
+        edge = detector(obs, surface_normal_3d, tangent_frame)
 
         assert edge.strength > 0.0
         assert edge.coherence > 0.0
         assert edge.angle is not None
         assert abs(edge.angle - np.pi / 2) < 0.3
 
-    @given(obs=sensor_observation(patterns=["horizontal_edge"]))
-    def test_horizontal_edge_orientation(self, obs):
+    @given(
+        obs=sensor_observation(patterns=["horizontal_edge"]),
+        geometry=surface_geometry(),
+    )
+    def test_horizontal_edge_orientation(self, obs, geometry):
         detector = EdgeDetector()
+        surface_normal_3d, tangent_frame = geometry
 
-        edge = detector(obs, SURFACE_NORMAL, TANGENT_FRAME)
+        edge = detector(obs, surface_normal_3d, tangent_frame)
 
         # Horizontal edge tangent is always pi (structure tensor is sign-invariant)
         assert edge.angle is not None
         assert abs(edge.angle - np.pi) < 0.3
 
-    @given(obs=sensor_observation(patterns=["diagonal_edge"]))
-    def test_diagonal_edge_detected(self, obs):
+    @given(
+        obs=sensor_observation(patterns=["diagonal_edge"]),
+        geometry=surface_geometry(),
+    )
+    def test_diagonal_edge_detected(self, obs, geometry):
         detector = EdgeDetector()
+        surface_normal_3d, tangent_frame = geometry
 
-        edge = detector(obs, SURFACE_NORMAL, TANGENT_FRAME)
+        edge = detector(obs, surface_normal_3d, tangent_frame)
 
         assert edge.strength > 0.0
         assert edge.coherence > 0.0
@@ -467,18 +490,21 @@ class TestEdgeDetector(unittest.TestCase):
         )
         # Set radius to force total_weight > DEFAULT_TOLERANCE
         detector = EdgeDetector(radius=PATCH_SIZE // 2, max_center_offset=1)
+        surface_normal_3d = np.array([1.0, 1.0, 1.0]) / np.sqrt(3.0)
+        tangent_frame = TangentFrame(surface_normal_3d)
 
-        edge = detector(obs, SURFACE_NORMAL, TANGENT_FRAME)
+        edge = detector(obs, surface_normal_3d, tangent_frame)
 
         assert edge.strength == 0.0
         assert edge.coherence == 0.0
         assert edge.angle is None
 
-    @given(obs=sensor_observation())
-    def test_output_ranges_valid(self, obs):
+    @given(obs=sensor_observation(), geometry=surface_geometry())
+    def test_output_ranges_valid(self, obs, geometry):
         detector = EdgeDetector()
+        surface_normal_3d, tangent_frame = geometry
 
-        edge = detector(obs, SURFACE_NORMAL, TANGENT_FRAME)
+        edge = detector(obs, surface_normal_3d, tangent_frame)
 
         assert edge.strength >= 0.0
         assert 0.0 <= edge.coherence <= 1.0
