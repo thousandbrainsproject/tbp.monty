@@ -208,9 +208,67 @@ class Rotation:
         return (Rotation(result[0]), *result[1:])
 
     def inv(self) -> Rotation:
+        """Create a new `Rotation` that is the inverse of this `Rotation`.
+
+        Composition of a rotation with its inverse is an identity transformation.
+
+        Returns:
+            The new `Rotation` object.
+
+        Examples:
+            >>> fwd = Rotation.from_euler("y", -np.pi/6)  # yaw right 30°
+            >>> inv = fwd.inv()
+            >>> inv.inv().approx_equal(fwd)
+            True
+        """
         return Rotation(self._rot.inv())
 
     def apply(self, vectors: npt.ArrayLike, inverse: bool = False) -> np.ndarray:
+        """Apply this rotation to a set of vectors.
+
+        If the original frame rotates to the final frame by this rotation,
+        then its application to a vector can be seen in two ways:
+          - As a projection of vector components
+            expressed in the final frame
+            to the original frame.
+          - As the physical rotation of a vector
+            being glued to the original frame as it rotates.
+            In this case the vector components
+            are expressed in the original frame
+            before and after the rotation.
+
+        Args:
+            vectors: The `array([`_x_, _y_, _z_`])`
+                or `array([[`_x_, _y_, _z_`], ...])` to rotate.
+            inverse: If `True` then apply the inverse of this rotation.
+                Equivalent to `rotation.inv().apply(vectors)`.
+
+        Returns:
+            The rotated `array([`_x'_, _y'_, _z'_`])`
+            or `array([[`_x'_, _y'_, _z'_`], ...])`
+
+        Examples:
+            >>> # pitch up 180°, then roll counter-clockwise 90°
+            >>> a_rotation = Rotation.from_euler("XZ", [np.pi, np.pi/2])
+            >>> a_rotation.apply([3, 5, 8])
+            array([-5., -3., -8.])
+
+            >>> vectors = np.array([
+            ...     [3, 5, 8],
+            ...     [3, 5, -8],
+            ...     [3, -5, -8],
+            ...     [-3, -5, -8],
+            ...     [-3, -5, 8],
+            ...     [-3, 5, 8]
+            ... ], dtype=float)
+            >>> a_rotation.apply(vectors)
+            array([[-5., -3., -8.],
+                   [-5., -3.,  8.],
+                   [ 5., -3.,  8.],
+                   [ 5.,  3.,  8.],
+                   [ 5.,  3., -8.],
+                   [-5.,  3., -8.]])
+        """
         return self._rot.apply(vectors, inverse=inverse)
 
     def magnitude(self) -> float | np.ndarray:
