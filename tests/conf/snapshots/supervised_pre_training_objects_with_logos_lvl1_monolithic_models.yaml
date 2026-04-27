@@ -118,9 +118,7 @@ experiment:
       sm_to_lm_matrix:
       - - 0
       - - 1
-      lm_to_lm_matrix:
-      - []
-      - - 0
+      lm_to_lm_matrix: null
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:
@@ -275,7 +273,7 @@ constants:
   - principal_curvatures_log
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
-  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v2}
+  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v3}
   rotations_all_count: 14
   rotations_all:
   - - 0

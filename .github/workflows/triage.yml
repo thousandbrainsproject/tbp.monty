@@ -19,7 +19,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           set -e
-          
+
           pattern="^(build|chore|ci|docs|feat|fix|perf|refactor|revert|rfc|style|test)!?:.+"
           if [[ ! $PR_TITLE =~ $pattern ]]; then
             echo "This PR title is missing a Conventional Commits label."
@@ -27,14 +27,14 @@ jobs:
             echo "See https://thousandbrainsproject.readme.io/docs/triage#title-1"
             exit 1
           fi
-          
-          pattern="^test!:.+"
+
+          pattern="^(test|docs)!:.+"
           if [[ $PR_TITLE =~ $pattern ]]; then
-            echo "This PR title indicates it is only changing tests, and"
+            echo "This PR title indicates it is only changing tests or documentation, and"
             echo "that those changes are breaking changes. Changes that"
-            echo "only change files in 'tests' cannot produce breaking"
+            echo "only change files in 'tests' or 'docs' cannot produce breaking"
             echo "changes."
-            echo "  If this PR has non-test changes, then 'test' is not the"
+            echo "  If this PR has non-test or non-docs changes, then 'test' or 'docs' is not the"
             echo "correct label for this PR."
             exit 1
           fi
