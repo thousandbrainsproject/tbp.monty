@@ -16,6 +16,7 @@ import quaternion as qt
 from hypothesis import assume, example, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
+from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     TangentFrame,
@@ -80,6 +81,9 @@ def quaternions(draw: st.DrawFn):
     )
     wxyz = normalize(wxyz)
     return qt.quaternion(*wxyz)
+
+
+rotations = quaternions().map(lambda q: Rotation.from_quat([q.x, q.y, q.z, q.w]))
 
 
 class NormalizeTest(unittest.TestCase):
