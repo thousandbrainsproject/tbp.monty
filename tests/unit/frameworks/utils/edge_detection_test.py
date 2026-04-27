@@ -35,18 +35,112 @@ from tests.unit.frameworks.utils.spatial_arithmetics_test import (
 )
 
 PATCH_SIZE = 64
-SURFACE_NORMAL_3D = np.array([0.0, 0.0, 1.0])
 UNIFORM_PATCH = np.full((PATCH_SIZE, PATCH_SIZE, 3), 128, dtype=np.uint8)
 
 angles = st.floats(min_value=-2 * np.pi, max_value=2 * np.pi)
-# Exclude 0 as EdgeDetetor deterministically outputs pi when horizontal edge is detected
+
+# Detected edge angle is in range (0, pi].
 edge_angles = st.floats(min_value=DEFAULT_TOLERANCE, max_value=np.pi)
 a_scalar = st.floats(min_value=DEFAULT_TOLERANCE, max_value=100.0)
 
 
+@dataclass(frozen=True)
+class EdgeDetectorGroundTruth:
+    name: str
+    angle: float
+    camera_orientation: np.ndarray  # 3x3
+    surface_normal: np.ndarray
+    expected_pose_2d: np.ndarray
+
+
+cases = [
+    EdgeDetectorGroundTruth(
+        name="identity_camera_vertical_edge",
+        angle=np.pi / 2,
+        camera_orientation=np.identity(3),
+        surface_normal=np.array([0.0, 0.0, 1.0]),
+        expected_pose_2d=np.array(
+            [
+                [0.0, 0.0, 1.0],
+                [0.0, -1.0, 0.0],
+                [1.0, 0.0, 0.0],
+            ]
+        ),
+    ),
+    EdgeDetectorGroundTruth(
+        name="identity_camera_diagonal_edge",
+        angle=np.pi / 4,
+        camera_orientation=np.identity(3),
+        surface_normal=np.array([0.0, 0.0, 1.0]),
+        expected_pose_2d=np.array(
+            [
+                [0.0, 0.0, 1.0],
+                [np.sqrt(0.5), -np.sqrt(0.5), 0.0],
+                [np.sqrt(0.5), np.sqrt(0.5), 0.0],
+            ]
+        ),
+    ),
+    EdgeDetectorGroundTruth(
+        name="identity_camera_horizontal_edge",
+        angle=np.pi,
+        camera_orientation=np.identity(3),
+        surface_normal=np.array([0.0, 0.0, 1.0]),
+        expected_pose_2d=np.array(
+            [
+                [0.0, 0.0, 1.0],
+                [-1.0, 0.0, 0.0],
+                [0.0, -1.0, 0.0],
+            ]
+        ),
+    ),
+    EdgeDetectorGroundTruth(
+        name="rotated_camera_surface_x_horizontal_edge",
+        angle=np.pi,
+        camera_orientation=np.array(
+            [
+                [0.0, -1.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+        ),
+        surface_normal=np.array([1.0, 0.0, 0.0]),
+        expected_pose_2d=np.array(
+            [
+                [0.0, 0.0, 1.0],
+                [0.0, -1.0, 0.0],
+                [1.0, 0.0, 0.0],
+            ]
+        ),
+    ),
+    EdgeDetectorGroundTruth(
+        name="camera_y_to_world_z_surface_y_diagonal_edge",
+        angle=np.pi / 4,
+        camera_orientation=np.array(
+            [
+                [1.0, 0.0, 0.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 1.0, 0.0],
+            ]
+        ),
+        surface_normal=np.array([0.0, 1.0, 0.0]),
+        expected_pose_2d=np.array(
+            [
+                [0.0, 0.0, 1.0],
+                [-np.sqrt(0.5), -np.sqrt(0.5), 0.0],
+                [np.sqrt(0.5), -np.sqrt(0.5), 0.0],
+            ]
+        ),
+    ),
+]
+
+
 @st.composite
 def surface_geometry(draw):
-    """Generate matching surface normal and tangent frame."""
+    """Generate matching surface normal and tangent frame.
+
+    Returns:
+        Tuple of surface normal and tangent frame.
+    """
     surface_normal_3d = draw(unit_vectors)
     return surface_normal_3d, TangentFrame(surface_normal_3d)
 
@@ -85,7 +179,11 @@ def structure_tensors(draw, max_value=100.0, allow_zero_matrix=True):
 
 
 def make_angled_edge_patch(angle_rad: float, size: int = PATCH_SIZE) -> np.ndarray:
-    """Generate a synthetic RGB patch with a half-plane edge through the center."""
+    """Generate a synthetic RGB patch with a half-plane edge through the center.
+
+    Returns:
+        RGB patch containing the synthetic edge.
+    """
     rows, cols = np.meshgrid(np.arange(size), np.arange(size), indexing="ij")
     center = (size - 1) / 2
     signed_distance = (cols - center) * -np.sin(angle_rad) + (rows - center) * np.cos(
@@ -103,7 +201,11 @@ def compute_expected_pose_2d(
     surface_normal: np.ndarray,
     tangent_frame: TangentFrame,
 ) -> np.ndarray:
-    """Compute the expected local 2D edge pose from an image-space angle."""
+    """Compute the expected local 2D edge pose from an image-space angle.
+
+    Returns:
+        Expected pose vectors expressed in the local tangent frame.
+    """
     rotation = world_camera[:3, :3]
     image_x_world = rotation @ np.array([1.0, 0.0, 0.0])
     image_y_world = rotation @ np.array([0.0, 1.0, 0.0])
@@ -192,6 +294,15 @@ def sensor_observation(
     )
 
 
+def angle_distance(actual: float, expected: float) -> float:
+    """Smallest angular distance between undirected edge orientations.
+
+    Returns:
+        Absolute angular distance modulo pi.
+    """
+    return abs((actual - expected + np.pi / 2) % np.pi - np.pi / 2)
+
+
 class StructureTensorTest(unittest.TestCase):
     def test_eigenvalues_match_analytical(self):
         t = StructureTensor(xx=3.0, yy=1.0, xy=1.0)
@@ -265,11 +376,6 @@ class StructureTensorTest(unittest.TestCase):
         np.testing.assert_allclose(
             t.edge_strength, np.sqrt(max(lambda_max, 0.0)), atol=1e-10
         )
-
-
-def angle_distance(actual: float, expected: float) -> float:
-    """Smallest angular distance between undirected edge orientations."""
-    return abs((actual - expected + np.pi / 2) % np.pi - np.pi / 2)
 
 
 class TestEdgeDetector(unittest.TestCase):
@@ -402,93 +508,3 @@ class TestEdgeDetector(unittest.TestCase):
             ),
             atol=0.1,
         )
-
-
-@dataclass(frozen=True)
-class EdgeDetectorGroundTruth:
-    name: str
-    angle: float
-    camera_orientation: np.ndarray  # 3x3
-    surface_normal: np.ndarray
-    expected_pose_2d: np.ndarray
-
-
-cases = [
-    EdgeDetectorGroundTruth(
-        name="identity_camera_vertical_edge",
-        angle=np.pi / 2,
-        camera_orientation=np.identity(3),
-        surface_normal=np.array([0.0, 0.0, 1.0]),
-        expected_pose_2d=np.array(
-            [
-                [0.0, 0.0, 1.0],
-                [0.0, -1.0, 0.0],
-                [1.0, 0.0, 0.0],
-            ]
-        ),
-    ),
-    EdgeDetectorGroundTruth(
-        name="identity_camera_diagonal_edge",
-        angle=np.pi / 4,
-        camera_orientation=np.identity(3),
-        surface_normal=np.array([0.0, 0.0, 1.0]),
-        expected_pose_2d=np.array(
-            [
-                [0.0, 0.0, 1.0],
-                [np.sqrt(0.5), -np.sqrt(0.5), 0.0],
-                [np.sqrt(0.5), np.sqrt(0.5), 0.0],
-            ]
-        ),
-    ),
-    EdgeDetectorGroundTruth(
-        name="identity_camera_horizontal_edge",
-        angle=np.pi,
-        camera_orientation=np.identity(3),
-        surface_normal=np.array([0.0, 0.0, 1.0]),
-        expected_pose_2d=np.array(
-            [
-                [0.0, 0.0, 1.0],
-                [-1.0, 0.0, 0.0],
-                [0.0, -1.0, 0.0],
-            ]
-        ),
-    ),
-    EdgeDetectorGroundTruth(
-        name="rotated_camera_surface_x_horizontal_edge",
-        angle=np.pi,
-        camera_orientation=np.array(
-            [
-                [0.0, -1.0, 0.0],
-                [1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0],
-            ],
-        ),
-        surface_normal=np.array([1.0, 0.0, 0.0]),
-        expected_pose_2d=np.array(
-            [
-                [0.0, 0.0, 1.0],
-                [0.0, -1.0, 0.0],
-                [1.0, 0.0, 0.0],
-            ]
-        ),
-    ),
-    EdgeDetectorGroundTruth(
-        name="camera_y_to_world_z_surface_y_diagonal_edge",
-        angle=np.pi / 4,
-        camera_orientation=np.array(
-            [
-                [1.0, 0.0, 0.0],
-                [0.0, 0.0, -1.0],
-                [0.0, 1.0, 0.0],
-            ]
-        ),
-        surface_normal=np.array([0.0, 1.0, 0.0]),
-        expected_pose_2d=np.array(
-            [
-                [0.0, 0.0, 1.0],
-                [-np.sqrt(0.5), -np.sqrt(0.5), 0.0],
-                [np.sqrt(0.5), -np.sqrt(0.5), 0.0],
-            ]
-        ),
-    ),
-]
