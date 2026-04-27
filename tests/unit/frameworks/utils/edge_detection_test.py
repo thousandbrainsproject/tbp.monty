@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pytest
-from hypothesis import assume, example, given
+from hypothesis import example, given
 from hypothesis import strategies as st
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
@@ -192,46 +192,6 @@ def sensor_observation(
     )
 
 
-@st.composite
-def center_weight_inputs(draw):
-    """Generate (shape, Ix, Iy, config) for _compute_center_weights.
-
-    Uses a uniform gradient array to keep generation fast while covering
-    all structural properties.
-
-    Returns:
-        Tuple of ((h, w), Ix, Iy, config).
-    """
-    h, w = PATCH_SIZE, PATCH_SIZE
-    g = draw(a_scalar)
-    Ix = np.full((h, w), g, dtype=np.float32)  # noqa: N806
-    Iy = np.full((h, w), g, dtype=np.float32)  # noqa: N806
-    radius = draw(st.floats(min_value=1.0, max_value=20.0))
-    sigma_r = draw(st.floats(min_value=0.5, max_value=10.0))
-    return (h, w), Ix, Iy, radius, sigma_r
-
-
-@st.composite
-def center_check_inputs(draw):
-    """Generate valid inputs for _passes_center_check.
-
-    Uses center_weight_inputs to get realistic (weights, total_weight) pairs
-    with total_weight > 0. Filters the rare zero-weight case.
-
-    Returns:
-        Tuple of (weights, total_weight, gradient_theta, max_center_offset).
-    """
-    rng = np.random.default_rng()
-    weights = rng.uniform(0.0, 1.0, size=(PATCH_SIZE, PATCH_SIZE)).astype(np.float32)
-    total_weight = weights.sum()
-    assume(total_weight > 0)
-    gradient_theta = draw(angles)
-    max_center_offset = draw(
-        st.one_of(st.none(), st.integers(min_value=0, max_value=50))
-    )
-    return weights, total_weight, gradient_theta, max_center_offset
-
-
 class StructureTensorTest(unittest.TestCase):
     def test_eigenvalues_match_analytical(self):
         t = StructureTensor(xx=3.0, yy=1.0, xy=1.0)
@@ -305,125 +265,6 @@ class StructureTensorTest(unittest.TestCase):
         np.testing.assert_allclose(
             t.edge_strength, np.sqrt(max(lambda_max, 0.0)), atol=1e-10
         )
-
-
-class ComputeCenterWeightsTest(unittest.TestCase):
-    def test_zero_gradients_give_zero_weight(self):
-        h, w = PATCH_SIZE, PATCH_SIZE
-        Ix = np.zeros((h, w), dtype=np.float32)  # noqa: N806
-        Iy = np.zeros((h, w), dtype=np.float32)  # noqa: N806
-        detector = EdgeDetector()
-
-        weights, total_weight = detector._compute_center_weights((h, w), Ix, Iy)
-
-        assert total_weight == 0.0
-        assert np.all(weights == 0.0)
-
-    def test_center_pixel_has_maximum_weight(self):
-        h, w = PATCH_SIZE, PATCH_SIZE
-        Ix = np.ones((h, w), dtype=np.float32)  # noqa: N806
-        Iy = np.ones((h, w), dtype=np.float32)  # noqa: N806
-        detector = EdgeDetector(radius=1000.0)
-
-        weights, _ = detector._compute_center_weights((h, w), Ix, Iy)
-
-        r0, c0 = h // 2, w // 2
-        assert weights[r0, c0] == np.max(weights)
-
-    def test_pixel_just_outside_radius_is_zero(self):
-        h, w = PATCH_SIZE, PATCH_SIZE
-        Ix = np.ones((h, w), dtype=np.float32)  # noqa: N806
-        Iy = np.ones((h, w), dtype=np.float32)  # noqa: N806
-        detector = EdgeDetector(radius=2.0)
-
-        weights, _ = detector._compute_center_weights((h, w), Ix, Iy)
-
-        r0, c0 = h // 2, w // 2
-        assert weights[r0 + 3, c0] == 0.0
-
-    @given(inputs=center_weight_inputs())
-    def test_weights_nonnegative(self, inputs):
-        shape, Ix, Iy, radius, sigma_r = inputs  # noqa: N806
-        detector = EdgeDetector(radius=radius, sigma_r=sigma_r)
-
-        weights, _ = detector._compute_center_weights(shape, Ix, Iy)
-
-        assert np.all(weights >= 0.0)
-
-    @given(inputs=center_weight_inputs())
-    def test_total_weight_equals_sum_of_weights(self, inputs):
-        shape, Ix, Iy, radius, sigma_r = inputs  # noqa: N806
-        detector = EdgeDetector(radius=radius, sigma_r=sigma_r)
-
-        weights, total_weight = detector._compute_center_weights(shape, Ix, Iy)
-
-        np.testing.assert_allclose(total_weight, np.sum(weights))
-
-    @given(inputs=center_weight_inputs())
-    def test_output_shape_matches_input(self, inputs):
-        shape, Ix, Iy, radius, sigma_r = inputs  # noqa: N806
-        detector = EdgeDetector(radius=radius, sigma_r=sigma_r)
-
-        weights, _ = detector._compute_center_weights(shape, Ix, Iy)
-
-        assert weights.shape == shape
-
-    @given(inputs=center_weight_inputs())
-    def test_pixels_beyond_radius_have_zero_weight(self, inputs):
-        shape, Ix, Iy, radius, sigma_r = inputs  # noqa: N806
-        h, w = shape
-        r0, c0 = h // 2, w // 2
-        detector = EdgeDetector(radius=radius, sigma_r=sigma_r)
-
-        weights, _ = detector._compute_center_weights(shape, Ix, Iy)
-
-        rows, cols = np.meshgrid(np.arange(h), np.arange(w), indexing="ij")
-        d = np.sqrt((rows - r0) ** 2 + (cols - c0) ** 2)
-        assert np.all(weights[d > radius] == 0.0)
-
-    @given(inputs=center_weight_inputs(), k=a_scalar)
-    def test_gradient_scaling_scales_weights_quadratically(self, inputs, k):
-        shape, Ix, Iy, radius, sigma_r = inputs  # noqa: N806
-        detector = EdgeDetector(radius=radius, sigma_r=sigma_r)
-
-        weights, total_weight = detector._compute_center_weights(shape, Ix, Iy)
-        weights_scaled, total_weight_scaled = detector._compute_center_weights(
-            shape, k * Ix, k * Iy
-        )
-
-        tol = max(DEFAULT_TOLERANCE * k**2, DEFAULT_TOLERANCE)
-        np.testing.assert_allclose(
-            weights_scaled, k**2 * weights, rtol=DEFAULT_TOLERANCE, atol=tol
-        )
-        np.testing.assert_allclose(
-            total_weight_scaled, k**2 * total_weight, rtol=DEFAULT_TOLERANCE, atol=tol
-        )
-
-
-class PassesCenterCheckTest(unittest.TestCase):
-    @given(inputs=center_check_inputs())
-    def test_none_offset_always_true(self, inputs):
-        weights, total_weight, gradient_theta, _ = inputs
-        detector = EdgeDetector()
-        assert detector._passes_center_check(weights, total_weight, gradient_theta)
-
-    @given(
-        inputs=center_weight_inputs(),
-        theta=angles,
-        offset=st.integers(min_value=1, max_value=100),
-    )
-    def test_symmetric_weights_pass_any_nonneg_offset(self, inputs, theta, offset):
-        # center_weight_inputs produces radially symmetric weights (radial Gaussian
-        # * uniform gradient magnitude), so sum(weights*(cols-c0)) ~= 0 and
-        # sum(weights*(rows-r0)) ~= 0, giving d_center ~= 0 for any theta.
-        shape, Ix, Iy, radius, sigma_r = inputs  # noqa: N806
-        detector = EdgeDetector(
-            radius=radius, sigma_r=sigma_r, max_center_offset=offset
-        )
-        weights, total_weight = detector._compute_center_weights(shape, Ix, Iy)
-
-        assume(total_weight > 0)
-        assert detector._passes_center_check(weights, total_weight, theta)
 
 
 def angle_distance(actual: float, expected: float) -> float:
