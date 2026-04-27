@@ -10,15 +10,16 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import dataclass
 
 import numpy as np
 import pytest
 from hypothesis import assume, example, given
 from hypothesis import strategies as st
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.utils.edge_detection import (
+    DEFAULT_POSE_2D,
     EdgeDetector,
     StructureTensor,
 )
@@ -28,13 +29,18 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     project_onto_tangent_plane,
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
-from tests.unit.frameworks.utils.spatial_arithmetics_test import unit_vectors
+from tests.unit.frameworks.utils.spatial_arithmetics_test import (
+    rotation_matrices,
+    unit_vectors,
+)
 
 PATCH_SIZE = 64
 SURFACE_NORMAL_3D = np.array([0.0, 0.0, 1.0])
 UNIFORM_PATCH = np.full((PATCH_SIZE, PATCH_SIZE, 3), 128, dtype=np.uint8)
 
 angles = st.floats(min_value=-2 * np.pi, max_value=2 * np.pi)
+# Exclude 0 as EdgeDetetor deterministically outputs pi when horizontal edge is detected
+edge_angles = st.floats(min_value=DEFAULT_TOLERANCE, max_value=np.pi)
 a_scalar = st.floats(min_value=DEFAULT_TOLERANCE, max_value=100.0)
 
 
@@ -129,24 +135,6 @@ def compute_expected_pose_2d(
     )
 
 
-def make_sensor_observation_from_rgb(
-    rgb: np.ndarray,
-    world_camera: np.ndarray,
-) -> SensorObservation:
-    """Build a minimal SensorObservation from an RGB patch."""
-    alpha = np.full((*rgb.shape[:2], 1), fill_value=255, dtype=np.uint8)
-    rgba = np.concatenate([rgb, alpha], axis=-1)
-    depth = np.ones(rgb.shape[:2], dtype=np.float32)
-    return SensorObservation(rgba=rgba, depth=depth, world_camera=world_camera)
-
-
-def world_camera_from_rotation(rotation: np.ndarray) -> np.ndarray:
-    """Build a camera-to-world matrix from a 3D rotation."""
-    world_camera = np.identity(4)
-    world_camera[:3, :3] = rotation
-    return world_camera
-
-
 def assert_pose_2d_is_orthonormal(pose_2d: np.ndarray) -> None:
     """Assert that pose rows form an orthonormal right-handed local 2D basis."""
     normal, tangent, perpendicular = pose_2d
@@ -174,36 +162,29 @@ def assert_pose_2d_is_orthonormal(pose_2d: np.ndarray) -> None:
     )
 
 
-@st.composite
-def camera_extrinsic_matrix(draw):
-    """Draw a random 4x4 camera-to-world matrix.
+def sensor_observation(
+    angle: float | None = None, camera_orientation: np.ndarray | None = None
+) -> SensorObservation:
+    """Build a minimal SensorObservation.
+
+    Args:
+        angle: If None, create a uniform rgb patch (no edge).
+            Otherwise a Hypothesis strategy to draw from.
+        camera_orientation: A 3x3 rotation matrix. If None, the identity matrix is used.
 
     Returns:
-         world_camera: 4x4 camera-to-world matrix.
+        SensorObservation.
     """
-    rng = np.random.default_rng()
-    rot_3x3 = Rotation.random(random_state=rng).as_matrix()
-    tx, ty, tz = (draw(st.floats(min_value=-100.0, max_value=100.0)) for _ in range(3))
-    world_to_cam = np.identity(4)
-    world_to_cam[:3, :3] = rot_3x3
-    world_to_cam[:3, 3] = [tx, ty, tz]
-    return world_to_cam
-
-
-edge_angles = st.floats(min_value=0.0, max_value=np.pi)
-
-
-@st.composite
-def sensor_observation(draw, angle=None):
-    if angle is None:
-        angle = edge_angles
-    drawn_angle = draw(angle)
-    rgb = make_angled_edge_patch(drawn_angle)
+    rgb = UNIFORM_PATCH if angle is None else make_angled_edge_patch(angle)
     alpha = np.full((PATCH_SIZE, PATCH_SIZE, 1), fill_value=255, dtype=np.uint8)
     rgba = np.concatenate([rgb, alpha], axis=-1)
 
     depth = np.ones((PATCH_SIZE, PATCH_SIZE), dtype=np.float32)
-    world_camera = draw(camera_extrinsic_matrix())
+
+    world_camera = np.identity(4)
+    if camera_orientation is not None:
+        world_camera[:3, :3] = camera_orientation.copy()
+
     return SensorObservation(
         rgba=rgba,
         depth=depth,
@@ -445,79 +426,59 @@ class PassesCenterCheckTest(unittest.TestCase):
         assert detector._passes_center_check(weights, total_weight, theta)
 
 
+def angle_distance(actual: float, expected: float) -> float:
+    """Smallest angular distance between undirected edge orientations."""
+    return abs((actual - expected + np.pi / 2) % np.pi - np.pi / 2)
+
+
 class TestEdgeDetector(unittest.TestCase):
     def test_kernel_size_is_not_odd(self):
         with pytest.raises(ValueError, match="must be odd"):
             EdgeDetector(kernel_size=2)
 
     @given(
-        obs=sensor_observation(),
+        angle=edge_angles,
+        camera_orientation=rotation_matrices,
         geometry=surface_geometry(),
     )
-    def test_surface_normal_is_not_none(self, obs, geometry):
+    def test_surface_normal_is_not_none(self, angle, camera_orientation, geometry):
         detector = EdgeDetector()
         _, tangent_frame = geometry
+        obs = sensor_observation(angle=angle, camera_orientation=camera_orientation)
 
         with pytest.raises(ValueError, match="surface_normal is required"):
             detector(obs, surface_normal=None, tangent_frame=tangent_frame)
 
-    @given(obs=sensor_observation(), geometry=surface_geometry())
-    def test_tangent_frame_is_not_none(self, obs, geometry):
+    @given(
+        angle=edge_angles,
+        camera_orientation=rotation_matrices,
+        geometry=surface_geometry(),
+    )
+    def test_tangent_frame_is_not_none(self, angle, camera_orientation, geometry):
         detector = EdgeDetector()
         surface_normal_3d, _ = geometry
+        obs = sensor_observation(angle=angle, camera_orientation=camera_orientation)
 
         with pytest.raises(ValueError, match="tangent_frame is required"):
             detector(obs, surface_normal=surface_normal_3d, tangent_frame=None)
 
-    @given(world_camera=camera_extrinsic_matrix(), geometry=surface_geometry())
-    def test_uniform_patch_returns_zero_strength(self, world_camera, geometry):
+    @given(
+        angle=st.just(None),
+        camera_orientation=rotation_matrices,
+        geometry=surface_geometry(),
+    )
+    def test_uniform_patch_returns_no_edge(self, angle, camera_orientation, geometry):
         detector = EdgeDetector()
         surface_normal_3d, tangent_frame = geometry
-        obs = make_sensor_observation_from_rgb(UNIFORM_PATCH, world_camera)
-
+        obs = sensor_observation(angle=angle, camera_orientation=camera_orientation)
         edge = detector(obs, surface_normal_3d, tangent_frame)
 
         assert edge.strength == 0.0
         assert edge.coherence == 0.0
         assert edge.angle is None
-
-    @given(
-        obs=sensor_observation(angle=st.just(np.pi / 2)), geometry=surface_geometry()
-    )
-    def test_vertical_edge_detected(self, obs, geometry):
-        detector = EdgeDetector()
-        surface_normal_3d, tangent_frame = geometry
-
-        edge = detector(obs, surface_normal_3d, tangent_frame)
-
-        assert edge.strength > 0.0
-        assert edge.coherence > 0.0
-        assert edge.angle is not None
-        assert abs(edge.angle - np.pi / 2) < 0.3
-
-    @given(obs=sensor_observation(angle=st.just(np.pi)), geometry=surface_geometry())
-    def test_horizontal_edge_orientation(self, obs, geometry):
-        detector = EdgeDetector()
-        surface_normal_3d, tangent_frame = geometry
-
-        edge = detector(obs, surface_normal_3d, tangent_frame)
-
-        # Horizontal edge tangent is always pi (structure tensor is sign-invariant)
-        assert edge.angle is not None
-        assert abs(edge.angle - np.pi) < 0.3
-
-    @given(
-        obs=sensor_observation(angle=st.just(np.pi / 4)), geometry=surface_geometry()
-    )
-    def test_diagonal_edge_detected(self, obs, geometry):
-        detector = EdgeDetector()
-        surface_normal_3d, tangent_frame = geometry
-
-        edge = detector(obs, surface_normal_3d, tangent_frame)
-
-        assert edge.strength > 0.0
-        assert edge.coherence > 0.0
-        assert edge.angle is not None
+        np.testing.assert_allclose(edge.pose_2d, DEFAULT_POSE_2D)
+        assert edge.is_geometric_edge is False
+        assert edge.has_edge is False
 
     def test_center_offset_rejects_off_center_edge(self):
         # Edge at right boundary, not at center
@@ -541,335 +502,152 @@ class TestEdgeDetector(unittest.TestCase):
         assert edge.coherence == 0.0
         assert edge.angle is None
 
-    @given(obs=sensor_observation(), geometry=surface_geometry())
-    def test_output_ranges_valid(self, obs, geometry):
-        detector = EdgeDetector()
-        surface_normal_3d, tangent_frame = geometry
-
-        edge = detector(obs, surface_normal_3d, tangent_frame)
-
-        assert edge.strength >= 0.0
-        assert 0.0 <= edge.coherence <= 1.0
-        assert edge.angle is None or 0.0 <= edge.angle <= np.pi
-
-    def test_angled_edge_patch_reports_expected_angle(self):
-        for drawn_angle in [
-            np.pi / 6,
-            np.pi / 4,
-            np.pi / 3,
-            np.pi / 2,
-            2 * np.pi / 3,
-            3 * np.pi / 4,
-            5 * np.pi / 6,
-        ]:
-            with self.subTest(drawn_angle=drawn_angle):
-                surface_normal = np.array([0.0, 0.0, 1.0])
-                tangent_frame = TangentFrame(surface_normal)
-                obs = make_sensor_observation_from_rgb(
-                    make_angled_edge_patch(drawn_angle),
-                    np.identity(4),
-                )
-
-                edge = EdgeDetector()(obs, surface_normal, tangent_frame)
-
-                assert edge.angle is not None
-                assert abs(edge.angle - drawn_angle) < 0.1
-
-    def test_diagonal_edge_identity_camera_produces_expected_pose(self):
-        drawn_angle = np.pi / 4
-        surface_normal = np.array([0.0, 0.0, 1.0])
-        tangent_frame = TangentFrame(surface_normal)
-        obs = make_sensor_observation_from_rgb(
-            make_angled_edge_patch(drawn_angle),
-            np.identity(4),
-        )
-
-        edge = EdgeDetector()(obs, surface_normal, tangent_frame)
-
-        s = np.sqrt(0.5)
-        np.testing.assert_allclose(
-            edge.pose_2d,
-            np.array(
-                [
-                    [0.0, 0.0, 1.0],
-                    [s, -s, 0.0],
-                    [s, s, 0.0],
-                ]
-            ),
-            atol=0.1,
-        )
-
     @given(
-        drawn_angle=st.sampled_from(
-            [
-                np.pi / 6,
-                np.pi / 4,
-                np.pi / 3,
-                np.pi / 2,
-                2 * np.pi / 3,
-                3 * np.pi / 4,
-                5 * np.pi / 6,
-            ]
-        ),
-        world_camera=camera_extrinsic_matrix(),
+        angle=edge_angles,
+        camera_orientation=rotation_matrices,
         geometry=surface_geometry(),
     )
-    def test_full_pipeline_pose_2d(self, drawn_angle, world_camera, geometry):
+    def test_angled_edge_patch_reports_expected_angle(
+        self, angle, camera_orientation, geometry
+    ):
         detector = EdgeDetector()
-        surface_normal_3d, tangent_frame = geometry
-        obs = make_sensor_observation_from_rgb(
-            make_angled_edge_patch(drawn_angle),
-            world_camera,
-        )
+        surface_normal, tangent_frame = geometry
+        obs = sensor_observation(angle=angle, camera_orientation=camera_orientation)
 
-        edge = detector(obs, surface_normal_3d, tangent_frame)
+        edge = detector(obs, surface_normal, tangent_frame)
+        assert angle_distance(edge.angle, angle) < 0.1
 
-        assert edge.angle is not None
-        assert abs(edge.angle - drawn_angle) < 0.1
-        assert_pose_2d_is_orthonormal(edge.pose_2d)
+    def test_edge_detection_for_closed_form_solutions(self):
+        detector = EdgeDetector()
+        for case in cases:
+            with self.subTest(case=case.name):
+                surface_normal = case.surface_normal
+                tangent_frame = TangentFrame(surface_normal)
+                obs = sensor_observation(case.angle, case.camera_orientation)
 
-        rotation = world_camera[:3, :3]
-        image_x_world = rotation @ np.array([1.0, 0.0, 0.0])
-        image_y_world = rotation @ np.array([0.0, 1.0, 0.0])
-        edge_world = (
-            np.cos(drawn_angle) * image_x_world - np.sin(drawn_angle) * image_y_world
-        )
-        projected = project_onto_tangent_plane(edge_world, surface_normal_3d)
-        assume(np.linalg.norm(projected) >= 0.5)
+                edge = detector(obs, surface_normal, tangent_frame)
+
+                assert_pose_2d_is_orthonormal(edge.pose_2d)
+                np.testing.assert_allclose(
+                    edge.pose_2d, case.expected_pose_2d, atol=0.1
+                )
+
+    def test_angle_to_pose_2d_uses_transported_tangent_frame(self):
+        detector = EdgeDetector()
+        tangent_frame = TangentFrame(np.array([0.0, 0.0, 1.0]))
+
+        for normal in [
+            normalize(np.array([0.0, 0.2, 1.0])),
+            normalize(np.array([0.0, 0.5, 1.0])),
+            normalize(np.array([0.0, 1.0, 1.0])),
+            normalize(np.array([0.0, 1.0, 0.0])),
+        ]:
+            tangent_frame.transport(normal)
+
+        surface_normal = tangent_frame.normal
+        angle = np.pi / 2
+        world_camera = np.identity(4)
+
+        obs = sensor_observation(angle, world_camera[:3, :3])
+        edge = detector(obs, surface_normal, tangent_frame)
 
         np.testing.assert_allclose(
             edge.pose_2d,
             compute_expected_pose_2d(
-                drawn_angle,
+                angle,
                 world_camera,
-                surface_normal_3d,
+                surface_normal,
                 tangent_frame,
             ),
             atol=0.1,
         )
 
-    def test_angle_to_pose_2d_matches_closed_form_anchors(self):
-        cases = [
-            (
-                np.pi / 2,
-                np.identity(4),
-                np.array([0.0, 0.0, 1.0]),
-                np.array(
-                    [
-                        [0.0, 0.0, 1.0],
-                        [0.0, -1.0, 0.0],
-                        [1.0, 0.0, 0.0],
-                    ]
-                ),
-            ),
-            (
-                np.pi / 4,
-                np.identity(4),
-                np.array([0.0, 0.0, 1.0]),
-                np.array(
-                    [
-                        [0.0, 0.0, 1.0],
-                        [np.sqrt(0.5), -np.sqrt(0.5), 0.0],
-                        [np.sqrt(0.5), np.sqrt(0.5), 0.0],
-                    ]
-                ),
-            ),
-            (
-                np.pi,
-                np.identity(4),
-                np.array([0.0, 0.0, 1.0]),
-                np.array(
-                    [
-                        [0.0, 0.0, 1.0],
-                        [-1.0, 0.0, 0.0],
-                        [0.0, -1.0, 0.0],
-                    ]
-                ),
-            ),
-            (
-                np.pi,
-                world_camera_from_rotation(
-                    np.array(
-                        [
-                            [0.0, -1.0, 0.0],
-                            [1.0, 0.0, 0.0],
-                            [0.0, 0.0, 1.0],
-                        ]
-                    )
-                ),
-                np.array([1.0, 0.0, 0.0]),
-                np.array(
-                    [
-                        [0.0, 0.0, 1.0],
-                        [0.0, -1.0, 0.0],
-                        [1.0, 0.0, 0.0],
-                    ]
-                ),
-            ),
-            (
-                np.pi / 4,
-                world_camera_from_rotation(
-                    np.array(
-                        [
-                            [1.0, 0.0, 0.0],
-                            [0.0, 0.0, -1.0],
-                            [0.0, 1.0, 0.0],
-                        ]
-                    )
-                ),
-                np.array([0.0, 1.0, 0.0]),
-                np.array(
-                    [
-                        [0.0, 0.0, 1.0],
-                        [-np.sqrt(0.5), -np.sqrt(0.5), 0.0],
-                        [np.sqrt(0.5), -np.sqrt(0.5), 0.0],
-                    ]
-                ),
-            ),
-            (
-                np.pi / 4,
-                world_camera_from_rotation(
-                    np.array(
-                        [
-                            [0.0, -1.0, 0.0],
-                            [1.0, 0.0, 0.0],
-                            [0.0, 0.0, 1.0],
-                        ]
-                    )
-                ),
-                normalize(np.array([1.0, 1.0, 0.0])),
-                np.array(
-                    [
-                        [0.0, 0.0, 1.0],
-                        [1.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0],
-                    ]
-                ),
-            ),
-        ]
 
-        detector = EdgeDetector()
-        for angle, world_camera, surface_normal, expected_pose_2d in cases:
-            with self.subTest(angle=angle, surface_normal=surface_normal):
-                tangent_frame = TangentFrame(surface_normal)
+@dataclass(frozen=True)
+class EdgeDetectorGroundTruth:
+    name: str
+    angle: float
+    camera_orientation: np.ndarray  # 3x3
+    surface_normal: np.ndarray
+    expected_pose_2d: np.ndarray
 
-                pose_2d = detector._angle_to_pose_2d(
-                    angle,
-                    world_camera,
-                    surface_normal=surface_normal,
-                    tangent_frame=tangent_frame,
-                )
 
-                assert_pose_2d_is_orthonormal(pose_2d)
-                np.testing.assert_allclose(
-                    pose_2d,
-                    expected_pose_2d,
-                    atol=DEFAULT_TOLERANCE,
-                )
-
-    @given(angle=angles, geometry=surface_geometry())
-    @example(
-        angle=0.0,
-        geometry=(
-            np.array([0.0, 0.0, 1.0]),
-            TangentFrame(np.array([0.0, 0.0, 1.0])),
-        ),
-    )
-    @example(
+cases = [
+    EdgeDetectorGroundTruth(
+        name="identity_camera_vertical_edge",
         angle=np.pi / 2,
-        geometry=(
-            np.array([0.0, 0.0, 1.0]),
-            TangentFrame(np.array([0.0, 0.0, 1.0])),
-        ),
-    )
-    def test_angle_to_pose_2d_maps_identity_camera_to_local_tangent_frame(
-        self, angle, geometry
-    ):
-        detector = EdgeDetector()
-        world_camera = np.identity(4)
-        surface_normal_3d, tangent_frame = geometry
-
-        pose_2d = detector._angle_to_pose_2d(
-            angle,
-            world_camera,
-            surface_normal=surface_normal_3d,
-            tangent_frame=tangent_frame,
-        )
-
-        edge_world = np.array([np.cos(angle), -np.sin(angle), 0.0])
-        edge_tangent_world = project_onto_tangent_plane(edge_world, surface_normal_3d)
-        if np.linalg.norm(edge_tangent_world) < DEFAULT_TOLERANCE:
-            edge_tangent_world = tangent_frame.basis_u
-        else:
-            edge_tangent_world = normalize(edge_tangent_world)
-
-        expected_tangent_2d = np.array(
+        camera_orientation=np.identity(3),
+        surface_normal=np.array([0.0, 0.0, 1.0]),
+        expected_pose_2d=np.array(
             [
-                np.dot(edge_tangent_world, tangent_frame.basis_u),
-                np.dot(edge_tangent_world, tangent_frame.basis_v),
-                0.0,
-            ]
-        )
-
-        assert_pose_2d_is_orthonormal(pose_2d)
-        np.testing.assert_allclose(
-            pose_2d[1], expected_tangent_2d, atol=DEFAULT_TOLERANCE
-        )
-
-    def test_angle_to_pose_2d_uses_transported_tangent_frame(self):
-        detector = EdgeDetector()
-        world_camera = np.identity(4)
-        world_camera[:3, :3] = np.array(
-            [
-                [1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0],
                 [0.0, -1.0, 0.0],
+                [1.0, 0.0, 0.0],
             ]
-        )
-        surface_normal = np.array([0.0, 1.0, 0.0])
-        tangent_frame = TangentFrame(np.array([0.0, 0.0, 1.0]))
-        tangent_frame.transport(surface_normal)
-
-        pose_2d = detector._angle_to_pose_2d(
-            np.pi / 2,
-            world_camera,
-            surface_normal=surface_normal,
-            tangent_frame=tangent_frame,
-        )
-
-        np.testing.assert_allclose(
-            pose_2d,
-            np.array(
-                [
-                    [0.0, 0.0, 1.0],
-                    [0.0, -1.0, 0.0],
-                    [1.0, 0.0, 0.0],
-                ]
-            ),
-            atol=DEFAULT_TOLERANCE,
-        )
-
-    def test_angle_to_pose_2d_falls_back_to_basis_u_for_degenerate_projection(self):
-        detector = EdgeDetector()
-        surface_normal = np.array([1.0, 0.0, 0.0])
-        tangent_frame = TangentFrame(surface_normal)
-
-        pose_2d = detector._angle_to_pose_2d(
-            0.0,
-            np.identity(4),
-            surface_normal=surface_normal,
-            tangent_frame=tangent_frame,
-        )
-
-        assert_pose_2d_is_orthonormal(pose_2d)
-        np.testing.assert_allclose(
-            pose_2d,
-            np.array(
-                [
-                    [0.0, 0.0, 1.0],
-                    [1.0, 0.0, 0.0],
-                    [-0.0, 1.0, 0.0],
-                ]
-            ),
-            atol=DEFAULT_TOLERANCE,
-        )
+        ),
+    ),
+    EdgeDetectorGroundTruth(
+        name="identity_camera_diagonal_edge",
+        angle=np.pi / 4,
+        camera_orientation=np.identity(3),
+        surface_normal=np.array([0.0, 0.0, 1.0]),
+        expected_pose_2d=np.array(
+            [
+                [0.0, 0.0, 1.0],
+                [np.sqrt(0.5), -np.sqrt(0.5), 0.0],
+                [np.sqrt(0.5), np.sqrt(0.5), 0.0],
+            ]
+        ),
+    ),
+    EdgeDetectorGroundTruth(
+        name="identity_camera_horizontal_edge",
+        angle=np.pi,
+        camera_orientation=np.identity(3),
+        surface_normal=np.array([0.0, 0.0, 1.0]),
+        expected_pose_2d=np.array(
+            [
+                [0.0, 0.0, 1.0],
+                [-1.0, 0.0, 0.0],
+                [0.0, -1.0, 0.0],
+            ]
+        ),
+    ),
+    EdgeDetectorGroundTruth(
+        name="rotated_camera_surface_x_horizontal_edge",
+        angle=np.pi,
+        camera_orientation=np.array(
+            [
+                [0.0, -1.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+        ),
+        surface_normal=np.array([1.0, 0.0, 0.0]),
+        expected_pose_2d=np.array(
+            [
+                [0.0, 0.0, 1.0],
+                [0.0, -1.0, 0.0],
+                [1.0, 0.0, 0.0],
+            ]
+        ),
+    ),
+    EdgeDetectorGroundTruth(
+        name="camera_y_to_world_z_surface_y_diagonal_edge",
+        angle=np.pi / 4,
+        camera_orientation=np.array(
+            [
+                [1.0, 0.0, 0.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 1.0, 0.0],
+            ]
+        ),
+        surface_normal=np.array([0.0, 1.0, 0.0]),
+        expected_pose_2d=np.array(
+            [
+                [0.0, 0.0, 1.0],
+                [-np.sqrt(0.5), -np.sqrt(0.5), 0.0],
+                [np.sqrt(0.5), -np.sqrt(0.5), 0.0],
+            ]
+        ),
+    ),
+]

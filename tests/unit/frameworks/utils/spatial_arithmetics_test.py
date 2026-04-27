@@ -83,7 +83,10 @@ def quaternions(draw: st.DrawFn):
     return qt.quaternion(*wxyz)
 
 
-rotations = quaternions().map(lambda q: Rotation.from_quat([q.x, q.y, q.z, q.w]))
+rotation_objs = quaternions().map(lambda q: Rotation.from_quat([q.x, q.y, q.z, q.w]))
+rotation_matrices = rotation_objs.map(
+    lambda q: Rotation.from_quat([q.x, q.y, q.z, q.w]).as_matrix()
+)
 
 
 class NormalizeTest(unittest.TestCase):
