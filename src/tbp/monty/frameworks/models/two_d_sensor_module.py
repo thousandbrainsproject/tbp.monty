@@ -38,6 +38,7 @@ from tbp.monty.frameworks.models.sensor_modules import (
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.edge_detection import (
     EdgeDetector,
+    _angle_to_pose_2d,
 )
 from tbp.monty.frameworks.utils.sensor_processing import (
     arc_length_corrected_displacement,
@@ -242,7 +243,14 @@ class TwoDSensorModule(SensorModule):
         if not edge.has_edge or (edge.strength and edge.is_geometric_edge):
             return state
 
-        state.morphological_features["pose_vectors"] = edge.pose_2d
+        pose_2d = _angle_to_pose_2d(
+            edge.angle,
+            observation["world_camera"],
+            surface_normal=surface_normal_3d,
+            tangent_frame=self._tangent_frame,
+        )
+
+        state.morphological_features["pose_vectors"] = pose_2d
         state.morphological_features["pose_fully_defined"] = True
 
         if "edge_strength" in self.features:
