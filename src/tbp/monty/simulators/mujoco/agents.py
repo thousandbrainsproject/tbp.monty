@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum
+from enum import IntEnum
 from typing import TYPE_CHECKING, Protocol, cast
 
 import numpy as np
@@ -33,7 +33,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
-from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
+from tbp.monty.frameworks.sensors import SensorConfig, SensorID
 from tbp.monty.frameworks.utils.transform_utils import (
     rotation_as_quat,
     rotation_from_quat,
@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_CAMERA_FOVY: float = 45.0
 
 
-class Axis(Enum):
+class Axis(IntEnum):
     """Axis for the purposes of local movement."""
 
     # Values map to indices in a rotation matrix
@@ -64,17 +64,6 @@ class Agent(Protocol):
     """Protocol for an agent that interacts with an environment."""
 
     id: AgentID
-
-    @property
-    def max_sensor_resolution(self) -> Resolution2D:
-        """Returns the maximum width and heights of the sensors.
-
-        Used by the simulator to determine the size of the off-screen rendering
-        surface to insure it is always large enough for any sensor images we
-        need to render.
-
-        Note: the maximum width and maximum height may come from separate sensors.
-        """
 
     @property
     def observations(self) -> AgentObservations:
@@ -148,14 +137,6 @@ class Embodiment(Agent):
             )
 
     @property
-    def max_sensor_resolution(self) -> Resolution2D:
-        max_width = max_height = 0
-        for sensor_cfg in self._sensor_configs.values():
-            max_width = max(max_width, sensor_cfg["resolution"][0])
-            max_height = max(max_height, sensor_cfg["resolution"][1])
-        return Resolution2D((max_width, max_height))
-
-    @property
     def position(self) -> VectorXYZ:
         # MuJoCo stores coordinates in an array-like structure that has
         # to be indexed into to pull out the relevant values. Because the
@@ -219,7 +200,10 @@ class Embodiment(Agent):
         sensor_states = {}
         for sensor_id, sensor_cfg in self._sensor_configs.items():
             # This code assumes that the position of the sensor body, or sensors
-            # relative to the agent CANNOT change.
+            # relative to the agent CANNOT change. This is because we use the
+            # configured position of the sensor (rel. agent) to compute positions.
+            # This constraint can be removed by computing the sensor's position
+            # relative agent from their world coordinates.
             sensor_pos_rel_agent = sensor_body_rot_rel_agent.apply(
                 sensor_cfg["position"]
             )
@@ -242,7 +226,7 @@ class Embodiment(Agent):
         """Move the embodiment along an axis relative to its local basis."""
         rotation = rotation_from_quat(self.rotation)
         rotation_matrix = rotation.as_matrix()
-        axis_vector = rotation_matrix[:, axis.value] * distance
+        axis_vector = rotation_matrix[:, axis] * distance
         new_xyz = np.array(self.position) + axis_vector
         self.position = new_xyz
 
@@ -306,10 +290,6 @@ class NoopAgent(Agent):
         self.id = agent_id
 
     @property
-    def max_sensor_resolution(self) -> Resolution2D:
-        return self._embodiment.max_sensor_resolution
-
-    @property
     def state(self) -> AgentState:
         return self._embodiment.state
 
@@ -339,10 +319,6 @@ class DistantAgent(Agent):
             simulator, agent_id, sensor_configs, position, rotation
         )
         self.id = agent_id
-
-    @property
-    def max_sensor_resolution(self) -> Resolution2D:
-        return self._embodiment.max_sensor_resolution
 
     @property
     def state(self) -> AgentState:

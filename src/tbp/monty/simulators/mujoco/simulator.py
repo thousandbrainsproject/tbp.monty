@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import TYPE_CHECKING, Callable, Sequence, cast
 
 from mujoco import (
     MjData,
@@ -44,8 +44,10 @@ from tbp.monty.simulators.mujoco.objects import (
     load_object_metadata,
 )
 
-logger = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from functools import partial
 
+logger = logging.getLogger(__name__)
 
 # Map of names to MuJoCo primitive object types
 PRIMITIVE_OBJECTS = {
@@ -203,19 +205,28 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             self._agents[agent.id] = agent
 
     def _max_sensor_resolution(self) -> Resolution2D:
-        """Determine the maximum resolution of all the sensors.
+        """Returns the maximum width and heights of the sensors.
 
-        We need this to set the off-screen buffer size in MuJoCo to support the
-        highest resolution sensor configured.
+        Used by the simulator to determine the size of the off-screen rendering
+        surface to insure it is always large enough for any sensor images we
+        need to render.
+
+        Note: the maximum width and maximum height may come from separate sensors.
 
         Returns:
             max_width, max_height
         """
         max_width = max_height = 0
-        for agent in self._agents.values():
-            width, height = agent.max_sensor_resolution
-            max_width = max(max_width, width)
-            max_height = max(max_height, height)
+        # Introspect the agent partials to determine what the original sensor
+        # configs were, so we can determine the maximum resolution needed.
+        sensor_configs = [
+            p.keywords["sensor_configs"]
+            for p in cast("list[partial]", self._agent_partials)
+        ]
+        for sensor_cfg in sensor_configs:
+            for sensor in sensor_cfg.values():
+                max_width = max(max_width, sensor["resolution"][0])
+                max_height = max(max_height, sensor["resolution"][1])
         return Resolution2D((max_width, max_height))
 
     def remove_all_objects(self) -> None:

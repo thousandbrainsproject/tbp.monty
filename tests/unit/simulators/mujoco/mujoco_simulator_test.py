@@ -244,7 +244,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         action = LookUp(AGENT_ID, rotation_degrees=5.0)
 
         sim = MuJoCoSimulator(
-            agents=[partial(AgentMockClass)],
+            agents=[partial(AgentMockClass, sensor_configs={})],
             raise_actuate_missing=False,
         )
         with sim:
@@ -265,7 +265,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         action = LookUp(AGENT_ID, rotation_degrees=5.0)
 
         sim = MuJoCoSimulator(
-            agents=[partial(AgentMockClass)],
+            agents=[partial(AgentMockClass, sensor_configs={})],
             raise_actuate_missing=True,
         )
         with sim, pytest.raises(ActuateMethodMissing):
@@ -283,7 +283,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         agent_mock.max_sensor_resolution = DEFAULT_RESOLUTION
         AgentMockClass = Mock(return_value=agent_mock)  # noqa: N806
         sim = MuJoCoSimulator(
-            agents=[partial(AgentMockClass)],
+            agents=[partial(AgentMockClass, sensor_configs={})],
             data_path=None,
             raise_actuate_missing=False,
         )
