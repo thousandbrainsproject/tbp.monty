@@ -44,6 +44,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     TangentFrame,
+    normalize,
     project_onto_tangent_plane,
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
@@ -184,9 +185,11 @@ class TwoDSensorModule(SensorModule):
         observed_state.morphological_features["pose_fully_defined"] = False
 
         if observed_state.use_state and observed_state.get_on_object():
+            self._update_tangent_frame(true_surface_normal)
             observed_state = self._extract_2d_edge(
                 observed_state,
                 observation,
+                true_surface_normal,
             )
 
         if observed_state.use_state:
@@ -213,6 +216,7 @@ class TwoDSensorModule(SensorModule):
         self,
         state: Message,
         observation: SensorObservation,
+        surface_normal_3d: np.ndarray,
     ) -> Message:
         """Extract 2D edge-based pose if edge is detected.
 
@@ -222,12 +226,18 @@ class TwoDSensorModule(SensorModule):
         Args:
             state: Message with standard features from ObservationProcessor
             observation: Sensor observation.
+            surface_normal_3d: True surface normal from curvature estimation,
+                saved before edge detection may overwrite pose_vectors.
 
         Returns:
             Message with edge-based pose vectors if edge detected,
             otherwise returns the original state unchanged.
         """
-        edge = self.edge_detector(observation)
+        edge = self.edge_detector(
+            observation,
+            surface_normal=surface_normal_3d,
+            tangent_frame=self._tangent_frame,
+        )
 
         if not edge.has_edge or (edge.strength and edge.is_geometric_edge):
             return state
@@ -241,6 +251,14 @@ class TwoDSensorModule(SensorModule):
             state.non_morphological_features["coherence"] = edge.coherence
 
         return state
+
+    def _update_tangent_frame(self, surface_normal_3d: np.ndarray) -> None:
+        """Keep the local 2D frame aligned with the current surface normal."""
+        surface_normal_3d = normalize(surface_normal_3d)
+        if self._tangent_frame is None:
+            self._tangent_frame = TangentFrame(surface_normal_3d)
+        else:
+            self._tangent_frame.transport(surface_normal_3d)
 
     def _update_2d_position_and_displacement(
         self,
@@ -273,8 +291,6 @@ class TwoDSensorModule(SensorModule):
                 # Setting z = 0 assumes that camera is TODO
                 [current_3d_location[0], current_3d_location[1], 0.0]
             )
-            if surface_normal_3d is not None:
-                self._tangent_frame = TangentFrame(surface_normal_3d)
             return observed_state
 
         displacement_3d = current_3d_location - self._previous_3d_location
