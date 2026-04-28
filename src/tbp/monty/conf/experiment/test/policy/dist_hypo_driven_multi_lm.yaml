@@ -2,7 +2,7 @@
 
 defaults:
   - /monty: evidencegraph_exp1000_e3_t3_tot2500
-  - /monty/motor_system_config: informed_5_goal1
+  - /monty/motor_system_config: distant_5
   - /monty/learning_module: test_evidence_5lm
   - /monty/sensor_module: 5sm_camera
   - /monty/connectivity: 5lm_5sm
