@@ -1,7 +1,7 @@
 ---
 title: Environment & Agent
 ---
-The 3D environment used for most experiments is **Habitat**. This class returns observations for given actions. Typically, an experiment will wrap an enviroment in an enviroment interface class, e.g., `OneObjectPerEpisodeInterface`.
+The 3D environment used for most experiments is **Habitat**. This class returns observations for given actions. Typically, an experiment will wrap an environment in an environment interface class, e.g., `OneObjectPerEpisodeInterface`.
 
 The environment is currently initialized with one agent that has N sensors attached to it. This setup has two sensors by default. The first sensor is the **sensor patch** which will be used for learning. It is a **camera, zoomed in 10x** such that it only perceives a small patch of the environment. The second sensor is the view-finder which is at the same location as the patch and moves together with it but its camera is not zoomed in. This one is only used at the beginning of an episode to get a good view of the object (more details in the policy section) and for visualization, but not for learning or inference. The agent setup can also be customized to use more than one sensor patch (such as in `src/tbp/monty/conf/experiment/config/monty/two_lm.yaml` or `src/tbp/monty/conf/experiment/config/monty/five_lm.yaml`, see figure below). The configs also specify the type of sensor used, the features that are being extracted, and the motor policy used by the agent.
 
