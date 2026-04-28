@@ -41,16 +41,23 @@ FLAT_SURFACE_POSE = DEFAULT_POSE_2D
 
 
 def make_message(
-    location: np.ndarray = np.array([0.0, 0.0, 0.0]),
+    location: np.ndarray | None = None,
     on_object: bool = True,
     use_state: bool = True,
-    pose_vectors: np.ndarray = np.identity(3),
+    pose_vectors: np.ndarray | None = None,
     pose_fully_defined: bool = False,
-    principal_curvatures: np.ndarray = np.identity(3),
+    principal_curvatures: np.ndarray | None = None,
     non_morphological_features: dict | None = None,
     sender_id: str = "patch",
     sender_type: str = "SM",
 ):
+    if location is None:
+        location = np.array([0.0, 0.0, 0.0])
+    if pose_vectors is None:
+        pose_vectors = np.identity(3)
+    if principal_curvatures is None:
+        principal_curvatures = np.identity(3)
+
     morphological_features = {
         "pose_vectors": pose_vectors,
         "pose_fully_defined": pose_fully_defined,
@@ -137,7 +144,7 @@ def make_2d_sm(
     if features is None:
         features = DEFAULT_FEATURES.copy()
 
-    two_d_sm = TwoDSensorModule(
+    return TwoDSensorModule(
         sensor_module_id=sensor_module_id,
         features=features,
         save_raw_obs=save_raw_obs,
@@ -147,12 +154,12 @@ def make_2d_sm(
         noise_params=noise_params,
         delta_thresholds=delta_thresholds,
     )
-    return two_d_sm
 
 
 """
-Below are ideas for tests for SensorModules in general (i.e. CameraSM/TwoDSensorModule).
-Not implemented (except for first one) because I think they belong elsewhere. 
+Below are ideas for tests for SensorModules in general
+(i.e. CameraSM/TwoDSensorModule).
+Not implemented (except for first one) because I think they belong elsewhere.
 I think these should go into Shortcut Tickets.
 
 1. [x] `test_step_snapshots_raw_observation_as_needed`
@@ -164,20 +171,21 @@ I think these should go into Shortcut Tickets.
 2. [x] `test_pre_episode_resets_all_state`
     - Idea: Run N on object steps to pretend that we are at the end of an episode
     - Call pre_episode() and assert states are reset
-    - Implemented for practice. 
-    
+    - Implemented for practice.
+
 3. [ ] Percept Filter/`delta_thresholds`
-    - Idea was to assert that first percept passes, unchanged percepts become use_state=False,
-    significant distance/feature change passes, and pre_episode() resets the filter. 
-    
+    - Idea was to assert that first percept passes, unchanged percepts become
+    use_state=False, significant distance/feature change passes, and
+    pre_episode() resets the filter.
+
 4. [ ] Noise with RuntimeContext.rng
 5. [ ] `test_update_state_computes_sensor_world_position`
     - Make an AgentState with known rotation and sensor offset.
-    - Call update_state() and make sure sm.state.position/rotation are updated correctly.
-    
+    - Call update_state() and make sure sm.state position/rotation are updated.
+
 6. [ ] `test_motor_only_step_sets_use_state_false`
 7. [ ] `test_state_dict_contains_processed_observations`
-    - Ideas was to Run N steps, call state_dict(), then assert that result has 
+    - Ideas was to Run N steps, call state_dict(), then assert that result has
     "processed_observations" key with N entries.
 """
 
@@ -243,7 +251,7 @@ def test_pre_episode_resets_all_state():
 
 
 """Note on Terminology:
-- I'm using `raw_observation` as what comes after Transforms 
+- I'm using `raw_observation` as what comes after Transforms
     (This has rgba, depth, world_camera, etc.)
 - I'm using `percept` as _input_ message from ObservationProcessor
 - I'm using `msg` as _output_ message from TwoDSensorModule returned from step()
@@ -531,8 +539,9 @@ def test_multi_step_2d_position_accumulated_on_flat_surface():
 # Integration-y test                               #
 ####################################################
 def test_like_how_monty_uses_two_d_sm():
-    """Intended to mimic how Monty might use SM in
-    aggregate_sensory_inputs().
+    """Mimic how Monty might use SM in aggregate_sensory_inputs().
+
+    This calls update_state() before step().
     """
     edge_detector = Mock(return_value=make_no_edge())
     two_d_sm = make_2d_sm(

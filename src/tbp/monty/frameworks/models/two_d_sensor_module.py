@@ -240,10 +240,15 @@ class TwoDSensorModule(SensorModule):
         Returns:
             Message with edge-based pose vectors if edge detected,
             otherwise returns the original state unchanged.
+
+        Raises:
+            RuntimeError: If edge features were requested but no edge detector
+                is configured.
         """
         if self.edge_detector is None:
             raise RuntimeError(
-                "edge_detector is required when edge_strength or coherence is in features."
+                "edge_detector is required when edge_strength or coherence is in "
+                "features."
             )
 
         edge = self.edge_detector(observation)
