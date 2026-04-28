@@ -55,8 +55,8 @@ __all__ = [
     "Interface",
     "ObjectInterface",
     "OmniglotInterface",
-    "SaccadeOnImageInterface",
     "SaccadeOnImageFromStreamInterface",
+    "SaccadeOnImageInterface",
 ]
 
 logger = logging.getLogger(__name__)

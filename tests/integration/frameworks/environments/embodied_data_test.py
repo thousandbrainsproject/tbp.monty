@@ -22,8 +22,8 @@ from tbp.monty.experiment.environment import (
     Interface,
     ObjectInterface,
     OmniglotInterface,
-    SaccadeOnImageInterface,
     SaccadeOnImageFromStreamInterface,
+    SaccadeOnImageInterface,
 )
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID

@@ -25,8 +25,8 @@ from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.environment import (
     Interface,
     ObjectInterface,
-    SaccadeOnImageInterface,
     SaccadeOnImageFromStreamInterface,
+    SaccadeOnImageInterface,
 )
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
