@@ -238,14 +238,12 @@ class Rotation:
             before and after the rotation.
 
         Args:
-            vectors: The `array([`_x_, _y_, _z_`])`
-                or `array([[`_x_, _y_, _z_`], ...])` to rotate.
+            vectors: Array-like of shape (3,) or (N, 3) of xyz coordinates to rotate.
             inverse: If `True` then apply the inverse of this rotation.
                 Equivalent to `rotation.inv().apply(vectors)`.
 
         Returns:
-            The rotated `array([`_x'_, _y'_, _z'_`])`
-            or `array([[`_x'_, _y'_, _z'_`], ...])`
+            An array of shape (3,) or (N, 3) of rotated xyz coordinates.
 
         Examples:
             >>> # pitch up 180°, then roll counter-clockwise 90°
@@ -301,12 +299,6 @@ class Rotation:
 
     def __repr__(self) -> str:
         return repr(self._rot)
-
-    def __delattr__(self, name: str) -> None:
-        raise AttributeError("Rotation is immutable")
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        raise AttributeError("Rotation is immutable")
 
     def __getstate__(self) -> ScipyRotation:
         return self._rot
