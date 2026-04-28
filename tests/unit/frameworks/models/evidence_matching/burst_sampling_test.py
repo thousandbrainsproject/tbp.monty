@@ -241,19 +241,19 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         graph_num_nodes=st.integers(min_value=1, max_value=100),
         pose_fully_defined=st.booleans(),
     )
-    def test_sample_count_returns_informed_count_during_burst(
+    def test_sample_count_returns_positive_count_during_burst(
         self, sampling_multiplier, graph_num_nodes, pose_fully_defined
     ) -> None:
-        """Test informed_count with various burst sampling parameters.
+        """Test sample count with various burst sampling parameters.
 
         When sampling_burst_steps > 0, _sample_count should calculate and
-        return a positive informed_count based on graph nodes and sampling_multiplier.
+        return a positive count based on graph nodes and sampling_multiplier.
 
         The sampling_multiplier is capped at num_hyps_per_node:
             - 2 for pose_fully_defined=True,
             - umbilical_num_poses for pose_fully_defined=False
 
-        Informed_count cannot exceed graph_num_nodes * num_hyps_per_node.
+        Sample count cannot exceed graph_num_nodes * num_hyps_per_node.
         """
         self.updater.sampling_burst_steps = 3
         self.updater.sampling_multiplier = sampling_multiplier
@@ -269,51 +269,51 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
         tracker = EvidenceSlopeTracker(min_age=0)
 
-        _, informed_samples_per_channel = self.updater._sample_count(
+        _, new_hypotheses_per_channel = self.updater._sample_count(
             features={"patch": channel_features},
             graph_id="object1",
             input_channels=["patch"],
             tracker=tracker,
         )
 
-        informed_count = informed_samples_per_channel["patch"]
+        sample_count = new_hypotheses_per_channel["patch"]
 
         # The number of required hypotheses cannot be negative
-        self.assertGreaterEqual(informed_count, 0)
+        self.assertGreaterEqual(sample_count, 0)
 
         # Divisible by num_hyps_per_node
-        self.assertEqual(informed_count % num_hyps_per_node, 0)
+        self.assertEqual(sample_count % num_hyps_per_node, 0)
 
         # Cannot exceed the available max number of hypotheses.
-        self.assertLessEqual(informed_count, graph_num_nodes * num_hyps_per_node)
+        self.assertLessEqual(sample_count, graph_num_nodes * num_hyps_per_node)
 
     @given(
         sampling_multiplier=st.floats(min_value=0.0, max_value=2.0),
         pose_fully_defined=st.booleans(),
     )
-    def test_sample_count_returns_zero_informed_count_when_not_in_burst(
+    def test_sample_count_returns_zero_count_when_not_in_burst(
         self,
         sampling_multiplier: float,
         pose_fully_defined: bool,
     ) -> None:
-        """Test that _sample_count returns informed_count == 0 when not in burst.
+        """Test that _sample_count returns an empty mapping when not in burst.
 
-        When sampling_burst_steps == 0, _sample_count should return
-        informed_count == 0 regardless of other parameters (e.g, sampling_multiplier).
+        When sampling_burst_steps == 0, _sample_count should return an empty
+        mapping regardless of other parameters (e.g, sampling_multiplier).
         """
         self.updater.sampling_burst_steps = 0
         self.updater.sampling_multiplier = sampling_multiplier
 
         tracker = EvidenceSlopeTracker(min_age=0)
 
-        _, informed_samples_per_channel = self.updater._sample_count(
+        _, new_hypotheses_per_channel = self.updater._sample_count(
             features={"patch": {"pose_fully_defined": pose_fully_defined}},
             graph_id="object1",
             input_channels=["patch"],
             tracker=tracker,
         )
 
-        self.assertEqual(informed_samples_per_channel, {})
+        self.assertEqual(new_hypotheses_per_channel, {})
 
     def test_burst_lasts_exactly_sampling_burst_duration_steps(self) -> None:
         """Test that burst lasts for exactly sampling_burst_duration steps.
@@ -472,11 +472,13 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.assertIn("new_object", self.updater.evidence_slope_trackers)
         self.assertIs(self.updater.evidence_slope_trackers["new_object"], new_tracker)
 
-    def test_sample_existing_returns_empty_when_no_hypotheses_retained(self) -> None:
-        """Test that _sample_existing returns empty arrays when ids_to_retain is empty.
+    def test_sample_existing_hypotheses_returns_empty_when_no_hypotheses_retained(
+        self,
+    ) -> None:
+        """Test sampling existing hypotheses returns empty arrays when none retained.
 
-        When HypothesesSelection has no hypotheses to retain, _sample_existing
-        should clear the tracker and return empty Hypotheses.
+        When HypothesesSelection has no hypotheses to retain, sampling
+        existing hypotheses should clear the tracker and return empty Hypotheses.
         """
         tracker = EvidenceSlopeTracker(min_age=0)
         tracker.add_hyp(3)
@@ -494,7 +496,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             mask_to_retain=np.array([False, False, False])
         )
 
-        result = self.updater._sample_existing(
+        result = self.updater._sample_existing_hypotheses_based_on_evidence_slopes(
             hypotheses_selection=hypotheses_selection,
             hypotheses=hypotheses,
             tracker=tracker,
@@ -583,15 +585,15 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         )
 
     @given(pose_fully_defined=st.booleans())
-    def test_sample_informed_returns_empty_when_informed_count_zero(
+    def test_sample_new_hypotheses_returns_empty_when_count_zero(
         self, pose_fully_defined
     ) -> None:
         tracker = EvidenceSlopeTracker()
 
-        result = self.updater._sample_informed(
+        result = self.updater._sample_new_hypotheses_based_on_current_observation(
             features={"patch": {"pose_fully_defined": pose_fully_defined}},
             graph_id="object1",
-            samples_per_channel={"patch": 0},
+            new_hypotheses_per_channel={"patch": 0},
             tracker=tracker,
         )
 
@@ -604,15 +606,15 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         num_nodes=st.integers(min_value=1, max_value=10),
         num_hyps_per_node=st.integers(min_value=1, max_value=10),
     )
-    def test_sample_informed_without_feature_matching(
+    def test_sample_new_hypotheses_without_feature_matching(
         self, num_nodes, num_hyps_per_node
     ) -> None:
-        """Test _sample_informed when use_features_for_matching is False.
+        """Test sampling new hypotheses when use_features_for_matching is False.
 
         When feature matching is disabled, hypotheses should be sampled from
         all nodes with zero initial evidence.
         """
-        informed_count = num_nodes * num_hyps_per_node
+        sample_count = num_nodes * num_hyps_per_node
 
         # Set up graph memory mocks
         self.mock_graph_memory.get_locations_in_graph = Mock(
@@ -631,34 +633,34 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
         tracker = EvidenceSlopeTracker()
 
-        result = self.updater._sample_informed(
+        result = self.updater._sample_new_hypotheses_based_on_current_observation(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
-            samples_per_channel={"patch": informed_count},
+            new_hypotheses_per_channel={"patch": sample_count},
             tracker=tracker,
         )
 
-        self.assertEqual(result.evidence.shape[0], informed_count)
-        self.assertEqual(result.locations.shape[0], informed_count)
-        self.assertEqual(result.poses.shape[0], informed_count)
+        self.assertEqual(result.evidence.shape[0], sample_count)
+        self.assertEqual(result.locations.shape[0], sample_count)
+        self.assertEqual(result.poses.shape[0], sample_count)
 
         # Evidence should be all zeros when not using feature matching
-        assert_array_equal(result.evidence, np.zeros(informed_count))
+        assert_array_equal(result.evidence, np.zeros(sample_count))
 
         # All hypotheses should be marked as not possible (newly sampled)
-        assert_array_equal(result.possible, np.zeros(informed_count, dtype=np.bool_))
+        assert_array_equal(result.possible, np.zeros(sample_count, dtype=np.bool_))
 
         # Tracker should have the new hypotheses added
-        self.assertEqual(tracker.total_size(), informed_count)
+        self.assertEqual(tracker.total_size(), sample_count)
 
-    def test_sample_informed_with_feature_matching(self) -> None:
-        """Test _sample_informed when use_features_for_matching is True.
+    def test_sample_new_hypotheses_with_feature_matching(self) -> None:
+        """Test sampling new hypotheses when use_features_for_matching is True.
 
         When feature matching is enabled, hypotheses should be sampled from
         top-k nodes based on feature evidence scores.
         """
         num_nodes = 5
-        informed_count = 4  # Request 4 hypotheses (2 nodes * 2 hyps/node)
+        sample_count = 4  # Request 4 hypotheses (2 nodes * 2 hyps/node)
 
         # Set up graph memory mocks
         mock_graph_memory = Mock()
@@ -703,15 +705,15 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             for pose in euler_angles
         ]
 
-        result = updater._sample_informed(
+        result = updater._sample_new_hypotheses_based_on_current_observation(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
-            samples_per_channel={"patch": informed_count},
+            new_hypotheses_per_channel={"patch": sample_count},
             tracker=EvidenceSlopeTracker(),
         )
 
         # Should have 4 hypotheses
-        self.assertEqual(result.count, informed_count)
+        self.assertEqual(result.count, sample_count)
 
         # Feature calculator should have been called
         mock_calculator.calculate.assert_called_once()
@@ -720,14 +722,14 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         # Indices 3 and 1 have highest scores (0.5 and 0.9)
         self.assertTrue(np.all(result.evidence >= 0.5))
 
-    def test_sample_informed_with_initial_poses_none(self) -> None:
-        """Test _sample_informed when initial_possible_poses is None.
+    def test_sample_new_hypotheses_with_initial_poses_none(self) -> None:
+        """Test sampling new hypotheses when initial_possible_poses is None.
 
         When initial_possible_poses is None, rotations should be computed using
         the graph rotation features.
         """
         num_nodes = 3
-        informed_count = 4
+        sample_count = 4
 
         self.updater.initial_possible_poses = None
         self.updater.use_features_for_matching = {"patch": False}
@@ -743,7 +745,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             return_value=np.tile(np.eye(3), (3, 1, 1)).astype(np.float64)
         )
 
-        result = self.updater._sample_informed(
+        result = self.updater._sample_new_hypotheses_based_on_current_observation(
             features={
                 "patch": {
                     "pose_fully_defined": True,
@@ -751,7 +753,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
                 },
             },
             graph_id="object1",
-            samples_per_channel={"patch": informed_count},
+            new_hypotheses_per_channel={"patch": sample_count},
             tracker=EvidenceSlopeTracker(),
         )
 
@@ -759,7 +761,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.mock_graph_memory.get_rotation_features_at_all_nodes.assert_called_once()
 
         # Should have 4 hypotheses, each pose is 3x3 rotation
-        self.assertEqual(result.poses.shape[0], informed_count)
+        self.assertEqual(result.poses.shape[0], sample_count)
         self.assertEqual(result.poses.shape[1:], (3, 3))
 
     @given(
@@ -801,7 +803,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             )
         )
 
-        _, informed_samples_per_channel = self.updater._sample_count(
+        _, new_hypotheses_per_channel = self.updater._sample_count(
             features={
                 "channel_a": {"pose_fully_defined": True},
                 "channel_b": {"pose_fully_defined": True},
@@ -815,25 +817,23 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             capped = min(sampling_multiplier, num_hyps_per_node)
             expected = round(num_nodes * capped)
             expected -= expected % num_hyps_per_node
-            self.assertEqual(informed_samples_per_channel[channel], expected)
-            self.assertEqual(
-                informed_samples_per_channel[channel] % num_hyps_per_node, 0
-            )
+            self.assertEqual(new_hypotheses_per_channel[channel], expected)
+            self.assertEqual(new_hypotheses_per_channel[channel] % num_hyps_per_node, 0)
 
     @given(
         num_nodes=st.integers(min_value=2, max_value=10),
         num_rotations=st.integers(min_value=1, max_value=10),
     )
-    def test_sample_informed_with_initial_poses_set(
+    def test_sample_new_hypotheses_with_initial_poses_set(
         self, num_nodes, num_rotations
     ) -> None:
-        """Test _sample_informed when initial_possible_poses is set.
+        """Test sampling new hypotheses when initial_possible_poses is set.
 
         When initial_possible_poses is a list of rotations, those rotations
         should be tiled across all selected nodes.
         """
         num_selected_nodes = 2
-        informed_count = num_selected_nodes * num_rotations
+        sample_count = num_selected_nodes * num_rotations
 
         # Set up graph memory mocks
         self.mock_graph_memory.get_locations_in_graph = Mock(
@@ -848,14 +848,14 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         ]
         self.updater.use_features_for_matching = {"patch": False}
 
-        result = self.updater._sample_informed(
+        result = self.updater._sample_new_hypotheses_based_on_current_observation(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
-            samples_per_channel={"patch": informed_count},
+            new_hypotheses_per_channel={"patch": sample_count},
             tracker=EvidenceSlopeTracker(),
         )
 
-        self.assertEqual(result.poses.shape[0], informed_count)
+        self.assertEqual(result.poses.shape[0], sample_count)
 
         # Verify poses are correctly tiled from initial_possible_poses
         expected_rot_mats = np.array(

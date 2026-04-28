@@ -326,22 +326,22 @@ class BurstSamplingHypothesesUpdater:
         if len(input_channels_to_use) == 0:
             return None, {}
 
-        hypotheses_selection, informed_samples_per_channel = self._sample_count(
+        hypotheses_selection, new_hypotheses_per_channel = self._sample_count(
             features=features,
             graph_id=graph_id,
             input_channels=input_channels_to_use,
             tracker=tracker,
         )
 
-        existing_hypotheses = self._sample_existing(
+        existing_hypotheses = self._sample_existing_hypotheses_based_on_evidence_slopes(
             hypotheses_selection=hypotheses_selection,
             hypotheses=hypotheses,
             tracker=tracker,
         )
-        informed_hypotheses = self._sample_informed(
+        new_hypotheses = self._sample_new_hypotheses_based_on_current_observation(
             features=features,
             graph_id=graph_id,
-            samples_per_channel=informed_samples_per_channel,
+            new_hypotheses_per_channel=new_hypotheses_per_channel,
             tracker=tracker,
         )
 
@@ -363,7 +363,7 @@ class BurstSamplingHypothesesUpdater:
             )
 
         hypotheses_update = Hypotheses.concatenate(
-            [existing_hypotheses, informed_hypotheses]
+            [existing_hypotheses, new_hypotheses]
         )
         tracker.update(hypotheses_update.evidence)
 
@@ -373,9 +373,9 @@ class BurstSamplingHypothesesUpdater:
                     displacer_telemetry=displacer_telemetry,
                     added_ids=(
                         np.arange(len(hypotheses_update.evidence))[
-                            -len(informed_hypotheses.evidence) :
+                            -len(new_hypotheses.evidence) :
                         ]
-                        if len(informed_hypotheses.evidence) > 0
+                        if len(new_hypotheses.evidence) > 0
                         else np.array([], dtype=np.int_)
                     ),
                     ages=tracker.hyp_ages(),
@@ -412,7 +412,7 @@ class BurstSamplingHypothesesUpdater:
         input_channels: list[str],
         tracker: EvidenceSlopeTracker,
     ) -> tuple[HypothesesSelection, dict[str, int]]:
-        """Calculates the number of existing and informed hypotheses needed.
+        """Calculates the number of existing and new hypotheses needed.
 
         Args:
             features: Input features keyed by channel name.
@@ -423,9 +423,9 @@ class BurstSamplingHypothesesUpdater:
 
         Returns:
             A tuple containing the hypotheses selection and a dictionary mapping
-            each channel to the number of informed hypotheses to sample from it.
+            each channel to the number of new hypotheses to sample from it.
             Hypotheses selection are retained from existing ones while new
-            hypotheses will be initialized, informed by pose sensory information.
+            hypotheses will be initialized from the current observation.
 
         Notes:
             This function takes into account the following parameters:
@@ -437,10 +437,10 @@ class BurstSamplingHypothesesUpdater:
               - `sampling_burst_steps`: The remaining number of burst steps. This value
                 is decremented in the `post_step` function.
         """
-        informed_samples_per_channel: dict[str, int] = {}
+        new_hypotheses_per_channel: dict[str, int] = {}
         if self.sampling_burst_steps > 0:
-            # Calculate informed count per channel based on each channel's
-            # num_hyps_per_node and node count. Each channel may have a
+            # Calculate the number of new hypotheses per channel based on each
+            # channel's num_hyps_per_node and node count. Each channel may have a
             # different num_hyps_per_node (e.g. due to pose_fully_defined),
             # so we compute per-channel totals to ensure each is divisible
             # by its own num_hyps_per_node.
@@ -451,16 +451,16 @@ class BurstSamplingHypothesesUpdater:
                 num_hyps_per_node = self._num_hyps_per_node(features[channel])
 
                 # This makes sure that we do not request more than the available
-                # number of informed hypotheses
+                # number of new hypotheses
                 capped_multiplier = min(self.sampling_multiplier, num_hyps_per_node)
 
-                # Calculate the total number of informed hypotheses to be sampled
+                # Calculate the total number of new hypotheses to be sampled
                 sample_count = round(num_nodes * capped_multiplier)
 
                 # Ensure divisible by this channel's num_hyps_per_node
                 sample_count -= sample_count % num_hyps_per_node
 
-                informed_samples_per_channel[channel] = sample_count
+                new_hypotheses_per_channel[channel] = sample_count
 
         # Returns a selection of hypotheses to retain/delete
         hypotheses_selection = (
@@ -473,10 +473,10 @@ class BurstSamplingHypothesesUpdater:
 
         return (
             hypotheses_selection,
-            informed_samples_per_channel,
+            new_hypotheses_per_channel,
         )
 
-    def _sample_existing(
+    def _sample_existing_hypotheses_based_on_evidence_slopes(
         self,
         hypotheses_selection: HypothesesSelection,
         hypotheses: Hypotheses,
@@ -522,14 +522,14 @@ class BurstSamplingHypothesesUpdater:
             possible=hypotheses.possible[ids_to_retain],
         )
 
-    def _sample_informed(
+    def _sample_new_hypotheses_based_on_current_observation(
         self,
         features: dict,
         graph_id: str,
-        samples_per_channel: dict[str, int],
+        new_hypotheses_per_channel: dict[str, int],
         tracker: EvidenceSlopeTracker,
     ) -> Hypotheses:
-        """Samples the specified number of fully informed hypotheses.
+        """Samples new hypotheses based on the current observation.
 
         For each channel, the method identifies the top-k nodes with the highest
         feature match scores to the current step's input and samples hypotheses only
@@ -538,7 +538,7 @@ class BurstSamplingHypothesesUpdater:
 
         The sampling includes:
           - Selecting the top-k node indices based on evidence scores, where k is
-             determined by the channel's informed count and its num_hyps_per_node.
+             determined by the channel's sample count and its num_hyps_per_node.
           - Fetching the 3D locations of only the selected top-k nodes.
           - Generating rotations for each hypothesis using one of two strategies:
             (a) If `initial_possible_poses` is set, rotations are uniformly sampled or
@@ -547,24 +547,24 @@ class BurstSamplingHypothesesUpdater:
                 sensed directions.
 
         This targeted sampling improves efficiency by avoiding unnecessary computation
-        for nodes with low evidence, especially beneficial when informed sampling occurs
+        for nodes with low evidence, especially beneficial when this sampling occurs
         at every step.
 
         Args:
             features: Input features keyed by channel name.
             graph_id: Identifier of the graph being queried.
-            samples_per_channel: Dictionary mapping each channel to the number
-                of informed hypotheses to sample from it, as computed by
+            new_hypotheses_per_channel: Dictionary mapping each channel to the
+                number of new hypotheses to sample from it, as computed by
                 ``_sample_count``.
             tracker: Slope tracker for the evidence values of a
                 graph_id
 
         Returns:
-            The sampled informed hypotheses.
+            The newly sampled hypotheses.
 
         """
         sampled_hypotheses = []
-        for channel, sample_count in samples_per_channel.items():
+        for channel, sample_count in new_hypotheses_per_channel.items():
             if sample_count == 0:
                 continue
             sampled_hypotheses.append(
@@ -599,7 +599,7 @@ class BurstSamplingHypothesesUpdater:
         graph_id: str,
         input_channel: str,
     ) -> Hypotheses:
-        """Sample informed hypotheses from a single channel's graph.
+        """Sample new hypotheses from a single channel's graph.
 
         Args:
             features: Features for this input channel.
@@ -627,7 +627,7 @@ class BurstSamplingHypothesesUpdater:
             )
             # Find the indices for the nodes with highest evidence scores. The sorting
             # is done in ascending order, so extract the indices from the end of
-            # the argsort array. We get the needed number of informed nodes not
+            # the argsort array. We get the needed number of nodes, not
             # the number of needed hypotheses.
             top_indices = np.argsort(node_feature_evidence)[
                 -int(count // num_hyps_per_node) :
