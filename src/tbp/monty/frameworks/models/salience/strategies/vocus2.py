@@ -17,8 +17,9 @@ from typing import Any, Callable, Iterator, Protocol, Sequence
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 
-# from tbp.monty.frameworks.models.salience.strategies import SalienceStrategy
+from tbp.monty.frameworks.models.salience.strategies import SalienceStrategy
 
 """
 - Color
@@ -60,15 +61,6 @@ _COLOR_SPACE_CONVERTERS = {
     ColorSpace.OPPONENT_CODI: rgb_to_opponent_codi,
 }
 
-def rgba_to_rgb_uint8(rgba: np.ndarray) -> np.ndarray:
-    rgb = rgba[:, :, :3]
-    if rgb.dtype == np.uint8:
-        return rgb
-    elif np.issubdtype(rgb.dtype, np.integer):
-        return rgb.astype(np.uint8)
-    else:
-        return (rgb * 255).astype(np.uint8)
-
 
 def gaussian_blur(image: np.ndarray, sigma: float, truncate: float = 2.5) -> np.ndarray:
     ksize = round(2 * truncate * sigma + 1) | 1  # Ensure odd
@@ -93,20 +85,18 @@ def resize(
 
 @dataclass(frozen=True)
 class Pyramid:
-    data: np.ndarray
+    data: npt.NDArray[np.object_]
 
     def __post_init__(self):
-        assert isinstance(self.data, np.ndarray)
-        assert np.issubdtype(self.data.dtype, np.object_)
         assert self.data.ndim == 2
 
     @property
     def shape(self) -> tuple[int, int]:
-        return self.data.shape
+        return self.data.shape  # type: ignore[return-value]
 
     @property
-    def flat(self) -> Iterator[np.ndarray]:
-        return self.data.flat
+    def flat(self) -> Iterator[npt.NDArray[np.float32]]:
+        return self.data.flat  # type: ignore[return-value]
 
     def apply(self, func: Callable) -> Pyramid:
         data = np.zeros(self.data.size, dtype=object)
@@ -366,7 +356,7 @@ def pyramid_collapse(
         A new image.
 
     """
-    images = list(pyr.data.flat)
+    images = list(pyr.flat)
     target_shape = images[0].shape
     resized = []
     for img in images:
@@ -422,8 +412,6 @@ class WeightedMean(MapCombine):
         total_weight = sum(abs(weight) for weight in weights.values())
         normed_weights = {key: weight / total_weight for key, weight in weights.items()}
         return np.sum([normed_weights[key] * img for key, img in maps.items()], axis=0)
-        
-
 
 
 @dataclass
@@ -455,7 +443,7 @@ class ColorChannelSalience:
         self._combine = combine
         self._collapse = collapse
 
-    def process(self, image: np.ndarray) -> ColorChannelSalienceResult:
+    def process(self, image: npt.NDArray[np.float32]) -> ColorChannelSalienceResult:
         """Compute salience for a single color channel.
 
         Args:
@@ -518,7 +506,7 @@ class DepthSalience:
         self._min_size = min_size
         self._collapse = collapse
 
-    def process(self, image: np.ndarray) -> DepthSalienceResult:
+    def process(self, image: npt.NDArray[np.float32]) -> DepthSalienceResult:
         """Compute salience for a depth channel.
 
         Args:
@@ -648,11 +636,13 @@ class OrientationSalience:
 class SalienceResult:
     salience_map: np.ndarray
     feature_maps: dict[str, np.ndarray]
-    results: dict[str, ColorChannelSalienceResult | DepthSalienceResult | OrientationSalienceResult]
-    
+    results: dict[
+        str,
+        ColorChannelSalienceResult | DepthSalienceResult | OrientationSalienceResult,
+    ]
 
 
-class Vocus2:
+class Vocus2(SalienceStrategy):
     def __init__(
         self,
         color_space: str | ColorSpace = ColorSpace.OPPONENT,
@@ -666,10 +656,9 @@ class Vocus2:
         combine: MapCombine | None = None,
         normalize: bool = True,
     ):
-
         if not isinstance(color_space, ColorSpace):
             color_space = ColorSpace(color_space)
-        
+
         self._color_space = color_space
         self._color_space_converter = _COLOR_SPACE_CONVERTERS[self._color_space]
 
@@ -679,7 +668,7 @@ class Vocus2:
         self._max_levels = max_levels
         self._min_size = min_size
         self._normalize = normalize
-        
+
         # construct salience computers
         self._color = ColorChannelSalience(
             center_sigma=self._center_sigma,
@@ -719,19 +708,18 @@ class Vocus2:
         else:
             self._combine = combine
 
-    def process(
+    def __call__(
         self,
-        rgba: np.ndarray,
-        depth: np.ndarray,
-    ) -> SalienceResult:
-        
+        rgba: npt.NDArray[np.int_],
+        depth: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.float64]:
         # Get color and depth data into open-cv compatible formats.
-        rgb = rgba_to_rgb_uint8(rgba)
+        rgb = rgba[:, :, :3]
         depth = depth.astype(np.float32)
 
         results = {}
         feature_maps = {}
-        
+
         Lab = self._color_space_converter(rgb)
         L, a, b = cv2.split(Lab)  # noqa: N806
         for channel, plane in zip(("L", "a", "b"), (L, a, b)):
@@ -742,7 +730,7 @@ class Vocus2:
 
         if self._orientation:
             results["orientation"] = self._orientation.process(results["L"].center)
-            
+
         feature_maps = {result.salience_map for result in results.values()}
         salience_map = self._combine(feature_maps)
 
@@ -755,11 +743,4 @@ class Vocus2:
             else:
                 salience_map = (salience_map - salience_min) / scale
 
-        return SalienceResult(
-            salience_map=salience_map,
-            feature_maps=feature_maps,
-            results=results,
-        )
-
-    def __call__(self, rgba: np.ndarray, depth: np.ndarray) -> np.ndarray:
-        return self.process(rgba, depth).salience_map
+        return salience_map.astype(np.float64)
