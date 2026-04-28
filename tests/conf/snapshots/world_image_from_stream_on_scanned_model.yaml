@@ -97,7 +97,7 @@ experiment:
         - 0
         clip_value: 1.1
     eval_env_interface_args: {}
-    eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageFromStreamEnvironmentInterface}
+    eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.SaccadeOnImageFromStreamInterface}
     logging:
       monty_log_level: BASIC
       monty_handlers:

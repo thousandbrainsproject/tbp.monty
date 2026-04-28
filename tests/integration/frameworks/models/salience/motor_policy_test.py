@@ -23,13 +23,13 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from tbp.monty.cmp import Goal
+from tbp.monty.experiment.environment import (
+    ObjectInterface,
+)
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
     MissingToMaxDepth,
-)
-from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentInterfacePerObject,
 )
 from tbp.monty.frameworks.environments.object_init_samplers import Predefined
 from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
@@ -112,7 +112,7 @@ class LookAtGoalTest(unittest.TestCase):
         )
         object_names = ["cubeSolid"]
 
-        cls.env_interface = EnvironmentInterfacePerObject(
+        cls.env_interface = ObjectInterface(
             object_names=object_names,
             object_init_sampler=object_init_sampler,
             env=cls.env,

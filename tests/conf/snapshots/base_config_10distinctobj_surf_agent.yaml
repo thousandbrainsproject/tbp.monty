@@ -191,7 +191,7 @@ experiment:
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
         rotations: ${constants.rotations_all}
-    eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
+    eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.ObjectInterface}
     logging:
       monty_log_level: BASIC
       monty_handlers:
