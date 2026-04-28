@@ -77,6 +77,7 @@ class FeatureAtLocationBuffer:
             "matching_step_when_output_goal_set": [],
             "goal_state_achieved": [],
             "mlh_prediction_error": [],
+            "num_bursts": 0,
         }
         self.start_time = time.time()
 
