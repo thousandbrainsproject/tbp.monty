@@ -361,9 +361,9 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.updater.num_bursts = 0
 
         tracker = EvidenceSlopeTracker(min_age=0)
-        tracker.add_hyp(3, "patch")
-        tracker.update(np.array([0.0, 0.0, 0.0]), "patch")
-        tracker.update(np.array([0.5, 0.5, 0.5]), "patch")
+        tracker.add_hyp(3)
+        tracker.update(np.array([0.0, 0.0, 0.0]))
+        tracker.update(np.array([0.5, 0.5, 0.5]))
         self.updater.evidence_slope_trackers = {"object1": tracker}
 
         for _ in range(num_steps):
