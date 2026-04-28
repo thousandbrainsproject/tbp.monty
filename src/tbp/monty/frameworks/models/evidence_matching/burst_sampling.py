@@ -249,6 +249,7 @@ class BurstSamplingHypothesesUpdater:
 
     def reset(self) -> None:
         self.sampling_burst_steps = 0
+        self.num_bursts = 0
 
         # Dictionary of slope trackers, one for each graph_id
         self.evidence_slope_trackers: dict[str, EvidenceSlopeTracker] = {}
@@ -269,6 +270,7 @@ class BurstSamplingHypothesesUpdater:
             and self.sampling_burst_steps == 0
         ):
             self.sampling_burst_steps = self.sampling_burst_duration
+            self.num_bursts += 1
 
         return self
 

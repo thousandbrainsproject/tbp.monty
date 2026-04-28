@@ -790,6 +790,7 @@ def add_evidence_lm_episode_stats(lm, stats, consistent_child_objects):
     stats["episode_avg_prediction_error"] = np.mean(
         lm.buffer.stats["mlh_prediction_error"]
     )
+    stats["num_bursts"] = lm.buffer.stats["num_bursts"]
     stats = calculate_performance(stats, "primary_performance", lm, lm.primary_target)
     stats = calculate_performance(
         stats, "stepwise_performance", lm, lm.stepwise_target_object

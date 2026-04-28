@@ -46,6 +46,10 @@ def update_snapshots(
         existing_snapshot.unlink()
 
     for file_path in config_dir.glob("*.yaml"):
+        # Exclude MuJoCo experiments
+        # TODO: Revert once we convert to MuJoCo
+        if file_path.stem.endswith("mujoco"):
+            continue
         print(f"Updating snapshot: {file_path}")
         with hydra.initialize(version_base=None, config_path="."):
             print(f"experiment={override_prefix}{file_path.stem}")

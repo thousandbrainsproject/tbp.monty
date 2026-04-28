@@ -2,7 +2,7 @@
 
 defaults:
   - /monty: graph_exp20_e3_t3_tot2500
-  - /monty/motor_system_config: informed_5_goal0
+  - /monty/motor_system_config: informed_random_walk_5
   - /monty/learning_module: test_feature_1lm_mmd001
   - /monty/sensor_module: camera_dist
   - /monty/connectivity: 1lm_1sm
