@@ -260,13 +260,11 @@ class MontyExperiment:
 
         Raises:
             TypeError: If `env_interface_class` is not a subclass of
-                `EnvironmentInterface`
+                `Interface`
         """
         # training and validation are just different environment interfaces
         if not issubclass(env_interface_class, Interface):
-            raise TypeError(
-                "env_interface_class must be EnvironmentInterface (for now)"
-            )
+            raise TypeError("env_interface_class must be Interface (for now)")
 
         return env_interface_class(
             **env_interface_args,
@@ -307,7 +305,7 @@ class MontyExperiment:
             eval_epochs=self.eval_epochs,
             episode_seed=current_rng_seed,
         )
-        # FIXME: 'target' attribute is specific to `EnvironmentInterfacePerObject`
+        # FIXME: 'target' attribute is specific to `OneObjectPerEpisodeInterface`
         if isinstance(self.env_interface, OneObjectPerEpisodeInterface):
             target = self.env_interface.primary_target
             if target is not None:

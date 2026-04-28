@@ -185,7 +185,7 @@ class FakeOmniglotEnvironment(FakeEnvironmentAbs):
         self.alphabet_names = ["name_one", "name_two", "name_three"]
 
 
-class EnvironmentInterfacePerObjectTest(unittest.TestCase):
+class OneObjectPerEpisodeInterfaceTest(unittest.TestCase):
     def test_accepts_plain_list_object_names(self):
         seed = 42
         rng = np.random.RandomState(seed)
