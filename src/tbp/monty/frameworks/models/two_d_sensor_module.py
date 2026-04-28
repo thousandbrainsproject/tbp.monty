@@ -343,6 +343,7 @@ class TwoDSensorModule(SensorModule):
             )
 
         self._previous_2d_location += [du, dv]
+        self._previous_3d_location = current_3d_location
         observed_state.set_displacement(np.array([du, dv, 0.0]))
         observed_state.location = np.array(
             [
