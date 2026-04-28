@@ -50,10 +50,17 @@ def position(draw) -> VectorXYZ:
 
 @st.composite
 def unit_quaternion(draw) -> QuaternionWXYZ:
+    """Strategy to generate unit quaternions.
+
+    Returns:
+        A unit quaternion as a 4-tuple, scalar first
+    """
+    # We're generating the quaternions from Euler angles because generating the
+    # coefficients directly results in zero-quaterions, which are invalid and raise
+    # an error when trying to construct the Rotation.
     x_rad = draw(st.floats(min_value=0.0, max_value=np.pi * 2))
     y_rad = draw(st.floats(min_value=0.0, max_value=np.pi * 2))
     z_rad = draw(st.floats(min_value=0.0, max_value=np.pi * 2))
-    # run through a SciPy rotation object to get quaternion values
     rotation = Rotation.from_euler("xyz", [x_rad, y_rad, z_rad], degrees=False)
     normalized_rotation = rotation_as_quat(rotation)
     return cast("QuaternionWXYZ", tuple(normalized_rotation))
@@ -120,7 +127,8 @@ class DistantAgentTest(TestCase):
     @given(
         sensor_rotation=x_rotation_quaterion(),
     )
-    # Example of a quaternion that ends up coming back as its negative.
+    # Example of a quaternion that is rotated to its negative, which is an
+    # equivalent rotation.
     @example(sensor_rotation=(-0.4161468365471424, 0.9092974268256817, 0.0, 0.0))
     @settings(deadline=None)
     def test_set_sensor_rotation(self, sensor_rotation):
@@ -132,8 +140,8 @@ class DistantAgentTest(TestCase):
         sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
         assert sensor_state.position == (0.0, 0.0, 0.0)
         # Due to the transformations that happen to sensor.rotation, some of the
-        # quaternions come back as their equivalent negative. Changing to
-        # SciPy rotation side-steps that issue when testing the results.
+        # quaternions are rotated to their negative, which represents the same rotation.
+        # Changing to SciPy rotation side-steps that issue when testing the results.
         sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
         expected_rot = rotation_from_quat(sensor_rotation)
         assert expected_rot.approx_equal(sensor_rot)
@@ -147,7 +155,7 @@ class DistantAgentTest(TestCase):
 
             agent_state = self.sim.states[TEST_AGENT_ID]
             # Moving forward moves the agent in the negative Z direction, so the
-            # returned distance will be the negative of the requested distance.
+            # moved distance will be the negative of the requested distance.
             assert agent_state.position == (0.0, 0.0, -distance)
 
     @given(delta_theta=st.floats(min_value=-180.0, max_value=180.0))
@@ -180,30 +188,44 @@ class DistantAgentTest(TestCase):
 
             assert agent_rot.approx_equal(expected_rot)
 
-    @given(delta_phi=st.floats(min_value=-180.0, max_value=180.0))
+    @given(
+        delta_phi=st.floats(min_value=0.0, max_value=180.0),
+        phi_limit=st.floats(min_value=0.0, max_value=180.0),
+    )
     @settings(deadline=None)
-    def test_look_up(self, delta_phi):
-        action = LookUp(agent_id=TEST_AGENT_ID, rotation_degrees=delta_phi)
+    def test_look_up(self, delta_phi, phi_limit):
+        action = LookUp(
+            agent_id=TEST_AGENT_ID,
+            rotation_degrees=delta_phi,
+            constraint_degrees=phi_limit,
+        )
         with sim_resetter(self.sim):
             self.sim.step([action])
 
             sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
             sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
             expected_rot = Rotation.from_euler(
-                "xyz", [delta_phi, 0.0, 0.0], degrees=True
+                "xyz", [min(delta_phi, phi_limit), 0.0, 0.0], degrees=True
             )
             assert sensor_rot.approx_equal(expected_rot)
 
-    @given(delta_phi=st.floats(min_value=-180.0, max_value=180.0))
+    @given(
+        delta_phi=st.floats(min_value=0.0, max_value=180.0),
+        phi_limit=st.floats(min_value=0.0, max_value=180.0),
+    )
     @settings(deadline=None)
-    def test_look_down(self, delta_phi):
-        action = LookDown(agent_id=TEST_AGENT_ID, rotation_degrees=delta_phi)
+    def test_look_down(self, delta_phi, phi_limit):
+        action = LookDown(
+            agent_id=TEST_AGENT_ID,
+            rotation_degrees=delta_phi,
+            constraint_degrees=phi_limit,
+        )
         with sim_resetter(self.sim):
             self.sim.step([action])
 
             sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
             sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
             expected_rot = Rotation.from_euler(
-                "xyz", [-delta_phi, 0.0, 0.0], degrees=True
+                "xyz", [-min(delta_phi, phi_limit), 0.0, 0.0], degrees=True
             )
             assert sensor_rot.approx_equal(expected_rot)
