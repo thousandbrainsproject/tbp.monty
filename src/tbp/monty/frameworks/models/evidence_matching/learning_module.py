@@ -729,6 +729,7 @@ class EvidenceGraphLM(GraphLM):
             "current_mlh": self.get_current_mlh(),
         }
         self._append_mlh_prediction_error_to_stats()
+        self._add_num_bursts_to_buffer_stats()
         if self.has_detailed_logger:
             stats = self._add_detailed_stats(stats)
         return stats
@@ -1271,6 +1272,14 @@ class EvidenceGraphLM(GraphLM):
         # Do we want to store this? will probably just clutter.
         # self.buffer.update_stats(vote_data, update_time=False)
         pass
+
+    def _add_num_bursts_to_buffer_stats(self):
+        """Add the the per-episode burst count to overall buffer stats.
+
+        Updaters that do not sample in bursts report 0.
+        """
+        num_bursts = getattr(self.hypotheses_updater, "num_bursts", 0)
+        self.buffer.add_overall_stats({"num_bursts": num_bursts})
 
     def _append_mlh_prediction_error_to_stats(self):
         """Append the MLH prediction error for this step to the buffer stats."""
