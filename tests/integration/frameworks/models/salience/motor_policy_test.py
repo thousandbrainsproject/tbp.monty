@@ -24,7 +24,7 @@ from hypothesis import strategies as st
 
 from tbp.monty.cmp import Goal
 from tbp.monty.experiment.environment import (
-    ObjectInterface,
+    OneObjectPerEpisodeInterface,
 )
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
@@ -112,7 +112,7 @@ class LookAtGoalTest(unittest.TestCase):
         )
         object_names = ["cubeSolid"]
 
-        cls.env_interface = ObjectInterface(
+        cls.env_interface = OneObjectPerEpisodeInterface(
             object_names=object_names,
             object_init_sampler=object_init_sampler,
             env=cls.env,

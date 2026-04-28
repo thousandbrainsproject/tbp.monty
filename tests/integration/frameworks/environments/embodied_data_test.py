@@ -20,7 +20,7 @@ from omegaconf import OmegaConf
 
 from tbp.monty.experiment.environment import (
     Interface,
-    ObjectInterface,
+    OneObjectPerEpisodeInterface,
     OmniglotInterface,
     SaccadeOnImageFromStreamInterface,
     SaccadeOnImageInterface,
@@ -190,7 +190,7 @@ class EnvironmentInterfacePerObjectTest(unittest.TestCase):
         seed = 42
         rng = np.random.RandomState(seed)
 
-        env_interface = ObjectInterface(
+        env_interface = OneObjectPerEpisodeInterface(
             env=FakeEnvironmentAbs(),
             rng=rng,
             seed=seed,
@@ -209,7 +209,7 @@ class EnvironmentInterfacePerObjectTest(unittest.TestCase):
         seed = 42
         rng = np.random.RandomState(seed)
 
-        env_interface = ObjectInterface(
+        env_interface = OneObjectPerEpisodeInterface(
             env=FakeEnvironmentAbs(),
             rng=rng,
             seed=seed,
@@ -228,7 +228,7 @@ class EnvironmentInterfacePerObjectTest(unittest.TestCase):
         seed = 42
         rng = np.random.RandomState(seed)
 
-        env_interface = ObjectInterface(
+        env_interface = OneObjectPerEpisodeInterface(
             env=FakeEnvironmentAbs(),
             rng=rng,
             seed=seed,
@@ -260,7 +260,7 @@ class EnvironmentInterfacePerObjectTest(unittest.TestCase):
             TypeError,
             "Object names must be a list, ListConfig, or a mapping",
         ):
-            ObjectInterface(
+            OneObjectPerEpisodeInterface(
                 env=FakeEnvironmentAbs(),
                 rng=rng,
                 seed=seed,

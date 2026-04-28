@@ -187,7 +187,7 @@ experiment:
         - ${np.array:[0.0, 15.0, 30.0]}
         - ${np.array:[7.0, 77.0, 2.0]}
         - ${np.array:[81.0, 33.0, 90.0]}
-    eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.ObjectInterface}
+    eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
     logging:
       monty_log_level: BASIC
       monty_handlers:

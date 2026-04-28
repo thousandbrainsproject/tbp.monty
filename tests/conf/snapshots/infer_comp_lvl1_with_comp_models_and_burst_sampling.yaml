@@ -335,7 +335,7 @@ experiment:
         sensor_id: patch_0
         allow_translation: false
         max_orientation_attempts: 3
-    eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.ObjectInterface}
+    eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
     logging:
       monty_log_level: BASIC
       monty_handlers:

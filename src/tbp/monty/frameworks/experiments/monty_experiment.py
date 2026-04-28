@@ -24,7 +24,7 @@ from typing_extensions import Self
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.environment import (
     Interface,
-    ObjectInterface,
+    OneObjectPerEpisodeInterface,
     SaccadeOnImageFromStreamInterface,
     SaccadeOnImageInterface,
 )
@@ -308,7 +308,7 @@ class MontyExperiment:
             episode_seed=current_rng_seed,
         )
         # FIXME: 'target' attribute is specific to `EnvironmentInterfacePerObject`
-        if isinstance(self.env_interface, ObjectInterface):
+        if isinstance(self.env_interface, OneObjectPerEpisodeInterface):
             target = self.env_interface.primary_target
             if target is not None:
                 target.update(
@@ -562,7 +562,7 @@ class MontyExperiment:
             num_episodes = len(self.env_interface.scenes)
             for _ in range(num_episodes):
                 self.run_episode()
-        elif isinstance(self.env_interface, ObjectInterface):
+        elif isinstance(self.env_interface, OneObjectPerEpisodeInterface):
             for object_name in self.env_interface.object_names:
                 logger.info(f"Running a simulation to model object: {object_name}")
                 self.run_episode()

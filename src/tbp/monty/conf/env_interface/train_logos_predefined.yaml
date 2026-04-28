@@ -22,4 +22,4 @@ train_env_interface_args:
       - 0.0
       - 0.0
     _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.ObjectInterface}
+train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}

@@ -53,7 +53,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
 
 __all__ = [
     "Interface",
-    "ObjectInterface",
+    "OneObjectPerEpisodeInterface",
     "OmniglotInterface",
     "SaccadeOnImageFromStreamInterface",
     "SaccadeOnImageInterface",
@@ -158,7 +158,7 @@ class Interface:
         pass
 
 
-class ObjectInterface(Interface):
+class OneObjectPerEpisodeInterface(Interface):
     """Interface for testing in an environment with one "primary target" object.
 
     Interface for testing in an environment where we load one "primary target" object
@@ -405,7 +405,7 @@ class ObjectInterface(Interface):
             )
 
 
-class OmniglotInterface(ObjectInterface):
+class OmniglotInterface(OneObjectPerEpisodeInterface):
     """Environment interface for Omniglot dataset."""
 
     def __init__(
@@ -501,7 +501,7 @@ class OmniglotInterface(ObjectInterface):
         }
 
 
-class SaccadeOnImageInterface(ObjectInterface):
+class SaccadeOnImageInterface(OneObjectPerEpisodeInterface):
     """Environment interface for moving over a 2D image with depth channel."""
 
     def __init__(
