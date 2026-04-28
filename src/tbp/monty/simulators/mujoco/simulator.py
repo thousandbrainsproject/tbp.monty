@@ -208,7 +208,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         """Returns the maximum width and heights of the sensors.
 
         Used by the simulator to determine the size of the off-screen rendering
-        surface to insure it is always large enough for any sensor images we
+        surface to ensure it is always large enough for any sensor images we
         need to render.
 
         Note: the maximum width and maximum height may come from separate sensors.
