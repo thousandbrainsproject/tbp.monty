@@ -117,6 +117,12 @@ class TwoDSensorModule(SensorModule):
             self._percept_filter = PassthroughPerceptFilter()
         self._snapshot_telemetry = SnapshotTelemetry()
 
+        self._extract_edges = any(
+            feature in features for feature in ("edge_strength", "coherence")
+        )
+        if self._extract_edges and edge_detector is None:
+            edge_detector = EdgeDetector()
+
         self.features = features
         self.processed_obs = []
         self.states = []
@@ -187,11 +193,12 @@ class TwoDSensorModule(SensorModule):
 
         if observed_state.use_state and observed_state.get_on_object():
             self._update_tangent_frame(true_surface_normal)
-            observed_state = self._extract_2d_edge(
-                observed_state,
-                observation,
-                true_surface_normal,
-            )
+            if self._extract_edges:
+                observed_state = self._extract_2d_edge(
+                    observed_state,
+                    observation,
+                    true_surface_normal,
+                )
 
         if observed_state.use_state:
             observed_state = self._message_noise(observed_state, rng=ctx.rng)
@@ -234,11 +241,12 @@ class TwoDSensorModule(SensorModule):
             Message with edge-based pose vectors if edge detected,
             otherwise returns the original state unchanged.
         """
-        edge = self.edge_detector(
-            observation,
-            surface_normal=surface_normal_3d,
-            tangent_frame=self._tangent_frame,
-        )
+        if self.edge_detector is None:
+            raise RuntimeError(
+                "edge_detector is required when edge_strength or coherence is in features."
+            )
+
+        edge = self.edge_detector(observation)
 
         if not edge.has_edge or (edge.strength and edge.is_geometric_edge):
             return state
