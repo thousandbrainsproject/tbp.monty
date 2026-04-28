@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any, Sequence
+from typing import Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -50,23 +50,18 @@ def scipy_rotations_approx_equal(
     a: ScipyRotation,
     b: ScipyRotation,
     tol: float = DEFAULT_TOLERANCE,
-    degrees: bool = False,
 ) -> bool | np.ndarray:
     """Backport of `scipy.spatial.transform.Rotation.approx_equal`.
 
     Args:
         a: First scipy rotation.
         b: Second scipy rotation.
-        tol: Absolute tolerance, expressed in radians by default, or degrees if
-          `degrees` is True.
-        degrees: Whether `tol` is expressed in degrees. Default is False.
+        tol: Absolute tolerance, expressed in radians.
 
     Returns:
         True if the angular delta between `a` and `b` is within tolerance. False
         otherwise. If `a` and `b` are non-single, returns an array of booleans.
     """
-    if degrees:
-        tol = np.degrees(tol)
     return (b * a.inv()).magnitude() <= tol
 
 
@@ -100,7 +95,7 @@ class Rotation:
             rot = obj.as_scipy_rotation()
         else:
             raise TypeError(f"Invalid object type: {type(obj)}")
-        object.__setattr__(self, "_rot", rot)  # because immutability
+        self._rot = rot
 
     @property
     def single(self) -> bool:
@@ -204,6 +199,28 @@ class Rotation:
         weights: npt.ArrayLike | None = None,
         return_sensitivity: bool = False,
     ) -> tuple[Rotation, float] | tuple[Rotation, float, np.ndarray]:
+        """Estimate a rotation to optimally align two sets of vectors.
+
+        For full details, see
+        (`scipy.spatial.transform.Rotation.align_vectors`)[https://docs.scipy.org/doc/scipy-1.10.1/reference/generated/scipy.spatial.transform.Rotation.align_vectors.html].
+
+        Args:
+            a: Array-like of shape (3,) or (N, 3).
+            b: Array-like of shape (3,) or (N, 3).
+            weights: Weights describing the relative importance of the vector
+              observations. If None (default), then all values in weights are assumed
+              to be 1. One and only one weight may be infinity, and weights must be
+              positive.
+            return_sensitivity: Whether to return the sensitivity matrix. See Notes for
+              details. Default is False.
+
+        Returns:
+            rotation : Best estimate of the `Rotation` that transforms `b` to `a`.
+            rssd : Square root of the weighted sum of the squared distances between
+              the given sets of vectors.
+            sensitivity_matrix : Sensitivity matrix of the estimated rotation estimate.
+              See scipy documentation (link above) for details.
+        """
         result = ScipyRotation.align_vectors(a, b, weights, return_sensitivity)
         return (Rotation(result[0]), *result[1:])
 
@@ -279,14 +296,22 @@ class Rotation:
         self,
         other: Rotation,
         tol: float = DEFAULT_TOLERANCE,
-        degrees: bool = False,
     ) -> bool | np.ndarray:
-        return scipy_rotations_approx_equal(
-            self._rot, other.as_scipy_rotation(), tol=tol, degrees=degrees
-        )
+        """Check if this rotation is approximately equal to another rotation.
 
-    def __bool__(self) -> bool:
-        return bool(self._rot)
+        Args:
+            other: The other rotation to compare to.
+            tol: Absolute tolerance, expressed in radians.
+
+        Returns:
+            True if the angular delta between `a` and `b` is within tolerance. False
+            otherwise. If `a` and `b` are non-single, returns an array of booleans.
+        """
+        return scipy_rotations_approx_equal(
+            self._rot,
+            other.as_scipy_rotation(),
+            tol=tol,
+        )
 
     def __getitem__(self, indexer: int | slice | None) -> Rotation:
         return Rotation(self._rot[indexer])
@@ -295,6 +320,19 @@ class Rotation:
         return len(self._rot)
 
     def __mul__(self, other: Rotation) -> Rotation:
+        """Compose this rotation with the other.
+
+        If `p` and `q` are two rotations, then the composition of 'q` followed
+        by `p` is equivalent to `p * q`. In terms of rotation matrices,
+        the composition can be expressed as
+        `p.as_matrix() @ q.as_matrix()`.
+
+        Args:
+            other: The other rotation to compose with.
+
+        Returns:
+            The composed rotation.
+        """
         return Rotation(self._rot * other.as_scipy_rotation())
 
     def __repr__(self) -> str:
