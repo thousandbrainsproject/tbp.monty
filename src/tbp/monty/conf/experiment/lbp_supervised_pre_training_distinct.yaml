@@ -26,4 +26,4 @@ experiment:
     seed: 42
     supervised_lm_ids: all
     logging:
-      run_name: ltp_ror_hellinger_deltathresholding_distinct_test
+      run_name: ltp_ror_hellinger_distinct_w_object_masking

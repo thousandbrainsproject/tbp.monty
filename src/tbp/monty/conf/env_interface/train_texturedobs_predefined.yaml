@@ -4,7 +4,7 @@ do_train: true
 train_env_interface_args:
   parent_to_child_mapping: null
   object_names:
-  - gelatin_box
+  - e_cups
   - potted_meat_can
   - sugar_box
   - foam_brick
