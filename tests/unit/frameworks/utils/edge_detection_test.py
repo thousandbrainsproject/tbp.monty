@@ -19,9 +19,9 @@ from hypothesis import strategies as st
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.utils.edge_detection import (
-    DEFAULT_POSE_2D,
     EdgeDetector,
     StructureTensor,
+    _angle_to_pose_2d,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     TangentFrame,
@@ -48,7 +48,7 @@ a_scalar = st.floats(min_value=DEFAULT_TOLERANCE, max_value=100.0)
 class EdgeDetectorGroundTruth:
     name: str
     angle: float
-    camera_orientation: np.ndarray  # 3x3
+    world_camera: np.ndarray  # 3x3
     surface_normal: np.ndarray
     expected_pose_2d: np.ndarray
 
@@ -57,7 +57,7 @@ cases = [
     EdgeDetectorGroundTruth(
         name="identity_camera_vertical_edge",
         angle=np.pi / 2,
-        camera_orientation=np.identity(3),
+        world_camera=np.identity(4),
         surface_normal=np.array([0.0, 0.0, 1.0]),
         expected_pose_2d=np.array(
             [
@@ -70,7 +70,7 @@ cases = [
     EdgeDetectorGroundTruth(
         name="identity_camera_diagonal_edge",
         angle=np.pi / 4,
-        camera_orientation=np.identity(3),
+        world_camera=np.identity(4),
         surface_normal=np.array([0.0, 0.0, 1.0]),
         expected_pose_2d=np.array(
             [
@@ -83,7 +83,7 @@ cases = [
     EdgeDetectorGroundTruth(
         name="identity_camera_horizontal_edge",
         angle=np.pi,
-        camera_orientation=np.identity(3),
+        world_camera=np.identity(4),
         surface_normal=np.array([0.0, 0.0, 1.0]),
         expected_pose_2d=np.array(
             [
@@ -96,11 +96,12 @@ cases = [
     EdgeDetectorGroundTruth(
         name="rotated_camera_surface_x_horizontal_edge",
         angle=np.pi,
-        camera_orientation=np.array(
+        world_camera=np.array(
             [
-                [0.0, -1.0, 0.0],
-                [1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0],
+                [0.0, -1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
             ],
         ),
         surface_normal=np.array([1.0, 0.0, 0.0]),
@@ -115,11 +116,12 @@ cases = [
     EdgeDetectorGroundTruth(
         name="camera_y_to_world_z_surface_y_diagonal_edge",
         angle=np.pi / 4,
-        camera_orientation=np.array(
+        world_camera=np.array(
             [
-                [1.0, 0.0, 0.0],
-                [0.0, 0.0, -1.0],
-                [0.0, 1.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, -1.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
             ]
         ),
         surface_normal=np.array([0.0, 1.0, 0.0]),
@@ -265,14 +267,15 @@ def assert_pose_2d_is_orthonormal(pose_2d: np.ndarray) -> None:
 
 
 def sensor_observation(
-    angle: float | None = None, camera_orientation: np.ndarray | None = None
+    angle: float | None = None, world_camera: np.ndarray | None = None
 ) -> SensorObservation:
     """Build a minimal SensorObservation.
 
     Args:
         angle: If None, create a uniform rgb patch (no edge).
             Otherwise a Hypothesis strategy to draw from.
-        camera_orientation: A 3x3 rotation matrix. If None, the identity matrix is used.
+        world_camera: If None, create an identity matrix.
+            Otherwise a 4x4 camera-to-world matrix.
 
     Returns:
         SensorObservation.
@@ -283,10 +286,7 @@ def sensor_observation(
 
     depth = np.ones((PATCH_SIZE, PATCH_SIZE), dtype=np.float32)
 
-    world_camera = np.identity(4)
-    if camera_orientation is not None:
-        world_camera[:3, :3] = camera_orientation.copy()
-
+    world_camera = np.identity(4) if world_camera is None else world_camera
     return SensorObservation(
         rgba=rgba,
         depth=depth,
@@ -384,46 +384,17 @@ class TestEdgeDetector(unittest.TestCase):
             EdgeDetector(kernel_size=2)
 
     @given(
-        angle=edge_angles,
-        camera_orientation=rotation_matrices,
-        geometry=surface_geometry(),
-    )
-    def test_surface_normal_is_not_none(self, angle, camera_orientation, geometry):
-        detector = EdgeDetector()
-        _, tangent_frame = geometry
-        obs = sensor_observation(angle=angle, camera_orientation=camera_orientation)
-
-        with pytest.raises(ValueError, match="surface_normal is required"):
-            detector(obs, surface_normal=None, tangent_frame=tangent_frame)
-
-    @given(
-        angle=edge_angles,
-        camera_orientation=rotation_matrices,
-        geometry=surface_geometry(),
-    )
-    def test_tangent_frame_is_not_none(self, angle, camera_orientation, geometry):
-        detector = EdgeDetector()
-        surface_normal_3d, _ = geometry
-        obs = sensor_observation(angle=angle, camera_orientation=camera_orientation)
-
-        with pytest.raises(ValueError, match="tangent_frame is required"):
-            detector(obs, surface_normal=surface_normal_3d, tangent_frame=None)
-
-    @given(
         angle=st.just(None),
-        camera_orientation=rotation_matrices,
-        geometry=surface_geometry(),
+        world_camera=rotation_matrices,
     )
-    def test_uniform_patch_returns_no_edge(self, angle, camera_orientation, geometry):
+    def test_uniform_patch_returns_no_edge(self, angle, world_camera):
         detector = EdgeDetector()
-        surface_normal_3d, tangent_frame = geometry
-        obs = sensor_observation(angle=angle, camera_orientation=camera_orientation)
-        edge = detector(obs, surface_normal_3d, tangent_frame)
+        obs = sensor_observation(angle=angle, world_camera=world_camera)
+        edge = detector(obs)
 
         assert edge.strength == 0.0
         assert edge.coherence == 0.0
         assert edge.angle is None
-        np.testing.assert_allclose(edge.pose_2d, DEFAULT_POSE_2D)
         assert edge.is_geometric_edge is False
         assert edge.has_edge is False
 
@@ -440,48 +411,56 @@ class TestEdgeDetector(unittest.TestCase):
         )
         # Set radius to force total_weight > DEFAULT_TOLERANCE
         detector = EdgeDetector(radius=PATCH_SIZE // 2, max_center_offset=1)
-        surface_normal_3d = np.array([1.0, 1.0, 1.0]) / np.sqrt(3.0)
-        tangent_frame = TangentFrame(surface_normal_3d)
-
-        edge = detector(obs, surface_normal_3d, tangent_frame)
+        edge = detector(obs)
 
         assert edge.strength == 0.0
         assert edge.coherence == 0.0
         assert edge.angle is None
-
-    @given(
-        angle=edge_angles,
-        camera_orientation=rotation_matrices,
-        geometry=surface_geometry(),
-    )
-    def test_angled_edge_patch_reports_expected_angle(
-        self, angle, camera_orientation, geometry
-    ):
-        detector = EdgeDetector()
-        surface_normal, tangent_frame = geometry
-        obs = sensor_observation(angle=angle, camera_orientation=camera_orientation)
-
-        edge = detector(obs, surface_normal, tangent_frame)
-        assert angle_distance(edge.angle, angle) < 0.1
+        assert edge.is_geometric_edge is False
+        assert edge.has_edge is False
 
     def test_edge_detection_for_closed_form_solutions(self):
         detector = EdgeDetector()
         for case in cases:
             with self.subTest(case=case.name):
-                surface_normal = case.surface_normal
-                tangent_frame = TangentFrame(surface_normal)
-                obs = sensor_observation(case.angle, case.camera_orientation)
+                obs = sensor_observation(case.angle, case.world_camera)
 
-                edge = detector(obs, surface_normal, tangent_frame)
+                edge = detector(obs)
 
-                assert_pose_2d_is_orthonormal(edge.pose_2d)
+                assert angle_distance(edge.angle, case.angle) < 0.1
+
+    @given(
+        angle=edge_angles,
+        world_camera=rotation_matrices,
+    )
+    def test_angled_edge_patch_reports_expected_angle(self, angle, world_camera):
+        detector = EdgeDetector()
+        obs = sensor_observation(angle=angle, world_camera=world_camera)
+
+        edge = detector(obs)
+        assert angle_distance(edge.angle, angle) < 0.1
+
+
+class TestAngleTo2DPose(unittest.TestCase):
+    def test_angle_converts_to_expected_pose_2d(self):
+        for case in cases:
+            with self.subTest(case=case.name):
+                tangent_frame = TangentFrame(case.surface_normal)
+                pose_2d = _angle_to_pose_2d(
+                    angle=case.angle,
+                    world_camera=case.world_camera,
+                    surface_normal=case.surface_normal,
+                    tangent_frame=tangent_frame,
+                )
                 np.testing.assert_allclose(
-                    edge.pose_2d, case.expected_pose_2d, atol=0.1
+                    pose_2d, case.expected_pose_2d, atol=DEFAULT_TOLERANCE
                 )
 
     def test_angle_to_pose_2d_uses_transported_tangent_frame(self):
-        detector = EdgeDetector()
-        tangent_frame = TangentFrame(np.array([0.0, 0.0, 1.0]))
+        angle = np.pi / 2
+        world_camera = np.identity(4)
+        surface_normal = np.array([1.0, 1.0, 1.0])
+        tangent_frame = TangentFrame(surface_normal)
 
         for normal in [
             normalize(np.array([0.0, 0.2, 1.0])),
@@ -491,20 +470,20 @@ class TestEdgeDetector(unittest.TestCase):
         ]:
             tangent_frame.transport(normal)
 
-        surface_normal = tangent_frame.normal
-        angle = np.pi / 2
-        world_camera = np.identity(4)
-
-        obs = sensor_observation(angle, world_camera[:3, :3])
-        edge = detector(obs, surface_normal, tangent_frame)
+        pose_2d = _angle_to_pose_2d(
+            angle=angle,
+            world_camera=world_camera,
+            surface_normal=surface_normal,
+            tangent_frame=tangent_frame,
+        )
 
         np.testing.assert_allclose(
-            edge.pose_2d,
+            pose_2d,
             compute_expected_pose_2d(
                 angle,
                 world_camera,
                 surface_normal,
                 tangent_frame,
             ),
-            atol=0.1,
+            atol=DEFAULT_TOLERANCE,
         )
