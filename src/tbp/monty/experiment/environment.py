@@ -53,8 +53,8 @@ from tbp.monty.frameworks.models.motor_system_state import (
 
 __all__ = [
     "Interface",
-    "OneObjectPerEpisodeInterface",
     "OmniglotInterface",
+    "OneObjectPerEpisodeInterface",
     "SaccadeOnImageFromStreamInterface",
     "SaccadeOnImageInterface",
 ]

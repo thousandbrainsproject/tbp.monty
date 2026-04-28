@@ -20,8 +20,8 @@ from omegaconf import OmegaConf
 
 from tbp.monty.experiment.environment import (
     Interface,
-    OneObjectPerEpisodeInterface,
     OmniglotInterface,
+    OneObjectPerEpisodeInterface,
     SaccadeOnImageFromStreamInterface,
     SaccadeOnImageInterface,
 )
