@@ -15,7 +15,6 @@ from pprint import pformat
 from typing import Mapping, Sequence, cast
 
 import numpy as np
-import quaternion as qt
 from omegaconf import ListConfig
 
 from tbp.monty.frameworks.actions.actions import (

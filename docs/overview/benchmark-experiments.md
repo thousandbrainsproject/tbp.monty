@@ -147,8 +147,8 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > | Dataset | Archive Format | Download Link |
 > | --- | --- | --- |
-> | compositional_objects | tgz | [compositional_objects.tgz]((https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.tgz)) |
-> | compositional_objects | zip | [compositional_objects.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.zip) |
+> | compositional_objects_1.1 | tgz | [compositional_objects_1.1.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.tgz) |
+> | compositional_objects_1.1 | zip | [compositional_objects_1.1.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.zip) |
 > 
 > Unpack the archive in the `~/tbp/data/` folder. For example:
 >
@@ -157,16 +157,16 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > cd ~/tbp/data/
 >
-> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.tgz | tar -xzf -
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.tgz | tar -xzf -
 > ```
 > ```plaintext zip
 > mkdir -p ~/tbp/data/
 > 
 > cd ~/tbp/data/
 > 
-> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.zip
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.zip
 > 
-> unzip compositional_objects.zip
+> unzip compositional_objects_1.1.zip
 > ```
 >
 > To generate the pretrained models, run the following experiments in order:
@@ -179,7 +179,33 @@ Note: To obtain these results, pretraining was run without parallelization acros
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl2_comp_models
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl3_comp_models
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl4_comp_models
+> ```
+
+> [!NOTE]
+> Alternatively, you can download the pretrained models directly instead of running the pretraining experiments above:
+>
+> | Models | Archive Format | Download Link |
+> | --- | --- | --- |
+> | pretrained_compositional_objects_v3 | tgz | [pretrained_compositional_objects_v3.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v3.tgz) |
+> | pretrained_compositional_objects_v3 | zip | [pretrained_compositional_objects_v3.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v3.zip) |
+>
+> Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
+>
+> ```plaintext tgz
+> mkdir -p ~/tbp/results/monty/pretrained_models/
+>
+> cd ~/tbp/results/monty/pretrained_models/
+>
+> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v3.tgz | tar -xzf -
+> ```
+> ```plaintext zip
+> mkdir -p ~/tbp/results/monty/pretrained_models/
+>
+> cd ~/tbp/results/monty/pretrained_models/
+>
+> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v3.zip
+>
+> unzip pretrained_compositional_objects_v3.zip
 > ```
 
 
@@ -219,7 +245,7 @@ curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.
 unzip worldimages.zip
 ```
 
-Finally, note that the world_image experimental runs **do not support running with multi-processing, so you cannot use the run_parallel.py script** when running these. This is because an appropriate object_init_sampler has yet to be defined for this experimental setup. All experiments are run with 16 CPUs for benchmarking purposes.
+Finally, note that the world_image experimental runs **do not support running with multi-processing, so you cannot use the run_parallel.py script** when running these. This is because an appropriate object_init_sampler has yet to be defined for this experimental setup. Note that this restriction does not apply to `randrot_noise_sim_on_scan_monty_world`, which can still be parallelized with `run_parallel.py`. All experiments are run with 16 CPUs for benchmarking purposes.
 
 See the [monty_lab project folder](https://github.com/thousandbrainsproject/monty_lab/tree/main/monty_meets_world) for the code.
 
