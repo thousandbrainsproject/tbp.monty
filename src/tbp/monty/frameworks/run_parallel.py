@@ -25,8 +25,8 @@ import torch.multiprocessing as mp
 import wandb
 from omegaconf import DictConfig, OmegaConf
 
-from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentInterfacePerObject,
+from tbp.monty.experiment.environment import (
+    OneObjectPerEpisodeInterface,
 )
 from tbp.monty.frameworks.environments.object_init_samplers import (
     Predefined,
@@ -434,7 +434,6 @@ def get_overall_stats(stats):
     overall_stats["overall/avg_prediction_error"] = np.mean(
         stats["episode/avg_prediction_error"]
     )
-    overall_stats["overall/avg_num_bursts"] = np.mean(stats["episode/num_bursts"])
 
     correct_ids = np.where(np.array(stats["episode/correct"]) == 1)
     correct_rotation_errs = np.array(stats["episode/rotation_error"])[correct_ids]
@@ -707,7 +706,7 @@ def main(cfg: DictConfig):
     if cfg.experiment.config.do_train:
         assert issubclass(
             cfg.experiment.config.train_env_interface_class,
-            EnvironmentInterfacePerObject,
+            OneObjectPerEpisodeInterface,
         ), "parallel experiments only work (for now) with per object env interfaces"
 
         train_configs = generate_parallel_train_configs(
@@ -729,7 +728,7 @@ def main(cfg: DictConfig):
     if cfg.experiment.config.do_eval:
         assert issubclass(
             cfg.experiment.config.eval_env_interface_class,
-            EnvironmentInterfacePerObject,
+            OneObjectPerEpisodeInterface,
         ), "parallel experiments only work (for now) with per object env interfaces"
 
         eval_configs = generate_parallel_eval_configs(

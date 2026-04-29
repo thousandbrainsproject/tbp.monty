@@ -23,7 +23,6 @@ from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 class EvidenceLMTest(BaseGraphTest):
     def setUp(self):
-        """Code that gets executed before every test."""
         super().setUp()
 
         self.default_gsg_config = dict(
@@ -139,7 +138,6 @@ class EvidenceLMTest(BaseGraphTest):
         return graph_lm
 
     def test_symmetry_recognition(self):
-        """Test that symmetry is recognized."""
         fake_obs_test = copy.deepcopy(self.fake_obs_symmetric)
         # Get LM with object learned from fake_obs
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_symmetric)
@@ -194,7 +192,6 @@ class EvidenceLMTest(BaseGraphTest):
         )
 
     def test_same_sequence_recognition_elm(self):
-        """Test that the object is recognized with same action sequence."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
 
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
@@ -382,29 +379,6 @@ class EvidenceLMTest(BaseGraphTest):
                     0,
                     "Should have no possible matches.",
                 )
-
-    def test_channel_mapper_shape_elm(self):
-        """Test that the channel mapper matches evidence keys and shape."""
-        fake_obs_test = copy.deepcopy(self.fake_obs_learn)
-
-        graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
-
-        graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
-        graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
-        graph_lm.matching_step(self.ctx, [fake_obs_test[0]])
-
-        self.assertEqual(
-            graph_lm.evidence.keys(),
-            graph_lm.channel_hypothesis_mapping.keys(),
-            "Graph ID should match.",
-        )
-
-        self.assertEqual(
-            graph_lm.evidence["new_object0"].shape[0],
-            graph_lm.channel_hypothesis_mapping["new_object0"].total_size,
-            "Channel mapper should have the total number of hypotheses in evidence",
-        )
 
     def _evaluate_target_location(
         self, graph_lm, fake_obs_test, target_object, focus_on_pose=False
