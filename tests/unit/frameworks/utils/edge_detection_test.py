@@ -10,12 +10,13 @@
 from __future__ import annotations
 
 import unittest
-from dataclasses import dataclass
+from typing import NamedTuple
 
 import numpy as np
 import pytest
 from hypothesis import example, given
 from hypothesis import strategies as st
+from unittest_parametrize import ParametrizedTestCase, parametrize
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.utils.edge_detection import (
@@ -44,8 +45,7 @@ edge_angles = st.floats(min_value=DEFAULT_TOLERANCE, max_value=np.pi)
 a_scalar = st.floats(min_value=DEFAULT_TOLERANCE, max_value=100.0)
 
 
-@dataclass(frozen=True)
-class EdgeDetectorGroundTruth:
+class EdgeDetectorExpectedValues(NamedTuple):
     name: str
     angle: float
     world_camera: np.ndarray  # 3x3
@@ -53,8 +53,8 @@ class EdgeDetectorGroundTruth:
     expected_pose_2d: np.ndarray
 
 
-cases = [
-    EdgeDetectorGroundTruth(
+CASES = [
+    EdgeDetectorExpectedValues(
         name="identity_camera_vertical_edge",
         angle=np.pi / 2,
         world_camera=np.identity(4),
@@ -67,7 +67,7 @@ cases = [
             ]
         ),
     ),
-    EdgeDetectorGroundTruth(
+    EdgeDetectorExpectedValues(
         name="identity_camera_diagonal_edge",
         angle=np.pi / 4,
         world_camera=np.identity(4),
@@ -80,7 +80,7 @@ cases = [
             ]
         ),
     ),
-    EdgeDetectorGroundTruth(
+    EdgeDetectorExpectedValues(
         name="identity_camera_horizontal_edge",
         angle=np.pi,
         world_camera=np.identity(4),
@@ -93,7 +93,7 @@ cases = [
             ]
         ),
     ),
-    EdgeDetectorGroundTruth(
+    EdgeDetectorExpectedValues(
         name="rotated_camera_surface_x_horizontal_edge",
         angle=np.pi,
         world_camera=np.array(
@@ -113,7 +113,7 @@ cases = [
             ]
         ),
     ),
-    EdgeDetectorGroundTruth(
+    EdgeDetectorExpectedValues(
         name="camera_y_to_world_z_surface_y_diagonal_edge",
         angle=np.pi / 4,
         world_camera=np.array(
@@ -378,7 +378,7 @@ class StructureTensorTest(unittest.TestCase):
         )
 
 
-class TestEdgeDetector(unittest.TestCase):
+class TestEdgeDetector(ParametrizedTestCase):
     def test_kernel_size_is_not_odd(self):
         with pytest.raises(ValueError, match="must be odd"):
             EdgeDetector(kernel_size=2)
@@ -419,15 +419,20 @@ class TestEdgeDetector(unittest.TestCase):
         assert edge.is_geometric_edge is False
         assert edge.has_edge is False
 
-    def test_edge_detection_for_closed_form_solutions(self):
+    @parametrize("name,angle,world_camera,surface_normal,expected_pose_2d", CASES)
+    def test_edge_detection_for_closed_form_solutions(
+        self,
+        name,
+        angle,
+        world_camera,
+        surface_normal,  # noqa: ARG002
+        expected_pose_2d,  # noqa: ARG002
+    ):
         detector = EdgeDetector()
-        for case in cases:
-            with self.subTest(case=case.name):
-                obs = sensor_observation(case.angle, case.world_camera)
+        obs = sensor_observation(angle, world_camera)
+        edge = detector(obs)
 
-                edge = detector(obs)
-
-                assert angle_distance(edge.angle, case.angle) < 0.1
+        assert angle_distance(edge.angle, angle) < 0.1, f"{name} case failed."
 
     @given(
         angle=edge_angles,
@@ -441,20 +446,24 @@ class TestEdgeDetector(unittest.TestCase):
         assert angle_distance(edge.angle, angle) < 0.1
 
 
-class TestAngleTo2DPose(unittest.TestCase):
-    def test_angle_converts_to_expected_pose_2d(self):
-        for case in cases:
-            with self.subTest(case=case.name):
-                tangent_frame = TangentFrame(case.surface_normal)
-                pose_2d = _angle_to_pose_2d(
-                    angle=case.angle,
-                    world_camera=case.world_camera,
-                    surface_normal=case.surface_normal,
-                    tangent_frame=tangent_frame,
-                )
-                np.testing.assert_allclose(
-                    pose_2d, case.expected_pose_2d, atol=DEFAULT_TOLERANCE
-                )
+class TestAngleTo2DPose(ParametrizedTestCase):
+    @parametrize("name,angle,world_camera,surface_normal,expected_pose_2d", CASES)
+    def test_angle_converts_to_expected_pose_2d(
+        self, name, angle, world_camera, surface_normal, expected_pose_2d
+    ):
+        tangent_frame = TangentFrame(surface_normal)
+        pose_2d = _angle_to_pose_2d(
+            angle=angle,
+            world_camera=world_camera,
+            surface_normal=surface_normal,
+            tangent_frame=tangent_frame,
+        )
+        np.testing.assert_allclose(
+            pose_2d,
+            expected_pose_2d,
+            atol=DEFAULT_TOLERANCE,
+            err_msg=f"{name} case failed.",
+        )
 
     def test_angle_to_pose_2d_uses_transported_tangent_frame(self):
         angle = np.pi / 2

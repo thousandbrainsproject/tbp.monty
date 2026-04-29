@@ -13,7 +13,6 @@ from typing import Any, Callable
 from unittest.mock import Mock, sentinel
 
 import numpy as np
-import pytest
 import quaternion as qt
 
 from tbp.monty.cmp import Message
@@ -156,112 +155,17 @@ def make_2d_sm(
     )
 
 
-"""
-Below are ideas for tests for SensorModules in general
-(i.e. CameraSM/TwoDSensorModule).
-Not implemented (except for first one) because I think they belong elsewhere.
-I think these should go into Shortcut Tickets.
-
-1. [x] `test_step_snapshots_raw_observation_as_needed`
-    - Idea taken from SalienceSMTest.
-    - Implemented for practice (and I think I have something a bit better).
-    - But I think this applies to all SensorModule and may not belong in this file.
-    - If so, delete implementation and save it to Shortcut Ticket.
-
-2. [x] `test_pre_episode_resets_all_state`
-    - Idea: Run N on object steps to pretend that we are at the end of an episode
-    - Call pre_episode() and assert states are reset
-    - Implemented for practice.
-
-3. [ ] Percept Filter/`delta_thresholds`
-    - Idea was to assert that first percept passes, unchanged percepts become
-    use_state=False, significant distance/feature change passes, and
-    pre_episode() resets the filter.
-
-4. [ ] Noise with RuntimeContext.rng
-5. [ ] `test_update_state_computes_sensor_world_position`
-    - Make an AgentState with known rotation and sensor offset.
-    - Call update_state() and make sure sm.state position/rotation are updated.
-
-6. [ ] `test_motor_only_step_sets_use_state_false`
-7. [ ] `test_state_dict_contains_processed_observations`
-    - Ideas was to Run N steps, call state_dict(), then assert that result has
-    "processed_observations" key with N entries.
-"""
-
-
-########################################################################
-# Practice Implementation (but not specific to 2D SM)                  #
-########################################################################
-@pytest.mark.parametrize(
-    ("save_raw_obs", "is_exploring", "expected_snapshots"),
-    [
-        (True, False, 1),
-        (True, True, 0),
-        (False, False, 0),
-        (False, True, 0),
-    ],
-)
-def test_step_snapshots_raw_observation_as_needed(
-    save_raw_obs: bool,
-    is_exploring: bool,
-    expected_snapshots: bool,
-):
-    # I updated slightly from SalienceSMTest because
-    # I think this mirrors how the codebase might use a SM
-    # (not by checking whether a method was called). 🤷‍♀️
-    two_d_sm = make_2d_sm(
-        save_raw_obs=save_raw_obs,
-        edge_detector=Mock(return_value=make_no_edge()),
-    )
-    two_d_sm.is_exploring = is_exploring
-    two_d_sm.update_state(make_agent_state())
-
-    ctx = RuntimeContext(rng=np.random.RandomState())
-    obs = sentinel.raw_observation
-    two_d_sm._observation_processor.process = Mock(return_value=make_message())
-
-    two_d_sm.step(ctx, obs)
-    state = two_d_sm.state_dict()
-    assert len(state["raw_observations"]) == expected_snapshots
-    assert len(state["sm_properties"]) == expected_snapshots
-
-    if expected_snapshots:
-        assert state["raw_observations"][0] is obs
-        np.testing.assert_allclose(
-            state["sm_properties"][0]["sm_location"],
-            two_d_sm.state.position,
-        )
-        np.testing.assert_allclose(
-            state["sm_properties"][0]["sm_rotation"],
-            qt.as_float_array(two_d_sm.state.rotation),
-        )
-
-
-def test_pre_episode_resets_all_state():
-    two_d_sm = make_2d_sm()
-    assert two_d_sm._previous_3d_location is None
-    np.testing.assert_allclose(
-        two_d_sm._previous_2d_location, [0.0, 0.0], atol=DEFAULT_TOLERANCE
-    )
-    assert two_d_sm._tangent_frame is None
-    assert two_d_sm.processed_obs == []
-    assert two_d_sm.states == []
-    assert two_d_sm.is_exploring is False
-
-
 """Note on Terminology:
-- I'm using `raw_observation` as what comes after Transforms
+- I'm using `transformed_obs` as what comes after Transforms
     (This has rgba, depth, world_camera, etc.)
 - I'm using `percept` as _input_ message from ObservationProcessor
 - I'm using `msg` as _output_ message from TwoDSensorModule returned from step()
 """
 
+
 #################################################
 # Tests specific to TwoDSM (init-related)       #
 #################################################
-
-
 def test_first_observation_initializes_2d_location_from_world_xy():
     two_d_sm = make_2d_sm(edge_detector=Mock(return_value=make_no_edge()))
     world_location = np.array([1.0, 2.0, 3.0])
