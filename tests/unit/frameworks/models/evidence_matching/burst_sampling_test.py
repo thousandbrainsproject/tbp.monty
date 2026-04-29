@@ -464,7 +464,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             mask_to_retain=np.array([False, False, False])
         )
 
-        result = self.updater._sample_existing_hypotheses_based_on_evidence_slopes(
+        result = self.updater._sample_existing_hypotheses(
             hypotheses_selection=hypotheses_selection,
             hypotheses=hypotheses,
             tracker=tracker,
@@ -558,7 +558,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
     ) -> None:
         tracker = EvidenceSlopeTracker()
 
-        result = self.updater._sample_new_hypotheses_based_on_current_observation(
+        result = self.updater._sample_new_hypotheses(
             features={"patch": {"pose_fully_defined": pose_fully_defined}},
             graph_id="object1",
             new_hypotheses_per_channel={"patch": 0},
@@ -601,7 +601,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
         tracker = EvidenceSlopeTracker()
 
-        result = self.updater._sample_new_hypotheses_based_on_current_observation(
+        result = self.updater._sample_new_hypotheses(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
             new_hypotheses_per_channel={"patch": sample_count},
@@ -673,7 +673,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             for pose in euler_angles
         ]
 
-        result = updater._sample_new_hypotheses_based_on_current_observation(
+        result = updater._sample_new_hypotheses(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
             new_hypotheses_per_channel={"patch": sample_count},
@@ -713,7 +713,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             return_value=np.tile(np.eye(3), (3, 1, 1)).astype(np.float64)
         )
 
-        result = self.updater._sample_new_hypotheses_based_on_current_observation(
+        result = self.updater._sample_new_hypotheses(
             features={
                 "patch": {
                     "pose_fully_defined": True,
@@ -816,7 +816,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         ]
         self.updater.use_features_for_matching = {"patch": False}
 
-        result = self.updater._sample_new_hypotheses_based_on_current_observation(
+        result = self.updater._sample_new_hypotheses(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
             new_hypotheses_per_channel={"patch": sample_count},

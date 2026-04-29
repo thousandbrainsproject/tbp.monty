@@ -331,12 +331,12 @@ class BurstSamplingHypothesesUpdater:
             tracker=tracker,
         )
 
-        existing_hypotheses = self._sample_existing_hypotheses_based_on_evidence_slopes(
+        existing_hypotheses = self._sample_existing_hypotheses(
             hypotheses_selection=hypotheses_selection,
             hypotheses=hypotheses,
             tracker=tracker,
         )
-        new_hypotheses = self._sample_new_hypotheses_based_on_current_observation(
+        new_hypotheses = self._sample_new_hypotheses(
             features=features,
             graph_id=graph_id,
             new_hypotheses_per_channel=new_hypotheses_per_channel,
@@ -474,13 +474,13 @@ class BurstSamplingHypothesesUpdater:
             new_hypotheses_per_channel,
         )
 
-    def _sample_existing_hypotheses_based_on_evidence_slopes(
+    def _sample_existing_hypotheses(
         self,
         hypotheses_selection: HypothesesSelection,
         hypotheses: Hypotheses,
         tracker: EvidenceSlopeTracker,
     ) -> Hypotheses:
-        """Samples the specified number of existing hypotheses to retain.
+        """Samples a specified number of existing hypotheses based on evidence slope.
 
         Note that we are not sampling the existing hypotheses in a probabilistic
         sense (e.g., random or seed-generation). Instead, those are deterministically
@@ -520,7 +520,7 @@ class BurstSamplingHypothesesUpdater:
             possible=hypotheses.possible[ids_to_retain],
         )
 
-    def _sample_new_hypotheses_based_on_current_observation(
+    def _sample_new_hypotheses(
         self,
         features: dict,
         graph_id: str,
