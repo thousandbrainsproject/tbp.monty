@@ -18,12 +18,15 @@ import pytest
 import quaternion as qt
 from hypothesis import example, given
 from hypothesis import strategies as st
+from hypothesis.extra.numpy import arrays
 
 from tbp.monty.frameworks.models.salience.strategies.vocus2 import (
     Pyramid,
+    gaussian_pyramid,
     pyramid_octave_shapes,
 )
 from tbp.monty.frameworks.sensors import Resolution2D
+from tests.unit.statistics import total_variation
 
 
 class PyramidTest(unittest.TestCase):
@@ -112,3 +115,78 @@ class PyramidOctaveShapesTest(unittest.TestCase):
         smaller_dims = np.array([min(shape) for shape in computed_shapes], dtype=int)
         # assert all of smaller_dims are greater than or equal to min_size
         self.assertTrue(all(smaller_dims >= min_size))
+
+
+class GaussianPyramidTest(unittest.TestCase):
+    @given(
+        image=arrays(dtype=np.float32, shape=(1024, 1024)),
+        n_scales=st.integers(min_value=1, max_value=10),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
+        min_size=st.integers(min_value=1, max_value=1024 * 2),
+    )
+    def test_gaussian_pyramid_has_correct_shape(
+        self,
+        image: np.ndarray,
+        n_scales: int,
+        max_octaves: int,
+        min_size: int,
+    ) -> None:
+        sigma = 3.0
+
+        expected_octave_shapes = pyramid_octave_shapes(
+            cast("Resolution2D", image.shape),
+            max_octaves=max_octaves,
+            min_size=min_size,
+        )
+        pyr = gaussian_pyramid(
+            image,
+            sigma=sigma,
+            n_scales=n_scales,
+            max_octaves=max_octaves,
+            min_size=min_size,
+        )
+        # Test pyramid is correct shape.
+        self.assertEqual(pyr.n_octaves, len(expected_octave_shapes))
+        self.assertEqual(pyr.n_scales, n_scales)
+
+        # Test each plane in pyramid is correct shape.
+        for octave in range(pyr.n_octaves):
+            for scale in range(pyr.n_scales):
+                self.assertEqual(
+                    pyr.data[octave, scale].shape, expected_octave_shapes[octave]
+                )
+
+    @given(
+        image=arrays(
+            dtype=np.float32,
+            shape=(1024, 1024),
+            elements=st.floats(
+                min_value=0.0,
+                max_value=1.0,
+                allow_nan=False,
+                width=32,
+            ),
+        ),
+        sigma=st.floats(min_value=0.5, max_value=3.0),
+        n_scales=st.integers(min_value=1, max_value=3),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
+        min_size=st.integers(min_value=1, max_value=1024 * 2),
+    )
+    def test_subsequent_planes_have_decreasing_total_variation(
+        self,
+        image: np.ndarray,
+        sigma: float,
+        n_scales: int,
+        max_octaves: int,
+        min_size: int,
+    ) -> None:
+        pyr = gaussian_pyramid(
+            image,
+            sigma=sigma,
+            n_scales=n_scales,
+            max_octaves=max_octaves,
+            min_size=min_size,
+        )
+        variations = np.array([total_variation(plane) for plane in pyr.flat])
+        diffs = np.ediff1d(variations)
+        self.assertTrue(all(diffs <= 0))

@@ -96,6 +96,14 @@ class Pyramid:
         return self.data.shape  # type: ignore[return-value]
 
     @property
+    def n_octaves(self) -> int:
+        return self.shape[0]
+
+    @property
+    def n_scales(self) -> int:
+        return self.shape[1]
+
+    @property
     def flat(self) -> Iterator[npt.NDArray[np.float32]]:
         return self.data.flat  # type: ignore[return-value]
 
@@ -227,10 +235,11 @@ def center_surround_pyramids(
     n_scales: int,
     **kwargs,
 ) -> tuple[Pyramid, Pyramid]:
-    center = gaussian_pyramid(image, sigma=center_sigma, n_scales=n_scales, **kwargs)
+    center: Pyramid = gaussian_pyramid(
+        image, sigma=center_sigma, n_scales=n_scales, **kwargs
+    )
 
-    center = center if isinstance(center, Pyramid) else Pyramid(center)
-    n_octaves, n_scales = center.data.shape
+    n_octaves, n_scales = center.shape
 
     # Use adapted surround sigma, a la VOCUS2.
     adapted_sigma = np.sqrt(surround_sigma**2 - center_sigma**2)
