@@ -156,14 +156,6 @@ def make_2d_sm(
     )
 
 
-"""Note on Terminology:
-- I'm using `transformed_obs` as what comes after Transforms
-    (This has rgba, depth, world_camera, etc.)
-- I'm using `percept` as _input_ message from ObservationProcessor
-- I'm using `msg` as _output_ message from TwoDSensorModule returned from step()
-"""
-
-
 class TwoDSensorModuleInitTest(unittest.TestCase):
     def test_first_observation_initializes_2d_location_from_world_xy(self) -> None:
         two_d_sm = make_2d_sm(edge_detector=Mock(return_value=make_no_edge()))
