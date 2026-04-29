@@ -68,9 +68,9 @@ def _angle_to_pose_2d(
     """
     R = world_camera[:3, :3]  # noqa: N806
     image_x_world = R @ np.array([1.0, 0.0, 0.0])
-    image_y_world = R @ np.array([0.0, 1.0, 0.0])
+    image_y_world = R @ np.array([0.0, -1.0, 0.0])
 
-    edge_world = np.cos(angle) * image_x_world - np.sin(angle) * image_y_world
+    edge_world = np.cos(angle) * image_x_world + np.sin(angle) * image_y_world
     edge_tangent_world = project_onto_tangent_plane(edge_world, surface_normal)
 
     if np.linalg.norm(edge_tangent_world) < DEFAULT_TOLERANCE:
