@@ -78,36 +78,36 @@ class PyramidOctaveShapesTest(unittest.TestCase):
             st.integers(min_value=1, max_value=1024),
             st.integers(min_value=1, max_value=1024),
         ),
-        max_levels=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
         min_size=st.integers(min_value=1, max_value=1024 * 2),
     )
-    def test_max_levels_limits_number_of_octaves(
+    def test_max_octaves_limits_number_of_octaves(
         self,
         image_shape: Resolution2D,
-        max_levels: int,
+        max_octaves: int,
         min_size: int,
     ):
         computed_shapes = pyramid_octave_shapes(
-            image_shape, max_levels=max_levels, min_size=min_size
+            image_shape, max_octaves=max_octaves, min_size=min_size
         )
-        self.assertLessEqual(len(computed_shapes), max_levels)
+        self.assertLessEqual(len(computed_shapes), max_octaves)
 
     @given(
         image_shape=st.tuples(
             st.integers(min_value=1, max_value=1024),
             st.integers(min_value=1, max_value=1024),
         ),
-        max_levels=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
         min_size=st.integers(min_value=1, max_value=1024 * 2),
     )
     def test_min_size_limits_number_of_octaves(
         self,
         image_shape: Resolution2D,
-        max_levels: int,
+        max_octaves: int,
         min_size: int,
     ):
         computed_shapes = pyramid_octave_shapes(
-            image_shape, max_levels=max_levels, min_size=min_size
+            image_shape, max_octaves=max_octaves, min_size=min_size
         )
         smaller_dims = np.array([min(shape) for shape in computed_shapes], dtype=int)
         # assert all of smaller_dims are greater than or equal to min_size

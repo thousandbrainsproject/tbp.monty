@@ -129,30 +129,30 @@ class Pyramid:
 
 def pyramid_octave_shapes(
     image_shape: Resolution2D,
-    max_levels: int | None = None,
+    max_octaves: int | None = None,
     min_size: int | None = None,
 ) -> list[tuple[int, int]]:
     """Compute the shapes of the pyramid levels.
 
     Args:
         image_shape: The shape of the image from which the pyramid will be built.
-        max_levels: The maximum number of levels in the pyramid.
+        max_octaves: The maximum number of levels in the pyramid.
         min_size: The minimum size of the pyramid levels.
 
     Returns:
         A list of tuples, each containing the shape of a pyramid level.
     """
     max_possible_octaves = int(np.log2(min(image_shape))) + 1
-    if max_levels:
-        max_levels = min(max_levels, max_possible_octaves)
+    if max_octaves:
+        max_octaves = min(max_octaves, max_possible_octaves)
     else:
-        max_levels = max_possible_octaves
+        max_octaves = max_possible_octaves
 
     min_size = min_size or 1
 
     cur_shape = image_shape
     shapes: list[tuple[int, int]] = []
-    while len(shapes) < max_levels and min(cur_shape) >= min_size:
+    while len(shapes) < max_octaves and min(cur_shape) >= min_size:
         shapes.append(cur_shape)
         cur_shape = (cur_shape[0] // 2, cur_shape[1] // 2)
 
@@ -163,7 +163,7 @@ def gaussian_pyramid(
     image: np.ndarray,
     sigma: float,
     n_scales: int,
-    max_levels: int | None = None,
+    max_octaves: int | None = None,
     min_size: int | None = None,
 ) -> Pyramid:
     """Build multi-scale pyramid following Lowe 2004.
@@ -176,7 +176,7 @@ def gaussian_pyramid(
         image: Input image (single channel, float32)
         sigma: Base sigma for Gaussian smoothing
         n_scales: Number of scales in each octave
-        max_levels: Maximum number of levels in the pyramid
+        max_octaves: Maximum number of levels in the pyramid
         min_size: Minimum size of the pyramid levels
 
     Returns:
@@ -186,7 +186,7 @@ def gaussian_pyramid(
     """
     # Calculate maximum number of octaves
     shapes = pyramid_octave_shapes(
-        image.shape, max_levels=max_levels, min_size=min_size
+        image.shape, max_octaves=max_octaves, min_size=min_size
     )
 
     # Compute pyramid as in Lowe 2004
@@ -248,14 +248,14 @@ def center_surround_pyramids(
 
 def laplacian_pyramid(
     pyr: Pyramid,
-    max_levels: int | None = None,
+    max_octaves: int | None = None,
     min_size: int | None = None,
 ) -> Pyramid:
     """Build a multiscale Laplacian pyramid.
 
     Args:
         pyr: The pyramid to build the Laplacian pyramid from.
-        max_levels: The maximum number of levels in the pyramid.
+        max_octaves: The maximum number of levels in the pyramid.
         min_size: The minimum size of the pyramid levels.
 
     Returns:
@@ -264,8 +264,8 @@ def laplacian_pyramid(
     gauss = pyr.data
     n_levels_in = gauss.shape[0]
     n_levels_out = n_levels_in - 1
-    if max_levels is not None:
-        n_levels_out = min(n_levels_out, max_levels)
+    if max_octaves is not None:
+        n_levels_out = min(n_levels_out, max_octaves)
     if min_size is not None:
         level_sizes = np.array([min(arrays[0].shape) for arrays in gauss])
         n_levels_big_enough = sum(level_sizes >= min_size)
@@ -433,7 +433,7 @@ class ColorChannelSalience:
         center_sigma: float,
         surround_sigma: float,
         n_scales: int,
-        max_levels: int | None = None,
+        max_octaves: int | None = None,
         min_size: int | None = None,
         combine: PyramidCombine = pyramid_combine_mean,
         collapse: PyramidCollapse = pyramid_collapse_mean,
@@ -441,7 +441,7 @@ class ColorChannelSalience:
         self._center_sigma = center_sigma
         self._surround_sigma = surround_sigma
         self._n_scales = n_scales
-        self._max_levels = max_levels
+        self._max_octaves = max_octaves
         self._min_size = min_size
         self._combine = combine
         self._collapse = collapse
@@ -461,7 +461,7 @@ class ColorChannelSalience:
             center_sigma=self._center_sigma,
             surround_sigma=self._surround_sigma,
             n_scales=self._n_scales,
-            max_levels=self._max_levels,
+            max_octaves=self._max_octaves,
             min_size=self._min_size,
         )
 
@@ -498,14 +498,14 @@ class DepthSalience:
         center_sigma: float,
         surround_sigma: float,
         n_scales: int,
-        max_levels: int | None = None,
+        max_octaves: int | None = None,
         min_size: int | None = None,
         collapse: PyramidCollapse = pyramid_collapse_mean,
     ):
         self._center_sigma = center_sigma
         self._surround_sigma = surround_sigma
         self._n_scales = n_scales
-        self._max_levels = max_levels
+        self._max_octaves = max_octaves
         self._min_size = min_size
         self._collapse = collapse
 
@@ -526,7 +526,7 @@ class DepthSalience:
             center_sigma=self._center_sigma,
             surround_sigma=self._surround_sigma,
             n_scales=self._n_scales,
-            max_levels=self._max_levels,
+            max_octaves=self._max_octaves,
             min_size=self._min_size,
         )
 
@@ -652,7 +652,7 @@ class Vocus2(SalienceStrategy):
         center_sigma: float = 3.0,
         surround_sigma: float = 5.0,
         n_scales: int = 2,
-        max_levels: int = 5,
+        max_octaves: int = 5,
         min_size: int = 16,
         depth: bool = False,
         orientation: bool = False,
@@ -668,7 +668,7 @@ class Vocus2(SalienceStrategy):
         self._center_sigma = center_sigma
         self._surround_sigma = surround_sigma
         self._n_scales = n_scales
-        self._max_levels = max_levels
+        self._max_octaves = max_octaves
         self._min_size = min_size
         self._normalize = normalize
 
@@ -677,7 +677,7 @@ class Vocus2(SalienceStrategy):
             center_sigma=self._center_sigma,
             surround_sigma=self._surround_sigma,
             n_scales=self._n_scales,
-            max_levels=self._max_levels,
+            max_octaves=self._max_octaves,
             min_size=self._min_size,
         )
 
@@ -686,7 +686,7 @@ class Vocus2(SalienceStrategy):
                 center_sigma=self._center_sigma,
                 surround_sigma=self._surround_sigma,
                 n_scales=self._n_scales,
-                max_levels=self._max_levels,
+                max_octaves=self._max_octaves,
                 min_size=self._min_size,
             )
         else:
