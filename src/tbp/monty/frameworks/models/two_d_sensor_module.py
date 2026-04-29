@@ -59,12 +59,20 @@ class TwoDSensorModule(SensorModule):
     Extends the base sensor module to detect edges on an object's surface (e.g.
     edges of a logo on a cup) and enable an associated LM to build a
     corresponding 2D model of the 3D object. Movements in 2D are estimated by
-    unrolling the 3D surface into a
-    local tangent plane, which requires extracting surface normals and principal
-    curvatures at each observation point to perform the projection correctly.
+    unrolling the 3D surface into a local tangent plane, which requires extracting
+    surface normals and principal curvatures at each observation point to perform
+    the projection correctly.
 
     The 2D position is initialized to the world x,y coordinates. A 2D model is
     built by accumulating tangent plane displacements.
+
+    Note:
+        This implementation represents the 2D model in the world xy-plane
+        by setting z to zero and initializing 2D position from world x/y.
+        This is appropriate when the relevant camera or object-facing projection
+        is aligned with world xy. It will be incorrect for views whose image
+        plane is not aligned with world xy, for example a camera looking along
+        the x-axis, where the visible plane is closer to yz.
     """
 
     def __init__(
@@ -309,7 +317,7 @@ class TwoDSensorModule(SensorModule):
             self._previous_3d_location = current_3d_location
             self._previous_2d_location = current_3d_location[:2].copy()
             observed_state.location = np.array(
-                # Setting z = 0 assumes that camera is TODO
+                # Setting z = 0 assumes that camera is aligned with world xy.
                 [current_3d_location[0], current_3d_location[1], 0.0]
             )
             return observed_state
@@ -321,7 +329,7 @@ class TwoDSensorModule(SensorModule):
             self._previous_3d_location = current_3d_location
             observed_state.set_displacement(np.zeros(3))
             observed_state.location = np.array(
-                # See previous comment on setting z = 0
+                # See previous comment on setting z = 0.
                 [
                     self._previous_2d_location[0],
                     self._previous_2d_location[1],
