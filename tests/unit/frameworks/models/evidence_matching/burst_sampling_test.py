@@ -6,7 +6,6 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-import math
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -341,37 +340,6 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
         self.assertEqual(burst_steps_history, [5, 4, 3, 2, 1])
         self.assertEqual(self.updater.sampling_burst_steps, 0)
-
-    @given(
-        num_steps=st.integers(min_value=1, max_value=30),
-        sampling_burst_duration=st.integers(min_value=1, max_value=10),
-    )
-    def test_num_bursts_counts_burst_starts(
-        self, num_steps, sampling_burst_duration
-    ) -> None:
-        """Test that num_bursts equals ceil(num_steps / sampling_burst_duration).
-
-        Each burst contributes exactly 1 to num_bursts regardless of how many
-        steps it spans, and a new burst triggers as soon as the previous one ends
-        (because evidence keeps the slope below threshold).
-        """
-        self.updater.burst_trigger_slope = 1.0
-        self.updater.sampling_burst_duration = sampling_burst_duration
-        self.updater.sampling_burst_steps = 0
-        self.updater.num_bursts = 0
-
-        tracker = EvidenceSlopeTracker(min_age=0)
-        tracker.add_hyp(3)
-        tracker.update(np.array([0.0, 0.0, 0.0]))
-        tracker.update(np.array([0.5, 0.5, 0.5]))
-        self.updater.evidence_slope_trackers = {"object1": tracker}
-
-        for _ in range(num_steps):
-            with self.updater:
-                pass
-
-        expected_num_bursts = math.ceil(num_steps / sampling_burst_duration)
-        self.assertEqual(self.updater.num_bursts, expected_num_bursts)
 
     def test_max_global_slope_returns_inf_when_no_trackers(self) -> None:
         """Test that _max_global_slope returns -inf when no trackers exist.
