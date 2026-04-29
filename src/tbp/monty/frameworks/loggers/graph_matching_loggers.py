@@ -107,7 +107,6 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             episode_pose_time_out=0,
             episode_time_out=0,
             episode_avg_prediction_error=[],
-            episode_num_bursts=[],
             episode_lm_performances=[],
             # Total number of steps performed during the episode,
             # including steps where no sensory data was passed to the learning-modules:
@@ -267,14 +266,11 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             )
             stats["monty_steps"].append(episode_steps)
             stats["monty_matching_steps"].append(monty_matching_steps)
-
-            # older LMs don't have prediction error or burst stats
+            # older LMs don't have prediction error stats
             if "episode_avg_prediction_error" in episode_stats:
                 stats["episode_avg_prediction_error"].append(
                     episode_stats["episode_avg_prediction_error"]
                 )
-            if "num_bursts" in episode_stats:
-                stats["episode_num_bursts"].append(episode_stats["num_bursts"])
 
             if performance in {"consistent_child_obj", "correct", "correct_mlh"}:
                 stats["num_correct_child_or_parent"] += 1
@@ -397,11 +393,6 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             "overall/avg_prediction_error": (
                 np.mean(stats["episode_avg_prediction_error"])
                 if len(stats["episode_avg_prediction_error"]) > 0
-                else np.nan
-            ),
-            "overall/avg_num_bursts": (
-                np.mean(stats["episode_num_bursts"])
-                if len(stats["episode_num_bursts"]) > 0
                 else np.nan
             ),
             "overall/percent_consistent_child_obj": (
