@@ -20,6 +20,7 @@ import numpy as np
 import numpy.typing as npt
 
 from tbp.monty.frameworks.models.salience.strategies import SalienceStrategy
+from tbp.monty.frameworks.sensors import Resolution2D
 
 """
 - Color
@@ -126,8 +127,8 @@ class Pyramid:
 """
 
 
-def pyramid_level_shapes(
-    image_shape: tuple[int, int],
+def pyramid_octave_shapes(
+    image_shape: Resolution2D,
     max_levels: int | None = None,
     min_size: int | None = None,
 ) -> list[tuple[int, int]]:
@@ -150,7 +151,7 @@ def pyramid_level_shapes(
     min_size = min_size or 1
 
     cur_shape = image_shape
-    shapes = []
+    shapes: list[tuple[int, int]] = []
     while len(shapes) < max_levels and min(cur_shape) >= min_size:
         shapes.append(cur_shape)
         cur_shape = (cur_shape[0] // 2, cur_shape[1] // 2)
@@ -184,7 +185,9 @@ def gaussian_pyramid(
     Note: sigmas = [sigma * (2.0 ** (s / n_scales)) for s in range(pyr.size)]
     """
     # Calculate maximum number of octaves
-    shapes = pyramid_level_shapes(image.shape, max_levels=max_levels, min_size=min_size)
+    shapes = pyramid_octave_shapes(
+        image.shape, max_levels=max_levels, min_size=min_size
+    )
 
     # Compute pyramid as in Lowe 2004
     pyr = np.zeros((len(shapes), n_scales + 1), dtype=object)

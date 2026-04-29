@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import cast
 from unittest.mock import Mock
 
 import numpy as np
@@ -18,10 +19,11 @@ import quaternion as qt
 from hypothesis import example, given
 from hypothesis import strategies as st
 
-from tbp.monty.frameworks.models.salience.sensor_module import (
-    SalienceSM,
+from tbp.monty.frameworks.models.salience.strategies.vocus2 import (
+    Pyramid,
+    pyramid_octave_shapes,
 )
-from tbp.monty.frameworks.models.salience.strategies.vocus2 import Pyramid, Vocus2
+from tbp.monty.frameworks.sensors import Resolution2D
 
 
 class PyramidTest(unittest.TestCase):
@@ -49,3 +51,64 @@ class PyramidTest(unittest.TestCase):
             self.assertEqual(call.args[0], data.flatten()[i])
         self.assertIsInstance(returned, Pyramid)
         self.assertEqual(returned.shape, pyr.shape)
+
+
+class PyramidOctaveShapesTest(unittest.TestCase):
+    @given(
+        image_shape=st.tuples(
+            st.integers(min_value=1, max_value=1024),
+            st.integers(min_value=1, max_value=1024),
+        ),
+    )
+    def test_generates_all_octaves_when_no_level_or_size_constraints(
+        self,
+        image_shape: Resolution2D,
+    ):
+        computed_shapes = pyramid_octave_shapes(image_shape)
+        expected_shapes = []
+        while min(image_shape) >= 1:
+            expected_shapes.append(image_shape)
+            image_shape = cast(
+                "Resolution2D", (image_shape[0] // 2, image_shape[1] // 2)
+            )
+        self.assertEqual(expected_shapes, computed_shapes)
+
+    @given(
+        image_shape=st.tuples(
+            st.integers(min_value=1, max_value=1024),
+            st.integers(min_value=1, max_value=1024),
+        ),
+        max_levels=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
+        min_size=st.integers(min_value=1, max_value=1024 * 2),
+    )
+    def test_max_levels_limits_number_of_octaves(
+        self,
+        image_shape: Resolution2D,
+        max_levels: int,
+        min_size: int,
+    ):
+        computed_shapes = pyramid_octave_shapes(
+            image_shape, max_levels=max_levels, min_size=min_size
+        )
+        self.assertLessEqual(len(computed_shapes), max_levels)
+
+    @given(
+        image_shape=st.tuples(
+            st.integers(min_value=1, max_value=1024),
+            st.integers(min_value=1, max_value=1024),
+        ),
+        max_levels=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
+        min_size=st.integers(min_value=1, max_value=1024 * 2),
+    )
+    def test_min_size_limits_number_of_octaves(
+        self,
+        image_shape: Resolution2D,
+        max_levels: int,
+        min_size: int,
+    ):
+        computed_shapes = pyramid_octave_shapes(
+            image_shape, max_levels=max_levels, min_size=min_size
+        )
+        smaller_dims = np.array([min(shape) for shape in computed_shapes], dtype=int)
+        # assert all of smaller_dims are greater than or equal to min_size
+        self.assertTrue(all(smaller_dims >= min_size))
