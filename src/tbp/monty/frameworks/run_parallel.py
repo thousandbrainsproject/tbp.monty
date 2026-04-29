@@ -434,7 +434,6 @@ def get_overall_stats(stats):
     overall_stats["overall/avg_prediction_error"] = np.mean(
         stats["episode/avg_prediction_error"]
     )
-    overall_stats["overall/avg_num_bursts"] = np.mean(stats["episode/num_bursts"])
 
     correct_ids = np.where(np.array(stats["episode/correct"]) == 1)
     correct_rotation_errs = np.array(stats["episode/rotation_error"])[correct_ids]

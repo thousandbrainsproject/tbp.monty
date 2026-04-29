@@ -14,7 +14,7 @@ import dataclasses
 import json
 import logging
 import time
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -46,6 +46,7 @@ class FeatureAtLocationBuffer:
         self.on_object = []
         self.input_percepts = []
 
+        self.last_location = None
         self.displacements = {}
 
         self.channel_sender_types = {}
@@ -76,7 +77,6 @@ class FeatureAtLocationBuffer:
             "matching_step_when_output_goal_set": [],
             "goal_state_achieved": [],
             "mlh_prediction_error": [],
-            "num_bursts": 0,
         }
         self.start_time = time.time()
 
@@ -104,15 +104,15 @@ class FeatureAtLocationBuffer:
             return 0
         return np.count_nonzero(~np.isnan(self.locations[input_channel][:, 0]))
 
-    def append(self, list_of_data):
-        """Add an observation to the buffer. Must be features at locations.
+    def append(self, percepts: list[Message]) -> None:
+        """Add a list of percepts to the buffer. Must be features at locations.
 
-        TODO S: Store messages instead of list of data?
+        TODO S: Store messages instead of list of percepts?
         A provisional version of this is implemented below, as the GSG uses
         messages for computations.
         """
         any_obs_on_obj = False
-        for msg in list_of_data:
+        for msg in percepts:
             input_channel = msg.sender_id
 
             self.channel_sender_types[input_channel] = msg.sender_type
@@ -129,13 +129,12 @@ class FeatureAtLocationBuffer:
             for attr in msg.non_morphological_features:
                 attr_val = msg.non_morphological_features[attr]
                 self._add_attr_to_feature_buffer(input_channel, attr, attr_val)
-            for attr in msg.displacement:
-                attr_val = msg.displacement[attr]
-                self._add_disp_to_displacement_buffer(input_channel, attr, attr_val)
             on_obj = msg.get_on_object()
             self._add_attr_to_feature_buffer(input_channel, "on_object", on_obj)
             if on_obj:
                 any_obs_on_obj = True
+        self._store_displacement_and_location(percepts)
+
         self.on_object.append(any_obs_on_obj)  # TODO S: remove?
 
     def append_input_percepts(self, input_percept: Message) -> None:
@@ -279,46 +278,34 @@ class FeatureAtLocationBuffer:
             return self.input_percepts[-2]
         return None
 
-    def get_nth_displacement(self, n, input_channel):
+    def nth_displacement(self, n: int) -> npt.NDArray[np.float64]:
         """Get the nth displacement.
+
+        Args:
+            n: Index of the displacement to retrieve.
 
         Returns:
             The nth displacement.
         """
-        if input_channel == "first":
-            input_channel = self.get_first_sensory_input_channel()
-        return self.displacements[input_channel]["displacement"][n]
+        return self.displacements["displacement"][n]
 
-    def get_current_displacement(self, input_channel):
+    def current_displacement(self) -> npt.NDArray[np.float64]:
         """Get the current displacement.
 
         Returns:
             The current displacement.
         """
-        return self.get_nth_displacement(-1, input_channel)
+        return self.nth_displacement(-1)
 
-    def get_all_current_displacements(self):
-        """Get all current displacements.
-
-        Returns:
-            A dictionary mapping channels to all current displacements.
-        """
-        return {
-            channel: self.get_current_displacement(channel)
-            for channel in self.displacements
-        }
-
-    def get_current_ppf(self, input_channel):
+    def current_ppf(self) -> npt.NDArray[np.float64]:
         """Get the current ppf.
 
         Returns:
             The current ppf.
         """
-        if input_channel == "first":
-            input_channel = self.get_first_sensory_input_channel()
-        return copy.deepcopy(self.displacements[input_channel]["ppf"][-1])
+        return copy.deepcopy(self.displacements["ppf"][-1])
 
-    def get_first_displacement_len(self, input_channel):
+    def first_displacement_len(self) -> float:
         """Get length of first observed displacement.
 
         Use for scale in DisplacementLM.
@@ -326,11 +313,9 @@ class FeatureAtLocationBuffer:
         Returns:
             The length of the first observed displacement.
         """
-        if input_channel == "first":
-            input_channel = self.get_first_sensory_input_channel()
-        if "ppf" in self.displacements[input_channel]:
-            return self.displacements[input_channel]["ppf"][1][0]
-        return np.linalg.norm(self.displacements[input_channel]["displacement"][1])
+        if "ppf" in self.displacements:
+            return self.displacements["ppf"][1][0]
+        return np.linalg.norm(self.displacements["displacement"][1])
 
     def get_all_features_on_object(self):
         """Get all observed features that were on the object.
@@ -544,28 +529,47 @@ class FeatureAtLocationBuffer:
         self.locations[input_channel] = padded_locs
         self.locations[input_channel][-1] = location
 
-    def _add_disp_to_displacement_buffer(self, input_channel, disp_name, disp_val):
-        """Add displacement to displacement buffer.
+    def _store_displacement_and_location(self, percepts: list[Message]) -> None:
+        """Store the global displacement and location from the current step.
+
+        Computes the average location across SM input channels (to be used for
+        calculating the next displacement) and stores any displacement present on
+        the first SM percept.
 
         Args:
-            input_channel: Input channel from which the displacement was received.
-            disp_name: Name of the displacement. Currently in ["displacement", "ppf"]
-            disp_val: Value of the displacement.
+            percepts: List of Message objects from the current step.
         """
-        if input_channel not in self.displacements:
-            self.displacements[input_channel] = {}
-        if disp_name not in self.displacements[input_channel]:
-            self.displacements[input_channel][disp_name] = np.full(
-                (len(self.locations), len(disp_val)), np.nan
-            )
+        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
+        current_location = np.mean([p.location for p in sm_percepts], axis=0)
+
+        first_percept = sm_percepts[0]
+        if getattr(first_percept, "displacement", None):
+            for name in sm_percepts[0].displacement:
+                self._add_displacement(name, sm_percepts[0].displacement[name])
+
+        self.last_location = current_location.copy()
+
+    def _add_displacement(
+        self,
+        name: Literal["displacement", "ppf"],
+        val: npt.NDArray[np.float64],
+    ) -> None:
+        """Add a displacement value to the global displacement buffer.
+
+        Args:
+            name: Name of the displacement (e.g. "displacement", "ppf").
+            val: Value of the displacement.
+        """
+        if name not in self.displacements:
+            self.displacements[name] = np.full((len(self.locations), len(val)), np.nan)
 
         padded_vals = self._pad_to_target_length(
-            existing_vals=self.displacements[input_channel][disp_name],
+            existing_vals=self.displacements[name],
             target_length=len(self) + 1,
-            new_val_len=disp_val.shape[0],
+            new_val_len=val.shape[0],
         )
-        self.displacements[input_channel][disp_name] = padded_vals
-        self.displacements[input_channel][disp_name][-1] = disp_val
+        self.displacements[name] = padded_vals
+        self.displacements[name][-1] = val
 
     def _pad_to_target_length(
         self,
