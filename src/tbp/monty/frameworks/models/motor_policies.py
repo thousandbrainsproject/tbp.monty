@@ -551,13 +551,8 @@ class JumpToGoal(MotorPolicy):
 
         # Should rotate by pitch degrees around x, and by yaw degrees around y (and
         # no change about z, which would correspond to roll)
-        scipy_combined_orientation = rot.from_euler(
-            "xyz",
-            [pitch_angle, yaw_angle, 0],
-            degrees=False,
-        )
-        # TODO: should be a QuaternionWXYZ
-        target_quat = scipy_to_numpy_quat(scipy_combined_orientation.as_quat())
+        scipy_combined_orientation = Rotation.from_euler("xy", [pitch_angle, yaw_angle])
+        target_quat = qt.quaternion(*scipy_combined_orientation.as_quat())
 
         return SetAgentPose(
             agent_id=self._agent_id,
