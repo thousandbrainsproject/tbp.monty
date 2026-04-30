@@ -6,6 +6,8 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 from contextlib import contextmanager
 from functools import partial
 from typing import cast
@@ -30,7 +32,7 @@ from tbp.monty.frameworks.utils.transform_utils import (
     rotation_as_quat,
     rotation_from_quat,
 )
-from tbp.monty.math import QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import DEFAULT_TOLERANCE, QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.mujoco import MuJoCoSimulator
 from tbp.monty.simulators.mujoco.agents import DistantAgent
 from tests.unit.simulators.mujoco.noop_agent_test import (
@@ -72,6 +74,18 @@ def x_rotation_quaterion(draw) -> QuaternionWXYZ:
     rotation = Rotation.from_euler("xyz", [x_rad, 0.0, 0.0], degrees=False)
     normalized_rotation = rotation_as_quat(rotation)
     return cast("QuaternionWXYZ", tuple(normalized_rotation))
+
+
+@st.composite
+def constrained_angle(draw) -> tuple[float, float]:
+    """Strategy to generate an angle constrained to a constraint.
+
+    Returns:
+        Tuple of angle and constraint
+    """
+    constraint = draw(st.floats(min_value=0.0, max_value=180.0))
+    angle = draw(st.floats(min_value=-constraint, max_value=constraint))
+    return angle, constraint
 
 
 @contextmanager
@@ -188,14 +202,33 @@ class DistantAgentTest(TestCase):
 
             assert agent_rot.approx_equal(expected_rot)
 
+    @given(angles=constrained_angle())
+    @settings(deadline=None)
+    def test_look_up(self, angles):
+        """Test LookUp actions with angles less than constraint move by that angle."""
+        angle, constraint = angles
+        action = LookUp(
+            agent_id=TEST_AGENT_ID,
+            rotation_degrees=angle,
+            constraint_degrees=constraint,
+        )
+        expected_rot = Rotation.from_euler("xyz", [angle, 0.0, 0.0], degrees=True)
+
+        with sim_resetter(self.sim):
+            self.sim.step([action])
+            sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
+            sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
+
+            assert sensor_rot.approx_equal(expected_rot)
+
     @given(
         delta_phi1=st.floats(min_value=-180.0, max_value=180.0),
         delta_phi2=st.floats(min_value=-180.0, max_value=180.0),
         phi_limit=st.floats(min_value=0.0, max_value=180.0),
     )
     @settings(deadline=None)
-    def test_look_up(self, delta_phi1, delta_phi2, phi_limit):
-        """Test that two LookUp actions are properly constrained."""
+    def test_multiple_look_up_constrained(self, delta_phi1, delta_phi2, phi_limit):
+        """Test that multiple LookUp actions are properly constrained."""
         actions = [
             LookUp(
                 agent_id=TEST_AGENT_ID,
@@ -208,15 +241,29 @@ class DistantAgentTest(TestCase):
                 constraint_degrees=phi_limit,
             ),
         ]
-        post_action1 = self._constrained_rotate(delta_phi1, phi_limit, 0.0)
-        post_action2 = self._constrained_rotate(delta_phi2, phi_limit, post_action1)
-
-        expected_rot = Rotation.from_euler(
-            "xyz", [post_action2, 0.0, 0.0], degrees=True
-        )
 
         with sim_resetter(self.sim):
             self.sim.step(actions)
+            sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
+            sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
+
+            pitch, _, _ = sensor_rot.as_euler("xyz", degrees=True)
+            assert abs(pitch) <= phi_limit + DEFAULT_TOLERANCE
+
+    @given(angles=constrained_angle())
+    @settings(deadline=None)
+    def test_look_down(self, angles):
+        """Test LookDown actions with angles less than constraint move by that angle."""
+        angle, constraint = angles
+        action = LookDown(
+            agent_id=TEST_AGENT_ID,
+            rotation_degrees=angle,
+            constraint_degrees=constraint,
+        )
+        expected_rot = Rotation.from_euler("xyz", [-angle, 0.0, 0.0], degrees=True)
+
+        with sim_resetter(self.sim):
+            self.sim.step([action])
             sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
             sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
 
@@ -228,8 +275,8 @@ class DistantAgentTest(TestCase):
         phi_limit=st.floats(min_value=0.0, max_value=180.0),
     )
     @settings(deadline=None)
-    def test_look_down(self, delta_phi1, delta_phi2, phi_limit):
-        """Test that two LookDown actions are properly constrained."""
+    def test_multiple_look_down_constrained(self, delta_phi1, delta_phi2, phi_limit):
+        """Test that multiple LookDown actions are properly constrained."""
         actions = [
             LookDown(
                 agent_id=TEST_AGENT_ID,
@@ -243,28 +290,10 @@ class DistantAgentTest(TestCase):
             ),
         ]
 
-        post_action1 = self._constrained_rotate(-delta_phi1, phi_limit, 0.0)
-        post_action2 = self._constrained_rotate(-delta_phi2, phi_limit, post_action1)
-
-        expected_rot = Rotation.from_euler(
-            "xyz", [post_action2, 0.0, 0.0], degrees=True
-        )
-
         with sim_resetter(self.sim):
             self.sim.step(actions)
             sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
             sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
 
-            assert sensor_rot.approx_equal(expected_rot)
-
-    def _constrained_rotate(self, delta_phi, constraint_angle, current_angle):
-        # This is technically the same code that Embodiment uses, but I can't
-        # come up with an alternative way to calculate these values.
-        new_angle = current_angle + delta_phi
-
-        if new_angle > constraint_angle:
-            delta_phi = constraint_angle - current_angle
-        elif new_angle < -constraint_angle:
-            delta_phi = -constraint_angle - current_angle
-
-        return current_angle + delta_phi
+            pitch, _, _ = sensor_rot.as_euler("xyz", degrees=True)
+            assert abs(pitch) <= phi_limit + DEFAULT_TOLERANCE
