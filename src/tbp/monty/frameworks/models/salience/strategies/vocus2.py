@@ -8,14 +8,11 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import timeit
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from pathlib import Path
-from typing import Any, Callable, Iterator, Protocol, Sequence
+from typing import Callable, Iterator, Protocol, Sequence
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 
@@ -578,6 +575,9 @@ class OrientationSalience:
                 0 for strip detection.
             gamma: Eccentricity. Good default is 0.75
             n_orientations: number of orientations. Good default is 4
+            combine: function to combine the feature maps. Good default is `map_mean`.
+            collapse: function to collapse the feature pyramids. Good default is
+                `pyramid_collapse_mean`.
 
         """
         self._period = period
@@ -732,7 +732,7 @@ class Vocus2(SalienceStrategy):
         results = {}
         feature_maps = {}
 
-        Lab = self._color_space_converter(rgb)
+        Lab = self._color_space_converter(rgb)  # noqa: N806
         L, a, b = cv2.split(Lab)  # noqa: N806
         for channel, plane in zip(("L", "a", "b"), (L, a, b)):
             results[channel] = self._color.process(plane)

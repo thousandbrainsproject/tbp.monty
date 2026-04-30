@@ -23,6 +23,4 @@ def total_variation(img: np.ndarray) -> float:
     Returns:
         The total variation of the image.
     """
-    return np.sum(np.abs(np.diff(img, axis=0))) + np.sum(
-        np.abs(np.diff(img, axis=1))
-    )
+    return np.sum(np.abs(np.diff(img, axis=0))) + np.sum(np.abs(np.diff(img, axis=1)))

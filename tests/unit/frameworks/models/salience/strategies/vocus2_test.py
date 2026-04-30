@@ -13,9 +13,6 @@ from typing import cast
 from unittest.mock import Mock
 
 import numpy as np
-import numpy.typing as npt
-import pytest
-import quaternion as qt
 from hypothesis import example, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
@@ -30,12 +27,11 @@ from tests.unit.statistics import total_variation
 
 
 class PyramidTest(unittest.TestCase):
-
     @given(ndim=st.integers(min_value=3, max_value=10))
     @example(ndim=1)
     def test_cannot_create_pyramid_with_non_2d_contents(self, ndim: int):
         with self.assertRaises(AssertionError):
-            Pyramid(np.zeros((5,)*ndim, dtype=object))
+            Pyramid(np.zeros((5,) * ndim, dtype=object))
 
     def test_can_create_pyramid_with_2d_contents(self):
         Pyramid(np.zeros((5, 5), dtype=object))
@@ -45,7 +41,9 @@ class PyramidTest(unittest.TestCase):
         dim2=st.integers(min_value=1, max_value=10),
     )
     def test_apply_applies_function_to_each_element(self, dim1: int, dim2: int):
-        data = np.array([[Mock() for _ in range(dim2)] for _ in range(dim1)], dtype=object)
+        data = np.array(
+            [[Mock() for _ in range(dim2)] for _ in range(dim1)], dtype=object
+        )
         pyr = Pyramid(data)
         fn = Mock()
         returned = pyr.apply(fn)
