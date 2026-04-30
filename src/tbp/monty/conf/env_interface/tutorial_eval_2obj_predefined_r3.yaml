@@ -3,9 +3,11 @@
 do_eval: true
 eval_env_interface_args:
   parent_to_child_mapping: null
+  # Specify objects to test.
   object_names:
   - mug
   - banana
+  # Specify the rotations in which objects will be presented.
   object_init_sampler:
     _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
     rotations:
