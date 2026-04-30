@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Iterator, Protocol, Sequence
+from typing import Callable, Iterator, Protocol, Sequence, cast
 
 import cv2
 import numpy as np
@@ -191,11 +191,13 @@ def gaussian_pyramid(
     """
     # Calculate maximum number of octaves
     shapes = pyramid_octave_shapes(
-        image.shape, max_octaves=max_octaves, min_size=min_size
+        cast("Resolution2D", image.shape),
+        max_octaves=max_octaves,
+        min_size=min_size,
     )
 
     # Compute pyramid as in Lowe 2004
-    pyr = np.zeros((len(shapes), n_scales + 1), dtype=object)
+    data = np.zeros((len(shapes), n_scales + 1), dtype=object)
     for octave in range(len(shapes)):
         # Compute n_scales + 1 (extra scale used as first of next octave)
         for scale in range(n_scales + 1):
@@ -206,7 +208,7 @@ def gaussian_pyramid(
 
             # First scale of other octaves: subsample additional scale of previous
             elif octave > 0 and scale == 0:
-                src = pyr[octave - 1, n_scales]
+                src = data[octave - 1, n_scales]
                 dst = resize(src, shapes[octave])
 
             # Intermediate scales: smooth previous scale
@@ -214,15 +216,15 @@ def gaussian_pyramid(
                 target_sigma = sigma * 2.0 ** (scale / n_scales)
                 previous_sigma = sigma * 2.0 ** ((scale - 1) / n_scales)
                 sig_diff = np.sqrt(target_sigma**2 - previous_sigma**2)
-                src = pyr[octave, scale - 1]
+                src = data[octave, scale - 1]
                 dst = gaussian_blur(src, sig_diff)
 
-            pyr[octave, scale] = dst
+            data[octave, scale] = dst
 
     # Erase the temporary scale in each octave that was just used to
     # compute the sigmas for the next octave.
-    pyr = pyr[:, :-1]
-    return Pyramid(pyr)
+    data = data[:, :-1]
+    return Pyramid(data)
 
 
 def center_surround_pyramids(
@@ -230,24 +232,48 @@ def center_surround_pyramids(
     center_sigma: float,
     surround_sigma: float,
     n_scales: int,
-    **kwargs,
+    max_octaves: int | None = None,
+    min_size: int | None = None,
 ) -> tuple[Pyramid, Pyramid]:
+    """Build center and surround pyramids.
+
+    Args:
+        image: The image to build the pyramids from.
+        center_sigma: The sigma for the center pyramid.
+        surround_sigma: The sigma for the surround pyramid.
+        n_scales: The number of scales in each pyramid.
+        max_octaves: An optional maximum number of levels in the pyramids.
+        min_size: An optional minimum size of the images in the last octave.
+
+    Returns:
+        A tuple of center and surround pyramids.
+
+    Raises:
+        ValueError: If center sigma is greater than or equal to surround sigma.
+    """
+    if center_sigma >= surround_sigma:
+        raise ValueError("Center sigma must be less than surround sigma")
+
     center: Pyramid = gaussian_pyramid(
-        image, sigma=center_sigma, n_scales=n_scales, **kwargs
+        image,
+        sigma=center_sigma,
+        n_scales=n_scales,
+        max_octaves=max_octaves,
+        min_size=min_size,
     )
 
     n_octaves, n_scales = center.shape
 
     # Use adapted surround sigma, a la VOCUS2.
     adapted_sigma = np.sqrt(surround_sigma**2 - center_sigma**2)
-    surround = np.zeros((n_octaves, n_scales), dtype=object)
+    surround_data = np.zeros((n_octaves, n_scales), dtype=object)
     for level in range(n_octaves):
         for scale in range(n_scales):
             scaled_sigma = adapted_sigma * (2.0 ** (scale / n_scales))
             center_img = center.data[level, scale]
-            surround[level, scale] = gaussian_blur(center_img, scaled_sigma)
+            surround_data[level, scale] = gaussian_blur(center_img, scaled_sigma)
 
-    surround: Pyramid = Pyramid(surround)
+    surround: Pyramid = Pyramid(surround_data)
 
     return center, surround
 
@@ -306,7 +332,7 @@ class PyramidCollapse(Protocol):
 def pyramid_combine(
     pyramids: Sequence[Pyramid],
     fn: Callable[[Sequence[np.ndarray]], np.ndarray],
-) -> np.ndarray:
+) -> Pyramid:
     """Combine multiple pyramids into a single pyramid.
 
     Args:

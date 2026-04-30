@@ -19,6 +19,7 @@ from hypothesis.extra.numpy import arrays
 
 from tbp.monty.frameworks.models.salience.strategies.vocus2 import (
     Pyramid,
+    center_surround_pyramids,
     gaussian_pyramid,
     pyramid_octave_shapes,
 )
@@ -171,6 +172,86 @@ class GaussianPyramidTest(unittest.TestCase):
         min_size=st.integers(min_value=1, max_value=1024 * 2),
     )
     def test_subsequent_planes_have_decreasing_total_variation(
+        self,
+        image: np.ndarray,
+        sigma: float,
+        n_scales: int,
+        max_octaves: int,
+        min_size: int,
+    ) -> None:
+        pyr = gaussian_pyramid(
+            image,
+            sigma=sigma,
+            n_scales=n_scales,
+            max_octaves=max_octaves,
+            min_size=min_size,
+        )
+        variations = np.array([total_variation(plane) for plane in pyr.flat])
+        diffs = np.ediff1d(variations)
+        self.assertTrue(all(diffs <= 0))
+
+
+class CenterSurroundPyramidsTest(unittest.TestCase):
+    @given(
+        center_sigma=st.floats(min_value=0.5, max_value=3.0),
+        surround_sigma_factor=st.floats(min_value=0.0, max_value=1.0),
+    )
+    def test_raises_value_error_if_center_sigma_is_greater_than_or_equal_to_surround_sigma(  # noqa: E501
+        self,
+        center_sigma: float,
+        surround_sigma_factor: float,
+    ) -> None:
+        surround_sigma = center_sigma * surround_sigma_factor
+        with self.assertRaises(ValueError):
+            center_surround_pyramids(
+                np.zeros((1024, 1024)),
+                center_sigma=center_sigma,
+                surround_sigma=surround_sigma,
+                n_scales=2,
+                max_octaves=5,
+                min_size=16,
+            )
+
+    @given(
+        image=arrays(dtype=np.float32, shape=(1024, 1024)),
+        n_scales=st.integers(min_value=1, max_value=10),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
+        min_size=st.integers(min_value=1, max_value=1024 * 2),
+    )
+    def test_center_and_surround_pyramids_have_same_shape(
+        self,
+        image: np.ndarray,
+        n_scales: int,
+        max_octaves: int,
+        min_size: int,
+    ) -> None:
+        center, surround = center_surround_pyramids(
+            image,
+            center_sigma=3.0,
+            surround_sigma=5.0,
+            n_scales=n_scales,
+            max_octaves=max_octaves,
+            min_size=min_size,
+        )
+        self.assertEqual(center.shape, surround.shape)
+
+    @given(
+        image=arrays(
+            dtype=np.float32,
+            shape=(1024, 1024),
+            elements=st.floats(
+                min_value=0.0,
+                max_value=1.0,
+                allow_nan=False,
+                width=32,
+            ),
+        ),
+        sigma=st.floats(min_value=0.5, max_value=3.0),
+        n_scales=st.integers(min_value=1, max_value=3),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
+        min_size=st.integers(min_value=1, max_value=1024 * 2),
+    )
+    def test_surround_planes_have_higher_total_variation_than_corresponding_center_planes(  # noqa: E501
         self,
         image: np.ndarray,
         sigma: float,
