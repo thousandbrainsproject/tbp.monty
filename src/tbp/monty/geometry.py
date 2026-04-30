@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Iterable
 
 import numpy as np
 import numpy.typing as npt
@@ -188,7 +188,7 @@ class Rotation:
         return Rotation(ScipyRotation.random(num, random_state))
 
     @staticmethod
-    def concatenate(rotations: Sequence[Rotation]) -> Rotation:
+    def concatenate(rotations: Iterable[Rotation]) -> Rotation:
         scipy_rots = [obj.as_scipy_rotation() for obj in rotations]
         return Rotation(ScipyRotation.concatenate(scipy_rots))
 
