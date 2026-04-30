@@ -1,0 +1,43 @@
+# @package experiment.config.environment
+
+env_init_args:
+  data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/ycb}
+  agents:
+    - _target_: tbp.monty.simulators.mujoco.agents.DistantAgent
+      _partial_: true
+      agent_id: agent_id_0
+      sensor_configs:
+        patch:
+          position:
+            - 0.0
+            - 0.0
+            - 0.0
+          rotation:
+            - 1.0
+            - 0.0
+            - 0.0
+            - 0.0
+          resolution:
+            - 64
+            - 64
+          zoom: 10.0
+        view_finder:
+          position:
+            - 0.0
+            - 0.0
+            - 0.0
+          rotation:
+            - 1.0
+            - 0.0
+            - 0.0
+            - 0.0
+          resolution:
+            - 64
+            - 64
+          zoom: 1.0
+      position:
+        - 0.0
+        - 1.5
+        - 0.5
+  raise_actuate_missing: False
+env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}

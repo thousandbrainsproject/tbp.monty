@@ -6,10 +6,11 @@ defaults:
   - /monty/learning_module: evidence_1lm_nn5_dod003
   - /monty/sensor_module: camera_dist_delta
   - /monty/connectivity: 1lm_1sm
-  - /environment: mujoco_ycb_noop_agent
+  - /environment: mujoco_ycb_dist_agent
   - /env_interface: eval_distinctobj_predefined
+  - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0
-  - /logging: basic_warning_monty_runs
+  - /logging: basic_info_monty_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
@@ -26,4 +27,4 @@ experiment:
     supervised_lm_ids: []
     python_log_level: DEBUG
     logging:
-      run_name: base_config_10distinctobj_noop_agent_mujoco
+      run_name: base_config_10distinctobj_dist_agent_mujoco
