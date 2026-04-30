@@ -109,7 +109,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         if not hasattr(kwargs, "hypotheses_updater_class"):
             kwargs["hypotheses_updater_class"] = BurstSamplingHypothesesUpdater
         super().__init__(*args, **kwargs)
-        self.last_location = {}
+        self.last_location = None
 
         # it does not make sense for the wait factor to exponentially
         # grow when objects are swapped without any supervisory signal.
@@ -119,16 +119,13 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
     def reset(self) -> None:
         super().reset()
         self.evidence = {}
-        self.last_location = {}
+        self.last_location = None
 
     def _add_displacements(self, percepts: list[Message]) -> list[Message]:
         """Add displacements to the current percept.
 
-        For each input channel, this function computes the displacement vector by
-        subtracting the current location from the last observed location. It then
-        updates `self.last_location` for use in the next step. If any percept
-        has a recorded previous location, we assume movement has occurred.
-
+        Computes the displacement vector by subtracting the current location from the
+        last observed location. Updates `self.last_location` for use in the next step.
         In this unsupervised inference setting, the displacement is set to zero
         at the beginning of the first episode when the last location is not set.
 
@@ -139,13 +136,16 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         Returns:
             The list of percepts, each updated with a displacement vector.
         """
+        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
+        current_location = np.mean([p.location for p in sm_percepts], axis=0)
+        if self.last_location is not None:
+            displacement = current_location - self.last_location
+        else:
+            displacement = np.zeros(3)
+
         for p in percepts:
-            if p.sender_id in self.last_location:
-                displacement = p.location - self.last_location[p.sender_id]
-            else:
-                displacement = np.zeros(3)
             p.set_displacement(displacement)
-            self.last_location[p.sender_id] = p.location
+        self.last_location = current_location.copy()
         return percepts
 
     def _agent_moved_since_reset(self):
@@ -157,4 +157,4 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         Returns:
             Whether the agent has moved since the last reset.
         """
-        return len(self.last_location) > 0
+        return self.last_location is not None

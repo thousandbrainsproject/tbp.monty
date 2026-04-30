@@ -15,10 +15,10 @@ import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.environments.embodied_data import (
-    SaccadeOnImageEnvironmentInterface,
+from tbp.monty.experiment.environment import (
+    SaccadeOnImageInterface,
 )
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.monty_experiment import (
     MontyExperiment,
@@ -92,7 +92,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             num_steps += 1
             if self.show_sensor_output:
                 is_saccade_on_image_env_interface = isinstance(
-                    self.env_interface, SaccadeOnImageEnvironmentInterface
+                    self.env_interface, SaccadeOnImageInterface
                 )
                 self.live_plotter.show_observations(
                     *self.live_plotter.hardcoded_assumptions(observations, self.model),

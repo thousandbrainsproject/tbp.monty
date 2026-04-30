@@ -35,9 +35,9 @@ Monty experiments are defined using a nested dictionary. These dictionaries defi
   - `lm_to_lm_matrix`: hierarchical connectivity between learning modules.
   - `lm_to_lm_vote_matrix`: lateral connectivity between learning modules.
 - `env_interface_config`: `dataclass` (specifies environment interface-related args incl. the environment that the interface wraps around (`env_init_func`), arguments for initializing this environment, such as the agent and sensor configuration (`env_init_args`), and optional transformations that occur before information reaches a sensor module. For an example, see `SurfaceViewFinderMountHabitatEnvInterfaceConfig`)
-- `train_env_interface_class`: `EnvironmentInterface`
+- `train_env_interface_class`: environment `Interface`
 - `train_env_interface_args`: Specifies how the interface should interact with the environment. For instance, which objects should be shown in what episodes and in which orientations and locations.
-- `eval_env_interface_class`: `EnvironmentInterface`
+- `eval_env_interface_class`: environment `Interface`
 - `eval_env_interface_args`: Same purpose as `train_env_interface_args` but allows for presenting Monty with different conditions between training and evaluation.
 
 # Setting up the Experiment Config for Pretraining

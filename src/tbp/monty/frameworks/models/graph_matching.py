@@ -948,7 +948,7 @@ class GraphLM(LearningModule):
         if first_movement_detected:
             query = [
                 self._select_features_to_use(observations),
-                self.buffer.get_all_current_displacements(),
+                self.buffer.current_displacement(),
             ]
         else:
             query = [
@@ -995,27 +995,28 @@ class GraphLM(LearningModule):
 
     # ------------------------ Helper --------------------------
 
-    def _add_displacements(self, obs):
-        """Add displacements to the current observation.
+    def _add_displacements(self, percepts: list[Message]) -> list[Message]:
+        """Compute and add a single displacement vector to all percepts.
 
-        The observation consists of features at a location. To get the displacement we
-        have to look at the previous observation stored in the buffer.
+        Computes one displacement by comparing the current average SM location from
+        current percepts to the previous average SM location stored in the buffer.
+        This single displacement is then set on every SM and LM percept.
 
         Args:
-            obs: Observations to add displacements to.
+            percepts: Percepts to add displacements to.
 
         Returns:
-            Observations with displacements.
+            Percepts with displacements.
         """
-        for o in obs:
-            if self.buffer.get_buffer_len_by_channel(o.sender_id) > 0:
-                displacement = o.location - self.buffer.get_current_location(
-                    input_channel=o.sender_id
-                )
-            else:
-                displacement = np.zeros(3)
-            o.set_displacement(displacement)
-        return obs
+        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
+        if self.buffer.last_location is not None:
+            current_location = np.mean([p.location for p in sm_percepts], axis=0)
+            displacement = current_location - self.buffer.last_location
+        else:
+            displacement = np.zeros(3)
+        for p in percepts:
+            p.set_displacement(displacement)
+        return percepts
 
     def _select_features_to_use(self, percepts: list[Message]):
         """Extract the features from percepts that are specified in tolerances.

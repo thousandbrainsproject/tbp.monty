@@ -8,7 +8,7 @@ defaults:
   - /monty/connectivity: 1lm_1sm
   - /environment: mujoco_ycb_noop_agent
   - /env_interface: eval_distinctobj_predefined
-  - /env_interface/transform: depthto3d_res64hfov11_sensor1
+  - /env_interface/transform: missing_depthto3d_sensor2_semantic0
   - /logging: basic_warning_monty_runs
 
 experiment:
