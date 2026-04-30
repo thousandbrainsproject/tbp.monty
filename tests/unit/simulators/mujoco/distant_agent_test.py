@@ -189,7 +189,7 @@ class DistantAgentTest(TestCase):
             assert agent_rot.approx_equal(expected_rot)
 
     @given(
-        delta_phi=st.floats(min_value=0.0, max_value=180.0),
+        delta_phi=st.floats(min_value=-180.0, max_value=180.0),
         phi_limit=st.floats(min_value=0.0, max_value=180.0),
     )
     @settings(deadline=None)
@@ -204,13 +204,18 @@ class DistantAgentTest(TestCase):
 
             sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
             sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
+            constrained_phi = (
+                min(delta_phi, phi_limit)
+                if delta_phi >= 0
+                else max(delta_phi, -phi_limit)
+            )
             expected_rot = Rotation.from_euler(
-                "xyz", [min(delta_phi, phi_limit), 0.0, 0.0], degrees=True
+                "xyz", [constrained_phi, 0.0, 0.0], degrees=True
             )
             assert sensor_rot.approx_equal(expected_rot)
 
     @given(
-        delta_phi=st.floats(min_value=0.0, max_value=180.0),
+        delta_phi=st.floats(min_value=-180.0, max_value=180.0),
         phi_limit=st.floats(min_value=0.0, max_value=180.0),
     )
     @settings(deadline=None)
@@ -225,7 +230,12 @@ class DistantAgentTest(TestCase):
 
             sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
             sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
+            constrained_phi = (
+                min(delta_phi, phi_limit)
+                if delta_phi >= 0
+                else max(delta_phi, -phi_limit)
+            )
             expected_rot = Rotation.from_euler(
-                "xyz", [-min(delta_phi, phi_limit), 0.0, 0.0], degrees=True
+                "xyz", [-constrained_phi, 0.0, 0.0], degrees=True
             )
             assert sensor_rot.approx_equal(expected_rot)

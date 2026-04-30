@@ -365,9 +365,17 @@ class DistantAgent(Agent):
         self._embodiment.yaw(action.rotation_degrees)
 
     def actuate_look_up(self, action: LookUp) -> None:
-        rotation_degrees = min(action.rotation_degrees, action.constraint_degrees)
-        self._embodiment.pitch(rotation_degrees)
+        constrained_phi = (
+            min(action.rotation_degrees, action.constraint_degrees)
+            if action.rotation_degrees >= 0
+            else max(action.rotation_degrees, -action.constraint_degrees)
+        )
+        self._embodiment.pitch(constrained_phi)
 
     def actuate_look_down(self, action: LookDown) -> None:
-        rotation_degrees = min(action.rotation_degrees, action.constraint_degrees)
-        self._embodiment.pitch(-rotation_degrees)
+        constrained_phi = (
+            min(action.rotation_degrees, action.constraint_degrees)
+            if action.rotation_degrees >= 0
+            else max(action.rotation_degrees, -action.constraint_degrees)
+        )
+        self._embodiment.pitch(-constrained_phi)
