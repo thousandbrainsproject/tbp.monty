@@ -1,0 +1,34 @@
+# @package experiment.config.monty_config.learning_module_configs
+
+defaults:
+  - hypotheses_updater/burst_sampling_5nn@learning_module_0.learning_module_args
+
+learning_module_0:
+  learning_module_args:
+    feature_weights:
+      patch:
+        hsv: ${np.array:[1, 0.5, 0.5]}
+        pose_vectors: ${np.ones:3}
+        principal_curvatures_log: ${np.ones:2}
+        local_binary_pattern: 
+        - 1
+    tolerances:
+      patch:
+        hsv: ${np.array:[0.1, 0.2, 0.2]}
+        principal_curvatures_log: ${np.ones:2}
+        local_binary_pattern: 
+        - 0.0008
+    max_match_distance: 0.01
+    x_percent_threshold: 20
+    evidence_threshold_config: all
+    max_graph_size: 0.3
+    num_model_voxels_per_dim: 100
+    gsg:
+      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+      goal_tolerances:
+        location: 0.015
+      elapsed_steps_factor: 10
+      min_post_goal_success_steps: 5
+      x_percent_scale_factor: 0.75
+      desired_object_distance: 0.03
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}

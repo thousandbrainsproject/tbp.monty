@@ -16,7 +16,8 @@ from typing import Any, ClassVar, Protocol
 import numpy as np
 import quaternion as qt
 from scipy.spatial.transform import Rotation
-from skimage.color import rgb2hsv
+from skimage.color import rgb2gray, rgb2hsv
+from skimage.feature import local_binary_pattern
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
@@ -143,6 +144,7 @@ class ObservationProcessor:
         "mean_curvature_sc",
         "curvature_for_TM",
         "coords_for_TM",
+        "local_binary_pattern",
     ]
 
     def __init__(
@@ -317,6 +319,22 @@ class ObservationProcessor:
             rgba = rgba_feat[center_row_col, center_row_col]
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
+        if "local_binary_pattern" in self._features:
+            patch = rgba_feat[:, :, :3]
+            gray = rgb2gray(patch)
+            gray = (gray * 255).astype(np.uint8)
+            p = 8
+            r = 1
+            lbp = local_binary_pattern(gray, p, r, method="uniform")
+            n_bins = p + 2
+            hist, _ = np.histogram(
+                lbp.ravel(),
+                bins=n_bins,
+                range=(0, n_bins),
+            )
+            hist = hist.astype("float")
+            hist /= (hist.sum() + 1e-6)
+            features["local_binary_pattern"] = hist
 
         # Note we only determine curvature if we could determine a valid surface normal
         if any(feat in self.CURVATURE_FEATURES for feat in self._features) and valid_sn:
@@ -759,6 +777,8 @@ class FeatureChangeFilter(PerceptFilter):
                         f"new point because of {feature} angle : {angle_between}"
                     )
                     return True
+            elif feature == "local_binary_pattern":
+                pass
 
             else:
                 delta_change = np.abs(last_feat - current_feat)

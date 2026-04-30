@@ -28,6 +28,22 @@ class FeatureEvidenceCalculator(Protocol):
 
 class DefaultFeatureEvidenceCalculator:
     @staticmethod
+    def chi_square_distance(
+        query_fv: np.ndarray,
+        node_fvs: np.ndarray,
+        epsilon: float = 1e-10,
+    ) -> np.ndarray:
+        """Compute chi-square distance between a node's feature vectors and
+        a query feature vector.
+
+        Returns:
+            A vector of chi-square distances as floats in the range [0, 1] between each
+            node's feature vector and the query feature vector.
+        """
+        return 0.5 * np.sum(((query_fv - node_fvs) ** 2) /
+                            (query_fv + node_fvs + epsilon), axis=1)
+
+    @staticmethod
     def calculate(
         channel_feature_array: np.ndarray,
         channel_feature_order: list[str],
@@ -60,6 +76,7 @@ class DefaultFeatureEvidenceCalculator:
         feature_weight_list = np.zeros(shape_to_use) * np.nan
         feature_list = np.zeros(shape_to_use) * np.nan
         circular_var = np.zeros(shape_to_use, dtype=bool)
+        feature_vectors = {}
         start_idx = 0
         for feature in channel_feature_order:
             if feature in [
@@ -72,6 +89,8 @@ class DefaultFeatureEvidenceCalculator:
             else:
                 feature_length = 1
             end_idx = start_idx + feature_length
+            feature_vectors[feature] = slice(start_idx, end_idx)
+
             feature_list[start_idx:end_idx] = channel_query_features[feature]
             tolerance_list[start_idx:end_idx] = channel_tolerances[feature]
             feature_weight_list[start_idx:end_idx] = channel_feature_weights[feature]
@@ -95,9 +114,41 @@ class DefaultFeatureEvidenceCalculator:
             ],
             axis=0,
         )
+        # local binary pattern features are stored as normalized histograms
+        # we compute a distance between each node's lbp feature vector and the query lbp
+        # feature vector
+        if "local_binary_pattern" in feature_vectors:
+            lbp_feature_vector = feature_vectors["local_binary_pattern"]
+            query_lbp_fv = feature_list[lbp_feature_vector]
+            node_lbp_fv = channel_feature_array[:, lbp_feature_vector]
+            chi2_dist = DefaultFeatureEvidenceCalculator.chi_square_distance(
+                query_lbp_fv,
+                node_lbp_fv
+            )
+            feature_differences[:, lbp_feature_vector] = chi2_dist[:, None]
         # any difference < tolerance should be positive evidence
         # any difference >= tolerance should be 0 evidence
         feature_evidence = np.clip(tolerance_list - feature_differences, 0, np.inf)
         # normalize evidence to be in [0, 1]
         feature_evidence = feature_evidence / tolerance_list
+        # mask out the duplicative LBP evidence values due to vectorized calculations
+        if "local_binary_pattern" in feature_vectors:
+            lbp_feature_vector = feature_vectors["local_binary_pattern"]
+
+            lbp_evidence = feature_evidence[:, lbp_feature_vector.start]
+            lbp_weight = feature_weight_list[lbp_feature_vector.start]
+
+            non_lbp_mask = np.ones(feature_evidence.shape[1], dtype=bool)
+            non_lbp_mask[lbp_feature_vector] = False
+
+            non_lbp_reduced_feature_evidence = feature_evidence[:, non_lbp_mask]
+            non_lbp_reduced_feature_weights = feature_weight_list[non_lbp_mask]
+            feature_evidence = np.concatenate(
+                [non_lbp_reduced_feature_evidence, lbp_evidence[:, None]],
+                axis=1,
+            )
+            feature_weight_list = np.concatenate(
+                [non_lbp_reduced_feature_weights, np.array([lbp_weight])],
+                axis=0,
+            )
         return np.average(feature_evidence, weights=feature_weight_list, axis=1)
