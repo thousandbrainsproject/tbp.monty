@@ -24,6 +24,7 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2 import (
     pyramid_octave_shapes,
 )
 from tbp.monty.frameworks.sensors import Resolution2D
+from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.unit.statistics import total_variation
 
 
@@ -190,6 +191,56 @@ class GaussianPyramidTest(unittest.TestCase):
         diffs = np.ediff1d(variations)
         self.assertTrue(all(diffs <= 0))
 
+@st.composite
+def center_surround_sigmas(
+    draw,
+    min_center_sigma: float,
+    max_center_sigma: float,
+):
+    center_sigma = draw(
+        st.floats(min_value=min_center_sigma, max_value=max_center_sigma)
+    )
+    surround_sigma_factor = draw(
+        st.floats(min_value=1.0, max_value=10.0, exclude_min=True)
+    )
+    return center_sigma, surround_sigma_factor * center_sigma
+
+
+@st.composite
+def solid_float32_image(draw):
+    height = draw(st.integers(min_value=1, max_value=1024))
+    width = draw(st.integers(min_value=1, max_value=1024))
+    fill_value = draw(
+        st.floats(min_value=0.0, max_value=1.0, allow_nan=False, width=32)
+    )
+    return np.full((height, width), fill_value, dtype=np.float32)
+
+
+@st.composite
+def float32_image(draw):
+    height = draw(st.integers(min_value=1, max_value=1024))
+    width = draw(st.integers(min_value=1, max_value=1024))
+    return draw(
+        arrays(
+            dtype=np.float32,
+            shape=(height, width),
+            elements=st.floats(
+                min_value=0.0,
+                max_value=1.0,
+                allow_nan=False,
+                width=32,
+            ),
+        )
+    )
+
+
+@st.composite
+def sufficiently_variable_float32_image(draw):
+    return draw(
+        float32_image().filter(
+            lambda img: not np.allclose(img, img[0, 0], atol=DEFAULT_TOLERANCE)
+        )
+    )
 
 class CenterSurroundPyramidsTest(unittest.TestCase):
     @given(
@@ -236,17 +287,8 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         self.assertEqual(center.shape, surround.shape)
 
     @given(
-        image=arrays(
-            dtype=np.float32,
-            shape=(1024, 1024),
-            elements=st.floats(
-                min_value=0.0,
-                max_value=1.0,
-                allow_nan=False,
-                width=32,
-            ),
-        ),
-        sigma=st.floats(min_value=0.5, max_value=3.0),
+        image=float32_image(),
+        sigmas=center_surround_sigmas(min_center_sigma=0.5, max_center_sigma=3.0),
         n_scales=st.integers(min_value=1, max_value=3),
         max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
         min_size=st.integers(min_value=1, max_value=1024 * 2),
@@ -254,18 +296,86 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
     def test_surround_planes_have_higher_total_variation_than_corresponding_center_planes(  # noqa: E501
         self,
         image: np.ndarray,
-        sigma: float,
+        sigmas: tuple[float, float],
         n_scales: int,
         max_octaves: int,
         min_size: int,
     ) -> None:
-        pyr = gaussian_pyramid(
+        center, surround = center_surround_pyramids(
             image,
-            sigma=sigma,
+            center_sigma=sigmas[0],
+            surround_sigma=sigmas[1],
             n_scales=n_scales,
             max_octaves=max_octaves,
             min_size=min_size,
         )
-        variations = np.array([total_variation(plane) for plane in pyr.flat])
-        diffs = np.ediff1d(variations)
-        self.assertTrue(all(diffs <= 0))
+
+        center_variations = np.array([total_variation(plane) for plane in center.flat])
+        surround_variations = np.array(
+            [total_variation(plane) for plane in surround.flat]
+        )
+        variations = center_variations - surround_variations
+        self.assertTrue(all(variations >= 0))
+
+    @given(
+        image=solid_float32_image(),
+        sigmas=center_surround_sigmas(min_center_sigma=0.5, max_center_sigma=3.0),
+        n_scales=st.integers(min_value=1, max_value=3),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
+        min_size=st.integers(min_value=1, max_value=1024 * 2),
+    )
+    def test_surround_planes_total_variation_equals_corresponding_center_planes_for_solid_image(  # noqa: E501
+        self,
+        image: np.ndarray,
+        sigmas: tuple[float, float],
+        n_scales: int,
+        max_octaves: int,
+        min_size: int,
+    ) -> None:
+        center, surround = center_surround_pyramids(
+            image,
+            center_sigma=sigmas[0],
+            surround_sigma=sigmas[1],
+            n_scales=n_scales,
+            max_octaves=max_octaves,
+            min_size=min_size,
+        )
+
+        center_variations = np.array([total_variation(plane) for plane in center.flat])
+        surround_variations = np.array(
+            [total_variation(plane) for plane in surround.flat]
+        )
+        self.assertTrue(
+            np.allclose(center_variations, surround_variations, atol=DEFAULT_TOLERANCE)
+        )
+
+    @given(
+        image=sufficiently_variable_float32_image(),
+        sigmas=center_surround_sigmas(min_center_sigma=0.5, max_center_sigma=3.0),
+        n_scales=st.integers(min_value=1, max_value=3),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
+        min_size=st.integers(min_value=1, max_value=1024 * 2),
+    )
+    def test_surround_planes_have_higher_total_variation_than_corresponding_center_planes_for_sufficiently_variable_image(  # noqa: E501
+        self,
+        image: np.ndarray,
+        sigmas: tuple[float, float],
+        n_scales: int,
+        max_octaves: int,
+        min_size: int,
+    ) -> None:
+        center, surround = center_surround_pyramids(
+            image,
+            center_sigma=sigmas[0],
+            surround_sigma=sigmas[1],
+            n_scales=n_scales,
+            max_octaves=max_octaves,
+            min_size=min_size,
+        )
+
+        center_variations = np.array([total_variation(plane) for plane in center.flat])
+        surround_variations = np.array(
+            [total_variation(plane) for plane in surround.flat]
+        )
+        variations = center_variations - surround_variations
+        self.assertTrue(all(variations >= 0))
