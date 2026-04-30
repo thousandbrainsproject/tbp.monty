@@ -265,7 +265,11 @@ class OneObjectPerEpisodeInterface(Interface):
             success = result.success
 
         if self.num_distractors == 0 and not success:
-            raise RuntimeError("Primary target not visible at start of episode")
+            raise RuntimeError(
+                f"Primary target '{self.primary_target['object']}' "
+                f"with rotation {self.primary_target['euler_rotation']} "
+                f"not visible at start of episode"
+            )
 
     def post_episode(self):
         super().post_episode()
