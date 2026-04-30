@@ -164,6 +164,17 @@ class Embodiment(Agent):
         self.sim.data.qpos[qpos_addr + 3 : qpos_addr + 7] = np.array(rotation)
 
     @property
+    def _sensor_pitch(self) -> float:
+        qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
+        return np.rad2deg(self.sim.data.qpos[qpos_addr])
+
+    @_sensor_pitch.setter
+    def _sensor_pitch(self, pitch_degrees: float) -> None:
+        pitch_rads = np.deg2rad(pitch_degrees)
+        qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
+        self.sim.data.qpos[qpos_addr] = pitch_rads
+
+    @property
     def observations(self) -> AgentObservations:
         obs = AgentObservations()
         for sensor_id, sensor_cfg in self._sensor_configs.items():
@@ -237,14 +248,22 @@ class Embodiment(Agent):
         new_rotation = rotation * delta_theta_rot
         self.rotation = rotation_as_quat(new_rotation)
 
-    def pitch(self, delta_phi: float) -> None:
-        """Pitch the sensor body by delta_phi degrees.
+    def pitch(self, delta_phi: float, constraint: float) -> None:
+        """Pitch the sensor body by delta_phi degrees while remaining constrained.
 
         Note: this DOES NOT change the orientation of the embodiment.
         """
-        delta_phi = np.deg2rad(delta_phi)
-        qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
-        self.sim.data.qpos[qpos_addr] += delta_phi
+        new_pitch = self._sensor_pitch + delta_phi
+
+        # If the new pitch is outside the constrained range, we want to
+        # calculate the maximum amount of movement we can do while staying
+        # within the range.
+        if new_pitch > constraint:
+            delta_phi = constraint - self._sensor_pitch
+        elif new_pitch < -constraint:
+            delta_phi = -constraint - self._sensor_pitch
+
+        self._sensor_pitch += delta_phi
 
     def set_pose(self, location: VectorXYZ, rotation: QuaternionWXYZ) -> None:
         """Set the location and rotation of the embodiment to the provided values."""
@@ -365,17 +384,7 @@ class DistantAgent(Agent):
         self._embodiment.yaw(action.rotation_degrees)
 
     def actuate_look_up(self, action: LookUp) -> None:
-        constrained_phi = (
-            min(action.rotation_degrees, action.constraint_degrees)
-            if action.rotation_degrees >= 0
-            else max(action.rotation_degrees, -action.constraint_degrees)
-        )
-        self._embodiment.pitch(constrained_phi)
+        self._embodiment.pitch(action.rotation_degrees, action.constraint_degrees)
 
     def actuate_look_down(self, action: LookDown) -> None:
-        constrained_phi = (
-            min(action.rotation_degrees, action.constraint_degrees)
-            if action.rotation_degrees >= 0
-            else max(action.rotation_degrees, -action.constraint_degrees)
-        )
-        self._embodiment.pitch(-constrained_phi)
+        self._embodiment.pitch(-action.rotation_degrees, action.constraint_degrees)

@@ -189,53 +189,82 @@ class DistantAgentTest(TestCase):
             assert agent_rot.approx_equal(expected_rot)
 
     @given(
-        delta_phi=st.floats(min_value=-180.0, max_value=180.0),
+        delta_phi1=st.floats(min_value=-180.0, max_value=180.0),
+        delta_phi2=st.floats(min_value=-180.0, max_value=180.0),
         phi_limit=st.floats(min_value=0.0, max_value=180.0),
     )
     @settings(deadline=None)
-    def test_look_up(self, delta_phi, phi_limit):
-        action = LookUp(
-            agent_id=TEST_AGENT_ID,
-            rotation_degrees=delta_phi,
-            constraint_degrees=phi_limit,
-        )
-        with sim_resetter(self.sim):
-            self.sim.step([action])
+    def test_look_up(self, delta_phi1, delta_phi2, phi_limit):
+        """Test that two LookUp actions are properly constrained."""
+        actions = [
+            LookUp(
+                agent_id=TEST_AGENT_ID,
+                rotation_degrees=delta_phi1,
+                constraint_degrees=phi_limit,
+            ),
+            LookUp(
+                agent_id=TEST_AGENT_ID,
+                rotation_degrees=delta_phi2,
+                constraint_degrees=phi_limit,
+            ),
+        ]
+        post_action1 = self._constrained_rotate(delta_phi1, phi_limit, 0.0)
+        post_action2 = self._constrained_rotate(delta_phi2, phi_limit, post_action1)
 
+        expected_rot = Rotation.from_euler(
+            "xyz", [post_action2, 0.0, 0.0], degrees=True
+        )
+
+        with sim_resetter(self.sim):
+            self.sim.step(actions)
             sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
             sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
-            constrained_phi = (
-                min(delta_phi, phi_limit)
-                if delta_phi >= 0
-                else max(delta_phi, -phi_limit)
-            )
-            expected_rot = Rotation.from_euler(
-                "xyz", [constrained_phi, 0.0, 0.0], degrees=True
-            )
+
             assert sensor_rot.approx_equal(expected_rot)
 
     @given(
-        delta_phi=st.floats(min_value=-180.0, max_value=180.0),
+        delta_phi1=st.floats(min_value=-180.0, max_value=180.0),
+        delta_phi2=st.floats(min_value=-180.0, max_value=180.0),
         phi_limit=st.floats(min_value=0.0, max_value=180.0),
     )
     @settings(deadline=None)
-    def test_look_down(self, delta_phi, phi_limit):
-        action = LookDown(
-            agent_id=TEST_AGENT_ID,
-            rotation_degrees=delta_phi,
-            constraint_degrees=phi_limit,
-        )
-        with sim_resetter(self.sim):
-            self.sim.step([action])
+    def test_look_down(self, delta_phi1, delta_phi2, phi_limit):
+        """Test that two LookDown actions are properly constrained."""
+        actions = [
+            LookDown(
+                agent_id=TEST_AGENT_ID,
+                rotation_degrees=delta_phi1,
+                constraint_degrees=phi_limit,
+            ),
+            LookDown(
+                agent_id=TEST_AGENT_ID,
+                rotation_degrees=delta_phi2,
+                constraint_degrees=phi_limit,
+            ),
+        ]
 
+        post_action1 = self._constrained_rotate(-delta_phi1, phi_limit, 0.0)
+        post_action2 = self._constrained_rotate(-delta_phi2, phi_limit, post_action1)
+
+        expected_rot = Rotation.from_euler(
+            "xyz", [post_action2, 0.0, 0.0], degrees=True
+        )
+
+        with sim_resetter(self.sim):
+            self.sim.step(actions)
             sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
             sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
-            constrained_phi = (
-                min(delta_phi, phi_limit)
-                if delta_phi >= 0
-                else max(delta_phi, -phi_limit)
-            )
-            expected_rot = Rotation.from_euler(
-                "xyz", [-constrained_phi, 0.0, 0.0], degrees=True
-            )
+
             assert sensor_rot.approx_equal(expected_rot)
+
+    def _constrained_rotate(self, delta_phi, constraint_angle, current_angle):
+        # This is technically the same code that Embodiment uses, but I can't
+        # come up with an alternative way to calculate these values.
+        new_angle = current_angle + delta_phi
+
+        if new_angle > constraint_angle:
+            delta_phi = constraint_angle - current_angle
+        elif new_angle < -constraint_angle:
+            delta_phi = -constraint_angle - current_angle
+
+        return current_angle + delta_phi
