@@ -2,6 +2,11 @@
 
 do_train: true
 train_env_interface_args:
+  # Train on the first version of each character (there are 20 drawings for each
+  # character in each alphabet, here we see one of them). The configuration specifies
+  # alphabets = [0, 0, 0, 1, 1, 1] and characters = [1, 2, 3, 1, 2, 3]) so in the first
+  # episode we will see version 1 of character 1 in alphabet 0, in the next episode
+  # version 1 of character 2 in alphabet 0, and so on.
   alphabets:
   - 0
   - 0
