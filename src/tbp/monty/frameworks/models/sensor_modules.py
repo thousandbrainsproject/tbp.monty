@@ -143,6 +143,8 @@ class ObservationProcessor:
         "mean_curvature_sc",
         "curvature_for_TM",
         "coords_for_TM",
+        "edge_strength",
+        "coherence",
     ]
 
     def __init__(

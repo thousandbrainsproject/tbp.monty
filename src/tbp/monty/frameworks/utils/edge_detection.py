@@ -15,13 +15,21 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    TangentFrame,
+    normalize,
+    project_onto_tangent_plane,
+)
 from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_POSE_2D = np.array([[0.0, 0.0, 1.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+
 
 def _gradient_to_tangent_angle(gradient_angle: float) -> float:
-    """Convert gradient direction to edge tangent direction and wrap to [0, 2*pi).
+    """Convert gradient direction to edge tangent direction and wrap to (0, pi].
 
     The edge tangent is perpendicular to the gradient direction.
 
@@ -29,10 +37,58 @@ def _gradient_to_tangent_angle(gradient_angle: float) -> float:
         gradient_angle: Gradient direction in radians (any range)
 
     Returns:
-        Edge tangent angle in [0, 2*pi) radians
+        Edge tangent angle in (0, pi] radians.
     """
     tangent_angle = gradient_angle + np.pi / 2
     return (tangent_angle + 2 * np.pi) % (2 * np.pi)
+
+
+def _angle_to_pose_2d(
+    angle: float,
+    world_camera: np.ndarray,
+    surface_normal: np.ndarray,
+    tangent_frame: TangentFrame,
+) -> np.ndarray:
+    """Build 2D pose vectors from an edge angle.
+
+    The image-space edge direction is projected onto the local tangent plane and
+    expressed in tangent-frame coordinates.
+
+    Args:
+        angle: Edge angle in radians in image coordinates (y-down), measured
+            from the image x-axis toward the image y-axis (i.e., toward the
+            bottom of the image).
+        world_camera: 4x4 camera-to-world transformation matrix.
+        surface_normal: Surface normal defining the local tangent plane.
+        tangent_frame: Orthonormal local basis used for the 2D model.
+
+    Returns:
+        3x3 array whose rows are [normal, edge_tangent, edge_perp].
+        Normal is always [0, 0, 1]; tangent and perp lie in local 2D coordinates.
+    """
+    R = world_camera[:3, :3]  # noqa: N806
+    image_x_world = R @ np.array([1.0, 0.0, 0.0])
+    image_y_world = R @ np.array([0.0, -1.0, 0.0])
+
+    edge_world = np.cos(angle) * image_x_world + np.sin(angle) * image_y_world
+    edge_tangent_world = project_onto_tangent_plane(edge_world, surface_normal)
+
+    if np.linalg.norm(edge_tangent_world) < DEFAULT_TOLERANCE:
+        edge_tangent_world = tangent_frame.basis_u
+    else:
+        edge_tangent_world = normalize(edge_tangent_world)
+
+    edge_tangent_u = np.dot(edge_tangent_world, tangent_frame.basis_u)
+    edge_tangent_v = np.dot(edge_tangent_world, tangent_frame.basis_v)
+    edge_tangent_2d = normalize(np.array([edge_tangent_u, edge_tangent_v, 0.0]))
+
+    return np.array(
+        [
+            [0.0, 0.0, 1.0],
+            edge_tangent_2d,
+            [-edge_tangent_2d[1], edge_tangent_2d[0], 0.0],
+        ]
+    )
 
 
 @dataclass
@@ -83,9 +139,11 @@ class StructureTensor:
 class EdgeFeatures:
     """Edge features extracted from a single image patch."""
 
+    angle: float | None
     strength: float
     coherence: float
-    angle: float | None
+    is_geometric_edge: bool
+    has_edge: bool
 
 
 class EdgeDetector:
@@ -129,44 +187,39 @@ class EdgeDetector:
 
     def __call__(
         self,
-        patch: np.ndarray,
+        observation: SensorObservation,
     ) -> EdgeFeatures:
         """Compute edge features using center-weighted, global-aware structure tensor.
 
         This function aggregates structure tensor components over a center-biased
         neighborhood, giving higher weight to pixels closer to the center and pixels
-        with stronger gradients. Returns edge strength and coherence (in addition to
-        orientation) for caller to threshold (i.e. reject weak or cluttered edges).
+        with stronger gradients.
 
         Reference:
             Nazar Khan, "Corner Detection" lecture notes, Section on Structure
             Tensor. http://faculty.pucit.edu.pk/nazarkhan/teaching/Spring2021/CS565/Lectures/lecture6_corner_detection.pdf
 
         Args:
-            patch: RGB image patch.
+            observation: Sensor observation.
 
         Returns:
-            EdgeFeatures with:
-                - strength: Magnitude of dominant eigenvalue (0.0 if no edge)
-                - coherence: Edge quality metric in [0, 1] (0.0 if no edge)
-                - orientation: Edge orientation angle in [0, pi) radians
-                  (None if no edge)
-
-        Notes:
-            1. The Gaussian blur (Step 1) convolves all pixels in the patch with a
-                Gaussian so as to effectively average their values by neighbors.
-            2. The radial weight (Step 2b) is a single Gaussian placed at the center
-                of the patch, and determines how much gradients associated with
-                different pixels will be weighted based on their displacement from
-                the center.
+            EdgeFeatures.
         """
+        patch = observation["rgba"][:, :, :3]
+        depth = observation["depth"]
         grayscale = cv2.cvtColor(patch, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0
         Ix, Iy = self._compute_sobel_gradients(grayscale)  # noqa: N806
         tensor_per_pixel = self._compute_per_pixel_structure_tensors(Ix, Iy)
 
         weights, total_weight = self._compute_center_weights(grayscale.shape, Ix, Iy)
         if total_weight < DEFAULT_TOLERANCE:
-            return EdgeFeatures(strength=0.0, coherence=0.0, angle=None)
+            return EdgeFeatures(
+                angle=None,
+                strength=0.0,
+                coherence=0.0,
+                is_geometric_edge=False,
+                has_edge=False,
+            )
 
         aggregated = self._aggregate_tensor(tensor_per_pixel, weights, total_weight)
 
@@ -175,12 +228,25 @@ class EdgeDetector:
             total_weight,
             aggregated.gradient_theta,
         ):
-            return EdgeFeatures(strength=0.0, coherence=0.0, angle=None)
+            return EdgeFeatures(
+                angle=None,
+                strength=0.0,
+                coherence=0.0,
+                is_geometric_edge=False,
+                has_edge=False,
+            )
+
+        has_edge = (
+            aggregated.edge_strength > self._strength_threshold
+            and aggregated.coherence > self._coherence_threshold
+        )
 
         return EdgeFeatures(
-            strength=float(aggregated.edge_strength),
-            coherence=float(aggregated.coherence),
-            angle=float(aggregated.edge_angle),
+            angle=aggregated.edge_angle,
+            strength=aggregated.edge_strength,
+            coherence=aggregated.coherence,
+            is_geometric_edge=self._is_geometric_edge(depth, aggregated.edge_angle),
+            has_edge=has_edge,
         )
 
     @staticmethod
@@ -318,3 +384,41 @@ class EdgeDetector:
         d_center = np.sum(weights * dist_normal) / total_weight
 
         return abs(d_center) <= self._max_center_offset
+
+    def _is_geometric_edge(
+        self,
+        depth_patch: np.ndarray,
+        edge_theta: float,
+    ) -> bool:
+        """Check if detected edge is a geometric edge (depth discontinuity).
+
+        Geometric edges occur at object boundaries or surface creases where depth
+        changes abruptly. Texture edges will be detected wherever there is an abrupt
+        discontinuity in image intensity. We will use detected geometric edges to
+        identify candidate texture edges that do not correspond to a 2D surface
+        (such as where the red handle of a mug is seen against the black background
+        of a simulator's void). This function computes the depth gradient perpendicular
+        to the detected edge direction and checks if it exceeds a threshold.
+
+        Args:
+            depth_patch: Depth image patch (same size as RGB patch used for edge
+                detection). Values should be in consistent units (e.g., meters).
+            edge_theta: Edge tangent angle in radians from RGB edge detection.
+            depth_threshold: Maximum allowed depth gradient magnitude for texture
+                edges. Edges with perpendicular depth gradient above this value
+                are classified as geometric.
+
+        Returns:
+            True if edge is geometric, False if texture edge.
+        """
+        depth_dx = cv2.Sobel(depth_patch, cv2.CV_32F, 1, 0, ksize=3)
+        depth_dy = cv2.Sobel(depth_patch, cv2.CV_32F, 0, 1, ksize=3)
+
+        edge_normal_angle = edge_theta + np.pi / 2
+        nx = np.cos(edge_normal_angle)
+        ny = np.sin(edge_normal_angle)
+
+        cy, cx = depth_patch.shape[0] // 2, depth_patch.shape[1] // 2
+        depth_gradient_perp = abs(nx * depth_dx[cy, cx] + ny * depth_dy[cy, cx])
+
+        return depth_gradient_perp > self._depth_edge_threshold
