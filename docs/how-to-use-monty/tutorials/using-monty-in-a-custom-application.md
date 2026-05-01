@@ -321,12 +321,12 @@ config:
 
 ```
 For more configs to test on different subsets of the Monty Meets World dataset (such as bright or dark images, hand intrusion, and multiple objects), you can find the RGBD image benchmark configs at:
-- [world_image_from_stream_on_scanned_model](../../../src/tbp/monty/conf/experiment/world_image_from_stream_on_scanned_model.yaml)
-- [world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/world_image_on_scanned_model.yaml)
-- [dark_world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/dark_world_image_on_scanned_model.yaml)
-- [bright_world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/bright_world_image_on_scanned_model.yaml)
-- [hand_intrusion_world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/hand_intrusion_world_image_on_scanned_model.yaml)
-- [multi_object_world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/multi_object_world_image_on_scanned_model.yaml)
+- [world_image_from_stream_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/world_image_from_stream_on_scanned_model.yaml)
+- [world_image_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/world_image_on_scanned_model.yaml)
+- [dark_world_image_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/dark_world_image_on_scanned_model.yaml)
+- [bright_world_image_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/bright_world_image_on_scanned_model.yaml)
+- [hand_intrusion_world_image_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/hand_intrusion_world_image_on_scanned_model.yaml)
+- [multi_object_world_image_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/multi_object_world_image_on_scanned_model.yaml)
 
 > 📘 Follow Along
 > To run this experiment, you first need to download our 2D image dataset called `worldimages`. You can find instructions for this [here](https://thousandbrainsproject.readme.io/docs/benchmark-experiments#monty-meets-world).
