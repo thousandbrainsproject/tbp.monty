@@ -28,6 +28,16 @@ class Hypotheses:
     possible: npt.NDArray[np.bool_]
 
     @staticmethod
+    def empty() -> Hypotheses:
+        """Return a Hypotheses with all arrays shaped for zero hypotheses."""
+        return Hypotheses(
+            evidence=np.empty((0,), dtype=np.float64),
+            locations=np.empty((0, 3), dtype=np.float64),
+            poses=np.empty((0, 3, 3), dtype=np.float64),
+            possible=np.empty((0,), dtype=np.bool_),
+        )
+
+    @staticmethod
     def concatenate(hyps: list[Hypotheses]) -> Hypotheses:
         """Concatenate multiple Hypotheses into a single unified Hypotheses.
 

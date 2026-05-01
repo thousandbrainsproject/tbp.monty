@@ -747,7 +747,7 @@ def get_stats_per_lm(model, target, episode_seed: int):
     primary_target_dict = target_data_to_dict(target)
     for i, lm in enumerate(model.learning_modules):
         lm_stats = get_graph_lm_episode_stats(lm)
-        if hasattr(lm, "evidence"):
+        if hasattr(lm, "hypotheses_updater"):
             lm_stats = add_evidence_lm_episode_stats(
                 lm, lm_stats, target["consistent_child_objects"]
             )
