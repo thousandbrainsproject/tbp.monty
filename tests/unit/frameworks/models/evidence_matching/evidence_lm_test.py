@@ -154,7 +154,7 @@ class EvidenceLMTest(BaseGraphTest):
             # manually. Usually monty class coordinates terminal condition checks and
             # updates to symmetry count.
             graph_lm.get_unique_pose_if_available("new_object0")
-            max_obj_evidence = np.max(graph_lm.evidence["new_object0"])
+            max_obj_evidence = np.max(graph_lm._hypotheses["new_object0"].evidence)
             if max_obj_evidence > graph_lm.object_evidence_threshold:
                 num_steps_checked_symmetry += 1
                 # On the first step we just store previous hypothesis ids.
@@ -397,7 +397,7 @@ class EvidenceLMTest(BaseGraphTest):
             # Since up to now we had identical evidence for both cube and house, we give
             # the house an edge now so we test for it and get the expected result.
             graph_lm.current_mlh["graph_id"] = "new_object1"
-            graph_lm.evidence["new_object1"] += 1
+            graph_lm._hypotheses["new_object1"].evidence += 1
 
         # Based on most recent observation, propose the most misaligned graph
         # sub-regions

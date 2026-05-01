@@ -623,12 +623,12 @@ class EvidenceSDRLMMixin:
         if mlh_object == "no_observations_yet" or self.sdr_encoder.n_objects == 1:
             return
         mlh_object_id = self.obj2id[mlh_object]
-        mlh_evidence = np.max(self.evidence[mlh_object])
+        mlh_evidence = np.max(self._hypotheses[mlh_object].evidence)
 
         relative_evidences = np.full_like(self.target_overlaps.overlaps, np.nan)
-        for obj in self.evidence:
-            ids = sorted([mlh_object_id, self.obj2id[obj]])
-            ev = np.max(self.evidence[obj]) - mlh_evidence
+        for graph_id, hyp in self._hypotheses.items():
+            ids = sorted([mlh_object_id, self.obj2id[graph_id]])
+            ev = np.max(hyp.evidence) - mlh_evidence
             relative_evidences[ids[0], ids[1]] = ev
 
         # Step 3: update running average with new evidence scores

@@ -916,7 +916,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         if second_id is None:
             # If we only have one object with a single hypothesis, we should not
             # attempt to generate a Goal.
-            if len(self.parent_lm.evidence[top_id]) == 1:
+            if len(self.parent_lm._hypotheses[top_id].evidence) == 1:
                 return False
 
             # If the LM's hypothesis space only contains one object, focus on pose.
@@ -942,7 +942,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         ) == 1:
             # If we only have one object with a single hypothesis, we should not
             # attempt to generate a Goal.
-            if len(self.parent_lm.evidence[top_id]) == 1:
+            if len(self.parent_lm._hypotheses[top_id].evidence) == 1:
                 return False
 
             # We always focus on pose if there is just 1 possible match - if we are part

@@ -95,9 +95,11 @@ class NoResetEvidenceLMTest(BaseGraphTest):
             eval_exp.model.set_experiment_mode(eval_exp.experiment_mode)
             eval_exp.pre_epoch()
 
+            lm = eval_exp.model.learning_modules[0]
+
             # first episode
             self.assertEqual(
-                len(eval_exp.model.learning_modules[0].evidence),
+                len(lm._hypotheses),
                 0,
                 "evidence dict should be empty before the first episode",
             )
@@ -105,7 +107,7 @@ class NoResetEvidenceLMTest(BaseGraphTest):
             episode_1_steps = eval_exp.run_episode_steps()
             eval_exp.post_episode(episode_1_steps)
             post_episode1_evidence = copy.deepcopy(
-                eval_exp.model.learning_modules[0].evidence
+                {graph_id: hyp.evidence for graph_id, hyp in lm._hypotheses.items()}
             )
             self.assertGreater(
                 len(post_episode1_evidence),
@@ -117,13 +119,13 @@ class NoResetEvidenceLMTest(BaseGraphTest):
             eval_exp.pre_episode()
             self.assert_dicts_equal(
                 post_episode1_evidence,
-                eval_exp.model.learning_modules[0].evidence,
+                {graph_id: hyp.evidence for graph_id, hyp in lm._hypotheses.items()},
                 "evidence dict should not change between episodes",
             )
             episode_2_steps = eval_exp.run_episode_steps()
             eval_exp.post_episode(episode_2_steps)
             self.assertGreater(
-                len(eval_exp.model.learning_modules[0].evidence),
+                len(lm._hypotheses),
                 0,
                 "evidence dict should contain evidence values",
             )
