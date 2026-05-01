@@ -3,9 +3,13 @@
 do_train: true
 train_env_interface_args:
   parent_to_child_mapping: null
+  # Here we specify which objects to learn. "mug" and "banana" come from the YCB dataset.
+  # If you don't have the YCB dataset, replace with names from habitat (e.g.,
+  # "capsule3DSolid", "cubeSolid", etc.).
   object_names:
   - mug
   - banana
+  # Use all predefined object rotations that give good views of the object from 14 angles.
   object_init_sampler:
     _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
     rotations: ${constants.rotations_all}
