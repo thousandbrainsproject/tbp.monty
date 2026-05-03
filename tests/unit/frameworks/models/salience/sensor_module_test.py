@@ -13,7 +13,6 @@ from typing import Any
 from unittest.mock import MagicMock, patch, sentinel
 
 import numpy as np
-import numpy.testing as nptest
 import numpy.typing as npt
 import pytest
 import quaternion as qt
@@ -145,7 +144,7 @@ class SalienceSMTest(unittest.TestCase):
                 sender_type="SM",
             )
             # TODO: implement __eq__ for GoalState
-            nptest.assert_array_equal(g.location, expected_goal.location)
+            np.testing.assert_array_equal(g.location, expected_goal.location)
             self.assertEqual(g.confidence, expected_goal.confidence)
             self.assertEqual(g.use_state, expected_goal.use_state)
             self.assertEqual(
@@ -174,12 +173,12 @@ class SalienceSMPrivateTest(unittest.TestCase):
     ) -> None:
         salience = 2 * np.ones(10)
         normalized = self.sensor_module._normalize_salience(salience)
-        nptest.assert_array_equal(normalized, np.ones(10))
+        np.testing.assert_array_equal(normalized, np.ones(10))
 
     def test_normalize_salience_normalizes_empty_salience(self) -> None:
         salience = np.array([])
         normalized = self.sensor_module._normalize_salience(salience)
-        nptest.assert_array_equal(normalized, np.array([]))
+        np.testing.assert_array_equal(normalized, np.array([]))
 
     def test_weight_salience_decays_randomizes_and_normalizes_salience_in_that_order(
         self,

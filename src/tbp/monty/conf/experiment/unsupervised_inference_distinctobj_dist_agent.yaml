@@ -2,7 +2,7 @@
 
 defaults:
   - /monty: noresetevidencegraph_exp1000_e100_t3_tot2500
-  - /monty/motor_system_config: informed_5_goal1
+  - /monty/motor_system_config: distant_5
   - /monty/learning_module: noresetevidence_1lm
   - /monty/sensor_module: camera_dist_noise_raw0
   - /monty/connectivity: 1lm_1sm

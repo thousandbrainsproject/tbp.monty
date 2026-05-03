@@ -53,9 +53,7 @@ class MontyBase(Monty):
             learning_modules: list of learning modules
             motor_system: class instance that aggregates proposed motor outputs
                 of learning modules and decides next action. Conceptually, this is
-                the subcortical motor area. Note: EnvironmentInterface takes a
-                motor_system as an argument. That motor system is the same as this
-                one.
+                the subcortical motor area.
             sm_to_agent_dict: dictionary mapping each sensor module id to the
                 list of habitat agents it receives input from. This is to simulate
                 columns with wide receptive fields that receive input from multiple

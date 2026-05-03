@@ -27,7 +27,7 @@ The first time you run experiments that log to wandb you will need to set your W
 
 ## Analyzing Data From `monty_handlers`
 
-The [`plot_utils.py`](../../src/tbp/monty/frameworks/utils/plot_utils.py) contains utils for plotting the logged data. The [`logging_utils.py`](../../src/tbp/monty/frameworks/utils/logging_utils.py) file contains some useful utils for loading logs and printing some summary statistics on them.
+The [`plot_utils.py`](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/frameworks/utils/plot_utils.py) contains utils for plotting the logged data. The [`logging_utils.py`](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/frameworks/utils/logging_utils.py) file contains some useful utils for loading logs and printing some summary statistics on them.
 
 > [!NOTE]
 > Install `analysis` optional dependencies to use `plot_utils.py`

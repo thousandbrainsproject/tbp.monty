@@ -118,9 +118,7 @@ experiment:
       sm_to_lm_matrix:
       - - 0
       - - 1
-      lm_to_lm_matrix:
-      - []
-      - - 0
+      lm_to_lm_matrix: null
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:
@@ -230,7 +228,7 @@ experiment:
         sensor_id: patch_0
         allow_translation: false
         max_orientation_attempts: 3
-    train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
+    train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
     logging:
       monty_log_level: SILENT
       monty_handlers: []
@@ -275,7 +273,7 @@ constants:
   - principal_curvatures_log
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
-  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v2}
+  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v3}
   rotations_all_count: 14
   rotations_all:
   - - 0

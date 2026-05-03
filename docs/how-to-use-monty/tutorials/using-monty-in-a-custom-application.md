@@ -15,7 +15,7 @@ Monty aims to implement a **general-purpose algorithm for understanding and inte
 In the current implementation, movement should happen in 3D (or less) space and be tracked using Euclidean location coordinates. Although we are convinced that the basic principles of Monty will also apply to abstract spaces ([potentially embedded in 3D space](https://thousandbrains.discourse.group/t/abstract-concept-in-monty/533/4)) and we know that the [brain uses different mechanisms to encode space](https://youtu.be/zRRazfFstvY), the current implementation relies on 3D Euclidean space.
 
 # Customizing Monty for Your Application
-The diagram below shows the base abstract classes in Monty. For general information on how to customize those classes, see our guide on [Customizing Monty](../customizing-monty.md). The Experiment class coordinates the experiment (learning and evaluation). It initializes and controls Monty and the environment and coordinates the interaction between them. The environment that implements the `Environment` protocol is wrapped in an `EnvironmentInterface` subclass, which exposes methods to interact with the environment. An experiment can have two environment interfaces associated with it: one for training and one for evaluation.
+The diagram below shows the base abstract classes in Monty. For general information on how to customize those classes, see our guide on [Customizing Monty](../customizing-monty.md). The Experiment class coordinates the experiment (learning and evaluation). It initializes and controls Monty and the environment and coordinates the interaction between them. The environment that implements the `Environment` protocol is wrapped in an experiment's environment `Interface` subclass, which exposes methods to interact with the environment. An experiment can have two environment interfaces associated with it: one for training and one for evaluation.
 
 ![Class structure in tbp.monty. Each class can be customized independently, allowing for easy modification and testing of individual components.](../../figures/how-to-use-monty/monty_class_diagram.png#width=500px)
 
@@ -23,15 +23,15 @@ Information flow in Monty implements a sensorimotor loop. Observations from the 
 
 ![Information flow in Monty. Note, this is a simplified view as there can also be model-free policies that bypass the learning module.](../../figures/how-to-use-monty/monty_information_flow_simplified.png)
 
-Additionally, the `EnvironmentInterface` and Environment can implement specific functions to be executed at different points in the experiment, such as resetting the agent position and showing a new object or scene at the beginning of a new episode.
+Additionally, the environment `Interface` can implement specific functions to be executed at different points in the experiment, such as resetting the agent position and showing a new object or scene at the beginning of a new episode.
 
-To use Monty in a custom environment, you usually need to customize the `EnvironmentInterface` class and write a custom implementation of the `SimulatedObjectEnvironment` protocol. For example, if you look back at the previous tutorials, you will see that for those Habitat experiments, we've been using the `EnvironmentInterfacePerObject` and the `HabitatEnvironment`. The diagram below shows some key elements that need to be defined for these two classes. It's best to start thinking about the environment setup first, as this will force you to think through how to structure your application correctly for Monty to tackle.
+To use Monty in a custom environment, you usually need to customize the environment `Interface` class and write a custom implementation of the `SimulatedObjectEnvironment` protocol. For example, if you look back at the previous tutorials, you will see that for those Habitat experiments, we've been using the `OneObjectPerEpisodeInterface` and the `HabitatEnvironment`. The diagram below shows some key elements that need to be defined for these two classes. It's best to start thinking about the environment setup first, as this will force you to think through how to structure your application correctly for Monty to tackle.
 ![Key elements to define for a custom environment interface](../../figures/how-to-use-monty/defining_env_and_env_interface.png)
 
 ### Environment
 The first thing to figure out is how movement should be defined in your environment. What actions are possible, and how do these actions change the agent's state and observations?
 
-If you are working with an existing environment, such as one used for reinforcement learning (for example, the Habitat environment we are using), you might just need to wrap this into the `.step()` function of your custom `Environment` class such that when `env.step(actions)` is called, observations and proprioceptive state are returned. If you work with an application that isn't already set up like that, defining how actions lead to the next observation may be more involved. You can look at the `OmniglotEnvironmentInterface` or `SaccadeOnImageEnvironmentInterface` as examples (more details below).
+If you are working with an existing environment, such as one used for reinforcement learning (for example, the Habitat environment we are using), you might just need to wrap this into the `.step()` function of your custom `Environment` class such that when `env.step(actions)` is called, observations and proprioceptive state are returned. If you work with an application that isn't already set up like that, defining how actions lead to the next observation may be more involved. You can look at the environment `OmniglotInterface` or `SaccadeOnImageInterface` as examples (more details below).
 
 The observations should be returned as `Observations` with one entry per agent in the environment. Each agent should have `SensorObservations` for each of its sensors. For example, if there is one agent with two sensors that each sense two types of modalities, it would look like this:
 
@@ -70,16 +70,16 @@ state = ProprioceptiveState(
         "rotation": current_agent_rotation,
         "sensors":
         {
-          SensorID("patch_0.depth"): SensorState(
+          SensorID("patch_0"): SensorState(
             {
-              "position": current_depth_sensor_position
-              "rotation": current_depth_sensor_rotation
+              "position": current_patch_0_sensor_position
+              "rotation": current_patch_0_sensor_rotation
             }
           ),
-          SensorID("patch_0.rgba"): SensorState(
+          SensorID("patch_1"): SensorState(
             {
-              "position": current_rgba_sensor_position
-              "rotation": current_rgba_sensor_rotation
+              "position": current_patch_1_sensor_position
+              "rotation": current_patch_1_sensor_rotation
             }
           ),
         }
@@ -92,9 +92,9 @@ state = ProprioceptiveState(
 Lastly, you need to define what happens when the environment is initialized (`__init__()`), when it is reset (`reset()`, usually at the end of an episode), and when it is closed (`close()`, at the end of an experiment). Resetting could include loading a new scene, resetting the agent position, or changing the arrangement of objects in the environment. It might also reset some of the environment's internal variables, such as step counters. Note that, as customary for RL environments, the `reset()` method is also expected to return `Observations` and `ProprioceptiveState`.
 
 ### Environment Interface
-The `EnvironmentInterface` manages retrieving observations from the `Environment`-given actions. The `Environment`, in turn, applies basic transforms to the raw observations from the environment.
+The environment `Interface` manages retrieving observations from the `Environment`-given actions. The `Environment`, in turn, applies basic transforms to the raw observations from the environment.
 
-The `EnvironmentInterface` should define all the key events at which the environment needs to be accessed or modified. This includes initializing the environment (`__init__()`), retrieving the next observation (`__next__()`), and things that happen at the beginning or end of episodes and epochs (`pre_episode()`, `post_episode()`, `pre_epoch()`, `post_epoch()`). Note that not all of those are relevant to every application.
+The environment `Interface` should define all the key events at which the environment needs to be accessed or modified. This includes initializing the environment (`__init__()`), retrieving the next observation from the environment (`step()`), and things that happen at the beginning or end of episodes and epochs (`pre_episode()`, `post_episode()`, `pre_epoch()`, `post_epoch()`). Note that not all of those are relevant to every application.
 
 Think about how your experiment should be structured. What defines an episode? What happens with the environment at the beginning or end of each episode? What happens at the beginning or end of epochs? Does anything need to happen at every step besides retrieving the observation and environment state?
 
@@ -108,132 +108,119 @@ Since this is a static dataset, and Monty is a sensorimotor learning system, we 
 At each step, the sensor module will extract a location and pose in a common reference frame and send it to the learning module. To define the pose at each location, we extract a [surface normal and two principal curvature directions](https://thousandbrainsproject.readme.io/docs/observations-transforms-sensor-modules#surface-normals-and-principle-curvatures) from a gaussian smoothed image of the patch. As you can see in the images below, the surface normal will always point straight out of the image (as this is a 2D image, not a 3D object surface) and the first principal curvature direction aligns with the stroke direction while the second one is orthogonal to it. The learning module then stores those relative locations and orientations in the model of the respective character and can use them to recognize a character during inference.
 ![The learned models store poses at locations relative to each other. Pose is defined by surface normal and curvature directions.](../../figures/how-to-use-monty/omniglot_model_exp.png#width=600px)
 
-Learning and inference on Omniglot characters can be implemented by writing two custom classes, the [OmniglotEnvironment](https://github.com/thousandbrainsproject/tbp.monty/blob/f9acc1f013c716f8d2c126ec8fd789ceb4595ac0/src/tbp/monty/frameworks/environments/two_d_data.py#L40) and the [OmniglotEnvironmentInterface](https://github.com/thousandbrainsproject/tbp.monty/blob/f9acc1f013c716f8d2c126ec8fd789ceb4595ac0/src/tbp/monty/frameworks/environments/embodied_data.py#L790):
+Learning and inference on Omniglot characters can be implemented by writing two custom classes, the [OmniglotEnvironment](https://github.com/thousandbrainsproject/tbp.monty/blob/f9acc1f013c716f8d2c126ec8fd789ceb4595ac0/src/tbp/monty/frameworks/environments/two_d_data.py#L40) and the [OmniglotInterface](https://github.com/thousandbrainsproject/tbp.monty/blob/f9acc1f013c716f8d2c126ec8fd789ceb4595ac0/src/tbp/monty/frameworks/environments/embodied_data.py#L790):
 1. `OmniglotEnvironment`:
    - Defines initialization of all basic variables in the `__init__(patch_size, data_path)` method.
-   - In this example, we define the action space as `None` because we give Monty no choice in how to move. The step method just returns the next observation by following the predefined stroke order in the dataset. Note this will still be formulated as a sensorimotor task, as the retrieval of the next observation corresponds to a (pre-defined) movement and we get a relative displacement of the sensor.
-   - Defines the `step(actions)` method, which uses the current `step_num` in the episode to determine where we are in the stroke sequence and extracts a patch around that location. It then returns a Gaussian smoothed version of this patch as the observation.
-   - Defines `get_state()`, which returns the current x, y, z location on the character as a state dict (z is always zero since we are in 2D space here).
+   - In this example, Monty has no choice in how to move. The step method just returns the next observation by following the predefined stroke order in the dataset. Note this will still be formulated as a sensorimotor task, as the retrieval of the next observation corresponds to a (pre-defined) movement and we get a relative displacement of the sensor.
+   - Defines the `step(actions)` method, which uses the current `step_num` in the episode to determine where we are in the stroke sequence and extracts a patch around that location. It then returns a Gaussian smoothed version of this patch as the observation and the x, y, z location on the character (z is always zero since we are in 2D space here).
    - Defines `reset()` to reset the `step_num` counter and return the first observation on a new character.
    - Helper methods such as
      - `switch_to_object` and `load_new_character_data` to load a new character
      - `get_image_patch(img, loc, patch_size)` to extract the patch around a given pixel location
      - `motor_to_locations` to convert the movement information from the Omniglot dataset into locations (pixel indices) on the character image
-2. `OmniglotEnvironmentInterface`:
+2. `OmniglotInterface`:
    - Defines initialization of basic variables such as episode and epoch counters in the `__init__` method.
-   - Defines the `post_episode` method, which calls `cycle_object` to call the environment's `switch_to_object` method. Using the episode and epoch counters, it keeps track of which character needs to be shown next.
+   - Defines the `post_episode` method, which calls `cycle_object` to call the customized `OmniglotEnvironment`'s `switch_to_object` method. Using the episode and epoch counters, it keeps track of which character needs to be shown next.
 
 ![Custom classes for character recognition on the Omniglot dataset](../../figures/how-to-use-monty/omniglot_custom_classes.png#width=500px)
 
 An experiment config for training on the Omniglot dataset can then look like this:
 ```yaml
-defaults:
-  - /experiment/config/supervised_pretraining@config
-  - /experiment/config/logging/pretrain@config.logging
-  - /experiment/config/monty/patch_and_view@config.monty_config
-  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
-  - /experiment/config/monty/motor_system/informed_no_trans_step_s1@config.monty_config.motor_system_config
-  - /experiment/config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
-  - /experiment/config/environment/omniglot@config.env_interface_config
-  - /experiment/config/environment_interface/omniglot@config.train_env_interface_args
+# @package _global_
 
-_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
-config:
-  n_train_epochs: 1
-  logging:
-    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
-    run_name: omniglot_training
-  monty_config:
-    sensor_module_configs:
-      sensor_module_0:
-        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
-        sensor_module_args:
-          sensor_module_id: patch
-          features:
-            - pose_vectors
-            - pose_fully_defined
-            - on_object
-            - principal_curvatures_log
-          save_raw_obs: false
-          # Need to set this lower since curvature is generally lower
-          pc1_is_pc2_threshold: 1
-      sensor_module_1:
-        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
-        sensor_module_args:
-          sensor_module_id: view_finder
-          save_raw_obs: false
-  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.OmniglotEnvironmentInterface}
-  train_env_interface_args:
-    # Train on the first version of each character (there are 20 drawings for each
-    # character in each alphabet, here we see one of them). The default
-    # OmniglotEnvironmentInterfaceArgs specify alphabets = [0, 0, 0, 1, 1, 1] and
-    # characters = [1, 2, 3, 1, 2, 3]) so in the first episode we will see version 1
-    # of character 1 in alphabet 0, in the next episode version 1 of character 2 in
-    # alphabet 0, and so on.
-    versions: [1, 1, 1, 1, 1, 1]
+defaults:
+  - /monty: graph_exp1000_emin_t3_tot2500
+  - /monty/motor_system_config: informed_random_walk_1
+  - /monty/learning_module: displacement_1lm
+  - /monty/sensor_module: camera_dist_omniglot_tutorial
+  - /monty/connectivity: 1lm_1sm
+  - /environment: two_d_data_omniglot
+  - /env_interface: train_omniglot
+  - /env_interface/transform: depthto3d_sensor1
+  - /logging: silent_warning_train
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 1
+    n_eval_epochs: 3
+    model_name_or_path: ""
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: all
+    logging:
+      run_name: omniglot_training
+```
+
+One noteworthy highlight would be the `- /env_interface: train_omniglot` environment interface setup:
+```yaml
+# @package experiment.config
+
+do_train: true
+train_env_interface_args:
+  # Train on the first version of each character (there are 20 drawings for each
+  # character in each alphabet, here we see one of them). The configuration specifies
+  # alphabets = [0, 0, 0, 1, 1, 1] and characters = [1, 2, 3, 1, 2, 3]) so in the first
+  # episode we will see version 1 of character 1 in alphabet 0, in the next episode
+  # version 1 of character 2 in alphabet 0, and so on.
+  alphabets:
+  - 0
+  - 0
+  - 0
+  - 1
+  - 1
+  - 1
+  characters:
+  - 1
+  - 2
+  - 3
+  - 1
+  - 2
+  - 3
+  versions:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OmniglotInterface}
 ```
 
 And a config for inference on those trained models could look like this:
 ```yaml
-defaults:
-  - /experiment/config/defaults@config
-  - /experiment/config/logging/defaults@config.logging
-  - /experiment/config/monty/patch_and_view@config.monty_config
-  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
-  - /experiment/config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
-  - /experiment/config/environment/omniglot@config.env_interface_config
-  - /experiment/config/environment_interface/omniglot@config.eval_env_interface_args
+# @package _global_
 
-_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
-config:
-  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/omniglot_training/pretrained/}
-  do_train: false
-  n_eval_epochs: 1
-  logging:
-    run_name: omniglot_inference
-  monty_config:
-    monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
-    learning_module_configs:
-      learning_module_0:
-        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
-        learning_module_args:
-          # xyz values are in larger range so need to increase mmd
-          max_match_distance: 5
-          tolerances:
-            patch:
-              principal_curvatures_log: ${np.ones:2}
-              pose_vectors: ${np.array:[45, 45, 45]}
-          # Surface normal always points up, so they are not useful
-          feature_weights:
-            patch:
-              pose_vectors: [0, 1, 0]
-          hypotheses_updater_args:
-            # We assume the letter is presented upright
-            initial_possible_poses: [[0, 0, 0]]
-    sensor_module_configs:
-      sensor_module_0:
-        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
-        sensor_module_args:
-          sensor_module_id: patch
-          features:
-            - pose_vectors
-            - pose_fully_defined
-            - on_object
-            - principal_curvatures_log
-          save_raw_obs: false
-          # Need to set this lower since curvature is generally lower
-          pc1_is_pc2_threshold: 1
-      sensor_module_1:
-        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
-        sensor_module_args:
-          sensor_module_id: view_finder
-          save_raw_obs: false
-  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.OmniglotEnvironmentInterface}
-  eval_env_interface_args:
-    # Using version 1 means testing on the same version of the character as trained.
-    # Version 2 is a new drawing of the previously seen characters. In this small test
-    # setting these are 3 characters from 2 alphabets.
-    versions: [1, 1, 1, 1, 1, 1]
+defaults:
+  - /monty: evidencegraph_exp1000_e3_t3_tot2500
+  - /monty/motor_system_config: informed_random_walk_5
+  - /monty/learning_module: evidence_omniglot_tutorial
+  - /monty/sensor_module: camera_dist_omniglot_tutorial
+  - /monty/connectivity: 1lm_1sm
+  - /environment: two_d_data_omniglot
+  - /env_interface: eval_omniglot
+  - /env_interface/transform: depthto3d_sensor1
+  - /logging: tutorial_detailed_info_monty_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    n_eval_epochs: 1
+    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/omniglot/omniglot_training/pretrained/}
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    logging:
+      run_name: omniglot_inference
 ```
 
 > 📘 Follow Along
@@ -262,19 +249,19 @@ For inference, we use the RGBD images taken with the iPad camera. Movement is de
 
 ![Inference: We move a patch over an RGBD image to recognize the object and it's pose.](../../figures/how-to-use-monty/patchon2dimage.gif#width=500px)
 
-This can be implemented using two custom classes the [SaccadeOnImageEnvironment](https://github.com/thousandbrainsproject/tbp.monty/blob/4bc857580ae6ac015586af1a61b3e292a7827b6f/src/tbp/monty/frameworks/environments/two_d_data.py#L258) and [SaccadeOnImageEnvironmentInterface](https://github.com/thousandbrainsproject/tbp.monty/blob/db6b0404e3c3fa9c95688db5db33fa58053fcb8d/src/tbp/monty/frameworks/environments/embodied_data.py#L898):
+This can be implemented using two custom classes the [SaccadeOnImageEnvironment](https://github.com/thousandbrainsproject/tbp.monty/blob/4bc857580ae6ac015586af1a61b3e292a7827b6f/src/tbp/monty/frameworks/environments/two_d_data.py#L258) and [SaccadeOnImageInterface](https://github.com/thousandbrainsproject/tbp.monty/blob/db6b0404e3c3fa9c95688db5db33fa58053fcb8d/src/tbp/monty/frameworks/environments/embodied_data.py#L898):
 1. `SaccadeOnImageEnvironment`:
    - Defines initialization of all basic variables in the `__init__(patch_size, data_path)` method.
-   - Defines the `step(actions)` method, which uses the sensor's current location, the given actions, and their amounts to determine the new location on the image and extract a patch. It updates `self.current_loc` and returns the sensor patch observations and proprioceptive state.
-   - Defines `get_state()`, which returns the current state as a dictionary. The dictionary mostly contains `self.current_loc` and placeholders for the orientation, as the sensor and agent orientation never change.
+   - Defines the `step(actions)` method, which uses the sensor's current location, the given actions, and their amounts to determine the new location on the image and extract a patch. It updates `self.current_loc` and returns the sensor patch observations and proprioceptive state. The proprioceptive state mostly contains `self.current_loc` and placeholders for the orientation, as the sensor and agent orientation never change.
    - Helper methods such as
      - `switch_to_object(scene_id, scene_version_id)` to load a new image
      - `get_3d_scene_point_cloud` to extract a 3D point cloud from the depth image
      - `get_next_loc(action_name, amount)` to determine valid next locations in pixel space
      - `get_3d_coordinates_from_pixel_indices(pixel_ids)` to get the 3D location from a pixel index
      - `get_image_patch(loc)` to extract a patch at a location in the image.
-  	These methods are all used internally within the `__init__`, `step`, and `get_state` methods (except for the `switch_to_object` method, which is called by the `SaccadeOnImageEnvironmentInterface`).
-2. `SaccadeOnImageEnvironmentInterface`:
+
+     These methods are all used internally within the `__init__`, and `step` methods (except for the `switch_to_object` method, which is called by the `SaccadeOnImageInterface`).
+2. `SaccadeOnImageInterface`:
    - Defines initialization of basic variables such as episode and epoch counters in the `__init__` method.
    - Defines the `post_episode` method, which calls `cycle_object` to call the environment's `switch_to_object` method. Using the episode and epoch counters, it keeps track of which image needs to be shown next.
 
@@ -283,63 +270,58 @@ This can be implemented using two custom classes the [SaccadeOnImageEnvironment]
 
 An experiment config can then look like this:
 ```yaml
-defaults:
-  - /experiment/config/eval@config
-  - /experiment/config/logging/parallel_evidence_lm@config.logging
-  - /experiment/config/monty/patch_and_view@config.monty_config
-  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
-  - /experiment/config/monty/learning_modules/default_evidence_1lm@config.monty_config.learning_module_configs
-  - /experiment/config/monty/args/clear_monty_args@config.monty_config
-  - /experiment/config/monty/args/defaults@config.monty_config.monty_args
-  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
-  # move 20 pixels at a time
-  - /experiment/config/monty/motor_system/informed_no_trans_step_s20@config.monty_config.motor_system_config
-  - /experiment/config/environment/world_image@config.env_interface_config
-  - /experiment/config/environment/init_args/clear_env_init_args@config.env_interface_config
-  - /experiment/config/environment/init_args/monty_world_standard_scenes@config.env_interface_config.env_init_args
-  - /experiment/config/environment_interface/clear_eval_env_interface_args@config
-  - /experiment/config/environment_interface/world_image@config.eval_env_interface_args
+# @package _global_
 
-_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
-config:
-  model_name_or_path: ${path.expanduser:${benchmarks.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/}
-  n_eval_epochs: 1
-  show_sensor_output: true
-  logging:
-    run_name: monty_meets_world_2dimage_inference
-    wandb_group: benchmark_experiments
-  monty_config:
-    monty_args:
-      min_eval_steps: ${benchmarks.min_eval_steps}
-  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageEnvironmentInterface}
-  eval_env_interface_args:
-    # list(np.repeat(range(12), 4))
-    scenes: [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11]
-    # list(np.tile(range(4), 12))
-    versions: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]
+defaults:
+  - /monty: graph_exp1000_emin_t3_tot2500
+  - /monty/motor_system_config: informed_random_walk_20 # move 20 pixels at a time
+  - /monty/learning_module: evidence_1lm_nn10_dod003_dts02_gsg0
+  - /monty/sensor_module: camera_dist
+  - /monty/connectivity: 1lm_1sm
+  - /environment: two_d_data_standard
+  - /env_interface: eval_worldimages
+  - /env_interface/transform: none
+  - /logging: basic_warning_wandb_evidence_eval_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: true
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 3
+    n_eval_epochs: 1
+    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
+    logging:
+      run_name: monty_meets_world_2dimage_inference
 
 ```
 For more configs to test on different subsets of the Monty Meets World dataset (such as bright or dark images, hand intrusion, and multiple objects), you can find the RGBD image benchmark configs at:
-- [world_image_from_stream_on_scanned_model](../../../src/tbp/monty/conf/experiment/world_image_from_stream_on_scanned_model.yaml)
-- [world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/world_image_on_scanned_model.yaml)
-- [dark_world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/dark_world_image_on_scanned_model.yaml)
-- [bright_world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/bright_world_image_on_scanned_model.yaml)
-- [hand_intrusion_world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/hand_intrusion_world_image_on_scanned_model.yaml)
-- [multi_object_world_image_on_scanned_model](../../../src/tbp/monty/conf/experiment/multi_object_world_image_on_scanned_model.yaml)
+- [world_image_from_stream_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/world_image_from_stream_on_scanned_model.yaml)
+- [world_image_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/world_image_on_scanned_model.yaml)
+- [dark_world_image_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/dark_world_image_on_scanned_model.yaml)
+- [bright_world_image_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/bright_world_image_on_scanned_model.yaml)
+- [hand_intrusion_world_image_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/hand_intrusion_world_image_on_scanned_model.yaml)
+- [multi_object_world_image_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/multi_object_world_image_on_scanned_model.yaml)
 
 > 📘 Follow Along
 > To run this experiment, you first need to download our 2D image dataset called `worldimages`. You can find instructions for this [here](https://thousandbrainsproject.readme.io/docs/benchmark-experiments#monty-meets-world).
 >
 > You will also need to [download the pre-trained models](https://thousandbrainsproject.readme.io/docs/getting-started#42-download-pretrained-models). Alternatively, you can run pre-training yourself by running `python run.py experiment=only_surf_agent_training_numenta_lab_obj`. Running pre-training requires the Habitat simulator and [downloading the `numenta_lab` 3D mesh dataset](https://thousandbrainsproject.readme.io/docs/benchmark-experiments#monty-meets-world).
 
-To run the experiment, call `python run.py experiment=tutorial/monty_meets_world_2dimage_inference`. If you don't want to log to wandb, add ` wandb_handlers: []` to `config.logging`. If you just want to run a quick test on a few of the images, adjust the `scenes` and `versions` parameters in `config.eval_env_interface_args`.
+To run the experiment, call `python run.py experiment=tutorial/monty_meets_world_2dimage_inference`. If you don't want to log to wandb, set the `WANDB_MODE=disabled` environment variable, or change to a logging configuration without any wandb handlers (i.e., set `wandb_handlers: []` under the `logging`). If you just want to run a quick test on a few of the images, adjust the `scenes` and `versions` parameters in `config.eval_env_interface_args`.
 
 # Other Things You May Need to Customize
 If your application uses sensors different from our commonly used cameras and depth sensors, or you want to extract specific features from your sensory input, you will need to define a custom sensor module. The sensor module receives the raw observations from the environment interface and converts them into the CMP, which contains features at poses. For more details on converting raw observations into the CMP, see our [documentation on sensor modules](https://thousandbrainsproject.readme.io/docs/observations-transforms-sensor-modules).
 
 If your application requires a specific policy to move through the environment or you have a complex actuator to control, you might want to implement a custom `MotorSystem` or `MotorPolicy` class. For more details on our existing motor system and policies, see our [documentation on Monty's policies](https://thousandbrainsproject.readme.io/docs/policy).
 
-Writing those custom classes works the same way as it does for the `EnvironmentInterface` class. For general information, see our documentation on [customizing Monty](https://thousandbrainsproject.readme.io/docs/customizing-monty).
+Writing those custom classes works the same way as it does for the environment `Interface` class. For general information, see our documentation on [customizing Monty](https://thousandbrainsproject.readme.io/docs/customizing-monty).
 
 # Conclusion
-This tutorial was a bit more text than practical code. This is because every application is different, and we try to convey the general principles here. The first step for any application is to think about if and how the task can be phrased as a sensorimotor environment. What is Monty's action space? How is movement defined? How does it change observations? How do movement and sensation determine the sensor's location and orientation in space? This will then help you figure out how to define a custom `Environment` and `EnvironmentInterface`, and their associated `__init__`, `step`,`reset`, `pre_episode`, and `post_episode` methods. If you run into issues customizing Monty to your application, please come over to our [Discourse Forum](https://thousandbrains.discourse.group/) and ask for help!
+This tutorial was a bit more text than practical code. This is because every application is different, and we try to convey the general principles here. The first step for any application is to think about if and how the task can be phrased as a sensorimotor environment. What is Monty's action space? How is movement defined? How does it change observations? How do movement and sensation determine the sensor's location and orientation in space? This will then help you figure out how to define a custom `Environment` and `Interface`, and their associated `__init__`, `step`, `reset`, `pre_episode`, and `post_episode` methods. If you run into issues customizing Monty to your application, please come over to our [Discourse Forum](https://thousandbrains.discourse.group/) and ask for help!

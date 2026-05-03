@@ -4,6 +4,8 @@ sensor_module_0:
   sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
   sensor_module_args:
     sensor_module_id: patch
+    # Features that will be extracted and sent to LM
+    # note: don't have to be all the features extracted during pretraining.
     features:
     - pose_vectors
     - pose_fully_defined
@@ -15,6 +17,8 @@ sensor_module_0:
     - principal_curvatures
     - principal_curvatures_log
     save_raw_obs: false
+    # CameraSM will only send an observation to the LM if features or location
+    # changed more than these amounts.
     delta_thresholds:
       on_object: 0
       n_steps: 20
@@ -27,14 +31,15 @@ sensor_module_0:
       - 2
       - 2
       distance: 0.01
-    is_surface_sm: true
+    is_surface_sm: true # for surface agent
+    # Let's add some noise to the sensor module outputs to make the task more challenging.
     noise_params:
       features:
-        pose_vectors: 2
-        hsv: ${np.array:[0.1, 0.2, 0.2]}
+        pose_vectors: 2 # rotate by random degrees along xyz
+        hsv: ${np.array:[0.1, 0.2, 0.2]} # add noise to each channel (the values here specify std. deviation of gaussian for each channel individually)
         principal_curvatures_log: 0.1
-        pose_fully_defined: 0.01
-      location: 0.002
+        pose_fully_defined: 0.01 # flip bool in 1% of cases
+      location: 0.002 # add gaussian noise with 0.002 std (0.2cm)
 sensor_module_1:
   sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
   sensor_module_args:

@@ -23,4 +23,4 @@ eval_env_interface_args:
   - 1
   - 1
   - 1
-eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.OmniglotEnvironmentInterface}
+eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OmniglotInterface}

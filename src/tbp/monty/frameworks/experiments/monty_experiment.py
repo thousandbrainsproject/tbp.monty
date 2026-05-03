@@ -22,13 +22,13 @@ from omegaconf import DictConfig
 from typing_extensions import Self
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentInterface,
-    EnvironmentInterfacePerObject,
-    SaccadeOnImageEnvironmentInterface,
-    SaccadeOnImageFromStreamEnvironmentInterface,
+from tbp.monty.experiment.environment import (
+    Interface,
+    OneObjectPerEpisodeInterface,
+    SaccadeOnImageFromStreamInterface,
+    SaccadeOnImageInterface,
 )
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.loggers.exp_logger import (
@@ -260,13 +260,11 @@ class MontyExperiment:
 
         Raises:
             TypeError: If `env_interface_class` is not a subclass of
-                `EnvironmentInterface`
+                `Interface`
         """
         # training and validation are just different environment interfaces
-        if not issubclass(env_interface_class, EnvironmentInterface):
-            raise TypeError(
-                "env_interface_class must be EnvironmentInterface (for now)"
-            )
+        if not issubclass(env_interface_class, Interface):
+            raise TypeError("env_interface_class must be Interface (for now)")
 
         return env_interface_class(
             **env_interface_args,
@@ -307,8 +305,8 @@ class MontyExperiment:
             eval_epochs=self.eval_epochs,
             episode_seed=current_rng_seed,
         )
-        # FIXME: 'target' attribute is specific to `EnvironmentInterfacePerObject`
-        if isinstance(self.env_interface, EnvironmentInterfacePerObject):
+        # FIXME: 'target' attribute is specific to `OneObjectPerEpisodeInterface`
+        if isinstance(self.env_interface, OneObjectPerEpisodeInterface):
             target = self.env_interface.primary_target
             if target is not None:
                 target.update(
@@ -552,17 +550,17 @@ class MontyExperiment:
     def run_epoch(self):
         """Run epoch -> Run one episode for each object."""
         self.pre_epoch()
-        if isinstance(self.env_interface, SaccadeOnImageFromStreamEnvironmentInterface):
+        if isinstance(self.env_interface, SaccadeOnImageFromStreamInterface):
             try:
                 while True:
                     self.run_episode()
             except KeyboardInterrupt:
                 logger.info("Data streaming interrupted. Stopping experiment.")
-        elif isinstance(self.env_interface, SaccadeOnImageEnvironmentInterface):
+        elif isinstance(self.env_interface, SaccadeOnImageInterface):
             num_episodes = len(self.env_interface.scenes)
             for _ in range(num_episodes):
                 self.run_episode()
-        elif isinstance(self.env_interface, EnvironmentInterfacePerObject):
+        elif isinstance(self.env_interface, OneObjectPerEpisodeInterface):
             for object_name in self.env_interface.object_names:
                 logger.info(f"Running a simulation to model object: {object_name}")
                 self.run_episode()
