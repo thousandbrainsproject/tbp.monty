@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -11,14 +11,12 @@ from __future__ import annotations
 from typing import Protocol
 
 import numpy as np
-from typing_extensions import override
+import numpy.typing as npt
 
 
 class SalienceStrategy(Protocol):
-    def __call__(self, rgba: np.ndarray, depth: np.ndarray) -> np.ndarray: ...
-
-
-class UniformSalienceStrategy(SalienceStrategy):
-    @override
-    def __call__(self, rgba: np.ndarray, depth: np.ndarray) -> np.ndarray:
-        return np.ones_like(depth)
+    def __call__(
+        self,
+        rgba: npt.NDArray[np.int_],
+        depth: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.float64]: ...

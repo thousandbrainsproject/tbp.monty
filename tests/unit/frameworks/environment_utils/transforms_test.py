@@ -27,6 +27,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorObservation,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tests.unit.statistics import total_variation
 
 AGENT_ID = AgentID("0")
 SENSOR_ID = SensorID("0")
@@ -230,13 +231,7 @@ class GaussianBlurRGBTest(unittest.TestCase):
         """Gaussian blur is a low-pass filter, so total variation cannot increase."""
         rgba, sigma, kernel_size = params
 
-        def total_variation(img):
-            img = img.astype(np.float32)
-            return np.sum(np.abs(np.diff(img, axis=0))) + np.sum(
-                np.abs(np.diff(img, axis=1))
-            )
-
-        input_tv = total_variation(rgba[:, :, :3])
+        input_tv = total_variation(rgba[:, :, :3].astype(np.float32))
         assume(input_tv > 0.0)  # Exclude solid images
 
         obs = Observations()
@@ -246,6 +241,6 @@ class GaussianBlurRGBTest(unittest.TestCase):
             agent_id=AGENT_ID, sigma=sigma, kernel_size=kernel_size
         )
         result_rgba = gaussian_smoother(obs, ctx=Mock())[AGENT_ID][SENSOR_ID]["rgba"]
-        result_tv = total_variation(result_rgba[:, :, :3])
+        result_tv = total_variation(result_rgba[:, :, :3].astype(np.float32))
 
         self.assertLessEqual(result_tv, input_tv)
