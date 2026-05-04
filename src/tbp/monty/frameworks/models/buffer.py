@@ -21,10 +21,11 @@ import numpy.typing as npt
 import quaternion as qt
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from scipy.spatial.transform import Rotation
+from scipy.spatial.transform import Rotation as ScipyRotation
 
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
 from tbp.monty.frameworks.utils.dataclass_utils import is_dataclass_instance
+from tbp.monty.geometry import Rotation
 
 if TYPE_CHECKING:
     from tbp.monty.cmp import Message
@@ -746,9 +747,10 @@ class BufferEncoder(json.JSONEncoder):
 
 BufferEncoder.register(np.generic, lambda obj: obj.item())
 BufferEncoder.register(np.ndarray, lambda obj: obj.tolist())
-BufferEncoder.register(Rotation, lambda obj: obj.as_euler("xyz", degrees=True))
+BufferEncoder.register(ScipyRotation, lambda obj: obj.as_euler("xyz", degrees=True))
 BufferEncoder.register(torch.Tensor, lambda obj: obj.cpu().numpy())
 BufferEncoder.register(qt.quaternion, lambda obj: qt.as_float_array(obj))
 BufferEncoder.register(Action, ActionJSONEncoder)
 BufferEncoder.register(DictConfig, lambda obj: OmegaConf.to_object(obj))
 BufferEncoder.register(ListConfig, lambda obj: OmegaConf.to_object(obj))
+BufferEncoder.register(Rotation, lambda obj: obj.as_euler("xyz", degrees=True))

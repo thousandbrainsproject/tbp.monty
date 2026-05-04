@@ -10,9 +10,9 @@
 import unittest
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.utils.logging_utils import compute_pose_error
+from tbp.monty.geometry import Rotation
 
 
 class TestComputePoseError(unittest.TestCase):
@@ -72,10 +72,11 @@ class TestComputePoseError(unittest.TestCase):
           matches the expected result
         """
         quats = [
-            [0, 0, 0, 1],  # Identity
-            [0, 0, 1, 0],  # 180° around Z
-            [0.707, 0, 0, 0.707],  # 90° around X (approx)
+            [1, 0, 0, 0],  # Identity
+            [0, 0, 0, 1],  # 180° around Z
+            [0.707, 0.707, 0, 0],  # 90° around X (approx)
         ]
+
         rotations_list = Rotation.from_quat(quats)
 
         # Verify that the length matches the number of input quaternions

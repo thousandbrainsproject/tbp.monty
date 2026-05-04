@@ -18,7 +18,6 @@ import numpy as np
 import numpy.typing as npt
 import quaternion as qt
 import torch
-from scipy.spatial.transform import Rotation
 
 import tests.unit.frameworks.models.fakes.encoder_classes
 from tbp.monty.cmp import Message
@@ -31,6 +30,7 @@ from tbp.monty.frameworks.actions.actions import (
 )
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.buffer import BufferEncoder, FeatureAtLocationBuffer
+from tbp.monty.geometry import Rotation
 from tests.unit.frameworks.models.fakes.encoder_classes import (
     FakeClass,
     FakeDataclass1,

@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 import numpy as np
 import quaternion as qt
-from scipy.spatial.transform import Rotation as rot  # noqa: N813
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
@@ -49,7 +48,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
-from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import VectorXYZ
 
 if TYPE_CHECKING:
@@ -552,13 +551,8 @@ class JumpToGoal(MotorPolicy):
 
         # Should rotate by pitch degrees around x, and by yaw degrees around y (and
         # no change about z, which would correspond to roll)
-        scipy_combined_orientation = rot.from_euler(
-            "xyz",
-            [pitch_angle, yaw_angle, 0],
-            degrees=False,
-        )
-        # TODO: should be a QuaternionWXYZ
-        target_quat = scipy_to_numpy_quat(scipy_combined_orientation.as_quat())
+        scipy_combined_orientation = Rotation.from_euler("xy", [pitch_angle, yaw_angle])
+        target_quat = qt.quaternion(*scipy_combined_orientation.as_quat())
 
         return SetAgentPose(
             agent_id=self._agent_id,
@@ -819,13 +813,14 @@ class InformedPolicy(BasePolicy):
 
         # Should rotate by pitch degrees around x, and by yaw degrees around y (and
         # no change about z, which would correspond to roll)
-        scipy_combined_orientation = rot.from_euler(
+        scipy_combined_orientation = Rotation.from_euler(
             "xyz",
             [pitch_angle, yaw_angle, 0],
             degrees=False,
         )
 
-        target_quat = scipy_to_numpy_quat(scipy_combined_orientation.as_quat())
+        target_wxyz = scipy_combined_orientation.as_quat()
+        target_quat = qt.quaternion(*target_wxyz)
 
         return SetAgentPose(
             agent_id=self.agent_id,
@@ -1568,8 +1563,7 @@ class SurfacePolicy(InformedPolicy):
         """
         # Note that quaternion format is [w, x, y, z]
         [w, x, y, z] = qt.as_float_array(state[self.agent_id].rotation)
-        # Note that scipy.spatial.transform.Rotation (v1.10.0) format is [x, y, z, w]
-        [x, y, z, w] = rot.from_quat([x, y, z, w]).inv().as_quat()
+        [w, x, y, z] = Rotation.from_quat([w, x, y, z]).inv().as_quat()
         return qt.quaternion(w, x, y, z)
 
     def orienting_angle_from_normal(
@@ -2371,7 +2365,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             rot_limits = np.clip(0.1 + self.search_counter / self.max_steps, 0, 1)
             rot_val = ctx.rng.uniform(-rot_limits, rot_limits) * np.pi
 
-            plane_rot = rot.from_euler("xyz", (0.0, 0.0, rot_val), degrees=False)
+            plane_rot = Rotation.from_euler("xyz", (0.0, 0.0, rot_val), degrees=False)
 
             # Note we apply the rotation to the original vector
             self.update_tangential_reps(vec_form=plane_rot.apply(vec_copy))

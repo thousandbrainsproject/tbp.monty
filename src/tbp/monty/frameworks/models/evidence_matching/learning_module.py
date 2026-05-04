@@ -17,7 +17,6 @@ import time
 import numpy as np
 import numpy.typing as npt
 from scipy.spatial import KDTree
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
@@ -39,6 +38,7 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
     get_scaled_evidences,
 )
+from tbp.monty.geometry import Rotation
 
 __all__ = ["EvidenceGraphLM", "InvalidEvidenceThresholdConfig"]
 

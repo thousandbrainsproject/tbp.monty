@@ -22,7 +22,6 @@ import numpy as np
 from matplotlib import animation
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.axes3d import Axes3D
-from scipy.spatial.transform import Rotation
 from torch_geometric.data import Data
 
 from tbp.monty.frameworks.actions.actions import Action
@@ -34,7 +33,7 @@ from tbp.monty.frameworks.utils.plot_utils import (
     add_patch_outline_to_view_finder,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
-from tbp.monty.frameworks.utils.transform_utils import numpy_to_scipy_quat
+from tbp.monty.geometry import Rotation
 
 
 def plot_graph(
@@ -813,12 +812,10 @@ class PolicyPlot:
             self.object_id
         ].pos
 
-        converted_quat = numpy_to_scipy_quat(
-            self.detailed_stats[str(self.episode)]["target"][
-                "primary_target_rotation_quat"
-            ]
-        )
-        object_rot = Rotation.from_quat(converted_quat)
+        quat = self.detailed_stats[str(self.episode)]["target"][
+            "primary_target_rotation_quat"
+        ]
+        object_rot = Rotation.from_quat(quat)
 
         # Update orientation and position of the learned model
         # to be consistent with [lm]["locations"] (which are in body-centric
@@ -1029,11 +1026,9 @@ class PolicyPlot:
             ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")].position
 
             temp_agent_rot = Rotation.from_quat(
-                numpy_to_scipy_quat(
-                    self.detailed_stats[str(self.episode)]["motor_system"][
-                        "action_details"
-                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")].rotation
-                )
+                self.detailed_stats[str(self.episode)]["motor_system"][
+                    "action_details"
+                ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")].rotation
             )
 
             # === PLOT SENSOR POSE ===
@@ -1059,13 +1054,11 @@ class PolicyPlot:
                 )
 
                 partial_sensor_rot = Rotation.from_quat(
-                    numpy_to_scipy_quat(
-                        self.detailed_stats[str(self.episode)]["motor_system"][
-                            "action_details"
-                        ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]
-                        .sensors[sensor_key]
-                        .rotation
-                    )
+                    self.detailed_stats[str(self.episode)]["motor_system"][
+                        "action_details"
+                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]
+                    .sensors[sensor_key]
+                    .rotation
                 )
                 temp_sensor_rot = (
                     temp_agent_rot * partial_sensor_rot
@@ -1148,11 +1141,9 @@ class PolicyPlot:
                 "sm_properties"
             ][np.where(self.tangential_steps_mask)[0][step_iter]]["sm_location"]
             sensor_rot = Rotation.from_quat(
-                numpy_to_scipy_quat(
-                    self.detailed_stats[str(self.episode)][sensor_key]["sm_properties"][
-                        np.where(self.tangential_steps_mask)[0][step_iter]
-                    ]["sm_rotation"]
-                )
+                self.detailed_stats[str(self.episode)][sensor_key]["sm_properties"][
+                    np.where(self.tangential_steps_mask)[0][step_iter]
+                ]["sm_rotation"]
             )
 
             # As the agent faces "forward" along the negative z-axis, we use this vector
@@ -1268,10 +1259,8 @@ def plot_learned_graph(
     # This is based on the *LM's model*, but always getting the ground-truth object,
     learned_model_cloud = lm_models["pretrained"][lm_index][object_id].pos
 
-    converted_quat = numpy_to_scipy_quat(
-        detailed_stats[str(episode)]["target"]["primary_target_rotation_quat"]
-    )
-    object_rot = Rotation.from_quat(converted_quat)
+    quat = detailed_stats[str(episode)]["target"]["primary_target_rotation_quat"]
+    object_rot = Rotation.from_quat(quat)
 
     # Update orientation and position of the learned model to be in environmental
     # coordinates
