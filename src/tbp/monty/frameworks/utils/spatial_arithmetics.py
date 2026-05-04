@@ -12,6 +12,7 @@ from __future__ import annotations
 import copy
 import logging
 import sys
+from typing import Sequence
 
 import numpy as np
 import torch
@@ -19,6 +20,7 @@ from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.math import DEFAULT_TOLERANCE
+from tbp.monty.pose import Location, Orientation
 
 logger = logging.getLogger(__name__)
 
@@ -237,13 +239,13 @@ def get_angle_beefed_up(v1, v2):
     If one of the vectors is the zero vector, return an arbitrarily large distance.
 
     Also enforces that vectors are unit vectors, which makes it less efficient than
-    the standard get_angle.
+    the standard `get_angle`.
 
-    >>> angle_between_vecs((1, 0, 0), (0, 1, 0))
+    >>> get_angle_beefed_up((1, 0, 0), (0, 1, 0))
     1.5707963267948966
-    >>> angle_between_vecs((1, 0, 0), (1, 0, 0))
+    >>> get_angle_beefed_up((1, 0, 0), (1, 0, 0))
     0.0
-    >>> angle_between_vecs((1, 0, 0), (-1, 0, 0))
+    >>> get_angle_beefed_up((1, 0, 0), (-1, 0, 0))
     3.141592653589793
     """
     if v1 is None or v2 is None:
@@ -311,6 +313,75 @@ def check_orthonormal(matrix):
             f"{np.mean(np.abs(np.linalg.norm(matrix, axis=1) - [1, 1, 1]))}"
         )
     return is_orthogonal and is_normal
+
+
+# FIXME: We may need a distinct Displacement class, but for now we're abusing Location.
+def align_orthonormal_displacement(
+    b0: Sequence[Location], b1: Sequence[Location]
+) -> Orientation:
+    """Calculate the rotation that aligns two sets of basis vectors.
+
+    Returns:
+        The rotation from `b0` to `b1`.
+
+    Raises:
+        TypeError: If `b0` or `b1` are not 3 orthonormal basis vectors.
+    """
+    if not (len(b0) == len(b1) == 3):
+        raise TypeError("3 orthonormal basis vectors required.")
+    m0 = np.array(
+        [
+            [b0[0].x, b0[0].y, b0[0].z],
+            [b0[1].x, b0[1].y, b0[1].z],
+            [b0[2].x, b0[2].y, b0[2].z],
+        ]
+    )
+    r0 = Orientation.from_matrix(matrix=m0)
+    m1 = np.array(
+        [
+            b1[0].as_array(),  # [b1[0].x, b1[0].y, b1[0].z],
+            b1[1].as_array(),  # [b1[1].x, b1[1].y, b1[1].z],
+            b1[2].as_array(),  # [b1[2].x, b1[2].y, b1[2].z]
+        ]
+    )
+    # m1 = np.array([b.as_array() for b in b1])
+    r1 = Orientation.from_matrix(None, m1)
+    return align_rotations(r0, r1)
+
+
+# FIXME: We may need a distinct Rotation class, but for now we're abusing Orientation.
+def align_rotations(from_r0: Orientation, to_r1: Orientation) -> Orientation:
+    """Calculate the rotation that aligns `Orientations`.
+
+    Returns:
+        The rotation from `from_r0` to `to_r1`.
+
+    Examples:
+        >>> Orientation().yaw(np.deg2rad(-30))
+        Orientation(frame=None, w=0.965926, x=0.0, y=-0.258819, z=0.0)
+        >>> Orientation().yaw(np.deg2rad(-30)).inverse()
+        Orientation(frame=None, w=-0.965926, x=0.0, y=-0.258819, z=0.0)
+        >>> Orientation().yaw(np.deg2rad(30))
+        Orientation(frame=None, w=0.965926, x=0.0, y=0.258819, z=0.0)
+        >>> Orientation().yaw(np.deg2rad(30)).inverse()
+        Orientation(frame=None, w=-0.965926, x=0.0, y=0.258819, z=0.0)
+
+        >>> r0 = Orientation().yaw(np.deg2rad(45))
+        >>> r1 = Orientation().yaw(np.deg2rad(15))
+        >>> r2 = align_rotations(r0, r1)
+        >>> r2
+        Orientation(frame=None, w=-0.965926, x=0.0, y=0.258819, z=0.0)
+        >>> r2.yaw(np.deg2rad(30))
+        Orientation(frame=None, w=-1.0, x=0.0, y=0.0, z=0.0)
+
+        >>> align_rotations(r1, r0)
+        Orientation(frame=None, w=-0.965926, x=0.0, y=-0.258819, z=0.0)
+        >>> align_rotations(r1, r0).to_matrix()
+        array([[ 0.8660254,  0.       ,  0.5      ],
+               [-0.       ,  1.       ,  0.       ],
+               [-0.5      , -0.       ,  0.8660254]])
+    """
+    return to_r1 * from_r0.inverse()
 
 
 def align_orthonormal_vectors(m1, m2, as_scipy=True):
