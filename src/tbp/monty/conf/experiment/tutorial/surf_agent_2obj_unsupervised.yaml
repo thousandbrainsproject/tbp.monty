@@ -1,9 +1,14 @@
 # @package _global_
 
 defaults:
+  # This configuration will take 1000 exploratory steps (`exp1000`) after recognizing the object to
+  # collect more information about it. It also requires at least 100 train steps (`t100`) before
+  # recognizing an object to avoid early misclassifications when we have few objects in
+  # memory.
   - /monty: graph_exp1000_e3_t100_tot2500
   - /monty/motor_system_config: surface
   - /monty/learning_module: evidence_tutorial_surf_agent_2obj_unsupervised
+  # We will use the default surface sensor modules (one habitat surface patch, one logging view finder)
   - /monty/sensor_module: camera_surf
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_surf_agent

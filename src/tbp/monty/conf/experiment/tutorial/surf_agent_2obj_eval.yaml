@@ -18,7 +18,9 @@ experiment:
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 5000
+    # We will evaluate each of the 3 test rotations
     n_train_epochs: 3
+    # Specify the path where we saved the pretrained model
     model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_2obj_train/pretrained"}
     n_eval_epochs: 3
     min_lms_match: 1
@@ -26,6 +28,8 @@ experiment:
     supervised_lm_ids: []
     python_log_level: DEBUG
     logging:
+      # Specify directory where an output directory will be created.
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
+      # Specify a name for the evaluation run
       run_name: surf_agent_2obj_eval
       wandb_group: gm_eval_runs

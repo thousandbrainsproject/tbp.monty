@@ -3,6 +3,8 @@
 do_train: true
 train_env_interface_args:
   parent_to_child_mapping: null
+  # Here we specify which objects to learn. We are going to use the mug and bowl
+  # from the YCB dataset.
   object_names:
   - mug
   - bowl
