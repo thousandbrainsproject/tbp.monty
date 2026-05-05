@@ -11,8 +11,25 @@ from __future__ import annotations
 import numpy as np
 
 
+def mean_local_variation(img: np.ndarray) -> float:
+    """Compute the mean of the absolute differences between adjacent pixels.
+
+    Differences are computed across rows and across columns independently and
+    then averaged together to yield the mean local variation.
+
+    Args:
+        img: The 2D image to compute the mean local variation of.
+
+    Returns:
+        The mean local variation of the image.
+    """
+    return (
+        np.sum(np.abs(np.diff(img, axis=0))) + np.sum(np.abs(np.diff(img, axis=1)))
+    ) / img.size
+
+
 def total_variation(img: np.ndarray) -> float:
-    """Computer the sum of the absolute differences between adjacent pixels.
+    """Compute the sum of the absolute differences between adjacent pixels.
 
     Differences are computed across rows and across columns independently and
     then summed together to yield the total variation.

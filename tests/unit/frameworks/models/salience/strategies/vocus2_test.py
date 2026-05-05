@@ -25,7 +25,7 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2 import (
 )
 from tbp.monty.frameworks.sensors import Resolution2D
 from tbp.monty.math import DEFAULT_TOLERANCE
-from tests.unit.statistics import total_variation
+from tests.unit.statistics import mean_local_variation, total_variation
 
 
 class PyramidTest(unittest.TestCase):
@@ -293,7 +293,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
         min_size=st.integers(min_value=1, max_value=1024 * 2),
     )
-    def test_surround_planes_have_higher_total_variation_than_corresponding_center_planes(  # noqa: E501
+    def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes(  # noqa: E501
         self,
         image: np.ndarray,
         sigmas: tuple[float, float],
@@ -310,9 +310,11 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             min_size=min_size,
         )
 
-        center_variations = np.array([total_variation(plane) for plane in center.flat])
+        center_variations = np.array(
+            [mean_local_variation(plane) for plane in center.flat]
+        )
         surround_variations = np.array(
-            [total_variation(plane) for plane in surround.flat]
+            [mean_local_variation(plane) for plane in surround.flat]
         )
         variations = center_variations - surround_variations
         self.assertTrue(all(variations >= 0))
@@ -324,7 +326,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
         min_size=st.integers(min_value=1, max_value=1024 * 2),
     )
-    def test_surround_planes_total_variation_equals_corresponding_center_planes_for_solid_image(  # noqa: E501
+    def test_surround_planes_mean_local_variation_equals_corresponding_center_planes_for_solid_image(  # noqa: E501
         self,
         image: np.ndarray,
         sigmas: tuple[float, float],
@@ -341,9 +343,11 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             min_size=min_size,
         )
 
-        center_variations = np.array([total_variation(plane) for plane in center.flat])
+        center_variations = np.array(
+            [mean_local_variation(plane) for plane in center.flat]
+        )
         surround_variations = np.array(
-            [total_variation(plane) for plane in surround.flat]
+            [mean_local_variation(plane) for plane in surround.flat]
         )
         self.assertTrue(
             np.allclose(center_variations, surround_variations, atol=DEFAULT_TOLERANCE)
@@ -356,7 +360,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
         min_size=st.integers(min_value=1, max_value=1024 * 2),
     )
-    def test_surround_planes_have_higher_total_variation_than_corresponding_center_planes_for_sufficiently_variable_image(  # noqa: E501
+    def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes_for_sufficiently_variable_image(  # noqa: E501
         self,
         image: np.ndarray,
         sigmas: tuple[float, float],
@@ -373,9 +377,11 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             min_size=min_size,
         )
 
-        center_variations = np.array([total_variation(plane) for plane in center.flat])
+        center_variations = np.array(
+            [mean_local_variation(plane) for plane in center.flat]
+        )
         surround_variations = np.array(
-            [total_variation(plane) for plane in surround.flat]
+            [mean_local_variation(plane) for plane in surround.flat]
         )
         variations = center_variations - surround_variations
         self.assertTrue(all(variations >= 0))
