@@ -234,11 +234,11 @@ class HabitatTransformTest(unittest.TestCase):
 
         translation = agent_position + agent_rotation_matrix @ sensor_position
 
-        world_camera = np.eye(4)
-        world_camera[0:3, 0:3] = rotation_matrix
-        world_camera[0:3, 3] = translation
+        cam_to_world = np.eye(4)
+        cam_to_world[0:3, 0:3] = rotation_matrix
+        cam_to_world[0:3, 3] = translation
 
-        points_world = (world_camera @ points_camera).T
+        points_world = (cam_to_world @ points_camera).T
 
         expected_semantic_id = np.unique(semantic_obs[semantic_obs.nonzero()])[0]
 

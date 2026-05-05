@@ -45,7 +45,7 @@ def _gradient_to_tangent_angle(gradient_angle: float) -> float:
 
 def _angle_to_pose_2d(
     angle: float,
-    world_camera: np.ndarray,
+    cam_to_world: np.ndarray,
     surface_normal: np.ndarray,
     tangent_frame: TangentFrame,
 ) -> np.ndarray:
@@ -58,7 +58,7 @@ def _angle_to_pose_2d(
         angle: Edge angle in radians in image coordinates (y-down), measured
             from the image x-axis toward the image y-axis (i.e., toward the
             bottom of the image).
-        world_camera: 4x4 camera-to-world transformation matrix.
+        cam_to_world: 4x4 camera-to-world transformation matrix.
         surface_normal: Surface normal defining the local tangent plane.
         tangent_frame: Orthonormal local basis used for the 2D model.
 
@@ -66,7 +66,7 @@ def _angle_to_pose_2d(
         3x3 array whose rows are [normal, edge_tangent, edge_perp].
         Normal is always [0, 0, 1]; tangent and perp lie in local 2D coordinates.
     """
-    R = world_camera[:3, :3]  # noqa: N806
+    R = cam_to_world[:3, :3]  # noqa: N806
     image_x_world = R @ np.array([1.0, 0.0, 0.0])
     image_y_world = R @ np.array([0.0, -1.0, 0.0])
 
