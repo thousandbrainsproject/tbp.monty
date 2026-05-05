@@ -124,7 +124,7 @@ class GaussianPyramidTest(unittest.TestCase):
         max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
         min_size=st.integers(min_value=1, max_value=1024 * 2),
     )
-    def test_gaussian_pyramid_has_correct_shape(
+    def test_has_correct_shape(
         self,
         image: np.ndarray,
         n_scales: int,
@@ -385,3 +385,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         )
         variations = center_variations - surround_variations
         self.assertTrue(all(variations >= 0))
+
+class LaplacianPyramidTest(unittest.TestCase):
+    def test_has_correct_shape(self):
+        pass
