@@ -234,7 +234,7 @@ class HabitatTransformTest(unittest.TestCase):
 
         translation = agent_position + agent_rotation_matrix @ sensor_position
 
-        cam_to_world = np.eye(4)
+        cam_to_world = np.identity(4)
         cam_to_world[0:3, 0:3] = rotation_matrix
         cam_to_world[0:3, 3] = translation
 
