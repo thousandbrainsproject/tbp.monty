@@ -81,8 +81,7 @@ class Rotation:
       - For consistency, `from_scipy_rotation` and `as_scipy_rotation` methods have
         been added.
 
-    At this stage, many scipy methods have not been wrapped. They can be added
-    as needed.
+    Any missing scipy methods can be added as needed.
 
     """
 
