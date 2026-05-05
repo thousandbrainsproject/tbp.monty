@@ -46,9 +46,9 @@ class Default:
         seed = episode_seed(seed, mode, episode)
         rng = np.random.RandomState(seed)
         euler_rotation = rng.uniform(0, 360, 3)
-        q = Rotation.from_euler("xyz", euler_rotation, degrees=True)
+        rotation = Rotation.from_euler("xyz", euler_rotation, degrees=True)
         return dict(
-            rotation=cast("QuaternionWXYZ", tuple(q.as_quat())),
+            rotation=cast("QuaternionWXYZ", tuple(rotation.as_quat())),
             euler_rotation=euler_rotation,
             position=(rng.uniform(-0.5, 0.5), 0.0, 0.0),
             scale=(1.0, 1.0, 1.0),

@@ -819,8 +819,7 @@ class InformedPolicy(BasePolicy):
             degrees=False,
         )
 
-        target_wxyz = scipy_combined_orientation.as_quat()
-        target_quat = qt.quaternion(*target_wxyz)
+        target_quat = qt.quaternion(*scipy_combined_orientation.as_quat())
 
         return SetAgentPose(
             agent_id=self.agent_id,

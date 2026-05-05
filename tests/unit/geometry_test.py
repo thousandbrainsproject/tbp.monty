@@ -74,7 +74,15 @@ def as_axis_angle(
     rot: ScipyRotation,
     epsilon: float = DEFAULT_TOLERANCE,
 ) -> tuple[np.ndarray, float]:
-    # Helper for generating rotations from axis-angle representations.
+    """Get the axis-angle representation of a rotation.
+
+    Args:
+        rot: The rotation to get the axis-angle representation of.
+        epsilon: The epsilon to use for the normalization.
+
+    Returns:
+        A tuple of the axis and the angle.
+    """
     angle = rot.magnitude()
     rotvec = rot.as_rotvec()
     try:
