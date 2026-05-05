@@ -266,7 +266,7 @@ class TwoDSensorModule(SensorModule):
 
         pose_2d = _angle_to_pose_2d(
             edge.angle,
-            observation["world_camera"],
+            observation["cam_to_world"],
             surface_normal=surface_normal_3d,
             tangent_frame=self._tangent_frame,
         )

@@ -328,7 +328,7 @@ def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
 
 
 def surface_normal_ordinary_least_squares(
-    sensor_frame_data, world_camera, center_id, neighbor_patch_frac=3.2
+    sensor_frame_data, cam_to_world, center_id, neighbor_patch_frac=3.2
 ):
     """Extracts the surface normal direction from a noisy point cloud.
 
@@ -338,7 +338,7 @@ def surface_normal_ordinary_least_squares(
     Args:
         sensor_frame_data: Point cloud in sensor coordinates (assumes the full
             patch is provided, i.e., no preliminary filtering of off-object points).
-        world_camera: Matrix defining the sensor-to-world frame transformation.
+        cam_to_world: Matrix defining the sensor-to-world frame transformation.
         center_id: ID of the center point in the point cloud.
         neighbor_patch_frac: Fraction of the patch width that defines the
             local neighborhood within which to perform the least-squares fitting.
@@ -377,7 +377,7 @@ def surface_normal_ordinary_least_squares(
                 surface_normal *= -1
 
             # Express surface normal back to world coordinate frame
-            surface_normal = np.matmul(world_camera[:3, :3], surface_normal)
+            surface_normal = np.matmul(cam_to_world[:3, :3], surface_normal)
 
         else:  # Not enough point to compute
             surface_normal = np.array([0.0, 0.0, 1.0])

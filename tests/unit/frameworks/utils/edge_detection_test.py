@@ -48,7 +48,7 @@ a_scalar = st.floats(min_value=DEFAULT_TOLERANCE, max_value=100.0)
 class EdgeDetectorExpectedValues(NamedTuple):
     name: str
     angle: float
-    world_camera: np.ndarray  # 3x3
+    cam_to_world: np.ndarray
     surface_normal: np.ndarray
     expected_pose_2d: np.ndarray
 
@@ -57,7 +57,7 @@ CASES = [
     EdgeDetectorExpectedValues(
         name="identity_camera_vertical_edge",
         angle=np.pi / 2,
-        world_camera=np.identity(4),
+        cam_to_world=np.identity(4),
         surface_normal=np.array([0.0, 0.0, 1.0]),
         expected_pose_2d=np.array(
             [
@@ -70,7 +70,7 @@ CASES = [
     EdgeDetectorExpectedValues(
         name="identity_camera_diagonal_edge",
         angle=np.pi / 4,
-        world_camera=np.identity(4),
+        cam_to_world=np.identity(4),
         surface_normal=np.array([0.0, 0.0, 1.0]),
         expected_pose_2d=np.array(
             [
@@ -83,7 +83,7 @@ CASES = [
     EdgeDetectorExpectedValues(
         name="identity_camera_horizontal_edge",
         angle=np.pi,
-        world_camera=np.identity(4),
+        cam_to_world=np.identity(4),
         surface_normal=np.array([0.0, 0.0, 1.0]),
         expected_pose_2d=np.array(
             [
@@ -96,7 +96,7 @@ CASES = [
     EdgeDetectorExpectedValues(
         name="rotated_camera_surface_x_horizontal_edge",
         angle=np.pi,
-        world_camera=np.array(
+        cam_to_world=np.array(
             [
                 [0.0, -1.0, 0.0, 0.0],
                 [1.0, 0.0, 0.0, 0.0],
@@ -116,7 +116,7 @@ CASES = [
     EdgeDetectorExpectedValues(
         name="camera_y_to_world_z_surface_y_diagonal_edge",
         angle=np.pi / 4,
-        world_camera=np.array(
+        cam_to_world=np.array(
             [
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, -1.0, 0.0],
@@ -199,7 +199,7 @@ def make_angled_edge_patch(angle_rad: float, size: int = PATCH_SIZE) -> np.ndarr
 
 def compute_expected_pose_2d(
     angle: float,
-    world_camera: np.ndarray,
+    cam_to_world: np.ndarray,
     surface_normal: np.ndarray,
     tangent_frame: TangentFrame,
 ) -> np.ndarray:
@@ -208,7 +208,7 @@ def compute_expected_pose_2d(
     Returns:
         Expected pose vectors expressed in the local tangent frame.
     """
-    rotation = world_camera[:3, :3]
+    rotation = cam_to_world[:3, :3]
     image_x_world = rotation @ np.array([1.0, 0.0, 0.0])
     image_y_world = rotation @ np.array([0.0, 1.0, 0.0])
 
@@ -267,14 +267,14 @@ def assert_pose_2d_is_orthonormal(pose_2d: np.ndarray) -> None:
 
 
 def sensor_observation(
-    angle: float | None = None, world_camera: np.ndarray | None = None
+    angle: float | None = None, cam_to_world: np.ndarray | None = None
 ) -> SensorObservation:
     """Build a minimal SensorObservation.
 
     Args:
         angle: If None, create a uniform rgb patch (no edge).
             Otherwise a Hypothesis strategy to draw from.
-        world_camera: If None, create an identity matrix.
+        cam_to_world: If None, create an identity matrix.
             Otherwise a 4x4 camera-to-world matrix.
 
     Returns:
@@ -286,11 +286,11 @@ def sensor_observation(
 
     depth = np.ones((PATCH_SIZE, PATCH_SIZE), dtype=np.float32)
 
-    world_camera = np.identity(4) if world_camera is None else world_camera
+    cam_to_world = np.identity(4) if cam_to_world is None else cam_to_world
     return SensorObservation(
         rgba=rgba,
         depth=depth,
-        world_camera=world_camera,
+        cam_to_world=cam_to_world,
     )
 
 
@@ -385,11 +385,11 @@ class TestEdgeDetector(ParametrizedTestCase):
 
     @given(
         angle=st.just(None),
-        world_camera=rotation_matrices,
+        cam_to_world=rotation_matrices,
     )
-    def test_uniform_patch_returns_no_edge(self, angle, world_camera):
+    def test_uniform_patch_returns_no_edge(self, angle, cam_to_world):
         detector = EdgeDetector()
-        obs = sensor_observation(angle=angle, world_camera=world_camera)
+        obs = sensor_observation(angle=angle, cam_to_world=cam_to_world)
         edge = detector(obs)
 
         assert edge.strength == 0.0
@@ -407,7 +407,7 @@ class TestEdgeDetector(ParametrizedTestCase):
         obs = SensorObservation(
             rgba=rgba,
             depth=np.ones((PATCH_SIZE, PATCH_SIZE), dtype=np.float32),
-            world_camera=np.identity(4),
+            cam_to_world=np.identity(4),
         )
         # Set radius to force total_weight > DEFAULT_TOLERANCE
         detector = EdgeDetector(radius=PATCH_SIZE // 2, max_center_offset=1)
@@ -419,42 +419,42 @@ class TestEdgeDetector(ParametrizedTestCase):
         assert edge.is_geometric_edge is False
         assert edge.has_edge is False
 
-    @parametrize("name,angle,world_camera,surface_normal,expected_pose_2d", CASES)
+    @parametrize("name,angle,cam_to_world,surface_normal,expected_pose_2d", CASES)
     def test_edge_detection_for_closed_form_solutions(
         self,
         name,
         angle,
-        world_camera,
+        cam_to_world,
         surface_normal,  # noqa: ARG002
         expected_pose_2d,  # noqa: ARG002
     ):
         detector = EdgeDetector()
-        obs = sensor_observation(angle, world_camera)
+        obs = sensor_observation(angle, cam_to_world)
         edge = detector(obs)
 
         assert angle_distance(edge.angle, angle) < 0.1, f"{name} case failed."
 
     @given(
         angle=edge_angles,
-        world_camera=rotation_matrices,
+        cam_to_world=rotation_matrices,
     )
-    def test_angled_edge_patch_reports_expected_angle(self, angle, world_camera):
+    def test_angled_edge_patch_reports_expected_angle(self, angle, cam_to_world):
         detector = EdgeDetector()
-        obs = sensor_observation(angle=angle, world_camera=world_camera)
+        obs = sensor_observation(angle=angle, cam_to_world=cam_to_world)
 
         edge = detector(obs)
         assert angle_distance(edge.angle, angle) < 0.1
 
 
 class TestAngleTo2DPose(ParametrizedTestCase):
-    @parametrize("name,angle,world_camera,surface_normal,expected_pose_2d", CASES)
+    @parametrize("name,angle,cam_to_world,surface_normal,expected_pose_2d", CASES)
     def test_angle_converts_to_expected_pose_2d(
-        self, name, angle, world_camera, surface_normal, expected_pose_2d
+        self, name, angle, cam_to_world, surface_normal, expected_pose_2d
     ):
         tangent_frame = TangentFrame(surface_normal)
         pose_2d = _angle_to_pose_2d(
             angle=angle,
-            world_camera=world_camera,
+            cam_to_world=cam_to_world,
             surface_normal=surface_normal,
             tangent_frame=tangent_frame,
         )
@@ -467,7 +467,7 @@ class TestAngleTo2DPose(ParametrizedTestCase):
 
     def test_angle_to_pose_2d_uses_transported_tangent_frame(self):
         angle = np.pi / 2
-        world_camera = np.identity(4)
+        cam_to_world = np.identity(4)
         surface_normal = np.array([1.0, 1.0, 1.0])
         tangent_frame = TangentFrame(surface_normal)
 
@@ -481,7 +481,7 @@ class TestAngleTo2DPose(ParametrizedTestCase):
 
         pose_2d = _angle_to_pose_2d(
             angle=angle,
-            world_camera=world_camera,
+            cam_to_world=cam_to_world,
             surface_normal=surface_normal,
             tangent_frame=tangent_frame,
         )
@@ -490,7 +490,7 @@ class TestAngleTo2DPose(ParametrizedTestCase):
             pose_2d,
             compute_expected_pose_2d(
                 angle,
-                world_camera,
+                cam_to_world,
                 surface_normal,
                 tangent_frame,
             ),

@@ -540,7 +540,7 @@ class DepthTo3DLocations(Transform):
                     reference frame and are in the sensor's reference frame otherwise.
                     It is structured as a 2D array with shape (n_pixels, 4) with
                     columns containing x-, y-, z-coordinates, and a semantic ID.
-                - "world_camera": Sensor-to-world coordinate frame transform. Included
+                - "cam_to_world": Sensor-to-world coordinate frame transform. Included
                     only when `self.world_coord` is `True` (default).
                 - "sensor_frame_data": 3D coordinates for each pixel relative to the
                     sensor. Has the same structure as "semantic_3d". Included only
@@ -627,14 +627,14 @@ class DepthTo3DLocations(Transform):
                 sensor_translation_rel_world = agent_position + rotated_sensor_position
                 # Apply the rotation and translation to get the world coordinates
                 rotation_matrix = qt.as_rotation_matrix(sensor_rotation_rel_world)
-                world_camera = np.eye(4)
-                world_camera[0:3, 0:3] = rotation_matrix
-                world_camera[0:3, 3] = sensor_translation_rel_world
-                xyz = np.matmul(world_camera, xyz)
+                cam_to_world = np.eye(4)
+                cam_to_world[0:3, 0:3] = rotation_matrix
+                cam_to_world[0:3, 3] = sensor_translation_rel_world
+                xyz = np.matmul(cam_to_world, xyz)
 
                 # Add sensor-to-world coordinate frame transform, used for surface
                 # normal extraction. View direction is the third column of the matrix.
-                observations[self.agent_id][sensor_id]["world_camera"] = world_camera
+                observations[self.agent_id][sensor_id]["cam_to_world"] = cam_to_world
 
             # Extract 3D coordinates of detected objects (semantic_id != 0)
             semantic = surface_patch.reshape(1, -1)
