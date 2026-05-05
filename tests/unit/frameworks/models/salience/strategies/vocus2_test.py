@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import unittest
 from typing import cast
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
+import cv2
 import numpy as np
+import numpy.testing as nptest
 from hypothesis import example, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
@@ -21,6 +23,7 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2 import (
     Pyramid,
     center_surround_pyramids,
     gaussian_pyramid,
+    laplacian_pyramid,
     pyramid_octave_shapes,
 )
 from tbp.monty.frameworks.sensors import Resolution2D
@@ -217,6 +220,13 @@ def solid_float32_image(draw):
 
 
 @st.composite
+def filled_float32_image(draw, fill_value: float = 1.0):
+    height = draw(st.integers(min_value=1, max_value=1024))
+    width = draw(st.integers(min_value=1, max_value=1024))
+    return np.full((height, width), fill_value, dtype=np.float32)
+
+
+@st.composite
 def float32_image(draw):
     height = draw(st.integers(min_value=1, max_value=1024))
     width = draw(st.integers(min_value=1, max_value=1024))
@@ -386,6 +396,68 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         variations = center_variations - surround_variations
         self.assertTrue(all(variations >= 0))
 
+
 class LaplacianPyramidTest(unittest.TestCase):
     def test_has_correct_shape(self):
         pass
+
+    def test_raises_value_error_if_input_pyramid_has_less_than_two_octaves(self):
+        pass
+
+    @given(
+        image_width=st.integers(min_value=2, max_value=1024),
+        image_height=st.integers(min_value=2, max_value=1024),
+        n_scales=st.integers(min_value=1, max_value=10),
+        max_octaves=st.integers(min_value=2, max_value=int(2 * np.log2(1024))),
+    )
+    def test_laplacian_planes_are_center_minus_resized_surround(
+        self,
+        image_width: int,
+        image_height: int,
+        n_scales: int,
+        max_octaves: int,
+    ) -> None:
+        center_fill = 1.0
+        surround_fill = 0.7
+
+        def mock_resize(
+            image: np.ndarray,
+            shape: tuple[int, int],
+            interpolation: int,  # noqa: ARG001
+        ) -> np.ndarray:
+            return np.full(shape, surround_fill, dtype=image.dtype)
+
+        octave_shapes = pyramid_octave_shapes(
+            (image_height, image_width),
+            max_octaves=max_octaves,
+        )
+        input_data = np.zeros((len(octave_shapes), n_scales), dtype=object)
+        for octave_num, octave_shape in enumerate(octave_shapes):
+            for scale_num in range(n_scales):
+                input_data[octave_num, scale_num] = np.full(
+                    octave_shape, center_fill, dtype=np.float32
+                )
+        input_pyramid = Pyramid(input_data)
+
+        with patch(
+            "tbp.monty.frameworks.models.salience.strategies.vocus2.resize",
+            side_effect=mock_resize,
+        ) as mock_resize_patch:
+            pyr = laplacian_pyramid(input_pyramid)
+            for plane in pyr.flat:
+                self.assertTrue(
+                    np.allclose(
+                        plane, center_fill - surround_fill, atol=DEFAULT_TOLERANCE
+                    )
+                )
+
+            call_count = 0
+            for scale in range(input_pyramid.n_scales):
+                for octave in range(pyr.n_octaves):
+                    expected_image = input_pyramid.data[octave + 1, scale]
+                    expected_shape = input_pyramid.data[octave, scale].shape
+                    call_args = mock_resize_patch.call_args_list[call_count]
+                    nptest.assert_array_equal(call_args.args[0], expected_image)
+                    self.assertEqual(call_args.args[1], expected_shape)
+                    self.assertEqual(call_args.kwargs["interpolation"], cv2.INTER_CUBIC)
+                    call_count += 1

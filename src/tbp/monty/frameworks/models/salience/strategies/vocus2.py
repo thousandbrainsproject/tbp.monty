@@ -278,37 +278,28 @@ def center_surround_pyramids(
     return center, surround
 
 
-def laplacian_pyramid(
-    pyr: Pyramid,
-    max_octaves: int | None = None,
-    min_size: int | None = None,
-) -> Pyramid:
+def laplacian_pyramid(pyr: Pyramid) -> Pyramid:
     """Build a multiscale Laplacian pyramid.
 
     Args:
         pyr: The pyramid to build the Laplacian pyramid from.
-        max_octaves: The maximum number of levels in the pyramid.
-        min_size: The minimum size of the pyramid levels.
 
     Returns:
-        A new pyramid.
-    """
-    gauss = pyr.data
-    n_levels_in = gauss.shape[0]
-    n_levels_out = n_levels_in - 1
-    if max_octaves is not None:
-        n_levels_out = min(n_levels_out, max_octaves)
-    if min_size is not None:
-        level_sizes = np.array([min(arrays[0].shape) for arrays in gauss])
-        n_levels_big_enough = sum(level_sizes >= min_size)
-        n_levels_out = min(n_levels_out, n_levels_big_enough)
+        A laplacian pyramid. Has one fewer octaves than the input pyramid.
 
-    lap = np.zeros([n_levels_out, gauss.shape[1]], dtype=object)
-    for scale in range(lap.shape[1]):
-        for octave in range(lap.shape[0]):
-            center = gauss[octave, scale]
+    Raises:
+        ValueError: If input pyramid doesn't have at least two octaves.
+    """
+    if pyr.n_octaves <= 1:
+        raise ValueError("Input pyramid must have at least 2 octaves.")
+
+    lap_octaves = pyr.n_octaves - 1
+    lap = np.zeros([lap_octaves, pyr.n_scales], dtype=object)
+    for scale in range(pyr.n_scales):
+        for octave in range(lap_octaves):
+            center = pyr.data[octave, scale]
             surround = resize(
-                gauss[octave + 1, scale], center.shape, interpolation=cv2.INTER_CUBIC
+                pyr.data[octave + 1, scale], center.shape, interpolation=cv2.INTER_CUBIC
             )
             lap[octave, scale] = center - surround
 
