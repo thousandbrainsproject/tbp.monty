@@ -86,7 +86,7 @@ class DefaultFeatureEvidenceCalculator:
             tolerance_list[start_idx:end_idx] = channel_tolerances[feature]
             feature_weight_list[start_idx:end_idx] = channel_feature_weights[feature]
 
-            if feature == "hsv":
+            if feature in _CIRCULAR_FEATURES:
                 # H is circular, S and V are numeric
                 circular_var[start_idx] = True
                 numeric_var[start_idx + 1 : end_idx] = True
