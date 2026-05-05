@@ -627,10 +627,10 @@ class DepthTo3DLocations(Transform):
                 sensor_translation_rel_world = agent_position + rotated_sensor_position
                 # Apply the rotation and translation to get the world coordinates
                 rotation_matrix = qt.as_rotation_matrix(sensor_rotation_rel_world)
-                cam_to_world = np.eye(4)
+                cam_to_world = np.identity(4)
                 cam_to_world[0:3, 0:3] = rotation_matrix
                 cam_to_world[0:3, 3] = sensor_translation_rel_world
-                xyz = np.matmul(cam_to_world, xyz)
+                xyz = cam_to_world @ xyz
 
                 # Add sensor-to-world coordinate frame transform, used for surface
                 # normal extraction. View direction is the third column of the matrix.
