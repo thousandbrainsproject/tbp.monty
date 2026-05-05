@@ -325,80 +325,20 @@ class ObservationProcessor:
             patch = rgba_feat[:, :, :3]
             gray = rgb2gray(patch)
             gray_arr = (gray * 255).astype(np.uint8)
-            gray_arr = gaussian_filter(gray_arr, sigma=1.0)
-
-            # --- Build object mask (exclude black background) ---
             black_threshold = 1
             object_mask = gray_arr > black_threshold
 
-            # Optional: include alpha if available
-            if rgba_feat.shape[-1] == 4:
-                alpha_mask = rgba_feat[:, :, 3] > 0
-                object_mask = object_mask & alpha_mask
+            ltp: LTPResult = local_ternary_pattern(
+                gray=gray_arr,
+                p=8,
+                r=1,
+                threshold=5.0,
+                method="uniform",
+                mask=object_mask,
+                normalize=True,
+            )
 
-            # --- Compute coverage dynamically ---
-            total_pixels = gray_arr.shape[0] * gray_arr.shape[1]
-            object_pixels = np.count_nonzero(object_mask)
-            coverage = object_pixels / total_pixels
-
-            coverage_threshold = 0.95
-
-            # --- Dropout condition ---
-            if coverage < coverage_threshold:
-                # Return neutral / non-informative vector (prevents downstream errors)
-                fallback = local_ternary_pattern(
-                    gray=gray_arr,
-                    p=8,
-                    r=1,
-                    threshold=3.0,
-                    method="ror",
-                    mask=None,
-                    normalize=True,
-                ).histogram
-
-                hist = np.full_like(fallback, 0, dtype=float)
-                # import matplotlib
-                # matplotlib.use('TkAgg')
-                # import matplotlib.pyplot as plt
-
-                # fig, axs = plt.subplots(1, 4, figsize=(16, 4))
-
-                # axs[0].imshow(patch)
-                # axs[0].set_title("Original Patch")
-                # axs[0].axis("off")
-
-                # axs[1].imshow(gray, cmap="gray")
-                # axs[1].set_title("Grayscale")
-                # axs[1].axis("off")
-
-                # axs[2].bar(np.arange(len(hist)), hist)
-                # axs[2].set_title("LBP Histogram")
-                # plt.tight_layout()
-                # plt.show()
-
-            else:
-                ltp: LTPResult = local_ternary_pattern(
-                    gray=gray_arr,
-                    p=8,
-                    r=1,
-                    threshold=3.0,
-                    method="ror",
-                    mask=object_mask,
-                    normalize=True,
-                )
-
-                hist = ltp.histogram.astype(float)
-
-                # Safety normalization
-                hist_sum = hist.sum()
-                if hist_sum > 0:
-                    hist = hist / hist_sum
-                else:
-                    hist = np.full_like(hist, 1.0 / hist.size, dtype=float)
-
-                # OPTIONAL:
-                # features["local_binary_pattern_valid"] = True
-
+            hist = ltp.histogram.astype(float)
             features["local_binary_pattern"] = hist
 
         # Note we only determine curvature if we could determine a valid surface normal
@@ -844,8 +784,9 @@ class FeatureChangeFilter(PerceptFilter):
                     return True
 
             elif feature == "local_binary_pattern":
-                return True
-                lbp_delta_threshold = self._delta_thresholds[feature]
+                lbp_delta_threshold = self._delta_thresholds[feature][0]
+                if lbp_delta_threshold <= 0:
+                    return True # to easily ignore thresholding if desired
                 # Compute a hellinger distance between the last percept's LBP histogram
                 # and the current percept's LBP histogram, and check if it's above the threshold
                 p = np.asarray(last_feat, dtype=np.float64)
