@@ -417,26 +417,35 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
 
 
 class LaplacianPyramidTest(unittest.TestCase):
-    def test_has_correct_shape(self):
-        pass
-
-    def test_raises_value_error_if_input_pyramid_has_less_than_two_octaves(self):
-        pass
+    FILL_VALUE = 1.0
 
     @given(
-        image_width=st.integers(min_value=2, max_value=1024),
-        image_height=st.integers(min_value=2, max_value=1024),
-        n_scales=st.integers(min_value=1, max_value=10),
-        max_octaves=st.integers(min_value=2, max_value=int(2 * np.log2(1024))),
+        input_pyramid=valid_input_pyramid_for_laplacian_pyramid(fill_value=FILL_VALUE),
+    )
+    def test_has_correct_shape(self, input_pyramid: Pyramid):
+        pyramid = laplacian_pyramid(input_pyramid)
+        self.assertEqual(input_pyramid.n_octaves - 1, pyramid.n_octaves)
+        self.assertEqual(input_pyramid.n_scales, pyramid.n_scales)
+        for octave in range(pyramid.n_octaves):
+            for scale in range(pyramid.n_scales):
+                self.assertEqual(
+                    pyramid.data[octave, scale].shape,
+                    input_pyramid.data[octave, scale].shape,
+                )
+
+    def test_raises_value_error_if_input_pyramid_has_less_than_two_octaves(self):
+        data = np.zeros((1, 1), dtype=object)
+        data[0, 0] = np.zeros((1, 1), dtype=np.float32)
+        with self.assertRaises(ValueError):
+            laplacian_pyramid(Pyramid(data))
+
+    @given(
+        input_pyramid=valid_input_pyramid_for_laplacian_pyramid(fill_value=FILL_VALUE),
     )
     def test_laplacian_planes_are_center_minus_resized_surround(
         self,
-        image_width: int,
-        image_height: int,
-        n_scales: int,
-        max_octaves: int,
+        input_pyramid: Pyramid,
     ) -> None:
-        center_fill = 1.0
         surround_fill = 0.7
 
         def mock_resize(
@@ -446,28 +455,14 @@ class LaplacianPyramidTest(unittest.TestCase):
         ) -> np.ndarray:
             return np.full(shape, surround_fill, dtype=image.dtype)
 
-        octave_shapes = pyramid_octave_shapes(
-            (image_height, image_width),
-            max_octaves=max_octaves,
-        )
-        input_data = np.zeros((len(octave_shapes), n_scales), dtype=object)
-        for octave_num, octave_shape in enumerate(octave_shapes):
-            for scale_num in range(n_scales):
-                input_data[octave_num, scale_num] = np.full(
-                    octave_shape, center_fill, dtype=np.float32
-                )
-        input_pyramid = Pyramid(input_data)
-
         with patch(
             "tbp.monty.frameworks.models.salience.strategies.vocus2.resize",
             side_effect=mock_resize,
         ) as mock_resize_patch:
             pyr = laplacian_pyramid(input_pyramid)
             for plane in pyr.flat:
-                self.assertTrue(
-                    np.allclose(
-                        plane, center_fill - surround_fill, atol=DEFAULT_TOLERANCE
-                    )
+                nptest.assert_allclose(
+                    plane, self.FILL_VALUE - surround_fill, atol=DEFAULT_TOLERANCE
                 )
 
             call_count = 0
