@@ -24,7 +24,7 @@ from tbp.monty.geometry import (
     to_scalar_first,
     to_scalar_last,
 )
-from tbp.monty.math import DEFAULT_TOLERANCE
+from tbp.monty.math import DEFAULT_TOLERANCE, ROTATION_TOLERANCE
 
 
 @st.composite
@@ -78,7 +78,9 @@ def as_axis_angle(
 
     Args:
         rot: The rotation to get the axis-angle representation of.
-        epsilon: The epsilon to use for the normalization.
+        epsilon: The epsilon to use for the normalization. Note that this is for
+           a normalization threshold and therefore uses DEFAULT_TOLERANCE instead of
+           ROTATION_TOLERANCE.
 
     Returns:
         A tuple of the axis and the angle.
@@ -132,7 +134,7 @@ class ScipyRotationsApproxEqualTest(unittest.TestCase):
     @given(
         a=scipy_rotations(),
         axis=rotation_axes(),
-        angle=st.floats(min_value=0, max_value=DEFAULT_TOLERANCE - 1e-15),
+        angle=st.floats(min_value=0, max_value=ROTATION_TOLERANCE - 1e-15),
     )
     def test_returns_true_if_delta_below_tolerance(
         self,
@@ -153,7 +155,7 @@ class ScipyRotationsApproxEqualTest(unittest.TestCase):
         a=scipy_rotations(),
         axis=rotation_axes(),
         angle=st.floats(
-            min_value=DEFAULT_TOLERANCE + 1e-15, max_value=2 * DEFAULT_TOLERANCE
+            min_value=ROTATION_TOLERANCE + 1e-15, max_value=2 * ROTATION_TOLERANCE
         ),
     )
     def test_returns_false_if_delta_above_tolerance(
@@ -170,7 +172,7 @@ class ScipyRotationsApproxEqualTest(unittest.TestCase):
         """
         rot = ScipyRotation.from_rotvec(axis * angle)
         b = rot * a
-        expected = (a * b.inv()).magnitude() <= DEFAULT_TOLERANCE
+        expected = (a * b.inv()).magnitude() <= ROTATION_TOLERANCE
         actual = scipy_rotations_approx_equal(a, b)
         self.assertEqual(actual, expected)
 
@@ -184,15 +186,15 @@ class ScipyRotationsApproxEqualTest(unittest.TestCase):
         b: ScipyRotation,
     ) -> None:
         """Double-ledger test."""
-        expected = (a * b.inv()).magnitude() <= DEFAULT_TOLERANCE
-        actual = scipy_rotations_approx_equal(a, b, tol=DEFAULT_TOLERANCE)
+        expected = (a * b.inv()).magnitude() <= ROTATION_TOLERANCE
+        actual = scipy_rotations_approx_equal(a, b, tol=ROTATION_TOLERANCE)
         self.assertEqual(actual, expected)
 
     @given(
         a=scipy_rotations(),
         axis=rotation_axes(),
         angle=st.floats(
-            min_value=0.9 * DEFAULT_TOLERANCE, max_value=1.1 * DEFAULT_TOLERANCE
+            min_value=0.9 * ROTATION_TOLERANCE, max_value=1.1 * ROTATION_TOLERANCE
         ),
     )
     def test_against_alternate_implementation_near_boundary(
@@ -203,8 +205,8 @@ class ScipyRotationsApproxEqualTest(unittest.TestCase):
     ) -> None:
         """Double-ledger test focused on and around the tolerance threshold."""
         b = ScipyRotation.from_rotvec(axis * angle) * a
-        expected = (a * b.inv()).magnitude() <= DEFAULT_TOLERANCE
-        actual = scipy_rotations_approx_equal(a, b, tol=DEFAULT_TOLERANCE)
+        expected = (a * b.inv()).magnitude() <= ROTATION_TOLERANCE
+        actual = scipy_rotations_approx_equal(a, b, tol=ROTATION_TOLERANCE)
         self.assertEqual(actual, expected)
 
 
@@ -221,7 +223,7 @@ class RotationQuaternionTest(unittest.TestCase):
         rot = Rotation.from_quat(quat)
         scipy_rot = ScipyRotation.from_quat(to_scalar_last(quat))
         nptest.assert_allclose(
-            rot.apply(xyz), scipy_rot.apply(xyz), atol=DEFAULT_TOLERANCE
+            rot.apply(xyz), scipy_rot.apply(xyz), atol=ROTATION_TOLERANCE
         )
 
     @given(quat=quaternions())
@@ -229,5 +231,5 @@ class RotationQuaternionTest(unittest.TestCase):
         rot = Rotation.from_quat(quat)
         scipy_rot = ScipyRotation.from_quat(to_scalar_last(quat))
         nptest.assert_allclose(
-            rot.as_quat(), to_scalar_first(scipy_rot.as_quat()), atol=DEFAULT_TOLERANCE
+            rot.as_quat(), to_scalar_first(scipy_rot.as_quat()), atol=ROTATION_TOLERANCE
         )
