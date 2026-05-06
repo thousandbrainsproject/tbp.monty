@@ -117,7 +117,7 @@ def make_no_edge() -> EdgeFeatures:
 def make_raw_observation(
     *, center_location: np.ndarray, semantic_id: int
 ) -> SensorObservation:
-    obs = sensor_observation(angle=None, world_camera=np.identity(4))
+    obs = sensor_observation(angle=None, cam_to_world=np.identity(4))
 
     semantic_3d = np.zeros((PATCH_SIZE * PATCH_SIZE, 4), dtype=np.float64)
     semantic_3d[:, :3] = center_location
