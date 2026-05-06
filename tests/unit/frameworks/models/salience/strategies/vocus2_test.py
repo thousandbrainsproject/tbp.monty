@@ -272,6 +272,17 @@ def valid_input_pyramid_for_laplacian_pyramid(draw, fill_value: float = 1.0):
     return Pyramid(input_data)
 
 
+@st.composite
+def differently_shaped_pyramids(draw, fill_value: float = 1.0):
+    pyramid_1 = draw(valid_input_pyramid_for_laplacian_pyramid(fill_value=fill_value))
+    pyramid_2 = draw(
+        valid_input_pyramid_for_laplacian_pyramid(fill_value=fill_value).filter(
+            lambda pyr: pyr.shape != pyramid_1.shape
+        )
+    )
+    return [pyramid_1, pyramid_2]
+
+
 class CenterSurroundPyramidsTest(unittest.TestCase):
     @given(
         center_sigma=st.floats(min_value=0.5, max_value=3.0),
@@ -477,14 +488,15 @@ class LaplacianPyramidTest(unittest.TestCase):
                     self.assertEqual(call_args.kwargs["interpolation"], cv2.INTER_CUBIC)
                     call_count += 1
 
+
 class PyramidCombineTest(unittest.TestCase):
     def test_raises_value_error_if_no_pyramids_are_provided(self):
         with self.assertRaises(ValueError):
-            pyramid_combine([], lambda x: x)
+            pyramid_combine([], Mock())
 
     def test_returns_first_pyramid_if_only_one_pyramid_is_provided(self):
         pyramid = Pyramid(np.zeros((1, 1), dtype=object))
-        result = pyramid_combine([pyramid], lambda x: x)
+        result = pyramid_combine([pyramid], Mock())
         self.assertIs(result, pyramid)
 
     def test_does_not_apply_fn_to_pyramids_if_only_one_pyramid_is_provided(self):
@@ -493,3 +505,13 @@ class PyramidCombineTest(unittest.TestCase):
         result = pyramid_combine([pyramid], fn)
         fn.assert_not_called()
         self.assertIs(result, pyramid)
+
+    @given(
+        pyramids=differently_shaped_pyramids(),
+    )
+    def test_raises_value_error_if_pyramids_have_different_shapes(
+        self,
+        pyramids: list[Pyramid],
+    ) -> None:
+        with self.assertRaises(ValueError):
+            pyramid_combine(pyramids, Mock())
