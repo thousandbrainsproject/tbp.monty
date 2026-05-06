@@ -1,0 +1,9 @@
+{
+  "friction_coefficient": 3.0,
+  "join_collision_meshes": false,
+  "collision_asset": "../collision_meshes/055_base_cv_decomp.glb",
+  "render_asset": "../meshes/079_flecked_baseball/google_16k/textured.glb",
+  "requires_lighting": true,
+  "up": [0.0,0.0,1.0],
+  "front": [0.0,1.0,0.0]
+}
