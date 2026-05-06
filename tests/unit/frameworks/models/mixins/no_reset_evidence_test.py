@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -19,7 +19,7 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
-    HypothesesUpdaterChannelTelemetry,
+    HypothesesUpdaterGraphTelemetry,
     TheoreticalLimitLMLoggingMixin,
 )
 
@@ -38,9 +38,9 @@ class InheritanceTheoreticalLMLoggingMixinTest(TestCase):
                 pass
 
 
-class HypothesesUpdaterChannelTelemetryTest(TestCase):
+class HypothesesUpdaterGraphTelemetryTest(TestCase):
     def test_buffer_encoder_encodes_hypotheses_updater_channel_telemetry(self) -> None:
-        telemetry = HypothesesUpdaterChannelTelemetry(
+        telemetry = HypothesesUpdaterGraphTelemetry(
             hypotheses_updater={},
             evidence=np.array([0, 1]),
             rotations=np.array([0, 1]),

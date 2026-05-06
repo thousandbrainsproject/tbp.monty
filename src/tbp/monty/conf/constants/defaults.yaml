@@ -14,7 +14,7 @@ default_sensor_features:
   - principal_curvatures_log
 
 # NOTE: maybe lower once we have better policies
-# Is not really nescessary for good performance but makes sure we don't just overfit
+# Is not really necessary for good performance but makes sure we don't just overfit
 # on the first few points.
 min_eval_steps: 20
 
@@ -29,7 +29,8 @@ pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
 
 # v1 : Trained on version 1.0 of the compositional objects dataset (logos had transparent backgrounds)
 # v2 : Trained on version 1.1 of the compositional objects dataset (logos on white "stickers")
-compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v2}
+# v3 : Trained after fixing the monolithic experiments connectivity issues (PR#942)
+compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v3}
 
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.

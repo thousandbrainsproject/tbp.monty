@@ -52,11 +52,11 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 
 __all__ = [
-    "EnvironmentInterface",
-    "EnvironmentInterfacePerObject",
-    "OmniglotEnvironmentInterface",
-    "SaccadeOnImageEnvironmentInterface",
-    "SaccadeOnImageFromStreamEnvironmentInterface",
+    "Interface",
+    "OmniglotInterface",
+    "OneObjectPerEpisodeInterface",
+    "SaccadeOnImageFromStreamInterface",
+    "SaccadeOnImageInterface",
 ]
 
 logger = logging.getLogger(__name__)
@@ -77,8 +77,8 @@ def normalize_transforms(
     return tuple(transform)
 
 
-class EnvironmentInterface:
-    """Provides an interface to an embodied environment.
+class Interface:
+    """Provides an interface to an environment.
 
     Observations and proprioceptive state are returned from the environment
     based on the actions taken.
@@ -158,7 +158,7 @@ class EnvironmentInterface:
         pass
 
 
-class EnvironmentInterfacePerObject(EnvironmentInterface):
+class OneObjectPerEpisodeInterface(Interface):
     """Interface for testing in an environment with one "primary target" object.
 
     Interface for testing in an environment where we load one "primary target" object
@@ -265,7 +265,11 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             success = result.success
 
         if self.num_distractors == 0 and not success:
-            raise RuntimeError("Primary target not visible at start of episode")
+            raise RuntimeError(
+                f"Primary target '{self.primary_target['object']}' "
+                f"with rotation {self.primary_target['euler_rotation']} "
+                f"not visible at start of episode"
+            )
 
     def post_episode(self):
         super().post_episode()
@@ -405,7 +409,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             )
 
 
-class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
+class OmniglotInterface(OneObjectPerEpisodeInterface):
     """Environment interface for Omniglot dataset."""
 
     def __init__(
@@ -501,7 +505,7 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         }
 
 
-class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
+class SaccadeOnImageInterface(OneObjectPerEpisodeInterface):
     """Environment interface for moving over a 2D image with depth channel."""
 
     def __init__(
@@ -599,7 +603,7 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         }
 
 
-class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInterface):
+class SaccadeOnImageFromStreamInterface(SaccadeOnImageInterface):
     """Environment interface for moving over a 2D image with depth channel."""
 
     def __init__(

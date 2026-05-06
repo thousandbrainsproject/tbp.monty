@@ -100,4 +100,4 @@ eval_env_interface_args:
   - 1
   - 2
   - 3
-eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageEnvironmentInterface}
+eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.SaccadeOnImageInterface}

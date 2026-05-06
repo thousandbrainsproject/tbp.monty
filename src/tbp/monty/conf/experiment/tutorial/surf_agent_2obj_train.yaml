@@ -1,17 +1,30 @@
 # @package _global_
-
+# The configuration for the pretraining experiment.
 defaults:
+  # The Monty configuration details.
   - /monty: graph_exp500_e3_t3_tot2500
+  # The Monty motor system configuration specific to a surface agent.
   - /monty/motor_system_config: surface_curvature_informed_5_goal0
+  # The Monty learning module configuration.
   - /monty/learning_module: graph_1lm
+  # The Monty sensor module configuration.
+  #
+  # One surface patch for training and one view-finder probe for initializing each
+  # episode and logging.
   - /monty/sensor_module: camera_surf_rgba_raw0
+  # The Monty connectivity configuration.
   - /monty/connectivity: 1lm_1sm
+  # The environment configuration.
   - /environment: habitat_ycb_surf_agent
+  # The environment interface configures how the experiment controls the environment.
   - /env_interface: tutorial_train_2obj_predefined
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
+  # The logging configuration.
   - /logging: silent_warning_train
 
 experiment:
+  # The MontySupervisedObjectPretrainingExperiment will provide the model with the
+  # object and pose labels for supervised pretraining.
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
   config:
     show_sensor_output: false
@@ -26,4 +39,5 @@ experiment:
     supervised_lm_ids: all
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
+      # Ensure the run name is unique per experiment configuration.
       run_name: surf_agent_1lm_2obj_train

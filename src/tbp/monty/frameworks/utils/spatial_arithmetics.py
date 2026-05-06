@@ -72,6 +72,11 @@ class TangentFrame:
         """Vertical tangent basis vector."""
         return self._v
 
+    @property
+    def normal(self) -> np.ndarray:
+        """Surface normal associated with this tangent frame."""
+        return self._normal
+
     def transport(self, new_normal: np.ndarray) -> None:
         """Parallel-transport the frame to a new surface normal.
 

@@ -108,7 +108,7 @@ class OmniglotEnvironment(SimulatedEnvironment):
             self.step_num += int(amount)
             obs = self._observations()
 
-        return obs, self.get_state()
+        return obs, self._state()
 
     def _observations(self) -> Observations:
         query_loc = self.locations[self.step_num % self.max_steps]
@@ -140,7 +140,7 @@ class OmniglotEnvironment(SimulatedEnvironment):
             }
         )
 
-    def get_state(self) -> ProprioceptiveState:
+    def _state(self) -> ProprioceptiveState:
         loc = self.locations[self.step_num % self.max_steps]
         sensor_position = np.array([loc[0], loc[1], 0])
         return ProprioceptiveState(
@@ -200,7 +200,7 @@ class OmniglotEnvironment(SimulatedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
+        return obs, self._state()
 
     def load_new_character_data(self):
         img_char_dir = (
@@ -336,7 +336,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             self.current_loc = self.get_next_loc(action.name, amount)
             obs = self._observations()
 
-        return obs, self.get_state()
+        return obs, self._state()
 
     def _observations(self) -> Observations:
         (
@@ -355,7 +355,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                                 "rgba": rgb_patch,
                                 "semantic_3d": depth3d_patch,
                                 "sensor_frame_data": sensor_frame_patch,
-                                "world_camera": self.world_camera,
+                                "cam_to_world": self.cam_to_world,
                                 # Save pixel loc for plotting
                                 "pixel_loc": self.current_loc,
                             }
@@ -371,7 +371,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             }
         )
 
-    def get_state(self) -> ProprioceptiveState:
+    def _state(self) -> ProprioceptiveState:
         loc = self.current_loc
         # Provide LM w/ sensor position in 3D, body-centric coordinates
         # instead of pixel indices
@@ -439,7 +439,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                                 "rgba": rgb_patch,
                                 "semantic_3d": depth3d_patch,
                                 "sensor_frame_data": sensor_frame_patch,
-                                "world_camera": self.world_camera,
+                                "cam_to_world": self.cam_to_world,
                                 "pixel_loc": np.array(self.current_loc),
                             }
                         ),
@@ -453,7 +453,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
+        return obs, self._state()
 
     def load_new_scene_data(self):
         """Load depth and rgb data for next scene environment.
@@ -586,7 +586,7 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
         current_sf_scene_point_cloud = current_sf_scene_point_cloud.reshape(
             (image_shape[0], image_shape[1], 4)
         )
-        self.world_camera = obs_3d[agent_id][sensor_id]["world_camera"]
+        self.cam_to_world = obs_3d[agent_id][sensor_id]["cam_to_world"]
         return current_scene_point_cloud, current_sf_scene_point_cloud
 
     def get_3d_coordinates_from_pixel_indices(

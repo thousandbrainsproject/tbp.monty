@@ -454,7 +454,6 @@ class FeatureGraphLM(GraphLM):
             New possible paths and poses.
         """
         first_input_channel = next(iter(features.keys()))
-        displacement = displacement[first_input_channel]
         new_possible_paths = []
         new_possible_poses = []
 
