@@ -24,6 +24,7 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2 import (
     center_surround_pyramids,
     gaussian_pyramid,
     laplacian_pyramid,
+    pyramid_combine,
     pyramid_octave_shapes,
 )
 from tbp.monty.frameworks.sensors import Resolution2D
@@ -475,3 +476,20 @@ class LaplacianPyramidTest(unittest.TestCase):
                     self.assertEqual(call_args.args[1], expected_shape)
                     self.assertEqual(call_args.kwargs["interpolation"], cv2.INTER_CUBIC)
                     call_count += 1
+
+class PyramidCombineTest(unittest.TestCase):
+    def test_raises_value_error_if_no_pyramids_are_provided(self):
+        with self.assertRaises(ValueError):
+            pyramid_combine([], lambda x: x)
+
+    def test_returns_first_pyramid_if_only_one_pyramid_is_provided(self):
+        pyramid = Pyramid(np.zeros((1, 1), dtype=object))
+        result = pyramid_combine([pyramid], lambda x: x)
+        self.assertIs(result, pyramid)
+
+    def test_does_not_apply_fn_to_pyramids_if_only_one_pyramid_is_provided(self):
+        pyramid = Pyramid(np.zeros((1, 1), dtype=object))
+        fn = Mock()
+        result = pyramid_combine([pyramid], fn)
+        fn.assert_not_called()
+        self.assertIs(result, pyramid)
