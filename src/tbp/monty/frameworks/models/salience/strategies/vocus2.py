@@ -322,13 +322,13 @@ class PyramidCollapse(Protocol):
 
 def pyramid_combine(
     pyramids: Sequence[Pyramid],
-    fn: Callable[[Sequence[np.ndarray]], np.ndarray],
+    reduce: Callable[[Sequence[np.ndarray]], np.ndarray],
 ) -> Pyramid:
     """Combine multiple pyramids into a single pyramid.
 
     Args:
         pyramids: The pyramids to combine.
-        fn: The function to use to combine the pyramids.
+        reduce: The function to use to reduce the pyramids.
 
     Returns:
         A new pyramid.
@@ -344,28 +344,22 @@ def pyramid_combine(
 
     pyr_arrays = [pyr.data for pyr in pyramids]
     pyr_shape = pyr_arrays[0].shape
-    assert all(pyr.shape == pyr_shape for pyr in pyr_arrays[1:])
+    if not all(pyr.shape == pyr_shape for pyr in pyr_arrays[1:]):
+        raise ValueError("All pyramids must have the same shape")
     pyr_size = pyr_arrays[0].size
     planes = np.zeros(pyr_size, dtype=object)
     for i, images in enumerate(zip(*[pyr.flat for pyr in pyramids])):
-        target_shape = images[0].shape
-        resized = []
-        for img in images:
-            if img.shape != target_shape:
-                resized.append(resize(img, target_shape))
-            else:
-                resized.append(img)
-        planes[i] = fn(resized)
+        planes[i] = reduce(images)
 
     return Pyramid(planes.reshape(pyr_shape))
 
 
 def pyramid_combine_max(pyramids: Sequence[Pyramid]) -> Pyramid:
-    return pyramid_combine(pyramids, lambda x: np.max(x, axis=0))
+    return pyramid_combine(pyramids, reduce=lambda x: np.max(x, axis=0))
 
 
 def pyramid_combine_mean(pyramids: Sequence[Pyramid]) -> Pyramid:
-    return pyramid_combine(pyramids, lambda x: np.mean(x, axis=0))
+    return pyramid_combine(pyramids, reduce=lambda x: np.mean(x, axis=0))
 
 
 def pyramid_collapse(
