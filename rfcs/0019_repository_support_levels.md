@@ -1,5 +1,5 @@
 - Start Date: 2026-04-07
-- RFC PR: (leave this empty, it will be filled in after RFC is merged)
+- RFC PR: https://github.com/thousandbrainsproject/tbp.monty/pull/904
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [BCP 14](https://tools.ietf.org/html/bcp14) [[RFC2119](https://tools.ietf.org/html/rfc2119)] [[RFC8174](https://tools.ietf.org/html/rfc8174)] when, and only when, they appear in all capitals, as shown here.
 
@@ -34,7 +34,7 @@ Markdown version to copy and paste:
 
 As an example, here's a screenshot of a badge, albeit with a different text:
 
-![example_badge_screenshot](./0000_repository_support_levels/example_badge_screenshot.png)
+![example_badge_screenshot](./0019_repository_support_levels/example_badge_screenshot.png)
 
 ## Actively Maintained
 
