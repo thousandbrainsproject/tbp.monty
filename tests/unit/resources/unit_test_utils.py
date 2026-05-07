@@ -12,13 +12,13 @@ import copy
 from unittest import TestCase
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.cmp import Message
 from tbp.monty.conf.make_environment import (
     make_sensor_positions_on_grid,
 )
 from tbp.monty.context import RuntimeContext
+from tbp.monty.geometry import Rotation
 
 
 class BaseGraphTest(TestCase):

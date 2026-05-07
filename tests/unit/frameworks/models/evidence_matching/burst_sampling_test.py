@@ -28,8 +28,6 @@ pytest.importorskip(
 
 from unittest import TestCase
 
-from scipy.spatial.transform import Rotation
-
 from tbp.monty.frameworks.models.evidence_matching.evidence_slope_tracker import (
     EvidenceSlopeTracker,
     HypothesesSelection,
@@ -37,6 +35,7 @@ from tbp.monty.frameworks.models.evidence_matching.evidence_slope_tracker import
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     InvalidEvidenceThresholdConfig,
 )
+from tbp.monty.geometry import Rotation
 
 
 class BurstSamplingHypothesesUpdaterTest(TestCase):

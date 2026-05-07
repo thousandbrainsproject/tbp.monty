@@ -15,7 +15,6 @@ from unittest.mock import Mock
 import numpy as np
 import quaternion as qt
 from hypothesis import given
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.cmp import Goal
 from tbp.monty.context import RuntimeContext
@@ -33,6 +32,7 @@ from tbp.monty.frameworks.models.salience.motor_policy import (
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import DEFAULT_TOLERANCE, VectorXYZ
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
     nonzero_magnitude_vectors,

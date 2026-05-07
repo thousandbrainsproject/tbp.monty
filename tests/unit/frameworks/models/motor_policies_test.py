@@ -20,7 +20,6 @@ import numpy.typing as npt
 import quaternion as qt
 from hypothesis import given
 from hypothesis import strategies as st
-from scipy.spatial.transform import Rotation
 from unittest_parametrize import ParametrizedTestCase, parametrize
 
 from tbp.monty.cmp import Goal, Message
@@ -54,6 +53,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import DEFAULT_TOLERANCE, VectorXYZ
 from tests.unit.frameworks.models.fakes.cmp import FakeMessage
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
@@ -295,10 +295,10 @@ class JumpToGoalTest(ParametrizedTestCase):
             [
                 # TODO(tslominski-tbp): Needs update when we use QuaternionWXYZ like
                 # we're supposed to.
+                set_agent_pose.rotation_quat.w,  # type: ignore[attr-defined]
                 set_agent_pose.rotation_quat.x,  # type: ignore[attr-defined]
                 set_agent_pose.rotation_quat.y,  # type: ignore[attr-defined]
                 set_agent_pose.rotation_quat.z,  # type: ignore[attr-defined]
-                set_agent_pose.rotation_quat.w,  # type: ignore[attr-defined]
             ]
         )
         new_forward_axis = -rotation.as_matrix()[:, 2]
@@ -473,10 +473,10 @@ class JumpToGoalTest(ParametrizedTestCase):
             [
                 # TODO(tslominski-tbp): Needs update when we use QuaternionWXYZ like
                 # we're supposed to.
+                set_agent_pose.rotation_quat.w,  # type: ignore[attr-defined]
                 set_agent_pose.rotation_quat.x,  # type: ignore[attr-defined]
                 set_agent_pose.rotation_quat.y,  # type: ignore[attr-defined]
                 set_agent_pose.rotation_quat.z,  # type: ignore[attr-defined]
-                set_agent_pose.rotation_quat.w,  # type: ignore[attr-defined]
             ]
         )
         new_forward_axis = -rotation.as_matrix()[:, 2]

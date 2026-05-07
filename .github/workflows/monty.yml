@@ -419,7 +419,9 @@ jobs:
           source activate tbp.monty
           set -e
           mkdir -p test_results/pytest
-          xvfb-run pytest --cov --cov-context=test --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
+          xvfb-run pytest --cov --cov-context=test --cov-report html --cov-report term \
+            --junitxml=test_results/pytest/results.xml --verbose --doctest-modules \
+            --doctest-continue-on-failure
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v4
@@ -539,9 +541,12 @@ jobs:
         run: |
           export MUJOCO_GL=egl
           mkdir -p test_results/pytest
-          uv run --frozen pytest tests \
+          uv run --frozen pytest src tests \
             --cov --cov-context=test --cov-report html --cov-report term \
-            --junitxml=test_results/pytest/results.xml --verbose
+            --junitxml=test_results/pytest/results.xml --verbose \
+            --doctest-modules --doctest-continue-on-failure \
+            --ignore=src/tbp/monty/simulators/habitat \
+            --ignore=src/tbp/monty/simulators/tacto
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v4
