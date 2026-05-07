@@ -131,10 +131,14 @@ class ScipyRotationsApproxEqualTest(unittest.TestCase):
     TODO(scottcanoe): Add tests for non-single rotation objects.
     """
 
+    ROTATION_EXAMPLE_ERROR = 1e-15
+
     @given(
         a=scipy_rotations(),
         axis=rotation_axes(),
-        angle=st.floats(min_value=0, max_value=ROTATION_TOLERANCE - 1e-15),
+        angle=st.floats(
+            min_value=0, max_value=ROTATION_TOLERANCE - ROTATION_EXAMPLE_ERROR
+        ),
     )
     def test_returns_true_if_delta_below_tolerance(
         self,
@@ -155,7 +159,8 @@ class ScipyRotationsApproxEqualTest(unittest.TestCase):
         a=scipy_rotations(),
         axis=rotation_axes(),
         angle=st.floats(
-            min_value=ROTATION_TOLERANCE + 1e-15, max_value=2 * ROTATION_TOLERANCE
+            min_value=ROTATION_TOLERANCE + ROTATION_EXAMPLE_ERROR,
+            max_value=2 * ROTATION_TOLERANCE,
         ),
     )
     def test_returns_false_if_delta_above_tolerance(
@@ -215,7 +220,7 @@ class RotationQuaternionTest(unittest.TestCase):
         quat=quaternions(),
         xyz=points_3d(),
     )
-    def test_from_quat_assumes_opposite_order_to_scipy(
+    def test_from_quat_assumes_scalar_first_order(
         self,
         quat: np.ndarray,
         xyz: np.ndarray,
@@ -227,7 +232,7 @@ class RotationQuaternionTest(unittest.TestCase):
         )
 
     @given(quat=quaternions())
-    def test_as_quat_returns_opposite_order_to_scipy(self, quat: np.ndarray) -> None:
+    def test_as_quat_returns_scalar_first_order(self, quat: np.ndarray) -> None:
         rot = Rotation.from_quat(quat)
         scipy_rot = ScipyRotation.from_quat(to_scalar_last(quat))
         nptest.assert_allclose(
