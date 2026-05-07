@@ -13,11 +13,6 @@ from typing import Protocol
 
 import numpy as np
 
-_SKIP_FEATURES = frozenset({"pose_vectors", "pose_fully_defined"})
-_CIRCULAR_FEATURES = frozenset({"hsv"})
-_CATEGORICAL_FEATURES = frozenset({"object_id"})
-_CIRCULAR_RANGE = 1
-
 
 class FeatureEvidenceCalculator(Protocol):
     @staticmethod
@@ -32,14 +27,20 @@ class FeatureEvidenceCalculator(Protocol):
 
 
 class DefaultFeatureEvidenceCalculator:
-    @staticmethod
+    SKIP_FEATURES = frozenset({"pose_vectors", "pose_fully_defined"})
+    CIRCULAR_FEATURES = frozenset({"hsv"})
+    CATEGORICAL_FEATURES = frozenset({"object_id"})
+    CIRCULAR_RANGE = 1
+
+    @classmethod
     def calculate(
+        cls,
         channel_feature_array: np.ndarray,
         channel_feature_order: list[str],
         channel_feature_weights: dict,
         channel_query_features: dict,
         channel_tolerances: dict,
-        input_channel: str,  # noqa: ARG004
+        input_channel: str,  # noqa: ARG003
     ) -> np.ndarray:
         """Calculate the feature evidence for all nodes stored in a graph.
 
@@ -48,7 +49,7 @@ class DefaultFeatureEvidenceCalculator:
 
         - numeric: `|stored - observed|`
         - circular (e.g. HSV hue): the smallest wrap-around distance on
-          `[0, _CIRCULAR_RANGE)`
+          `[0, CIRCULAR_RANGE)`
         - categorical (e.g. ``object_id``): `0` if equal, `1` otherwise
 
         The resulting per-column difference is mapped to evidence in `[0, 1]`
@@ -75,7 +76,7 @@ class DefaultFeatureEvidenceCalculator:
 
         start_idx = 0
         for feature in channel_feature_order:
-            if feature in _SKIP_FEATURES:
+            if feature in cls.SKIP_FEATURES:
                 continue
             if hasattr(channel_query_features[feature], "__len__"):
                 feature_length = len(channel_query_features[feature])
@@ -86,11 +87,11 @@ class DefaultFeatureEvidenceCalculator:
             tolerance_list[start_idx:end_idx] = channel_tolerances[feature]
             feature_weight_list[start_idx:end_idx] = channel_feature_weights[feature]
 
-            if feature in _CIRCULAR_FEATURES:
+            if feature in cls.CIRCULAR_FEATURES:
                 # H is circular, S and V are numeric
                 circular_var[start_idx] = True
                 numeric_var[start_idx + 1 : end_idx] = True
-            elif feature in _CATEGORICAL_FEATURES:
+            elif feature in cls.CATEGORICAL_FEATURES:
                 categorical_var[start_idx:end_idx] = True
             else:
                 numeric_var[start_idx:end_idx] = True
@@ -109,9 +110,9 @@ class DefaultFeatureEvidenceCalculator:
         cquery_fs = feature_list[circular_var]
         feature_differences[:, circular_var] = np.min(
             [
-                np.abs(_CIRCULAR_RANGE + cnode_fs - cquery_fs),
+                np.abs(cls.CIRCULAR_RANGE + cnode_fs - cquery_fs),
                 np.abs(cnode_fs - cquery_fs),
-                np.abs(cnode_fs - (cquery_fs + _CIRCULAR_RANGE)),
+                np.abs(cnode_fs - (cquery_fs + cls.CIRCULAR_RANGE)),
             ],
             axis=0,
         )
