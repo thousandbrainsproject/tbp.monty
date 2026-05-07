@@ -87,14 +87,8 @@ class Rotation:
 
     _rot: ScipyRotation
 
-    def __init__(self, obj: ScipyRotation | Rotation) -> None:
-        if isinstance(obj, ScipyRotation):
-            rot = obj
-        elif isinstance(obj, Rotation):
-            rot = obj.as_scipy_rotation()
-        else:
-            raise TypeError(f"Invalid object type: {type(obj)}")
-        self._rot = rot
+    def __init__(self, scipy_rotation: ScipyRotation) -> None:
+        self._rot = scipy_rotation
 
     @property
     def single(self) -> bool:
@@ -188,6 +182,18 @@ class Rotation:
 
     @staticmethod
     def concatenate(rotations: Iterable[Rotation]) -> Rotation:
+        """Concatenate a sequence of `Rotation` objects into a single object.
+
+        This is useful if you want to, for example, take the mean of a set of
+        rotations and need to pack them into a single object to do so.
+
+        Args:
+            rotations: The rotations to concatenate. If a single `Rotation` object is
+              passed in, a copy is returned.
+
+        Returns:
+            The `Rotation` instance containing the concatenated rotations.
+        """
         scipy_rots = [obj.as_scipy_rotation() for obj in rotations]
         return Rotation(ScipyRotation.concatenate(scipy_rots))
 
