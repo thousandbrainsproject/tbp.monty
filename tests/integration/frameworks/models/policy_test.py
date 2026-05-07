@@ -31,7 +31,6 @@ import hydra
 import numpy as np
 import quaternion as qt
 from omegaconf import DictConfig
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.cmp import Message
 from tbp.monty.frameworks.actions.actions import (
@@ -57,7 +56,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     ProprioceptiveState,
 )
-from tbp.monty.frameworks.utils.transform_utils import numpy_to_scipy_quat
+from tbp.monty.geometry import Rotation
 
 
 class PolicyTest(unittest.TestCase):
@@ -960,9 +959,7 @@ class PolicyTest(unittest.TestCase):
         target_loc_hab = set_agent_pose.location
         target_quat = set_agent_pose.rotation_quat
 
-        resulting_rot = Rotation.from_quat(
-            numpy_to_scipy_quat(np.array([target_quat.real] + list(target_quat.imag)))
-        )
+        resulting_rot = Rotation.from_quat(qt.as_float_array(target_quat))
 
         # As the agent faces "forward" along the negative z-axis, we use this vector
         # to visualize its orientation

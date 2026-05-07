@@ -14,7 +14,6 @@ import unittest
 import numpy as np
 import numpy.typing as npt
 import quaternion as qt
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
@@ -32,6 +31,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     SensorState,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.geometry import Rotation
 
 AGENT_ID = AgentID("camera")
 SENSOR_ID = SensorID("sensor_01")
@@ -284,7 +284,7 @@ class HabitatTransformTest(unittest.TestCase):
 
     def test_semantic_3d_global_agent_rotation(self):
         agent_position = np.array([0.0, 0.0, 0.0])
-        x, y, z, w = Rotation.from_euler("xyz", [30, 45, -10], degrees=True).as_quat()
+        w, x, y, z = Rotation.from_euler("xyz", [30, 45, -10], degrees=True).as_quat()
         # quaternion package uses w, x, y, z convention
         agent_rotation = qt.quaternion(w, x, y, z)
         sensor_position = np.array([0.0, 0.0, 0.0])
@@ -318,7 +318,7 @@ class HabitatTransformTest(unittest.TestCase):
         agent_position = np.array([0.0, 0.0, 0.0])
         agent_rotation = qt.quaternion(1.0, 0.0, 0.0, 0.0)
         sensor_position = np.array([0.0, 0.0, 0.0])
-        x, y, z, w = Rotation.from_euler("xyz", [30, 45, -10], degrees=True).as_quat()
+        w, x, y, z = Rotation.from_euler("xyz", [30, 45, -10], degrees=True).as_quat()
         sensor_rotation = qt.quaternion(w, x, y, z)
 
         md_obs, depth_obs, semantic_obs, semantic_3d_obs = self.setup_test_data(

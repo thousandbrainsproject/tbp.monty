@@ -10,10 +10,10 @@ import json
 import unittest
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.cmp import Goal, encode_goal
 from tbp.monty.frameworks.models.buffer import BufferEncoder
+from tbp.monty.geometry import Rotation
 
 
 class EncodeGoalTest(unittest.TestCase):

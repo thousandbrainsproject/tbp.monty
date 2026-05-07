@@ -15,9 +15,9 @@ import math
 from itertools import permutations
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_more_directions_in_plane
+from tbp.monty.geometry import Rotation
 
 logger = logging.getLogger(__name__)
 

@@ -13,14 +13,11 @@ from typing import Sequence, TypedDict, cast
 
 import numpy as np
 import numpy.typing as npt
-from scipy.spatial.transform import Rotation
 from typing_extensions import NotRequired
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
-from tbp.monty.frameworks.utils.transform_utils import (
-    rotation_as_quat,
-)
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import EulerAnglesXYZ, QuaternionWXYZ, VectorXYZ
 
 
@@ -49,9 +46,9 @@ class Default:
         seed = episode_seed(seed, mode, episode)
         rng = np.random.RandomState(seed)
         euler_rotation = rng.uniform(0, 360, 3)
-        q = Rotation.from_euler("xyz", euler_rotation, degrees=True)
+        rotation = Rotation.from_euler("xyz", euler_rotation, degrees=True)
         return dict(
-            rotation=cast("QuaternionWXYZ", tuple(rotation_as_quat(q))),
+            rotation=cast("QuaternionWXYZ", tuple(rotation.as_quat())),
             euler_rotation=euler_rotation,
             position=(rng.uniform(-0.5, 0.5), 0.0, 0.0),
             scale=(1.0, 1.0, 1.0),
@@ -83,15 +80,15 @@ class Predefined(Default):
         episode: int,
     ) -> ObjectInitParams:
         mod_counter = episode if self.change_every_episode else epoch
-        q = Rotation.from_euler(
+        rotation = Rotation.from_euler(
             "xyz",
             self.rotations[mod_counter % len(self.rotations)],
             degrees=True,
         )
         return dict(
-            rotation=cast("QuaternionWXYZ", tuple(rotation_as_quat(q))),
+            rotation=cast("QuaternionWXYZ", tuple(rotation.as_quat())),
             euler_rotation=self.rotations[mod_counter % len(self.rotations)],
-            quat_rotation=q.as_quat(),
+            quat_rotation=rotation.as_quat(),
             position=self.positions[mod_counter % len(self.positions)],
             scale=self.scales[mod_counter % len(self.scales)],
         )
@@ -138,11 +135,11 @@ class RandomRotation(Default):
         seed = episode_seed(seed, mode, episode)
         rng = np.random.RandomState(seed)
         euler_rotation = rng.uniform(0, 360, 3)
-        q = Rotation.from_euler("xyz", euler_rotation, degrees=True)
+        rotation = Rotation.from_euler("xyz", euler_rotation, degrees=True)
         return dict(
-            rotation=cast("QuaternionWXYZ", tuple(rotation_as_quat(q))),
+            rotation=cast("QuaternionWXYZ", tuple(rotation.as_quat())),
             euler_rotation=euler_rotation,
-            quat_rotation=q.as_quat(),
+            quat_rotation=rotation.as_quat(),
             position=self.position,
             scale=self.scale,
         )

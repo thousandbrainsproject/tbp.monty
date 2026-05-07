@@ -15,7 +15,6 @@ from typing import Any, ClassVar, Protocol
 
 import numpy as np
 import quaternion as qt
-from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
 from tbp.monty.cmp import Message
@@ -38,6 +37,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     surface_normal_total_least_squares,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
+from tbp.monty.geometry import Rotation
 
 __all__ = [
     "CameraSM",

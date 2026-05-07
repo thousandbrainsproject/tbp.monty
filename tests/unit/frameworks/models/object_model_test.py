@@ -12,7 +12,6 @@ import copy
 import unittest
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.models.object_model import (
     GraphObjectModel,
@@ -20,6 +19,7 @@ from tbp.monty.frameworks.models.object_model import (
     GridTooSmallError,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import check_orthonormal
+from tbp.monty.geometry import Rotation
 
 
 class ObjectModelTest(unittest.TestCase):

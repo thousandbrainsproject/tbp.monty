@@ -16,8 +16,8 @@ import sys
 import numpy as np
 import torch
 from numpy.typing import ArrayLike
-from scipy.spatial.transform import Rotation
 
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)

@@ -16,7 +16,6 @@ import numpy as np
 import numpy.typing as npt
 import quaternion as qt
 import scipy.ndimage
-from scipy.spatial.transform import Rotation as rot  # noqa: N813
 from typing_extensions import Protocol
 
 from tbp.monty.frameworks.actions.actions import Action, LookDown, MoveForward, TurnLeft
@@ -25,6 +24,7 @@ from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.geometry import Rotation
 
 __all__ = [
     "GOOD_VIEW_DISTANCE_DEFAULT",
@@ -241,8 +241,7 @@ class GetGoodView(PositioningProcedure):
         sensor_rotation_rel_world = self.sensor_rotation_relative_to_world(state)
 
         # Invert the sensor rotation and apply it to the relative location
-        w, x, y, z = qt.as_float_array(sensor_rotation_rel_world)
-        rotation = rot.from_quat([x, y, z, w])
+        rotation = Rotation.from_quat(qt.as_float_array(sensor_rotation_rel_world))
         rotated_location = rotation.inv().apply(relative_location)
 
         # Calculate the necessary rotation amounts and convert them to degrees.
