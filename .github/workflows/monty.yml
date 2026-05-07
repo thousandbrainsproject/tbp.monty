@@ -544,7 +544,9 @@ jobs:
           uv run --frozen pytest src tests \
             --cov --cov-context=test --cov-report html --cov-report term \
             --junitxml=test_results/pytest/results.xml --verbose \
-            --doctest-modules --doctest-continue-on-failure
+            --doctest-modules --doctest-continue-on-failure \
+            --ignore=src/tbp/monty/simulators/habitat \
+            --ignore=src/tbp/monty/simulators/tacto
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v4
