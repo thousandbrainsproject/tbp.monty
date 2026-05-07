@@ -76,7 +76,7 @@ from tbp.monty.frameworks.run_env import setup_env
 # tbp.monty configuration and runtime.
 setup_env()
 
-# import run_parallel to run the experiment
+# import run_parallel to run the experiment, parallelizing across episodes
 from tbp.monty.frameworks.run_parallel import main  # noqa: E402
 
 if __name__ == "__main__":
