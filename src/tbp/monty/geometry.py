@@ -335,7 +335,14 @@ class Rotation:
         return Rotation(self._rot * other.as_scipy_rotation())
 
     def __repr__(self) -> str:
-        w, x, y, z = self.as_quat()
+        quat = self.as_quat()
+        if quat.ndim == 1:
+            w, x, y, z = quat
+        else:
+            w = quat[:, 0]
+            x = quat[:, 1]
+            y = quat[:, 2]
+            z = quat[:, 3]
         return f"{self.__class__.__name__}(w={w}, x={x}, y={y}, z={z})"
 
     def __getstate__(self) -> ScipyRotation:
