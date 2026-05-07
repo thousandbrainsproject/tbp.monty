@@ -1556,9 +1556,8 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             Inverse quaternion rotation.
         """
-        # Note that quaternion format is [w, x, y, z]
-        [w, x, y, z] = qt.as_float_array(state[self.agent_id].rotation)
-        [w, x, y, z] = Rotation.from_quat([w, x, y, z]).inv().as_quat()
+        wxyz = qt.as_float_array(state[self.agent_id].rotation)
+        [w, x, y, z] = Rotation.from_quat(wxyz).inv().as_quat()
         return qt.quaternion(w, x, y, z)
 
     def orienting_angle_from_normal(

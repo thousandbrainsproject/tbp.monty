@@ -80,15 +80,15 @@ class Predefined(Default):
         episode: int,
     ) -> ObjectInitParams:
         mod_counter = episode if self.change_every_episode else epoch
-        q = Rotation.from_euler(
+        rotation = Rotation.from_euler(
             "xyz",
             self.rotations[mod_counter % len(self.rotations)],
             degrees=True,
         )
         return dict(
-            rotation=cast("QuaternionWXYZ", tuple(q.as_quat())),
+            rotation=cast("QuaternionWXYZ", tuple(rotation.as_quat())),
             euler_rotation=self.rotations[mod_counter % len(self.rotations)],
-            quat_rotation=q.as_quat(),
+            quat_rotation=rotation.as_quat(),
             position=self.positions[mod_counter % len(self.positions)],
             scale=self.scales[mod_counter % len(self.scales)],
         )
@@ -135,11 +135,11 @@ class RandomRotation(Default):
         seed = episode_seed(seed, mode, episode)
         rng = np.random.RandomState(seed)
         euler_rotation = rng.uniform(0, 360, 3)
-        q = Rotation.from_euler("xyz", euler_rotation, degrees=True)
+        rotation = Rotation.from_euler("xyz", euler_rotation, degrees=True)
         return dict(
-            rotation=cast("QuaternionWXYZ", tuple(q.as_quat())),
+            rotation=cast("QuaternionWXYZ", tuple(rotation.as_quat())),
             euler_rotation=euler_rotation,
-            quat_rotation=q.as_quat(),
+            quat_rotation=rotation.as_quat(),
             position=self.position,
             scale=self.scale,
         )

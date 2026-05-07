@@ -14,7 +14,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.spatial.transform import Rotation as ScipyRotation
 
-from tbp.monty.math import ROTATION_TOLERANCE
+from tbp.monty.math import ROTATION_TOLERANCE_RADIANS
 
 
 def to_scalar_last(wxyz: npt.ArrayLike) -> np.ndarray:
@@ -49,7 +49,7 @@ def to_scalar_first(xyzw: npt.ArrayLike) -> np.ndarray:
 def scipy_rotations_approx_equal(
     a: ScipyRotation,
     b: ScipyRotation,
-    tol: float = ROTATION_TOLERANCE,
+    tol: float = ROTATION_TOLERANCE_RADIANS,
 ) -> bool | np.ndarray:
     """Backport of `scipy.spatial.transform.Rotation.approx_equal`.
 
@@ -301,7 +301,7 @@ class Rotation:
     def approx_equal(
         self,
         other: Rotation,
-        tol: float = ROTATION_TOLERANCE,
+        tol: float = ROTATION_TOLERANCE_RADIANS,
     ) -> bool | np.ndarray:
         """Check if this rotation is approximately equal to another rotation.
 

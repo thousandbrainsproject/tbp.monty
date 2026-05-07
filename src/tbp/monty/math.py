@@ -21,4 +21,4 @@ IDENTITY_QUATERNION: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0)
 ZERO_VECTOR: VectorXYZ = (0.0, 0.0, 0.0)
 
 DEFAULT_TOLERANCE = 1e-6
-ROTATION_TOLERANCE = 1e-6  # (radians) Used for computing rotation equivalence.
+ROTATION_TOLERANCE_RADIANS = 1e-6
