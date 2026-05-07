@@ -44,27 +44,29 @@ class DefaultFeatureEvidenceCalculator:
     ) -> np.ndarray:
         """Calculate the feature evidence for all nodes stored in a graph.
 
-        Each feature column is classified into one of three kinds and compared
-        accordingly:
+        For each node, compares the stored features against the observed
+        query features and returns a score in `[0, 1]`: 1 for a perfect
+        match, decaying to 0 once the difference exceeds the per-feature
+        tolerance. Nodes with missing stored values for a feature receive
+        NaN evidence.
 
-        - numeric: `|stored - observed|`
-        - circular (e.g. HSV hue): the smallest wrap-around distance on
-          `[0, CIRCULAR_RANGE)`
-        - categorical (e.g. ``object_id``): `0` if equal, `1` otherwise
-
-        The resulting per-column difference is mapped to evidence in `[0, 1]`
-        via `clip(tolerance - difference, 0, inf) / tolerance`: an evidence
-        of 1 is a perfect match, 0 once the difference reaches the tolerance.
-        Per-channel evidence is the feature-weighted average across columns.
-
-        If a node does not store a given feature, evidence will be nan.
-
-        `input_channel` indicates where the sensed features are coming from
-        and thereby tells this function to which features in the graph they
-        need to be compared.
+        Args:
+            channel_feature_array: Stored features for every node in the
+                graph, shape `(n_nodes, n_columns)`. Columns follow the
+                layout given by `channel_feature_order`.
+            channel_feature_order: Feature names in the order they appear
+                across the columns of `channel_feature_array`.
+            channel_feature_weights: Per-feature weights used to combine
+                per-column evidence into a single per-node score.
+            channel_query_features: Observed feature values to compare
+                against the stored features, keyed by feature name.
+            channel_tolerances: Per-feature tolerance, the largest
+                difference that still produces non-zero evidence.
+            input_channel: The channel the observation came from, used to
+                select which features in the graph to compare against.
 
         Returns:
-            The feature evidence for all nodes.
+            The feature evidence for all nodes, shape `(n_nodes,)`.
         """
         n_cols = channel_feature_array.shape[1]
         tolerance_list = np.full(n_cols, np.nan)
