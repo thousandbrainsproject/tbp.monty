@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import unittest
 from typing import cast
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, sentinel
 
 import cv2
 import numpy as np
 import numpy.testing as nptest
-from hypothesis import example, given
+from hypothesis import example, given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -557,12 +557,13 @@ class PyramidCombineTest(unittest.TestCase):
 
 
 class PyramidCollapseTest(unittest.TestCase):
-    INPUT_FILL_VALUE = 1.0
+    INPUT_FILL_VALUE = 0.0
 
+    @settings(deadline=1000)
     @given(
         pyramid=valid_input_pyramid_for_laplacian_pyramid(fill_value=INPUT_FILL_VALUE),
     )
-    def test_resize_only_called_on_planes_with_shapes_different_from_first_plane(
+    def test_resize_only_called_on_planes_with_shapes_different_from_first_plane_and_returns_what_reduce_returns(  # noqa: E501
         self,
         pyramid: Pyramid,
     ) -> None:
@@ -576,17 +577,29 @@ class PyramidCollapseTest(unittest.TestCase):
             return np.full(shape, resize_fill, dtype=image.dtype)
 
         reduce_mock = Mock()
+        reduce_mock.return_value = sentinel.reduce_return_value
 
         with patch(
             "tbp.monty.frameworks.models.salience.strategies.vocus2.resize",
             side_effect=mock_resize,
         ) as mock_resize_patch:
-            pyr = pyramid_collapse(pyramid, reduce=reduce_mock)
+            result = pyramid_collapse(pyramid, reduce=reduce_mock)
+            self.assertIs(result, sentinel.reduce_return_value)
             n_expected_calls_to_resize = pyramid.n_scales * (pyramid.n_octaves - 1)
             self.assertEqual(mock_resize_patch.call_count, n_expected_calls_to_resize)
 
-            expected_reduce_input_array = np.zeros(pyramid.shape, dtype=object)
             target_shape = pyramid.data[0, 0].shape
+
+            call_count = 0
+            for octave in range(1, pyramid.n_octaves):
+                for scale in range(pyramid.n_scales):
+                    call_args = mock_resize_patch.call_args_list[call_count]
+                    self.assertIs(call_args.args[0], pyramid.data[octave, scale])
+                    self.assertEqual(call_args.args[1], target_shape)
+                    self.assertEqual(call_args.kwargs["interpolation"], cv2.INTER_CUBIC)
+                    call_count += 1
+
+            expected_reduce_input_array = np.zeros(pyramid.shape, dtype=object)
             for scale in range(pyramid.n_scales):
                 expected_reduce_input_array[0, scale] = np.full(
                     target_shape,
@@ -601,27 +614,8 @@ class PyramidCollapseTest(unittest.TestCase):
                         dtype=np.float32,
                     )
             expected_reduce_input = list(expected_reduce_input_array.flat)
-            self.assertEqual(reduce_mock.call_count, 1)
-            call_args = reduce_mock.call_args_list[0].args
-            self.assertEqual(len(call_args), len(expected_reduce_input))
-            for i in range(len(call_args)):
-                nptest.assert_array_equal(call_args[i], expected_reduce_input[i])
-
-            # for plane in pyr.flat:
-            # nptest.assert_allclose(
-            #     plane, self.FILL_VALUE - surround_fill, atol=DEFAULT_TOLERANCE
-            # )
-
-            # call_count = 0
-            # for scale in range(input_pyramid.n_scales):
-            #     for octave in range(pyr.n_octaves):
-            #         expected_image = input_pyramid.data[octave + 1, scale]
-            #         expected_shape = input_pyramid.data[octave, scale].shape
-            #         call_args = mock_resize_patch.call_args_list[call_count]
-            #         nptest.assert_array_equal(call_args.args[0], expected_image)
-            #         self.assertEqual(call_args.args[1], expected_shape)
-            #         self.assertEqual(call_args.kwargs["interpolation"], cv2.INTER_CUBIC)
-            #         call_count += 1
-
-    def test_reduce_called_on_all_possibly_resized_planes(self):
-        pass
+            reduce_mock.assert_called_once()
+            reduce_input = reduce_mock.call_args_list[0].args[0]
+            self.assertEqual(len(reduce_input), len(expected_reduce_input))
+            for i in range(len(reduce_input)):
+                nptest.assert_array_equal(reduce_input[i], expected_reduce_input[i])
