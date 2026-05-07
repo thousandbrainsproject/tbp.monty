@@ -813,11 +813,7 @@ class InformedPolicy(BasePolicy):
 
         # Should rotate by pitch degrees around x, and by yaw degrees around y (and
         # no change about z, which would correspond to roll)
-        scipy_combined_orientation = Rotation.from_euler(
-            "xyz",
-            [pitch_angle, yaw_angle, 0],
-            degrees=False,
-        )
+        scipy_combined_orientation = Rotation.from_euler("xy", [pitch_angle, yaw_angle])
 
         target_quat = qt.quaternion(*scipy_combined_orientation.as_quat())
 
@@ -2364,7 +2360,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             rot_limits = np.clip(0.1 + self.search_counter / self.max_steps, 0, 1)
             rot_val = ctx.rng.uniform(-rot_limits, rot_limits) * np.pi
 
-            plane_rot = Rotation.from_euler("xyz", (0.0, 0.0, rot_val), degrees=False)
+            plane_rot = Rotation.from_euler("z", rot_val)
 
             # Note we apply the rotation to the original vector
             self.update_tangential_reps(vec_form=plane_rot.apply(vec_copy))
