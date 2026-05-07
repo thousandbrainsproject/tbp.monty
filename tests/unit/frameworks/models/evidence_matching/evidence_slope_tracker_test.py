@@ -98,6 +98,21 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         expected_slope = ((2.0 - 1.0) + (3.0 - 2.0)) / 2  # = 1.0
         self.assertAlmostEqual(slopes[0], expected_slope)
 
+    def test_slope_is_invariant_to_channel_count_change(self) -> None:
+        """Per-channel slope stays constant when the input channel count changes.
+
+        Accumulated evidence rises 2.0 -> 3.0 with 2 channels, then 3.0 -> 4.5 with 3
+        channels. The per-channel rate is 0.5/step throughout. Without normalization
+        the reported slope would be 1.25; with per-channel normalization it is 0.5.
+        """
+        self.tracker.add_hyp(1)
+        self.tracker.update(np.array([2.0]), num_channels=2)
+        self.tracker.update(np.array([3.0]), num_channels=2)
+        self.tracker.update(np.array([4.5]), num_channels=3)
+
+        slopes = self.tracker.calculate_slopes()
+        self.assertAlmostEqual(slopes[0], 0.5)
+
     def test_removable_indices_mask_matches_min_age(self) -> None:
         self.tracker.add_hyp(3)
         self.tracker._hyp_age[:] = [1, 2, 3]
