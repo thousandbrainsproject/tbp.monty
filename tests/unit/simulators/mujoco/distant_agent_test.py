@@ -17,7 +17,6 @@ import hypothesis.strategies as st
 import numpy as np
 import quaternion as qt
 from hypothesis import example, given, settings
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
     LookDown,

@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Protocol, cast
 import numpy as np
 import quaternion as qt
 from mujoco import MjsBody, mjtJoint
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
     LookDown,
