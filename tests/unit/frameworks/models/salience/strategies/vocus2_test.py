@@ -499,11 +499,11 @@ class PyramidCombineTest(unittest.TestCase):
         result = pyramid_combine([pyramid], Mock())
         self.assertIs(result, pyramid)
 
-    def test_does_not_apply_fn_to_pyramids_if_only_one_pyramid_is_provided(self):
+    def test_does_not_apply_reduce_to_pyramids_if_only_one_pyramid_is_provided(self):
         pyramid = Pyramid(np.zeros((1, 1), dtype=object))
-        fn = Mock()
-        result = pyramid_combine([pyramid], fn)
-        fn.assert_not_called()
+        reduce = Mock()
+        result = pyramid_combine([pyramid], reduce)
+        reduce.assert_not_called()
         self.assertIs(result, pyramid)
 
     @given(
@@ -515,3 +515,41 @@ class PyramidCombineTest(unittest.TestCase):
     ) -> None:
         with self.assertRaises(ValueError):
             pyramid_combine(pyramids, Mock())
+
+    @given(
+        pyramid=valid_input_pyramid_for_laplacian_pyramid(),
+    )
+    def test_returns_combined_pyramid_with_correct_shape_and_reduced_planes(
+        self,
+        pyramid: Pyramid,
+    ) -> None:
+        reduce = Mock()
+
+        def mock_reduce(
+            images: tuple[np.ndarray, ...],
+        ) -> np.ndarray:
+            return np.zeros_like(images[0])
+
+        reduce.side_effect = mock_reduce
+
+        pyramids = [pyramid, pyramid]
+        result = pyramid_combine(pyramids, reduce)
+
+        self.assertEqual(result.shape, pyramid.shape)
+        self.assertEqual(result.n_octaves, pyramid.n_octaves)
+        self.assertEqual(result.n_scales, pyramid.n_scales)
+
+        self.assertEqual(reduce.call_count, pyramid.size)
+        call_count = 0
+        for octave in range(result.n_octaves):
+            for scale in range(result.n_scales):
+                call_args = reduce.call_args_list[call_count]
+                self.assertIs(call_args.args[0][0], pyramid.data[octave, scale])
+                self.assertIs(call_args.args[0][1], pyramid.data[octave, scale])
+                nptest.assert_array_equal(
+                    result.data[octave, scale],
+                    mock_reduce(
+                        (pyramid.data[octave, scale], pyramid.data[octave, scale])
+                    ),
+                )
+                call_count += 1

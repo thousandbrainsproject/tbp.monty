@@ -93,6 +93,10 @@ class Pyramid:
         return self.data.shape  # type: ignore[return-value]
 
     @property
+    def size(self) -> int:
+        return self.data.size
+
+    @property
     def n_octaves(self) -> int:
         return self.shape[0]
 
