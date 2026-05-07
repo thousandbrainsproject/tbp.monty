@@ -368,13 +368,13 @@ def pyramid_combine_mean(pyramids: Sequence[Pyramid]) -> Pyramid:
 
 def pyramid_collapse(
     pyr: Pyramid,
-    fn: Callable[[Sequence[np.ndarray]], np.ndarray],
+    reduce: Callable[[Sequence[np.ndarray]], np.ndarray],
 ) -> np.ndarray:
     """Collapse a pyramid into a single image.
 
     Args:
         pyr: The pyramid to collapse.
-        fn: The function to use to collapse the pyramid.
+        reduce: The function to use to reduce the pyramid's planes into one.
 
     Returns:
         A new image.
@@ -388,7 +388,7 @@ def pyramid_collapse(
             resized.append(resize(img, target_shape, interpolation=cv2.INTER_CUBIC))
         else:
             resized.append(img)
-    return fn(resized)
+    return reduce(resized)
 
 
 def pyramid_collapse_max(pyr: Pyramid) -> np.ndarray:
