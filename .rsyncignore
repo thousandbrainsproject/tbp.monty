@@ -1,5 +1,8 @@
+- .coverage
+- .cursor
 - .git
 - .github
+- .hypothesis
 - .idea
 - .mypy_cache
 - .pytest_cache
@@ -8,6 +11,7 @@
 - .venv
 - .vscode
 - docs
+- htmlcov
 - outputs
 - rfcs
 - *.pyc
