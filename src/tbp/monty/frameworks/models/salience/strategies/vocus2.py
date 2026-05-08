@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Iterator, Protocol, Sequence, cast
+from typing import Callable, Dict, Iterator, NewType, Protocol, Sequence, cast
 
 import cv2
 import numpy as np
@@ -33,11 +33,11 @@ class ColorSpace(Enum):
     OPPONENT = "OPPONENT"  # Opponent color space (shifted and scaled to [0, 1])
 
 
-def rgb_to_lab(image: np.ndarray) -> np.ndarray:
+def rgb_to_lab(image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]:
     return cv2.cvtColor(image, cv2.COLOR_RGB2Lab).astype(np.float32) / 255.0
 
 
-def rgb_to_opponent(image: np.ndarray) -> np.ndarray:
+def rgb_to_opponent(image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]:
     r, g, b = cv2.split(image.astype(np.float32))
     L = (r + g + b) / (3 * 255.0)  # noqa: N806
     a = (r - g + 255.0) / (2 * 255.0)
@@ -45,7 +45,7 @@ def rgb_to_opponent(image: np.ndarray) -> np.ndarray:
     return cv2.merge([L, a, b])
 
 
-def rgb_to_opponent_codi(image: np.ndarray) -> np.ndarray:
+def rgb_to_opponent_codi(image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]:
     r, g, b = cv2.split(image.astype(np.float32))
     L = (r + g + b) / (3 * 255.0)  # noqa: N806
     a = (r - g) / 255.0
@@ -60,7 +60,9 @@ _COLOR_SPACE_CONVERTERS = {
 }
 
 
-def gaussian_blur(image: np.ndarray, sigma: float, truncate: float = 2.5) -> np.ndarray:
+def gaussian_blur(
+    image: npt.NDArray[np.float32], sigma: float, truncate: float = 2.5
+) -> npt.NDArray[np.float32]:
     ksize = round(2 * truncate * sigma + 1) | 1  # Ensure odd
     return cv2.GaussianBlur(
         image, (ksize, ksize), sigma, borderType=cv2.BORDER_REPLICATE
@@ -68,10 +70,10 @@ def gaussian_blur(image: np.ndarray, sigma: float, truncate: float = 2.5) -> np.
 
 
 def resize(
-    image: np.ndarray,
+    image: npt.NDArray[np.float32],
     shape: tuple[int, int],
     interpolation: int = cv2.INTER_NEAREST,
-) -> np.ndarray:
+) -> npt.NDArray[np.float32]:
     return cv2.resize(image, (shape[1], shape[0]), interpolation=interpolation)
 
 
@@ -169,7 +171,7 @@ def pyramid_octave_shapes(
 
 
 def gaussian_pyramid(
-    image: np.ndarray,
+    image: npt.NDArray[np.float32],
     sigma: float,
     n_scales: int,
     max_octaves: int | None = None,
@@ -232,7 +234,7 @@ def gaussian_pyramid(
 
 
 def center_surround_pyramids(
-    image: np.ndarray,
+    image: npt.NDArray[np.float32],
     center_sigma: float,
     surround_sigma: float,
     n_scales: int,
@@ -321,12 +323,12 @@ class PyramidCombine(Protocol):
 
 
 class PyramidCollapse(Protocol):
-    def __call__(self, pyr: Pyramid) -> np.ndarray: ...
+    def __call__(self, pyr: Pyramid) -> npt.NDArray[np.float32]: ...
 
 
 def pyramid_combine(
     pyramids: Sequence[Pyramid],
-    reduce: Callable[[Sequence[np.ndarray]], np.ndarray],
+    reduce: Callable[[Sequence[npt.NDArray[np.float32]]], npt.NDArray[np.float32]],
 ) -> Pyramid:
     """Combine multiple pyramids into a single pyramid.
 
@@ -368,8 +370,8 @@ def pyramid_combine_mean(pyramids: Sequence[Pyramid]) -> Pyramid:
 
 def pyramid_collapse(
     pyr: Pyramid,
-    reduce: Callable[[Sequence[np.ndarray]], np.ndarray],
-) -> np.ndarray:
+    reduce: Callable[[Sequence[npt.NDArray[np.float32]]], npt.NDArray[np.float32]],
+) -> npt.NDArray[np.float32]:
     """Collapse a pyramid into a single image.
 
     Args:
@@ -391,11 +393,11 @@ def pyramid_collapse(
     return reduce(resized)
 
 
-def pyramid_collapse_max(pyr: Pyramid) -> np.ndarray:
+def pyramid_collapse_max(pyr: Pyramid) -> npt.NDArray[np.float32]:
     return pyramid_collapse(pyr, lambda x: np.max(x, axis=0))
 
 
-def pyramid_collapse_mean(pyr: Pyramid) -> np.ndarray:
+def pyramid_collapse_mean(pyr: Pyramid) -> npt.NDArray[np.float32]:
     return pyramid_collapse(pyr, lambda x: np.mean(x, axis=0))
 
 
@@ -403,49 +405,40 @@ def pyramid_collapse_mean(pyr: Pyramid) -> np.ndarray:
 - Operations on Feature Maps
 """
 
+FeatureMaps = NewType("FeatureMaps", Dict[str, npt.NDArray[np.float32]])
 
 class MapCombine(Protocol):
-    def __call__(self, maps: dict[str, np.ndarray]) -> np.ndarray: ...
+    def __call__(self, maps: FeatureMaps) -> npt.NDArray[np.float32]: ...
 
 
-def map_max(maps: dict[int | str, np.ndarray]) -> np.ndarray:
+def map_max(maps: FeatureMaps) -> npt.NDArray[np.float32]:
     np.max(list(maps.values()), axis=0)
 
 
-def map_sum(maps: dict[int | str, np.ndarray]) -> np.ndarray:
+def map_sum(maps: FeatureMaps) -> npt.NDArray[np.float32]:
     return np.sum(list(maps.values()), axis=0)
 
 
 def map_weighted_sum(
-    maps: dict[int | str, np.ndarray],
-    weights: dict[int | str, float],
-) -> np.ndarray:
+    maps: FeatureMaps,
+    weights: dict[str, float],
+) -> npt.NDArray[np.float32]:
     return np.sum([weights[key] * img for key, img in maps.items()], axis=0)
 
 
-def map_mean(maps: dict[int | str, np.ndarray]) -> np.ndarray:
+def map_mean(maps: FeatureMaps) -> npt.NDArray[np.float32]:
     return np.mean(list(maps.values()), axis=0)
 
 
 class WeightedMean(MapCombine):
     def __init__(self, weights: dict[str, float]):
-        self._weights = dict(weights)
+        self._weights = weights
 
-    def __call__(self, maps: dict[str, np.ndarray]) -> np.ndarray:
+    def __call__(self, maps: FeatureMaps) -> npt.NDArray[np.float32]:
         weights = {key: self._weights[key] for key in maps}
         total_weight = sum(abs(weight) for weight in weights.values())
         normed_weights = {key: weight / total_weight for key, weight in weights.items()}
         return np.sum([normed_weights[key] * img for key, img in maps.items()], axis=0)
-
-
-@dataclass
-class ColorChannelSalienceResult:
-    feature_map: np.ndarray
-    feature_pyramid: Pyramid
-    center: Pyramid
-    surround: Pyramid
-    on: Pyramid
-    off: Pyramid
 
 
 class ColorChannelSalience:
@@ -467,14 +460,16 @@ class ColorChannelSalience:
         self._combine = combine
         self._collapse = collapse
 
-    def process(self, image: npt.NDArray[np.float32]) -> ColorChannelSalienceResult:
+    def process(
+        self, image: npt.NDArray[np.float32]
+    ) -> tuple[npt.NDArray[np.float32], Pyramid]:
         """Compute salience for a single color channel.
 
         Args:
             image: Must be float32 and in the range [0, 1].
 
         Returns:
-            A ColorChannelSalienceResult object.
+            A tuple of the feature map and the center pyramid.
         """
         # Build center/surround and on/off pyramids.
         center, surround = center_surround_pyramids(
@@ -495,22 +490,7 @@ class ColorChannelSalience:
         feature_pyramid = self._combine([on, off])
         feature_map = self._collapse(feature_pyramid)
 
-        return ColorChannelSalienceResult(
-            feature_map=feature_map,
-            feature_pyramid=feature_pyramid,
-            center=center,
-            surround=surround,
-            on=on,
-            off=off,
-        )
-
-
-@dataclass
-class DepthSalienceResult:
-    feature_map: np.ndarray
-    feature_pyramid: Pyramid
-    center: Pyramid
-    surround: Pyramid
+        return feature_map, center
 
 
 class DepthSalience:
@@ -530,7 +510,7 @@ class DepthSalience:
         self._min_size = min_size
         self._collapse = collapse
 
-    def process(self, image: npt.NDArray[np.float32]) -> DepthSalienceResult:
+    def process(self, image: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
         """Compute salience for a depth channel.
 
         Args:
@@ -554,21 +534,7 @@ class DepthSalience:
         # Build the on pyramid, and collapse the result.
         diff: Pyramid = center - surround
         feature_pyramid = diff.apply(lambda img: np.maximum(img, 0))
-        feature_map = self._collapse(feature_pyramid)
-
-        return DepthSalienceResult(
-            feature_map=feature_map,
-            feature_pyramid=feature_pyramid,
-            center=center,
-            surround=surround,
-        )
-
-
-@dataclass
-class OrientationSalienceResult:
-    feature_map: np.ndarray
-    feature_maps: dict[str, np.ndarray]
-    feature_pyramids: dict[str, Pyramid]
+        return self._collapse(feature_pyramid)
 
 
 class OrientationSalience:
@@ -619,7 +585,7 @@ class OrientationSalience:
         phase: float = np.pi / 2,
         gamma: float = 0.75,
         n_orientations: int = 4,
-    ) -> dict[str, np.ndarray]:
+    ) -> dict[str, npt.NDArray[np.float32]]:
         kernels = {}
         filter_size = int(7 * sigma + 1) | 1
         for ori in range(n_orientations):
@@ -638,7 +604,7 @@ class OrientationSalience:
 
         return kernels
 
-    def process(self, pyr: Pyramid) -> OrientationSalienceResult:
+    def process(self, pyr: Pyramid) -> npt.NDArray[np.float32]:
         feature_pyramids = {}
         feature_maps = {}
         lap = laplacian_pyramid(pyr)
@@ -651,14 +617,7 @@ class OrientationSalience:
             feature_pyramids[ori] = Pyramid(p)
             feature_maps[ori] = self._collapse(feature_pyramids[ori])
 
-        feature_map = self._combine(feature_maps)
-
-        return OrientationSalienceResult(
-            feature_map=feature_map,
-            feature_maps=feature_maps,
-            feature_pyramids=feature_pyramids,
-        )
-
+        return self._combine(feature_maps)
 
 
 class Vocus2(SalienceStrategy):
@@ -716,14 +675,15 @@ class Vocus2(SalienceStrategy):
             self._orientation = None
 
         if combine is None:
-            weights = {
-                "L": 1,
-                "a": 1,
-                "b": 1,
-                "depth": 0.1,
-                "orientation": 1,
-            }
-            self._combine = WeightedMean(weights)
+            self._combine = WeightedMean(
+                {
+                    "L": 1,
+                    "a": 1,
+                    "b": 1,
+                    "depth": 0.1,
+                    "orientation": 1,
+                }
+            )
         else:
             self._combine = combine
 
@@ -736,20 +696,20 @@ class Vocus2(SalienceStrategy):
         rgb = rgba[:, :, :3]
         depth = depth.astype(np.float32)
 
-        results = {}
+        feature_maps = FeatureMaps({})
 
         Lab = self._color_space_converter(rgb)  # noqa: N806
         L, a, b = cv2.split(Lab)  # noqa: N806
-        for channel, plane in zip(("L", "a", "b"), (L, a, b)):
-            results[channel] = self._color.process(plane)
+        feature_maps["L"], L_center = self._color.process(L)  # noqa: N806
+        feature_maps["a"], _ = self._color.process(a)
+        feature_maps["b"], _ = self._color.process(b)
 
         if self._depth:
-            results["depth"] = self._depth.process(depth)
+            feature_maps["depth"] = self._depth.process(depth)
 
         if self._orientation:
-            results["orientation"] = self._orientation.process(results["L"].center)
+            feature_maps["orientation"] = self._orientation.process(L_center)
 
-        feature_maps = {name: result.salience_map for name, result in results.items()}
         salience_map = self._combine(feature_maps)
 
         if self._normalize:
