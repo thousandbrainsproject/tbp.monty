@@ -470,7 +470,14 @@ class ColorChannelSalience:
 
         Returns:
             A tuple of the feature map and the center pyramid.
+
+        Raises:
+            ValueError: If configured min_size is greater than the smallest
+              image dimension.
         """
+        if self._min_size is not None and self._min_size > min(image.shape):
+            raise ValueError("Min size is greater than the image size")
+
         # Build center/surround and on/off pyramids.
         center, surround = center_surround_pyramids(
             image,

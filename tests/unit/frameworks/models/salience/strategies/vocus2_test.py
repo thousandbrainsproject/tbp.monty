@@ -20,6 +20,7 @@ from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
 from tbp.monty.frameworks.models.salience.strategies.vocus2 import (
+    ColorChannelSalience,
     Pyramid,
     center_surround_pyramids,
     gaussian_pyramid,
@@ -641,3 +642,51 @@ class PyramidCollapseTest(unittest.TestCase):
             self.assertEqual(len(reduce_input), len(expected_reduce_input))
             for i in range(len(reduce_input)):
                 nptest.assert_array_equal(reduce_input[i], expected_reduce_input[i])
+
+
+@st.composite
+def color_channel_salience_processor(draw, image: np.ndarray):
+    center_sigma = draw(st.floats(min_value=0.5, max_value=3.0))
+    surround_sigma = draw(
+        st.floats(min_value=center_sigma, max_value=6.0, exclude_min=True)
+    )
+    n_scales = draw(st.integers(min_value=1, max_value=5))
+    max_octaves = draw(
+        st.integers(min_value=1, max_value=int(1 + np.log2(max(image.shape))))
+    )
+    min_size = draw(st.integers(min_value=1, max_value=min(image.shape)))
+
+    return ColorChannelSalience(
+        center_sigma=center_sigma,
+        surround_sigma=surround_sigma,
+        n_scales=n_scales,
+        max_octaves=max_octaves,
+        min_size=min_size,
+    )
+
+
+@st.composite
+def color_channel_salience_setup(draw, image_strategy: st.SearchStrategy[np.ndarray]):
+    image = draw(image_strategy)
+    processor = draw(color_channel_salience_processor(image))
+    return image, processor
+
+
+class ColorChannelSalienceTest(unittest.TestCase):
+    MINIMUM_SALIENCE_THRESHOLD = 1e-3
+
+    @given(
+        image_and_processor=color_channel_salience_setup(solid_float32_image()),
+    )
+    def test_solid_image_not_salient(
+        self, image_and_processor: tuple[np.ndarray, ColorChannelSalience]
+    ):
+        image, processor = image_and_processor
+        feature_map, _ = processor.process(image)
+        self.assertTrue(np.all(feature_map < self.MINIMUM_SALIENCE_THRESHOLD))
+
+    def test_edge_flanks_are_salient(self):
+        pass
+
+    def test_edge_core_less_salient_than_its_flanks(self):
+        pass
