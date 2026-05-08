@@ -440,8 +440,8 @@ class WeightedMean(MapCombine):
 
 @dataclass
 class ColorChannelSalienceResult:
-    salience_map: np.ndarray
-    salience_pyramid: Pyramid
+    feature_map: np.ndarray
+    feature_pyramid: Pyramid
     center: Pyramid
     surround: Pyramid
     on: Pyramid
@@ -492,12 +492,12 @@ class ColorChannelSalience:
         off: Pyramid = diff.apply(lambda img: np.maximum(-img, 0))
 
         # Combine on/off pyramids, and collapse the result.
-        salience_pyramid = self._combine([on, off])
-        salience_map = self._collapse(salience_pyramid)
+        feature_pyramid = self._combine([on, off])
+        feature_map = self._collapse(feature_pyramid)
 
         return ColorChannelSalienceResult(
-            salience_map=salience_map,
-            salience_pyramid=salience_pyramid,
+            feature_map=feature_map,
+            feature_pyramid=feature_pyramid,
             center=center,
             surround=surround,
             on=on,
@@ -507,8 +507,8 @@ class ColorChannelSalience:
 
 @dataclass
 class DepthSalienceResult:
-    salience_map: np.ndarray
-    salience_pyramid: Pyramid
+    feature_map: np.ndarray
+    feature_pyramid: Pyramid
     center: Pyramid
     surround: Pyramid
 
@@ -553,19 +553,20 @@ class DepthSalience:
 
         # Build the on pyramid, and collapse the result.
         diff: Pyramid = center - surround
-        salience_pyramid = diff.apply(lambda img: np.maximum(img, 0))
-        salience_map = self._collapse(salience_pyramid)
+        feature_pyramid = diff.apply(lambda img: np.maximum(img, 0))
+        feature_map = self._collapse(feature_pyramid)
 
         return DepthSalienceResult(
-            salience_map=salience_map,
-            salience_pyramid=salience_pyramid,
+            feature_map=feature_map,
+            feature_pyramid=feature_pyramid,
             center=center,
             surround=surround,
         )
 
 
+@dataclass
 class OrientationSalienceResult:
-    salience_map: np.ndarray
+    feature_map: np.ndarray
     feature_maps: dict[str, np.ndarray]
     feature_pyramids: dict[str, Pyramid]
 
@@ -650,23 +651,14 @@ class OrientationSalience:
             feature_pyramids[ori] = Pyramid(p)
             feature_maps[ori] = self._collapse(feature_pyramids[ori])
 
-        salience_map = self._combine(feature_maps)
+        feature_map = self._combine(feature_maps)
 
         return OrientationSalienceResult(
-            salience_map=salience_map,
+            feature_map=feature_map,
             feature_maps=feature_maps,
             feature_pyramids=feature_pyramids,
         )
 
-
-@dataclass
-class SalienceResult:
-    salience_map: np.ndarray
-    feature_maps: dict[str, np.ndarray]
-    results: dict[
-        str,
-        ColorChannelSalienceResult | DepthSalienceResult | OrientationSalienceResult,
-    ]
 
 
 class Vocus2(SalienceStrategy):
