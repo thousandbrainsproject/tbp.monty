@@ -36,7 +36,6 @@ from tbp.monty.frameworks.loggers.exp_logger import (
     LoggingCallbackHandler,
 )
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
-from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
@@ -83,7 +82,7 @@ class MontyExperiment:
         self.supervised_lm_ids = config["supervised_lm_ids"]
         if self.supervised_lm_ids == "all":
             self.supervised_lm_ids = list(
-                self.config["monty_config"]["learning_module_configs"].keys()
+                self.config["monty_config"]["learning_modules"].keys()
             )
 
         if self.show_sensor_output:
@@ -140,15 +139,9 @@ class MontyExperiment:
         # Make monty_config a dict from a DictConfig, so we can edit it.
         monty_config = dict(copy.deepcopy(monty_config))
 
-        # Create learning modules
-        learning_module_configs = monty_config.pop("learning_module_configs")
-        learning_modules = {}
-        for lm_id, lm_cfg in learning_module_configs.items():
-            lm_class = lm_cfg["learning_module_class"]
-            lm_args = lm_cfg["learning_module_args"]
-            assert issubclass(lm_class, LearningModule)
-            learning_modules[lm_id] = lm_class(**lm_args)
-            learning_modules[lm_id].learning_module_id = lm_id
+        learning_modules = monty_config.pop("learning_modules")
+        for lm_id, lm in learning_modules.items():
+            lm.learning_module_id = lm_id
 
         sensor_modules = monty_config.pop("sensor_modules")
         motor_system = monty_config.pop("motor_system_config")
