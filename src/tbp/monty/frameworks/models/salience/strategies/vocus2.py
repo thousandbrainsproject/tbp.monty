@@ -412,18 +412,18 @@ class MapCombine(Protocol):
 
 
 def map_max(maps: FeatureMaps) -> npt.NDArray[np.float32]:
-    np.max(list(maps.values()), axis=0)
+    return np.max(list(maps.values()), axis=0)
 
 
 def map_sum(maps: FeatureMaps) -> npt.NDArray[np.float32]:
     return np.sum(list(maps.values()), axis=0)
 
+class WeightedSum(MapCombine):
+    def __init__(self, weights: dict[str, float]):
+        self._weights = weights
 
-def map_weighted_sum(
-    maps: FeatureMaps,
-    weights: dict[str, float],
-) -> npt.NDArray[np.float32]:
-    return np.sum([weights[key] * img for key, img in maps.items()], axis=0)
+    def __call__(self, maps: FeatureMaps) -> npt.NDArray[np.float32]:
+        return np.sum([self._weights[key] * img for key, img in maps.items()], axis=0)
 
 
 def map_mean(maps: FeatureMaps) -> npt.NDArray[np.float32]:
