@@ -28,7 +28,7 @@ Monty experiments are defined and configured using [Hydra](https://hydra.cc/). T
     - `monty_config`: Configuration for the Monty model.
       - `monty_class`: `Monty` The type of Monty model to use, e.g. for evidence-based graph matching: `MontyForEvidenceGraphMatching`.
       - `monty_args`: Arguments supplied to the Monty class.
-      - `sensor_module_configs`: `Mapping[str:Mapping]` Sensor module configurations.
+      - `sensor_modules`: `Mapping[str:Mapping]` Sensor module configurations.
       - `learning_module_configs`: `Mapping[str:Mapping]` Learning module configurations.
       - `motor_system_config`: Configuration of the motor system and motor policies.
       - `sm_to_agent_dict`: Connectivity mapping of which sensors connect to which sensor modules.

@@ -36,10 +36,7 @@ from tbp.monty.frameworks.loggers.exp_logger import (
     LoggingCallbackHandler,
 )
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
-from tbp.monty.frameworks.models.abstract_monty_classes import (
-    LearningModule,
-    SensorModule,
-)
+from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
@@ -153,16 +150,7 @@ class MontyExperiment:
             learning_modules[lm_id] = lm_class(**lm_args)
             learning_modules[lm_id].learning_module_id = lm_id
 
-        # Create sensor modules
-        sensor_module_configs = monty_config.pop("sensor_module_configs")
-        sensor_modules = {}
-        for sm_id, sm_cfg in sensor_module_configs.items():
-            sm_class = sm_cfg["sensor_module_class"]
-            sm_args = sm_cfg["sensor_module_args"]
-            assert issubclass(sm_class, SensorModule)
-            sensor_modules[sm_id] = sm_class(**sm_args)
-
-        # Create motor system
+        sensor_modules = monty_config.pop("sensor_modules")
         motor_system = monty_config.pop("motor_system_config")
 
         # Get mapping between sensor modules, learning modules and agents

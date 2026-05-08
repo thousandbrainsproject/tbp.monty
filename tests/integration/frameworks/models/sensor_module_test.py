@@ -93,8 +93,8 @@ class SensorModuleTest(unittest.TestCase):
 
             # Dig the features list out of the hydra config
             config = self.sensor_feature_cfg.experiment.config
-            sensor_configs = config.monty_config.sensor_module_configs
-            tested_features = sensor_configs.sensor_module_0.sensor_module_args.features
+            sensor_modules = config.monty_config.sensor_modules
+            tested_features = sensor_modules.sensor_module_0.features
             for feature in tested_features:
                 if feature in ["pose_vectors", "pose_fully_defined", "on_object"]:
                     self.assertIn(
