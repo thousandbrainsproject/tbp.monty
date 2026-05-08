@@ -254,6 +254,28 @@ def sufficiently_variable_float32_image(draw):
         )
     )
 
+
+@st.composite
+def pyramid(draw, fill_value: float = 1.0):
+    image_width = draw(st.integers(min_value=1, max_value=1024))
+    image_height = draw(st.integers(min_value=1, max_value=1024))
+    n_scales = draw(st.integers(min_value=1, max_value=10))
+    max_octaves = draw(st.integers(min_value=1, max_value=int(2 * np.log2(1024))))
+    min_size = draw(st.integers(min_value=1, max_value=min(image_width, image_height)))
+    octave_shapes = pyramid_octave_shapes(
+        (image_height, image_width),
+        max_octaves=max_octaves,
+        min_size=min_size,
+    )
+    input_data = np.zeros((len(octave_shapes), n_scales), dtype=object)
+    for octave_num, octave_shape in enumerate(octave_shapes):
+        for scale_num in range(n_scales):
+            input_data[octave_num, scale_num] = np.full(
+                octave_shape, fill_value, dtype=np.float32
+            )
+    return Pyramid(input_data)
+
+
 @st.composite
 def valid_input_pyramid_for_laplacian_pyramid(draw, fill_value: float = 1.0):
     image_width = draw(st.integers(min_value=2, max_value=1024))
@@ -561,7 +583,7 @@ class PyramidCollapseTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(
-        pyramid=valid_input_pyramid_for_laplacian_pyramid(fill_value=INPUT_FILL_VALUE),
+        pyramid=pyramid(fill_value=INPUT_FILL_VALUE),
     )
     def test_resize_only_called_on_planes_with_shapes_different_from_first_plane_and_returns_what_reduce_returns(  # noqa: E501
         self,
