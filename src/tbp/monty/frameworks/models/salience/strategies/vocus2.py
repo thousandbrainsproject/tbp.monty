@@ -745,7 +745,6 @@ class Vocus2(SalienceStrategy):
         depth = depth.astype(np.float32)
 
         results = {}
-        feature_maps = {}
 
         Lab = self._color_space_converter(rgb)  # noqa: N806
         L, a, b = cv2.split(Lab)  # noqa: N806
@@ -758,7 +757,7 @@ class Vocus2(SalienceStrategy):
         if self._orientation:
             results["orientation"] = self._orientation.process(results["L"].center)
 
-        feature_maps = {result.salience_map for result in results.values()}
+        feature_maps = {name: result.salience_map for name, result in results.items()}
         salience_map = self._combine(feature_maps)
 
         if self._normalize:
