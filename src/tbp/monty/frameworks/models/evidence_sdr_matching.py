@@ -513,11 +513,11 @@ class EvidenceSDRLMMixin:
 
     It overrides the __init__ and post_episode functions of the LM
 
-    To use this Mixin, pass the EvidenceSDRGraphLM class as the `learning_module_class`
-    in the `learning_module_configs`.
+    To use this Mixin, pass the EvidenceSDRGraphLM class as the `_target_`
+    in the `learning_modules` configuration.
 
     Additionally pass the `sdr_args` dictionary as an additional key
-    in the `learning_module_args`.
+    in the learning module constructor arguments.
 
     The sdr_args dictionary should contain:
         - `log_path` (string): A string that points to a temporary location for saving

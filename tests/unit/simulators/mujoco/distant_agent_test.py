@@ -17,7 +17,6 @@ import hypothesis.strategies as st
 import numpy as np
 import quaternion as qt
 from hypothesis import example, given, settings
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
     LookDown,
@@ -28,10 +27,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
-from tbp.monty.frameworks.utils.transform_utils import (
-    rotation_as_quat,
-    rotation_from_quat,
-)
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import DEFAULT_TOLERANCE, QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.mujoco import MuJoCoSimulator
 from tbp.monty.simulators.mujoco.agents import DistantAgent
@@ -64,7 +60,7 @@ def unit_quaternion(draw) -> QuaternionWXYZ:
     y_rad = draw(st.floats(min_value=0.0, max_value=np.pi * 2))
     z_rad = draw(st.floats(min_value=0.0, max_value=np.pi * 2))
     rotation = Rotation.from_euler("xyz", [x_rad, y_rad, z_rad], degrees=False)
-    normalized_rotation = rotation_as_quat(rotation)
+    normalized_rotation = rotation.as_quat()
     return cast("QuaternionWXYZ", tuple(normalized_rotation))
 
 
@@ -72,7 +68,7 @@ def unit_quaternion(draw) -> QuaternionWXYZ:
 def x_rotation_quaterion(draw) -> QuaternionWXYZ:
     x_rad = draw(st.floats(min_value=0.0, max_value=np.pi * 2))
     rotation = Rotation.from_euler("xyz", [x_rad, 0.0, 0.0], degrees=False)
-    normalized_rotation = rotation_as_quat(rotation)
+    normalized_rotation = rotation.as_quat()
     return cast("QuaternionWXYZ", tuple(normalized_rotation))
 
 
@@ -156,8 +152,8 @@ class DistantAgentTest(TestCase):
         # Due to the transformations that happen to sensor.rotation, some of the
         # quaternions are rotated to their negative, which represents the same rotation.
         # Changing to SciPy rotation side-steps that issue when testing the results.
-        sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
-        expected_rot = rotation_from_quat(sensor_rotation)
+        sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
+        expected_rot = Rotation.from_quat(sensor_rotation)
         assert expected_rot.approx_equal(sensor_rot)
 
     @given(distance=st.floats(min_value=0.0, max_value=10.0))
@@ -180,7 +176,7 @@ class DistantAgentTest(TestCase):
             self.sim.step([action])
 
             agent_state = self.sim.states[TEST_AGENT_ID]
-            agent_rot = rotation_from_quat(qt.as_float_array(agent_state.rotation))
+            agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
             expected_rot = Rotation.from_euler(
                 "xyz", [0.0, -delta_theta, 0.0], degrees=True
             )
@@ -195,7 +191,7 @@ class DistantAgentTest(TestCase):
             self.sim.step([action])
 
             agent_state = self.sim.states[TEST_AGENT_ID]
-            agent_rot = rotation_from_quat(qt.as_float_array(agent_state.rotation))
+            agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
             expected_rot = Rotation.from_euler(
                 "xyz", [0.0, delta_theta, 0.0], degrees=True
             )
@@ -217,7 +213,7 @@ class DistantAgentTest(TestCase):
         with sim_resetter(self.sim):
             self.sim.step([action])
             sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
-            sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
+            sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
 
             assert sensor_rot.approx_equal(expected_rot)
 
@@ -245,7 +241,7 @@ class DistantAgentTest(TestCase):
         with sim_resetter(self.sim):
             self.sim.step(actions)
             sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
-            sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
+            sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
 
             pitch, _, _ = sensor_rot.as_euler("xyz", degrees=True)
             assert abs(pitch) <= phi_limit + DEFAULT_TOLERANCE
@@ -265,7 +261,7 @@ class DistantAgentTest(TestCase):
         with sim_resetter(self.sim):
             self.sim.step([action])
             sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
-            sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
+            sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
 
             assert sensor_rot.approx_equal(expected_rot)
 
@@ -293,7 +289,7 @@ class DistantAgentTest(TestCase):
         with sim_resetter(self.sim):
             self.sim.step(actions)
             sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
-            sensor_rot = rotation_from_quat(qt.as_float_array(sensor_state.rotation))
+            sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
 
             pitch, _, _ = sensor_rot.as_euler("xyz", degrees=True)
             assert abs(pitch) <= phi_limit + DEFAULT_TOLERANCE

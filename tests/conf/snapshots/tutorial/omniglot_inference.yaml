@@ -24,43 +24,40 @@ experiment:
               - ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
               - ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}
               rotation_degrees: 5.0
-      learning_module_configs:
+      learning_modules:
         learning_module_0:
-          learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
-          learning_module_args:
-            max_match_distance: 5
-            tolerances:
-              patch:
-                principal_curvatures_log: ${np.ones:2}
-                pose_vectors: ${np.array:[45, 45, 45]}
-            feature_weights:
-              patch:
-                pose_vectors:
-                - 0
-                - 1
-                - 0
-            hypotheses_updater_args:
-              initial_possible_poses:
-              - - 0
-                - 0
-                - 0
-      sensor_module_configs:
+          _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+          max_match_distance: 5
+          tolerances:
+            patch:
+              principal_curvatures_log: ${np.ones:2}
+              pose_vectors: ${np.array:[45, 45, 45]}
+          feature_weights:
+            patch:
+              pose_vectors:
+              - 0
+              - 1
+              - 0
+          hypotheses_updater_args:
+            initial_possible_poses:
+            - - 0
+              - 0
+              - 0
+      sensor_modules:
         sensor_module_0:
-          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
-          sensor_module_args:
-            sensor_module_id: patch
-            features:
-            - pose_vectors
-            - pose_fully_defined
-            - on_object
-            - principal_curvatures_log
-            save_raw_obs: false
-            pc1_is_pc2_threshold: 1
+          _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+          sensor_module_id: patch
+          features:
+          - pose_vectors
+          - pose_fully_defined
+          - on_object
+          - principal_curvatures_log
+          save_raw_obs: false
+          pc1_is_pc2_threshold: 1
         sensor_module_1:
-          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
-          sensor_module_args:
-            sensor_module_id: view_finder
-            save_raw_obs: false
+          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          sensor_module_id: view_finder
+          save_raw_obs: false
       sm_to_agent_dict:
         patch: agent_id_0
         view_finder: agent_id_0

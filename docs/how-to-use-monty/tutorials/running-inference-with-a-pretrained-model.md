@@ -73,53 +73,51 @@ eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObje
 Since this config is going to be a bit more complex, we will build it up in pieces. Here is the configuration for sensor modules from `src/tbp/monty/conf/monty/sensor_module/camera_tutorial_surf_agent_2obj.yaml`:
 
 ```yaml
-# @package experiment.config.monty_config.sensor_module_configs
+# @package experiment.config.monty_config.sensor_modules
 
 sensor_module_0:
-  sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
-  sensor_module_args:
-    sensor_module_id: patch
-    # Features that will be extracted and sent to LM
-    # note: don't have to be all the features extracted during pretraining.
+  _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+  sensor_module_id: patch
+  # Features that will be extracted and sent to LM
+  # note: don't have to be all the features extracted during pretraining.
+  features:
+  - pose_vectors
+  - pose_fully_defined
+  - on_object
+  - object_coverage
+  - min_depth
+  - mean_depth
+  - hsv
+  - principal_curvatures
+  - principal_curvatures_log
+  save_raw_obs: false
+  # CameraSM will only send an observation to the LM if features or location
+  # changed more than these amounts.
+  delta_thresholds:
+    on_object: 0
+    n_steps: 20
+    hsv:
+    - 0.1
+    - 0.1
+    - 0.1
+    pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+    principal_curvatures_log:
+    - 2
+    - 2
+    distance: 0.01
+  is_surface_sm: true # for surface agent
+  # Let's add some noise to the sensor module outputs to make the task more challenging.
+  noise_params:
     features:
-    - pose_vectors
-    - pose_fully_defined
-    - on_object
-    - object_coverage
-    - min_depth
-    - mean_depth
-    - hsv
-    - principal_curvatures
-    - principal_curvatures_log
-    save_raw_obs: false
-    # CameraSM will only send an observation to the LM if features or location
-    # changed more than these amounts.
-    delta_thresholds:
-      on_object: 0
-      n_steps: 20
-      hsv:
-      - 0.1
-      - 0.1
-      - 0.1
-      pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
-      principal_curvatures_log:
-      - 2
-      - 2
-      distance: 0.01
-    is_surface_sm: true # for surface agent
-    # Let's add some noise to the sensor module outputs to make the task more challenging.
-    noise_params:
-      features:
-        pose_vectors: 2 # rotate by random degrees along xyz
-        hsv: ${np.array:[0.1, 0.2, 0.2]} # add noise to each channel (the values here specify std. deviation of gaussian for each channel individually)
-        principal_curvatures_log: 0.1
-        pose_fully_defined: 0.01 # flip bool in 1% of cases
-      location: 0.002 # add gaussian noise with 0.002 std (0.2cm)
+      pose_vectors: 2 # rotate by random degrees along xyz
+      hsv: ${np.array:[0.1, 0.2, 0.2]} # add noise to each channel (the values here specify std. deviation of gaussian for each channel individually)
+      principal_curvatures_log: 0.1
+      pose_fully_defined: 0.01 # flip bool in 1% of cases
+    location: 0.002 # add gaussian noise with 0.002 std (0.2cm)
 sensor_module_1:
-  sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
-  sensor_module_args:
-    sensor_module_id: view_finder
-    save_raw_obs: false
+  _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+  sensor_module_id: view_finder
+  save_raw_obs: false
 ```
 
 There are two main differences between this config and the pretraining sensor module config. First, we are adding some noise to the sensor patch, so we define noise parameters and add them to `sensor_module_0`'s dictionary. Second, we're using `delta_threshold` parameters to only send an observation to the learning module if the features have changed significantly. Note that `CameraSM` can be used as either a surface or distant agent, for which `is_surface_sm` should be appropriately set.
@@ -127,44 +125,43 @@ There are two main differences between this config and the pretraining sensor mo
 For the learning module, we specify configuration available in `src/tbp/monty/conf/monty/learning_module/evidence_tutorial_surf_agent_2obj.yaml`:
 
 ```yaml
-# @package experiment.config.monty_config.learning_module_configs
+# @package experiment.config.monty_config.learning_modules
 
 learning_module_0:
-  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
-  learning_module_args:
-    # Search the model in a radius of 1cm from the hypothesized location on the model.
-    max_match_distance: 0.01 # = 1cm
-    # Tolerances within which features must match stored values in order to add evidence
-    # to a hypothesis.
-    tolerances:
-      patch:
-        hsv: ${np.array:[0.1, 0.2, 0.2]}
-        principal_curvatures_log:
-        - 1
-        - 1
-    # Features where weight is not specified default to 1.
-    feature_weights:
-      patch:
-        # Weighting saturation and value less since these might change under different
-        # lighting conditions.
-        hsv: ${np.array:[1, 0.5, 0.5]}
-    # Most likely hypothesis needs to have 20% more evidence than the others to
-    # be considered certain enough to trigger a terminal condition (match).
-    x_percent_threshold: 20
-    # Update all hypotheses with evidence > 80% of the max hypothesis evidence
-    evidence_threshold_config: 80%
-    # Config for goal generator of LM which is used for model-based action
-    # suggestions, such as hypothesis-testing actions.
-    gsg:
-      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
-      # Tolerance(s) when determining goal success
-      goal_tolerances:
-        location: 0.015 # distance in meters
-      # Number of necessary steps for a hypothesis-testing action to be considered
-      min_post_goal_success_steps: 5
-    hypotheses_updater_args:
-      # Look at features associated with (at most) the 10 closest learned points.
-      max_nneighbors: 10
+  _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+  # Search the model in a radius of 1cm from the hypothesized location on the model.
+  max_match_distance: 0.01 # = 1cm
+  # Tolerances within which features must match stored values in order to add evidence
+  # to a hypothesis.
+  tolerances:
+    patch:
+      hsv: ${np.array:[0.1, 0.2, 0.2]}
+      principal_curvatures_log:
+      - 1
+      - 1
+  # Features where weight is not specified default to 1.
+  feature_weights:
+    patch:
+      # Weighting saturation and value less since these might change under different
+      # lighting conditions.
+      hsv: ${np.array:[1, 0.5, 0.5]}
+  # Most likely hypothesis needs to have 20% more evidence than the others to
+  # be considered certain enough to trigger a terminal condition (match).
+  x_percent_threshold: 20
+  # Update all hypotheses with evidence > 80% of the max hypothesis evidence
+  evidence_threshold_config: 80%
+  # Config for goal generator of LM which is used for model-based action
+  # suggestions, such as hypothesis-testing actions.
+  gsg:
+    _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+    # Tolerance(s) when determining goal success
+    goal_tolerances:
+      location: 0.015 # distance in meters
+    # Number of necessary steps for a hypothesis-testing action to be considered
+    min_post_goal_success_steps: 5
+  hypotheses_updater_args:
+    # Look at features associated with (at most) the 10 closest learned points.
+    max_nneighbors: 10
 ```
 
 Since this learning module will be performing graph matching, we want to specify further parameters that will define various thresholds and weights to be given to different features. We're also using the `EvidenceGraphLM` (rather than the `GraphLM`) which keeps a continuous evidence count for all its hypotheses and is currently the best-performing LM in this codebase.

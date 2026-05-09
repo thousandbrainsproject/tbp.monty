@@ -32,193 +32,182 @@ experiment:
               - ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
               - ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}
               rotation_degrees: 5.0
-      learning_module_configs:
+      learning_modules:
         learning_module_0:
-          learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
-          learning_module_args:
-            max_match_distance: 0.01
-            evidence_threshold_config: 80%
-            x_percent_threshold: 20
-            gsg:
-              _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
-              goal_tolerances:
-                location: 0.015
-              min_post_goal_success_steps: 5
-            hypotheses_updater_args:
-              max_nneighbors: 10
-            feature_weights:
-              patch_0:
-                hsv: ${np.array:[1, 0.5, 0.5]}
-            tolerances:
-              patch_0:
-                hsv: ${np.array:[0.1, 0.2, 0.2]}
-                principal_curvatures_log: ${np.ones:2}
+          _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+          max_match_distance: 0.01
+          evidence_threshold_config: 80%
+          x_percent_threshold: 20
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+            goal_tolerances:
+              location: 0.015
+            min_post_goal_success_steps: 5
+          hypotheses_updater_args:
+            max_nneighbors: 10
+          feature_weights:
+            patch_0:
+              hsv: ${np.array:[1, 0.5, 0.5]}
+          tolerances:
+            patch_0:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+              principal_curvatures_log: ${np.ones:2}
         learning_module_1:
-          learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
-          learning_module_args:
-            max_match_distance: 0.01
-            evidence_threshold_config: 80%
-            x_percent_threshold: 20
-            gsg:
-              _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
-              goal_tolerances:
-                location: 0.015
-              min_post_goal_success_steps: 5
-            hypotheses_updater_args:
-              max_nneighbors: 10
-            feature_weights:
-              patch_1:
-                hsv: ${np.array:[1, 0.5, 0.5]}
-            tolerances:
-              patch_1:
-                hsv: ${np.array:[0.1, 0.2, 0.2]}
-                principal_curvatures_log: ${np.ones:2}
+          _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+          max_match_distance: 0.01
+          evidence_threshold_config: 80%
+          x_percent_threshold: 20
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+            goal_tolerances:
+              location: 0.015
+            min_post_goal_success_steps: 5
+          hypotheses_updater_args:
+            max_nneighbors: 10
+          feature_weights:
+            patch_1:
+              hsv: ${np.array:[1, 0.5, 0.5]}
+          tolerances:
+            patch_1:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+              principal_curvatures_log: ${np.ones:2}
         learning_module_2:
-          learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
-          learning_module_args:
-            max_match_distance: 0.01
-            evidence_threshold_config: 80%
-            x_percent_threshold: 20
-            gsg:
-              _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
-              goal_tolerances:
-                location: 0.015
-              min_post_goal_success_steps: 5
-            hypotheses_updater_args:
-              max_nneighbors: 10
-            feature_weights:
-              patch_2:
-                hsv: ${np.array:[1, 0.5, 0.5]}
-            tolerances:
-              patch_2:
-                hsv: ${np.array:[0.1, 0.2, 0.2]}
-                principal_curvatures_log: ${np.ones:2}
+          _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+          max_match_distance: 0.01
+          evidence_threshold_config: 80%
+          x_percent_threshold: 20
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+            goal_tolerances:
+              location: 0.015
+            min_post_goal_success_steps: 5
+          hypotheses_updater_args:
+            max_nneighbors: 10
+          feature_weights:
+            patch_2:
+              hsv: ${np.array:[1, 0.5, 0.5]}
+          tolerances:
+            patch_2:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+              principal_curvatures_log: ${np.ones:2}
         learning_module_3:
-          learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
-          learning_module_args:
-            max_match_distance: 0.01
-            evidence_threshold_config: 80%
-            x_percent_threshold: 20
-            gsg:
-              _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
-              goal_tolerances:
-                location: 0.015
-              min_post_goal_success_steps: 5
-            hypotheses_updater_args:
-              max_nneighbors: 10
-            feature_weights:
-              patch_3:
-                hsv: ${np.array:[1, 0.5, 0.5]}
-            tolerances:
-              patch_3:
-                hsv: ${np.array:[0.1, 0.2, 0.2]}
-                principal_curvatures_log: ${np.ones:2}
+          _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+          max_match_distance: 0.01
+          evidence_threshold_config: 80%
+          x_percent_threshold: 20
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+            goal_tolerances:
+              location: 0.015
+            min_post_goal_success_steps: 5
+          hypotheses_updater_args:
+            max_nneighbors: 10
+          feature_weights:
+            patch_3:
+              hsv: ${np.array:[1, 0.5, 0.5]}
+          tolerances:
+            patch_3:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+              principal_curvatures_log: ${np.ones:2}
         learning_module_4:
-          learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
-          learning_module_args:
-            max_match_distance: 0.01
-            evidence_threshold_config: 80%
-            x_percent_threshold: 20
-            gsg:
-              _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
-              goal_tolerances:
-                location: 0.015
-              min_post_goal_success_steps: 5
-            hypotheses_updater_args:
-              max_nneighbors: 10
-            feature_weights:
-              patch_4:
-                hsv: ${np.array:[1, 0.5, 0.5]}
-            tolerances:
-              patch_4:
-                hsv: ${np.array:[0.1, 0.2, 0.2]}
-                principal_curvatures_log: ${np.ones:2}
-      sensor_module_configs:
+          _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+          max_match_distance: 0.01
+          evidence_threshold_config: 80%
+          x_percent_threshold: 20
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+            goal_tolerances:
+              location: 0.015
+            min_post_goal_success_steps: 5
+          hypotheses_updater_args:
+            max_nneighbors: 10
+          feature_weights:
+            patch_4:
+              hsv: ${np.array:[1, 0.5, 0.5]}
+          tolerances:
+            patch_4:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+              principal_curvatures_log: ${np.ones:2}
+      sensor_modules:
         sensor_module_0:
-          sensor_module_args:
-            features:
-            - on_object
-            - rgba
-            - hsv
-            - pose_vectors
-            - principal_curvatures
-            - principal_curvatures_log
-            - gaussian_curvature
-            - mean_curvature
-            - gaussian_curvature_sc
-            - mean_curvature_sc
-            sensor_module_id: patch_0
-            save_raw_obs: false
-          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
+          _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+          features:
+          - on_object
+          - rgba
+          - hsv
+          - pose_vectors
+          - principal_curvatures
+          - principal_curvatures_log
+          - gaussian_curvature
+          - mean_curvature
+          - gaussian_curvature_sc
+          - mean_curvature_sc
+          sensor_module_id: patch_0
+          save_raw_obs: false
         sensor_module_1:
-          sensor_module_args:
-            features:
-            - on_object
-            - rgba
-            - hsv
-            - pose_vectors
-            - principal_curvatures
-            - principal_curvatures_log
-            - gaussian_curvature
-            - mean_curvature
-            - gaussian_curvature_sc
-            - mean_curvature_sc
-            sensor_module_id: patch_1
-            save_raw_obs: false
-          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
+          _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+          features:
+          - on_object
+          - rgba
+          - hsv
+          - pose_vectors
+          - principal_curvatures
+          - principal_curvatures_log
+          - gaussian_curvature
+          - mean_curvature
+          - gaussian_curvature_sc
+          - mean_curvature_sc
+          sensor_module_id: patch_1
+          save_raw_obs: false
         sensor_module_2:
-          sensor_module_args:
-            features:
-            - on_object
-            - rgba
-            - hsv
-            - pose_vectors
-            - principal_curvatures
-            - principal_curvatures_log
-            - gaussian_curvature
-            - mean_curvature
-            - gaussian_curvature_sc
-            - mean_curvature_sc
-            sensor_module_id: patch_2
-            save_raw_obs: false
-          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
+          _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+          features:
+          - on_object
+          - rgba
+          - hsv
+          - pose_vectors
+          - principal_curvatures
+          - principal_curvatures_log
+          - gaussian_curvature
+          - mean_curvature
+          - gaussian_curvature_sc
+          - mean_curvature_sc
+          sensor_module_id: patch_2
+          save_raw_obs: false
         sensor_module_3:
-          sensor_module_args:
-            features:
-            - on_object
-            - rgba
-            - hsv
-            - pose_vectors
-            - principal_curvatures
-            - principal_curvatures_log
-            - gaussian_curvature
-            - mean_curvature
-            - gaussian_curvature_sc
-            - mean_curvature_sc
-            sensor_module_id: patch_3
-            save_raw_obs: false
-          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
+          _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+          features:
+          - on_object
+          - rgba
+          - hsv
+          - pose_vectors
+          - principal_curvatures
+          - principal_curvatures_log
+          - gaussian_curvature
+          - mean_curvature
+          - gaussian_curvature_sc
+          - mean_curvature_sc
+          sensor_module_id: patch_3
+          save_raw_obs: false
         sensor_module_4:
-          sensor_module_args:
-            features:
-            - on_object
-            - rgba
-            - hsv
-            - pose_vectors
-            - principal_curvatures
-            - principal_curvatures_log
-            - gaussian_curvature
-            - mean_curvature
-            - gaussian_curvature_sc
-            - mean_curvature_sc
-            sensor_module_id: patch_4
-            save_raw_obs: false
-          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.CameraSM}
+          _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+          features:
+          - on_object
+          - rgba
+          - hsv
+          - pose_vectors
+          - principal_curvatures
+          - principal_curvatures_log
+          - gaussian_curvature
+          - mean_curvature
+          - gaussian_curvature_sc
+          - mean_curvature_sc
+          sensor_module_id: patch_4
+          save_raw_obs: false
         sensor_module_5:
-          sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
-          sensor_module_args:
-            sensor_module_id: view_finder
-            save_raw_obs: false
+          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          sensor_module_id: view_finder
+          save_raw_obs: false
       sm_to_agent_dict:
         patch_0: agent_id_0
         patch_1: agent_id_0

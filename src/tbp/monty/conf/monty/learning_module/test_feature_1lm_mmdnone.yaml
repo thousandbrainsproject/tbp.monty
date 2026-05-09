@@ -1,8 +1,7 @@
-# @package experiment.config.monty_config.learning_module_configs
+# @package experiment.config.monty_config.learning_modules
 
 learning_module_0:
-  learning_module_class: ${monty.class:tbp.monty.frameworks.models.feature_location_matching.FeatureGraphLM}
-  learning_module_args:
-    max_match_distance: None
-    tolerances:
-      patch: {}
+  _target_: tbp.monty.frameworks.models.feature_location_matching.FeatureGraphLM
+  max_match_distance: None
+  tolerances:
+    patch: {}

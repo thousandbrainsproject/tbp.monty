@@ -25,12 +25,11 @@ experiment:
     seed: 42
     supervised_lm_ids: []
     monty_config:
-      learning_module_configs:
+      learning_modules:
         learning_module_0:
-          learning_module_args:
-            tolerance:
-            - 0.0001
-            - 0.0001
-            - 0.0001
+          tolerance:
+          - 0.0001
+          - 0.0001
+          - 0.0001
     logging:
       run_name: ""

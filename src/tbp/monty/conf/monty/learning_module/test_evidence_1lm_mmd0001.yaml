@@ -1,10 +1,9 @@
-# @package experiment.config.monty_config.learning_module_configs
+# @package experiment.config.monty_config.learning_modules
 
 learning_module_0:
-  learning_module_args:
-    tolerances:
-      patch:
-        pose_vectors: ${np.array:[20, 20, 20]}
-    feature_weights: {}
-    max_match_distance: 0.001
-  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+  _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+  tolerances:
+    patch:
+      pose_vectors: ${np.array:[20, 20, 20]}
+  feature_weights: {}
+  max_match_distance: 0.001
