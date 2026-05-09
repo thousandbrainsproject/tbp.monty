@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Protocol, cast
 import numpy as np
 import quaternion as qt
 from mujoco import MjsBody, mjtJoint
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
     LookDown,
@@ -34,10 +33,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.sensors import SensorConfig, SensorID
-from tbp.monty.frameworks.utils.transform_utils import (
-    rotation_as_quat,
-    rotation_from_quat,
-)
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
 
 if TYPE_CHECKING:
@@ -199,14 +195,12 @@ class Embodiment(Agent):
         # sensors, while individual sensor positions are calculated separately below.
         # Note: the sensor body position and rotation is returned relative to world
         # coordinates from the simulator.
-        sensor_body_rot = rotation_from_quat(
+        sensor_body_rot = Rotation.from_quat(
             self.sim.data.body(self.sensor_body_id).xquat
         )
-        agent_rotation = rotation_from_quat(self.rotation)
+        agent_rotation = Rotation.from_quat(self.rotation)
         sensor_body_rot_rel_agent = agent_rotation.inv() * sensor_body_rot
-        sensor_body_rot_quat = qt.quaternion(
-            *rotation_as_quat(sensor_body_rot_rel_agent)
-        )
+        sensor_body_rot_quat = qt.quaternion(*sensor_body_rot_rel_agent.as_quat())
 
         sensor_states = {}
         for sensor_id, sensor_cfg in self._sensor_configs.items():
@@ -235,7 +229,7 @@ class Embodiment(Agent):
 
     def move_along_local_axis(self, distance: float, axis: Axis) -> None:
         """Move the embodiment along an axis relative to its local basis."""
-        rotation = rotation_from_quat(self.rotation)
+        rotation = Rotation.from_quat(self.rotation)
         rotation_matrix = rotation.as_matrix()
         axis_vector = rotation_matrix[:, axis] * distance
         new_xyz = np.array(self.position) + axis_vector
@@ -244,9 +238,9 @@ class Embodiment(Agent):
     def yaw(self, delta_theta: float) -> None:
         """Yaw the embodiment by delta_theta degrees."""
         delta_theta_rot = Rotation.from_euler("xyz", (0, delta_theta, 0), degrees=True)
-        rotation = rotation_from_quat(self.rotation)
+        rotation = Rotation.from_quat(self.rotation)
         new_rotation = rotation * delta_theta_rot
-        self.rotation = rotation_as_quat(new_rotation)
+        self.rotation = new_rotation.as_quat()
 
     def pitch(self, delta_phi: float, constraint: float) -> None:
         """Pitch the sensor body by delta_phi degrees while remaining constrained.
@@ -278,7 +272,7 @@ class Embodiment(Agent):
         orientation outside the x-axis of the sensor body, i.e. the body can only
         pitch up and down.
         """
-        rotation = rotation_from_quat(rotation_quat)
+        rotation = Rotation.from_quat(rotation_quat)
         angles = rotation.as_euler("xyz", degrees=False)
         qpos_addr = self.sim.model.jnt_qposadr[self.pitch_joint.id]
         self.sim.data.qpos[qpos_addr] = angles[0]

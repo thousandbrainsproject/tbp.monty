@@ -25,9 +25,8 @@ experiment:
     seed: 42
     supervised_lm_ids: []
     monty_config:
-      learning_module_configs:
+      learning_modules:
         learning_module_0:
-          learning_module_args:
-            use_relative_len: true
+          use_relative_len: true
     logging:
       run_name: ""
