@@ -23,12 +23,12 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import torch
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_unique_rotations,
     rotations_to_quats,
 )
+from tbp.monty.geometry import Rotation
 
 logger = logging.getLogger(__name__)
 
@@ -393,7 +393,7 @@ def compute_pose_errors(
 ) -> npt.NDArray[np.float64] | float:
     """Computes the angular pose errors between predicted and target rotations.
 
-    Both inputs must be instances of `scipy.spatial.transform.Rotation`. The
+    Both inputs must be instances of `tbp.monty.geometry.Rotation`. The
     `predicted_rotation` may contain a single rotation or a list of rotations,
     while `target_rotation` must be exactly one rotation.
 
@@ -747,7 +747,7 @@ def get_stats_per_lm(model, target, episode_seed: int):
     primary_target_dict = target_data_to_dict(target)
     for i, lm in enumerate(model.learning_modules):
         lm_stats = get_graph_lm_episode_stats(lm)
-        if hasattr(lm, "evidence"):
+        if hasattr(lm, "hypotheses_updater"):
             lm_stats = add_evidence_lm_episode_stats(
                 lm, lm_stats, target["consistent_child_objects"]
             )

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import TYPE_CHECKING, Callable, Sequence, cast
 
 from mujoco import (
     MjData,
@@ -20,6 +20,7 @@ from mujoco import (
     Renderer,
     mj_forward,
     mjtGeom,
+    mjtLightType,
     mjtTexture,
     mjtTextureRole,
 )
@@ -43,8 +44,10 @@ from tbp.monty.simulators.mujoco.objects import (
     load_object_metadata,
 )
 
-logger = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from functools import partial
 
+logger = logging.getLogger(__name__)
 
 # Map of names to MuJoCo primitive object types
 PRIMITIVE_OBJECTS = {
@@ -122,40 +125,78 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self._create_agents()
         self._loaded_custom_types: set[str] = set()
 
-        # Start with a default resolution in case we don't have agents, e.g. in tests.
-        self._render_resolution = DEFAULT_RESOLUTION
-        if self._agents:
-            self._render_resolution = self._max_sensor_resolution()
-
         # Track how many objects we add to the environment.
         # Note: We can't use the `model.ngeoms` for this since that will include parts
         # of the agents, especially when we start to add more structure to them.
         self._object_count = 0
 
-        self.renderer = None
+        self._renderers: dict[Resolution2D, Renderer] = {}
         self._recompile()
 
     def _recompile(self) -> None:
         """Recompile the MuJoCo model while retaining any state data."""
         # The spec might be new, so reset all the options
-        self.spec.option.gravity = (0.0, 0.0, 0.0)
-        g = self.spec.visual.global_
-        g.offwidth, g.offheight = self._render_resolution
+        self._configure_spec_settings()
+        self._configure_lights()
         self.model, self.data = self.spec.recompile(self.model, self.data)
-        # The renderer has to be recreated when the model is updated.
-        self._create_renderer()
+        # The renderers have to be recreated when the model is updated.
+        self._close_renderers()
         # Step the simulation so all objects are in their initial positions.
         mj_forward(self.model, self.data)
 
-    def _create_renderer(self) -> None:
-        """Create a new MuJoCo renderer, closing the existing one if needed."""
-        if self.renderer:
-            self.renderer.close()
-        self.renderer = Renderer(
-            width=self._render_resolution[0],
-            height=self._render_resolution[1],
-            model=self.model,
+    def _configure_spec_settings(self):
+        """Set all the relevant global settings on the spec object."""
+        self.spec.option.gravity = (0.0, 0.0, 0.0)
+        # Configure the maximum rendering resolution for the off-screen buffer.
+        # Start with a default resolution in case we don't have agents and therefore
+        # sensors to query, e.g. in tests.
+        render_resolution = DEFAULT_RESOLUTION
+        if self._agents:
+            render_resolution = self._max_sensor_resolution()
+        g = self.spec.visual.global_
+        g.offwidth, g.offheight = render_resolution
+
+    def _configure_lights(self):
+        """Configure the lights as needed.
+
+        We're attempting to recreate the lighting setup we were getting from Habitat,
+        i.e. a directional light from the front of the object, with ambient lighting
+        on the back sides.
+
+        Using a fixed ambient light on the back side doesn't provide good results, but
+        putting it on the headlight does.
+
+        Note: this makes a lot of assumptions about the layout of our scene and
+          the objects in the scene.
+        """
+        # TODO: Consider making these configurable.
+
+        # Configure the headlight to produce the ambient lighting we want on
+        # the back of the objects.
+        self.spec.visual.headlight.ambient = (0.5, 0.5, 0.5)
+        self.spec.visual.headlight.diffuse = (0.0, 0.0, 0.0)
+        self.spec.visual.headlight.specular = (0.0, 0.0, 0.0)
+        # Add a directional light on the "front" side of the object.
+        self.spec.worldbody.add_light(
+            pos=(0, 0, 0.2),
+            diffuse=(0.6, 0.6, 0.6),
+            type=mjtLightType.mjLIGHT_DIRECTIONAL,
         )
+
+    def renderer_for_res(self, resolution: Resolution2D) -> Renderer:
+        """Creates or returns a renderer of the specified resolution.
+
+        Used by Agents to get sensor specific renderers, since MuJoCo camera
+        "resolution" doesn't affect the resolution of the captured images.
+
+        Returns:
+            a renderer of the specified resolution
+        """
+        if resolution not in self._renderers:
+            self._renderers[resolution] = Renderer(
+                width=resolution[0], height=resolution[1], model=self.model
+            )
+        return self._renderers[resolution]
 
     def _create_agents(self) -> None:
         self._agents = {}
@@ -164,23 +205,31 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             self._agents[agent.id] = agent
 
     def _max_sensor_resolution(self) -> Resolution2D:
-        """Determine the maximum resolution of all the sensors.
+        """Returns the maximum width and heights of the sensors.
 
-        We need this to set the off-screen buffer size in MuJoCo to support the
-        highest resolution sensor configured.
+        Used by the simulator to determine the size of the off-screen rendering
+        surface to ensure it is always large enough for any sensor images we
+        need to render.
+
+        Note: the maximum width and maximum height may come from separate sensors.
 
         Returns:
             max_width, max_height
         """
         max_width = max_height = 0
-        for agent in self._agents.values():
-            width, height = agent.max_sensor_resolution
-            max_width = max(max_width, width)
-            max_height = max(max_height, height)
+        # Introspect the agent partials to determine what the original sensor
+        # configs were, so we can determine the maximum resolution needed.
+        sensor_configs = [
+            p.keywords["sensor_configs"]
+            for p in cast("list[partial]", self._agent_partials)
+        ]
+        for sensor_cfg in sensor_configs:
+            for sensor in sensor_cfg.values():
+                max_width = max(max_width, sensor["resolution"][0])
+                max_height = max(max_height, sensor["resolution"][1])
         return Resolution2D((max_width, max_height))
 
     def remove_all_objects(self) -> None:
-        # TODO: is there a better way to do this?
         self.spec = MjSpec()
         self._create_agents()
         self._recompile()
@@ -197,6 +246,11 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:
+        if semantic_id is not None:
+            logger.warning(
+                "MuJoCo does not support adding objects with custom semantic IDs."
+            )
+
         obj_name = f"{name}_{self._object_count}"
 
         if name in PRIMITIVE_OBJECTS:
@@ -207,11 +261,12 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
 
         self._recompile()
 
-        if not semantic_id:
-            semantic_id = SemanticID(self._object_count)
+        # Using the object count for the semantic_id will give a distinct
+        # value for each added object, and _might_ map to MuJoCo's internal
+        # object IDs if we need to use those.
         return ObjectInfo(
             object_id=ObjectID(self._object_count),
-            semantic_id=semantic_id,
+            semantic_id=SemanticID(self._object_count),
         )
 
     def _add_custom_object(
@@ -332,19 +387,9 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             position: Initial position of the object.
             rotation: Initial orientation of the object.
             scale: Initial scale of the object.
-
-        Raises:
-            UnknownObjectType: When the shape_type is unknown.
         """
         world_body: MjsBody = self.spec.worldbody
-
-        try:
-            geom_type = PRIMITIVE_OBJECTS[object_type]
-        except KeyError:
-            raise UnknownObjectType(
-                f"Unknown MuJoCo primitive: {object_type}"
-            ) from None
-
+        geom_type = PRIMITIVE_OBJECTS[object_type]
         # TODO: should we encapsulate primitive objects into bodies?
         world_body.add_geom(
             name=obj_name,
@@ -375,6 +420,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         logger.debug(f"{actions=}")
         for action in actions:
             agent = self._agents[action.agent_id]
+            logger.debug(f"Applying {action} to {agent}")
             try:
                 action.act(agent)  # type: ignore[attr-defined]
             except AttributeError as exc:
@@ -396,9 +442,12 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         return self.observations, self.states
 
     def close(self) -> None:
-        if self.renderer:
-            self.renderer.close()
-        self.renderer = None
+        self._close_renderers()
+
+    def _close_renderers(self):
+        for renderer in self._renderers.values():
+            renderer.close()
+        self._renderers = {}
 
     def __enter__(self) -> Self:
         return self

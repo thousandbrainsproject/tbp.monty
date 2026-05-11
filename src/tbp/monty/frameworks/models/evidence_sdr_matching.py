@@ -513,11 +513,11 @@ class EvidenceSDRLMMixin:
 
     It overrides the __init__ and post_episode functions of the LM
 
-    To use this Mixin, pass the EvidenceSDRGraphLM class as the `learning_module_class`
-    in the `learning_module_configs`.
+    To use this Mixin, pass the EvidenceSDRGraphLM class as the `_target_`
+    in the `learning_modules` configuration.
 
     Additionally pass the `sdr_args` dictionary as an additional key
-    in the `learning_module_args`.
+    in the learning module constructor arguments.
 
     The sdr_args dictionary should contain:
         - `log_path` (string): A string that points to a temporary location for saving
@@ -623,12 +623,12 @@ class EvidenceSDRLMMixin:
         if mlh_object == "no_observations_yet" or self.sdr_encoder.n_objects == 1:
             return
         mlh_object_id = self.obj2id[mlh_object]
-        mlh_evidence = np.max(self.evidence[mlh_object])
+        mlh_evidence = np.max(self._hypotheses[mlh_object].evidence)
 
         relative_evidences = np.full_like(self.target_overlaps.overlaps, np.nan)
-        for obj in self.evidence:
-            ids = sorted([mlh_object_id, self.obj2id[obj]])
-            ev = np.max(self.evidence[obj]) - mlh_evidence
+        for graph_id, hyp in self._hypotheses.items():
+            ids = sorted([mlh_object_id, self.obj2id[graph_id]])
+            ev = np.max(hyp.evidence) - mlh_evidence
             relative_evidences[ids[0], ids[1]] = ev
 
         # Step 3: update running average with new evidence scores

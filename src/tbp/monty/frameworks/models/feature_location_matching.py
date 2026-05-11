@@ -13,7 +13,6 @@ import logging
 
 import numpy as np
 import torch
-from scipy.spatial.transform import Rotation
 from sklearn.neighbors import KDTree
 
 from tbp.monty.context import RuntimeContext
@@ -30,6 +29,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_unique_rotations,
     rotate_pose_dependent_features,
 )
+from tbp.monty.geometry import Rotation
 
 __all__ = ["FeatureGraphLM", "FeatureGraphMemory"]
 
@@ -454,7 +454,6 @@ class FeatureGraphLM(GraphLM):
             New possible paths and poses.
         """
         first_input_channel = next(iter(features.keys()))
-        displacement = displacement[first_input_channel]
         new_possible_paths = []
         new_possible_poses = []
 

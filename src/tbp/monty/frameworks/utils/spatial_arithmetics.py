@@ -16,8 +16,8 @@ import sys
 import numpy as np
 import torch
 from numpy.typing import ArrayLike
-from scipy.spatial.transform import Rotation
 
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)
@@ -71,6 +71,11 @@ class TangentFrame:
     def basis_v(self) -> np.ndarray:
         """Vertical tangent basis vector."""
         return self._v
+
+    @property
+    def normal(self) -> np.ndarray:
+        """Surface normal associated with this tangent frame."""
+        return self._normal
 
     def transport(self, new_normal: np.ndarray) -> None:
         """Parallel-transport the frame to a new surface normal.

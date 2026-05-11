@@ -141,10 +141,15 @@ ipython = 'IPython'
 
 [tool.pytest.ini_options]
 minversion = '6.0'
-addopts = '-ra -n auto'
+addopts = '-ra -n auto --doctest-modules --doctest-continue-on-failure'
 testpaths = [
+    'src', # discover doctests
     'tests/conf',
     'tests/unit',
+]
+norecursedirs = [
+    'src/tbp/monty/frameworks/utils',  # ignore where 'seaborn' module is required
+    'src/tbp/monty/simulators/mujoco', # ignore where 'mujoco' module is required
 ]
 filterwarnings = [
     'ignore:.*:DeprecationWarning'

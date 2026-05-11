@@ -145,29 +145,28 @@ Now we specify the learning module config. We define five learning modules with 
 ```yaml
 # src/tbp/monty/conf/monty/learning_module/tutorial_evidence_5lm.yaml
 # ...
-  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
-  learning_module_args:
-    max_match_distance: 0.01 # =1cm
-    # Use this to update all hypotheses > 80% of the max hypothesis evidence
-    evidence_threshold_config: 80%
-    x_percent_threshold: 20
-    gsg:
-      _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
-      # Tolerance(s) when determining goal success
-      goal_tolerances:
-        location: 0.015 # distance in meters
-      min_post_goal_success_steps: 5 # Number of necessary steps for a hypothesis
-    hypotheses_updater_args:
-      max_nneighbors: 10
-    feature_weights:
-      patch_0:
-        # Weighting saturation and value less since these might change under
-        # different lighting conditions.
-        hsv: ${np.array:[1, 0.5, 0.5]}
-    tolerances:
-      patch_0:
-        hsv: ${np.array:[0.1, 0.2, 0.2]}
-        principal_curvatures_log: ${np.ones:2}
+  _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+  max_match_distance: 0.01 # =1cm
+  # Use this to update all hypotheses > 80% of the max hypothesis evidence
+  evidence_threshold_config: 80%
+  x_percent_threshold: 20
+  gsg:
+    _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+    # Tolerance(s) when determining goal success
+    goal_tolerances:
+      location: 0.015 # distance in meters
+    min_post_goal_success_steps: 5 # Number of necessary steps for a hypothesis
+  hypotheses_updater_args:
+    max_nneighbors: 10
+  feature_weights:
+    patch_0:
+      # Weighting saturation and value less since these might change under
+      # different lighting conditions.
+      hsv: ${np.array:[1, 0.5, 0.5]}
+  tolerances:
+    patch_0:
+      hsv: ${np.array:[0.1, 0.2, 0.2]}
+      principal_curvatures_log: ${np.ones:2}
 ```
 
 These are then imported as `/monty/learning_module: tutorial_evidence_5lm` defaults.

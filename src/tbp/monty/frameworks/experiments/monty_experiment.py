@@ -22,13 +22,13 @@ from omegaconf import DictConfig
 from typing_extensions import Self
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentInterface,
-    EnvironmentInterfacePerObject,
-    SaccadeOnImageEnvironmentInterface,
-    SaccadeOnImageFromStreamEnvironmentInterface,
+from tbp.monty.experiment.environment import (
+    Interface,
+    OneObjectPerEpisodeInterface,
+    SaccadeOnImageFromStreamInterface,
+    SaccadeOnImageInterface,
 )
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.loggers.exp_logger import (
@@ -36,10 +36,6 @@ from tbp.monty.frameworks.loggers.exp_logger import (
     LoggingCallbackHandler,
 )
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
-from tbp.monty.frameworks.models.abstract_monty_classes import (
-    LearningModule,
-    SensorModule,
-)
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
@@ -86,7 +82,7 @@ class MontyExperiment:
         self.supervised_lm_ids = config["supervised_lm_ids"]
         if self.supervised_lm_ids == "all":
             self.supervised_lm_ids = list(
-                self.config["monty_config"]["learning_module_configs"].keys()
+                self.config["monty_config"]["learning_modules"].keys()
             )
 
         if self.show_sensor_output:
@@ -143,26 +139,11 @@ class MontyExperiment:
         # Make monty_config a dict from a DictConfig, so we can edit it.
         monty_config = dict(copy.deepcopy(monty_config))
 
-        # Create learning modules
-        learning_module_configs = monty_config.pop("learning_module_configs")
-        learning_modules = {}
-        for lm_id, lm_cfg in learning_module_configs.items():
-            lm_class = lm_cfg["learning_module_class"]
-            lm_args = lm_cfg["learning_module_args"]
-            assert issubclass(lm_class, LearningModule)
-            learning_modules[lm_id] = lm_class(**lm_args)
-            learning_modules[lm_id].learning_module_id = lm_id
+        learning_modules = monty_config.pop("learning_modules")
+        for lm_id, lm in learning_modules.items():
+            lm.learning_module_id = lm_id
 
-        # Create sensor modules
-        sensor_module_configs = monty_config.pop("sensor_module_configs")
-        sensor_modules = {}
-        for sm_id, sm_cfg in sensor_module_configs.items():
-            sm_class = sm_cfg["sensor_module_class"]
-            sm_args = sm_cfg["sensor_module_args"]
-            assert issubclass(sm_class, SensorModule)
-            sensor_modules[sm_id] = sm_class(**sm_args)
-
-        # Create motor system
+        sensor_modules = monty_config.pop("sensor_modules")
         motor_system = monty_config.pop("motor_system_config")
 
         # Get mapping between sensor modules, learning modules and agents
@@ -260,13 +241,11 @@ class MontyExperiment:
 
         Raises:
             TypeError: If `env_interface_class` is not a subclass of
-                `EnvironmentInterface`
+                `Interface`
         """
         # training and validation are just different environment interfaces
-        if not issubclass(env_interface_class, EnvironmentInterface):
-            raise TypeError(
-                "env_interface_class must be EnvironmentInterface (for now)"
-            )
+        if not issubclass(env_interface_class, Interface):
+            raise TypeError("env_interface_class must be Interface (for now)")
 
         return env_interface_class(
             **env_interface_args,
@@ -307,8 +286,8 @@ class MontyExperiment:
             eval_epochs=self.eval_epochs,
             episode_seed=current_rng_seed,
         )
-        # FIXME: 'target' attribute is specific to `EnvironmentInterfacePerObject`
-        if isinstance(self.env_interface, EnvironmentInterfacePerObject):
+        # FIXME: 'target' attribute is specific to `OneObjectPerEpisodeInterface`
+        if isinstance(self.env_interface, OneObjectPerEpisodeInterface):
             target = self.env_interface.primary_target
             if target is not None:
                 target.update(
@@ -552,17 +531,17 @@ class MontyExperiment:
     def run_epoch(self):
         """Run epoch -> Run one episode for each object."""
         self.pre_epoch()
-        if isinstance(self.env_interface, SaccadeOnImageFromStreamEnvironmentInterface):
+        if isinstance(self.env_interface, SaccadeOnImageFromStreamInterface):
             try:
                 while True:
                     self.run_episode()
             except KeyboardInterrupt:
                 logger.info("Data streaming interrupted. Stopping experiment.")
-        elif isinstance(self.env_interface, SaccadeOnImageEnvironmentInterface):
+        elif isinstance(self.env_interface, SaccadeOnImageInterface):
             num_episodes = len(self.env_interface.scenes)
             for _ in range(num_episodes):
                 self.run_episode()
-        elif isinstance(self.env_interface, EnvironmentInterfacePerObject):
+        elif isinstance(self.env_interface, OneObjectPerEpisodeInterface):
             for object_name in self.env_interface.object_names:
                 logger.info(f"Running a simulation to model object: {object_name}")
                 self.run_episode()

@@ -15,7 +15,6 @@ from typing import Any, ClassVar, Protocol
 
 import numpy as np
 import quaternion as qt
-from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
 from tbp.monty.cmp import Message
@@ -38,6 +37,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     surface_normal_total_least_squares,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
+from tbp.monty.geometry import Rotation
 
 __all__ = [
     "CameraSM",
@@ -143,6 +143,8 @@ class ObservationProcessor:
         "mean_curvature_sc",
         "curvature_for_TM",
         "coords_for_TM",
+        "edge_strength",
+        "coherence",
     ]
 
     def __init__(
@@ -192,7 +194,7 @@ class ObservationProcessor:
         """
         obs_3d = observation["semantic_3d"]
         sensor_frame_data = observation["sensor_frame_data"]
-        world_camera = observation["world_camera"]
+        cam_to_world = observation["cam_to_world"]
         rgba_feat = observation["rgba"]
         depth_feat = (
             observation["depth"]
@@ -229,7 +231,7 @@ class ObservationProcessor:
                 center_id,
                 center_row_col,
                 sensor_frame_data,
-                world_camera,
+                cam_to_world,
             )
         else:
             valid_signals = False
@@ -268,7 +270,7 @@ class ObservationProcessor:
         center_id: int,
         center_row_col: int,
         sensor_frame_data: np.ndarray,
-        world_camera: np.ndarray,
+        cam_to_world: np.ndarray,
     ) -> tuple[dict[str, Any], dict[str, Any], bool]:
         """Extract features configured for extraction from sensor patch.
 
@@ -284,7 +286,7 @@ class ObservationProcessor:
         # ------------ Extract Morphological Features ------------
         # Get surface normal for graph matching with features
         surface_normal, valid_sn = self._get_surface_normals(
-            obs_3d, sensor_frame_data, center_id, world_camera
+            obs_3d, sensor_frame_data, center_id, cam_to_world
         )
 
         k1, k2, dir1, dir2, valid_pc = principal_curvatures(
@@ -360,15 +362,15 @@ class ObservationProcessor:
         obs_3d: np.ndarray,
         sensor_frame_data: np.ndarray,
         center_id: int,
-        world_camera: np.ndarray,
+        cam_to_world: np.ndarray,
     ) -> tuple[np.ndarray, bool]:
         if self._surface_normal_method == SurfaceNormalMethod.TLS:
             surface_normal, valid_sn = surface_normal_total_least_squares(
-                obs_3d, center_id, world_camera[:3, 2]
+                obs_3d, center_id, cam_to_world[:3, 2]
             )
         elif self._surface_normal_method == SurfaceNormalMethod.OLS:
             surface_normal, valid_sn = surface_normal_ordinary_least_squares(
-                sensor_frame_data, world_camera, center_id
+                sensor_frame_data, cam_to_world, center_id
             )
         elif self._surface_normal_method == SurfaceNormalMethod.NAIVE:
             surface_normal, valid_sn = surface_normal_naive(

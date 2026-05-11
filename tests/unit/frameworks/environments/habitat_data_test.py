@@ -24,7 +24,7 @@ from unittest import mock
 import magnum as mn
 import numpy as np
 
-from tbp.monty.frameworks.environments.embodied_data import EnvironmentInterface
+from tbp.monty.experiment.environment import Interface
 from tbp.monty.simulators.habitat import SingleSensorAgent
 from tbp.monty.simulators.habitat.environment import AgentConfig, HabitatEnvironment
 
@@ -97,7 +97,7 @@ class HabitatDataTest(unittest.TestCase):
         # Create habitat env datasets with distant-agent action space
         env_init_args = {"agents": self.camera_dist_config}
         env = HabitatEnvironment(**env_init_args)
-        env_interface_dist = EnvironmentInterface(
+        env_interface_dist = Interface(
             env,
             rng=rng,
             seed=seed,
@@ -152,7 +152,7 @@ class HabitatDataTest(unittest.TestCase):
         # Create habitat env with absolute action space
         env_init_args = {"agents": self.camera_abs_config}
         env = HabitatEnvironment(**env_init_args)
-        env_interface_abs = EnvironmentInterface(
+        env_interface_abs = Interface(
             env,
             rng=rng,
             seed=seed,
@@ -207,7 +207,7 @@ class HabitatDataTest(unittest.TestCase):
         # Create habitat env interface with distant-agent action space
         env_init_args = {"agents": self.camera_surf_config}
         env = HabitatEnvironment(**env_init_args)
-        env_interface_surf = EnvironmentInterface(
+        env_interface_surf = Interface(
             env,
             rng=rng,
             seed=seed,
@@ -262,7 +262,7 @@ class HabitatDataTest(unittest.TestCase):
 
         env_init_args = {"agents": self.camera_dist_config}
         env = HabitatEnvironment(**env_init_args)
-        env_interface_dist = EnvironmentInterface(
+        env_interface_dist = Interface(
             env,
             rng=rng,
             seed=seed,
@@ -308,7 +308,7 @@ class HabitatDataTest(unittest.TestCase):
 
         env_init_args = {"agents": self.camera_abs_config}
         env = HabitatEnvironment(**env_init_args)
-        env_interface_abs = EnvironmentInterface(
+        env_interface_abs = Interface(
             env,
             rng=rng,
             seed=seed,
@@ -353,7 +353,7 @@ class HabitatDataTest(unittest.TestCase):
 
         env_init_args = {"agents": self.camera_surf_config}
         env = HabitatEnvironment(**env_init_args)
-        env_interface_surf = EnvironmentInterface(
+        env_interface_surf = Interface(
             env,
             rng=rng,
             seed=seed,
