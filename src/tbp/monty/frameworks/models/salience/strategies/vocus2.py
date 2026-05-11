@@ -620,55 +620,32 @@ class OrientationSalience:
         return self._combine(feature_maps)
 
 
+@dataclass
+class Vocus2SalienceConfig:
+    center_sigma: float = 3.0
+    surround_sigma: float = 5.0
+    n_scales: int = 2
+    max_octaves: int = 5
+    min_size: int = 16
+    use_depth: bool = True
+    use_orientation: bool = True
+
+
 class Vocus2(SalienceStrategy):
     def __init__(
         self,
+        color: ColorChannelSalience,
+        depth: DepthSalience | None = None,
+        orientation: OrientationSalience | None = None,
         color_space_converter: ColorSpaceConverter = rgb_to_opponent,
-        center_sigma: float = 3.0,
-        surround_sigma: float = 5.0,
-        n_scales: int = 2,
-        max_octaves: int = 5,
-        min_size: int = 16,
-        depth: bool = False,
-        orientation: bool = False,
         combine: MapCombine | None = None,
         normalize: bool = True,
     ):
+        self._color = color
+        self._depth = depth
+        self._orientation = orientation
         self._color_space_converter = color_space_converter
-
-        self._center_sigma = center_sigma
-        self._surround_sigma = surround_sigma
-        self._n_scales = n_scales
-        self._max_octaves = max_octaves
-        self._min_size = min_size
         self._normalize = normalize
-
-        # construct salience computers
-        self._color = ColorChannelSalience(
-            center_sigma=self._center_sigma,
-            surround_sigma=self._surround_sigma,
-            n_scales=self._n_scales,
-            max_octaves=self._max_octaves,
-            min_size=self._min_size,
-        )
-
-        if depth:
-            self._depth = DepthSalience(
-                center_sigma=self._center_sigma,
-                surround_sigma=self._surround_sigma,
-                n_scales=self._n_scales,
-                max_octaves=self._max_octaves,
-                min_size=self._min_size,
-            )
-        else:
-            self._depth = None
-
-        if orientation:
-            self._orientation = OrientationSalience(
-                period=2 * self._center_sigma,
-            )
-        else:
-            self._orientation = None
 
         if combine is None:
             self._combine = WeightedMean(
@@ -682,6 +659,63 @@ class Vocus2(SalienceStrategy):
             )
         else:
             self._combine = combine
+
+    @classmethod
+    def from_config(
+        cls,
+        config: Vocus2SalienceConfig,
+        color_space_converter: ColorSpaceConverter = rgb_to_opponent,
+        combine: MapCombine | None = None,
+    ) -> Vocus2:
+        """Create a Vocus2 salience strategy from a configuration.
+
+        Since Vocus2 uses color, depth, and orientation that all need to be configured
+        in a compatible way, this method creates the necessary components and configures
+        them all at once from a single configuration.
+
+        Args:
+            config: The configuration to use.
+            color_space_converter: The color space converter to use.
+            combine: The combine function to use.
+
+        Returns:
+            A Vocus2 salience strategy.
+        """
+        color = ColorChannelSalience(
+            center_sigma=config.center_sigma,
+            surround_sigma=config.surround_sigma,
+            n_scales=config.n_scales,
+            max_octaves=config.max_octaves,
+            min_size=config.min_size,
+        )
+
+        depth = (
+            DepthSalience(
+                center_sigma=config.center_sigma,
+                surround_sigma=config.surround_sigma,
+                n_scales=config.n_scales,
+                max_octaves=config.max_octaves,
+                min_size=config.min_size,
+            )
+            if config.use_depth
+            else None
+        )
+
+        orientation = (
+            OrientationSalience(
+                period=2 * config.center_sigma,
+            )
+            if config.use_orientation
+            else None
+        )
+
+        return cls(
+            color=color,
+            depth=depth,
+            orientation=orientation,
+            color_space_converter=color_space_converter,
+            combine=combine,
+        )
 
     def __call__(
         self,
