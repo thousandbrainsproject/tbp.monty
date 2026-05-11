@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Callable, Dict, Iterator, NewType, Protocol, Sequence, cast
 
 import cv2
@@ -25,19 +24,17 @@ from tbp.monty.frameworks.sensors import Resolution2D
 """
 
 
-class ColorSpace(Enum):
-    """Color space options."""
-
-    LAB = "LAB"  # CIE Lab color space
-    OPPONENT_CODI = "OPPONENT_CODI"  # Opponent color space (Klein/Frintrop DAGM 2012)
-    OPPONENT = "OPPONENT"  # Opponent color space (shifted and scaled to [0, 1])
+class ColorSpaceConverter(Protocol):
+    def __call__(self, image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]: ...
 
 
 def rgb_to_lab(image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]:
+    """Returns the CIE Lab color space of the image."""
     return cv2.cvtColor(image, cv2.COLOR_RGB2Lab).astype(np.float32) / 255.0
 
 
 def rgb_to_opponent(image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]:
+    """Returns the Opponent color space of the image shifted and scaled to [0, 1]."""
     r, g, b = cv2.split(image.astype(np.float32))
     L = (r + g + b) / (3 * 255.0)  # noqa: N806
     a = (r - g + 255.0) / (2 * 255.0)
@@ -46,18 +43,12 @@ def rgb_to_opponent(image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]:
 
 
 def rgb_to_opponent_codi(image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]:
+    """Returns the Opponent color space of the image (Klein/Frintrop DAGM 2012)."""
     r, g, b = cv2.split(image.astype(np.float32))
     L = (r + g + b) / (3 * 255.0)  # noqa: N806
     a = (r - g) / 255.0
     b = (b - (g + r) / 2.0) / 255.0
     return cv2.merge([L, a, b])
-
-
-_COLOR_SPACE_CONVERTERS = {
-    ColorSpace.LAB: rgb_to_lab,
-    ColorSpace.OPPONENT: rgb_to_opponent,
-    ColorSpace.OPPONENT_CODI: rgb_to_opponent_codi,
-}
 
 
 def gaussian_blur(
@@ -407,6 +398,7 @@ def pyramid_collapse_mean(pyr: Pyramid) -> npt.NDArray[np.float32]:
 
 FeatureMaps = NewType("FeatureMaps", Dict[str, npt.NDArray[np.float32]])
 
+
 class MapCombine(Protocol):
     def __call__(self, maps: FeatureMaps) -> npt.NDArray[np.float32]: ...
 
@@ -417,6 +409,7 @@ def map_max(maps: FeatureMaps) -> npt.NDArray[np.float32]:
 
 def map_sum(maps: FeatureMaps) -> npt.NDArray[np.float32]:
     return np.sum(list(maps.values()), axis=0)
+
 
 class WeightedSum(MapCombine):
     def __init__(self, weights: dict[str, float]):
@@ -630,7 +623,7 @@ class OrientationSalience:
 class Vocus2(SalienceStrategy):
     def __init__(
         self,
-        color_space: ColorSpace = ColorSpace.OPPONENT,
+        color_space_converter: ColorSpaceConverter = rgb_to_opponent,
         center_sigma: float = 3.0,
         surround_sigma: float = 5.0,
         n_scales: int = 2,
@@ -641,8 +634,7 @@ class Vocus2(SalienceStrategy):
         combine: MapCombine | None = None,
         normalize: bool = True,
     ):
-        self._color_space = color_space
-        self._color_space_converter = _COLOR_SPACE_CONVERTERS[self._color_space]
+        self._color_space_converter = color_space_converter
 
         self._center_sigma = center_sigma
         self._surround_sigma = surround_sigma

@@ -197,6 +197,7 @@ class GaussianPyramidTest(unittest.TestCase):
         diffs = np.ediff1d(variations)
         self.assertTrue(all(diffs <= 0))
 
+
 @st.composite
 def center_surround_sigmas(
     draw,
