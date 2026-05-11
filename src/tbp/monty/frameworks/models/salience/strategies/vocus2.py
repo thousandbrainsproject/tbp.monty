@@ -545,7 +545,7 @@ class OrientationSalience:
         phase: float = np.pi / 2,
         gamma: float = 0.75,
         n_orientations: int = 4,
-        combine: MapCombine | None = map_mean,
+        combine: MapCombine = map_mean,
         collapse: PyramidCollapse = pyramid_collapse_mean,
     ):
         """Computes orientation salience.
