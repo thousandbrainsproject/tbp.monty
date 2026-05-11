@@ -630,7 +630,7 @@ class OrientationSalience:
 class Vocus2(SalienceStrategy):
     def __init__(
         self,
-        color_space: str | ColorSpace = ColorSpace.OPPONENT,
+        color_space: ColorSpace = ColorSpace.OPPONENT,
         center_sigma: float = 3.0,
         surround_sigma: float = 5.0,
         n_scales: int = 2,
@@ -641,9 +641,6 @@ class Vocus2(SalienceStrategy):
         combine: MapCombine | None = None,
         normalize: bool = True,
     ):
-        if not isinstance(color_space, ColorSpace):
-            color_space = ColorSpace(color_space)
-
         self._color_space = color_space
         self._color_space_converter = _COLOR_SPACE_CONVERTERS[self._color_space]
 
