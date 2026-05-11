@@ -52,7 +52,7 @@ This aligns with Monty's broader goal of biologically plausible computation.
 ### HNSW + kNN + Gaussian Kernel Interpolation
 
 Hierarchical Navigable Small World (HNSW) is an approximate nearest neighbor search algorithm based on a layered graph data structure. It belongs to the family of proximity graphs, where nodes (vertices) are connected based on their proximity, typically measured by the Euclidean distance.  
-HNSW is currently actively used in embedding databases for searching similar text by vectors. So, I decided to use it to store and find states.  
+HNSW is currently actively used in embedding databases for searching similar text by vectors. So, I decided to use it to store and find states.  [What is State](#state-vector-13d)  
 During the learning process, the agent stores experience in a graph and then uses the weighted past experience in a similar situation. Thehnically it looks like: store point in HNSW graph, then find the K closest ones and mix them with Gaussian kernel weights.
 
 ### Why not only Deep Learing
@@ -68,15 +68,17 @@ Evidence LM's Goal-State Generator proposes the goal-state from the hypothesis-t
    ↓  
 **RLGoalApproachController** computes **State Vector** using **goal_pose** as well as sensory patch input and proprioceptive information.   
    ↓  
-**At the begining for new states** it needs to learn before inference  
+**At the begining for new states** it needs to learn before inference.  
    ↓  
-**RL Q-leraning with HNSW + kNN + Gaussian Kernel Interpolation** working with discrete actions. Action Selection with **Heuristic-Guided Exploration**. Objective: To obtain smart behavior and training data for SAC. 
+**RL Q-leraning with HNSW + kNN + Gaussian Kernel Interpolation** working with discrete actions. [What is Action](#montyactionspace)    
+Actions are selected using [Heuristic-Guided Exploration](#heuristic-guided-exploration) approach. Objective: To obtain smart behavior and training data for SAC.  
 HNSW graph points collection (gathering experience). Copying of **successful traces into replay buffer**.
 **HNSWStateStore** stores **State Vector**, actions, Q-values.
 Upon reaching a certain threshold of successful validation operations moves to next step of learning.    
    ↓  
-**Behavioral cloning (BC)** — method of imitation learning in which an agent learns to imitate the behavior of an expert by directly copying his actions based on data. 
-Translation of discrete actions from replay buffer into continuous ones.
+**Behavioral cloning (BC)** — method of imitation learning in which an agent learns to imitate the behavior of an expert by directly copying his actions based on data. BC is the simplest form of imitation learning: we teach the robot's policy as a supervised learning task—to predict the action of an expert based on observation. It can be used as independent approach but usually used as supplement before SAC or other off-policy RL algorithm.
+Translation of HNSW 18D discrete action space from replay buffer into Parameterized SAC continuous action space. Replacing of 8 direction MoveTangentially with one action with two parameters: angle_deg, distance. Others actions are stays the same. Main defference will be during SAC training when paramters can be any value, not fixed config free_step, rotation_step, surface_step.
+   ↓  
 **Train a SAC Actor policy using supervised learning loss** to have a continuous policy that copying the behavior of a discrete policy.  
    ↓  
 **Warm-start to run RL SAC training with Critic policy** as well using the Actor policy weights from the BC.
@@ -85,7 +87,6 @@ The SAC refines the policy: it makes movements smoother and more accurate, adapt
 **Now the policy doesn't just copy of a discrete policy, it optimizes**.  
    ↓  
 In future when SAC is trained we use it as **skills to propose continuous actions**  
-
 
 ## Advantages of this scheme:
 - Quick start with Q-learning and discrete actions – no need to wait for the SAC to learn from scratch.
@@ -119,10 +120,31 @@ Update state → normalize → KNN search
 Get state → normalize → KNN search → kernel interpolation → Q-values
 
 
-## MontyActionSpace (18D)
+## MontyActionSpace
 
-To properly train hand, finger movement, it is suggested to use the combined agent mode (distant + surface) from the beginning.
+To properly train hand, finger movement, it is suggested to use the combined action spaces (distant + surface) from the beginning.  When the finger is on the surface it plays like surface agent, when is on the air like distant. For me current split for distant and surface for finger looks a little bit artificial in RL.
+Proposed action space is universal high level primitives for moving finger to the goal.
+These primitives can be used for any other similar agents and tasks and they are not dependent from specific low level robotic actions (joints, speed, strength etc). 
+Transfer primitives to low level robotic is a separate and well known task.
+In the industry standard is a mix: the Neural Network chooses 'What to do' (high level primitives), and the classical algorithm (Inverse kinematics & Impedance) decides 'How exactly to move the motors'.
 
+So I agree that action space is agent specific. In my vision agent is something real (arm, hand, finger) that has actions and skills.
+Now we try to learn moving to target, then we can add new action and train new skill to grasp objects.
+
+### How to use actions in RL step by step:
+1. Q-learning and discrete actions  
+The policy outputs an index from 0 to 17.  
+Fixed directions, surface_step, free_step, rotation_step are used.  
+Apply masking if on_object == 0 (disallow 0-7, 16-17).  
+2. Parameterized SAC (current proposal)  
+The policy outputs: action index (0-11) and a continuous parameter instaed of fixed step.
+Replacing of 8 direction MoveTangentially with one action with two parameters: angle_deg, distance. Others actions are stays the same.
+3. Purely continuous SAC (future)  
+The policy outputs a vector [Δx, Δy, Δz, Δθ, Δφ] and then interprets this as a combined motion.
+4. Mathematical controller (Low-level / Inverse kinematics & Impedance)
+This is 'spinal cord' that receives a command from the neural network (SAC) and instantly calculates the motor actions.
+
+### Discrete action space 18D
 | Index | Action               | Description                                                                 | Mode     | Parameters |
 |--------|------------------------|-------------------------------------------------------------------------|-----------|-----------|
 | 0–7    | MoveTangentially       | Movement tangent to the surface in 8 directions: 0°, 45°, ..., 315° | surface   | `distance: float`, `direction: VectorXYZ` |
@@ -136,16 +158,6 @@ To properly train hand, finger movement, it is suggested to use the combined age
 | 15     | SetSensorRotation (-)  | Rotate the sensor counterclockwise                                          | both       | `rotation_quat: Quaternion` |
 | 16     | OrientHorizontal       | Correction of position and orientation in the horizontal plane (with compensation) | surface   | `rotation_degrees: float`, `left_distance: float`, `forward_distance: float` |
 | 17     | OrientVertical         | Correction of position and orientation in the vertical plane                | surface   | `rotation_degrees: float`, `down_distance: float`, `forward_distance: float` |
-
-How to use in RL
-1. Q-learning and discrete actions  
-The policy outputs an index from 0 to 17.  
-Fixed directions, surface_step, free_step, rotation_step are used.  
-Apply masking if on_object == 0 (disallow 0-7, 16-17).  
-3. Parameterized SAC (current proposal)  
-The policy outputs: action index (0-17) and a continuous parameter instaed of fixed step.  
-4. Purely continuous SAC (future)  
-The policy outputs a vector [Δx, Δy, Δz, Δθ, Δφ] and then interprets this as a combined motion.
 
 
 
@@ -167,7 +179,7 @@ Dense reward signal computed locally in the motor system (no LM or CMP involveme
 | Timeout | -10.0 | Yes | `steps >= max_steps_per_goal` |
 
 
-### Action Selection with Heuristic-Guided Exploration
+### Heuristic-Guided Exploration
 
 #### Problem with Standard ε-Greedy
 
@@ -209,13 +221,36 @@ No modifications to LMs: Goal states are read from LM attributes that already ex
 No modifications to CMP: Reward is computed locally from proprioceptive and sensor data
 Graceful degradation: If RL fails (timeout/collision), control returns to standard Monty exploration
 
-**Inheritance**: RLMotorPolicy → SurfacePolicyCurvatureInformed → SurfacePolicy → InformedPolicy → BasePolicy → MotorPolicy
+## Lightweight Enviroment
+To fast test hypophesys and ideas we need to create relevant approximation of Habitat, especially for training policies based on haptics/active perception.
+It should not simulate graphics, but it should accurately reproduces the key physics that are important for training: contact, normals, ray casting, movement on surfaces.
+I suggest to use Trimesh python library for loading and using triangular meshes with an emphasis on watertight surfaces. https://github.com/mikedh/trimesh
 
+### Obejscts
+To train / test complete action space we can start with these primitives:
+- Cube: trimesh.primitives.Box
+- Cylinder: trimesh.creation.cylinder
+- Sphere: trimesh.primitives.Sphere
 
+Next step can be to train / test with more complex objects, cup as example.
+It can be created from primitives or loaded from library. 
+
+### Methods
+To compute State 13D it needs to implement enviroment methods to get:
+- Agent position
+- Agent orientation
+- Target point: random surface point
+- Surface normal
+- Depth
+- Flag on object
+
+### Actions
+It needs to implement 18D action space
+
+Trimesh provides many usefull methods so implementation of Lightweight Enviroment looks very realistic in reasonble time.
 
 
 # Reference-level explanation
-
 
 # Drawbacks
 
