@@ -15,6 +15,7 @@ from unittest.mock import Mock, patch, sentinel
 import cv2
 import numpy as np
 import numpy.testing as nptest
+import numpy.typing as npt
 from hypothesis import example, given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
@@ -37,18 +38,18 @@ from tests.unit.statistics import mean_local_variation, total_variation
 class PyramidTest(unittest.TestCase):
     @given(ndim=st.integers(min_value=3, max_value=10))
     @example(ndim=1)
-    def test_cannot_create_pyramid_with_non_2d_contents(self, ndim: int):
+    def test_cannot_create_pyramid_with_non_2d_contents(self, ndim: int) -> None:
         with self.assertRaises(AssertionError):
             Pyramid(np.zeros((5,) * ndim, dtype=object))
 
-    def test_can_create_pyramid_with_2d_contents(self):
+    def test_can_create_pyramid_with_2d_contents(self) -> None:
         Pyramid(np.zeros((5, 5), dtype=object))
 
     @given(
         dim1=st.integers(min_value=1, max_value=10),
         dim2=st.integers(min_value=1, max_value=10),
     )
-    def test_apply_applies_function_to_each_element(self, dim1: int, dim2: int):
+    def test_apply_applies_function_to_each_element(self, dim1: int, dim2: int) -> None:
         data = np.array(
             [[Mock() for _ in range(dim2)] for _ in range(dim1)], dtype=object
         )
@@ -72,7 +73,7 @@ class PyramidOctaveShapesTest(unittest.TestCase):
     def test_generates_all_octaves_when_no_level_or_size_constraints(
         self,
         image_shape: Resolution2D,
-    ):
+    ) -> None:
         computed_shapes = pyramid_octave_shapes(image_shape)
         expected_shapes = []
         while min(image_shape) >= 1:
@@ -95,7 +96,7 @@ class PyramidOctaveShapesTest(unittest.TestCase):
         image_shape: Resolution2D,
         max_octaves: int,
         min_size: int,
-    ):
+    ) -> None:
         computed_shapes = pyramid_octave_shapes(
             image_shape, max_octaves=max_octaves, min_size=min_size
         )
@@ -114,7 +115,7 @@ class PyramidOctaveShapesTest(unittest.TestCase):
         image_shape: Resolution2D,
         max_octaves: int,
         min_size: int,
-    ):
+    ) -> None:
         computed_shapes = pyramid_octave_shapes(
             image_shape, max_octaves=max_octaves, min_size=min_size
         )
@@ -200,10 +201,10 @@ class GaussianPyramidTest(unittest.TestCase):
 
 @st.composite
 def center_surround_sigmas(
-    draw,
+    draw: st.DrawFn,
     min_center_sigma: float,
     max_center_sigma: float,
-):
+) -> tuple[float, float]:
     center_sigma = draw(
         st.floats(min_value=min_center_sigma, max_value=max_center_sigma)
     )
@@ -214,7 +215,7 @@ def center_surround_sigmas(
 
 
 @st.composite
-def solid_float32_image(draw):
+def solid_float32_image(draw: st.DrawFn) -> npt.NDArray[np.float32]:
     height = draw(st.integers(min_value=1, max_value=1024))
     width = draw(st.integers(min_value=1, max_value=1024))
     fill_value = draw(
@@ -224,14 +225,16 @@ def solid_float32_image(draw):
 
 
 @st.composite
-def filled_float32_image(draw, fill_value: float = 1.0):
+def filled_float32_image(
+    draw: st.DrawFn, fill_value: float = 1.0
+) -> npt.NDArray[np.float32]:
     height = draw(st.integers(min_value=1, max_value=1024))
     width = draw(st.integers(min_value=1, max_value=1024))
     return np.full((height, width), fill_value, dtype=np.float32)
 
 
 @st.composite
-def float32_image(draw):
+def float32_image(draw: st.DrawFn) -> npt.NDArray[np.float32]:
     height = draw(st.integers(min_value=1, max_value=1024))
     width = draw(st.integers(min_value=1, max_value=1024))
     return draw(
@@ -249,7 +252,7 @@ def float32_image(draw):
 
 
 @st.composite
-def sufficiently_variable_float32_image(draw):
+def sufficiently_variable_float32_image(draw: st.DrawFn) -> npt.NDArray[np.float32]:
     return draw(
         float32_image().filter(
             lambda img: not np.allclose(img, img[0, 0], atol=DEFAULT_TOLERANCE)
@@ -258,7 +261,7 @@ def sufficiently_variable_float32_image(draw):
 
 
 @st.composite
-def pyramid(draw, fill_value: float = 1.0):
+def pyramid(draw: st.DrawFn, fill_value: float = 1.0) -> Pyramid:
     image_width = draw(st.integers(min_value=1, max_value=1024))
     image_height = draw(st.integers(min_value=1, max_value=1024))
     n_scales = draw(st.integers(min_value=1, max_value=10))
@@ -279,7 +282,9 @@ def pyramid(draw, fill_value: float = 1.0):
 
 
 @st.composite
-def valid_input_pyramid_for_laplacian_pyramid(draw, fill_value: float = 1.0):
+def valid_input_pyramid_for_laplacian_pyramid(
+    draw: st.DrawFn, fill_value: float = 1.0
+) -> Pyramid:
     image_width = draw(st.integers(min_value=2, max_value=1024))
     image_height = draw(st.integers(min_value=2, max_value=1024))
     n_scales = draw(st.integers(min_value=1, max_value=10))
@@ -298,7 +303,9 @@ def valid_input_pyramid_for_laplacian_pyramid(draw, fill_value: float = 1.0):
 
 
 @st.composite
-def differently_shaped_pyramids(draw, fill_value: float = 1.0):
+def differently_shaped_pyramids(
+    draw: st.DrawFn, fill_value: float = 1.0
+) -> list[Pyramid]:
     pyramid_1 = draw(valid_input_pyramid_for_laplacian_pyramid(fill_value=fill_value))
     pyramid_2 = draw(
         valid_input_pyramid_for_laplacian_pyramid(fill_value=fill_value).filter(
@@ -337,7 +344,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
     )
     def test_center_and_surround_pyramids_have_same_shape(
         self,
-        image: np.ndarray,
+        image: npt.NDArray[np.float32],
         n_scales: int,
         max_octaves: int,
         min_size: int,
@@ -361,7 +368,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
     )
     def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes(  # noqa: E501
         self,
-        image: np.ndarray,
+        image: npt.NDArray[np.float32],
         sigmas: tuple[float, float],
         n_scales: int,
         max_octaves: int,
@@ -394,7 +401,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
     )
     def test_surround_planes_mean_local_variation_equals_corresponding_center_planes_for_solid_image(  # noqa: E501
         self,
-        image: np.ndarray,
+        image: npt.NDArray[np.float32],
         sigmas: tuple[float, float],
         n_scales: int,
         max_octaves: int,
@@ -428,7 +435,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
     )
     def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes_for_sufficiently_variable_image(  # noqa: E501
         self,
-        image: np.ndarray,
+        image: npt.NDArray[np.float32],
         sigmas: tuple[float, float],
         n_scales: int,
         max_octaves: int,
@@ -459,7 +466,7 @@ class LaplacianPyramidTest(unittest.TestCase):
     @given(
         input_pyramid=valid_input_pyramid_for_laplacian_pyramid(fill_value=FILL_VALUE),
     )
-    def test_has_correct_shape(self, input_pyramid: Pyramid):
+    def test_has_correct_shape(self, input_pyramid: Pyramid) -> None:
         pyramid = laplacian_pyramid(input_pyramid)
         self.assertEqual(input_pyramid.n_octaves - 1, pyramid.n_octaves)
         self.assertEqual(input_pyramid.n_scales, pyramid.n_scales)
@@ -470,7 +477,9 @@ class LaplacianPyramidTest(unittest.TestCase):
                     input_pyramid.data[octave, scale].shape,
                 )
 
-    def test_raises_value_error_if_input_pyramid_has_less_than_two_octaves(self):
+    def test_raises_value_error_if_input_pyramid_has_less_than_two_octaves(
+        self,
+    ) -> None:
         data = np.zeros((1, 1), dtype=object)
         data[0, 0] = np.zeros((1, 1), dtype=np.float32)
         with self.assertRaises(ValueError):
@@ -515,16 +524,18 @@ class LaplacianPyramidTest(unittest.TestCase):
 
 
 class PyramidCombineTest(unittest.TestCase):
-    def test_raises_value_error_if_no_pyramids_are_provided(self):
+    def test_raises_value_error_if_no_pyramids_are_provided(self) -> None:
         with self.assertRaises(ValueError):
             pyramid_combine([], Mock())
 
-    def test_returns_first_pyramid_if_only_one_pyramid_is_provided(self):
+    def test_returns_first_pyramid_if_only_one_pyramid_is_provided(self) -> None:
         pyramid = Pyramid(np.zeros((1, 1), dtype=object))
         result = pyramid_combine([pyramid], Mock())
         self.assertIs(result, pyramid)
 
-    def test_does_not_apply_reduce_to_pyramids_if_only_one_pyramid_is_provided(self):
+    def test_does_not_apply_reduce_to_pyramids_if_only_one_pyramid_is_provided(
+        self,
+    ) -> None:
         pyramid = Pyramid(np.zeros((1, 1), dtype=object))
         reduce = Mock()
         result = pyramid_combine([pyramid], reduce)
@@ -646,7 +657,9 @@ class PyramidCollapseTest(unittest.TestCase):
 
 
 @st.composite
-def color_channel_salience_processor(draw, image: np.ndarray):
+def color_channel_salience_processor(
+    draw: st.DrawFn, image: npt.NDArray[np.float32]
+) -> ColorChannelSalience:
     center_sigma = draw(st.floats(min_value=0.5, max_value=3.0))
     surround_sigma = draw(
         st.floats(min_value=center_sigma, max_value=6.0, exclude_min=True)
@@ -667,7 +680,9 @@ def color_channel_salience_processor(draw, image: np.ndarray):
 
 
 @st.composite
-def color_channel_salience_setup(draw, image_strategy: st.SearchStrategy[np.ndarray]):
+def color_channel_salience_setup(
+    draw: st.DrawFn, image_strategy: st.SearchStrategy[npt.NDArray[np.float32]]
+) -> tuple[npt.NDArray[np.float32], ColorChannelSalience]:
     image = draw(image_strategy)
     processor = draw(color_channel_salience_processor(image))
     return image, processor
@@ -680,14 +695,14 @@ class ColorChannelSalienceTest(unittest.TestCase):
         image_and_processor=color_channel_salience_setup(solid_float32_image()),
     )
     def test_solid_image_not_salient(
-        self, image_and_processor: tuple[np.ndarray, ColorChannelSalience]
-    ):
+        self, image_and_processor: tuple[npt.NDArray[np.float32], ColorChannelSalience]
+    ) -> None:
         image, processor = image_and_processor
         feature_map, _ = processor.process(image)
         self.assertTrue(np.all(feature_map < self.MINIMUM_SALIENCE_THRESHOLD))
 
-    def test_edge_flanks_are_salient(self):
+    def test_edge_flanks_are_salient(self) -> None:
         pass
 
-    def test_edge_core_less_salient_than_its_flanks(self):
+    def test_edge_core_less_salient_than_its_flanks(self) -> None:
         pass
