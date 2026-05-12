@@ -27,45 +27,58 @@ class FeatureEvidenceCalculator(Protocol):
 
 
 class DefaultFeatureEvidenceCalculator:
-    @staticmethod
+    SKIP_FEATURES = frozenset({"pose_vectors", "pose_fully_defined"})
+    CIRCULAR_FEATURES = frozenset({"hsv"})
+    CATEGORICAL_FEATURES = frozenset({"object_id"})
+    CIRCULAR_RANGE = 1
+
+    @classmethod
     def calculate(
+        cls,
         channel_feature_array: np.ndarray,
         channel_feature_order: list[str],
         channel_feature_weights: dict,
         channel_query_features: dict,
         channel_tolerances: dict,
-        input_channel: str,  # noqa: ARG004
+        input_channel: str,  # noqa: ARG003
     ) -> np.ndarray:
         """Calculate the feature evidence for all nodes stored in a graph.
 
-        Evidence for each feature depends on the difference between observed and stored
-        features, feature weights, and distance weights.
+        For each node, compares the stored features against the observed
+        query features and returns a score in `[0, 1]`: 1 for a perfect
+        match, decaying to 0 once the difference exceeds the per-feature
+        tolerance. Nodes with missing stored values for a feature receive
+        NaN evidence.
 
-        Evidence is a float between 0 and 1. An evidence of 1 is a perfect match; the
-        larger the difference between observed and sensed features, the closer to 0
-        the evidence becomes. Evidence is 0 if the difference is >= the tolerance for
-        this feature.
-
-        If a node does not store a given feature, evidence will be nan.
-
-        input_channel indicates where the sensed features are coming from and thereby
-        tells this function to which features in the graph they need to be compared.
+        Args:
+            channel_feature_array: Stored features for every node in the
+                graph, shape `(n_nodes, n_columns)`. Columns follow the
+                layout given by `channel_feature_order`.
+            channel_feature_order: Feature names in the order they appear
+                across the columns of `channel_feature_array`.
+            channel_feature_weights: Per-feature weights used to combine
+                per-column evidence into a single per-node score.
+            channel_query_features: Observed feature values to compare
+                against the stored features, keyed by feature name.
+            channel_tolerances: Per-feature tolerance, the largest
+                difference that still produces non-zero evidence.
+            input_channel: The channel the observation came from, used to
+                select which features in the graph to compare against.
 
         Returns:
-            The feature evidence for all nodes.
+            The feature evidence for all nodes, shape `(n_nodes,)`.
         """
-        # generate the lists of features, tolerances, and whether features are circular
-        shape_to_use = channel_feature_array.shape[1]
-        tolerance_list = np.zeros(shape_to_use) * np.nan
-        feature_weight_list = np.zeros(shape_to_use) * np.nan
-        feature_list = np.zeros(shape_to_use) * np.nan
-        circular_var = np.zeros(shape_to_use, dtype=bool)
+        n_cols = channel_feature_array.shape[1]
+        tolerance_list = np.full(n_cols, np.nan)
+        feature_weight_list = np.full(n_cols, np.nan)
+        feature_list = np.full(n_cols, np.nan)
+        numeric_var = np.zeros(n_cols, dtype=bool)
+        circular_var = np.zeros(n_cols, dtype=bool)
+        categorical_var = np.zeros(n_cols, dtype=bool)
+
         start_idx = 0
         for feature in channel_feature_order:
-            if feature in [
-                "pose_vectors",
-                "pose_fully_defined",
-            ]:
+            if feature in cls.SKIP_FEATURES:
                 continue
             if hasattr(channel_query_features[feature], "__len__"):
                 feature_length = len(channel_query_features[feature])
@@ -75,26 +88,40 @@ class DefaultFeatureEvidenceCalculator:
             feature_list[start_idx:end_idx] = channel_query_features[feature]
             tolerance_list[start_idx:end_idx] = channel_tolerances[feature]
             feature_weight_list[start_idx:end_idx] = channel_feature_weights[feature]
-            circular_var[start_idx:end_idx] = (
-                [True, False, False] if feature == "hsv" else False
-            )
-            circ_range = 1
+
+            if feature in cls.CIRCULAR_FEATURES:
+                # H is circular, S and V are numeric
+                circular_var[start_idx] = True
+                numeric_var[start_idx + 1 : end_idx] = True
+            elif feature in cls.CATEGORICAL_FEATURES:
+                categorical_var[start_idx:end_idx] = True
+            else:
+                numeric_var[start_idx:end_idx] = True
+
             start_idx = end_idx
 
+        assert (numeric_var ^ circular_var ^ categorical_var).all(), (
+            "feature kind masks must be mutually exclusive and exhaustive"
+        )
+
         feature_differences = np.zeros_like(channel_feature_array)
-        feature_differences[:, ~circular_var] = np.abs(
-            channel_feature_array[:, ~circular_var] - feature_list[~circular_var]
+        feature_differences[:, numeric_var] = np.abs(
+            channel_feature_array[:, numeric_var] - feature_list[numeric_var]
         )
         cnode_fs = channel_feature_array[:, circular_var]
         cquery_fs = feature_list[circular_var]
         feature_differences[:, circular_var] = np.min(
             [
-                np.abs(circ_range + cnode_fs - cquery_fs),
+                np.abs(cls.CIRCULAR_RANGE + cnode_fs - cquery_fs),
                 np.abs(cnode_fs - cquery_fs),
-                np.abs(cnode_fs - (cquery_fs + circ_range)),
+                np.abs(cnode_fs - (cquery_fs + cls.CIRCULAR_RANGE)),
             ],
             axis=0,
         )
+        feature_differences[:, categorical_var] = (
+            channel_feature_array[:, categorical_var] != feature_list[categorical_var]
+        ).astype(channel_feature_array.dtype)
+
         # any difference < tolerance should be positive evidence
         # any difference >= tolerance should be 0 evidence
         feature_evidence = np.clip(tolerance_list - feature_differences, 0, np.inf)
