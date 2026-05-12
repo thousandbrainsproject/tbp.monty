@@ -363,7 +363,9 @@ class BurstSamplingHypothesesUpdater:
         hypotheses_update = Hypotheses.concatenate(
             [existing_hypotheses, new_hypotheses]
         )
-        tracker.update(hypotheses_update.evidence)
+        tracker.update(
+            hypotheses_update.evidence, num_channels=len(input_channels_to_use)
+        )
 
         if self.include_telemetry:
             telemetry = asdict(

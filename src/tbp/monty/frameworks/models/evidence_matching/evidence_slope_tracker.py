@@ -17,7 +17,9 @@ class EvidenceSlopeTracker:
     """Tracks the slopes of evidence streams over a sliding window.
 
     This tracker supports adding, updating, pruning, and analyzing hypotheses
-    in a hypothesis space.
+    in a hypothesis space. Slopes are reported as evidence change per channel
+    per step, so they remain comparable when the set of input channels active at
+    each step varies.
 
     Note:
         - One optimization might be to treat the array of tracked values as a ring-like
@@ -37,6 +39,9 @@ class EvidenceSlopeTracker:
             removal.
         _evidence_buffer: Hypothesis evidence buffer of shape (N, window_size).
         _hyp_age: Hypothesis age counters of shape (N,).
+        _channels_buffer: Per-step number of input channels active at each slot of
+            the sliding window, shape (window_size,). Used by `calculate_slopes` to
+            normalize per-step diffs.
     """
 
     def __init__(self, window_size: int = 10, min_age: int = 5) -> None:
@@ -52,6 +57,9 @@ class EvidenceSlopeTracker:
             (0, window_size), dtype=np.float64
         )
         self._hyp_age: npt.NDArray[np.int_] = np.empty(0, dtype=int)
+        self._channels_buffer: npt.NDArray[np.float64] = np.ones(
+            window_size, dtype=np.float64
+        )
 
     def total_size(self) -> int:
         """Returns the number of tracked hypotheses.
@@ -85,11 +93,14 @@ class EvidenceSlopeTracker:
         """Returns the ages of all hypotheses."""
         return self._hyp_age
 
-    def update(self, values: npt.NDArray[np.float64]) -> None:
+    def update(self, values: npt.NDArray[np.float64], num_channels: int = 1) -> None:
         """Updates all hypotheses with new evidence values.
 
         Args:
             values: Array of new evidence values.
+            num_channels: Number of input channels that contributed to this step's
+                evidence. Recorded alongside `values` in a parallel buffer and used by
+                `calculate_slopes` to normalize per-step diffs. Defaults to 1.
 
         Raises:
             ValueError: If the number of values doesn't match the number of hypotheses.
@@ -105,23 +116,26 @@ class EvidenceSlopeTracker:
         # Add new evidence data
         self._evidence_buffer[:, -1] = values
 
+        # Shift channels buffer and record this step's channel count
+        self._channels_buffer[:-1] = self._channels_buffer[1:]
+        self._channels_buffer[-1] = num_channels
+
         # Increment age
         self._hyp_age += 1
 
     def calculate_slopes(self) -> npt.NDArray[np.float64]:
-        """Computes the average slope of all hypotheses.
+        """Computes the average per-channel slope of all hypotheses.
 
-        This method calculates the slope of the evidence signal for each hypothesis by
-        subtracting adjacent values along the time dimension (i.e., computing deltas
-        between consecutive evidence values). It then computes the average of these
-        differences while ignoring any missing (NaN) values. For hypotheses with no
-        valid evidence differences (e.g., all NaNs), the slope is returned as NaN.
+        Each per-step diff between adjacent slots is divided by the number of input
+        channels that contributed at the later slot. The result is then averaged over
+        the window, ignoring NaN values. For hypotheses with no valid evidence
+        differences (e.g., all NaNs), the slope is returned as NaN.
 
         Returns:
-            Array of average slopes, one per hypothesis.
+            Array of average per-channel slopes, one per hypothesis.
         """
-        # Calculate the evidence differences
-        diffs = np.diff(self._evidence_buffer, axis=1)
+        # Per-step evidence differences, normalized by channel count at each step
+        diffs = np.diff(self._evidence_buffer, axis=1) / self._channels_buffer[1:]
 
         # Count the number of non-NaN values
         valid_steps = np.sum(~np.isnan(diffs), axis=1).astype(np.float64)
