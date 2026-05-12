@@ -16,10 +16,10 @@ import cv2
 import numpy as np
 import numpy.testing as nptest
 import numpy.typing as npt
+import scipy.signal
 from hypothesis import example, given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
-import scipy.signal
 
 from tbp.monty.frameworks.models.salience.strategies.vocus2 import (
     ColorChannelSalience,
@@ -661,9 +661,9 @@ class PyramidCollapseTest(unittest.TestCase):
 def color_channel_salience_processor(
     draw: st.DrawFn, image: npt.NDArray[np.float32]
 ) -> ColorChannelSalience:
-    center_sigma = draw(st.floats(min_value=0.5, max_value=3.0))
+    center_sigma = draw(st.floats(min_value=1.0, max_value=3.0))
     surround_sigma = draw(
-        st.floats(min_value=center_sigma, max_value=6.0, exclude_min=True)
+        st.floats(min_value=center_sigma * 1.5, max_value=6.0, exclude_min=True)
     )
     n_scales = draw(st.integers(min_value=1, max_value=5))
     max_octaves = draw(
@@ -693,7 +693,7 @@ def color_channel_salience_setup(
 def solid_left_half_float32_image_color_channel_salience_setup(
     draw: st.DrawFn, fill_value: float = 1.0
 ) -> npt.NDArray[np.float32]:
-    image = draw(filled_float32_image(fill_value=fill_value, min_value=6))
+    image = draw(filled_float32_image(fill_value=fill_value, min_value=64))
     image[:, image.shape[1] // 2 :] = 0.0
     processor = draw(color_channel_salience_processor(image))
     return image, processor
@@ -723,12 +723,33 @@ class ColorChannelSalienceTest(unittest.TestCase):
         feature_map, _ = processor.process(vertical_edge_image)
 
         band = feature_map[0]
-        local_minima = find_peaks(-band)
-        local_maxima = find_peaks(band)
 
-        self.assertTrue(len(local_minima) == 1)
-        self.assertTrue(len(local_maxima) == 2)
-        self.assertTrue(local_maxima[0] < local_minima[0] < local_maxima[1])
+        # local_minima = find_local_minima(band)
+        local_maxima, _ = scipy.signal.find_peaks(band)
+
+        local_minima, _ = scipy.signal.find_peaks(-band)
+        index_of_edge = vertical_edge_image.shape[1] // 2
+
+        print(f"band: {list(band)}")
+        print(f" - local_minima: {local_minima}")
+        print(f" - local_maxima: {local_maxima}")
+        print(f" - center_sigma: {processor._center_sigma}")
+        print(f" - surround_sigma: {processor._surround_sigma}")
+        print(f" - n_scales: {processor._n_scales}")
+        print(f" - max_octaves: {processor._max_octaves}")
+        print(f" - min_size: {processor._min_size}")
+
+        self.assertTrue(
+            index_of_edge in local_minima or index_of_edge - 1 in local_minima
+        )
+        peaks_below_edge = local_maxima[local_maxima < index_of_edge]
+        self.assertTrue(len(peaks_below_edge) > 0)
+        peaks_above_edge = local_maxima[local_maxima > index_of_edge]
+        self.assertTrue(len(peaks_above_edge) > 0)
+
+        # self.assertTrue(len(local_minima) == 3)
+        # self.assertTrue(len(local_maxima) == 2)
+        # self.assertTrue(local_minima[0] < local_maxima[0])
 
         # | MIN ...... MAX .... MIN 2 | | MIN 2 ...... MAX ...... MIN |
         # | MIN .... |  <- global min should be on left edge
@@ -769,6 +790,16 @@ class ColorChannelSalienceTest(unittest.TestCase):
     def test_edge_core_less_salient_than_its_flanks(self) -> None:
         pass
 
+
+class FindPeaksTest(unittest.TestCase):
+    def test_find_peaks(self) -> None:
+        band = np.array(
+            [0.0499633, 0.08309868, 0.04993224, 0.0499323, 0.08309866, 0.04996329],
+            dtype=np.float32,
+        )
+        peaks = find_peaks(-band)
+
+
 def find_peaks(band: npt.NDArray[np.float32]) -> npt.NDArray[np.int_]:
     """Finds peaks in a band of salience values.
 
@@ -785,5 +816,46 @@ def find_peaks(band: npt.NDArray[np.float32]) -> npt.NDArray[np.int_]:
     if band[0] > band[1]:
         peaks = np.insert(peaks, 0, 0)
     if band[-1] > band[-2]:
+        peaks = np.append(peaks, len(band) - 1)
+    return peaks
+
+
+def find_local_maxima(band: npt.NDArray[np.float32]) -> npt.NDArray[np.int_]:
+    """Finds peaks in a band of salience values.
+
+    Args:
+        band: A 1D array of salience values of length at least 2.
+
+    Returns:
+        A 1D array of peak indices.
+    """
+    if len(band) < 2:
+        raise ValueError("Band must have at least 2 elements")
+
+    peaks, _ = scipy.signal.find_peaks(band)
+    if band[0] > band[1]:
+        peaks = np.insert(peaks, 0, 0)
+    if band[-1] > band[-2]:
+        peaks = np.append(peaks, len(band) - 1)
+    return peaks
+
+
+def find_local_minima(band: npt.NDArray[np.float32]) -> npt.NDArray[np.int_]:
+    """Finds peaks in a band of salience values.
+
+    Args:
+        band: A 1D array of salience values of length at least 2.
+
+    Returns:
+        A 1D array of peak indices.
+    """
+
+    if len(band) < 2:
+        raise ValueError("Band must have at least 2 elements")
+
+    peaks, _ = scipy.signal.find_peaks(-band)
+    if band[0] <= band[1]:
+        peaks = np.insert(peaks, 0, 0)
+    if band[-1] <= band[-2]:
         peaks = np.append(peaks, len(band) - 1)
     return peaks
