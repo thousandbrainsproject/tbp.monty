@@ -1153,18 +1153,6 @@ class GraphMemory(LMMemory):
                         input_channel,
                     )
 
-    def memory_consolidation(self):
-        """Is here just as a placeholder.
-
-        This could be a function that cleans up graphs in memory to make
-        more efficient use of their nodes by spacing them out evenly along
-        the approximated object surface. It could be something that happens
-        during sleep. During clean up, similar graphs could also be merged.
-
-        Q: Should we implement something like this?
-        """
-        raise NotImplementedError("memory_consolidation has not been implemented yet.")
-
     def initialize_feature_arrays(self):
         for graph_id in self.get_memory_ids():
             if graph_id not in self.feature_array:

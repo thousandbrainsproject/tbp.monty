@@ -358,11 +358,6 @@ class LMMemory(metaclass=abc.ABCMeta):
         """Update models stored in memory given new observation & classification."""
         pass
 
-    @abc.abstractmethod
-    def memory_consolidation(self):
-        """Consolidate/clean up models stored in memory."""
-        pass
-
     ###
     # Saving, loading
     ###
