@@ -133,7 +133,6 @@ class TwoDSensorModule(SensorModule):
 
         self.features = features
         self.processed_obs = []
-        self.states = []
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
         self.edge_detector = edge_detector
@@ -149,7 +148,6 @@ class TwoDSensorModule(SensorModule):
         self._percept_filter.reset()
         self.is_exploring = False
         self.processed_obs = []
-        self.states = []
         self._previous_3d_location = None
         self._previous_2d_location = np.zeros(2)
         self._tangent_frame = None
@@ -224,7 +222,6 @@ class TwoDSensorModule(SensorModule):
 
         if not self.is_exploring:
             self.processed_obs.append(observed_state.__dict__)
-            self.states.append(self.state)
 
         return observed_state
 
