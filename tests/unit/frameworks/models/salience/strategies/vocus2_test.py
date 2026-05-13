@@ -734,10 +734,12 @@ class ColorChannelSalienceTest(unittest.TestCase):
 
     @given(
         vertical_edge_case=solid_left_half_float32_image_color_channel_salience_setup(),
+        vertical=st.booleans(),
     )
     def test_edge_not_salient_but_flanks_are_salient(
         self,
         vertical_edge_case: tuple[npt.NDArray[np.float32], ColorChannelSalience],
+        vertical: bool,
     ) -> None:
         # Over our tested range of center_sigma and surround_sigma values, an edge
         # should look qualitatively like
@@ -746,23 +748,20 @@ class ColorChannelSalienceTest(unittest.TestCase):
         # ___/    \/    \___
         # where central minimum is located at the edge.
         vertical_edge_image, processor = vertical_edge_case
-        feature_map, _ = processor.process(vertical_edge_image)
 
-        band = feature_map[0]
+        if vertical:
+            image = vertical_edge_image
+        else:
+            image = vertical_edge_image.T
+
+        feature_map, _ = processor.process(image)
+
+        band = feature_map[0] if vertical else feature_map[:, 0]
         local_maxima, _ = scipy.signal.find_peaks(band)
         local_minima, _ = scipy.signal.find_peaks(-band)
-        index_of_edge = vertical_edge_image.shape[1] // 2
+        index_of_edge = len(band) // 2
         peaks_below_edge = local_maxima[local_maxima < index_of_edge]
         peaks_above_edge = local_maxima[local_maxima > index_of_edge]
-
-        # print(f"band: {list(band)}")
-        # print(f" - local_minima: {local_minima}")
-        # print(f" - local_maxima: {local_maxima}")
-        # print(f" - center_sigma: {processor._center_sigma}")
-        # print(f" - surround_sigma: {processor._surround_sigma}")
-        # print(f" - n_scales: {processor._n_scales}")
-        # print(f" - max_octaves: {processor._max_octaves}")
-        # print(f" - min_size: {processor._min_size}")
 
         self.assertTrue(
             index_of_edge in local_minima or index_of_edge - 1 in local_minima
@@ -771,6 +770,3 @@ class ColorChannelSalienceTest(unittest.TestCase):
         self.assertTrue(len(peaks_below_edge) > 0)
         peaks_above_edge = local_maxima[local_maxima > index_of_edge]
         self.assertTrue(len(peaks_above_edge) > 0)
-
-    def test_edge_core_less_salient_than_its_flanks(self) -> None:
-        pass
