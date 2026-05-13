@@ -844,7 +844,14 @@ class ColorChannelSalienceTest(unittest.TestCase):
         index_of_edge = len(band) // 2
         peaks_below_edge = local_maxima[local_maxima < index_of_edge]
         peaks_above_edge = local_maxima[local_maxima > index_of_edge]
-
+        print(f"band: {list(band)}")
+        # print(f"local_minima: {len(local_minima)}")
+        # print(f"local_maxima: {len(local_maxima)}")
+        # print(f"index_of_edge: {index_of_edge}")
+        # print(f"peaks_below_edge: {len(peaks_below_edge)}")
+        # print(f"peaks_above_edge: {len(peaks_above_edge)}")
+        # print(f"peaks_below_edge: {peaks_below_edge}")
+        # print(f"peaks_above_edge: {peaks_above_edge}")
         self.assertTrue(
             index_of_edge in local_minima or index_of_edge - 1 in local_minima
         )

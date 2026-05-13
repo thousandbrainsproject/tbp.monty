@@ -463,9 +463,9 @@ class NoOperatingLimits(OperatingLimits):
 @dataclass(frozen=True)
 class SafeOperatingLimits(OperatingLimits):
     min_center_sigma: float = 1.0
-    max_center_sigma: float = 3.0
-    max_surround_sigma: float = 6.0
-    center_surround_sigma_ratio: float = 1.5
+    max_center_sigma: float = 6.0
+    max_surround_sigma: float = 12.0
+    center_surround_sigma_ratio: float = 1.6
     min_image_dim_size: int = 64
 
     @staticmethod
