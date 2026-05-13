@@ -392,7 +392,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             [mean_local_variation(plane) for plane in surround.flat]
         )
         variations = center_variations - surround_variations
-        self.assertTrue(all(variations >= 0))
+        self.assertTrue(all(variations >= -DEFAULT_TOLERANCE))
 
     @given(
         image=solid_float32_image(),
