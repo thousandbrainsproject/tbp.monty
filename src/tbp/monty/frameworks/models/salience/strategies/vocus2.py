@@ -523,11 +523,15 @@ class ColorChannelSalience:
         collapse: PyramidCollapse = pyramid_collapse_mean,
         operating_limits: OperatingLimits | None = None,
     ):
-        """Create a `ColorChannelSalience`.
+        """Create a `ColorChannelSalience` with safe operating limits.
 
         `ColorChannelSalience` was designed and tested to be used within provided safe
-        operating limits. To opt-into using safe operating limits, use the
-        `with_safe_operating_limits` class method instead of constructing directly.
+        operating limits. Safe operating limits will raise a `ValueError` if the
+        parameters are outside of the safe operating limits. Some are checked at
+        construction time, others are checked at runtime and subject to
+        `RuntimeContext.suppress_runtime_errors`. To opt-out of using safe operating
+        limits, use the `without_operating_limits` class method instead of constructing
+        directly.
 
         Args:
             center_sigma: The center sigma for the center/surround pyramids.
@@ -547,7 +551,7 @@ class ColorChannelSalience:
         self._combine = combine
         self._collapse = collapse
         self._operating_limits = (
-            operating_limits if operating_limits is not None else NoOperatingLimits()
+            operating_limits if operating_limits is not None else SafeOperatingLimits()
         )
 
         error = self._operating_limits.validate_center_and_surround_sigma(
@@ -557,7 +561,7 @@ class ColorChannelSalience:
             raise error
 
     @classmethod
-    def with_safe_operating_limits(
+    def without_operating_limits(
         cls,
         center_sigma: float = 2.0,
         surround_sigma: float = 3.0,
@@ -567,11 +571,10 @@ class ColorChannelSalience:
         combine: PyramidCombine = pyramid_combine_mean,
         collapse: PyramidCollapse = pyramid_collapse_mean,
     ) -> ColorChannelSalience:
-        """Create a `ColorChannelSalience` with safe operating limits.
+        """Create a `ColorChannelSalience` without operating limits.
 
-        Safe operating limits will raise a `ValueError` if the parameters are outside of
-        the safe operating limits. Some are checked at construction time, others are
-        checked at runtime and subject to `RuntimeContext.suppress_runtime_errors`.
+        It is up to you to ensure that the combination of parameters you select is
+        valid for your use case.
 
         Args:
             center_sigma: The center sigma for the center/surround pyramids.
@@ -583,7 +586,7 @@ class ColorChannelSalience:
             collapse: The function to collapse the combined pyramid into a single image.
 
         Returns:
-            A `ColorChannelSalience` with safe operating limits.
+            A `ColorChannelSalience` without operating limits.
         """
         return cls(
             center_sigma=center_sigma,
@@ -593,7 +596,7 @@ class ColorChannelSalience:
             min_size=min_size,
             combine=combine,
             collapse=collapse,
-            operating_limits=SafeOperatingLimits(),
+            operating_limits=NoOperatingLimits(),
         )
 
     def process(
