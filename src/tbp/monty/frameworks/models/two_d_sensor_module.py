@@ -338,7 +338,7 @@ class TwoDSensorModule(SensorModule):
         du = np.dot(d_tan, self._tangent_frame.basis_u)
         dv = np.dot(d_tan, self._tangent_frame.basis_v)
 
-        principal_curvatures = observed_state.morphological_features.get(
+        principal_curvatures = observed_state.non_morphological_features.get(
             "principal_curvatures"
         )
 
