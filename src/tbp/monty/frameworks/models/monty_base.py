@@ -392,6 +392,7 @@ class MontyBase(Monty):
         # to update their long-term memory from their short-term buffer.
         for lm in self.learning_modules:
             lm.update_ltm_from_stm()
+            lm.fixme_update_ground_truth()
 
     ###
     # Methods for saving and loading

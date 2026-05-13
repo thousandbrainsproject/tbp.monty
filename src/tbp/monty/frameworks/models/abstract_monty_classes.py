@@ -284,7 +284,12 @@ class LearningModule(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def update_ltm_from_stm(self):
-        """Update long-term memory from short-term buffer (post episode)."""
+        """Update long-term memory from short-term memory buffer."""
+        pass
+
+    @abc.abstractmethod
+    def fixme_update_ground_truth(self):
+        """Update internal state based on ground truth."""
         pass
 
     @abc.abstractmethod
