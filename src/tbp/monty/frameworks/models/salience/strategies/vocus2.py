@@ -433,6 +433,7 @@ class WeightedMean(MapCombine):
         normed_weights = {key: weight / total_weight for key, weight in weights.items()}
         return np.sum([normed_weights[key] * img for key, img in maps.items()], axis=0)
 
+
 @dataclass(frozen=True)
 class SafeOperatingLimits:
     min_center_sigma: float = 1.0
@@ -441,6 +442,58 @@ class SafeOperatingLimits:
     center_surround_sigma_ratio: float = 1.5
     min_image_dim_size: int = 64
     max_image_dim_size: int = 1024
+
+    @staticmethod
+    def validate_center_and_surround_sigma(
+        center_sigma: float,
+        surround_sigma: float,
+    ) -> None:
+        if center_sigma < SafeOperatingLimits.min_center_sigma:
+            raise ValueError(
+                "Center sigma must be greater than or equal to "
+                f"{SafeOperatingLimits.min_center_sigma}"
+            )
+        if center_sigma > SafeOperatingLimits.max_center_sigma:
+            raise ValueError(
+                "Center sigma must be less than or equal to "
+                f"{SafeOperatingLimits.max_center_sigma}"
+            )
+        if surround_sigma < SafeOperatingLimits.min_surround_sigma:
+            raise ValueError(
+                "Surround sigma must be greater than or equal to "
+                f"{SafeOperatingLimits.min_surround_sigma}"
+            )
+        if surround_sigma > SafeOperatingLimits.max_surround_sigma:
+            raise ValueError(
+                "Surround sigma must be less than or equal to "
+                f"{SafeOperatingLimits.max_surround_sigma}"
+            )
+        if (
+            center_sigma / surround_sigma
+            > SafeOperatingLimits.center_surround_sigma_ratio
+        ):
+            raise ValueError(
+                "Center sigma must be less than or equal to "
+                f"{SafeOperatingLimits.center_surround_sigma_ratio} times "
+                "surround sigma"
+            )
+
+    @staticmethod
+    def validate_image_dim_size(
+        image_dim_size: int,
+    ) -> None:
+        if image_dim_size < SafeOperatingLimits.min_image_dim_size:
+            raise ValueError(
+                "Image dimension size must be greater than or equal to "
+                f"{SafeOperatingLimits.min_image_dim_size}"
+            )
+        if image_dim_size > SafeOperatingLimits.max_image_dim_size:
+            raise ValueError(
+                "Image dimension size must be less than or equal to "
+                f"{SafeOperatingLimits.max_image_dim_size}"
+            )
+
+
 class ColorChannelSalience:
     def __init__(
         self,
