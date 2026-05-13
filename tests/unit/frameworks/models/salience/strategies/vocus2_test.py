@@ -693,6 +693,7 @@ def color_channel_salience_processor(
         min_size=min_size,
     )
 
+
 @st.composite
 def color_channel_salience_processor_with_safe_operating_limits(
     draw: st.DrawFn, image: npt.NDArray[np.float32]
@@ -753,6 +754,7 @@ class Direction(Enum):
     VERTICAL = "vertical"
     HORIZONTAL = "horizontal"
 
+
 @st.composite
 def unsafe_center_and_surround_sigmas(draw: st.DrawFn) -> tuple[float, float]:
     center_sigma = draw(
@@ -787,6 +789,7 @@ def unsafe_center_and_surround_sigmas(draw: st.DrawFn) -> tuple[float, float]:
         )
     )
     return center_sigma, surround_sigma
+
 
 class ColorChannelSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-3

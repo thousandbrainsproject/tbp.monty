@@ -499,7 +499,6 @@ class SafeOperatingLimits(OperatingLimits):
             )
         return None
 
-
     @staticmethod
     def validate_image_dim_size(
         image_dim_size: int,
