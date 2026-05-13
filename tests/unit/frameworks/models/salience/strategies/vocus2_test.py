@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import unittest
+from enum import Enum
 from typing import cast
 from unittest.mock import Mock, patch, sentinel
 
@@ -719,6 +720,11 @@ def solid_left_half_float32_image_color_channel_salience_setup(
     return image, processor
 
 
+class Direction(Enum):
+    VERTICAL = "vertical"
+    HORIZONTAL = "horizontal"
+
+
 class ColorChannelSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-3
 
@@ -734,12 +740,12 @@ class ColorChannelSalienceTest(unittest.TestCase):
 
     @given(
         vertical_edge_case=solid_left_half_float32_image_color_channel_salience_setup(),
-        vertical=st.booleans(),
+        edge_orientation=st.sampled_from(Direction),
     )
     def test_edge_not_salient_but_flanks_are_salient(
         self,
         vertical_edge_case: tuple[npt.NDArray[np.float32], ColorChannelSalience],
-        vertical: bool,
+        edge_orientation: Direction,
     ) -> None:
         # Over our tested range of center_sigma and surround_sigma values, an edge
         # should look qualitatively like
@@ -749,14 +755,22 @@ class ColorChannelSalienceTest(unittest.TestCase):
         # where central minimum is located at the edge.
         vertical_edge_image, processor = vertical_edge_case
 
-        if vertical:
+        if edge_orientation == Direction.VERTICAL:
             image = vertical_edge_image
-        else:
+        elif edge_orientation == Direction.HORIZONTAL:
             image = vertical_edge_image.T
+        else:
+            raise ValueError(f"Invalid edge orientation: {edge_orientation}")
 
         feature_map, _ = processor.process(image)
 
-        band = feature_map[0] if vertical else feature_map[:, 0]
+        if edge_orientation == Direction.VERTICAL:
+            band = feature_map[0]
+        elif edge_orientation == Direction.HORIZONTAL:
+            band = feature_map[:, 0]
+        else:
+            raise ValueError(f"Invalid edge orientation: {edge_orientation}")
+
         local_maxima, _ = scipy.signal.find_peaks(band)
         local_minima, _ = scipy.signal.find_peaks(-band)
         index_of_edge = len(band) // 2
