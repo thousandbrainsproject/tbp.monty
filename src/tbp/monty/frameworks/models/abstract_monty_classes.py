@@ -283,8 +283,8 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def post_episode(self):
-        """Do things like update object models with stored data after an episode."""
+    def update_ltm_from_stm(self):
+        """Update long-term memory from short-term buffer (post episode)."""
         pass
 
     @abc.abstractmethod
