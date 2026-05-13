@@ -657,13 +657,29 @@ class PyramidCollapseTest(unittest.TestCase):
                 nptest.assert_array_equal(reduce_input[i], expected_reduce_input[i])
 
 
+RESTRICTED_MIN_CENTER_SIGMA = 1.0
+RESTRICTED_MAX_CENTER_SIGMA = 3.0
+RESTRICTED_MIN_SURROUND_SIGMA = 1.5
+RESTRICTED_MAX_SURROUND_SIGMA = 6.0
+RESTRICTED_CENTER_SURROUND_SIGMA_RATIO = 1.5
+RESTRICTED_MIN_IMAGE_DIM_SIZE = 64
+RESTRICTED_MAX_IMAGE_DIM_SIZE = 1024
+
+
 @st.composite
 def color_channel_salience_processor(
     draw: st.DrawFn, image: npt.NDArray[np.float32]
 ) -> ColorChannelSalience:
-    center_sigma = draw(st.floats(min_value=1.0, max_value=3.0))
+    center_sigma = draw(
+        st.floats(
+            min_value=RESTRICTED_MIN_CENTER_SIGMA, max_value=RESTRICTED_MAX_CENTER_SIGMA
+        )
+    )
     surround_sigma = draw(
-        st.floats(min_value=center_sigma * 1.5, max_value=6.0, exclude_min=True)
+        st.floats(
+            min_value=center_sigma * RESTRICTED_CENTER_SURROUND_SIGMA_RATIO,
+            max_value=RESTRICTED_MAX_SURROUND_SIGMA,
+        )
     )
     n_scales = draw(st.integers(min_value=1, max_value=5))
     max_octaves = draw(
@@ -693,7 +709,11 @@ def color_channel_salience_setup(
 def solid_left_half_float32_image_color_channel_salience_setup(
     draw: st.DrawFn, fill_value: float = 1.0
 ) -> npt.NDArray[np.float32]:
-    image = draw(filled_float32_image(fill_value=fill_value, min_value=64))
+    image = draw(
+        filled_float32_image(
+            fill_value=fill_value, min_dim_size=RESTRICTED_MIN_IMAGE_DIM_SIZE
+        )
+    )
     image[:, image.shape[1] // 2 :] = 0.0
     processor = draw(color_channel_salience_processor(image))
     return image, processor
