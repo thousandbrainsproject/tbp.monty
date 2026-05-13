@@ -396,7 +396,8 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             [mean_local_variation(plane) for plane in surround.flat]
         )
         variations = center_variations - surround_variations
-        self.assertTrue(all(variations >= -DEFAULT_TOLERANCE))
+        tolerance = 1e-4  # opencv variation tolerance
+        self.assertTrue(all(variations >= -tolerance))
 
     @given(
         image=solid_float32_image(),
@@ -692,13 +693,45 @@ def color_channel_salience_processor(
         min_size=min_size,
     )
 
+@st.composite
+def color_channel_salience_processor_with_safe_operating_limits(
+    draw: st.DrawFn, image: npt.NDArray[np.float32]
+) -> ColorChannelSalience:
+    center_sigma = draw(
+        st.floats(
+            min_value=SafeOperatingLimits.min_center_sigma,
+            max_value=SafeOperatingLimits.max_center_sigma,
+        )
+    )
+    surround_sigma = draw(
+        st.floats(
+            min_value=center_sigma * SafeOperatingLimits.center_surround_sigma_ratio,
+            max_value=SafeOperatingLimits.max_surround_sigma,
+        )
+    )
+    n_scales = draw(st.integers(min_value=1, max_value=5))
+    max_octaves = draw(
+        st.integers(min_value=1, max_value=int(1 + np.log2(max(image.shape))))
+    )
+    min_size = draw(st.integers(min_value=1, max_value=min(image.shape)))
+
+    return ColorChannelSalience.with_safe_operating_limits(
+        center_sigma=center_sigma,
+        surround_sigma=surround_sigma,
+        n_scales=n_scales,
+        max_octaves=max_octaves,
+        min_size=min_size,
+    )
+
 
 @st.composite
 def color_channel_salience_setup(
-    draw: st.DrawFn, image_strategy: st.SearchStrategy[npt.NDArray[np.float32]]
+    draw: st.DrawFn,
+    salience_processor_strategy: st.SearchStrategy[ColorChannelSalience],
+    image_strategy: st.SearchStrategy[npt.NDArray[np.float32]],
 ) -> tuple[npt.NDArray[np.float32], ColorChannelSalience]:
     image = draw(image_strategy)
-    processor = draw(color_channel_salience_processor(image))
+    processor = draw(salience_processor_strategy(image))
     return image, processor
 
 
@@ -720,18 +753,54 @@ class Direction(Enum):
     VERTICAL = "vertical"
     HORIZONTAL = "horizontal"
 
+@st.composite
+def unsafe_center_and_surround_sigmas(draw: st.DrawFn) -> tuple[float, float]:
+    center_sigma = draw(
+        st.one_of(
+            st.floats(
+                min_value=SafeOperatingLimits.min_center_sigma - 1,
+                max_value=SafeOperatingLimits.min_center_sigma,
+                exclude_max=True,
+            ),
+            st.floats(
+                min_value=SafeOperatingLimits.max_center_sigma,
+                max_value=SafeOperatingLimits.max_center_sigma + 1,
+                exclude_min=True,
+            ),
+        )
+    )
+    surround_sigma = draw(
+        st.one_of(
+            st.floats(
+                min_value=SafeOperatingLimits.center_surround_sigma_ratio
+                * SafeOperatingLimits.min_center_sigma
+                - 1,
+                max_value=SafeOperatingLimits.center_surround_sigma_ratio
+                * SafeOperatingLimits.min_center_sigma,
+                exclude_max=True,
+            ),
+            st.floats(
+                min_value=SafeOperatingLimits.max_surround_sigma,
+                max_value=SafeOperatingLimits.max_surround_sigma + 1,
+                exclude_min=True,
+            ),
+        )
+    )
+    return center_sigma, surround_sigma
 
 class ColorChannelSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-3
 
     @given(
-        image_and_processor=color_channel_salience_setup(solid_float32_image()),
+        image_and_processor=color_channel_salience_setup(
+            color_channel_salience_processor, solid_float32_image()
+        ),
     )
     def test_solid_image_not_salient(
         self, image_and_processor: tuple[npt.NDArray[np.float32], ColorChannelSalience]
     ) -> None:
         image, processor = image_and_processor
-        feature_map, _ = processor.process(image)
+        feature_map, _ = processor.process(Mock(), image)
         self.assertTrue(np.all(feature_map < self.MINIMUM_SALIENCE_THRESHOLD))
 
     @given(
@@ -758,7 +827,7 @@ class ColorChannelSalienceTest(unittest.TestCase):
         else:
             raise ValueError(f"Invalid edge orientation: {edge_orientation}")
 
-        feature_map, _ = processor.process(image)
+        feature_map, _ = processor.process(Mock(), image)
 
         if edge_orientation == Direction.VERTICAL:
             band = feature_map[feature_map.shape[0] // 2]
@@ -782,51 +851,58 @@ class ColorChannelSalienceTest(unittest.TestCase):
         self.assertTrue(len(peaks_above_edge) > 0)
 
     @given(
-        center_sigma=st.one_of(
-            st.floats(
-                min_value=SafeOperatingLimits.min_center_sigma - 1,
-                max_value=SafeOperatingLimits.min_center_sigma,
-                exclude_max=True,
-            ),
-            st.floats(
-                min_value=SafeOperatingLimits.max_center_sigma,
-                max_value=SafeOperatingLimits.max_center_sigma + 1,
-                exclude_min=True,
-            ),
-        ),
-        surround_sigma=st.one_of(
-            st.floats(
-                min_value=SafeOperatingLimits.center_surround_sigma_ratio
-                * SafeOperatingLimits.min_center_sigma
-                - 1,
-                max_value=SafeOperatingLimits.center_surround_sigma_ratio
-                * SafeOperatingLimits.min_center_sigma,
-                exclude_max=True,
-            ),
-            st.floats(
-                min_value=SafeOperatingLimits.max_surround_sigma,
-                max_value=SafeOperatingLimits.max_surround_sigma + 1,
-                exclude_min=True,
+        center_and_surround_sigmas=unsafe_center_and_surround_sigmas(),
+    )
+    def test_constructing_with_unsafe_sigmas_does_not_raise(
+        self,
+        center_and_surround_sigmas: tuple[float, float],
+    ) -> None:
+        center_sigma, surround_sigma = center_and_surround_sigmas
+        ColorChannelSalience(
+            center_sigma=center_sigma,
+            surround_sigma=surround_sigma,
+        )
+
+    @given(
+        image_and_processor=color_channel_salience_setup(
+            color_channel_salience_processor,
+            filled_float32_image(
+                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
             ),
         ),
+        suppress_runtime_errors=st.booleans(),
+    )
+    def test_process_does_not_raise_value_error_if_image_has_smaller_dimension_than_min_safe_dim_size(  # noqa: E501
+        self,
+        image_and_processor: tuple[npt.NDArray[np.float32], ColorChannelSalience],
+        suppress_runtime_errors: bool,
+    ) -> None:
+        image, processor = image_and_processor
+        ctx = Mock(suppress_runtime_errors=suppress_runtime_errors)
+        processor.process(ctx, image)
+
+
+class ColorChannelSalienceWithSafeOperatingLimitsTest(unittest.TestCase):
+    @given(
+        center_and_surround_sigmas=unsafe_center_and_surround_sigmas(),
     )
     def test_constructing_with_unsafe_sigmas_raises_value_error(
         self,
-        center_sigma: float,
-        surround_sigma: float,
+        center_and_surround_sigmas: tuple[float, float],
     ) -> None:
+        center_sigma, surround_sigma = center_and_surround_sigmas
         with self.assertRaises(ValueError):
-            ColorChannelSalience(
+            ColorChannelSalience.with_safe_operating_limits(
                 center_sigma=center_sigma,
                 surround_sigma=surround_sigma,
-                n_scales=Mock(),
             )
 
     @given(
         image_and_processor=color_channel_salience_setup(
+            color_channel_salience_processor_with_safe_operating_limits,
             filled_float32_image(
                 max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
-            )
+            ),
         ),
     )
     def test_process_raises_value_error_if_image_has_smaller_dimension_than_min_safe_dim_size_and_suppress_runtimes_errors_is_false(  # noqa: E501
@@ -837,3 +913,19 @@ class ColorChannelSalienceTest(unittest.TestCase):
         ctx = Mock(suppress_runtime_errors=False)
         with self.assertRaises(ValueError):
             processor.process(ctx, image)
+
+    @given(
+        image_and_processor=color_channel_salience_setup(
+            color_channel_salience_processor_with_safe_operating_limits,
+            filled_float32_image(
+                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
+            ),
+        ),
+    )
+    def test_process_does_not_raise_value_error_if_image_has_smaller_dimension_than_min_safe_dim_size_and_suppress_runtimes_errors_is_true(  # noqa: E501
+        self,
+        image_and_processor: tuple[npt.NDArray[np.float32], ColorChannelSalience],
+    ) -> None:
+        image, processor = image_and_processor
+        ctx = Mock(suppress_runtime_errors=True)
+        processor.process(ctx, image)

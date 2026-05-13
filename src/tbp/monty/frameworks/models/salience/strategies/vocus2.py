@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Callable, Dict, Iterator, NewType, Protocol, Sequence, cast
 
@@ -15,8 +16,11 @@ import cv2
 import numpy as np
 import numpy.typing as npt
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.salience.strategies import SalienceStrategy
 from tbp.monty.frameworks.sensors import Resolution2D
+
+logger = logging.getLogger(__name__)
 
 """
 - Color
@@ -434,8 +438,30 @@ class WeightedMean(MapCombine):
         return np.sum([normed_weights[key] * img for key, img in maps.items()], axis=0)
 
 
+class OperatingLimits(Protocol):
+    def validate_center_and_surround_sigma(
+        self, center_sigma: float, surround_sigma: float
+    ) -> ValueError | None: ...
+    def validate_image_dim_size(self, image_dim_size: int) -> ValueError | None: ...
+
+
+class NoOperatingLimits(OperatingLimits):
+    def validate_center_and_surround_sigma(
+        self,
+        center_sigma: float,  # noqa: ARG002
+        surround_sigma: float,  # noqa: ARG002
+    ) -> ValueError | None:
+        return None
+
+    def validate_image_dim_size(
+        self,
+        image_dim_size: int,  # noqa: ARG002
+    ) -> ValueError | None:
+        return None
+
+
 @dataclass(frozen=True)
-class SafeOperatingLimits:
+class SafeOperatingLimits(OperatingLimits):
     min_center_sigma: float = 1.0
     max_center_sigma: float = 3.0
     max_surround_sigma: float = 6.0
@@ -446,14 +472,14 @@ class SafeOperatingLimits:
     def validate_center_and_surround_sigma(
         center_sigma: float,
         surround_sigma: float,
-    ) -> None:
+    ) -> ValueError | None:
         if center_sigma < SafeOperatingLimits.min_center_sigma:
-            raise ValueError(
+            return ValueError(
                 "Center sigma must be greater than or equal to "
                 f"{SafeOperatingLimits.min_center_sigma}"
             )
         if center_sigma > SafeOperatingLimits.max_center_sigma:
-            raise ValueError(
+            return ValueError(
                 "Center sigma must be less than or equal to "
                 f"{SafeOperatingLimits.max_center_sigma}"
             )
@@ -462,40 +488,58 @@ class SafeOperatingLimits:
             surround_sigma
             < center_sigma * SafeOperatingLimits.center_surround_sigma_ratio
         ):
-            raise ValueError(
+            return ValueError(
                 "Surround sigma must be greater than or equal to "
                 f"{center_sigma * SafeOperatingLimits.center_surround_sigma_ratio}"
             )
         if surround_sigma > SafeOperatingLimits.max_surround_sigma:
-            raise ValueError(
+            return ValueError(
                 "Surround sigma must be less than or equal to "
                 f"{SafeOperatingLimits.max_surround_sigma}"
             )
+        return None
 
 
     @staticmethod
     def validate_image_dim_size(
         image_dim_size: int,
-    ) -> None:
+    ) -> ValueError | None:
         if image_dim_size < SafeOperatingLimits.min_image_dim_size:
-            raise ValueError(
+            return ValueError(
                 "Image dimension size must be greater than or equal to "
                 f"{SafeOperatingLimits.min_image_dim_size}"
             )
+        return None
 
 
 class ColorChannelSalience:
     def __init__(
         self,
-        center_sigma: float,
-        surround_sigma: float,
-        n_scales: int,
+        center_sigma: float = 2.0,
+        surround_sigma: float = 3.0,
+        n_scales: int = 5,
         max_octaves: int | None = None,
         min_size: int | None = None,
         combine: PyramidCombine = pyramid_combine_mean,
         collapse: PyramidCollapse = pyramid_collapse_mean,
-        unsafe: bool = False,
+        operating_limits: OperatingLimits | None = None,
     ):
+        """Create a `ColorChannelSalience`.
+
+        `ColorChannelSalience` was designed and tested to be used within provided safe
+        operating limits. To opt-into using safe operating limits, use the
+        `with_safe_operating_limits` class method instead of constructing directly.
+
+        Args:
+            center_sigma: The center sigma for the center/surround pyramids.
+            surround_sigma: The surround sigma for the center/surround pyramids.
+            n_scales: The number of pyramid scales.
+            max_octaves: The maximum number of pyramid octaves to construct.
+            min_size: The minimum image size to construct the pyramids at.
+            combine: The function to combine the on/off pyramids into a single pyramid.
+            collapse: The function to collapse the combined pyramid into a single image.
+            operating_limits: The operating limits to use.
+        """
         self._center_sigma = center_sigma
         self._surround_sigma = surround_sigma
         self._n_scales = n_scales
@@ -503,18 +547,63 @@ class ColorChannelSalience:
         self._min_size = min_size
         self._combine = combine
         self._collapse = collapse
-        self._unsafe = unsafe
-        if not self._unsafe:
-            SafeOperatingLimits.validate_center_and_surround_sigma(
-                self._center_sigma, self._surround_sigma
-            )
+        self._operating_limits = (
+            operating_limits if operating_limits is not None else NoOperatingLimits()
+        )
+
+        error = self._operating_limits.validate_center_and_surround_sigma(
+            self._center_sigma, self._surround_sigma
+        )
+        if error is not None:
+            raise error
+
+    @classmethod
+    def with_safe_operating_limits(
+        cls,
+        center_sigma: float = 2.0,
+        surround_sigma: float = 3.0,
+        n_scales: int = 5,
+        max_octaves: int | None = None,
+        min_size: int | None = None,
+        combine: PyramidCombine = pyramid_combine_mean,
+        collapse: PyramidCollapse = pyramid_collapse_mean,
+    ) -> ColorChannelSalience:
+        """Create a `ColorChannelSalience` with safe operating limits.
+
+        Safe operating limits will raise a `ValueError` if the parameters are outside of
+        the safe operating limits. Some are checked at construction time, others are
+        checked at runtime and subject to `RuntimeContext.suppress_runtime_errors`.
+
+        Args:
+            center_sigma: The center sigma for the center/surround pyramids.
+            surround_sigma: The surround sigma for the center/surround pyramids.
+            n_scales: The number of pyramid scales.
+            max_octaves: The maximum number of pyramid octaves to construct.
+            min_size: The minimum image size to construct the pyramids at.
+            combine: The function to combine the on/off pyramids into a single pyramid.
+            collapse: The function to collapse the combined pyramid into a single image.
+
+        Returns:
+            A `ColorChannelSalience` with safe operating limits.
+        """
+        return cls(
+            center_sigma=center_sigma,
+            surround_sigma=surround_sigma,
+            n_scales=n_scales,
+            max_octaves=max_octaves,
+            min_size=min_size,
+            combine=combine,
+            collapse=collapse,
+            operating_limits=SafeOperatingLimits(),
+        )
 
     def process(
-        self, image: npt.NDArray[np.float32]
+        self, ctx: RuntimeContext, image: npt.NDArray[np.float32]
     ) -> tuple[npt.NDArray[np.float32], Pyramid]:
         """Compute salience for a single color channel.
 
         Args:
+            ctx: The runtime context.
             image: Must be float32 and in the range [0, 1].
 
         Returns:
@@ -522,10 +611,18 @@ class ColorChannelSalience:
 
         Raises:
             ValueError: If configured min_size is greater than the smallest
-              image dimension.
+              image dimension. Also, if the image size is less than configured operating
+              limits.
         """
         if self._min_size is not None and self._min_size > min(image.shape):
             raise ValueError("Min size is greater than the image size")
+
+        error = self._operating_limits.validate_image_dim_size(min(image.shape))
+        if error is not None:
+            if ctx.suppress_runtime_errors:
+                logger.warning(str(error))
+            else:
+                raise error
 
         # Build center/surround and on/off pyramids.
         center, surround = center_surround_pyramids(
