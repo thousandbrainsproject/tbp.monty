@@ -441,7 +441,6 @@ class SafeOperatingLimits:
     max_surround_sigma: float = 6.0
     center_surround_sigma_ratio: float = 1.5
     min_image_dim_size: int = 64
-    max_image_dim_size: int = 1024
 
     @staticmethod
     def validate_center_and_surround_sigma(
@@ -458,25 +457,21 @@ class SafeOperatingLimits:
                 "Center sigma must be less than or equal to "
                 f"{SafeOperatingLimits.max_center_sigma}"
             )
-        if surround_sigma < SafeOperatingLimits.min_surround_sigma:
+
+        if (
+            surround_sigma
+            < center_sigma * SafeOperatingLimits.center_surround_sigma_ratio
+        ):
             raise ValueError(
                 "Surround sigma must be greater than or equal to "
-                f"{SafeOperatingLimits.min_surround_sigma}"
+                f"{center_sigma * SafeOperatingLimits.center_surround_sigma_ratio}"
             )
         if surround_sigma > SafeOperatingLimits.max_surround_sigma:
             raise ValueError(
                 "Surround sigma must be less than or equal to "
                 f"{SafeOperatingLimits.max_surround_sigma}"
             )
-        if (
-            center_sigma / surround_sigma
-            > SafeOperatingLimits.center_surround_sigma_ratio
-        ):
-            raise ValueError(
-                "Center sigma must be less than or equal to "
-                f"{SafeOperatingLimits.center_surround_sigma_ratio} times "
-                "surround sigma"
-            )
+
 
     @staticmethod
     def validate_image_dim_size(
@@ -486,11 +481,6 @@ class SafeOperatingLimits:
             raise ValueError(
                 "Image dimension size must be greater than or equal to "
                 f"{SafeOperatingLimits.min_image_dim_size}"
-            )
-        if image_dim_size > SafeOperatingLimits.max_image_dim_size:
-            raise ValueError(
-                "Image dimension size must be less than or equal to "
-                f"{SafeOperatingLimits.max_image_dim_size}"
             )
 
 
@@ -504,6 +494,7 @@ class ColorChannelSalience:
         min_size: int | None = None,
         combine: PyramidCombine = pyramid_combine_mean,
         collapse: PyramidCollapse = pyramid_collapse_mean,
+        unsafe: bool = False,
     ):
         self._center_sigma = center_sigma
         self._surround_sigma = surround_sigma
@@ -512,6 +503,11 @@ class ColorChannelSalience:
         self._min_size = min_size
         self._combine = combine
         self._collapse = collapse
+        self._unsafe = unsafe
+        if not self._unsafe:
+            SafeOperatingLimits.validate_center_and_surround_sigma(
+                self._center_sigma, self._surround_sigma
+            )
 
     def process(
         self, image: npt.NDArray[np.float32]
