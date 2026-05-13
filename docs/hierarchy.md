@@ -53,8 +53,6 @@
   - [evidence-based-learning-module](how-monty-works/learning-module/evidence-based-learning-module.md)
 - [connecting-lms-into-a-heterarchy](how-monty-works/connecting-lms-into-a-heterarchy.md)
 - [policy](how-monty-works/policy.md)
-- [research-features](how-monty-works/research-features.md)
-  - [evidence-as-a-similarity-measure](how-monty-works/research-features/evidence-as-a-similarity-measure.md)
 - [faq-monty](how-monty-works/faq-monty.md)
 - [open-questions](how-monty-works/open-questions.md)
 
