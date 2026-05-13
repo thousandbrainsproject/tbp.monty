@@ -636,12 +636,12 @@ class EvidenceSDRLMMixin:
             relative_evidences, [0, self.sdr_args["sdr_on_bits"]]
         )
 
-    def post_episode(self, *args, **kwargs):
-        """Overrides the LM post_episode function.
+    def update_ltm_from_stm(self, *args, **kwargs):
+        """Overrides the LM update_ltm_from_stm function.
 
         This function collects evidences, trains SDRs and logs the output.
         """
-        super().post_episode(*args, **kwargs)
+        super().update_ltm_from_stm(*args, **kwargs)
 
         # collect the evidences from Learning Module
         self.collect_evidences()

@@ -210,7 +210,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
             len(percepts),
             f"Should have stored exactly {len(percepts)} locations in the buffer.",
         )
-        lm.post_episode()
+        lm.update_ltm_from_stm()
 
     def match(self, lm, percepts):
         """Matching function without action policy and gsg.
@@ -246,7 +246,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTest):
             lm.add_lm_processing_to_buffer_stats(lm_processed=True)
             self.match(lm, [percept])
 
-        lm.post_episode()
+        lm.update_ltm_from_stm()
 
     def test_can_generate_reasonable_sdrs(self):
         """Test ability to generate reasonable SDRs.
