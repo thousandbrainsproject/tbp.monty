@@ -25,6 +25,7 @@ from hypothesis.extra.numpy import arrays
 from tbp.monty.frameworks.models.salience.strategies.vocus2 import (
     ColorChannelSalience,
     Pyramid,
+    SafeOperatingLimits,
     center_surround_pyramids,
     gaussian_pyramid,
     laplacian_pyramid,
@@ -658,28 +659,20 @@ class PyramidCollapseTest(unittest.TestCase):
                 nptest.assert_array_equal(reduce_input[i], expected_reduce_input[i])
 
 
-RESTRICTED_MIN_CENTER_SIGMA = 1.0
-RESTRICTED_MAX_CENTER_SIGMA = 3.0
-RESTRICTED_MIN_SURROUND_SIGMA = 1.5
-RESTRICTED_MAX_SURROUND_SIGMA = 6.0
-RESTRICTED_CENTER_SURROUND_SIGMA_RATIO = 1.5
-RESTRICTED_MIN_IMAGE_DIM_SIZE = 64
-RESTRICTED_MAX_IMAGE_DIM_SIZE = 1024
-
-
 @st.composite
 def color_channel_salience_processor(
     draw: st.DrawFn, image: npt.NDArray[np.float32]
 ) -> ColorChannelSalience:
     center_sigma = draw(
         st.floats(
-            min_value=RESTRICTED_MIN_CENTER_SIGMA, max_value=RESTRICTED_MAX_CENTER_SIGMA
+            min_value=SafeOperatingLimits.min_center_sigma,
+            max_value=SafeOperatingLimits.max_center_sigma,
         )
     )
     surround_sigma = draw(
         st.floats(
-            min_value=center_sigma * RESTRICTED_CENTER_SURROUND_SIGMA_RATIO,
-            max_value=RESTRICTED_MAX_SURROUND_SIGMA,
+            min_value=center_sigma * SafeOperatingLimits.center_surround_sigma_ratio,
+            max_value=SafeOperatingLimits.max_surround_sigma,
         )
     )
     n_scales = draw(st.integers(min_value=1, max_value=5))
@@ -712,7 +705,7 @@ def solid_left_half_float32_image_color_channel_salience_setup(
 ) -> npt.NDArray[np.float32]:
     image = draw(
         filled_float32_image(
-            fill_value=fill_value, min_dim_size=RESTRICTED_MIN_IMAGE_DIM_SIZE
+            fill_value=fill_value, min_dim_size=SafeOperatingLimits.min_image_dim_size
         )
     )
     image[:, image.shape[1] // 2 :] = 0.0
@@ -765,9 +758,9 @@ class ColorChannelSalienceTest(unittest.TestCase):
         feature_map, _ = processor.process(image)
 
         if edge_orientation == Direction.VERTICAL:
-            band = feature_map[0]
+            band = feature_map[feature_map.shape[0] // 2]
         elif edge_orientation == Direction.HORIZONTAL:
-            band = feature_map[:, 0]
+            band = feature_map[:, feature_map.shape[1] // 2]
         else:
             raise ValueError(f"Invalid edge orientation: {edge_orientation}")
 

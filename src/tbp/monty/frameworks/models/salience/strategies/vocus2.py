@@ -433,7 +433,14 @@ class WeightedMean(MapCombine):
         normed_weights = {key: weight / total_weight for key, weight in weights.items()}
         return np.sum([normed_weights[key] * img for key, img in maps.items()], axis=0)
 
-
+@dataclass(frozen=True)
+class SafeOperatingLimits:
+    min_center_sigma: float = 1.0
+    max_center_sigma: float = 3.0
+    max_surround_sigma: float = 6.0
+    center_surround_sigma_ratio: float = 1.5
+    min_image_dim_size: int = 64
+    max_image_dim_size: int = 1024
 class ColorChannelSalience:
     def __init__(
         self,
