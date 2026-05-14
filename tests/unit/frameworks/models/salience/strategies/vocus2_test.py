@@ -39,24 +39,28 @@ from tbp.monty.frameworks.sensors import Resolution2D
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.unit.statistics import mean_local_variation, total_variation
 
+MAX_DIM_SIZE = 1024
 
 class PyramidTest(unittest.TestCase):
-    @given(ndim=st.integers(min_value=3, max_value=10))
-    @example(ndim=1)
+    @given(ndim=st.sampled_from([0, 1, 3, 4, 5, 6, 7, 8, 9, 10]))
     def test_cannot_create_pyramid_with_non_2d_contents(self, ndim: int) -> None:
         with self.assertRaises(AssertionError):
-            Pyramid(np.zeros((5,) * ndim, dtype=object))
+            Pyramid(np.zeros((2,) * ndim, dtype=object))
 
     def test_can_create_pyramid_with_2d_contents(self) -> None:
-        Pyramid(np.zeros((5, 5), dtype=object))
+        Pyramid(np.zeros((2, 2), dtype=object))
 
     @given(
-        dim1=st.integers(min_value=1, max_value=10),
-        dim2=st.integers(min_value=1, max_value=10),
+        n_octaves=st.integers(min_value=1, max_value=10),
+        n_scales=st.integers(min_value=1, max_value=10),
     )
-    def test_apply_applies_function_to_each_element(self, dim1: int, dim2: int) -> None:
+    def test_apply_applies_function_to_each_element(
+        self,
+        n_octaves: int,
+        n_scales: int,
+    ) -> None:
         data = np.array(
-            [[Mock() for _ in range(dim2)] for _ in range(dim1)], dtype=object
+            [[Mock() for _ in range(n_scales)] for _ in range(n_octaves)], dtype=object
         )
         pyr = Pyramid(data)
         fn = Mock()
@@ -71,8 +75,8 @@ class PyramidTest(unittest.TestCase):
 class PyramidOctaveShapesTest(unittest.TestCase):
     @given(
         image_shape=st.tuples(
-            st.integers(min_value=1, max_value=1024),
-            st.integers(min_value=1, max_value=1024),
+            st.integers(min_value=1, max_value=MAX_DIM_SIZE),
+            st.integers(min_value=1, max_value=MAX_DIM_SIZE),
         ),
     )
     def test_generates_all_octaves_when_no_level_or_size_constraints(
@@ -90,11 +94,11 @@ class PyramidOctaveShapesTest(unittest.TestCase):
 
     @given(
         image_shape=st.tuples(
-            st.integers(min_value=1, max_value=1024),
-            st.integers(min_value=1, max_value=1024),
+            st.integers(min_value=1, max_value=MAX_DIM_SIZE),
+            st.integers(min_value=1, max_value=MAX_DIM_SIZE),
         ),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
-        min_size=st.integers(min_value=1, max_value=1024 * 2),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
+        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
     )
     def test_max_octaves_limits_number_of_octaves(
         self,
@@ -109,11 +113,11 @@ class PyramidOctaveShapesTest(unittest.TestCase):
 
     @given(
         image_shape=st.tuples(
-            st.integers(min_value=1, max_value=1024),
-            st.integers(min_value=1, max_value=1024),
+            st.integers(min_value=1, max_value=MAX_DIM_SIZE),
+            st.integers(min_value=1, max_value=MAX_DIM_SIZE),
         ),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
-        min_size=st.integers(min_value=1, max_value=1024 * 2),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
+        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
     )
     def test_min_size_limits_number_of_octaves(
         self,
@@ -131,10 +135,10 @@ class PyramidOctaveShapesTest(unittest.TestCase):
 
 class GaussianPyramidTest(unittest.TestCase):
     @given(
-        image=arrays(dtype=np.float32, shape=(1024, 1024)),
+        image=arrays(dtype=np.float32, shape=(MAX_DIM_SIZE, MAX_DIM_SIZE)),
         n_scales=st.integers(min_value=1, max_value=10),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
-        min_size=st.integers(min_value=1, max_value=1024 * 2),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
+        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
     )
     def test_has_correct_shape(
         self,
@@ -171,7 +175,7 @@ class GaussianPyramidTest(unittest.TestCase):
     @given(
         image=arrays(
             dtype=np.float32,
-            shape=(1024, 1024),
+            shape=(MAX_DIM_SIZE, MAX_DIM_SIZE),
             elements=st.floats(
                 min_value=0.0,
                 max_value=1.0,
@@ -181,8 +185,8 @@ class GaussianPyramidTest(unittest.TestCase):
         ),
         sigma=st.floats(min_value=0.5, max_value=3.0),
         n_scales=st.integers(min_value=1, max_value=3),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
-        min_size=st.integers(min_value=1, max_value=1024 * 2),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
+        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
     )
     def test_subsequent_planes_have_decreasing_total_variation(
         self,
@@ -221,7 +225,7 @@ def center_surround_sigmas(
 
 @st.composite
 def solid_float32_image(
-    draw: st.DrawFn, min_dim_size: int = 1, max_dim_size: int = 1024
+    draw: st.DrawFn, min_dim_size: int = 1, max_dim_size: int = MAX_DIM_SIZE
 ) -> npt.NDArray[np.float32]:
     height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
     width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
@@ -236,7 +240,7 @@ def filled_float32_image(
     draw: st.DrawFn,
     fill_value: float = 1.0,
     min_dim_size: int = 1,
-    max_dim_size: int = 1024,
+    max_dim_size: int = MAX_DIM_SIZE,
 ) -> npt.NDArray[np.float32]:
     height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
     width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
@@ -245,8 +249,8 @@ def filled_float32_image(
 
 @st.composite
 def float32_image(draw: st.DrawFn) -> npt.NDArray[np.float32]:
-    height = draw(st.integers(min_value=1, max_value=1024))
-    width = draw(st.integers(min_value=1, max_value=1024))
+    height = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
+    width = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
     return draw(
         arrays(
             dtype=np.float32,
@@ -272,10 +276,12 @@ def sufficiently_variable_float32_image(draw: st.DrawFn) -> npt.NDArray[np.float
 
 @st.composite
 def pyramid(draw: st.DrawFn, fill_value: float = 1.0) -> Pyramid:
-    image_width = draw(st.integers(min_value=1, max_value=1024))
-    image_height = draw(st.integers(min_value=1, max_value=1024))
+    image_width = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
+    image_height = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
     n_scales = draw(st.integers(min_value=1, max_value=10))
-    max_octaves = draw(st.integers(min_value=1, max_value=int(2 * np.log2(1024))))
+    max_octaves = draw(
+        st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE)))
+    )
     min_size = draw(st.integers(min_value=1, max_value=min(image_width, image_height)))
     octave_shapes = pyramid_octave_shapes(
         (image_height, image_width),
@@ -295,10 +301,12 @@ def pyramid(draw: st.DrawFn, fill_value: float = 1.0) -> Pyramid:
 def valid_input_pyramid_for_laplacian_pyramid(
     draw: st.DrawFn, fill_value: float = 1.0
 ) -> Pyramid:
-    image_width = draw(st.integers(min_value=2, max_value=1024))
-    image_height = draw(st.integers(min_value=2, max_value=1024))
+    image_width = draw(st.integers(min_value=2, max_value=MAX_DIM_SIZE))
+    image_height = draw(st.integers(min_value=2, max_value=MAX_DIM_SIZE))
     n_scales = draw(st.integers(min_value=1, max_value=10))
-    max_octaves = draw(st.integers(min_value=2, max_value=int(2 * np.log2(1024))))
+    max_octaves = draw(
+        st.integers(min_value=2, max_value=int(2 * np.log2(MAX_DIM_SIZE)))
+    )
     octave_shapes = pyramid_octave_shapes(
         (image_height, image_width),
         max_octaves=max_octaves,
@@ -338,7 +346,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         surround_sigma = center_sigma * surround_sigma_factor
         with self.assertRaises(ValueError):
             center_surround_pyramids(
-                np.zeros((1024, 1024)),
+                np.zeros((MAX_DIM_SIZE, MAX_DIM_SIZE)),
                 center_sigma=center_sigma,
                 surround_sigma=surround_sigma,
                 n_scales=2,
@@ -347,10 +355,10 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             )
 
     @given(
-        image=arrays(dtype=np.float32, shape=(1024, 1024)),
+        image=arrays(dtype=np.float32, shape=(MAX_DIM_SIZE, MAX_DIM_SIZE)),
         n_scales=st.integers(min_value=1, max_value=10),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
-        min_size=st.integers(min_value=1, max_value=1024 * 2),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
+        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
     )
     def test_center_and_surround_pyramids_have_same_shape(
         self,
@@ -373,8 +381,8 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         image=float32_image(),
         sigmas=center_surround_sigmas(min_center_sigma=0.5, max_center_sigma=3.0),
         n_scales=st.integers(min_value=1, max_value=3),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
-        min_size=st.integers(min_value=1, max_value=1024 * 2),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
+        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
     )
     def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes(  # noqa: E501
         self,
@@ -407,8 +415,8 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         image=solid_float32_image(),
         sigmas=center_surround_sigmas(min_center_sigma=0.5, max_center_sigma=3.0),
         n_scales=st.integers(min_value=1, max_value=3),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
-        min_size=st.integers(min_value=1, max_value=1024 * 2),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
+        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
     )
     def test_surround_planes_mean_local_variation_equals_corresponding_center_planes_for_solid_image(  # noqa: E501
         self,
@@ -441,8 +449,8 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         image=sufficiently_variable_float32_image(),
         sigmas=center_surround_sigmas(min_center_sigma=0.5, max_center_sigma=3.0),
         n_scales=st.integers(min_value=1, max_value=3),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(1024))),
-        min_size=st.integers(min_value=1, max_value=1024 * 2),
+        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
+        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
     )
     def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes_for_sufficiently_variable_image(  # noqa: E501
         self,
