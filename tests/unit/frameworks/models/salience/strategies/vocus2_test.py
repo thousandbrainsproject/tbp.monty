@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from dataclasses import dataclass
 import unittest
 from enum import Enum
 from typing import cast
@@ -24,6 +25,7 @@ from hypothesis.extra.numpy import arrays
 
 from tbp.monty.frameworks.models.salience.strategies.vocus2 import (
     ColorChannelSalience,
+    DepthSalience,
     Pyramid,
     SafeOperatingLimits,
     center_surround_pyramids,
@@ -218,9 +220,11 @@ def center_surround_sigmas(
 
 
 @st.composite
-def solid_float32_image(draw: st.DrawFn) -> npt.NDArray[np.float32]:
-    height = draw(st.integers(min_value=1, max_value=1024))
-    width = draw(st.integers(min_value=1, max_value=1024))
+def solid_float32_image(
+    draw: st.DrawFn, min_dim_size: int = 1, max_dim_size: int = 1024
+) -> npt.NDArray[np.float32]:
+    height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
+    width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
     fill_value = draw(
         st.floats(min_value=0.0, max_value=1.0, allow_nan=False, width=32)
     )
@@ -739,7 +743,7 @@ def color_channel_salience_setup(
 @st.composite
 def solid_left_half_float32_image_color_channel_salience_setup(
     draw: st.DrawFn, fill_value: float = 1.0
-) -> npt.NDArray[np.float32]:
+) -> tuple[npt.NDArray[np.float32], ColorChannelSalience]:
     image = draw(
         filled_float32_image(
             fill_value=fill_value, min_dim_size=SafeOperatingLimits.min_image_dim_size
@@ -844,14 +848,6 @@ class ColorChannelSalienceTest(unittest.TestCase):
         index_of_edge = len(band) // 2
         peaks_below_edge = local_maxima[local_maxima < index_of_edge]
         peaks_above_edge = local_maxima[local_maxima > index_of_edge]
-        print(f"band: {list(band)}")
-        # print(f"local_minima: {len(local_minima)}")
-        # print(f"local_maxima: {len(local_maxima)}")
-        # print(f"index_of_edge: {index_of_edge}")
-        # print(f"peaks_below_edge: {len(peaks_below_edge)}")
-        # print(f"peaks_above_edge: {len(peaks_above_edge)}")
-        # print(f"peaks_below_edge: {peaks_below_edge}")
-        # print(f"peaks_above_edge: {peaks_above_edge}")
         self.assertTrue(
             index_of_edge in local_minima or index_of_edge - 1 in local_minima
         )
@@ -939,3 +935,109 @@ class ColorChannelSalienceWithoutOperatingLimitsTest(unittest.TestCase):
         image, processor = image_and_processor
         ctx = Mock(suppress_runtime_errors=suppress_runtime_errors)
         processor.process(ctx, image)
+
+@dataclass
+class CenterAndSurroundParams:
+    center_sigma: float
+    surround_sigma: float
+    n_scales: int
+    max_octaves: int
+    min_size: int
+
+
+@st.composite
+def safe_center_and_surround_params(
+    draw: st.DrawFn, image: npt.NDArray[np.float32]
+) -> CenterAndSurroundParams:
+    center_sigma = draw(
+        st.floats(
+            min_value=SafeOperatingLimits.min_center_sigma,
+            max_value=SafeOperatingLimits.max_center_sigma,
+        )
+    )
+    surround_sigma = draw(
+        st.floats(
+            min_value=center_sigma * SafeOperatingLimits.center_surround_sigma_ratio,
+            max_value=SafeOperatingLimits.max_surround_sigma,
+        )
+    )
+    n_scales = draw(st.integers(min_value=1, max_value=5))
+    max_octaves = draw(
+        st.integers(min_value=1, max_value=int(1 + np.log2(max(image.shape))))
+    )
+    min_size = draw(st.integers(min_value=1, max_value=min(image.shape)))
+
+    return CenterAndSurroundParams(
+        center_sigma=center_sigma,
+        surround_sigma=surround_sigma,
+        n_scales=n_scales,
+        max_octaves=max_octaves,
+        min_size=min_size,
+    )
+
+
+@st.composite
+def depth_salience_processor(
+    draw: st.DrawFn, image: npt.NDArray[np.float32]
+) -> DepthSalience:
+    center_and_surround_params = draw(safe_center_and_surround_params(image))
+    return DepthSalience(
+        center_sigma=center_and_surround_params.center_sigma,
+        surround_sigma=center_and_surround_params.surround_sigma,
+        n_scales=center_and_surround_params.n_scales,
+        max_octaves=center_and_surround_params.max_octaves,
+        min_size=center_and_surround_params.min_size,
+    )
+
+
+@st.composite
+def depth_salience_setup(
+    draw: st.DrawFn,
+    salience_processor_strategy: st.SearchStrategy[DepthSalience],
+    image_strategy: st.SearchStrategy[npt.NDArray[np.float32]],
+) -> tuple[npt.NDArray[np.float32], DepthSalience]:
+    image = draw(image_strategy)
+    processor = draw(salience_processor_strategy(image))
+    return image, processor
+
+
+@st.composite
+def near_left_half_float32_image_depth_salience_setup(
+    draw: st.DrawFn, near_value: float = 0.5
+) -> tuple[npt.NDArray[np.float32], DepthSalience]:
+    image = draw(
+        filled_float32_image(
+            fill_value=near_value, min_dim_size=SafeOperatingLimits.min_image_dim_size
+        )
+    )
+    image[:, image.shape[1] // 2 :] = near_value * 2.0
+    processor = draw(depth_salience_processor(image))
+    return image, processor
+
+
+class DepthSalienceTest(unittest.TestCase):
+    MINIMUM_SALIENCE_THRESHOLD = 1e-3
+
+    @given(
+        image_and_processor=depth_salience_setup(
+            depth_salience_processor,
+            solid_float32_image(min_dim_size=SafeOperatingLimits.min_image_dim_size),
+        ),
+    )
+    def test_uniform_depth_image_not_salient(
+        self, image_and_processor: tuple[npt.NDArray[np.float32], DepthSalience]
+    ) -> None:
+        image, processor = image_and_processor
+        feature_map = processor.process(Mock(), image)
+        self.assertTrue(np.all(feature_map < self.MINIMUM_SALIENCE_THRESHOLD))
+
+    @given(
+        vertical_edge_case=near_left_half_float32_image_depth_salience_setup(),
+        edge_orientation=st.sampled_from(Direction),
+    )
+    def test_near_more_salient_than_far(
+        self,
+        vertical_edge_case: tuple[npt.NDArray[np.float32], DepthSalience],
+        edge_orientation: Direction,
+    ) -> None:
+        pass

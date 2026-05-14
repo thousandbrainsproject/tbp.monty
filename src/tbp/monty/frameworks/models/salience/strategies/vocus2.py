@@ -665,16 +665,20 @@ class DepthSalience:
         self._min_size = min_size
         self._collapse = collapse
 
-    def process(self, image: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
+    def process(
+        self, ctx: RuntimeContext, image: npt.NDArray[np.float32]
+    ) -> npt.NDArray[np.float32]:
         """Compute salience for a depth channel.
 
         Args:
+            ctx: The runtime context.
             image: Must be float32.
 
         Returns:
             A DepthSalienceResult object.
         """
         image = -np.log(image).astype(np.float32)
+        image = np.nan_to_num(image, posinf=0.0)
 
         # Build center/surround and on/off pyramids.
         center, surround = center_surround_pyramids(
