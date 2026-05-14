@@ -11,7 +11,7 @@ status: open
 
 ---
 
-We have implemented the ability to [encode object IDs using sparse-distributed representations (SDRs)](https://thousandbrainsproject.readme.io/docs/evidence-as-a-similarity-measure), and in particular can use this as a way of capturing similarity and dissimilarity between objects. Using such encodings in learned [Hierarchical Connections](add-top-down-connections.md), we should observe a degree of natural generalization when recognizing compositional objects.
+We have implemented the ability to [encode object IDs using sparse-distributed representations (SDRs)](https://github.com/thousandbrainsproject/tbp.evidence_sdr_matching), and in particular can use this as a way of capturing similarity and dissimilarity between objects. Using such encodings in learned [Hierarchical Connections](add-top-down-connections.md), we should observe a degree of natural generalization when recognizing compositional objects.
 
 For example, assume a Monty system learns a dinner table setting with normal cutlery and plates (see examples below). Separately, the system learns about medieval instances of cutlery and plates, but never sees them arranged in a dinner table setting. Based on the similarity of the medieval cutlery objects to their modern counterparts, the objects should have considerable overlap in their SDR encodings.
 
