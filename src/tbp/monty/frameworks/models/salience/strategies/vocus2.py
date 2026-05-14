@@ -188,14 +188,8 @@ def gaussian_pyramid(
     Returns:
         2D object-type array with shape (n_octaves, n_scales)
 
-    Raises:
-        ValueError: If min_size is greater than the smallest image dimension.
-
     Note that sigmas = [sigma * (2.0 ** (s / n_scales)) for s in range(pyr.size)]
     """
-    if min_size is not None and min_size > min(image.shape):
-        raise ValueError("Min size is greater than the image size")
-
     # Calculate maximum number of octaves
     shapes = pyramid_octave_shapes(
         cast("Resolution2D", image.shape),
@@ -617,7 +611,12 @@ class ColorChannelSalience:
         Returns:
             A tuple of the feature map and the center pyramid.
 
+        Raises:
+            ValueError: If the min size is greater than the image size.
         """
+        if self._min_size is not None and self._min_size > min(image.shape):
+            raise ValueError("Min size is greater than the image size")
+
         error = self._operating_limits.validate_image_dim_size(min(image.shape))
         if error is not None:
             if ctx.suppress_runtime_errors:
@@ -719,7 +718,12 @@ class DepthSalience:
         Returns:
             A DepthSalienceResult object.
 
+        Raises:
+            ValueError: If the min size is greater than the image size.
         """
+        if self._min_size is not None and self._min_size > min(image.shape):
+            raise ValueError("Min size is greater than the image size")
+
         error = self._operating_limits.validate_image_dim_size(min(image.shape))
         if error is not None:
             if ctx.suppress_runtime_errors:

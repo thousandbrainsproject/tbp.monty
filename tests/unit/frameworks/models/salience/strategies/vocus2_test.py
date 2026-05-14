@@ -11,7 +11,7 @@ from __future__ import annotations
 import unittest
 from dataclasses import dataclass
 from enum import Enum
-from typing import cast
+from typing import Callable, cast
 from unittest.mock import Mock, patch, sentinel
 
 import cv2
@@ -667,10 +667,19 @@ class PyramidCollapseTest(unittest.TestCase):
                 nptest.assert_array_equal(reduce_input[i], expected_reduce_input[i])
 
 
+@dataclass
+class CenterAndSurroundParams:
+    center_sigma: float
+    surround_sigma: float
+    n_scales: int
+    max_octaves: int
+    min_size: int
+
+
 @st.composite
-def color_channel_salience_processor(
+def safe_center_and_surround_params(
     draw: st.DrawFn, image: npt.NDArray[np.float32]
-) -> ColorChannelSalience:
+) -> CenterAndSurroundParams:
     center_sigma = draw(
         st.floats(
             min_value=SafeOperatingLimits.min_center_sigma,
@@ -689,12 +698,63 @@ def color_channel_salience_processor(
     )
     min_size = draw(st.integers(min_value=1, max_value=min(image.shape)))
 
-    return ColorChannelSalience(
+    return CenterAndSurroundParams(
         center_sigma=center_sigma,
         surround_sigma=surround_sigma,
         n_scales=n_scales,
         max_octaves=max_octaves,
         min_size=min_size,
+    )
+
+
+@st.composite
+def unsafe_min_size_in_safe_center_and_surround_params(
+    draw: st.DrawFn, image: npt.NDArray[np.float32]
+) -> CenterAndSurroundParams:
+    center_sigma = draw(
+        st.floats(
+            min_value=SafeOperatingLimits.min_center_sigma,
+            max_value=SafeOperatingLimits.max_center_sigma,
+        )
+    )
+    surround_sigma = draw(
+        st.floats(
+            min_value=center_sigma * SafeOperatingLimits.center_surround_sigma_ratio,
+            max_value=SafeOperatingLimits.max_surround_sigma,
+        )
+    )
+    n_scales = draw(st.integers(min_value=1, max_value=5))
+    max_octaves = draw(
+        st.integers(min_value=1, max_value=int(1 + np.log2(max(image.shape))))
+    )
+    min_size = draw(
+        st.integers(min_value=min(image.shape) + 1, max_value=max(image.shape) * 3)
+    )
+
+    return CenterAndSurroundParams(
+        center_sigma=center_sigma,
+        surround_sigma=surround_sigma,
+        n_scales=n_scales,
+        max_octaves=max_octaves,
+        min_size=min_size,
+    )
+
+
+@st.composite
+def color_channel_salience_processor(
+    draw: st.DrawFn,
+    image: npt.NDArray[np.float32],
+    center_and_surround_params_strategy: Callable[
+        [npt.NDArray[np.float32]], st.SearchStrategy[CenterAndSurroundParams]
+    ] = safe_center_and_surround_params,
+) -> ColorChannelSalience:
+    center_and_surround_params = draw(center_and_surround_params_strategy(image))
+    return ColorChannelSalience(
+        center_sigma=center_and_surround_params.center_sigma,
+        surround_sigma=center_and_surround_params.surround_sigma,
+        n_scales=center_and_surround_params.n_scales,
+        max_octaves=center_and_surround_params.max_octaves,
+        min_size=center_and_surround_params.min_size,
     )
 
 
@@ -702,30 +762,13 @@ def color_channel_salience_processor(
 def color_channel_salience_processor_without_operating_limits(
     draw: st.DrawFn, image: npt.NDArray[np.float32]
 ) -> ColorChannelSalience:
-    center_sigma = draw(
-        st.floats(
-            min_value=SafeOperatingLimits.min_center_sigma,
-            max_value=SafeOperatingLimits.max_center_sigma,
-        )
-    )
-    surround_sigma = draw(
-        st.floats(
-            min_value=center_sigma * SafeOperatingLimits.center_surround_sigma_ratio,
-            max_value=SafeOperatingLimits.max_surround_sigma,
-        )
-    )
-    n_scales = draw(st.integers(min_value=1, max_value=5))
-    max_octaves = draw(
-        st.integers(min_value=1, max_value=int(1 + np.log2(max(image.shape))))
-    )
-    min_size = draw(st.integers(min_value=1, max_value=min(image.shape)))
-
+    center_and_surround_params = draw(safe_center_and_surround_params(image))
     return ColorChannelSalience.without_operating_limits(
-        center_sigma=center_sigma,
-        surround_sigma=surround_sigma,
-        n_scales=n_scales,
-        max_octaves=max_octaves,
-        min_size=min_size,
+        center_sigma=center_and_surround_params.center_sigma,
+        surround_sigma=center_and_surround_params.surround_sigma,
+        n_scales=center_and_surround_params.n_scales,
+        max_octaves=center_and_surround_params.max_octaves,
+        min_size=center_and_surround_params.min_size,
     )
 
 
@@ -734,9 +777,14 @@ def color_channel_salience_setup(
     draw: st.DrawFn,
     salience_processor_strategy: st.SearchStrategy[ColorChannelSalience],
     image_strategy: st.SearchStrategy[npt.NDArray[np.float32]],
+    center_and_surround_params_strategy: Callable[
+        [npt.NDArray[np.float32]], st.SearchStrategy[CenterAndSurroundParams]
+    ] = safe_center_and_surround_params,
 ) -> tuple[npt.NDArray[np.float32], ColorChannelSalience]:
     image = draw(image_strategy)
-    processor = draw(salience_processor_strategy(image))
+    processor = draw(
+        salience_processor_strategy(image, center_and_surround_params_strategy)
+    )
     return image, processor
 
 
@@ -797,6 +845,23 @@ def unsafe_center_and_surround_sigmas(draw: st.DrawFn) -> tuple[float, float]:
 
 class ColorChannelSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-3
+
+    @given(
+        image_and_processor=color_channel_salience_setup(
+            color_channel_salience_processor,
+            filled_float32_image(
+                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
+            ),
+            unsafe_min_size_in_safe_center_and_surround_params,
+        ),
+    )
+    def test_process_raises_value_error_if_image_has_smaller_dimension_than_min_size(
+        self,
+        image_and_processor: tuple[npt.NDArray[np.float32], ColorChannelSalience],
+    ) -> None:
+        image, processor = image_and_processor
+        with self.assertRaises(ValueError):
+            processor.process(Mock(), image)
 
     @given(
         image_and_processor=color_channel_salience_setup(
@@ -936,51 +1001,16 @@ class ColorChannelSalienceWithoutOperatingLimitsTest(unittest.TestCase):
         ctx = Mock(suppress_runtime_errors=suppress_runtime_errors)
         processor.process(ctx, image)
 
-@dataclass
-class CenterAndSurroundParams:
-    center_sigma: float
-    surround_sigma: float
-    n_scales: int
-    max_octaves: int
-    min_size: int
-
-
-@st.composite
-def safe_center_and_surround_params(
-    draw: st.DrawFn, image: npt.NDArray[np.float32]
-) -> CenterAndSurroundParams:
-    center_sigma = draw(
-        st.floats(
-            min_value=SafeOperatingLimits.min_center_sigma,
-            max_value=SafeOperatingLimits.max_center_sigma,
-        )
-    )
-    surround_sigma = draw(
-        st.floats(
-            min_value=center_sigma * SafeOperatingLimits.center_surround_sigma_ratio,
-            max_value=SafeOperatingLimits.max_surround_sigma,
-        )
-    )
-    n_scales = draw(st.integers(min_value=1, max_value=5))
-    max_octaves = draw(
-        st.integers(min_value=1, max_value=int(1 + np.log2(max(image.shape))))
-    )
-    min_size = draw(st.integers(min_value=1, max_value=min(image.shape)))
-
-    return CenterAndSurroundParams(
-        center_sigma=center_sigma,
-        surround_sigma=surround_sigma,
-        n_scales=n_scales,
-        max_octaves=max_octaves,
-        min_size=min_size,
-    )
-
 
 @st.composite
 def depth_salience_processor(
-    draw: st.DrawFn, image: npt.NDArray[np.float32]
+    draw: st.DrawFn,
+    image: npt.NDArray[np.float32],
+    center_and_surround_params_strategy: Callable[
+        [npt.NDArray[np.float32]], st.SearchStrategy[CenterAndSurroundParams]
+    ] = safe_center_and_surround_params,
 ) -> DepthSalience:
-    center_and_surround_params = draw(safe_center_and_surround_params(image))
+    center_and_surround_params = draw(center_and_surround_params_strategy(image))
     return DepthSalience(
         center_sigma=center_and_surround_params.center_sigma,
         surround_sigma=center_and_surround_params.surround_sigma,
@@ -995,9 +1025,14 @@ def depth_salience_setup(
     draw: st.DrawFn,
     salience_processor_strategy: st.SearchStrategy[DepthSalience],
     image_strategy: st.SearchStrategy[npt.NDArray[np.float32]],
+    center_and_surround_params_strategy: Callable[
+        [npt.NDArray[np.float32]], st.SearchStrategy[CenterAndSurroundParams]
+    ] = safe_center_and_surround_params,
 ) -> tuple[npt.NDArray[np.float32], DepthSalience]:
     image = draw(image_strategy)
-    processor = draw(salience_processor_strategy(image))
+    processor = draw(
+        salience_processor_strategy(image, center_and_surround_params_strategy)
+    )
     return image, processor
 
 
@@ -1032,6 +1067,23 @@ def depth_salience_processor_without_operating_limits(
 
 class DepthSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-3
+
+    @given(
+        image_and_processor=depth_salience_setup(
+            depth_salience_processor,
+            filled_float32_image(
+                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
+            ),
+            unsafe_min_size_in_safe_center_and_surround_params,
+        ),
+    )
+    def test_process_raises_value_error_if_image_has_smaller_dimension_than_min_size(
+        self,
+        image_and_processor: tuple[npt.NDArray[np.float32], DepthSalience],
+    ) -> None:
+        image, processor = image_and_processor
+        with self.assertRaises(ValueError):
+            processor.process(Mock(), image)
 
     @given(
         image_and_processor=depth_salience_setup(
