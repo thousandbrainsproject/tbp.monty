@@ -760,9 +760,13 @@ def color_channel_salience_processor(
 
 @st.composite
 def color_channel_salience_processor_without_operating_limits(
-    draw: st.DrawFn, image: npt.NDArray[np.float32]
+    draw: st.DrawFn,
+    image: npt.NDArray[np.float32],
+    center_and_surround_params_strategy: Callable[
+        [npt.NDArray[np.float32]], st.SearchStrategy[CenterAndSurroundParams]
+    ] = safe_center_and_surround_params,
 ) -> ColorChannelSalience:
-    center_and_surround_params = draw(safe_center_and_surround_params(image))
+    center_and_surround_params = draw(center_and_surround_params_strategy(image))
     return ColorChannelSalience.without_operating_limits(
         center_sigma=center_and_surround_params.center_sigma,
         surround_sigma=center_and_surround_params.surround_sigma,
@@ -1052,10 +1056,13 @@ def near_left_half_float32_image_depth_salience_setup(
 
 @st.composite
 def depth_salience_processor_without_operating_limits(
-    draw: st.DrawFn, image: npt.NDArray[np.float32]
+    draw: st.DrawFn,
+    image: npt.NDArray[np.float32],
+    center_and_surround_params_strategy: Callable[
+        [npt.NDArray[np.float32]], st.SearchStrategy[CenterAndSurroundParams]
+    ] = safe_center_and_surround_params,
 ) -> DepthSalience:
-    center_and_surround_params = draw(safe_center_and_surround_params(image))
-
+    center_and_surround_params = draw(center_and_surround_params_strategy(image))
     return DepthSalience.without_operating_limits(
         center_sigma=center_and_surround_params.center_sigma,
         surround_sigma=center_and_surround_params.surround_sigma,
