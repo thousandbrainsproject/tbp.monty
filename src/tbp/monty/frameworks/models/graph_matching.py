@@ -629,7 +629,7 @@ class GraphLM(LearningModule):
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(observations)
 
-    def post_episode(self):
+    def update_ltm_from_stm(self):
         """If training, update memory after each episode."""
         if self.mode is ExperimentMode.TRAIN and len(self.buffer) > 0:
             logger.info(f"\n---Updating memory of {self.learning_module_id}---")
