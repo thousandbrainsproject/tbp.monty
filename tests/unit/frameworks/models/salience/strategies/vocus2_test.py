@@ -8,8 +8,8 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from dataclasses import dataclass
 import unittest
+from dataclasses import dataclass
 from enum import Enum
 from typing import cast
 from unittest.mock import Mock, patch, sentinel
@@ -1015,6 +1015,21 @@ def near_left_half_float32_image_depth_salience_setup(
     return image, processor
 
 
+@st.composite
+def depth_salience_processor_without_operating_limits(
+    draw: st.DrawFn, image: npt.NDArray[np.float32]
+) -> DepthSalience:
+    center_and_surround_params = draw(safe_center_and_surround_params(image))
+
+    return DepthSalience.without_operating_limits(
+        center_sigma=center_and_surround_params.center_sigma,
+        surround_sigma=center_and_surround_params.surround_sigma,
+        n_scales=center_and_surround_params.n_scales,
+        max_octaves=center_and_surround_params.max_octaves,
+        min_size=center_and_surround_params.min_size,
+    )
+
+
 class DepthSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-3
 
@@ -1040,4 +1055,104 @@ class DepthSalienceTest(unittest.TestCase):
         vertical_edge_case: tuple[npt.NDArray[np.float32], DepthSalience],
         edge_orientation: Direction,
     ) -> None:
-        pass
+        vertical_edge_image, processor = vertical_edge_case
+
+        if edge_orientation == Direction.VERTICAL:
+            image = vertical_edge_image
+        elif edge_orientation == Direction.HORIZONTAL:
+            image = vertical_edge_image.T
+        else:
+            raise ValueError(f"Invalid edge orientation: {edge_orientation}")
+
+        feature_map = processor.process(Mock(), image)
+
+        if edge_orientation == Direction.VERTICAL:
+            band = feature_map[feature_map.shape[0] // 2]
+        elif edge_orientation == Direction.HORIZONTAL:
+            band = feature_map[:, feature_map.shape[1] // 2]
+        else:
+            raise ValueError(f"Invalid edge orientation: {edge_orientation}")
+
+        left_of_edge = band[: len(band) // 2]
+        right_of_edge = band[len(band) // 2 :]
+        self.assertTrue(left_of_edge.sum() > right_of_edge.sum())
+
+    @given(
+        center_and_surround_sigmas=unsafe_center_and_surround_sigmas(),
+    )
+    def test_constructing_with_unsafe_sigmas_raises_value_error(
+        self,
+        center_and_surround_sigmas: tuple[float, float],
+    ) -> None:
+        center_sigma, surround_sigma = center_and_surround_sigmas
+        with self.assertRaises(ValueError):
+            DepthSalience(
+                center_sigma=center_sigma,
+                surround_sigma=surround_sigma,
+            )
+
+    @given(
+        image_and_processor=depth_salience_setup(
+            depth_salience_processor,
+            filled_float32_image(
+                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
+            ),
+        ),
+    )
+    def test_process_raises_value_error_if_image_has_smaller_dimension_than_min_safe_dim_size_and_suppress_runtimes_errors_is_false(  # noqa: E501
+        self,
+        image_and_processor: tuple[npt.NDArray[np.float32], DepthSalience],
+    ) -> None:
+        image, processor = image_and_processor
+        ctx = Mock(suppress_runtime_errors=False)
+        with self.assertRaises(ValueError):
+            processor.process(ctx, image)
+
+    @given(
+        image_and_processor=depth_salience_setup(
+            depth_salience_processor,
+            filled_float32_image(
+                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
+            ),
+        ),
+    )
+    def test_process_does_not_raise_value_error_if_image_has_smaller_dimension_than_min_safe_dim_size_and_suppress_runtimes_errors_is_true(  # noqa: E501
+        self,
+        image_and_processor: tuple[npt.NDArray[np.float32], DepthSalience],
+    ) -> None:
+        image, processor = image_and_processor
+        ctx = Mock(suppress_runtime_errors=True)
+        processor.process(ctx, image)
+
+
+class DepthSalienceWithoutOperatingLimitsTest(unittest.TestCase):
+    @given(
+        center_and_surround_sigmas=unsafe_center_and_surround_sigmas(),
+    )
+    def test_constructing_with_unsafe_sigmas_does_not_raise(
+        self,
+        center_and_surround_sigmas: tuple[float, float],
+    ) -> None:
+        center_sigma, surround_sigma = center_and_surround_sigmas
+        DepthSalience.without_operating_limits(
+            center_sigma=center_sigma,
+            surround_sigma=surround_sigma,
+        )
+
+    @given(
+        image_and_processor=depth_salience_setup(
+            depth_salience_processor_without_operating_limits,
+            filled_float32_image(
+                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
+            ),
+        ),
+        suppress_runtime_errors=st.booleans(),
+    )
+    def test_process_does_not_raise_value_error_if_image_has_smaller_dimension_than_min_safe_dim_size(  # noqa: E501
+        self,
+        image_and_processor: tuple[npt.NDArray[np.float32], DepthSalience],
+        suppress_runtime_errors: bool,
+    ) -> None:
+        image, processor = image_and_processor
+        ctx = Mock(suppress_runtime_errors=suppress_runtime_errors)
+        processor.process(ctx, image)
