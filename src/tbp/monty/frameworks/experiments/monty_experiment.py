@@ -12,6 +12,7 @@ from __future__ import annotations
 import copy
 import datetime
 import logging
+import logging.config
 import pprint
 from pathlib import Path
 from typing import Any, Literal
@@ -339,6 +340,10 @@ class MontyExperiment:
 
         logger.info("logger initialized")
         logger.debug(pprint.pformat(self.config))
+
+        # TODO: Migrate the rest of the configuration to use this
+        if "dict_config" in logging_config:
+            logging.config.dictConfig(logging_config["dict_config"])
 
     def init_monty_data_loggers(self, logging_config: dict[str, Any]) -> None:
         """Initialize Monty data loggers.
