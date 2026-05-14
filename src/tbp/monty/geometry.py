@@ -69,7 +69,7 @@ class Rotation:
     """Rotation in 3 dimensions.
 
     This class was created to be a (nearly) drop-in replacement for
-    ()`scipy.spatial.transform.Rotation`)[https://docs.scipy.org/doc/scipy-1.10.1/reference/generated/scipy.spatial.transform.Rotation.html].
+    (`scipy.spatial.transform.Rotation`)[https://docs.scipy.org/doc/scipy-1.10.1/reference/generated/scipy.spatial.transform.Rotation.html].
     that better conforms to our conventions. Primarily, we wanted to be consistent about
     using scalar-first (wxyz) order for quaternions, but scalar-last (xyzw) is scipy's
     default mode. Consequently, this class's `from_quat` and `as_quat` implementations
