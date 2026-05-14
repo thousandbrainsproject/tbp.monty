@@ -188,8 +188,14 @@ def gaussian_pyramid(
     Returns:
         2D object-type array with shape (n_octaves, n_scales)
 
-    Note: sigmas = [sigma * (2.0 ** (s / n_scales)) for s in range(pyr.size)]
+    Raises:
+        ValueError: If min_size is greater than the smallest image dimension.
+
+    Note that sigmas = [sigma * (2.0 ** (s / n_scales)) for s in range(pyr.size)]
     """
+    if min_size is not None and min_size > min(image.shape):
+        raise ValueError("Min size is greater than the image size")
+
     # Calculate maximum number of octaves
     shapes = pyramid_octave_shapes(
         cast("Resolution2D", image.shape),
@@ -516,7 +522,7 @@ class ColorChannelSalience:
         self,
         center_sigma: float = 2.0,
         surround_sigma: float = 3.0,
-        n_scales: int = 5,
+        n_scales: int = 2,
         max_octaves: int | None = None,
         min_size: int | None = None,
         combine: PyramidCombine = pyramid_combine_mean,
@@ -565,7 +571,7 @@ class ColorChannelSalience:
         cls,
         center_sigma: float = 2.0,
         surround_sigma: float = 3.0,
-        n_scales: int = 5,
+        n_scales: int = 2,
         max_octaves: int | None = None,
         min_size: int | None = None,
         combine: PyramidCombine = pyramid_combine_mean,
@@ -611,14 +617,7 @@ class ColorChannelSalience:
         Returns:
             A tuple of the feature map and the center pyramid.
 
-        Raises:
-            ValueError: If configured min_size is greater than the smallest
-              image dimension. Also, if the image size is less than configured operating
-              limits.
         """
-        if self._min_size is not None and self._min_size > min(image.shape):
-            raise ValueError("Min size is greater than the image size")
-
         error = self._operating_limits.validate_image_dim_size(min(image.shape))
         if error is not None:
             if ctx.suppress_runtime_errors:
@@ -626,7 +625,6 @@ class ColorChannelSalience:
             else:
                 raise error
 
-        # Build center/surround and on/off pyramids.
         center, surround = center_surround_pyramids(
             image,
             center_sigma=self._center_sigma,
@@ -636,12 +634,10 @@ class ColorChannelSalience:
             min_size=self._min_size,
         )
 
-        # Build on/off pyramids.
         diff: Pyramid = center - surround
         on: Pyramid = diff.apply(lambda img: np.maximum(img, 0))
         off: Pyramid = diff.apply(lambda img: np.maximum(-img, 0))
 
-        # Combine on/off pyramids, and collapse the result.
         feature_pyramid = self._combine([on, off])
         feature_map = self._collapse(feature_pyramid)
 
@@ -651,12 +647,13 @@ class ColorChannelSalience:
 class DepthSalience:
     def __init__(
         self,
-        center_sigma: float,
-        surround_sigma: float,
-        n_scales: int,
+        center_sigma: float = 2.0,
+        surround_sigma: float = 3.0,
+        n_scales: int = 2,
         max_octaves: int | None = None,
         min_size: int | None = None,
         collapse: PyramidCollapse = pyramid_collapse_mean,
+        operating_limits: OperatingLimits | None = None,
     ):
         self._center_sigma = center_sigma
         self._surround_sigma = surround_sigma
@@ -664,6 +661,51 @@ class DepthSalience:
         self._max_octaves = max_octaves
         self._min_size = min_size
         self._collapse = collapse
+        self._operating_limits = (
+            operating_limits if operating_limits is not None else SafeOperatingLimits()
+        )
+
+        error = self._operating_limits.validate_center_and_surround_sigma(
+            self._center_sigma, self._surround_sigma
+        )
+        if error is not None:
+            raise error
+
+    @classmethod
+    def without_operating_limits(
+        cls,
+        center_sigma: float = 2.0,
+        surround_sigma: float = 3.0,
+        n_scales: int = 2,
+        max_octaves: int | None = None,
+        min_size: int | None = None,
+        collapse: PyramidCollapse = pyramid_collapse_mean,
+    ) -> DepthSalience:
+        """Create a `DepthSalience` without operating limits.
+
+        It is up to you to ensure that the combination of parameters you select is
+        valid for your use case.
+
+        Args:
+            center_sigma: The center sigma for the center/surround pyramids.
+            surround_sigma: The surround sigma for the center/surround pyramids.
+            n_scales: The number of pyramid scales.
+            max_octaves: The maximum number of pyramid octaves to construct.
+            min_size: The minimum image size to construct the pyramids at.
+            collapse: The function to collapse the combined pyramid into a single image.
+
+        Returns:
+            A `DepthSalience` without operating limits.
+        """
+        return cls(
+            center_sigma=center_sigma,
+            surround_sigma=surround_sigma,
+            n_scales=n_scales,
+            max_octaves=max_octaves,
+            min_size=min_size,
+            collapse=collapse,
+            operating_limits=NoOperatingLimits(),
+        )
 
     def process(
         self, ctx: RuntimeContext, image: npt.NDArray[np.float32]
@@ -676,11 +718,18 @@ class DepthSalience:
 
         Returns:
             A DepthSalienceResult object.
+
         """
+        error = self._operating_limits.validate_image_dim_size(min(image.shape))
+        if error is not None:
+            if ctx.suppress_runtime_errors:
+                logger.warning(str(error))
+            else:
+                raise error
+
         image = -np.log(image).astype(np.float32)
         image = np.nan_to_num(image, posinf=0.0)
 
-        # Build center/surround and on/off pyramids.
         center, surround = center_surround_pyramids(
             image,
             center_sigma=self._center_sigma,
@@ -690,7 +739,6 @@ class DepthSalience:
             min_size=self._min_size,
         )
 
-        # Build the on pyramid, and collapse the result.
         diff: Pyramid = center - surround
         feature_pyramid = diff.apply(lambda img: np.maximum(img, 0))
         return self._collapse(feature_pyramid)
