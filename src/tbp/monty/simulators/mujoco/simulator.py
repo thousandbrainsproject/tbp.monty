@@ -83,6 +83,15 @@ class DataPathNotConfigured(RuntimeError):
 class ActuateMethodMissing(RuntimeError):
     """The simulator applied an action to an agent that lacks that actuate method."""
 
+    agent_class: type
+    method_name: str
+
+    def __init__(self, agent_class: type, method_name: str) -> None:
+        msg = f"{agent_class.__name__} does not understand '{method_name}'"
+        super().__init__(msg)
+        self.agent_class = agent_class
+        self.method_name = method_name
+
 
 class MuJoCoSimulator(SimulatedObjectEnvironment):
     """Simulator implementation for MuJoCo.
@@ -94,6 +103,18 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     To allow programmatic editing of the scene, we're using an MjSpec that we will
     recompile the model and data from whenever an object is added or removed.
     """
+
+    spec: MjSpec
+    model: MjModel
+    data: MjData
+    data_path: Path | None
+
+    _raise_actuate_missing: bool
+    _agent_partials: Sequence[MuJoCoAgentFactory]
+    _agents: dict[AgentID, Agent]
+    _loaded_custom_types: set[str]
+    _object_count: int
+    _renderers: dict[tuple[int, int], Renderer]
 
     def __init__(
         self,
@@ -111,17 +132,14 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             raise_actuate_missing: whether to raise an exception when an agent
               does not have an actuate method for an Action.
         """
-        if agents is None:
-            agents: Sequence[MuJoCoAgentFactory] = []
-
         self.spec = MjSpec()
-        self.model: MjModel = self.spec.compile()
+        self.model = self.spec.compile()
         self.data = MjData(self.model)
         self.data_path = Path(data_path) if data_path else None
         self._raise_actuate_missing = raise_actuate_missing
 
-        self._agent_partials = agents
-        self._agents: dict[AgentID, Agent] = {}
+        self._agent_partials = agents or []
+        self._agents = {}
         self._create_agents()
         self._loaded_custom_types: set[str] = set()
 
@@ -130,7 +148,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # of the agents, especially when we start to add more structure to them.
         self._object_count = 0
 
-        self._renderers: dict[tuple[int, int], Renderer] = {}
+        self._renderers = {}
         self._recompile()
 
     def _recompile(self) -> None:
@@ -419,7 +437,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     def step(
         self, actions: Sequence[Action]
     ) -> tuple[Observations, ProprioceptiveState]:
-        logger.debug(f"{actions=}")
         for action in actions:
             agent = self._agents[action.agent_id]
             logger.debug(f"Applying {action} to {agent}")
@@ -428,9 +445,11 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             except AttributeError as exc:
                 # Only catch missing actuate methods, propagate any other errors
                 if exc.name and exc.name.startswith("actuate_"):
-                    msg = f"{exc.obj} does not understand '{exc.name}'"
                     if self._raise_actuate_missing:
-                        raise ActuateMethodMissing(msg) from None
+                        raise ActuateMethodMissing(
+                            agent_class=exc.obj.__class__, method_name=exc.name
+                        ) from None
+                    msg = f"{exc.obj} does not understand {exc.name}"
                     logger.warning(msg)
                     continue
                 raise

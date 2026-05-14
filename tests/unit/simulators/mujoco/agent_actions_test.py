@@ -10,78 +10,45 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from functools import partial
-from typing import cast
 from unittest import TestCase
 
 import hypothesis.strategies as st
 import numpy as np
+import pytest
 import quaternion as qt
 from hypothesis import example, given, settings
+from parameterized import parameterized_class
 
 from tbp.monty.frameworks.actions.actions import (
     LookDown,
     LookUp,
     MoveForward,
+    MoveTangentially,
+    OrientHorizontal,
+    OrientVertical,
     SetAgentPose,
     SetSensorRotation,
     TurnLeft,
     TurnRight,
 )
 from tbp.monty.geometry import Rotation
-from tbp.monty.math import DEFAULT_TOLERANCE, QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import (
+    DEFAULT_TOLERANCE,
+)
 from tbp.monty.simulators.mujoco import MuJoCoSimulator
-from tbp.monty.simulators.mujoco.agents import DistantAgent
+from tbp.monty.simulators.mujoco.agents import DistantAgent, SurfaceAgent
+from tbp.monty.simulators.mujoco.simulator import ActuateMethodMissing
 from tests.unit.simulators.mujoco.noop_agent_test import (
     TEST_AGENT_ID,
     TEST_SENSOR_ID,
     default_agent_args,
 )
-
-
-@st.composite
-def position(draw) -> VectorXYZ:
-    x = draw(st.floats(min_value=-10.0, max_value=10.0))
-    y = draw(st.floats(min_value=-10.0, max_value=10.0))
-    z = draw(st.floats(min_value=-10.0, max_value=10.0))
-    return x, y, z
-
-
-@st.composite
-def unit_quaternion(draw) -> QuaternionWXYZ:
-    """Strategy to generate unit quaternions.
-
-    Returns:
-        A unit quaternion as a 4-tuple, scalar first
-    """
-    # We're generating the quaternions from Euler angles because generating the
-    # coefficients directly results in zero-quaterions, which are invalid and raise
-    # an error when trying to construct the Rotation.
-    x_rad = draw(st.floats(min_value=0.0, max_value=np.pi * 2))
-    y_rad = draw(st.floats(min_value=0.0, max_value=np.pi * 2))
-    z_rad = draw(st.floats(min_value=0.0, max_value=np.pi * 2))
-    rotation = Rotation.from_euler("xyz", [x_rad, y_rad, z_rad], degrees=False)
-    normalized_rotation = rotation.as_quat()
-    return cast("QuaternionWXYZ", tuple(normalized_rotation))
-
-
-@st.composite
-def x_rotation_quaterion(draw) -> QuaternionWXYZ:
-    x_rad = draw(st.floats(min_value=0.0, max_value=np.pi * 2))
-    rotation = Rotation.from_euler("xyz", [x_rad, 0.0, 0.0], degrees=False)
-    normalized_rotation = rotation.as_quat()
-    return cast("QuaternionWXYZ", tuple(normalized_rotation))
-
-
-@st.composite
-def constrained_angle(draw) -> tuple[float, float]:
-    """Strategy to generate an angle constrained to a constraint.
-
-    Returns:
-        Tuple of angle and constraint
-    """
-    constraint = draw(st.floats(min_value=0.0, max_value=180.0))
-    angle = draw(st.floats(min_value=-constraint, max_value=constraint))
-    return angle, constraint
+from tests.unit.simulators.mujoco.strategies import (
+    constrained_angle,
+    position,
+    unit_quaternion,
+    x_rotation_quaterion,
+)
 
 
 @contextmanager
@@ -100,14 +67,101 @@ def sim_resetter(sim: MuJoCoSimulator):
         sim.reset()
 
 
-class DistantAgentTest(TestCase):
+@contextmanager
+def skip_on_missing_actuate():
+    """A test decorator that skips tests for missing actuate methods.
+
+    Not all agents implement all actuate methods, so we skip the tests that
+    cover those methods.
+    """
+    try:
+        yield
+    except ActuateMethodMissing as e:
+        pytest.skip(
+            reason=f"{e.agent_class.__name__} missing {e.method_name} method "
+            f"under test."
+        )
+
+
+def agent_test_name_func(
+    cls: type,
+    num: int,  # noqa: ARG001
+    params_dict: dict[str, type],
+) -> str:
+    """Function used by `parameterized_class` to determine the class name for the test.
+
+    By default, the test classes that `parameterized_class` generates are just the class
+    name with a number at the end. This makes it hard to know which agent class under
+    test had the failure.
+
+    Returns:
+        The base test case class name with the agent class name prepended.
+    """
+    agent_name = params_dict["agent_class"].__name__
+    return f"{agent_name}{cls.__name__}"
+
+
+def orient_horizontal_position(
+    left: float = 0.0, forward: float = 0.0, theta: float = 0.0
+) -> np.ndarray:
+    """Helper to calculate position after an OrientHorizontal action.
+
+    Starts from the origin looking down the negative-Z axis.
+
+    Returns:
+        position after the OrientHorizontal action.
+    """
+    # The action results in a move left, then a yaw, then a move forward
+    after_left_pos = np.array([-left, 0.0, 0.0])
+    theta_rot = Rotation.from_euler("y", -theta, degrees=True)
+    theta_matrix = theta_rot.as_matrix()
+    axis_vector = theta_matrix[:, 2] * -forward  # 2 = z-axis
+
+    return after_left_pos + axis_vector
+
+
+def orient_vertical_position(
+    down: float = 0.0, forward: float = 0.0, phi: float = 0.0
+) -> np.ndarray:
+    """Helper to calculate position after an OrientVertical action.
+
+    Starts from the origin looking down the positive-Z axis.
+
+    Returns:
+        position after the OrientVertical action.
+    """
+    # The action results in a move down, then a pitch, then a move forward
+    after_down_pos = np.array([0.0, -down, 0.0])
+    phi_rot = Rotation.from_euler("x", phi, degrees=True)
+    phi_matrix = phi_rot.as_matrix()
+    axis_vector = phi_matrix[:, 2] * -forward  # 2 = z-axis
+
+    return after_down_pos + axis_vector
+
+
+@parameterized_class(
+    [{"agent_class": DistantAgent}, {"agent_class": SurfaceAgent}],
+    class_name_func=agent_test_name_func,
+)
+class ActionsTest(TestCase):
+    """This tests the actuate methods on the agents.
+
+    Rather than duplicate the test code for each agent, we run this suite over
+    the agent classes.
+    """
+
     @classmethod
     def setUpClass(cls):
         # Use a single shared simulator since Hypothesis will rerun the
         # tests multiple times, and this cuts down on the runtime, but
         # leads to other complications, see `sim_resetter` above.
         cls.sim = MuJoCoSimulator(
-            agents=[partial(DistantAgent, **default_agent_args())]
+            agents=[
+                partial(
+                    cls.agent_class,  # type: ignore[attr-defined]
+                    **default_agent_args(),
+                )
+            ]
         )
 
     @classmethod
@@ -117,6 +171,7 @@ class DistantAgentTest(TestCase):
     def tearDown(self):
         self.sim.remove_all_objects()
 
+    @skip_on_missing_actuate()
     @given(
         final_position=position(),
         final_rotation=unit_quaternion(),
@@ -134,6 +189,7 @@ class DistantAgentTest(TestCase):
         assert agent_state.position == final_position
         assert agent_state.rotation == qt.quaternion(*final_rotation)
 
+    @skip_on_missing_actuate()
     @given(
         sensor_rotation=x_rotation_quaterion(),
     )
@@ -151,11 +207,12 @@ class DistantAgentTest(TestCase):
         assert sensor_state.position == (0.0, 0.0, 0.0)
         # Due to the transformations that happen to sensor.rotation, some of the
         # quaternions are rotated to their negative, which represents the same rotation.
-        # Changing to SciPy rotation side-steps that issue when testing the results.
+        # Changing to Rotation side-steps that issue when testing the results.
         sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
         expected_rot = Rotation.from_quat(sensor_rotation)
         assert expected_rot.approx_equal(sensor_rot)
 
+    @skip_on_missing_actuate()
     @given(distance=st.floats(min_value=0.0, max_value=10.0))
     @settings(deadline=None)
     def test_move_forward(self, distance):
@@ -168,6 +225,7 @@ class DistantAgentTest(TestCase):
             # moved distance will be the negative of the requested distance.
             assert agent_state.position == (0.0, 0.0, -distance)
 
+    @skip_on_missing_actuate()
     @given(delta_theta=st.floats(min_value=-180.0, max_value=180.0))
     @settings(deadline=None)
     def test_turn_right(self, delta_theta):
@@ -183,6 +241,7 @@ class DistantAgentTest(TestCase):
 
             assert agent_rot.approx_equal(expected_rot)
 
+    @skip_on_missing_actuate()
     @given(delta_theta=st.floats(min_value=-180.0, max_value=180.0))
     @settings(deadline=None)
     def test_turn_left(self, delta_theta):
@@ -198,6 +257,7 @@ class DistantAgentTest(TestCase):
 
             assert agent_rot.approx_equal(expected_rot)
 
+    @skip_on_missing_actuate()
     @given(angles=constrained_angle())
     @settings(deadline=None)
     def test_look_up(self, angles):
@@ -217,6 +277,7 @@ class DistantAgentTest(TestCase):
 
             assert sensor_rot.approx_equal(expected_rot)
 
+    @skip_on_missing_actuate()
     @given(
         delta_phi1=st.floats(min_value=-180.0, max_value=180.0),
         delta_phi2=st.floats(min_value=-180.0, max_value=180.0),
@@ -246,6 +307,7 @@ class DistantAgentTest(TestCase):
             pitch, _, _ = sensor_rot.as_euler("xyz", degrees=True)
             assert abs(pitch) <= phi_limit + DEFAULT_TOLERANCE
 
+    @skip_on_missing_actuate()
     @given(angles=constrained_angle())
     @settings(deadline=None)
     def test_look_down(self, angles):
@@ -265,6 +327,7 @@ class DistantAgentTest(TestCase):
 
             assert sensor_rot.approx_equal(expected_rot)
 
+    @skip_on_missing_actuate()
     @given(
         delta_phi1=st.floats(min_value=-180.0, max_value=180.0),
         delta_phi2=st.floats(min_value=-180.0, max_value=180.0),
@@ -293,3 +356,117 @@ class DistantAgentTest(TestCase):
 
             pitch, _, _ = sensor_rot.as_euler("xyz", degrees=True)
             assert abs(pitch) <= phi_limit + DEFAULT_TOLERANCE
+
+    @skip_on_missing_actuate()
+    @given(
+        delta_theta=st.floats(min_value=-180.0, max_value=180.0),
+        # 10 meters seems like a good upper limit given the size of our
+        # test objects.
+        left_distance=st.floats(min_value=0.0, max_value=10.0),
+        forward_distance=st.floats(min_value=0.0, max_value=10.0),
+    )
+    @settings(deadline=None)
+    def test_orient_horizontal(
+        self, delta_theta: float, left_distance: float, forward_distance: float
+    ) -> None:
+        """Tests the OrientHorizontal action.
+
+        This test could be more complicated and try to test OrientHorizontal from a
+        variety of starting positions and orientations, or multiple OrientHorizontal
+        actions. This would make the test more complicated and the
+        `orient_horizontal_position` helper would end up duplicating the code that
+        the `actuate_orient_horizontal` method uses.
+
+        We would essentially be testing the underlying mathematical properties of
+        translations and rotations, which isn't really needed.
+
+        Testing starting from the origin tests enough to prove that the action behaves
+        as we expect it to without over-complicating the test.
+        """
+        action = OrientHorizontal(
+            agent_id=TEST_AGENT_ID,
+            rotation_degrees=delta_theta,
+            forward_distance=forward_distance,
+            left_distance=left_distance,
+        )
+
+        with sim_resetter(self.sim):
+            self.sim.step([action])
+            agent_state = self.sim.states[TEST_AGENT_ID]
+            agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
+            agent_pos = agent_state.position
+
+            expected_rot = Rotation.from_euler("y", -delta_theta, degrees=True)
+            expected_pos = orient_horizontal_position(
+                left=left_distance,
+                forward=forward_distance,
+                theta=delta_theta,
+            )
+
+            assert agent_rot.approx_equal(expected_rot)
+            np.testing.assert_allclose(agent_pos, expected_pos)
+
+    @skip_on_missing_actuate()
+    @given(
+        delta_phi=st.floats(min_value=-180.0, max_value=180.0),
+        down_distance=st.floats(min_value=0.0, max_value=10.0),
+        forward_distance=st.floats(min_value=0.0, max_value=10.0),
+    )
+    @settings(deadline=None)
+    def test_orient_vertical(
+        self, delta_phi: float, down_distance: float, forward_distance: float
+    ) -> None:
+        """Tests the OrientVertical action.
+
+        See note in `test_orient_horizontal`.
+        """
+        action = OrientVertical(
+            agent_id=TEST_AGENT_ID,
+            rotation_degrees=delta_phi,
+            forward_distance=forward_distance,
+            down_distance=down_distance,
+        )
+
+        with sim_resetter(self.sim):
+            self.sim.step([action])
+            agent_state = self.sim.states[TEST_AGENT_ID]
+            agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
+            agent_pos = agent_state.position
+
+            expected_rot = Rotation.from_euler("x", delta_phi, degrees=True)
+            expected_pos = orient_vertical_position(
+                down=down_distance, forward=forward_distance, phi=delta_phi
+            )
+
+            assert agent_rot.approx_equal(expected_rot)
+            np.testing.assert_allclose(agent_pos, expected_pos)
+
+    @skip_on_missing_actuate()
+    @given(
+        distance=st.floats(min_value=0.0, max_value=10.0),
+        theta=st.floats(min_value=-np.pi, max_value=np.pi),
+    )
+    @settings(deadline=None)
+    def test_move_tangentially(self, distance: float, theta: float) -> None:
+        # Offset used in the code that generates MoveTangentially actions to set
+        # the origin angle to the positive Y axis instead of the positive X axis.
+        offset = np.pi / 2
+        # Since we're starting from the origin, we can directly calculate this
+        # value without having to apply it to the agent's starting position.
+        direction_vector = np.array(
+            [np.cos(theta - offset), np.sin(theta + offset), 0.0]
+        )
+        action = MoveTangentially(
+            agent_id=TEST_AGENT_ID,
+            distance=distance,
+            direction=tuple(direction_vector),
+        )
+
+        with sim_resetter(self.sim):
+            self.sim.step([action])
+            agent_state = self.sim.states[TEST_AGENT_ID]
+            agent_pos = agent_state.position
+
+            expected_pos = direction_vector * distance
+
+            np.testing.assert_allclose(agent_pos, expected_pos)
