@@ -815,7 +815,11 @@ class OrientationSalience:
 
         return kernels
 
-    def process(self, pyr: Pyramid) -> npt.NDArray[np.float32]:
+    def process(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        pyr: Pyramid,
+    ) -> npt.NDArray[np.float32]:
         feature_pyramids = {}
         feature_maps = {}
         lap = laplacian_pyramid(pyr)
@@ -930,6 +934,7 @@ class Vocus2(SalienceStrategy):
 
     def __call__(
         self,
+        ctx: RuntimeContext,
         rgba: npt.NDArray[np.int_],
         depth: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
@@ -941,15 +946,15 @@ class Vocus2(SalienceStrategy):
 
         Lab = self._color_space_converter(rgb)  # noqa: N806
         L, a, b = cv2.split(Lab)  # noqa: N806
-        feature_maps["L"], L_center = self._color.process(L)  # noqa: N806
-        feature_maps["a"], _ = self._color.process(a)
-        feature_maps["b"], _ = self._color.process(b)
+        feature_maps["L"], L_center = self._color.process(ctx, L)  # noqa: N806
+        feature_maps["a"], _ = self._color.process(ctx, a)
+        feature_maps["b"], _ = self._color.process(ctx, b)
 
         if self._depth:
-            feature_maps["depth"] = self._depth.process(depth)
+            feature_maps["depth"] = self._depth.process(ctx, depth)
 
         if self._orientation:
-            feature_maps["orientation"] = self._orientation.process(L_center)
+            feature_maps["orientation"] = self._orientation.process(ctx, L_center)
 
         salience_map = self._combine(feature_maps)
 
