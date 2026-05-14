@@ -630,10 +630,14 @@ class GraphLM(LearningModule):
         self.buffer.append_input_percepts(observations)
 
     def update_ltm_from_stm(self):
-        """If training, update memory after each episode."""
+        """If training, update memory from buffer."""
         if self.mode is ExperimentMode.TRAIN and len(self.buffer) > 0:
             logger.info(f"\n---Updating memory of {self.learning_module_id}---")
             self._update_memory()
+
+    def fixme_update_ground_truth(self):
+        """If training, update ground truth."""
+        if self.mode is ExperimentMode.TRAIN and len(self.buffer) > 0:
             self._update_target_graph_mapping(self.detected_object, self.primary_target)
 
     def send_out_vote(self):
