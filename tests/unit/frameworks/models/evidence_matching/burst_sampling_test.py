@@ -598,24 +598,31 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         """
         sample_count = num_nodes * num_hyps_per_node
 
-        # Set up graph memory mocks
+        self.mock_graph_memory.get_feature_array = Mock(
+            return_value={"patch": np.zeros((num_nodes, 3))}
+        )
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
         )
-
-        # Set up updater with feature matching disabled
-        self.updater.use_features_for_matching = {"patch": False}
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights={},
+            graph_memory=self.mock_graph_memory,
+            max_match_distance=0,
+            tolerances={},
+            evidence_threshold_config="all",
+            features_for_matching_selector=PatchFalseFeaturesForMatchingSelector,
+        )
 
         # Use predefined poses to avoid needing rotation features
         euler_angles = [[0, 0, i * 30] for i in range(num_hyps_per_node)]
-        self.updater.initial_possible_poses = [
+        updater.initial_possible_poses = [
             Rotation.from_euler("xyz", pose, degrees=True).inv()
             for pose in euler_angles
         ]
 
         tracker = EvidenceSlopeTracker()
 
-        result = self.updater._sample_new_hypotheses(
+        result = updater._sample_new_hypotheses(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
             new_hypotheses_per_channel={"patch": sample_count},
