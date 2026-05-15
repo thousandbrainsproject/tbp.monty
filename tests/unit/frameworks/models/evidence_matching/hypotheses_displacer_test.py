@@ -16,23 +16,10 @@ import numpy as np
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.scorer import (
     DefaultFeatureEvidenceScorer,
 )
-from tbp.monty.frameworks.models.evidence_matching.features_for_matching.selector import (  # noqa: E501
-    FeaturesForMatchingSelector,
-)
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
 )
-
-
-class TestFeaturesForMatchingSelector(FeaturesForMatchingSelector):
-    @staticmethod
-    def select(
-        feature_evidence_increment: int,  # noqa: ARG004
-        feature_weights: dict,  # noqa: ARG004
-        tolerances: dict,  # noqa: ARG004
-    ) -> dict[str, bool]:
-        return {"channel_a": False, "channel_b": False}
 
 
 class DefaultHypothesesDisplacerTest(TestCase):
@@ -50,11 +37,14 @@ class DefaultHypothesesDisplacerTest(TestCase):
             "channel_a": {},
             "channel_b": {},
         }
+        self.feature_for_matching_selector = Mock(
+            select=Mock(return_value={"channel_a": False, "channel_b": False})
+        )
         self.feature_evidence_scorer = DefaultFeatureEvidenceScorer(
             graph_memory=self.mock_graph_memory,
             feature_weights=self.feature_weights,
             tolerances=self.tolerances,
-            features_for_matching_selector=TestFeaturesForMatchingSelector,
+            features_for_matching_selector=self.feature_for_matching_selector,
         )
         self.displacer = DefaultHypothesesDisplacer(
             feature_weights=self.feature_weights,

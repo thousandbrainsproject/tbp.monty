@@ -433,16 +433,6 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         ):
             nwmf_stacked.extend(node_feature_evidence)
         evidence = np.array(nwmf_stacked)
-        # TODO: Previously, when we don't use feature for matching for the
-        #       input_channel, the else case was:
-        #
-        #       evidence = np.zeros(initial_possible_channel_rotations.shape[0])
-        #
-        # Question: When node_feature_evidence is all zeros, is the shape of evidence
-        #           in the calculation above equivalent to
-        #           initial_possible_channel_rotations.shape[0], or do we need an else
-        #           case for this and force the shape to be
-        #           initial_possible_channel_rotations.shape[0] ?
 
         # New hypotheses cannot be possible
         initial_possible_hyps = np.zeros_like(evidence, dtype=np.bool_)
