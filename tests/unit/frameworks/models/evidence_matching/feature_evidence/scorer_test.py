@@ -50,7 +50,9 @@ class DefaultFeatureEvidenceScorerTest(TestCase):
         )
         np.testing.assert_array_equal(result, np.zeros(num_nodes))
 
-    def test_returns_feature_evidence_multiplied_by_feature_evidence_increment_when_input_channel_is_used_for_matching(self) -> None:  # noqa: E501
+    def test_returns_feature_evidence_multiplied_by_feature_evidence_increment_when_input_channel_is_used_for_matching(  # noqa: E501
+        self,
+    ) -> None:
         mock_graph_memory = Mock()
         mock_graph_memory.get_feature_array = Mock(
             return_value={CHANNEL: sentinel.feature_array}
@@ -65,12 +67,8 @@ class DefaultFeatureEvidenceScorerTest(TestCase):
 
         scorer = DefaultFeatureEvidenceScorer(
             graph_memory=mock_graph_memory,
-            feature_weights={
-                CHANNEL: sentinel.feature_weights
-            },
-            tolerances={
-                CHANNEL: sentinel.tolerances
-            },
+            feature_weights={CHANNEL: sentinel.feature_weights},
+            tolerances={CHANNEL: sentinel.tolerances},
             features_for_matching_selector=mock_selector,
             feature_evidence_calculator=mock_calculator,
             feature_evidence_increment=feature_evidence_increment,
