@@ -829,20 +829,29 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         num_selected_nodes = 2
         sample_count = num_selected_nodes * num_rotations
 
-        # Set up graph memory mocks
+        self.mock_graph_memory.get_feature_array = Mock(
+            return_value={"patch": np.zeros((num_nodes, 3))}
+        )
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
+        )
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights={},
+            graph_memory=self.mock_graph_memory,
+            max_match_distance=0,
+            tolerances={},
+            evidence_threshold_config="all",
+            features_for_matching_selector=PatchFalseFeaturesForMatchingSelector,
         )
 
         # Set up updater with predefined rotations
         euler_angles = [[0, 0, i * 360 / num_rotations] for i in range(num_rotations)]
-        self.updater.initial_possible_poses = [
+        updater.initial_possible_poses = [
             Rotation.from_euler("xyz", pose, degrees=True).inv()
             for pose in euler_angles
         ]
-        self.updater.use_features_for_matching = {"patch": False}
 
-        result = self.updater._sample_new_hypotheses(
+        result = updater._sample_new_hypotheses(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
             new_hypotheses_per_channel={"patch": sample_count},
@@ -853,7 +862,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
         # Verify poses are correctly tiled from initial_possible_poses
         expected_rot_mats = np.array(
-            [r.as_matrix() for r in self.updater.initial_possible_poses]
+            [r.as_matrix() for r in updater.initial_possible_poses]
         )
         expected_tiled = np.repeat(expected_rot_mats, num_selected_nodes, axis=0)
         np.testing.assert_array_almost_equal(result.poses, expected_tiled, decimal=5)
