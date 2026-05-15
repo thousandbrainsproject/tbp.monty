@@ -641,15 +641,19 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             return_value=np.random.rand(num_nodes, 3)
         )
 
+        mock_calculator = Mock()
+        mock_calculator.calculate = Mock(
+            return_value=np.array([0.1, 0.5, 0.3, 0.9, 0.2])
+        )
         updater = BurstSamplingHypothesesUpdater(
             feature_weights={"patch": {"feature1": 1.0}},
             graph_memory=mock_graph_memory,
             max_match_distance=0,
             tolerances={"patch": {"feature1": 0.1}},
             evidence_threshold_config="all",
+            feature_evidence_calculator=mock_calculator,
             feature_evidence_increment=1,
         )
-        updater.use_features_for_matching = {"patch": True}
 
         # Mock the hypotheses displacer
         hypotheses_displacer = Mock()
@@ -657,13 +661,6 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
         )
         updater._hypotheses_displacer = hypotheses_displacer
-
-        # Mock the feature evidence calculator
-        mock_calculator = Mock()
-        mock_calculator.calculate = Mock(
-            return_value=np.array([0.1, 0.5, 0.3, 0.9, 0.2])
-        )
-        updater.feature_evidence_calculator = mock_calculator
 
         # Use predefined poses (initial possible poses)
         euler_angles = [[0, 0, 0], [0, 0, 180]]
