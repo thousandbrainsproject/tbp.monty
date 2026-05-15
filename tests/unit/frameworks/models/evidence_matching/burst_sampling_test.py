@@ -6,6 +6,8 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -16,6 +18,9 @@ from numpy.ma.testutils import assert_array_equal
 
 from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
+)
+from tbp.monty.frameworks.models.evidence_matching.features_for_matching.selector import (
+    FeaturesForMatchingSelector,
 )
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
     Hypotheses,
@@ -36,6 +41,16 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     InvalidEvidenceThresholdConfig,
 )
 from tbp.monty.geometry import Rotation
+
+
+class PatchFalseFeaturesForMatchingSelector(FeaturesForMatchingSelector):
+    @staticmethod
+    def select(
+        feature_evidence_increment: int,  # noqa: ARG004
+        feature_weights: dict,  # noqa: ARG004
+        tolerances: dict,  # noqa: ARG004
+    ) -> dict[str, bool]:
+        return {"patch": False}
 
 
 class BurstSamplingHypothesesUpdaterTest(TestCase):
@@ -686,30 +701,38 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         # Indices 3 and 1 have highest scores (0.5 and 0.9)
         self.assertTrue(np.all(result.evidence >= 0.5))
 
-    def test_sample_new_hypotheses_with_initial_poses_none(self) -> None:
-        """Test sampling new hypotheses when initial_possible_poses is None.
+    def test_sample_new_hypotheses_with_initial_possible_poses_informed(self) -> None:
+        """Test sampling new hypotheses when initial_possible_poses is "informed".
 
-        When initial_possible_poses is None, rotations should be computed using
+        When initial_possible_poses is "informed"", rotations should be computed using
         the graph rotation features.
         """
         num_nodes = 3
         sample_count = 4
 
-        self.updater.initial_possible_poses = None
-        self.updater.use_features_for_matching = {"patch": False}
-
-        # Set up graph memory mocks
+        self.mock_graph_memory.get_feature_array = Mock(
+            return_value={"patch": np.zeros((num_nodes, 3))}
+        )
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
         )
-
         # Each node has 3 orthonormal rotation vectors (3x3 matrix)
         # We use identity matrices here for simplicity
         self.mock_graph_memory.get_rotation_features_at_all_nodes = Mock(
             return_value=np.tile(np.eye(3), (3, 1, 1)).astype(np.float64)
         )
 
-        result = self.updater._sample_new_hypotheses(
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights={},
+            graph_memory=self.mock_graph_memory,
+            initial_possible_poses="informed",  # Note: this is the default value
+            max_match_distance=0,
+            tolerances={},
+            evidence_threshold_config="all",
+            features_for_matching_selector=PatchFalseFeaturesForMatchingSelector,
+        )
+
+        result = updater._sample_new_hypotheses(
             features={
                 "patch": {
                     "pose_fully_defined": True,
