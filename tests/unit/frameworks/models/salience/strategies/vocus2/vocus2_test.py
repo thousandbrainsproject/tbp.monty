@@ -39,6 +39,10 @@ MAX_DIM_SIZE = 1024
 MAX_SCALES = 5
 
 
+# Parameters
+# -----------------------------------------------------------------------------
+
+
 @st.composite
 def resolution(
     draw: st.DrawFn,
@@ -63,7 +67,7 @@ def n_scales(
 def max_octaves(
     draw: st.DrawFn,
     min_value: int = 1,
-    max_value: int = int(2 * np.log2(MAX_DIM_SIZE)),
+    max_value: int = int(np.log2(MAX_DIM_SIZE)) + 1,
 ) -> int | None:
     return draw(
         st.one_of(st.none(), st.integers(min_value=min_value, max_value=max_value))
@@ -79,26 +83,6 @@ def min_size(
     return draw(st.integers(min_value=min_value, max_value=max_value))
 
 
-
-
-@st.composite
-def random_image(
-    draw: st.DrawFn,
-    min_dim_size: int = 1,
-    max_dim_size: int = MAX_DIM_SIZE,
-) -> npt.NDArray[np.float32]:
-    height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
-    width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
-    return draw(
-        arrays(
-            dtype=np.float32,
-            shape=(height, width),
-            elements=np.random.uniform(size=(height, width)).astype(np.float32),
-        )
-    )
-
-
-
 @st.composite
 def center_surround_sigmas(
     draw: st.DrawFn,
@@ -112,6 +96,10 @@ def center_surround_sigmas(
         st.floats(min_value=1.0, max_value=10.0, exclude_min=True)
     )
     return center_sigma, surround_sigma_factor * center_sigma
+
+
+# Images
+# -----------------------------------------------------------------------------
 
 
 @st.composite
@@ -154,74 +142,6 @@ def float32_image(draw: st.DrawFn) -> npt.NDArray[np.float32]:
             ),
         )
     )
-
-
-@st.composite
-def sufficiently_variable_float32_image(draw: st.DrawFn) -> npt.NDArray[np.float32]:
-    return draw(
-        float32_image().filter(
-            lambda img: not np.allclose(img, img[0, 0], atol=DEFAULT_TOLERANCE)
-        )
-    )
-
-
-@st.composite
-def pyramid(draw: st.DrawFn, fill_value: float = 1.0) -> Pyramid:
-    image_width = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
-    image_height = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
-    n_scales = draw(st.integers(min_value=1, max_value=10))
-    max_octaves = draw(
-        st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE)))
-    )
-    min_size = draw(st.integers(min_value=1, max_value=min(image_width, image_height)))
-    octave_shapes = pyramid_octave_shapes(
-        (image_height, image_width),
-        max_octaves=max_octaves,
-        min_size=min_size,
-    )
-    input_data = np.zeros((len(octave_shapes), n_scales), dtype=object)
-    for octave_num, octave_shape in enumerate(octave_shapes):
-        for scale_num in range(n_scales):
-            input_data[octave_num, scale_num] = np.full(
-                octave_shape, fill_value, dtype=np.float32
-            )
-    return Pyramid(input_data)
-
-
-@st.composite
-def valid_input_pyramid_for_laplacian_pyramid(
-    draw: st.DrawFn, fill_value: float = 1.0
-) -> Pyramid:
-    image_width = draw(st.integers(min_value=2, max_value=MAX_DIM_SIZE))
-    image_height = draw(st.integers(min_value=2, max_value=MAX_DIM_SIZE))
-    n_scales = draw(st.integers(min_value=1, max_value=10))
-    max_octaves = draw(
-        st.integers(min_value=2, max_value=int(2 * np.log2(MAX_DIM_SIZE)))
-    )
-    octave_shapes = pyramid_octave_shapes(
-        (image_height, image_width),
-        max_octaves=max_octaves,
-    )
-    input_data = np.zeros((len(octave_shapes), n_scales), dtype=object)
-    for octave_num, octave_shape in enumerate(octave_shapes):
-        for scale_num in range(n_scales):
-            input_data[octave_num, scale_num] = np.full(
-                octave_shape, fill_value, dtype=np.float32
-            )
-    return Pyramid(input_data)
-
-
-@st.composite
-def differently_shaped_pyramids(
-    draw: st.DrawFn, fill_value: float = 1.0
-) -> list[Pyramid]:
-    pyramid_1 = draw(valid_input_pyramid_for_laplacian_pyramid(fill_value=fill_value))
-    pyramid_2 = draw(
-        valid_input_pyramid_for_laplacian_pyramid(fill_value=fill_value).filter(
-            lambda pyr: pyr.shape != pyramid_1.shape
-        )
-    )
-    return [pyramid_1, pyramid_2]
 
 
 @dataclass
