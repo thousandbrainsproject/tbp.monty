@@ -19,9 +19,8 @@ import numpy.typing as npt
 from tbp.monty.frameworks.models.evidence_matching.channels import (
     all_usable_input_channels,
 )
-from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
-    DefaultFeatureEvidenceCalculator,
-    FeatureEvidenceCalculator,
+from tbp.monty.frameworks.models.evidence_matching.feature_evidence.scorer import (
+    FeatureEvidenceScorer,
 )
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
@@ -82,12 +81,7 @@ class DefaultHypothesesDisplacer:
         feature_weights: dict,
         graph_memory: EvidenceGraphMemory,
         max_match_distance: float,
-        tolerances: dict,
-        use_features_for_matching: dict[str, bool],
-        feature_evidence_calculator: type[
-            FeatureEvidenceCalculator
-        ] = DefaultFeatureEvidenceCalculator,
-        feature_evidence_increment: int = 1,
+        feature_evidence_scorer: FeatureEvidenceScorer,
         max_nneighbors: int = 3,
         past_weight: float = 1,
         present_weight: float = 1,
@@ -102,16 +96,7 @@ class DefaultHypothesesDisplacer:
             graph_memory: The graph memory to read graphs from.
             max_match_distance: Maximum distance of a tested and stored location
                 to be matched.
-            tolerances: How much can each observed feature deviate from the
-                stored features to still be considered a match.
-            use_features_for_matching: Dictionary mapping input channels to
-                booleans indicating whether to use features for matching.
-            feature_evidence_calculator: Class to calculate feature evidence for all
-                nodes. Defaults to the default calculator.
-            feature_evidence_increment: Feature evidence (between 0 and 1) is
-                multiplied by this value before being added to the overall evidence of
-                a hypothesis. This factor is only multiplied with the feature evidence
-                (not the pose evidence as opposed to the present_weight). Defaults to 1.
+            feature_evidence_scorer: Scorer that scores evidence for all nodes.
             max_nneighbors: Maximum number of nearest neighbors to consider in the
                 radius of a hypothesis for calculating the evidence. Defaults to 3.
             past_weight: How much should the evidence accumulated so far be
@@ -127,16 +112,13 @@ class DefaultHypothesesDisplacer:
                 though and could help when moving from one object to another and to
                 generally make setting thresholds etc. more intuitive.
         """
-        self.feature_evidence_calculator = feature_evidence_calculator
-        self.feature_evidence_increment = feature_evidence_increment
         self.feature_weights = feature_weights
         self.graph_memory = graph_memory
         self.max_match_distance = max_match_distance
         self.max_nneighbors = max_nneighbors
         self.past_weight = past_weight
         self.present_weight = present_weight
-        self.tolerances = tolerances
-        self.use_features_for_matching = use_features_for_matching
+        self._feature_evidence_scorer = feature_evidence_scorer
 
     def displace_hypotheses_and_compute_evidence(
         self,
@@ -299,32 +281,20 @@ class DefaultHypothesesDisplacer:
         # matter.
         node_distance_weights[mask] = 1
 
-        # If no feature weights are provided besides the ones for surface_normal
-        # and curvature_directions we don't need to calculate feature evidence.
-        if self.use_features_for_matching[input_channel]:
-            # add evidence if features match
-            node_feature_evidence = self.feature_evidence_calculator.calculate(
-                channel_feature_array=self.graph_memory.get_feature_array(graph_id)[
-                    input_channel
-                ],
-                channel_feature_order=self.graph_memory.get_feature_order(graph_id)[
-                    input_channel
-                ],
-                channel_feature_weights=self.feature_weights[input_channel],
-                channel_query_features=channel_features,
-                channel_tolerances=self.tolerances[input_channel],
-            )
-            hypothesis_radius_feature_evidence = node_feature_evidence[nearest_node_ids]
-            # Set feature evidence of nearest neighbors that are too far away to 0
-            hypothesis_radius_feature_evidence[mask] = 0
-            # Take the maximum feature evidence out of the nearest neighbors in the
-            # search radius and weighted by its distance to the search location.
-            # Evidence will be in [0, 1] and is only 1 if all features match
-            # perfectly and the node is at the search location.
-            radius_evidence = (
-                radius_evidence
-                + hypothesis_radius_feature_evidence * self.feature_evidence_increment
-            )
+        node_feature_evidence = self._feature_evidence_scorer(
+            graph_id=graph_id,
+            input_channel=input_channel,
+            query_features=channel_features,
+        )
+        hypothesis_radius_feature_evidence = node_feature_evidence[nearest_node_ids]
+        # Set feature evidence of nearest neighbors that are too far away to 0
+        hypothesis_radius_feature_evidence[mask] = 0
+        # Take the maximum feature evidence out of the nearest neighbors in the
+        # search radius and weighted by its distance to the search location.
+        # Evidence will be in [0, 1] and is only 1 if all features match
+        # perfectly and the node is at the search location.
+        radius_evidence = radius_evidence + hypothesis_radius_feature_evidence
+
         # We take the maximum to be better able to deal with parts of the model where
         # features change quickly and we may have noisy location information. This way
         # we check if we can find a good match of pose features within the search

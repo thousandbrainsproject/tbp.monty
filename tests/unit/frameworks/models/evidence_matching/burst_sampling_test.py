@@ -58,7 +58,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             # since we're not testing that.
             side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
         )
-        self.updater.hypotheses_displacer = hypotheses_displacer
+        self.updater._hypotheses_displacer = hypotheses_displacer
 
     def test_init_fails_when_passed_invalid_evidence_threshold_config(self) -> None:
         """Test that the updater only accepts "all" for evidence_threshold_config."""
@@ -656,7 +656,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         hypotheses_displacer.displace_hypotheses_and_compute_evidence = Mock(
             side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
         )
-        updater.hypotheses_displacer = hypotheses_displacer
+        updater._hypotheses_displacer = hypotheses_displacer
 
         # Mock the feature evidence calculator
         mock_calculator = Mock()
