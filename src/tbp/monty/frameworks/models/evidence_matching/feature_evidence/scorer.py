@@ -27,15 +27,34 @@ from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
 
 
 class FeatureEvidenceScorer(Protocol):
+    """A scorer that calculates the feature evidence for a given channel."""
     def __call__(
         self,
         graph_id: str,
         input_channel: str,
         query_features: dict,
-    ) -> npt.NDArray[np.float64]: ...
+    ) -> npt.NDArray[np.float64]:
+        """Calculate the feature evidence for a given channel.
+
+        Args:
+            graph_id: The graph id.
+            input_channel: The channel.
+            query_features: The query features.
+
+        Returns:
+            The feature evidence for the given channel.
+        """
+        ...
 
 
 class DefaultFeatureEvidenceScorer(FeatureEvidenceScorer):
+    """Default scorer that calculates the feature evidence for a given channel.
+
+    The feature evidence is a score between 0 and 1 that indicates how well the observed
+    features match the stored features. If  the channel is used for matching, the score
+    is calculated by the feature evidence calculator and multiplied by the feature
+    evidence increment. Otherwise, all zeros are returned.
+    """
     def __init__(
         self,
         graph_memory: EvidenceGraphMemory,
