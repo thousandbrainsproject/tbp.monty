@@ -136,7 +136,7 @@ class Pyramid:
 def pyramid_octave_shapes(
     image_shape: Resolution2D,
     max_octaves: int | None = None,
-    min_size: int | None = None,
+    min_size: int = 1,
 ) -> list[tuple[int, int]]:
     """Compute the shapes of the pyramid levels.
 
@@ -154,8 +154,6 @@ def pyramid_octave_shapes(
     else:
         max_octaves = max_possible_octaves
 
-    min_size = min_size or 1
-
     cur_shape = image_shape
     shapes: list[tuple[int, int]] = []
     while len(shapes) < max_octaves and min(cur_shape) >= min_size:
@@ -170,7 +168,7 @@ def gaussian_pyramid(
     sigma: float,
     n_scales: int,
     max_octaves: int | None = None,
-    min_size: int | None = None,
+    min_size: int = 1,
 ) -> Pyramid:
     """Build multi-scale pyramid following Lowe 2004.
 
@@ -234,7 +232,7 @@ def center_surround_pyramids(
     surround_sigma: float,
     n_scales: int,
     max_octaves: int | None = None,
-    min_size: int | None = None,
+    min_size: int = 1,
 ) -> tuple[Pyramid, Pyramid]:
     """Build center and surround pyramids.
 
@@ -244,7 +242,7 @@ def center_surround_pyramids(
         surround_sigma: The sigma for the surround pyramid.
         n_scales: The number of scales in each pyramid.
         max_octaves: An optional maximum number of levels in the pyramids.
-        min_size: An optional minimum size of the images in the last octave.
+        min_size: The minimum size of the images in the last octave.
 
     Returns:
         A tuple of center and surround pyramids.
@@ -518,7 +516,7 @@ class ColorChannelSalience:
         surround_sigma: float = 3.0,
         n_scales: int = 2,
         max_octaves: int | None = None,
-        min_size: int | None = None,
+        min_size: int = 1,
         combine: PyramidCombine = pyramid_combine_mean,
         collapse: PyramidCollapse = pyramid_collapse_mean,
         operating_limits: OperatingLimits | None = None,
@@ -538,7 +536,7 @@ class ColorChannelSalience:
             surround_sigma: The surround sigma for the center/surround pyramids.
             n_scales: The number of pyramid scales.
             max_octaves: The maximum number of pyramid octaves to construct.
-            min_size: The minimum image size to construct the pyramids at.
+            min_size: The minimum size of the images in the last octave.
             combine: The function to combine the on/off pyramids into a single pyramid.
             collapse: The function to collapse the combined pyramid into a single image.
             operating_limits: The operating limits to use.
@@ -567,7 +565,7 @@ class ColorChannelSalience:
         surround_sigma: float = 3.0,
         n_scales: int = 2,
         max_octaves: int | None = None,
-        min_size: int | None = None,
+        min_size: int = 1,
         combine: PyramidCombine = pyramid_combine_mean,
         collapse: PyramidCollapse = pyramid_collapse_mean,
     ) -> ColorChannelSalience:
@@ -650,7 +648,7 @@ class DepthSalience:
         surround_sigma: float = 3.0,
         n_scales: int = 2,
         max_octaves: int | None = None,
-        min_size: int | None = None,
+        min_size: int = 1,
         collapse: PyramidCollapse = pyramid_collapse_mean,
         operating_limits: OperatingLimits | None = None,
     ):
@@ -677,7 +675,7 @@ class DepthSalience:
         surround_sigma: float = 3.0,
         n_scales: int = 2,
         max_octaves: int | None = None,
-        min_size: int | None = None,
+        min_size: int = 1,
         collapse: PyramidCollapse = pyramid_collapse_mean,
     ) -> DepthSalience:
         """Create a `DepthSalience` without operating limits.

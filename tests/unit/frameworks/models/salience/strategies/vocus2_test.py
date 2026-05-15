@@ -82,12 +82,7 @@ def min_size(
     min_value: int = 1,
     max_value: int = MAX_DIM_SIZE,
 ) -> int | None:
-    return draw(
-        st.one_of(
-            st.none(),
-            st.integers(min_value=min_value, max_value=max_value),
-        )
-    )
+    return draw(st.integers(min_value=min_value, max_value=max_value))
 
 
 class PyramidTest(unittest.TestCase):
@@ -143,7 +138,7 @@ class PyramidOctaveShapesTest(unittest.TestCase):
         self,
         resolution: Resolution2D,
         max_octaves: int,
-        min_size: int | None,
+        min_size: int,
     ) -> None:
         computed_shapes = pyramid_octave_shapes(
             resolution, max_octaves=max_octaves, min_size=min_size
@@ -206,7 +201,7 @@ class GaussianPyramidTest(unittest.TestCase):
         image: np.ndarray,
         n_scales: int,
         max_octaves: int | None,
-        min_size: int | None,
+        min_size: int,
     ) -> None:
         sigma = 3.0
 
