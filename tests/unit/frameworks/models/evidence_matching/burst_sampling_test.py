@@ -19,9 +19,6 @@ from numpy.ma.testutils import assert_array_equal
 from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
 )
-from tbp.monty.frameworks.models.evidence_matching.features_for_matching.selector import (  # noqa: E501
-    FeaturesForMatchingSelector,
-)
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
     Hypotheses,
 )
@@ -41,16 +38,6 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     InvalidEvidenceThresholdConfig,
 )
 from tbp.monty.geometry import Rotation
-
-
-class PatchFalseFeaturesForMatchingSelector(FeaturesForMatchingSelector):
-    @staticmethod
-    def select(
-        feature_evidence_increment: int,  # noqa: ARG004
-        feature_weights: dict,  # noqa: ARG004
-        tolerances: dict,  # noqa: ARG004
-    ) -> dict[str, bool]:
-        return {"patch": False}
 
 
 class BurstSamplingHypothesesUpdaterTest(TestCase):
@@ -604,13 +591,15 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
         )
+        mock_selector = Mock(select=Mock(return_value={"patch": False}))
+
         updater = BurstSamplingHypothesesUpdater(
             feature_weights={},
             graph_memory=self.mock_graph_memory,
             max_match_distance=0,
             tolerances={},
             evidence_threshold_config="all",
-            features_for_matching_selector=PatchFalseFeaturesForMatchingSelector,
+            features_for_matching_selector=mock_selector,
         )
 
         # Use predefined poses to avoid needing rotation features
@@ -728,6 +717,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.mock_graph_memory.get_rotation_features_at_all_nodes = Mock(
             return_value=np.tile(np.eye(3), (3, 1, 1)).astype(np.float64)
         )
+        mock_selector = Mock(select=Mock(return_value={"patch": False}))
 
         updater = BurstSamplingHypothesesUpdater(
             feature_weights={},
@@ -736,7 +726,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             max_match_distance=0,
             tolerances={},
             evidence_threshold_config="all",
-            features_for_matching_selector=PatchFalseFeaturesForMatchingSelector,
+            features_for_matching_selector=mock_selector,
         )
 
         result = updater._sample_new_hypotheses(
@@ -835,13 +825,15 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
         )
+        mock_selector = Mock(select=Mock(return_value={"patch": False}))
+
         updater = BurstSamplingHypothesesUpdater(
             feature_weights={},
             graph_memory=self.mock_graph_memory,
             max_match_distance=0,
             tolerances={},
             evidence_threshold_config="all",
-            features_for_matching_selector=PatchFalseFeaturesForMatchingSelector,
+            features_for_matching_selector=mock_selector,
         )
 
         # Set up updater with predefined rotations
