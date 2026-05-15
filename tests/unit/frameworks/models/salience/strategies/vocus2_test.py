@@ -19,7 +19,7 @@ import numpy as np
 import numpy.testing as nptest
 import numpy.typing as npt
 import scipy.signal
-from hypothesis import example, given, settings
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -39,7 +39,56 @@ from tbp.monty.frameworks.sensors import Resolution2D
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.unit.statistics import mean_local_variation, total_variation
 
+# Common upper limits used in these tests. Not the same thing
+# as safe operating limits.
 MAX_DIM_SIZE = 1024
+MAX_SCALES = 5
+
+
+@st.composite
+def resolution(
+    draw: st.DrawFn,
+    min_dim_size: int = 1,
+    max_dim_size: int = MAX_DIM_SIZE,
+) -> Resolution2D:
+    height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
+    width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
+    return cast("Resolution2D", (height, width))
+
+
+@st.composite
+def n_scales(
+    draw: st.DrawFn,
+    min_value: int = 1,
+    max_value: int = MAX_SCALES,
+) -> int:
+    return draw(st.integers(min_value=min_value, max_value=max_value))
+
+
+@st.composite
+def max_octaves(
+    draw: st.DrawFn,
+    min_value: int = 1,
+    max_value: int = int(2 * np.log2(MAX_DIM_SIZE)),
+) -> int | None:
+    return draw(
+        st.one_of(st.none(), st.integers(min_value=min_value, max_value=max_value))
+    )
+
+
+@st.composite
+def min_size(
+    draw: st.DrawFn,
+    min_value: int = 1,
+    max_value: int = MAX_DIM_SIZE,
+) -> int | None:
+    return draw(
+        st.one_of(
+            st.none(),
+            st.integers(min_value=min_value, max_value=max_value),
+        )
+    )
+
 
 class PyramidTest(unittest.TestCase):
     @given(ndim=st.sampled_from([0, 1, 3, 4, 5, 6, 7, 8, 9, 10]))
@@ -73,79 +122,91 @@ class PyramidTest(unittest.TestCase):
 
 
 class PyramidOctaveShapesTest(unittest.TestCase):
-    @given(
-        image_shape=st.tuples(
-            st.integers(min_value=1, max_value=MAX_DIM_SIZE),
-            st.integers(min_value=1, max_value=MAX_DIM_SIZE),
-        ),
-    )
+    @given(resolution=resolution())
     def test_generates_all_octaves_when_no_level_or_size_constraints(
         self,
-        image_shape: Resolution2D,
+        resolution: Resolution2D,
     ) -> None:
-        computed_shapes = pyramid_octave_shapes(image_shape)
+        computed_shapes = pyramid_octave_shapes(resolution)
         expected_shapes = []
-        while min(image_shape) >= 1:
-            expected_shapes.append(image_shape)
-            image_shape = cast(
-                "Resolution2D", (image_shape[0] // 2, image_shape[1] // 2)
-            )
+        while min(resolution) >= 1:
+            expected_shapes.append(resolution)
+            resolution = cast("Resolution2D", (resolution[0] // 2, resolution[1] // 2))
         self.assertEqual(expected_shapes, computed_shapes)
 
     @given(
-        image_shape=st.tuples(
-            st.integers(min_value=1, max_value=MAX_DIM_SIZE),
-            st.integers(min_value=1, max_value=MAX_DIM_SIZE),
-        ),
+        resolution=resolution(),
         max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
-        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
+        min_size=min_size(),
     )
     def test_max_octaves_limits_number_of_octaves(
         self,
-        image_shape: Resolution2D,
+        resolution: Resolution2D,
         max_octaves: int,
-        min_size: int,
+        min_size: int | None,
     ) -> None:
         computed_shapes = pyramid_octave_shapes(
-            image_shape, max_octaves=max_octaves, min_size=min_size
+            resolution, max_octaves=max_octaves, min_size=min_size
         )
         self.assertLessEqual(len(computed_shapes), max_octaves)
 
     @given(
-        image_shape=st.tuples(
-            st.integers(min_value=1, max_value=MAX_DIM_SIZE),
-            st.integers(min_value=1, max_value=MAX_DIM_SIZE),
-        ),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
+        resolution=resolution(),
+        max_octaves=max_octaves(),
         min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
     )
     def test_min_size_limits_number_of_octaves(
         self,
-        image_shape: Resolution2D,
-        max_octaves: int,
+        resolution: Resolution2D,
+        max_octaves: int | None,
         min_size: int,
     ) -> None:
         computed_shapes = pyramid_octave_shapes(
-            image_shape, max_octaves=max_octaves, min_size=min_size
+            resolution,
+            max_octaves=max_octaves,
+            min_size=min_size,
         )
         smaller_dims = np.array([min(shape) for shape in computed_shapes], dtype=int)
-        # assert all of smaller_dims are greater than or equal to min_size
         self.assertTrue(all(smaller_dims >= min_size))
+
+
+@st.composite
+def random_image(
+    draw: st.DrawFn,
+    min_dim_size: int = 1,
+    max_dim_size: int = MAX_DIM_SIZE,
+    min_value: float = 0.0,
+    max_value: float = 1.0,
+) -> npt.NDArray[np.float32]:
+    height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
+    width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
+    return draw(
+        arrays(
+            dtype=np.float32,
+            shape=(height, width),
+            elements=st.floats(
+                min_value=min_value,
+                max_value=max_value,
+                allow_nan=False,
+                width=32,
+            ),
+        )
+    )
 
 
 class GaussianPyramidTest(unittest.TestCase):
     @given(
-        image=arrays(dtype=np.float32, shape=(MAX_DIM_SIZE, MAX_DIM_SIZE)),
-        n_scales=st.integers(min_value=1, max_value=10),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
-        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
+        image=random_image(),
+        n_scales=n_scales(),
+        max_octaves=max_octaves(),
+        min_size=min_size(),
     )
     def test_has_correct_shape(
         self,
         image: np.ndarray,
         n_scales: int,
-        max_octaves: int,
-        min_size: int,
+        max_octaves: int | None,
+        min_size: int | None,
     ) -> None:
         sigma = 3.0
 
@@ -173,20 +234,11 @@ class GaussianPyramidTest(unittest.TestCase):
                 )
 
     @given(
-        image=arrays(
-            dtype=np.float32,
-            shape=(MAX_DIM_SIZE, MAX_DIM_SIZE),
-            elements=st.floats(
-                min_value=0.0,
-                max_value=1.0,
-                allow_nan=False,
-                width=32,
-            ),
-        ),
-        sigma=st.floats(min_value=0.5, max_value=3.0),
-        n_scales=st.integers(min_value=1, max_value=3),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
-        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
+        image=random_image(),
+        sigma=st.floats(min_value=0.5, max_value=12.0),
+        n_scales=n_scales(),
+        max_octaves=max_octaves(),
+        min_size=min_size(),
     )
     def test_subsequent_planes_have_decreasing_total_variation(
         self,
