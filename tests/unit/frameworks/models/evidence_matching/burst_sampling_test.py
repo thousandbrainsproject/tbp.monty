@@ -19,7 +19,7 @@ from numpy.ma.testutils import assert_array_equal
 from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
 )
-from tbp.monty.frameworks.models.evidence_matching.features_for_matching.selector import (
+from tbp.monty.frameworks.models.evidence_matching.features_for_matching.selector import (  # noqa: E501
     FeaturesForMatchingSelector,
 )
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
