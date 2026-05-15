@@ -28,6 +28,7 @@ from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
 
 class FeatureEvidenceScorer(Protocol):
     """A scorer that calculates the feature evidence for a given channel."""
+
     def __call__(
         self,
         graph_id: str,
@@ -55,6 +56,7 @@ class DefaultFeatureEvidenceScorer(FeatureEvidenceScorer):
     is calculated by the feature evidence calculator and multiplied by the feature
     evidence increment. Otherwise, all zeros are returned.
     """
+
     def __init__(
         self,
         graph_memory: EvidenceGraphMemory,
