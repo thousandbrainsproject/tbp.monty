@@ -289,7 +289,12 @@ class LearningModule(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def fixme_update_ground_truth(self):
-        """Update internal state based on ground truth."""
+        """Update internal state based on ground truth.
+        
+        TODO Move this logic into `Experiment`.
+        A `LearningModule` should not have access
+        to "ground truth" information.
+        """
         pass
 
     @abc.abstractmethod
