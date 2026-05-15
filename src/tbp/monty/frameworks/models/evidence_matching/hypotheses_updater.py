@@ -432,7 +432,6 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 channel_feature_weights=self.feature_weights[input_channel],
                 channel_query_features=channel_features,
                 channel_tolerances=self.tolerances[input_channel],
-                input_channel=input_channel,
             )
             # Stack node_feature_evidence to match possible poses
             nwmf_stacked = []

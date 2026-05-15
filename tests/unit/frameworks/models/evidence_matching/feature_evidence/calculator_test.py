@@ -37,7 +37,6 @@ class DefaultFeatureEvidenceCalculatorTest(unittest.TestCase):
             channel_feature_weights=weights,
             channel_query_features=query,
             channel_tolerances=tolerances,
-            input_channel="patch_0",
         )
 
     @given(
