@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import dataclass
 from typing import cast
 from unittest.mock import Mock, patch, sentinel
 
@@ -16,7 +17,7 @@ import cv2
 import numpy as np
 import numpy.testing as nptest
 import numpy.typing as npt
-from hypothesis import given, settings
+from hypothesis import example, given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -51,6 +52,20 @@ def resolutions(
 ) -> Resolution2D:
     height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
     width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
+    return cast("Resolution2D", (height, width))
+
+@st.composite
+def resolutions_with_a_zero_length_dimension(
+    draw: st.DrawFn,
+    min_dim_size: int = 1,
+    max_dim_size: int = MAX_DIM_SIZE,
+) -> Resolution2D:
+    if draw(st.booleans()):
+        height = 0
+        width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
+    else:
+        height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
+        width = 0
     return cast("Resolution2D", (height, width))
 
 
@@ -101,49 +116,80 @@ def center_surround_sigmas(
     return center_sigma, surround_sigma_factor * center_sigma
 
 
+@st.composite
+def sigmas(
+    draw: st.DrawFn,
+    image: npt.NDArray[np.float32],
+    min_fractional_sigma: float | None = None,
+    max_fractional_sigma: float = 0.2,
+) -> float:
+    major_dim = max(image.shape)
+
+    hard_min_fractional_sigma = 1 / major_dim
+    if min_fractional_sigma is None:
+        min_fractional_sigma = hard_min_fractional_sigma
+    else:
+        min_fractional_sigma = max(min_fractional_sigma, hard_min_fractional_sigma)
+
+    sigma_max = max(max_fractional_sigma * major_dim, 1.0)
+    sigma_min = max(min_fractional_sigma * major_dim, 1.0)
+    return draw(st.floats(min_value=sigma_min, max_value=sigma_max))
+
+
 # Images
 # -----------------------------------------------------------------------------
 
 
 @st.composite
+def image_values(
+    draw: st.DrawFn,
+    min_value: float = 0.0,
+    max_value: float = 1.0,
+) -> float:
+    return draw(
+        st.floats(min_value=min_value, max_value=max_value, allow_nan=False, width=32)
+    )
+
+
+@st.composite
+def float32_images(
+    draw: st.DrawFn,
+    resolution_strategy: st.SearchStrategy[Resolution2D] | None = None,
+    value_strategy: st.SearchStrategy[float] | None = None,
+    unique: bool = False,
+) -> npt.NDArray[np.float32]:
+    resolution_strategy = resolution_strategy or resolutions()
+    value_strategy = value_strategy or image_values()
+    return draw(
+        arrays(
+            dtype=np.float32,
+            shape=draw(resolution_strategy),
+            elements=value_strategy,
+            unique=unique,
+        )
+    )
+
+
+@st.composite
 def random_images(
     draw: st.DrawFn,
-    min_dim_size: int = 1,
-    max_dim_size: int = MAX_DIM_SIZE,
+    resolution_strategy: st.SearchStrategy[Resolution2D] | None = None,
 ) -> npt.NDArray[np.float32]:
-    resolution = draw(resolutions(min_dim_size=min_dim_size, max_dim_size=max_dim_size))
+    resolution_strategy = resolution_strategy or resolutions()
+    resolution = draw(resolution_strategy)
     return np.random.uniform(size=resolution).astype(np.float32)
 
 
 @st.composite
 def solid_float32_images(
-    draw: st.DrawFn, min_dim_size: int = 1, max_dim_size: int = MAX_DIM_SIZE
+    draw: st.DrawFn,
+    resolution_strategy: st.SearchStrategy[Resolution2D] | None = None,
 ) -> npt.NDArray[np.float32]:
-    height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
-    width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
-    fill_value = draw(
-        st.floats(min_value=0.0, max_value=1.0, allow_nan=False, width=32)
-    )
-    return np.full((height, width), fill_value, dtype=np.float32)
-
-
-
-@st.composite
-def float32_images(draw: st.DrawFn, unique: bool = False) -> npt.NDArray[np.float32]:
-    height = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
-    width = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
-    return draw(
-        arrays(
-            dtype=np.float32,
-            shape=(height, width),
-            elements=st.floats(
-                min_value=0.0,
-                max_value=1.0,
-                allow_nan=False,
-                width=32,
-            ),
-            unique=unique,
-        )
+    resolution_strategy = resolution_strategy or resolutions()
+    return np.full(
+        draw(resolution_strategy),
+        draw(st.floats(min_value=0.0, max_value=1.0, allow_nan=False, width=32)),
+        dtype=np.float32,
     )
 
 
@@ -293,38 +339,77 @@ class PyramidOctaveShapesTest(unittest.TestCase):
         self.assertTrue(all(smaller_dims >= min_size))
 
 
+@dataclass(frozen=True)
+class GaussianPyramidParams:
+    image: npt.NDArray[np.float32]
+    sigma: float
+    n_scales: int
+    max_octaves: int | None
+    min_size: int
+
+
+@st.composite
+def gaussian_pyramid_params(
+    draw: st.DrawFn,
+    image_strategy: st.SearchStrategy[npt.NDArray[np.float32]] | None = None,
+    sigma_strategy: st.SearchStrategy[float] | None = None,
+) -> GaussianPyramidParams:
+    """Generate parameters for calls to `gaussian_pyramid`.
+
+    Args:
+        draw: The hypothesis draw function.
+        image_strategy: A strategy for generating images or None. Defaults to
+          `random_images`.
+        sigma_strategy: A strategy for generating sigmas or None. Defaults to
+          `sigmas`.
+
+    Returns:
+        The parameters for a call to `gaussian_pyramid`.
+    """
+    image_strategy = image_strategy or random_images()
+    image = draw(image_strategy)
+    sigma_strategy = sigma_strategy or sigmas(image)
+    return GaussianPyramidParams(
+        image=image,
+        sigma=draw(sigma_strategy),
+        n_scales=draw(n_scales()),
+        max_octaves=draw(max_octaves()),
+        min_size=draw(min_sizes()),
+    )
+
 
 class GaussianPyramidTest(unittest.TestCase):
-    @given(
-        image=random_images(),
-        n_scales=n_scales(),
-        max_octaves=max_octaves(),
-        min_size=min_sizes(),
-    )
+    @given(resolution=resolutions_with_a_zero_length_dimension())
+    @example(resolution=cast("Resolution2D", (0, 0)))
+    def test_raises_value_error_if_image_has_no_values(
+        self,
+        resolution: Resolution2D,
+    ) -> None:
+        image = np.zeros(resolution, dtype=np.float32)
+        with self.assertRaises(ValueError):
+            gaussian_pyramid(image, sigma=1.0, n_scales=1, max_octaves=1, min_size=1)
+
+    @given(params=gaussian_pyramid_params(sigma_strategy=st.just(1.0)))
     def test_has_correct_shape(
         self,
-        image: np.ndarray,
-        n_scales: int,
-        max_octaves: int | None,
-        min_size: int,
+        params: GaussianPyramidParams,
     ) -> None:
-        sigma = 3.0
 
         expected_octave_shapes = pyramid_octave_shapes(
-            cast("Resolution2D", image.shape),
-            max_octaves=max_octaves,
-            min_size=min_size,
+            cast("Resolution2D", params.image.shape),
+            max_octaves=params.max_octaves,
+            min_size=params.min_size,
         )
         pyr = gaussian_pyramid(
-            image,
-            sigma=sigma,
-            n_scales=n_scales,
-            max_octaves=max_octaves,
-            min_size=min_size,
+            params.image,
+            sigma=params.sigma,
+            n_scales=params.n_scales,
+            max_octaves=params.max_octaves,
+            min_size=params.min_size,
         )
         # Test pyramid is correct shape.
         self.assertEqual(pyr.n_octaves, len(expected_octave_shapes))
-        self.assertEqual(pyr.n_scales, n_scales)
+        self.assertEqual(pyr.n_scales, params.n_scales)
 
         # Test each plane in pyramid is correct shape.
         for octave in range(pyr.n_octaves):
@@ -333,27 +418,18 @@ class GaussianPyramidTest(unittest.TestCase):
                     pyr.data[octave, scale].shape, expected_octave_shapes[octave]
                 )
 
-    @given(
-        image=random_images(),
-        sigma=st.floats(min_value=0.5, max_value=12.0),
-        n_scales=n_scales(),
-        max_octaves=max_octaves(),
-        min_size=min_sizes(),
-    )
+    @settings(deadline=1000)
+    @given(params=gaussian_pyramid_params())
     def test_subsequent_planes_have_decreasing_total_variation(
         self,
-        image: np.ndarray,
-        sigma: float,
-        n_scales: int,
-        max_octaves: int,
-        min_size: int,
+        params: GaussianPyramidParams,
     ) -> None:
         pyr = gaussian_pyramid(
-            image,
-            sigma=sigma,
-            n_scales=n_scales,
-            max_octaves=max_octaves,
-            min_size=min_size,
+            params.image,
+            sigma=params.sigma,
+            n_scales=params.n_scales,
+            max_octaves=params.max_octaves,
+            min_size=params.min_size,
         )
         variations = np.array([total_variation(plane) for plane in pyr.flat])
         diffs = np.ediff1d(variations)

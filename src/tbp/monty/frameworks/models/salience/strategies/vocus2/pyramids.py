@@ -122,8 +122,14 @@ def gaussian_pyramid(
     Returns:
         2D object-type array with shape (n_octaves, n_scales)
 
+    Raises:
+        ValueError: If image has size 0.
+
     Note that sigmas = [sigma * (2.0 ** (s / n_scales)) for s in range(pyr.size)]
     """
+    if image.size == 0:
+        raise ValueError(f"Image must have a non-zero size. Has shape {image.shape}.")
+
     # Calculate maximum number of octaves
     shapes = pyramid_octave_shapes(
         cast("Resolution2D", image.shape),
