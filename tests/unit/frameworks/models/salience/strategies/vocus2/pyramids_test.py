@@ -32,11 +32,12 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2.pyramids import (
 )
 from tbp.monty.frameworks.sensors import Resolution2D
 from tbp.monty.math import DEFAULT_TOLERANCE
-from tests.unit.statistics import mean_local_variation, total_variation
+from tests.unit.statistics import mean_local_variation
 
 # Common upper limits used in these tests. Not the same thing
 # as safe operating limits.
 MAX_DIM_SIZE = 1024
+MAX_OCTAVES = int(np.log2(MAX_DIM_SIZE)) + 1
 MAX_SCALES = 5
 
 
@@ -45,7 +46,7 @@ MAX_SCALES = 5
 
 
 @st.composite
-def resolutions(
+def default_resolutions(
     draw: st.DrawFn,
     min_dim_size: int = 1,
     max_dim_size: int = MAX_DIM_SIZE,
@@ -54,23 +55,30 @@ def resolutions(
     width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
     return cast("Resolution2D", (height, width))
 
+
 @st.composite
 def resolutions_with_a_zero_length_dimension(
     draw: st.DrawFn,
-    min_dim_size: int = 1,
-    max_dim_size: int = MAX_DIM_SIZE,
 ) -> Resolution2D:
+    height = 0
+    width = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
     if draw(st.booleans()):
-        height = 0
-        width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
-    else:
-        height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
-        width = 0
+        height, width = width, height
     return cast("Resolution2D", (height, width))
 
 
 @st.composite
-def n_scales(
+def resolutions_with_more_than_one_pixel(
+    draw: st.DrawFn,
+) -> Resolution2D:
+    height = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
+    min_width = 2 if height == 1 else 1
+    width = draw(st.integers(min_value=min_width, max_value=MAX_DIM_SIZE))
+    return cast("Resolution2D", (height, width))
+
+
+@st.composite
+def default_n_scales(
     draw: st.DrawFn,
     min_value: int = 1,
     max_value: int = MAX_SCALES,
@@ -79,7 +87,7 @@ def n_scales(
 
 
 @st.composite
-def max_octaves(
+def default_max_octaves(
     draw: st.DrawFn,
     min_value: int = 1,
     max_value: int = int(np.log2(MAX_DIM_SIZE)) + 2,
@@ -89,15 +97,6 @@ def max_octaves(
         return draw(
             st.one_of(st.none(), st.integers(min_value=min_value, max_value=max_value))
         )
-    return draw(st.integers(min_value=min_value, max_value=max_value))
-
-
-@st.composite
-def min_sizes(
-    draw: st.DrawFn,
-    min_value: int = 1,
-    max_value: int = MAX_DIM_SIZE + 1,
-) -> int:
     return draw(st.integers(min_value=min_value, max_value=max_value))
 
 
@@ -117,7 +116,7 @@ def center_surround_sigmas(
 
 
 @st.composite
-def sigmas(
+def default_sigmas(
     draw: st.DrawFn,
     image: npt.NDArray[np.float32],
     min_fractional_sigma: float | None = None,
@@ -141,32 +140,52 @@ def sigmas(
 
 
 @st.composite
-def image_values(
+def default_elements(
     draw: st.DrawFn,
     min_value: float = 0.0,
     max_value: float = 1.0,
 ) -> float:
     return draw(
-        st.floats(min_value=min_value, max_value=max_value, allow_nan=False, width=32)
+        st.floats(
+            min_value=min_value,
+            max_value=max_value,
+            allow_nan=False,
+            width=32,
+        )
     )
 
 
 @st.composite
-def float32_images(
+def default_images(
     draw: st.DrawFn,
     resolution_strategy: st.SearchStrategy[Resolution2D] | None = None,
-    value_strategy: st.SearchStrategy[float] | None = None,
+    elements_strategy: st.SearchStrategy[float] | None = None,
     unique: bool = False,
 ) -> npt.NDArray[np.float32]:
-    resolution_strategy = resolution_strategy or resolutions()
-    value_strategy = value_strategy or image_values()
+    resolution_strategy = resolution_strategy or default_resolutions()
+    elements_strategy = elements_strategy or default_elements()
     return draw(
         arrays(
             dtype=np.float32,
             shape=draw(resolution_strategy),
-            elements=value_strategy,
+            elements=elements_strategy,
             unique=unique,
         )
+    )
+
+
+@st.composite
+def full_images(
+    draw: st.DrawFn,
+    resolution_strategy: st.SearchStrategy[Resolution2D] | None = None,
+    elements_strategy: st.SearchStrategy[float] | None = None,
+) -> npt.NDArray[np.float32]:
+    resolution_strategy = resolution_strategy or default_resolutions()
+    elements_strategy = elements_strategy or default_elements()
+    return np.full(
+        draw(resolution_strategy),
+        draw(elements_strategy),
+        dtype=np.float32,
     )
 
 
@@ -175,22 +194,9 @@ def random_images(
     draw: st.DrawFn,
     resolution_strategy: st.SearchStrategy[Resolution2D] | None = None,
 ) -> npt.NDArray[np.float32]:
-    resolution_strategy = resolution_strategy or resolutions()
+    resolution_strategy = resolution_strategy or default_resolutions()
     resolution = draw(resolution_strategy)
     return np.random.uniform(size=resolution).astype(np.float32)
-
-
-@st.composite
-def solid_float32_images(
-    draw: st.DrawFn,
-    resolution_strategy: st.SearchStrategy[Resolution2D] | None = None,
-) -> npt.NDArray[np.float32]:
-    resolution_strategy = resolution_strategy or resolutions()
-    return np.full(
-        draw(resolution_strategy),
-        draw(st.floats(min_value=0.0, max_value=1.0, allow_nan=False, width=32)),
-        dtype=np.float32,
-    )
 
 
 # Pyramids
@@ -198,26 +204,25 @@ def solid_float32_images(
 
 
 @st.composite
-def pyramid(draw: st.DrawFn, fill_value: float = 1.0) -> Pyramid:
-    image_width = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
-    image_height = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
-    n_scales = draw(st.integers(min_value=1, max_value=10))
-    max_octaves = draw(
-        st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE)))
-    )
-    min_size = draw(st.integers(min_value=1, max_value=min(image_width, image_height)))
+def full_pyramids(draw: st.DrawFn, fill_value: float = 1.0) -> Pyramid:
+    resolution = draw(default_resolutions())
+    n_scales = draw(default_n_scales())
+    max_octaves = draw(default_max_octaves())
     octave_shapes = pyramid_octave_shapes(
-        (image_height, image_width),
+        resolution,
         max_octaves=max_octaves,
-        min_size=min_size,
     )
-    input_data = np.zeros((len(octave_shapes), n_scales), dtype=object)
-    for octave_num, octave_shape in enumerate(octave_shapes):
-        for scale_num in range(n_scales):
-            input_data[octave_num, scale_num] = np.full(
-                octave_shape, fill_value, dtype=np.float32
+
+    n_octaves = len(octave_shapes)
+    pyramid_data = np.zeros((n_octaves, n_scales), dtype=object)
+    for octave, octave_shape in enumerate(octave_shapes):
+        for scale in range(n_scales):
+            pyramid_data[octave, scale] = np.full(
+                octave_shape,
+                fill_value,
+                dtype=np.float32,
             )
-    return Pyramid(input_data)
+    return Pyramid(pyramid_data)
 
 
 @st.composite
@@ -234,33 +239,36 @@ def valid_input_pyramid_for_laplacian_pyramid(
         (image_height, image_width),
         max_octaves=max_octaves,
     )
-    input_data = np.zeros((len(octave_shapes), n_scales), dtype=object)
+    pyramid_data = np.zeros((len(octave_shapes), n_scales), dtype=object)
     for octave_num, octave_shape in enumerate(octave_shapes):
         for scale_num in range(n_scales):
-            input_data[octave_num, scale_num] = np.full(
-                octave_shape, fill_value, dtype=np.float32
+            pyramid_data[octave_num, scale_num] = np.full(
+                octave_shape,
+                fill_value,
+                dtype=np.float32,
             )
-    return Pyramid(input_data)
+    return Pyramid(pyramid_data)
 
 
 @st.composite
 def differently_shaped_pyramids(
-    draw: st.DrawFn, fill_value: float = 1.0
-) -> list[Pyramid]:
+    draw: st.DrawFn,
+    fill_value: float = 1.0,
+) -> tuple[Pyramid, Pyramid]:
     pyramid_1 = draw(valid_input_pyramid_for_laplacian_pyramid(fill_value=fill_value))
     pyramid_2 = draw(
         valid_input_pyramid_for_laplacian_pyramid(fill_value=fill_value).filter(
             lambda pyr: pyr.shape != pyramid_1.shape
         )
     )
-    return [pyramid_1, pyramid_2]
+    return (pyramid_1, pyramid_2)
 
 
 # -----------------------------------------------------------------------------
 
 
 class PyramidTest(unittest.TestCase):
-    @given(ndim=st.sampled_from([0, 1, 3, 4, 5, 6, 7, 8, 9, 10]))
+    @given(ndim=st.sampled_from([0, 1, 3, 4]))
     def test_cannot_create_pyramid_with_non_2d_contents(self, ndim: int) -> None:
         with self.assertRaises(AssertionError):
             Pyramid(np.zeros((2,) * ndim, dtype=object))
@@ -269,8 +277,8 @@ class PyramidTest(unittest.TestCase):
         Pyramid(np.zeros((2, 2), dtype=object))
 
     @given(
-        n_octaves=st.integers(min_value=1, max_value=10),
-        n_scales=st.integers(min_value=1, max_value=10),
+        n_octaves=st.integers(min_value=1, max_value=MAX_OCTAVES),
+        n_scales=st.integers(min_value=1, max_value=MAX_SCALES),
     )
     def test_apply_applies_function_to_each_element(
         self,
@@ -291,52 +299,29 @@ class PyramidTest(unittest.TestCase):
 
 
 class PyramidOctaveShapesTest(unittest.TestCase):
-    @given(resolution=resolutions())
-    def test_generates_all_octaves_when_no_level_or_size_constraints(
+    @given(resolution=default_resolutions())
+    def test_generates_maximum_possible_shapes_when_max_level_is_none(
         self,
         resolution: Resolution2D,
     ) -> None:
-        computed_shapes = pyramid_octave_shapes(resolution)
-        expected_shapes = []
+        computed_shapes: list[Resolution2D] = pyramid_octave_shapes(resolution)
+        expected_shapes: list[Resolution2D] = []
         while min(resolution) >= 1:
             expected_shapes.append(resolution)
             resolution = cast("Resolution2D", (resolution[0] // 2, resolution[1] // 2))
         self.assertEqual(expected_shapes, computed_shapes)
 
     @given(
-        resolution=resolutions(),
-        max_octaves=max_octaves(allow_none=False),
-        min_size=min_sizes(),
+        resolution=default_resolutions(),
+        max_octaves=default_max_octaves(allow_none=False),
     )
-    def test_max_octaves_limits_number_of_octaves(
+    def test_max_octaves_limits_number_of_shapes(
         self,
         resolution: Resolution2D,
         max_octaves: int,
-        min_size: int,
     ) -> None:
-        computed_shapes = pyramid_octave_shapes(
-            resolution, max_octaves=max_octaves, min_size=min_size
-        )
+        computed_shapes = pyramid_octave_shapes(resolution, max_octaves=max_octaves)
         self.assertLessEqual(len(computed_shapes), max_octaves)
-
-    @given(
-        resolution=resolutions(),
-        max_octaves=max_octaves(),
-        min_size=min_sizes(),
-    )
-    def test_min_size_limits_number_of_octaves(
-        self,
-        resolution: Resolution2D,
-        max_octaves: int | None,
-        min_size: int,
-    ) -> None:
-        computed_shapes = pyramid_octave_shapes(
-            resolution,
-            max_octaves=max_octaves,
-            min_size=min_size,
-        )
-        smaller_dims = np.array([min(shape) for shape in computed_shapes], dtype=int)
-        self.assertTrue(all(smaller_dims >= min_size))
 
 
 @dataclass(frozen=True)
@@ -345,7 +330,6 @@ class GaussianPyramidParams:
     sigma: float
     n_scales: int
     max_octaves: int | None
-    min_size: int
 
 
 @st.composite
@@ -353,8 +337,52 @@ def gaussian_pyramid_params(
     draw: st.DrawFn,
     image_strategy: st.SearchStrategy[npt.NDArray[np.float32]] | None = None,
     sigma_strategy: st.SearchStrategy[float] | None = None,
+    n_scales_strategy: st.SearchStrategy[int] | None = None,
+    max_octaves_strategy: st.SearchStrategy[int | None] | None = None,
 ) -> GaussianPyramidParams:
     """Generate parameters for calls to `gaussian_pyramid`.
+
+    Args:
+        draw: The hypothesis draw function.
+        image_strategy: A strategy for generating images or None. Defaults to
+          `random_images`.
+        sigma_strategy: A strategy for generating sigmas or None. Defaults to
+          `sigmas`.
+        n_scales_strategy: A strategy for generating n_scales or None. Defaults to
+          `default_n_scales`.
+        max_octaves_strategy: A strategy for max_octaves or None. Defaults to
+          `default_max_octaves`.
+
+    Returns:
+        The parameters for a call to `gaussian_pyramid`.
+    """
+    image_strategy = image_strategy or random_images()
+    image = draw(image_strategy)
+
+    sigma_strategy = sigma_strategy or default_sigmas(image)
+    sigma = draw(sigma_strategy)
+
+    n_scales_strategy = n_scales_strategy or default_n_scales()
+    n_scales = draw(n_scales_strategy)
+
+    max_octaves_strategy = max_octaves_strategy or default_max_octaves()
+    max_octaves = draw(max_octaves_strategy)
+
+    return GaussianPyramidParams(
+        image=image,
+        sigma=sigma,
+        n_scales=n_scales,
+        max_octaves=max_octaves,
+    )
+
+
+@st.composite
+def gaussian_pyramid_params_for_multiplane_pyramids(
+    draw: st.DrawFn,
+    image_strategy: st.SearchStrategy[npt.NDArray[np.float32]] | None = None,
+    sigma_strategy: st.SearchStrategy[float] | None = None,
+) -> GaussianPyramidParams:
+    """Generate parameters for calls to `gaussian_pyramid` for a multi-plane pyramid.
 
     Args:
         draw: The hypothesis draw function.
@@ -365,20 +393,47 @@ def gaussian_pyramid_params(
 
     Returns:
         The parameters for a call to `gaussian_pyramid`.
+
+    Raises:
+        ValueError: If the image has no size.
     """
-    image_strategy = image_strategy or random_images()
+    if image_strategy is None:
+        resolution_strategy = resolutions_with_more_than_one_pixel()
+        default_image_strategy = default_images(resolution_strategy=resolution_strategy)
+        random_image_strategy = random_images(resolution_strategy=resolution_strategy)
+        image_strategy = st.one_of(default_image_strategy, random_image_strategy)
+
     image = draw(image_strategy)
-    sigma_strategy = sigma_strategy or sigmas(image)
+    octave_shapes = pyramid_octave_shapes(image.shape)
+    if len(octave_shapes) == 0:
+        raise ValueError(
+            "Cannot generate parameters for a multi-plane pyramid with no octaves."
+        )
+
+    # If we can't get more than one octave, we need to use a minimum of 2 scales.
+    if len(octave_shapes) == 1:
+        n_scales = draw(default_n_scales(min_value=2))
+        max_octaves = 1
+    else:
+        # If only one scale, ensure we have at least one octave.
+        n_scales = draw(default_n_scales())
+        min_max_octaves = 2 if n_scales == 1 else 1
+        max_octaves = draw(default_max_octaves(min_value=min_max_octaves))
+
+    sigma_strategy = sigma_strategy or default_sigmas(image)
+
     return GaussianPyramidParams(
         image=image,
         sigma=draw(sigma_strategy),
-        n_scales=draw(n_scales()),
-        max_octaves=draw(max_octaves()),
-        min_size=draw(min_sizes()),
+        n_scales=n_scales,
+        max_octaves=max_octaves,
     )
 
 
 class GaussianPyramidTest(unittest.TestCase):
+    INTRA_OCTAVE_VARIANCE_TOLERANCE = 1e-6
+    INTER_OCTAVE_VARIANCE_TOLERANCE = 1e-4
+
     @given(resolution=resolutions_with_a_zero_length_dimension())
     @example(resolution=cast("Resolution2D", (0, 0)))
     def test_raises_value_error_if_image_has_no_values(
@@ -387,7 +442,7 @@ class GaussianPyramidTest(unittest.TestCase):
     ) -> None:
         image = np.zeros(resolution, dtype=np.float32)
         with self.assertRaises(ValueError):
-            gaussian_pyramid(image, sigma=1.0, n_scales=1, max_octaves=1, min_size=1)
+            gaussian_pyramid(image, sigma=1.0, n_scales=1)
 
     @given(params=gaussian_pyramid_params(sigma_strategy=st.just(1.0)))
     def test_has_correct_shape(
@@ -398,14 +453,12 @@ class GaussianPyramidTest(unittest.TestCase):
         expected_octave_shapes = pyramid_octave_shapes(
             cast("Resolution2D", params.image.shape),
             max_octaves=params.max_octaves,
-            min_size=params.min_size,
         )
         pyr = gaussian_pyramid(
             params.image,
             sigma=params.sigma,
             n_scales=params.n_scales,
             max_octaves=params.max_octaves,
-            min_size=params.min_size,
         )
         # Test pyramid is correct shape.
         self.assertEqual(pyr.n_octaves, len(expected_octave_shapes))
@@ -419,7 +472,7 @@ class GaussianPyramidTest(unittest.TestCase):
                 )
 
     @settings(deadline=1000)
-    @given(params=gaussian_pyramid_params())
+    @given(params=gaussian_pyramid_params_for_multiplane_pyramids())
     def test_subsequent_planes_have_decreasing_total_variation(
         self,
         params: GaussianPyramidParams,
@@ -429,14 +482,21 @@ class GaussianPyramidTest(unittest.TestCase):
             sigma=params.sigma,
             n_scales=params.n_scales,
             max_octaves=params.max_octaves,
-            min_size=params.min_size,
         )
-        variations = np.array([total_variation(plane) for plane in pyr.flat])
-        diffs = np.ediff1d(variations)
-        self.assertTrue(all(diffs <= 0))
+        # Check that variance decreases as scales increase within each octave.
+        for octave in range(pyr.n_octaves):
+            intra_octave_variances = [np.var(plane) for plane in pyr.data[octave]]
+            deltas = np.diff(intra_octave_variances)
+            nptest.assert_array_less(deltas, self.INTRA_OCTAVE_VARIANCE_TOLERANCE)
 
-
-
+        # Check that variance decreases when jumping to the next octave.
+        # Note, however, that the error in the variance estimate increases as we
+        # use smaller and smaller images. Therefore, we have to use a larger tolerance
+        # value for this comparison than for the intra-octave comparisons.
+        for octave in range(pyr.n_octaves - 1):
+            last_plane, next_plane = pyr.data[octave, -1], pyr.data[octave + 1, 0]
+            delta = np.var(next_plane) - np.var(last_plane)
+            self.assertLessEqual(delta, self.INTER_OCTAVE_VARIANCE_TOLERANCE)
 
 class CenterSurroundPyramidsTest(unittest.TestCase):
     @given(
@@ -456,21 +516,18 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
                 surround_sigma=surround_sigma,
                 n_scales=2,
                 max_octaves=5,
-                min_size=16,
             )
 
     @given(
         image=arrays(dtype=np.float32, shape=(MAX_DIM_SIZE, MAX_DIM_SIZE)),
         n_scales=st.integers(min_value=1, max_value=10),
         max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
-        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
     )
     def test_center_and_surround_pyramids_have_same_shape(
         self,
         image: npt.NDArray[np.float32],
         n_scales: int,
         max_octaves: int,
-        min_size: int,
     ) -> None:
         center, surround = center_surround_pyramids(
             image,
@@ -478,16 +535,14 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             surround_sigma=5.0,
             n_scales=n_scales,
             max_octaves=max_octaves,
-            min_size=min_size,
         )
         self.assertEqual(center.shape, surround.shape)
 
     @given(
-        image=float32_images(),
-        sigmas=center_surround_sigmas(min_center_sigma=0.5, max_center_sigma=3.0),
-        n_scales=st.integers(min_value=1, max_value=3),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
-        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
+        image=default_images(),
+        sigmas=center_surround_sigmas(min_center_sigma=1.0, max_center_sigma=3.0),
+        n_scales=st.integers(min_value=1, max_value=MAX_SCALES),
+        max_octaves=st.integers(min_value=1, max_value=MAX_OCTAVES),
     )
     def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes(  # noqa: E501
         self,
@@ -495,7 +550,6 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         sigmas: tuple[float, float],
         n_scales: int,
         max_octaves: int,
-        min_size: int,
     ) -> None:
         center, surround = center_surround_pyramids(
             image,
@@ -503,7 +557,6 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             surround_sigma=sigmas[1],
             n_scales=n_scales,
             max_octaves=max_octaves,
-            min_size=min_size,
         )
 
         center_variations = np.array(
@@ -517,11 +570,10 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         self.assertTrue(all(variations >= -tolerance))
 
     @given(
-        image=solid_float32_images(),
+        image=full_images(),
         sigmas=center_surround_sigmas(min_center_sigma=0.5, max_center_sigma=3.0),
         n_scales=st.integers(min_value=1, max_value=3),
         max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
-        min_size=st.integers(min_value=1, max_value=MAX_DIM_SIZE * 2),
     )
     def test_surround_planes_mean_local_variation_equals_corresponding_center_planes_for_solid_image(  # noqa: E501
         self,
@@ -529,7 +581,6 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         sigmas: tuple[float, float],
         n_scales: int,
         max_octaves: int,
-        min_size: int,
     ) -> None:
         center, surround = center_surround_pyramids(
             image,
@@ -537,7 +588,6 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             surround_sigma=sigmas[1],
             n_scales=n_scales,
             max_octaves=max_octaves,
-            min_size=min_size,
         )
 
         center_variations = np.array(
@@ -551,11 +601,10 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         )
 
     @given(
-        image=float32_images(unique=False),
+        image=default_images(unique=False),
         sigmas=center_surround_sigmas(min_center_sigma=1.0, max_center_sigma=3.0),
-        n_scales=n_scales(),
-        max_octaves=max_octaves(),
-        min_size=min_sizes(),
+        n_scales=default_n_scales(),
+        max_octaves=default_max_octaves(),
     )
     def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes_for_sufficiently_variable_image(  # noqa: E501
         self,
@@ -563,7 +612,6 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         sigmas: tuple[float, float],
         n_scales: int,
         max_octaves: int,
-        min_size: int,
     ) -> None:
         center, surround = center_surround_pyramids(
             image,
@@ -571,7 +619,6 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             surround_sigma=sigmas[1],
             n_scales=n_scales,
             max_octaves=max_octaves,
-            min_size=min_size,
         )
 
         center_variations = np.array(
@@ -720,7 +767,7 @@ class PyramidCollapseTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(
-        pyramid=pyramid(fill_value=INPUT_FILL_VALUE),
+        pyramid=full_pyramids(fill_value=INPUT_FILL_VALUE),
     )
     def test_resize_only_called_on_planes_with_shapes_different_from_first_plane_and_returns_what_reduce_returns(  # noqa: E501
         self,

@@ -21,17 +21,12 @@ from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
-from tbp.monty.frameworks.models.salience.strategies.vocus2.pyramids import (
-    Pyramid,
-    pyramid_octave_shapes,
-)
 from tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2 import (
     ColorChannelSalience,
     DepthSalience,
     SafeOperatingLimits,
 )
 from tbp.monty.frameworks.sensors import Resolution2D
-from tbp.monty.math import DEFAULT_TOLERANCE
 
 # Common upper limits used in these tests. Not the same thing
 # as safe operating limits.
@@ -72,15 +67,6 @@ def max_octaves(
     return draw(
         st.one_of(st.none(), st.integers(min_value=min_value, max_value=max_value))
     )
-
-
-@st.composite
-def min_size(
-    draw: st.DrawFn,
-    min_value: int = 1,
-    max_value: int = MAX_DIM_SIZE,
-) -> int | None:
-    return draw(st.integers(min_value=min_value, max_value=max_value))
 
 
 @st.composite
@@ -150,7 +136,6 @@ class CenterAndSurroundParams:
     surround_sigma: float
     n_scales: int
     max_octaves: int
-    min_size: int
 
 
 @st.composite
@@ -173,47 +158,12 @@ def safe_center_and_surround_params(
     max_octaves = draw(
         st.integers(min_value=1, max_value=int(1 + np.log2(max(image.shape))))
     )
-    min_size = draw(st.integers(min_value=1, max_value=min(image.shape)))
 
     return CenterAndSurroundParams(
         center_sigma=center_sigma,
         surround_sigma=surround_sigma,
         n_scales=n_scales,
         max_octaves=max_octaves,
-        min_size=min_size,
-    )
-
-
-@st.composite
-def unsafe_min_size_in_safe_center_and_surround_params(
-    draw: st.DrawFn, image: npt.NDArray[np.float32]
-) -> CenterAndSurroundParams:
-    center_sigma = draw(
-        st.floats(
-            min_value=SafeOperatingLimits.min_center_sigma,
-            max_value=SafeOperatingLimits.max_center_sigma,
-        )
-    )
-    surround_sigma = draw(
-        st.floats(
-            min_value=center_sigma * SafeOperatingLimits.center_surround_sigma_ratio,
-            max_value=SafeOperatingLimits.max_surround_sigma,
-        )
-    )
-    n_scales = draw(st.integers(min_value=1, max_value=5))
-    max_octaves = draw(
-        st.integers(min_value=1, max_value=int(1 + np.log2(max(image.shape))))
-    )
-    min_size = draw(
-        st.integers(min_value=min(image.shape) + 1, max_value=max(image.shape) * 3)
-    )
-
-    return CenterAndSurroundParams(
-        center_sigma=center_sigma,
-        surround_sigma=surround_sigma,
-        n_scales=n_scales,
-        max_octaves=max_octaves,
-        min_size=min_size,
     )
 
 
@@ -231,7 +181,6 @@ def color_channel_salience_processor(
         surround_sigma=center_and_surround_params.surround_sigma,
         n_scales=center_and_surround_params.n_scales,
         max_octaves=center_and_surround_params.max_octaves,
-        min_size=center_and_surround_params.min_size,
     )
 
 
@@ -249,7 +198,6 @@ def color_channel_salience_processor_without_operating_limits(
         surround_sigma=center_and_surround_params.surround_sigma,
         n_scales=center_and_surround_params.n_scales,
         max_octaves=center_and_surround_params.max_octaves,
-        min_size=center_and_surround_params.min_size,
     )
 
 
@@ -326,23 +274,6 @@ def unsafe_center_and_surround_sigmas(draw: st.DrawFn) -> tuple[float, float]:
 
 class ColorChannelSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-3
-
-    @given(
-        image_and_processor=color_channel_salience_setup(
-            color_channel_salience_processor,
-            filled_float32_image(
-                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
-            ),
-            unsafe_min_size_in_safe_center_and_surround_params,
-        ),
-    )
-    def test_process_raises_value_error_if_image_has_smaller_dimension_than_min_size(
-        self,
-        image_and_processor: tuple[npt.NDArray[np.float32], ColorChannelSalience],
-    ) -> None:
-        image, processor = image_and_processor
-        with self.assertRaises(ValueError):
-            processor.process(Mock(), image)
 
     @given(
         image_and_processor=color_channel_salience_setup(
@@ -497,7 +428,6 @@ def depth_salience_processor(
         surround_sigma=center_and_surround_params.surround_sigma,
         n_scales=center_and_surround_params.n_scales,
         max_octaves=center_and_surround_params.max_octaves,
-        min_size=center_and_surround_params.min_size,
     )
 
 
@@ -545,29 +475,11 @@ def depth_salience_processor_without_operating_limits(
         surround_sigma=center_and_surround_params.surround_sigma,
         n_scales=center_and_surround_params.n_scales,
         max_octaves=center_and_surround_params.max_octaves,
-        min_size=center_and_surround_params.min_size,
     )
 
 
 class DepthSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-3
-
-    @given(
-        image_and_processor=depth_salience_setup(
-            depth_salience_processor,
-            filled_float32_image(
-                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
-            ),
-            unsafe_min_size_in_safe_center_and_surround_params,
-        ),
-    )
-    def test_process_raises_value_error_if_image_has_smaller_dimension_than_min_size(
-        self,
-        image_and_processor: tuple[npt.NDArray[np.float32], DepthSalience],
-    ) -> None:
-        image, processor = image_and_processor
-        with self.assertRaises(ValueError):
-            processor.process(Mock(), image)
 
     @given(
         image_and_processor=depth_salience_setup(

@@ -150,7 +150,6 @@ class ColorChannelSalience:
         surround_sigma: float = 3.0,
         n_scales: int = 2,
         max_octaves: int | None = None,
-        min_size: int = 1,
         combine: PyramidCombine = pyramid_combine_mean,
         collapse: PyramidCollapse = pyramid_collapse_mean,
         operating_limits: OperatingLimits | None = None,
@@ -170,7 +169,6 @@ class ColorChannelSalience:
             surround_sigma: The surround sigma for the center/surround pyramids.
             n_scales: The number of pyramid scales.
             max_octaves: The maximum number of pyramid octaves to construct.
-            min_size: The minimum size of the images in the last octave.
             combine: The function to combine the on/off pyramids into a single pyramid.
             collapse: The function to collapse the combined pyramid into a single image.
             operating_limits: The operating limits to use.
@@ -179,7 +177,6 @@ class ColorChannelSalience:
         self._surround_sigma = surround_sigma
         self._n_scales = n_scales
         self._max_octaves = max_octaves
-        self._min_size = min_size
         self._combine = combine
         self._collapse = collapse
         self._operating_limits = (
@@ -199,7 +196,6 @@ class ColorChannelSalience:
         surround_sigma: float = 3.0,
         n_scales: int = 2,
         max_octaves: int | None = None,
-        min_size: int = 1,
         combine: PyramidCombine = pyramid_combine_mean,
         collapse: PyramidCollapse = pyramid_collapse_mean,
     ) -> ColorChannelSalience:
@@ -213,7 +209,6 @@ class ColorChannelSalience:
             surround_sigma: The surround sigma for the center/surround pyramids.
             n_scales: The number of pyramid scales.
             max_octaves: The maximum number of pyramid octaves to construct.
-            min_size: The minimum image size to construct the pyramids at.
             combine: The function to combine the on/off pyramids into a single pyramid.
             collapse: The function to collapse the combined pyramid into a single image.
 
@@ -225,7 +220,6 @@ class ColorChannelSalience:
             surround_sigma=surround_sigma,
             n_scales=n_scales,
             max_octaves=max_octaves,
-            min_size=min_size,
             combine=combine,
             collapse=collapse,
             operating_limits=NoOperatingLimits(),
@@ -244,17 +238,14 @@ class ColorChannelSalience:
             A tuple of the feature map and the center pyramid.
 
         Raises:
-            ValueError: If the min size is greater than the image size.
+            ValueError: If operating limits reject the image size.
         """
-        if self._min_size is not None and self._min_size > min(image.shape):
-            raise ValueError("Min size is greater than the image size")
-
         error = self._operating_limits.validate_image_dim_size(min(image.shape))
         if error is not None:
             if ctx.suppress_runtime_errors:
                 logger.warning(str(error))
             else:
-                raise error
+                raise ValueError(str(error))
 
         center, surround = center_surround_pyramids(
             image,
@@ -262,7 +253,6 @@ class ColorChannelSalience:
             surround_sigma=self._surround_sigma,
             n_scales=self._n_scales,
             max_octaves=self._max_octaves,
-            min_size=self._min_size,
         )
 
         diff: Pyramid = center - surround
@@ -282,7 +272,6 @@ class DepthSalience:
         surround_sigma: float = 3.0,
         n_scales: int = 2,
         max_octaves: int | None = None,
-        min_size: int = 1,
         collapse: PyramidCollapse = pyramid_collapse_mean,
         operating_limits: OperatingLimits | None = None,
     ):
@@ -290,7 +279,6 @@ class DepthSalience:
         self._surround_sigma = surround_sigma
         self._n_scales = n_scales
         self._max_octaves = max_octaves
-        self._min_size = min_size
         self._collapse = collapse
         self._operating_limits = (
             operating_limits if operating_limits is not None else SafeOperatingLimits()
@@ -309,7 +297,6 @@ class DepthSalience:
         surround_sigma: float = 3.0,
         n_scales: int = 2,
         max_octaves: int | None = None,
-        min_size: int = 1,
         collapse: PyramidCollapse = pyramid_collapse_mean,
     ) -> DepthSalience:
         """Create a `DepthSalience` without operating limits.
@@ -322,7 +309,6 @@ class DepthSalience:
             surround_sigma: The surround sigma for the center/surround pyramids.
             n_scales: The number of pyramid scales.
             max_octaves: The maximum number of pyramid octaves to construct.
-            min_size: The minimum image size to construct the pyramids at.
             collapse: The function to collapse the combined pyramid into a single image.
 
         Returns:
@@ -333,7 +319,6 @@ class DepthSalience:
             surround_sigma=surround_sigma,
             n_scales=n_scales,
             max_octaves=max_octaves,
-            min_size=min_size,
             collapse=collapse,
             operating_limits=NoOperatingLimits(),
         )
@@ -351,17 +336,14 @@ class DepthSalience:
             A DepthSalienceResult object.
 
         Raises:
-            ValueError: If the min size is greater than the image size.
+            ValueError: If operating limits reject the image size.
         """
-        if self._min_size is not None and self._min_size > min(image.shape):
-            raise ValueError("Min size is greater than the image size")
-
         error = self._operating_limits.validate_image_dim_size(min(image.shape))
         if error is not None:
             if ctx.suppress_runtime_errors:
                 logger.warning(str(error))
             else:
-                raise error
+                raise ValueError(str(error))
 
         image = -np.log(image).astype(np.float32)
         image = np.nan_to_num(image, posinf=0.0)
@@ -372,7 +354,6 @@ class DepthSalience:
             surround_sigma=self._surround_sigma,
             n_scales=self._n_scales,
             max_octaves=self._max_octaves,
-            min_size=self._min_size,
         )
 
         diff: Pyramid = center - surround
@@ -473,7 +454,6 @@ class Vocus2SalienceConfig:
     surround_sigma: float = 5.0
     n_scales: int = 2
     max_octaves: int = 5
-    min_size: int = 16
     use_depth: bool = True
     use_orientation: bool = True
 
@@ -533,7 +513,6 @@ class Vocus2(SalienceStrategy):
             surround_sigma=config.surround_sigma,
             n_scales=config.n_scales,
             max_octaves=config.max_octaves,
-            min_size=config.min_size,
         )
 
         depth = (
@@ -542,7 +521,6 @@ class Vocus2(SalienceStrategy):
                 surround_sigma=config.surround_sigma,
                 n_scales=config.n_scales,
                 max_octaves=config.max_octaves,
-                min_size=config.min_size,
             )
             if config.use_depth
             else None

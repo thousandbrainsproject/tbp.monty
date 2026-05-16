@@ -26,6 +26,7 @@ class Pyramid:
 
     def __post_init__(self):
         assert self.data.ndim == 2
+        assert self.data.size > 0
 
     @property
     def shape(self) -> tuple[int, int]:
@@ -72,28 +73,24 @@ class Pyramid:
 def pyramid_octave_shapes(
     image_shape: Resolution2D,
     max_octaves: int | None = None,
-    min_size: int = 1,
-) -> list[tuple[int, int]]:
+) -> list[Resolution2D]:
     """Compute the shapes of the pyramid levels.
 
     Args:
         image_shape: The shape of the image from which the pyramid will be built.
         max_octaves: The maximum number of levels in the pyramid.
-        min_size: The minimum size of the pyramid levels.
 
     Returns:
         A list of tuples, each containing the shape of a pyramid level.
     """
-    max_possible_octaves = int(np.log2(min(image_shape))) + 1
-    if max_octaves:
-        max_octaves = min(max_octaves, max_possible_octaves)
-    else:
-        max_octaves = max_possible_octaves
+    max_actual_octaves = int(np.log2(min(image_shape))) + 1
+    if max_octaves is not None:
+        max_actual_octaves = min(max_octaves, max_actual_octaves)
 
     cur_shape = image_shape
-    shapes: list[tuple[int, int]] = []
-    while len(shapes) < max_octaves and min(cur_shape) >= min_size:
-        shapes.append(cur_shape)
+    shapes: list[Resolution2D] = []
+    while len(shapes) < max_actual_octaves and min(cur_shape) >= 1:
+        shapes.append(cast("Resolution2D", cur_shape))
         cur_shape = (cur_shape[0] // 2, cur_shape[1] // 2)
 
     return shapes
@@ -104,7 +101,6 @@ def gaussian_pyramid(
     sigma: float,
     n_scales: int,
     max_octaves: int | None = None,
-    min_size: int = 1,
 ) -> Pyramid:
     """Build multi-scale pyramid following Lowe 2004.
 
@@ -117,24 +113,23 @@ def gaussian_pyramid(
         sigma: Base sigma for Gaussian smoothing
         n_scales: Number of scales in each octave
         max_octaves: Maximum number of levels in the pyramid
-        min_size: Minimum size of the pyramid levels
 
     Returns:
         2D object-type array with shape (n_octaves, n_scales)
 
     Raises:
-        ValueError: If image has size 0.
+        ValueError: If image has size 0 or is not 2D.
 
     Note that sigmas = [sigma * (2.0 ** (s / n_scales)) for s in range(pyr.size)]
     """
     if image.size == 0:
         raise ValueError(f"Image must have a non-zero size. Has shape {image.shape}.")
+    if image.ndim != 2:
+        raise ValueError(f"Image must be 2D. Has shape {image.shape}.")
 
     # Calculate maximum number of octaves
     shapes = pyramid_octave_shapes(
-        cast("Resolution2D", image.shape),
-        max_octaves=max_octaves,
-        min_size=min_size,
+        cast("Resolution2D", image.shape), max_octaves=max_octaves
     )
 
     # Compute pyramid as in Lowe 2004
@@ -174,7 +169,6 @@ def center_surround_pyramids(
     surround_sigma: float,
     n_scales: int,
     max_octaves: int | None = None,
-    min_size: int = 1,
 ) -> tuple[Pyramid, Pyramid]:
     """Build center and surround pyramids.
 
@@ -184,7 +178,6 @@ def center_surround_pyramids(
         surround_sigma: The sigma for the surround pyramid.
         n_scales: The number of scales in each pyramid.
         max_octaves: An optional maximum number of levels in the pyramids.
-        min_size: The minimum size of the images in the last octave.
 
     Returns:
         A tuple of center and surround pyramids.
@@ -200,7 +193,6 @@ def center_surround_pyramids(
         sigma=center_sigma,
         n_scales=n_scales,
         max_octaves=max_octaves,
-        min_size=min_size,
     )
 
     n_octaves, n_scales = center.shape
