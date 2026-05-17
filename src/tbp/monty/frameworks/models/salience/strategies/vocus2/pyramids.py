@@ -186,7 +186,7 @@ def center_surround_pyramids(
         ValueError: If center sigma is greater than or equal to surround sigma.
     """
     if center_sigma >= surround_sigma:
-        raise ValueError("Center sigma must be less than surround sigma")
+        raise ValueError("Center sigma must be strictly less than surround sigma")
 
     center: Pyramid = gaussian_pyramid(
         image,
@@ -200,11 +200,11 @@ def center_surround_pyramids(
     # Use adapted surround sigma, a la VOCUS2.
     adapted_sigma = np.sqrt(surround_sigma**2 - center_sigma**2)
     surround_data = np.zeros((n_octaves, n_scales), dtype=object)
-    for level in range(n_octaves):
+    for octave in range(n_octaves):
         for scale in range(n_scales):
             scaled_sigma = adapted_sigma * (2.0 ** (scale / n_scales))
-            center_img = center.data[level, scale]
-            surround_data[level, scale] = gaussian_blur(center_img, scaled_sigma)
+            center_img = center.data[octave, scale]
+            surround_data[octave, scale] = gaussian_blur(center_img, scaled_sigma)
 
     surround: Pyramid = Pyramid(surround_data)
 

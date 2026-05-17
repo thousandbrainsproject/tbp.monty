@@ -76,6 +76,13 @@ class OperatingLimits(Protocol):
     ) -> ValueError | None: ...
     def validate_image_dim_size(self, image_dim_size: int) -> ValueError | None: ...
 
+    @staticmethod
+    def validate(
+        min_image_dim_size: int,
+        center_sigma: float,
+        surround_sigma: float,
+    ) -> ValueError | None: ...
+
 
 class NoOperatingLimits(OperatingLimits):
     def validate_center_and_surround_sigma(
@@ -91,6 +98,14 @@ class NoOperatingLimits(OperatingLimits):
     ) -> ValueError | None:
         return None
 
+    @staticmethod
+    def validate(
+        min_image_dim_size: int,  # noqa: ARG004
+        center_sigma: float,  # noqa: ARG004
+        surround_sigma: float,  # noqa: ARG004
+    ) -> ValueError | None:
+        return None
+
 
 @dataclass(frozen=True)
 class SafeOperatingLimits(OperatingLimits):
@@ -98,7 +113,10 @@ class SafeOperatingLimits(OperatingLimits):
     max_center_sigma: float = 6.0
     max_surround_sigma: float = 12.0
     center_surround_sigma_ratio: float = 1.6
+
     min_image_dim_size: int = 64
+    min_fractional_sigma_separation: float = 0.01
+    max_fractional_sigma: float = 1.0
 
     @staticmethod
     def validate_center_and_surround_sigma(
@@ -142,6 +160,50 @@ class SafeOperatingLimits(OperatingLimits):
             )
         return None
 
+    @staticmethod
+    def validate(
+        min_image_dim_size: int,
+        center_sigma: float,
+        surround_sigma: float,
+    ) -> ValueError | None:
+        min_fractional_sigma = 1 / min_image_dim_size
+        fractional_center_sigma = center_sigma / min_image_dim_size
+        fractional_surround_sigma = surround_sigma / min_image_dim_size
+
+        # Check surround < center
+        if fractional_surround_sigma <= fractional_center_sigma:
+            return ValueError("Surround sigma must be greater than center sigma")
+
+        # Check surround >= center + buffer
+        if (
+            fractional_surround_sigma
+            < fractional_center_sigma
+            + SafeOperatingLimits.min_fractional_sigma_separation
+        ):
+            return ValueError(
+                "Surround sigma must be greater than or equal to center_sigma + "
+                "min_fractional_sigma_separation."
+            )
+
+        # Check neither sigmas are outside of the allowed range.
+        sigma_info = [
+            (fractional_center_sigma, "Center"),
+            (fractional_surround_sigma, "Surround"),
+        ]
+        for fractional_sigma, sigma_name in sigma_info:
+            if fractional_sigma < min_fractional_sigma:
+                return ValueError(
+                    f"{sigma_name} sigma must be greater than or equal to "
+                    f"min fractional sigma ({min_fractional_sigma})"
+                )
+            if fractional_sigma > SafeOperatingLimits.max_fractional_sigma:
+                return ValueError(
+                    f"{sigma_name} sigma must be less than or equal to "
+                    f"max fractional sigma ({SafeOperatingLimits.max_fractional_sigma})"
+                )
+
+        return None
+
 
 class ColorChannelSalience:
     def __init__(
@@ -183,48 +245,6 @@ class ColorChannelSalience:
             operating_limits if operating_limits is not None else SafeOperatingLimits()
         )
 
-        error = self._operating_limits.validate_center_and_surround_sigma(
-            self._center_sigma, self._surround_sigma
-        )
-        if error is not None:
-            raise error
-
-    @classmethod
-    def without_operating_limits(
-        cls,
-        center_sigma: float = 2.0,
-        surround_sigma: float = 3.0,
-        n_scales: int = 2,
-        max_octaves: int | None = None,
-        combine: PyramidCombine = pyramid_combine_mean,
-        collapse: PyramidCollapse = pyramid_collapse_mean,
-    ) -> ColorChannelSalience:
-        """Create a `ColorChannelSalience` without operating limits.
-
-        It is up to you to ensure that the combination of parameters you select is
-        valid for your use case.
-
-        Args:
-            center_sigma: The center sigma for the center/surround pyramids.
-            surround_sigma: The surround sigma for the center/surround pyramids.
-            n_scales: The number of pyramid scales.
-            max_octaves: The maximum number of pyramid octaves to construct.
-            combine: The function to combine the on/off pyramids into a single pyramid.
-            collapse: The function to collapse the combined pyramid into a single image.
-
-        Returns:
-            A `ColorChannelSalience` without operating limits.
-        """
-        return cls(
-            center_sigma=center_sigma,
-            surround_sigma=surround_sigma,
-            n_scales=n_scales,
-            max_octaves=max_octaves,
-            combine=combine,
-            collapse=collapse,
-            operating_limits=NoOperatingLimits(),
-        )
-
     def process(
         self, ctx: RuntimeContext, image: npt.NDArray[np.float32]
     ) -> tuple[npt.NDArray[np.float32], Pyramid]:
@@ -240,7 +260,11 @@ class ColorChannelSalience:
         Raises:
             ValueError: If operating limits reject the image size.
         """
-        error = self._operating_limits.validate_image_dim_size(min(image.shape))
+        error = self._operating_limits.validate(
+            min(image.shape),
+            self._center_sigma,
+            self._surround_sigma,
+        )
         if error is not None:
             if ctx.suppress_runtime_errors:
                 logger.warning(str(error))
@@ -284,45 +308,6 @@ class DepthSalience:
             operating_limits if operating_limits is not None else SafeOperatingLimits()
         )
 
-        error = self._operating_limits.validate_center_and_surround_sigma(
-            self._center_sigma, self._surround_sigma
-        )
-        if error is not None:
-            raise error
-
-    @classmethod
-    def without_operating_limits(
-        cls,
-        center_sigma: float = 2.0,
-        surround_sigma: float = 3.0,
-        n_scales: int = 2,
-        max_octaves: int | None = None,
-        collapse: PyramidCollapse = pyramid_collapse_mean,
-    ) -> DepthSalience:
-        """Create a `DepthSalience` without operating limits.
-
-        It is up to you to ensure that the combination of parameters you select is
-        valid for your use case.
-
-        Args:
-            center_sigma: The center sigma for the center/surround pyramids.
-            surround_sigma: The surround sigma for the center/surround pyramids.
-            n_scales: The number of pyramid scales.
-            max_octaves: The maximum number of pyramid octaves to construct.
-            collapse: The function to collapse the combined pyramid into a single image.
-
-        Returns:
-            A `DepthSalience` without operating limits.
-        """
-        return cls(
-            center_sigma=center_sigma,
-            surround_sigma=surround_sigma,
-            n_scales=n_scales,
-            max_octaves=max_octaves,
-            collapse=collapse,
-            operating_limits=NoOperatingLimits(),
-        )
-
     def process(
         self, ctx: RuntimeContext, image: npt.NDArray[np.float32]
     ) -> npt.NDArray[np.float32]:
@@ -338,7 +323,11 @@ class DepthSalience:
         Raises:
             ValueError: If operating limits reject the image size.
         """
-        error = self._operating_limits.validate_image_dim_size(min(image.shape))
+        error = self._operating_limits.validate(
+            min(image.shape),
+            self._center_sigma,
+            self._surround_sigma,
+        )
         if error is not None:
             if ctx.suppress_runtime_errors:
                 logger.warning(str(error))

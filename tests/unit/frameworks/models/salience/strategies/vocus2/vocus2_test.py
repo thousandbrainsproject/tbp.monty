@@ -27,6 +27,16 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2 import (
     SafeOperatingLimits,
 )
 from tbp.monty.frameworks.sensors import Resolution2D
+from tests.unit.frameworks.models.salience.strategies.vocus2.pyramids_test import (
+    MAX_DIM_SIZE,
+    default_cs_sigmas,
+    default_image_values,
+    default_images,
+    default_max_octaves,
+    default_n_scales,
+    default_resolutions,
+    solid_images,
+)
 
 # Common upper limits used in these tests. Not the same thing
 # as safe operating limits.
@@ -39,69 +49,49 @@ MAX_SCALES = 5
 
 
 @st.composite
-def resolution(
+def safe_resolutions(
     draw: st.DrawFn,
-    min_dim_size: int = 1,
+    min_dim_size: int = SafeOperatingLimits.min_image_dim_size,
     max_dim_size: int = MAX_DIM_SIZE,
 ) -> Resolution2D:
     height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
     width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
-    return cast("Resolution2D", (height, width))
+    return (height, width)
+
+
+# @st.composite
+# def default_cs_sigmas(
+#     draw: st.DrawFn,
+#     min_center_sigma: float,
+#     max_center_sigma: float,
+# ) -> tuple[float, float]:
+#     center_sigma = draw(
+#         st.floats(min_value=min_center_sigma, max_value=max_center_sigma)
+#     )
+#     surround_sigma_factor = draw(
+#         st.floats(min_value=1.0, max_value=10.0, exclude_min=True)
+#     )
+#     return center_sigma, surround_sigma_factor * center_sigma
+
+
+# # Images
+# # -----------------------------------------------------------------------------
+
+
+# @st.composite
+# def solid_images(
+#     draw: st.DrawFn, min_dim_size: int = 1, max_dim_size: int = MAX_DIM_SIZE
+# ) -> npt.NDArray[np.float32]:
+#     height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
+#     width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
+#     fill_value = draw(
+#         st.floats(min_value=0.0, max_value=1.0, allow_nan=False, width=32)
+#     )
+#     return np.full((height, width), fill_value, dtype=np.float32)
 
 
 @st.composite
-def n_scales(
-    draw: st.DrawFn,
-    min_value: int = 1,
-    max_value: int = MAX_SCALES,
-) -> int:
-    return draw(st.integers(min_value=min_value, max_value=max_value))
-
-
-@st.composite
-def max_octaves(
-    draw: st.DrawFn,
-    min_value: int = 1,
-    max_value: int = int(np.log2(MAX_DIM_SIZE)) + 1,
-) -> int | None:
-    return draw(
-        st.one_of(st.none(), st.integers(min_value=min_value, max_value=max_value))
-    )
-
-
-@st.composite
-def center_surround_sigmas(
-    draw: st.DrawFn,
-    min_center_sigma: float,
-    max_center_sigma: float,
-) -> tuple[float, float]:
-    center_sigma = draw(
-        st.floats(min_value=min_center_sigma, max_value=max_center_sigma)
-    )
-    surround_sigma_factor = draw(
-        st.floats(min_value=1.0, max_value=10.0, exclude_min=True)
-    )
-    return center_sigma, surround_sigma_factor * center_sigma
-
-
-# Images
-# -----------------------------------------------------------------------------
-
-
-@st.composite
-def solid_float32_image(
-    draw: st.DrawFn, min_dim_size: int = 1, max_dim_size: int = MAX_DIM_SIZE
-) -> npt.NDArray[np.float32]:
-    height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
-    width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
-    fill_value = draw(
-        st.floats(min_value=0.0, max_value=1.0, allow_nan=False, width=32)
-    )
-    return np.full((height, width), fill_value, dtype=np.float32)
-
-
-@st.composite
-def filled_float32_image(
+def filled_images(
     draw: st.DrawFn,
     fill_value: float = 1.0,
     min_dim_size: int = 1,
@@ -110,24 +100,6 @@ def filled_float32_image(
     height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
     width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
     return np.full((height, width), fill_value, dtype=np.float32)
-
-
-@st.composite
-def float32_image(draw: st.DrawFn) -> npt.NDArray[np.float32]:
-    height = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
-    width = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
-    return draw(
-        arrays(
-            dtype=np.float32,
-            shape=(height, width),
-            elements=st.floats(
-                min_value=0.0,
-                max_value=1.0,
-                allow_nan=False,
-                width=32,
-            ),
-        )
-    )
 
 
 @dataclass
@@ -222,7 +194,7 @@ def solid_left_half_float32_image_color_channel_salience_setup(
     draw: st.DrawFn, fill_value: float = 1.0
 ) -> tuple[npt.NDArray[np.float32], ColorChannelSalience]:
     image = draw(
-        filled_float32_image(
+        filled_images(
             fill_value=fill_value, min_dim_size=SafeOperatingLimits.min_image_dim_size
         )
     )
@@ -272,12 +244,17 @@ def unsafe_center_and_surround_sigmas(draw: st.DrawFn) -> tuple[float, float]:
     return center_sigma, surround_sigma
 
 
+@dataclass
+class ProcessParams:
+    image: npt.NDArray[np.float32]
+
+
 class ColorChannelSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-3
 
     @given(
         image_and_processor=color_channel_salience_setup(
-            color_channel_salience_processor, solid_float32_image()
+            color_channel_salience_processor, solid_images()
         ),
     )
     def test_solid_image_not_salient(
@@ -350,9 +327,7 @@ class ColorChannelSalienceTest(unittest.TestCase):
     @given(
         image_and_processor=color_channel_salience_setup(
             color_channel_salience_processor,
-            filled_float32_image(
-                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
-            ),
+            filled_images(max_dim_size=SafeOperatingLimits.min_image_dim_size - 1),
         ),
     )
     def test_process_raises_value_error_if_image_has_smaller_dimension_than_min_safe_dim_size_and_suppress_runtimes_errors_is_false(  # noqa: E501
@@ -367,9 +342,7 @@ class ColorChannelSalienceTest(unittest.TestCase):
     @given(
         image_and_processor=color_channel_salience_setup(
             color_channel_salience_processor,
-            filled_float32_image(
-                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
-            ),
+            filled_images(max_dim_size=SafeOperatingLimits.min_image_dim_size - 1),
         ),
     )
     def test_process_does_not_raise_value_error_if_image_has_smaller_dimension_than_min_safe_dim_size_and_suppress_runtimes_errors_is_true(  # noqa: E501
@@ -398,9 +371,7 @@ class ColorChannelSalienceWithoutOperatingLimitsTest(unittest.TestCase):
     @given(
         image_and_processor=color_channel_salience_setup(
             color_channel_salience_processor_without_operating_limits,
-            filled_float32_image(
-                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
-            ),
+            filled_images(max_dim_size=SafeOperatingLimits.min_image_dim_size - 1),
         ),
         suppress_runtime_errors=st.booleans(),
     )
@@ -452,7 +423,7 @@ def near_left_half_float32_image_depth_salience_setup(
     draw: st.DrawFn, near_value: float = 0.5
 ) -> tuple[npt.NDArray[np.float32], DepthSalience]:
     image = draw(
-        filled_float32_image(
+        filled_images(
             fill_value=near_value, min_dim_size=SafeOperatingLimits.min_image_dim_size
         )
     )
@@ -484,7 +455,7 @@ class DepthSalienceTest(unittest.TestCase):
     @given(
         image_and_processor=depth_salience_setup(
             depth_salience_processor,
-            solid_float32_image(min_dim_size=SafeOperatingLimits.min_image_dim_size),
+            solid_images(min_dim_size=SafeOperatingLimits.min_image_dim_size),
         ),
     )
     def test_uniform_depth_image_not_salient(
@@ -542,9 +513,7 @@ class DepthSalienceTest(unittest.TestCase):
     @given(
         image_and_processor=depth_salience_setup(
             depth_salience_processor,
-            filled_float32_image(
-                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
-            ),
+            filled_images(max_dim_size=SafeOperatingLimits.min_image_dim_size - 1),
         ),
     )
     def test_process_raises_value_error_if_image_has_smaller_dimension_than_min_safe_dim_size_and_suppress_runtimes_errors_is_false(  # noqa: E501
@@ -559,9 +528,7 @@ class DepthSalienceTest(unittest.TestCase):
     @given(
         image_and_processor=depth_salience_setup(
             depth_salience_processor,
-            filled_float32_image(
-                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
-            ),
+            filled_images(max_dim_size=SafeOperatingLimits.min_image_dim_size - 1),
         ),
     )
     def test_process_does_not_raise_value_error_if_image_has_smaller_dimension_than_min_safe_dim_size_and_suppress_runtimes_errors_is_true(  # noqa: E501
@@ -590,9 +557,7 @@ class DepthSalienceWithoutOperatingLimitsTest(unittest.TestCase):
     @given(
         image_and_processor=depth_salience_setup(
             depth_salience_processor_without_operating_limits,
-            filled_float32_image(
-                max_dim_size=SafeOperatingLimits.min_image_dim_size - 1
-            ),
+            filled_images(max_dim_size=SafeOperatingLimits.min_image_dim_size - 1),
         ),
         suppress_runtime_errors=st.booleans(),
     )
