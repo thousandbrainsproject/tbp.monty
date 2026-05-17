@@ -54,6 +54,6 @@ def gaussian_blur(
 def resize(
     image: npt.NDArray[np.float32],
     shape: tuple[int, int],
-    interpolation: int = cv2.INTER_NEAREST,
+    interpolation: int = cv2.INTER_AREA,
 ) -> npt.NDArray[np.float32]:
     return cv2.resize(image, (shape[1], shape[0]), interpolation=interpolation)

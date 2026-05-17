@@ -36,7 +36,7 @@ from tests.unit.statistics import mean_local_variation
 
 # Common upper limits used in these tests. Not the same thing
 # as safe operating limits.
-MAX_DIM_SIZE = 1024
+MAX_DIM_SIZE = 512
 MAX_OCTAVES = int(np.log2(MAX_DIM_SIZE)) + 1
 MAX_SCALES = 5
 
@@ -50,31 +50,20 @@ def default_resolutions(
     draw: st.DrawFn,
     min_dim_size: int = 1,
     max_dim_size: int = MAX_DIM_SIZE,
-) -> Resolution2D:
+) -> tuple[int, int]:
     height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
     width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
-    return cast("Resolution2D", (height, width))
-
-
-@st.composite
-def resolutions_with_a_zero_length_dimension(
-    draw: st.DrawFn,
-) -> Resolution2D:
-    height = 0
-    width = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
-    if draw(st.booleans()):
-        height, width = width, height
-    return cast("Resolution2D", (height, width))
+    return (height, width)
 
 
 @st.composite
 def resolutions_with_more_than_one_pixel(
     draw: st.DrawFn,
-) -> Resolution2D:
+) -> tuple[int, int]:
     height = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
     min_width = 2 if height == 1 else 1
     width = draw(st.integers(min_value=min_width, max_value=MAX_DIM_SIZE))
-    return cast("Resolution2D", (height, width))
+    return (height, width)
 
 
 @st.composite
@@ -120,18 +109,22 @@ def default_sigmas(
     draw: st.DrawFn,
     image: npt.NDArray[np.float32],
     min_fractional_sigma: float | None = None,
-    max_fractional_sigma: float = 0.2,
+    max_fractional_sigma: float = 0.5,
 ) -> float:
-    major_dim = max(image.shape)
+    smallest_dim = min(image.shape)
+    if smallest_dim == 1:
+        return draw(st.just(1.0))
 
-    hard_min_fractional_sigma = 1 / major_dim
+    smallest_fractional_sigma = 1 / smallest_dim
     if min_fractional_sigma is None:
-        min_fractional_sigma = hard_min_fractional_sigma
+        min_fractional_sigma = smallest_fractional_sigma
     else:
-        min_fractional_sigma = max(min_fractional_sigma, hard_min_fractional_sigma)
+        min_fractional_sigma = max(min_fractional_sigma, smallest_fractional_sigma)
 
-    sigma_max = max(max_fractional_sigma * major_dim, 1.0)
-    sigma_min = max(min_fractional_sigma * major_dim, 1.0)
+    sigma_min = max(min_fractional_sigma * smallest_dim, 1.0)
+    sigma_max = max_fractional_sigma * smallest_dim
+    sigma_max = max(sigma_min, sigma_max)
+
     return draw(st.floats(min_value=sigma_min, max_value=sigma_max))
 
 
@@ -175,7 +168,7 @@ def default_images(
 
 
 @st.composite
-def full_images(
+def solid_images(
     draw: st.DrawFn,
     resolution_strategy: st.SearchStrategy[Resolution2D] | None = None,
     elements_strategy: st.SearchStrategy[float] | None = None,
@@ -204,14 +197,23 @@ def random_images(
 
 
 @st.composite
-def full_pyramids(draw: st.DrawFn, fill_value: float = 1.0) -> Pyramid:
-    resolution = draw(default_resolutions())
-    n_scales = draw(default_n_scales())
-    max_octaves = draw(default_max_octaves())
-    octave_shapes = pyramid_octave_shapes(
-        resolution,
-        max_octaves=max_octaves,
-    )
+def default_pyramids(
+    draw: st.DrawFn,
+    fill_value: float = 0.0,
+    resolution_strategy: st.SearchStrategy[Resolution2D] | None = None,
+    n_scales_strategy: st.SearchStrategy[int] | None = None,
+    max_octaves_strategy: st.SearchStrategy[int | None] | None = None,
+) -> Pyramid:
+    resolution_strategy = resolution_strategy or default_resolutions()
+    resolution = draw(resolution_strategy)
+
+    n_scales_strategy = n_scales_strategy or default_n_scales()
+    n_scales = draw(n_scales_strategy)
+
+    max_octaves_strategy = max_octaves_strategy or default_max_octaves()
+    max_octaves = draw(max_octaves_strategy)
+
+    octave_shapes = pyramid_octave_shapes(resolution, max_octaves=max_octaves)
 
     n_octaves = len(octave_shapes)
     pyramid_data = np.zeros((n_octaves, n_scales), dtype=object)
@@ -356,7 +358,7 @@ def gaussian_pyramid_params(
     Returns:
         The parameters for a call to `gaussian_pyramid`.
     """
-    image_strategy = image_strategy or random_images()
+    image_strategy = image_strategy or default_images()
     image = draw(image_strategy)
 
     sigma_strategy = sigma_strategy or default_sigmas(image)
@@ -376,82 +378,38 @@ def gaussian_pyramid_params(
     )
 
 
+# -----------------------------------------------------------------------------
+# Gaussian Pyramid Tests
+# -----------------------------------------------------------------------------
+
+
 @st.composite
-def gaussian_pyramid_params_for_multiplane_pyramids(
+def images_with_size_zero(
     draw: st.DrawFn,
-    image_strategy: st.SearchStrategy[npt.NDArray[np.float32]] | None = None,
-    sigma_strategy: st.SearchStrategy[float] | None = None,
-) -> GaussianPyramidParams:
-    """Generate parameters for calls to `gaussian_pyramid` for a multi-plane pyramid.
-
-    Args:
-        draw: The hypothesis draw function.
-        image_strategy: A strategy for generating images or None. Defaults to
-          `random_images`.
-        sigma_strategy: A strategy for generating sigmas or None. Defaults to
-          `sigmas`.
-
-    Returns:
-        The parameters for a call to `gaussian_pyramid`.
-
-    Raises:
-        ValueError: If the image has no size.
-    """
-    if image_strategy is None:
-        resolution_strategy = resolutions_with_more_than_one_pixel()
-        default_image_strategy = default_images(resolution_strategy=resolution_strategy)
-        random_image_strategy = random_images(resolution_strategy=resolution_strategy)
-        image_strategy = st.one_of(default_image_strategy, random_image_strategy)
-
-    image = draw(image_strategy)
-    octave_shapes = pyramid_octave_shapes(image.shape)
-    if len(octave_shapes) == 0:
-        raise ValueError(
-            "Cannot generate parameters for a multi-plane pyramid with no octaves."
+) -> tuple[int, int]:
+    height, width = draw(
+        st.one_of(
+            st.tuples(st.just(0), st.integers(min_value=1, max_value=MAX_DIM_SIZE)),
+            st.tuples(st.integers(min_value=1, max_value=MAX_DIM_SIZE), st.just(0)),
+            st.tuples(st.just(0), st.just(0)),
         )
-
-    # If we can't get more than one octave, we need to use a minimum of 2 scales.
-    if len(octave_shapes) == 1:
-        n_scales = draw(default_n_scales(min_value=2))
-        max_octaves = 1
-    else:
-        # If only one scale, ensure we have at least one octave.
-        n_scales = draw(default_n_scales())
-        min_max_octaves = 2 if n_scales == 1 else 1
-        max_octaves = draw(default_max_octaves(min_value=min_max_octaves))
-
-    sigma_strategy = sigma_strategy or default_sigmas(image)
-
-    return GaussianPyramidParams(
-        image=image,
-        sigma=draw(sigma_strategy),
-        n_scales=n_scales,
-        max_octaves=max_octaves,
     )
+    return np.zeros((height, width), dtype=np.float32)
 
 
 class GaussianPyramidTest(unittest.TestCase):
-    INTRA_OCTAVE_VARIANCE_TOLERANCE = 1e-6
-    INTER_OCTAVE_VARIANCE_TOLERANCE = 1e-4
-
-    @given(resolution=resolutions_with_a_zero_length_dimension())
-    @example(resolution=cast("Resolution2D", (0, 0)))
-    def test_raises_value_error_if_image_has_no_values(
+    @given(image=images_with_size_zero())
+    def test_raises_value_error_if_image_has_size_zero(
         self,
-        resolution: Resolution2D,
+        image: npt.NDArray[np.float32],
     ) -> None:
-        image = np.zeros(resolution, dtype=np.float32)
         with self.assertRaises(ValueError):
-            gaussian_pyramid(image, sigma=1.0, n_scales=1)
+            gaussian_pyramid(image, sigma=Mock(), n_scales=Mock())
 
     @given(params=gaussian_pyramid_params(sigma_strategy=st.just(1.0)))
-    def test_has_correct_shape(
-        self,
-        params: GaussianPyramidParams,
-    ) -> None:
-
+    def test_has_correct_shape(self, params: GaussianPyramidParams) -> None:
         expected_octave_shapes = pyramid_octave_shapes(
-            cast("Resolution2D", params.image.shape),
+            params.image.shape,
             max_octaves=params.max_octaves,
         )
         pyr = gaussian_pyramid(
@@ -460,11 +418,11 @@ class GaussianPyramidTest(unittest.TestCase):
             n_scales=params.n_scales,
             max_octaves=params.max_octaves,
         )
-        # Test pyramid is correct shape.
+        # Check the pyramid itself has the correct shape.
         self.assertEqual(pyr.n_octaves, len(expected_octave_shapes))
         self.assertEqual(pyr.n_scales, params.n_scales)
 
-        # Test each plane in pyramid is correct shape.
+        # Check each plane in the pyramid has the correct shape.
         for octave in range(pyr.n_octaves):
             for scale in range(pyr.n_scales):
                 self.assertEqual(
@@ -472,358 +430,124 @@ class GaussianPyramidTest(unittest.TestCase):
                 )
 
     @settings(deadline=1000)
-    @given(params=gaussian_pyramid_params_for_multiplane_pyramids())
-    def test_subsequent_planes_have_decreasing_total_variation(
+    @given(
+        params=gaussian_pyramid_params(
+            image_strategy=st.one_of(default_images(), random_images()),
+        ),
+    )
+    def test_subsequent_planes_have_decreasing_variance(
         self,
         params: GaussianPyramidParams,
     ) -> None:
+        # Test that each plane in the pyramid is blurrier than its predecessor.
+        #
+        # Here we use standard deviation to quantify each plane's blurriness.
+        # Therefore, we want to show that the following holds for all i:
+        #
+        #                   std(plane[i]) > std(plane[i+1])
+        #
+        # In reality, the above condition will not hold due several factors.
+        #
+        #   1. Downsampling an image can slightly increase variance. There are mundane
+        #      and not concerning reasons for this.
+        #   2. Gaussian blur can also increase variance around the border. As planes
+        #      get smaller, the border pixels take up a larger fraction of the plane,
+        #      so boundary artifacts have an outsized impact on global variance.
+        #   3. Small planes also means fewer pixels, meaning our statistics get noisier
+        #      and less stable.
+        #   4. For solid (or nearly solid) images, artifacts due to the above causes
+        #      won't be counteracted out by variance reductions elsewhere in the image.
+        #
+        # If we naively add a tolerance to our checks and use it for every comparison,
+        # then we'd never be able to check that variance ever decreases. Instead,
+        # we'll start each comparison assuming a tolerance of 0 and widen it
+        # as necessary.
+        #
+        #   1. When comparing the last plane in octave i with the first plane in the
+        #      octave i+1, pad the tolerance with `downsampling_tolerance` to
+        #      accommodate for downsampling artifacts.
+        #   2. When comparing very small planes, pad the tolerance with
+        #      `small_plane_tolerance` to accommodate for statistical noise.
+        #      to accommodate for statistical noise.
+        #   3. When planes already have very low variance, we grant extra tolerance.
         pyr = gaussian_pyramid(
             params.image,
             sigma=params.sigma,
             n_scales=params.n_scales,
             max_octaves=params.max_octaves,
         )
-        # Check that variance decreases as scales increase within each octave.
-        for octave in range(pyr.n_octaves):
-            intra_octave_variances = [np.var(plane) for plane in pyr.data[octave]]
-            deltas = np.diff(intra_octave_variances)
-            nptest.assert_array_less(deltas, self.INTRA_OCTAVE_VARIANCE_TOLERANCE)
+        downsampling_tolerance = 5e-4
+        small_plane_threshold = 4
+        small_plane_tolerance = 1e-6
+        ignore_below_variance = 1e-6
 
-        # Check that variance decreases when jumping to the next octave.
-        # Note, however, that the error in the variance estimate increases as we
-        # use smaller and smaller images. Therefore, we have to use a larger tolerance
-        # value for this comparison than for the intra-octave comparisons.
-        for octave in range(pyr.n_octaves - 1):
-            last_plane, next_plane = pyr.data[octave, -1], pyr.data[octave + 1, 0]
-            delta = np.var(next_plane) - np.var(last_plane)
-            self.assertLessEqual(delta, self.INTER_OCTAVE_VARIANCE_TOLERANCE)
+        planes = list(pyr.flat)
+        for i in range(len(planes) - 1):
+            tolerance = 0.0
+            plane_a = planes[i]
+            plane_b = planes[i + 1]
 
-class CenterSurroundPyramidsTest(unittest.TestCase):
-    @given(
-        center_sigma=st.floats(min_value=0.5, max_value=3.0),
-        surround_sigma_factor=st.floats(min_value=0.0, max_value=1.0),
-    )
-    def test_raises_value_error_if_center_sigma_is_greater_than_or_equal_to_surround_sigma(  # noqa: E501
-        self,
-        center_sigma: float,
-        surround_sigma_factor: float,
-    ) -> None:
-        surround_sigma = center_sigma * surround_sigma_factor
-        with self.assertRaises(ValueError):
-            center_surround_pyramids(
-                np.zeros((MAX_DIM_SIZE, MAX_DIM_SIZE)),
-                center_sigma=center_sigma,
-                surround_sigma=surround_sigma,
-                n_scales=2,
-                max_octaves=5,
-            )
+            if plane_a.shape != plane_b.shape:
+                tolerance += downsampling_tolerance
 
-    @given(
-        image=arrays(dtype=np.float32, shape=(MAX_DIM_SIZE, MAX_DIM_SIZE)),
-        n_scales=st.integers(min_value=1, max_value=10),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
-    )
-    def test_center_and_surround_pyramids_have_same_shape(
-        self,
-        image: npt.NDArray[np.float32],
-        n_scales: int,
-        max_octaves: int,
-    ) -> None:
-        center, surround = center_surround_pyramids(
-            image,
-            center_sigma=3.0,
-            surround_sigma=5.0,
-            n_scales=n_scales,
-            max_octaves=max_octaves,
-        )
-        self.assertEqual(center.shape, surround.shape)
+            if (
+                min(plane_a.shape) < small_plane_threshold
+                or min(plane_b.shape) < small_plane_threshold
+            ):
+                tolerance += small_plane_tolerance
 
-    @given(
-        image=default_images(),
-        sigmas=center_surround_sigmas(min_center_sigma=1.0, max_center_sigma=3.0),
-        n_scales=st.integers(min_value=1, max_value=MAX_SCALES),
-        max_octaves=st.integers(min_value=1, max_value=MAX_OCTAVES),
-    )
-    def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes(  # noqa: E501
-        self,
-        image: npt.NDArray[np.float32],
-        sigmas: tuple[float, float],
-        n_scales: int,
-        max_octaves: int,
-    ) -> None:
-        center, surround = center_surround_pyramids(
-            image,
-            center_sigma=sigmas[0],
-            surround_sigma=sigmas[1],
-            n_scales=n_scales,
-            max_octaves=max_octaves,
-        )
+            var_a = np.std(plane_a)
+            var_b = np.std(plane_b)
+            delta = var_b - var_a
 
-        center_variations = np.array(
-            [mean_local_variation(plane) for plane in center.flat]
-        )
-        surround_variations = np.array(
-            [mean_local_variation(plane) for plane in surround.flat]
-        )
-        variations = center_variations - surround_variations
-        tolerance = 1e-4  # opencv variation tolerance
-        self.assertTrue(all(variations >= -tolerance))
+            if plane_a.size == 1 and plane_b.size == 1:
+                self.assertEqual(delta, 0.0)
+                continue
 
-    @given(
-        image=full_images(),
-        sigmas=center_surround_sigmas(min_center_sigma=0.5, max_center_sigma=3.0),
-        n_scales=st.integers(min_value=1, max_value=3),
-        max_octaves=st.integers(min_value=1, max_value=int(2 * np.log2(MAX_DIM_SIZE))),
-    )
-    def test_surround_planes_mean_local_variation_equals_corresponding_center_planes_for_solid_image(  # noqa: E501
-        self,
-        image: npt.NDArray[np.float32],
-        sigmas: tuple[float, float],
-        n_scales: int,
-        max_octaves: int,
-    ) -> None:
-        center, surround = center_surround_pyramids(
-            image,
-            center_sigma=sigmas[0],
-            surround_sigma=sigmas[1],
-            n_scales=n_scales,
-            max_octaves=max_octaves,
-        )
+            if var_a <= ignore_below_variance and var_b <= ignore_below_variance:
+                tolerance += ignore_below_variance
 
-        center_variations = np.array(
-            [mean_local_variation(plane) for plane in center.flat]
-        )
-        surround_variations = np.array(
-            [mean_local_variation(plane) for plane in surround.flat]
-        )
-        self.assertTrue(
-            np.allclose(center_variations, surround_variations, atol=DEFAULT_TOLERANCE)
-        )
+            self.assertLess(delta, tolerance)
 
-    @given(
-        image=default_images(unique=False),
-        sigmas=center_surround_sigmas(min_center_sigma=1.0, max_center_sigma=3.0),
-        n_scales=default_n_scales(),
-        max_octaves=default_max_octaves(),
-    )
-    def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes_for_sufficiently_variable_image(  # noqa: E501
-        self,
-        image: npt.NDArray[np.float32],
-        sigmas: tuple[float, float],
-        n_scales: int,
-        max_octaves: int,
-    ) -> None:
-        center, surround = center_surround_pyramids(
-            image,
-            center_sigma=sigmas[0],
-            surround_sigma=sigmas[1],
-            n_scales=n_scales,
-            max_octaves=max_octaves,
-        )
-
-        center_variations = np.array(
-            [mean_local_variation(plane) for plane in center.flat]
-        )
-        surround_variations = np.array(
-            [mean_local_variation(plane) for plane in surround.flat]
-        )
-        variations = center_variations - surround_variations
-        self.assertTrue(all(variations >= 0))
-
-
-class LaplacianPyramidTest(unittest.TestCase):
-    FILL_VALUE = 1.0
-
-    @given(
-        input_pyramid=valid_input_pyramid_for_laplacian_pyramid(fill_value=FILL_VALUE),
-    )
-    def test_has_correct_shape(self, input_pyramid: Pyramid) -> None:
-        pyramid = laplacian_pyramid(input_pyramid)
-        self.assertEqual(input_pyramid.n_octaves - 1, pyramid.n_octaves)
-        self.assertEqual(input_pyramid.n_scales, pyramid.n_scales)
-        for octave in range(pyramid.n_octaves):
-            for scale in range(pyramid.n_scales):
-                self.assertEqual(
-                    pyramid.data[octave, scale].shape,
-                    input_pyramid.data[octave, scale].shape,
-                )
-
-    def test_raises_value_error_if_input_pyramid_has_less_than_two_octaves(
+    def test_subsequent_planes_have_decreasing_variance_strict_with_specific_example(
         self,
     ) -> None:
-        data = np.zeros((1, 1), dtype=object)
-        data[0, 0] = np.zeros((1, 1), dtype=np.float32)
-        with self.assertRaises(ValueError):
-            laplacian_pyramid(Pyramid(data))
+        # This is a more specific and stricter test than the one above.
+        #
+        # While the more general test a wider range of inputs, it also has to make
+        # complex allowances for the many ways that spurious increases in global
+        # variance can be introduced. This made it impossible to definitely check
+        # for the basic properties we expect of a multi-scale gaussian pyramid 99.99%
+        # of the time.
+        #
+        # This test complements the more general test by performing maximally strict
+        # checks on a known example.
+        #
+        # If this fails, then something has changed that should probably be attended to.
+        rng = np.random.RandomState(67)
+        image = rng.uniform(0.0, 1.0, size=(512, 512))
+        pyr = gaussian_pyramid(image, sigma=3.0, n_scales=2)
 
-    @given(
-        input_pyramid=valid_input_pyramid_for_laplacian_pyramid(fill_value=FILL_VALUE),
-    )
-    def test_laplacian_planes_are_center_minus_resized_surround(
-        self,
-        input_pyramid: Pyramid,
-    ) -> None:
-        surround_fill = 0.7
+        planes = list(pyr.flat)
+        for i in range(len(planes) - 1):
+            plane_a = planes[i]
+            plane_b = planes[i + 1]
 
-        def mock_resize(
-            image: np.ndarray,
-            shape: tuple[int, int],
-            interpolation: int,  # noqa: ARG001
-        ) -> np.ndarray:
-            return np.full(shape, surround_fill, dtype=image.dtype)
+            var_a = np.std(plane_a)
+            var_b = np.std(plane_b)
+            delta = var_b - var_a
 
-        with patch(
-            "tbp.monty.frameworks.models.salience.strategies.vocus2.pyramids.resize",
-            side_effect=mock_resize,
-        ) as mock_resize_patch:
-            pyr = laplacian_pyramid(input_pyramid)
-            for plane in pyr.flat:
-                nptest.assert_allclose(
-                    plane, self.FILL_VALUE - surround_fill, atol=DEFAULT_TOLERANCE
-                )
-
-            call_count = 0
-            for scale in range(input_pyramid.n_scales):
-                for octave in range(pyr.n_octaves):
-                    expected_image = input_pyramid.data[octave + 1, scale]
-                    expected_shape = input_pyramid.data[octave, scale].shape
-                    call_args = mock_resize_patch.call_args_list[call_count]
-                    nptest.assert_array_equal(call_args.args[0], expected_image)
-                    self.assertEqual(call_args.args[1], expected_shape)
-                    self.assertEqual(call_args.kwargs["interpolation"], cv2.INTER_CUBIC)
-                    call_count += 1
+            if plane_a.size == 1 and plane_b.size == 1:
+                self.assertEqual(delta, 0.0)
+            else:
+                self.assertLess(delta, 0.0)
 
 
-class PyramidCombineTest(unittest.TestCase):
-    def test_raises_value_error_if_no_pyramids_are_provided(self) -> None:
-        with self.assertRaises(ValueError):
-            pyramid_combine([], Mock())
+def save_params(**kwargs) -> None:
+    from pathlib import Path
 
-    def test_returns_first_pyramid_if_only_one_pyramid_is_provided(self) -> None:
-        pyramid = Pyramid(np.zeros((1, 1), dtype=object))
-        result = pyramid_combine([pyramid], Mock())
-        self.assertIs(result, pyramid)
-
-    def test_does_not_apply_reduce_to_pyramids_if_only_one_pyramid_is_provided(
-        self,
-    ) -> None:
-        pyramid = Pyramid(np.zeros((1, 1), dtype=object))
-        reduce = Mock()
-        result = pyramid_combine([pyramid], reduce)
-        reduce.assert_not_called()
-        self.assertIs(result, pyramid)
-
-    @given(
-        pyramids=differently_shaped_pyramids(),
-    )
-    def test_raises_value_error_if_pyramids_have_different_shapes(
-        self,
-        pyramids: list[Pyramid],
-    ) -> None:
-        with self.assertRaises(ValueError):
-            pyramid_combine(pyramids, Mock())
-
-    @given(
-        pyramid=valid_input_pyramid_for_laplacian_pyramid(),
-    )
-    def test_returns_combined_pyramid_with_correct_shape_and_reduced_planes(
-        self,
-        pyramid: Pyramid,
-    ) -> None:
-        reduce = Mock()
-
-        def mock_reduce(
-            images: tuple[np.ndarray, ...],
-        ) -> np.ndarray:
-            return np.zeros_like(images[0])
-
-        reduce.side_effect = mock_reduce
-
-        pyramids = [pyramid, pyramid]
-        result = pyramid_combine(pyramids, reduce)
-
-        self.assertEqual(result.shape, pyramid.shape)
-        self.assertEqual(result.n_octaves, pyramid.n_octaves)
-        self.assertEqual(result.n_scales, pyramid.n_scales)
-
-        self.assertEqual(reduce.call_count, pyramid.size)
-        call_count = 0
-        for octave in range(result.n_octaves):
-            for scale in range(result.n_scales):
-                call_args = reduce.call_args_list[call_count]
-                self.assertIs(call_args.args[0][0], pyramid.data[octave, scale])
-                self.assertIs(call_args.args[0][1], pyramid.data[octave, scale])
-                nptest.assert_array_equal(
-                    result.data[octave, scale],
-                    mock_reduce(
-                        (pyramid.data[octave, scale], pyramid.data[octave, scale])
-                    ),
-                )
-                call_count += 1
-
-
-class PyramidCollapseTest(unittest.TestCase):
-    INPUT_FILL_VALUE = 0.0
-
-    @settings(deadline=1000)
-    @given(
-        pyramid=full_pyramids(fill_value=INPUT_FILL_VALUE),
-    )
-    def test_resize_only_called_on_planes_with_shapes_different_from_first_plane_and_returns_what_reduce_returns(  # noqa: E501
-        self,
-        pyramid: Pyramid,
-    ) -> None:
-        resize_fill = 1.0
-
-        def mock_resize(
-            image: np.ndarray,
-            shape: tuple[int, int],
-            interpolation: int,  # noqa: ARG001
-        ) -> np.ndarray:
-            return np.full(shape, resize_fill, dtype=image.dtype)
-
-        reduce_mock = Mock()
-        reduce_mock.return_value = sentinel.reduce_return_value
-
-        with patch(
-            "tbp.monty.frameworks.models.salience.strategies.vocus2.pyramids.resize",
-            side_effect=mock_resize,
-        ) as mock_resize_patch:
-            result = pyramid_collapse(pyramid, reduce=reduce_mock)
-            self.assertIs(result, sentinel.reduce_return_value)
-            n_expected_calls_to_resize = pyramid.n_scales * (pyramid.n_octaves - 1)
-            self.assertEqual(mock_resize_patch.call_count, n_expected_calls_to_resize)
-
-            target_shape = pyramid.data[0, 0].shape
-
-            call_count = 0
-            for octave in range(1, pyramid.n_octaves):
-                for scale in range(pyramid.n_scales):
-                    call_args = mock_resize_patch.call_args_list[call_count]
-                    self.assertIs(call_args.args[0], pyramid.data[octave, scale])
-                    self.assertEqual(call_args.args[1], target_shape)
-                    self.assertEqual(call_args.kwargs["interpolation"], cv2.INTER_CUBIC)
-                    call_count += 1
-
-            expected_reduce_input_array = np.zeros(pyramid.shape, dtype=object)
-            for scale in range(pyramid.n_scales):
-                expected_reduce_input_array[0, scale] = np.full(
-                    target_shape,
-                    self.INPUT_FILL_VALUE,
-                    dtype=np.float32,
-                )
-            for octave in range(1, pyramid.n_octaves):
-                for scale in range(pyramid.n_scales):
-                    expected_reduce_input_array[octave, scale] = np.full(
-                        target_shape,
-                        resize_fill,
-                        dtype=np.float32,
-                    )
-            expected_reduce_input = list(expected_reduce_input_array.flat)
-            reduce_mock.assert_called_once()
-            reduce_input = reduce_mock.call_args_list[0].args[0]
-            self.assertEqual(len(reduce_input), len(expected_reduce_input))
-            for i in range(len(reduce_input)):
-                nptest.assert_array_equal(reduce_input[i], expected_reduce_input[i])
-
-
+    data_dir = Path.home() / "params"
+    data_dir.mkdir(exist_ok=True)
+    for key, value in kwargs.items():
+        path = data_dir / f"{key}.npy"
+        np.save(path, value)

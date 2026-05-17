@@ -71,26 +71,26 @@ class Pyramid:
 
 
 def pyramid_octave_shapes(
-    image_shape: Resolution2D,
+    image_shape: tuple[int, int],
     max_octaves: int | None = None,
 ) -> list[Resolution2D]:
     """Compute the shapes of the pyramid levels.
 
     Args:
-        image_shape: The shape of the image from which the pyramid will be built.
+        image_shape: The shape of the plane from which the pyramid will be built.
         max_octaves: The maximum number of levels in the pyramid.
 
     Returns:
-        A list of tuples, each containing the shape of a pyramid level.
+        A list of resolutions, each being the image shape for a pyramid's octave.
     """
-    max_actual_octaves = int(np.log2(min(image_shape))) + 1
+    max_possible_octaves = int(np.log2(min(image_shape))) + 1
     if max_octaves is not None:
-        max_actual_octaves = min(max_octaves, max_actual_octaves)
+        max_possible_octaves = min(max_octaves, max_possible_octaves)
 
     cur_shape = image_shape
     shapes: list[Resolution2D] = []
-    while len(shapes) < max_actual_octaves and min(cur_shape) >= 1:
-        shapes.append(cast("Resolution2D", cur_shape))
+    while len(shapes) < max_possible_octaves and min(cur_shape) >= 1:
+        shapes.append(cur_shape)
         cur_shape = (cur_shape[0] // 2, cur_shape[1] // 2)
 
     return shapes
@@ -128,8 +128,8 @@ def gaussian_pyramid(
         raise ValueError(f"Image must be 2D. Has shape {image.shape}.")
 
     # Calculate maximum number of octaves
-    shapes = pyramid_octave_shapes(
-        cast("Resolution2D", image.shape), max_octaves=max_octaves
+    shapes: list[tuple[int, int]] = pyramid_octave_shapes(
+        image.shape, max_octaves=max_octaves
     )
 
     # Compute pyramid as in Lowe 2004
@@ -145,7 +145,7 @@ def gaussian_pyramid(
             # First scale of other octaves: subsample additional scale of previous
             elif octave > 0 and scale == 0:
                 src = data[octave - 1, n_scales]
-                dst = resize(src, shapes[octave])
+                dst = resize(src, shapes[octave], interpolation=cv2.INTER_AREA)
 
             # Intermediate scales: smooth previous scale
             else:
@@ -232,7 +232,9 @@ def laplacian_pyramid(pyr: Pyramid) -> Pyramid:
         for octave in range(lap_octaves):
             center = pyr.data[octave, scale]
             surround = resize(
-                pyr.data[octave + 1, scale], center.shape, interpolation=cv2.INTER_CUBIC
+                pyr.data[octave + 1, scale],
+                center.shape,
+                interpolation=cv2.INTER_CUBIC,
             )
             lap[octave, scale] = center - surround
 
