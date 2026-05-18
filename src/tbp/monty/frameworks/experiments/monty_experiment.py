@@ -341,19 +341,18 @@ class MontyExperiment:
         logger.info("logger initialized")
         logger.debug(pprint.pformat(self.config))
 
-        # TODO: Migrate the rest of the configuration to use this
-        if "dict_config" in logging_config:
+        # Allow loading additional Python logging configurations from the
+        # Hydra configuration.
+        final_config = {
             # Specify some defaults so we don't have to remember to configure
             # them in Hydra.
-            final_config = {
-                "version": 1,
-                # TODO: This can be removed if we configure all the loggers via
-                #   the dictConfig call below.
-                "incremental": True,
-            }
-            dict_config = logging_config["dict_config"]
-            final_config.update(dict_config)
-            logging.config.dictConfig(final_config)
+            "version": 1,
+            # TODO: This can be removed if we configure all the loggers via
+            #   the dictConfig call below.
+            "incremental": True,
+        }
+        final_config.update(logging_config)
+        logging.config.dictConfig(final_config)
 
     def init_monty_data_loggers(self, logging_config: dict[str, Any]) -> None:
         """Initialize Monty data loggers.
