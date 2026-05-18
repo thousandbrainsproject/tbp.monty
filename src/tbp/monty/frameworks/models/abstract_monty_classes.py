@@ -272,10 +272,6 @@ class LearningModule(metaclass=abc.ABCMeta):
     ###
     # Methods that interact with the experiment
     ###
-    @abc.abstractmethod
-    def reset(self):
-        """Do things like reset buffers or possible_matches before training."""
-        pass
 
     @abc.abstractmethod
     def reset_stm(self) -> None:

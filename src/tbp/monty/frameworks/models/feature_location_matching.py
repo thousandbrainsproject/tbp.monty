@@ -101,8 +101,12 @@ class FeatureGraphLM(GraphLM):
     # =============== Public Interface Functions ===============
 
     # ------------------- Main Algorithm -----------------------
+
     def reset(self):
-        """Call this before each episode."""
+        """Reset initial hypotheses.
+
+        Called by `GraphLM.reset_stm()`.
+        """
         (
             self.possible_matches,
             self.possible_paths,

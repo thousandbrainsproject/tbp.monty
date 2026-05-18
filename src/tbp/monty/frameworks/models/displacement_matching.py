@@ -73,7 +73,10 @@ class DisplacementGraphLM(GraphLM):
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
     def reset(self):
-        """Call this before each episode."""
+        """Reset initial hypotheses.
+
+        Called by `GraphLM.reset_stm()`.
+        """
         # reset possible matches for paths on objects
         (
             self.possible_matches,

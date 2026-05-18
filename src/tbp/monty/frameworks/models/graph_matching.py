@@ -559,8 +559,9 @@ class GraphLM(LearningModule):
     # =============== Public Interface Functions ===============
 
     # ------------------- Main Algorithm -----------------------
+
     def reset(self):
-        """NOTE: currently not used in public interface.
+        """Reset initial hypotheses.
 
         TODO integrate this into `reset_stm` and/or `fixme_reset_ground_truth`?
         """
@@ -575,10 +576,6 @@ class GraphLM(LearningModule):
         self.buffer.reset()
         if self.gsg is not None:
             self.gsg.reset()
-        # self.primary_target = primary_target["object"]
-        # self.primary_target_rotation_quat = primary_target["quat_rotation"]
-        # self.stepwise_target_object = None
-        # self.stepwise_targets_list = []
         self.terminal_state = None
         self.detected_object = None
         self.detected_pose = [None for _ in range(7)]
@@ -600,10 +597,6 @@ class GraphLM(LearningModule):
             self.primary_target_rotation_quat = primary_target["quat_rotation"]
         self.stepwise_target_object = None
         self.stepwise_targets_list = []
-        # self.terminal_state = None
-        # self.detected_object = None
-        # self.detected_pose = [None for _ in range(7)]
-        # self.detected_rotation_r = None
 
     def matching_step(
         self,
