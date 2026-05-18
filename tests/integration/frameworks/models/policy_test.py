@@ -257,7 +257,9 @@ class PolicyTest(unittest.TestCase):
                 "motor_system_config"
             ].policy_selector.policy.desired_object_distance
         )
-        exp: MontyExperiment = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.experiment)
+        exp: MontyExperiment = hydra.utils.instantiate(
+            self.surf_poor_initial_view_cfg.experiment
+        )
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -302,7 +304,9 @@ class PolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness and large saccade sizes, so
         that we are guaranteed to move off of the cube.
         """
-        exp: MontyExperiment = hydra.utils.instantiate(self.dist_fixed_action_cfg.experiment)
+        exp: MontyExperiment = hydra.utils.instantiate(
+            self.dist_fixed_action_cfg.experiment
+        )
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -421,7 +425,9 @@ class PolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness, so that we are guaranteed to move
         off of the cube.
         """
-        exp: MontyExperiment = hydra.utils.instantiate(self.surf_fixed_action_cfg.experiment)
+        exp: MontyExperiment = hydra.utils.instantiate(
+            self.surf_fixed_action_cfg.experiment
+        )
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -568,7 +574,9 @@ class PolicyTest(unittest.TestCase):
         Begins the episode by facing a cube whose surface is pointing away from
         the agent at an odd angle.
         """
-        exp: MontyExperiment = hydra.utils.instantiate(self.rotated_cube_view_cfg.experiment)
+        exp: MontyExperiment = hydra.utils.instantiate(
+            self.rotated_cube_view_cfg.experiment
+        )
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)

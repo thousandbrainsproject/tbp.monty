@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 import torch
