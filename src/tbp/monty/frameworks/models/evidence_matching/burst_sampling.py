@@ -613,7 +613,6 @@ class BurstSamplingHypothesesUpdater:
                 channel_feature_weights=self.feature_weights[input_channel],
                 channel_query_features=features,
                 channel_tolerances=self.tolerances[input_channel],
-                input_channel=input_channel,
             )
             # Find the indices for the nodes with highest evidence scores. The sorting
             # is done in ascending order, so extract the indices from the end of

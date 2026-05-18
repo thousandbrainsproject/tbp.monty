@@ -283,8 +283,13 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def post_episode(self):
-        """Do things like update object models with stored data after an episode."""
+    def update_ltm_from_stm(self):
+        """Update long-term memory from short-term memory buffer."""
+        pass
+
+    @abc.abstractmethod
+    def fixme_update_ground_truth(self):
+        """Update internal state based on ground truth."""
         pass
 
     @abc.abstractmethod
@@ -356,11 +361,6 @@ class LMMemory(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_memory(self, observations):
         """Update models stored in memory given new observation & classification."""
-        pass
-
-    @abc.abstractmethod
-    def memory_consolidation(self):
-        """Consolidate/clean up models stored in memory."""
         pass
 
     ###

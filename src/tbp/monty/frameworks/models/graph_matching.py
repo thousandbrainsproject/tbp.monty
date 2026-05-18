@@ -629,11 +629,15 @@ class GraphLM(LearningModule):
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(observations)
 
-    def post_episode(self):
-        """If training, update memory after each episode."""
+    def update_ltm_from_stm(self):
+        """If training, update memory from buffer."""
         if self.mode is ExperimentMode.TRAIN and len(self.buffer) > 0:
             logger.info(f"\n---Updating memory of {self.learning_module_id}---")
             self._update_memory()
+
+    def fixme_update_ground_truth(self):
+        """If training, update ground truth."""
+        if self.mode is ExperimentMode.TRAIN and len(self.buffer) > 0:
             self._update_target_graph_mapping(self.detected_object, self.primary_target)
 
     def send_out_vote(self):
@@ -1152,18 +1156,6 @@ class GraphMemory(LMMemory):
                         graph_id,
                         input_channel,
                     )
-
-    def memory_consolidation(self):
-        """Is here just as a placeholder.
-
-        This could be a function that cleans up graphs in memory to make
-        more efficient use of their nodes by spacing them out evenly along
-        the approximated object surface. It could be something that happens
-        during sleep. During clean up, similar graphs could also be merged.
-
-        Q: Should we implement something like this?
-        """
-        raise NotImplementedError("memory_consolidation has not been implemented yet.")
 
     def initialize_feature_arrays(self):
         for graph_id in self.get_memory_ids():

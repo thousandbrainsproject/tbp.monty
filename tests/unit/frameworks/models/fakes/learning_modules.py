@@ -49,7 +49,10 @@ class FakeLearningModule(LearningModule):
     def pre_episode(self) -> None:
         pass
 
-    def post_episode(self):
+    def update_ltm_from_stm(self):
+        pass
+
+    def fixme_update_ground_truth(self):
         pass
 
     def set_experiment_mode(self, mode: ExperimentMode):

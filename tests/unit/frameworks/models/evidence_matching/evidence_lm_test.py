@@ -69,7 +69,8 @@ class EvidenceLMTest(BaseGraphTest):
             len(fake_obs),
             f"Should have stored exactly {fake_obs} locations in the buffer.",
         )
-        graph_lm.post_episode()
+        graph_lm.update_ltm_from_stm()
+        graph_lm.fixme_update_ground_truth()
         self.assertEqual(
             len(graph_lm.get_all_known_object_ids()),
             1,
@@ -118,7 +119,8 @@ class EvidenceLMTest(BaseGraphTest):
             len(fake_obs_two),
             f"Should have stored exactly {fake_obs_two} locations in the buffer.",
         )
-        graph_lm.post_episode()
+        graph_lm.update_ltm_from_stm()
+        graph_lm.fixme_update_ground_truth()
         self.assertEqual(
             len(graph_lm.get_all_known_object_ids()),
             2,

@@ -581,7 +581,8 @@ class GraphLearningTest(BaseGraphTest):
             graph_lm.buffer.get_current_location(input_channel="first")
         )
 
-        graph_lm.post_episode()
+        graph_lm.update_ltm_from_stm()
+        graph_lm.fixme_update_ground_truth()
         return offset_obs
 
     def get_gm_with_fake_object(self):

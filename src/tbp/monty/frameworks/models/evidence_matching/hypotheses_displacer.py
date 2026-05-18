@@ -313,7 +313,6 @@ class DefaultHypothesesDisplacer:
                 channel_feature_weights=self.feature_weights[input_channel],
                 channel_query_features=channel_features,
                 channel_tolerances=self.tolerances[input_channel],
-                input_channel=input_channel,
             )
             hypothesis_radius_feature_evidence = node_feature_evidence[nearest_node_ids]
             # Set feature evidence of nearest neighbors that are too far away to 0

@@ -388,9 +388,11 @@ class MontyBase(Monty):
         self._goals = []
 
     def post_episode(self):
+        # At the end of an episode we ask each learning module
+        # to update their long-term memory from their short-term buffer.
         for lm in self.learning_modules:
-            lm.post_episode()
-        # for sm in self.sensor_modules: sm.post_episode() unused & removed
+            lm.update_ltm_from_stm()
+            lm.fixme_update_ground_truth()
 
     ###
     # Methods for saving and loading
