@@ -397,9 +397,21 @@ def orientation_box_salience_setup(
     center_sigma, surround_sigma = draw(cs_sigmas)
 
     # Create image that has a box with a sinusoidal grating in it.
-    box_width = min(resolution) // 2
+    min_box_width = round(2 * center_sigma)
+    max_box_width = min(resolution) // 2
+    box_width = draw(st.integers(min_value=min_box_width, max_value=max_box_width))
     box_height = box_width
-    box_center = (resolution[0] // 2, resolution[1] // 2)
+
+    min_box_y = box_height // 2
+    max_box_y = resolution[0] - box_height // 2
+    box_y = draw(st.integers(min_value=min_box_y, max_value=max_box_y))
+
+    min_box_x = box_width // 2
+    max_box_x = resolution[1] - box_width // 2
+    box_x = draw(st.integers(min_value=min_box_x, max_value=max_box_x))
+
+    box_center = (box_y, box_x)
+
     box = rectangular_mask(
         resolution=resolution,
         center=box_center,
