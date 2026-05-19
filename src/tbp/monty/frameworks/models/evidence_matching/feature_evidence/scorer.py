@@ -51,10 +51,10 @@ class FeatureEvidenceScorer(Protocol):
 class DefaultFeatureEvidenceScorer(FeatureEvidenceScorer):
     """Default scorer that calculates the feature evidence for a given channel.
 
-    The feature evidence is a score between 0 and 1 that indicates how well the observed
-    features match the stored features. If  the channel is used for matching, the score
-    is calculated by the feature evidence calculator and multiplied by the feature
-    evidence increment. Otherwise, all zeros are returned.
+    The feature evidence is a value between 0 and 1 that indicates how well the observed
+    features match the stored features. If  the channel is used for matching, the
+    evidence is calculated by the feature evidence calculator and multiplied by the
+    feature evidence increment. Otherwise, all zeros are returned.
     """
 
     def __init__(
