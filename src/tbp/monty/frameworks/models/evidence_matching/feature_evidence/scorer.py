@@ -27,7 +27,15 @@ from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
 
 
 class FeatureEvidenceScorer(Protocol):
-    """A scorer that calculates the feature evidence for a given channel."""
+    """A scorer that calculates the feature evidence for a given channel.
+
+    TODO: "FeatureEvidenceScorer" is not a great name and should be considered a
+    placeholder. The name was created during refactoring of common functionality
+    to improve dependency injection in hypotheses updater and displacer code. Once the
+    refactoring is complete and dependency injection improved, we should reconsider
+    whether this functionality should be bundled together in a single class and if so,
+    what a better name would be.
+    """
 
     def __call__(
         self,
