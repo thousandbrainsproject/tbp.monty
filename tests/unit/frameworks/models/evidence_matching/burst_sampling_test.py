@@ -640,7 +640,6 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         num_nodes = 5
         sample_count = 4  # Request 4 hypotheses (2 nodes * 2 hyps/node)
 
-        # Set up graph memory mocks
         mock_graph_memory = Mock()
         mock_graph_memory.get_feature_array = Mock(
             return_value={"patch": np.zeros((num_nodes, 3))}
@@ -651,11 +650,12 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
         )
-
         mock_calculator = Mock()
         mock_calculator.calculate = Mock(
             return_value=np.array([0.1, 0.5, 0.3, 0.9, 0.2])
         )
+        mock_selector = Mock(select=Mock(return_value={"patch": True}))
+
         updater = BurstSamplingHypothesesUpdater(
             feature_weights={"patch": {"feature1": 1.0}},
             graph_memory=mock_graph_memory,
@@ -664,6 +664,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             evidence_threshold_config="all",
             feature_evidence_calculator=mock_calculator,
             feature_evidence_increment=1,
+            features_for_matching_selector=mock_selector,
         )
 
         # Mock the hypotheses displacer
