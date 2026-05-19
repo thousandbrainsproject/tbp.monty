@@ -187,11 +187,7 @@ class ColorChannelSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-4
 
     @settings(deadline=1000)
-    @given(
-        setup=color_channel_salience_setup(
-            image=safe_solid_images(),
-        )
-    )
+    @given(setup=color_channel_salience_setup(image=safe_solid_images()))
     def test_solid_image_not_salient(
         self,
         setup: ColorChannelSalienceSetup,
@@ -202,12 +198,7 @@ class ColorChannelSalienceTest(unittest.TestCase):
         self.assertTrue(np.all(feature_map < self.MINIMUM_SALIENCE_THRESHOLD))
 
     @settings(deadline=1000)
-    @given(
-        setup=box_salience_setup(
-            on_value=1.0,
-            off_value=0.0,
-        )
-    )
+    @given(setup=box_salience_setup(on_value=1.0, off_value=0.0))
     def test_box_is_more_salient_than_surround(
         self,
         setup: ColorChannelSalienceSetup,
@@ -310,11 +301,7 @@ class DepthSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-4
 
     @settings(deadline=1000)
-    @given(
-        setup=depth_salience_setup(
-            image=safe_solid_images(),
-        )
-    )
+    @given(setup=depth_salience_setup(image=safe_solid_images()))
     def test_solid_image_not_salient(
         self,
         setup: DepthSalienceSetup,
@@ -325,12 +312,7 @@ class DepthSalienceTest(unittest.TestCase):
         self.assertTrue(np.all(feature_map < self.MINIMUM_SALIENCE_THRESHOLD))
 
     @settings(deadline=1000)
-    @given(
-        setup=depth_box_salience_setup(
-            on_value=0.5,
-            off_value=1.0,
-        )
-    )
+    @given(setup=depth_box_salience_setup(on_value=0.5, off_value=1.0))
     def test_box_is_more_salient_than_surround(
         self,
         setup: DepthSalienceSetup,
@@ -418,7 +400,6 @@ def orientation_box_salience_setup(
         width=box_width,
         height=box_height,
     )
-    grating_wavelength = 2 * center_sigma
     min_wavelength = 2 * center_sigma
     max_wavelength = box_width * 2
     grating_wavelength = draw(
@@ -458,11 +439,7 @@ class OrientationSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-4
 
     @settings(deadline=1000)
-    @given(
-        setup=orientation_salience_setup(
-            image=safe_solid_images(),
-        )
-    )
+    @given(setup=orientation_salience_setup(image=safe_solid_images()))
     def test_solid_image_not_salient(
         self,
         setup: OrientationSalienceSetup,
@@ -473,11 +450,7 @@ class OrientationSalienceTest(unittest.TestCase):
         self.assertTrue(np.all(feature_map < self.MINIMUM_SALIENCE_THRESHOLD))
 
     @settings(deadline=1000)
-    @given(
-        setup=orientation_box_salience_setup(
-            off_value=0.0,
-        )
-    )
+    @given(setup=orientation_box_salience_setup(off_value=0.0))
     def test_box_is_more_salient_than_surround(
         self,
         setup: OrientationSalienceSetup,

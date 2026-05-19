@@ -541,7 +541,7 @@ def default_cs_sigmas(
 def center_surround_pyramids_params(
     draw: st.DrawFn,
     image: st.SearchStrategy[npt.NDArray[np.float32]] | None = None,
-    cs_sigmas: st.SearchStrategy[tuple[float, float]] | None = None,  # noqa: E501
+    cs_sigmas: st.SearchStrategy[tuple[float, float]] | None = None,
 ) -> CenterSurroundPyramidsParams:
     """Generate parameters for calls to `gaussian_pyramid`.
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 import unittest
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, cast
+from typing import Callable
 from unittest.mock import Mock
 
 import numpy as np
@@ -19,7 +19,6 @@ import numpy.typing as npt
 import scipy.signal
 from hypothesis import given
 from hypothesis import strategies as st
-from hypothesis.extra.numpy import arrays
 
 from tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2 import (
     ColorChannelSalience,
@@ -29,12 +28,6 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2 import (
 from tbp.monty.frameworks.sensors import Resolution2D
 from tests.unit.frameworks.models.salience.strategies.vocus2.pyramids_test import (
     MAX_DIM_SIZE,
-    default_cs_sigmas,
-    default_image_values,
-    default_images,
-    default_max_octaves,
-    default_n_scales,
-    default_resolutions,
     solid_images,
 )
 

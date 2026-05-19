@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Iterator, Protocol, Sequence, cast
+from typing import Callable, Iterator, Protocol, Sequence
 
 import cv2
 import numpy as np
