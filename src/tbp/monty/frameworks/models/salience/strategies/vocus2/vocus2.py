@@ -85,19 +85,6 @@ class OperatingLimits(Protocol):
 
 
 class NoOperatingLimits(OperatingLimits):
-    def validate_center_and_surround_sigma(
-        self,
-        center_sigma: float,  # noqa: ARG002
-        surround_sigma: float,  # noqa: ARG002
-    ) -> ValueError | None:
-        return None
-
-    def validate_image_dim_size(
-        self,
-        image_dim_size: int,  # noqa: ARG002
-    ) -> ValueError | None:
-        return None
-
     @staticmethod
     def validate(
         min_image_dim_size: int,  # noqa: ARG004
@@ -109,56 +96,9 @@ class NoOperatingLimits(OperatingLimits):
 
 @dataclass(frozen=True)
 class SafeOperatingLimits(OperatingLimits):
-    min_center_sigma: float = 1.0
-    max_center_sigma: float = 6.0
-    max_surround_sigma: float = 12.0
-    center_surround_sigma_ratio: float = 1.6
-
     min_image_dim_size: int = 64
     min_fractional_sigma_separation: float = 0.01
     max_fractional_sigma: float = 1.0
-
-    @staticmethod
-    def validate_center_and_surround_sigma(
-        center_sigma: float,
-        surround_sigma: float,
-    ) -> ValueError | None:
-        if center_sigma < SafeOperatingLimits.min_center_sigma:
-            return ValueError(
-                "Center sigma must be greater than or equal to "
-                f"{SafeOperatingLimits.min_center_sigma}"
-            )
-        if center_sigma > SafeOperatingLimits.max_center_sigma:
-            return ValueError(
-                "Center sigma must be less than or equal to "
-                f"{SafeOperatingLimits.max_center_sigma}"
-            )
-
-        if (
-            surround_sigma
-            < center_sigma * SafeOperatingLimits.center_surround_sigma_ratio
-        ):
-            return ValueError(
-                "Surround sigma must be greater than or equal to "
-                f"{center_sigma * SafeOperatingLimits.center_surround_sigma_ratio}"
-            )
-        if surround_sigma > SafeOperatingLimits.max_surround_sigma:
-            return ValueError(
-                "Surround sigma must be less than or equal to "
-                f"{SafeOperatingLimits.max_surround_sigma}"
-            )
-        return None
-
-    @staticmethod
-    def validate_image_dim_size(
-        image_dim_size: int,
-    ) -> ValueError | None:
-        if image_dim_size < SafeOperatingLimits.min_image_dim_size:
-            return ValueError(
-                "Image dimension size must be greater than or equal to "
-                f"{SafeOperatingLimits.min_image_dim_size}"
-            )
-        return None
 
     @staticmethod
     def validate(

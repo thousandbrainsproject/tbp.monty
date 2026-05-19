@@ -16,7 +16,7 @@ import cv2
 import numpy as np
 import numpy.testing as nptest
 import numpy.typing as npt
-from hypothesis import given, settings
+from hypothesis import example, given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -547,10 +547,8 @@ def center_surround_pyramids_params(
 
     Args:
         draw: The hypothesis draw function.
-        image: A strategy for generating images or None. Defaults to
-          `random_images`.
-        cs_sigmas: A strategy for generating sigmas or None. Defaults to
-          `default_cs_sigmas`.
+        image: A strategy for generating images or None.
+        cs_sigmas: A strategy for generating sigmas or None.
 
     Returns:
         The parameters for a call to `gaussian_pyramid`.
@@ -654,6 +652,29 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(params=center_surround_pyramids_params(image=random_images()))
+    @example(
+        params=CenterSurroundPyramidsParams(
+            image=np.array(
+                [
+                    [
+                        0.5488135,
+                        0.71518934,
+                        0.60276335,
+                        0.5448832,
+                        0.4236548,
+                        0.6458941,
+                        0.4375872,
+                        0.891773,
+                    ]
+                ],
+                dtype=np.float32,
+            ),
+            center_sigma=1.0,
+            surround_sigma=1.01,
+            n_scales=4,
+            max_octaves=None,
+        )
+    )
     def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes_for_sufficiently_variable_image(  # noqa: E501
         self,
         params: CenterSurroundPyramidsParams,
