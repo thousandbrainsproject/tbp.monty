@@ -96,7 +96,8 @@ class DefaultHypothesesDisplacer:
             graph_memory: The graph memory to read graphs from.
             max_match_distance: Maximum distance of a tested and stored location
                 to be matched.
-            feature_evidence_scorer: Scorer that scores evidence for all nodes.
+            feature_evidence_scorer: Scorer that calculates evidence for all nodes in
+                an object model's graph for a given channel.
             max_nneighbors: Maximum number of nearest neighbors to consider in the
                 radius of a hypothesis for calculating the evidence. Defaults to 3.
             past_weight: How much should the evidence accumulated so far be
