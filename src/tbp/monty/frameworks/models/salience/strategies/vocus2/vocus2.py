@@ -383,6 +383,27 @@ class Vocus2SalienceConfig:
     use_orientation: bool = True
 
 
+class Normalize(Protocol):
+    def __call__(
+        self, salience_map: npt.NDArray[np.float32]
+    ) -> npt.NDArray[np.float32]: ...
+
+
+def no_normalize(salience_map: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
+    return salience_map
+
+
+def range_normalize(
+    salience_map: npt.NDArray[np.float32],
+) -> npt.NDArray[np.float32]:
+    salience_min = salience_map.min()
+    salience_max = salience_map.max()
+    scale = salience_max - salience_min
+    if np.isclose(scale, 0):
+        return np.clip(salience_map, 0, 1)
+    return (salience_map - salience_min) / scale
+
+
 class Vocus2(SalienceStrategy):
     def __init__(
         self,
@@ -391,7 +412,7 @@ class Vocus2(SalienceStrategy):
         orientation: OrientationSalience | None = None,
         color_space_converter: ColorSpaceConverter = rgb_to_opponent,
         combine: MapCombine | None = None,
-        normalize: bool = True,
+        normalize: Normalize = range_normalize,
     ):
         self._color = color
         self._depth = depth
@@ -492,14 +513,5 @@ class Vocus2(SalienceStrategy):
             feature_maps["orientation"] = self._orientation.process(ctx, L_center)
 
         salience_map = self._combine(feature_maps)
-
-        if self._normalize:
-            salience_min = salience_map.min()
-            salience_max = salience_map.max()
-            scale = salience_max - salience_min
-            if np.isclose(scale, 0):
-                salience_map = np.clip(salience_map, 0, 1)
-            else:
-                salience_map = (salience_map - salience_min) / scale
-
+        salience_map = self._normalize(salience_map)
         return salience_map.astype(np.float64)
