@@ -170,10 +170,6 @@ class SafeOperatingLimits(OperatingLimits):
         fractional_center_sigma = center_sigma / min_image_dim_size
         fractional_surround_sigma = surround_sigma / min_image_dim_size
 
-        # Check surround < center
-        if fractional_surround_sigma <= fractional_center_sigma:
-            return ValueError("Surround sigma must be greater than center sigma")
-
         # Check surround >= center + buffer
         if (
             fractional_surround_sigma
