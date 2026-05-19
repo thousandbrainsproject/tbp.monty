@@ -18,9 +18,11 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from scipy.ndimage import binary_dilation
 
+from tbp.monty.frameworks.models.salience.strategies.vocus2.pyramids import Pyramid
 from tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2 import (
     ColorChannelSalience,
     DepthSalience,
+    OrientationSalience,
     SafeOperatingLimits,
 )
 from tbp.monty.frameworks.sensors import Resolution2D
@@ -347,35 +349,140 @@ class DepthSalienceTest(unittest.TestCase):
         self.assertTrue(box_salience > surround_salience)
 
 
-# class ColorChannelSalienceWithoutOperatingLimitsTest(unittest.TestCase):
-#     @given(
-#         center_and_surround_sigmas=unsafe_center_and_surround_sigmas(),
-#     )
-#     def test_constructing_with_unsafe_sigmas_does_not_raise(
-#         self,
-#         center_and_surround_sigmas: tuple[float, float],
-#     ) -> None:
-#         center_sigma, surround_sigma = center_and_surround_sigmas
-#         ColorChannelSalience.without_operating_limits(
-#             center_sigma=center_sigma,
-#             surround_sigma=surround_sigma,
-#         )
+# --------------------------------------------------------------------------------------
+# Orientation Salience
+# --------------------------------------------------------------------------------------
 
-#     @given(
-#         image_and_processor=color_channel_salience_setup(
-#             color_channel_salience_processor_without_operating_limits,
-#             safe_filled_images(max_dim_size=SafeOperatingLimits.min_image_dim_size - 1),
-#         ),
-#         suppress_runtime_errors=st.booleans(),
-#     )
-#     def test_process_does_not_raise_value_error_if_image_has_smaller_dimension_than_min_safe_dim_size(  # noqa: E501
-#         self,
-#         image_and_processor: tuple[npt.NDArray[np.float32], ColorChannelSalience],
-#         suppress_runtime_errors: bool,
-#     ) -> None:
-#         image, processor = image_and_processor
-#         ctx = Mock(suppress_runtime_errors=suppress_runtime_errors)
-#         processor.process(ctx, image)
+
+@dataclass
+class OrientationSalienceSetup:
+    processor: OrientationSalience
+    pyramid: Pyramid
+    box: npt.NDArray[np.bool_] | None = None
+
+
+@st.composite
+def orientation_salience_setup(
+    draw: st.DrawFn,
+    image: st.SearchStrategy[npt.NDArray[np.float32]] | None = None,
+) -> OrientationSalienceSetup:
+    image = image or safe_images()
+    _image = draw(image)
+    center_sigma, surround_sigma = draw(safe_cs_sigmas(resolution=_image.shape))
+
+    # Create the input pyramid
+    color_channel_salience = ColorChannelSalience(
+        center_sigma=center_sigma,
+        surround_sigma=surround_sigma,
+        n_scales=draw(default_n_scales()),
+        max_octaves=draw(default_max_octaves(min_value=2)),
+        operating_limits=SafeOperatingLimits(),
+    )
+    _, input_pyramid = color_channel_salience.process(Mock(), _image)
+
+    return OrientationSalienceSetup(
+        processor=OrientationSalience(period=2 * center_sigma),
+        pyramid=input_pyramid,
+        box=None,
+    )
+
+
+@st.composite
+def orientation_box_salience_setup(
+    draw: st.DrawFn,
+    off_value: float = 0.0,
+) -> DepthSalienceSetup:
+    resolution = draw(safe_resolutions())
+    cs_sigmas = safe_cs_sigmas(resolution=resolution)
+    center_sigma, surround_sigma = draw(cs_sigmas)
+
+    # Create image that has a box with a sinusoidal grating in it.
+    box_width = min(resolution) // 2
+    box_height = box_width
+    box_center = (resolution[0] // 2, resolution[1] // 2)
+    box = rectangular_mask(
+        resolution=resolution,
+        center=box_center,
+        width=box_width,
+        height=box_height,
+    )
+    grating_wavelength = 2 * center_sigma
+    min_wavelength = 2 * center_sigma
+    max_wavelength = box_width * 2
+    grating_wavelength = draw(
+        st.floats(min_value=min_wavelength, max_value=max_wavelength)
+    )
+    grating_angle = draw(st.floats(min_value=0.0, max_value=180.0))
+    grating_image = generate_grating(
+        resolution=resolution,
+        wavelength=grating_wavelength,
+        angle_degrees=grating_angle,
+    )
+    grating_image[~box] = off_value
+
+    # Create the input pyramid for OrientationSalience
+    color_channel_salience = ColorChannelSalience(
+        center_sigma=center_sigma,
+        surround_sigma=surround_sigma,
+        n_scales=draw(default_n_scales()),
+        max_octaves=draw(default_max_octaves(min_value=2)),
+        operating_limits=SafeOperatingLimits(),
+    )
+
+    _, input_pyramid = color_channel_salience.process(Mock(), grating_image)
+
+    processor = OrientationSalience(
+        period=2 * center_sigma,
+    )
+
+    return OrientationSalienceSetup(
+        processor=processor,
+        pyramid=input_pyramid,
+        box=box,
+    )
+
+
+class OrientationSalienceTest(unittest.TestCase):
+    MINIMUM_SALIENCE_THRESHOLD = 1e-4
+
+    @settings(deadline=1000)
+    @given(
+        setup=orientation_salience_setup(
+            image=safe_solid_images(),
+        )
+    )
+    def test_solid_image_not_salient(
+        self,
+        setup: OrientationSalienceSetup,
+    ) -> None:
+        processor = setup.processor
+        pyramid = setup.pyramid
+        feature_map = processor.process(Mock(), pyramid)
+        self.assertTrue(np.all(feature_map < self.MINIMUM_SALIENCE_THRESHOLD))
+
+    @settings(deadline=1000)
+    @given(
+        setup=orientation_box_salience_setup(
+            off_value=0.0,
+        )
+    )
+    def test_box_is_more_salient_than_surround(
+        self,
+        setup: OrientationSalienceSetup,
+    ) -> None:
+        processor = setup.processor
+        pyramid = setup.pyramid
+        feature_map = processor.process(Mock(), pyramid)
+
+        box = setup.box
+        dilated = binary_dilation(box, iterations=5)
+        surround = ~dilated
+        surround = ~box
+
+        box_salience = feature_map[box].mean()
+        surround_salience = feature_map[surround].mean()
+        self.assertTrue(box_salience > surround_salience)
+
 
 
 def rectangular_mask(
@@ -399,3 +506,33 @@ def rectangular_mask(
     x2 = min(x + half_width, resolution[1])
     data[y1:y2, x1:x2] = True
     return data
+
+
+def generate_grating(
+    resolution: tuple[int, int],
+    wavelength: float,
+    angle_degrees: float,
+    phase: float = 0,
+) -> npt.NDArray[np.uint8]:
+    height, width = resolution
+    # Convert angle to radians
+    angle_rad = np.deg2rad(angle_degrees)
+
+    # Create coordinate grid
+    y, x = np.meshgrid(np.arange(height), np.arange(width), indexing="ij")
+
+    # Calculate orientation components
+    # Rotate the coordinates to orient the grating
+    x_prime = x * np.cos(angle_rad) + y * np.sin(angle_rad)
+
+    # Calculate the spatial frequency
+    frequency = 2 * np.pi / wavelength
+
+    # Evaluate the sinusoidal grating formula
+    # Output values are in the range [-1, 1]
+    grating = np.sin(frequency * x_prime + phase)
+
+    # Put in [0, 1] range
+    grating = (grating + 1) / 2
+
+    return grating.astype(np.float32)
