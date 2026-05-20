@@ -23,6 +23,9 @@ from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator i
     DefaultFeatureEvidenceCalculator,
     FeatureEvidenceCalculator,
 )
+from tbp.monty.frameworks.models.evidence_matching.feature_evidence.scorer import (
+    DefaultFeatureEvidenceScorer,
+)
 from tbp.monty.frameworks.models.evidence_matching.features_for_matching.selector import (  # noqa: E501
     DefaultFeaturesForMatchingSelector,
     FeaturesForMatchingSelector,
@@ -152,30 +155,28 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 the plane perpendicular to the surface normal. These are sampled at
                 umbilical points (i.e., points where PC directions are undefined).
         """
-        self.feature_evidence_calculator = feature_evidence_calculator
-        self.feature_evidence_increment = feature_evidence_increment
-        self.feature_weights = feature_weights
-        self.features_for_matching_selector = features_for_matching_selector
         self.graph_memory = graph_memory
         self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
-        self.tolerances = tolerances
         self.umbilical_num_poses = umbilical_num_poses
 
-        self.use_features_for_matching = self.features_for_matching_selector.select(
-            feature_evidence_increment=self.feature_evidence_increment,
-            feature_weights=self.feature_weights,
-            tolerances=self.tolerances,
+        # TODO: Dependency inject a constructed FeatureEvidenceScorer instead
+        self._feature_evidence_scorer = DefaultFeatureEvidenceScorer(
+            graph_memory=self.graph_memory,
+            feature_weights=feature_weights,
+            tolerances=tolerances,
+            feature_evidence_calculator=feature_evidence_calculator,
+            feature_evidence_increment=feature_evidence_increment,
+            features_for_matching_selector=features_for_matching_selector,
         )
-        self.hypotheses_displacer = DefaultHypothesesDisplacer(
-            feature_evidence_increment=self.feature_evidence_increment,
-            feature_weights=self.feature_weights,
+        # TODO: Dependency inject a constructed HypothesesDisplacer instead
+        self._hypotheses_displacer = DefaultHypothesesDisplacer(
+            feature_weights=feature_weights,
             graph_memory=self.graph_memory,
             max_match_distance=max_match_distance,
             max_nneighbors=max_nneighbors,
             past_weight=past_weight,
             present_weight=present_weight,
-            tolerances=self.tolerances,
-            use_features_for_matching=self.use_features_for_matching,
+            feature_evidence_scorer=self._feature_evidence_scorer,
         )
         self._initialized_channels: dict[str, set[str]] = {}
 
@@ -255,7 +256,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         # hypotheses should not be affected by the displacement from the last
         # sensory input.
         displaced_hypotheses, displacer_telemetry = (
-            self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
+            self._hypotheses_displacer.displace_hypotheses_and_compute_evidence(
                 displacement=displacement,
                 features=features,
                 evidence_update_threshold=evidence_update_threshold,
@@ -420,29 +421,18 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         # matching and skip this step. Doing matching with only morphology can
         # currently be achieved in two ways. Either we don't specify tolerances
         # and feature_weights or we set the global feature_evidence_increment to 0.
-        if self.use_features_for_matching[input_channel]:
-            # Get real valued features match for each node
-            node_feature_evidence = self.feature_evidence_calculator.calculate(
-                channel_feature_array=self.graph_memory.get_feature_array(graph_id)[
-                    input_channel
-                ],
-                channel_feature_order=self.graph_memory.get_feature_order(graph_id)[
-                    input_channel
-                ],
-                channel_feature_weights=self.feature_weights[input_channel],
-                channel_query_features=channel_features,
-                channel_tolerances=self.tolerances[input_channel],
-            )
-            # Stack node_feature_evidence to match possible poses
-            nwmf_stacked = []
-            for _ in range(
-                len(initial_possible_channel_rotations) // len(node_feature_evidence)
-            ):
-                nwmf_stacked.extend(node_feature_evidence)
-            # Add evidence if features match
-            evidence = np.array(nwmf_stacked) * self.feature_evidence_increment
-        else:
-            evidence = np.zeros(initial_possible_channel_rotations.shape[0])
+        node_feature_evidence = self._feature_evidence_scorer(
+            graph_id=graph_id,
+            input_channel=input_channel,
+            query_features=channel_features,
+        )
+        # Stack node_feature_evidence to match possible poses
+        nwmf_stacked = []
+        for _ in range(
+            len(initial_possible_channel_rotations) // len(node_feature_evidence)
+        ):
+            nwmf_stacked.extend(node_feature_evidence)
+        evidence = np.array(nwmf_stacked)
 
         # New hypotheses cannot be possible
         initial_possible_hyps = np.zeros_like(evidence, dtype=np.bool_)
