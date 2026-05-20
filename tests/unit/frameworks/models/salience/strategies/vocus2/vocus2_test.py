@@ -29,6 +29,7 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2 import (
     SafeOperatingLimits,
     Vocus2,
     Vocus2SalienceConfig,
+    range_normalize,
 )
 from tbp.monty.frameworks.sensors import Resolution2D
 from tests.unit.frameworks.models.salience.strategies.vocus2.pyramids_test import (
@@ -557,6 +558,7 @@ class Vocus2TestFromConfig(unittest.TestCase):
             orientation=sentinel.orientation,
             color_space_converter=rgb_to_opponent,
             combine=None,
+            normalize=range_normalize,
         )
 
     @patch(
@@ -603,6 +605,7 @@ class Vocus2TestFromConfig(unittest.TestCase):
             orientation=sentinel.orientation,
             color_space_converter=rgb_to_opponent,
             combine=None,
+            normalize=range_normalize,
         )
 
     @patch(
@@ -649,13 +652,14 @@ class Vocus2TestFromConfig(unittest.TestCase):
             orientation=None,
             color_space_converter=rgb_to_opponent,
             combine=None,
+            normalize=range_normalize,
         )
 
     @patch(
         "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.Vocus2",
         return_value=Mock(),
     )
-    def test_color_space_converter_and_combine_are_passed_to_constructor(
+    def test_color_space_converter_combine_and_normalize_are_passed_to_constructor(
         self,
         vocus2_mock: Mock,
     ) -> None:
@@ -666,6 +670,7 @@ class Vocus2TestFromConfig(unittest.TestCase):
             config,
             color_space_converter=sentinel.color_space_converter,
             combine=sentinel.combine,
+            normalize=sentinel.normalize,
         )
         vocus2_mock.assert_called_once_with(
             color=ANY,
@@ -673,4 +678,35 @@ class Vocus2TestFromConfig(unittest.TestCase):
             orientation=ANY,
             color_space_converter=sentinel.color_space_converter,
             combine=sentinel.combine,
+            normalize=sentinel.normalize,
         )
+
+
+class Vocus2Test(unittest.TestCase):
+    # @patch("cv2.split", return_value=Mock())
+    # def test_split(self, split_mock: Mock) -> None:
+    #     pass
+    def test_color_space_converts_rgba(self) -> None:
+        rgba = np.array([[[255, 0, 0, 255]]], dtype=np.uint8)
+        color_space_converter_mock = Mock()
+        vocus2 = Vocus2(color_space_converter=color_space_converter_mock)
+        vocus2(Mock(), rgba, Mock())
+        rgb = np.array([[[1.0, 0, 0]]], dtype=np.float32)
+        color_space_converter_mock.assert_called_once_with(rgb)
+
+    def test_creates_Lab_feature_maps(self) -> None:  # noqa: N802
+        pass
+
+    def test_creates_depth_feature_map_if_depth_processor_is_provided(self) -> None:
+        pass
+
+    def test_creates_orientation_feature_map_if_orientation_processor_is_provided(
+        self,
+    ) -> None:
+        pass
+
+    def test_combines_feature_maps(self) -> None:
+        pass
+
+    def test_normalizes_salience_map(self) -> None:
+        pass
