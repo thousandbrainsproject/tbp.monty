@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import unittest
 from dataclasses import dataclass
-from unittest.mock import Mock, patch, sentinel
+from unittest.mock import ANY, Mock, patch, sentinel
 
 import numpy as np
 import numpy.typing as npt
@@ -651,5 +651,26 @@ class Vocus2TestFromConfig(unittest.TestCase):
             combine=None,
         )
 
-    def test_color_space_converter_and_combine_are_passed_to_constructor(self) -> None:
-        pass
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.Vocus2",
+        return_value=Mock(),
+    )
+    def test_color_space_converter_and_combine_are_passed_to_constructor(
+        self,
+        vocus2_mock: Mock,
+    ) -> None:
+        config = Vocus2SalienceConfig()
+
+        Vocus2.from_config.__func__(
+            vocus2_mock,
+            config,
+            color_space_converter=sentinel.color_space_converter,
+            combine=sentinel.combine,
+        )
+        vocus2_mock.assert_called_once_with(
+            color=ANY,
+            depth=ANY,
+            orientation=ANY,
+            color_space_converter=sentinel.color_space_converter,
+            combine=sentinel.combine,
+        )
