@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import unittest
 from dataclasses import dataclass
-from unittest.mock import Mock
+from unittest.mock import Mock, patch, sentinel
 
 import numpy as np
 import numpy.typing as npt
@@ -18,12 +18,17 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from scipy.ndimage import binary_dilation
 
+from tbp.monty.frameworks.models.salience.strategies.vocus2.images import (
+    rgb_to_opponent,
+)
 from tbp.monty.frameworks.models.salience.strategies.vocus2.pyramids import Pyramid
 from tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2 import (
     ColorChannelSalience,
     DepthSalience,
     OrientationSalience,
     SafeOperatingLimits,
+    Vocus2,
+    Vocus2SalienceConfig,
 )
 from tbp.monty.frameworks.sensors import Resolution2D
 from tests.unit.frameworks.models.salience.strategies.vocus2.pyramids_test import (
@@ -452,7 +457,7 @@ class OrientationSalienceTest(unittest.TestCase):
         self.assertTrue(np.all(feature_map < self.MINIMUM_SALIENCE_THRESHOLD))
 
     @settings(deadline=1000)
-    @given(setup=orientation_box_salience_setup(off_value=0.0))
+    @given(setup=orientation_box_salience_setup())
     def test_box_is_more_salient_than_surround(
         self,
         setup: OrientationSalienceSetup,
@@ -492,3 +497,159 @@ def rectangular_mask(
     x2 = min(x + half_width, resolution[1])
     data[y1:y2, x1:x2] = True
     return data
+
+
+class Vocus2TestFromConfig(unittest.TestCase):
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.ColorChannelSalience",
+        return_value=Mock(),
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.DepthSalience",
+        return_value=Mock(),
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.OrientationSalience",
+        return_value=Mock(),
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.Vocus2",
+        return_value=Mock(),
+    )
+    def test_sigmas_scales_and_octaves_are_coupled_across_color_depth_and_orientation(
+        self,
+        vocus2_mock: Mock,
+        orientation_salience_mock: Mock,
+        depth_salience_mock: Mock,
+        color_channel_salience_mock: Mock,
+    ) -> None:
+        sentinel_center_sigma = 1.0
+        config = Vocus2SalienceConfig(
+            center_sigma=sentinel_center_sigma,
+            surround_sigma=sentinel.surround_sigma,
+            n_scales=sentinel.n_scales,
+            max_octaves=sentinel.max_octaves,
+        )
+        color_channel_salience_mock.return_value = sentinel.color
+        depth_salience_mock.return_value = sentinel.depth
+        orientation_salience_mock.return_value = sentinel.orientation
+
+        Vocus2.from_config.__func__(vocus2_mock, config)
+
+        color_channel_salience_mock.assert_called_once_with(
+            center_sigma=sentinel_center_sigma,
+            surround_sigma=sentinel.surround_sigma,
+            n_scales=sentinel.n_scales,
+            max_octaves=sentinel.max_octaves,
+        )
+        depth_salience_mock.assert_called_once_with(
+            center_sigma=sentinel_center_sigma,
+            surround_sigma=sentinel.surround_sigma,
+            n_scales=sentinel.n_scales,
+            max_octaves=sentinel.max_octaves,
+        )
+        orientation_salience_mock.assert_called_once_with(
+            period=2 * sentinel_center_sigma,
+        )
+        vocus2_mock.assert_called_once_with(
+            color=sentinel.color,
+            depth=sentinel.depth,
+            orientation=sentinel.orientation,
+            color_space_converter=rgb_to_opponent,
+            combine=None,
+        )
+
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.ColorChannelSalience",
+        return_value=Mock(),
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.DepthSalience",
+        return_value=Mock(),
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.OrientationSalience",
+        return_value=Mock(),
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.Vocus2",
+        return_value=Mock(),
+    )
+    def test_no_depth_if_use_depth_is_false(
+        self,
+        vocus2_mock: Mock,
+        orientation_salience_mock: Mock,
+        depth_salience_mock: Mock,
+        color_channel_salience_mock: Mock,
+    ) -> None:
+        sentinel_center_sigma = 1.0
+        config = Vocus2SalienceConfig(
+            center_sigma=sentinel_center_sigma,
+            surround_sigma=sentinel.surround_sigma,
+            n_scales=sentinel.n_scales,
+            max_octaves=sentinel.max_octaves,
+            use_depth=False,
+        )
+        color_channel_salience_mock.return_value = sentinel.color
+        depth_salience_mock.return_value = sentinel.depth
+        orientation_salience_mock.return_value = sentinel.orientation
+
+        Vocus2.from_config.__func__(vocus2_mock, config)
+
+        depth_salience_mock.assert_not_called()
+        vocus2_mock.assert_called_once_with(
+            color=sentinel.color,
+            depth=None,
+            orientation=sentinel.orientation,
+            color_space_converter=rgb_to_opponent,
+            combine=None,
+        )
+
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.ColorChannelSalience",
+        return_value=Mock(),
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.DepthSalience",
+        return_value=Mock(),
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.OrientationSalience",
+        return_value=Mock(),
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.Vocus2",
+        return_value=Mock(),
+    )
+    def test_no_orientation_if_use_orientation_is_false(
+        self,
+        vocus2_mock: Mock,
+        orientation_salience_mock: Mock,
+        depth_salience_mock: Mock,
+        color_channel_salience_mock: Mock,
+    ) -> None:
+        sentinel_center_sigma = 1.0
+        config = Vocus2SalienceConfig(
+            center_sigma=sentinel_center_sigma,
+            surround_sigma=sentinel.surround_sigma,
+            n_scales=sentinel.n_scales,
+            max_octaves=sentinel.max_octaves,
+            use_orientation=False,
+        )
+        color_channel_salience_mock.return_value = sentinel.color
+        depth_salience_mock.return_value = sentinel.depth
+        orientation_salience_mock.return_value = sentinel.orientation
+
+        Vocus2.from_config.__func__(vocus2_mock, config)
+
+        orientation_salience_mock.assert_not_called()
+        vocus2_mock.assert_called_once_with(
+            color=sentinel.color,
+            depth=sentinel.depth,
+            orientation=None,
+            color_space_converter=rgb_to_opponent,
+            combine=None,
+        )
+
+    def test_color_space_converter_and_combine_are_passed_to_constructor(self) -> None:
+        pass
