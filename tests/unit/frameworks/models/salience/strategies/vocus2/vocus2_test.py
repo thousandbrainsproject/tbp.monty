@@ -55,6 +55,24 @@ def safe_resolutions(
     width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
     return (height, width)
 
+@st.composite
+def unsafe_resolutions(draw: st.DrawFn) -> Resolution2D:
+    height = draw(
+        st.integers(
+            min_value=1,
+            max_value=SafeOperatingLimits.min_image_dim_size,
+            exclude_max=True,
+        )
+    )
+    width = draw(
+        st.integers(
+            min_value=1,
+            max_value=SafeOperatingLimits.min_image_dim_size,
+            exclude_max=True,
+        )
+    )
+    return (height, width)
+
 
 @st.composite
 def safe_cs_sigmas(
@@ -70,9 +88,23 @@ def safe_cs_sigmas(
     )
     return (center_sigma, surround_sigma)
 
-
-# Images
-# -----------------------------------------------------------------------------
+@st.composite
+def unsafe_cs_sigmas(
+    draw: st.DrawFn,
+    resolution: tuple[int, int],
+) -> tuple[float, float]:
+    min_dim_size = min(resolution)
+    # sigma > min_dim_size unsafe
+    # sigma in [0..1] unsafe
+    # surround <= center unsafe
+    center_sigma, surround_sigma = draw(
+        default_cs_sigmas(
+            resolution,
+            min_fractional_sigma_separation=SafeOperatingLimits.min_fractional_sigma_separation,
+            max_fractional_sigma=SafeOperatingLimits.max_fractional_sigma,
+        )
+    )
+    return (center_sigma, surround_sigma)
 
 
 @st.composite
@@ -222,11 +254,16 @@ class ColorChannelSalienceTest(unittest.TestCase):
         surround_salience = feature_map[surround].mean()
         self.assertTrue(box_salience > surround_salience)
 
-
-# --------------------------------------------------------------------------------------
-# Depth Salience
-# --------------------------------------------------------------------------------------
-
+    def test_constructing_with_unsafe_sigmas_raises_value_error(
+        self,
+        center_and_surround_sigmas: tuple[float, float],
+    ) -> None:
+        center_sigma, surround_sigma = center_and_surround_sigmas
+        with self.assertRaises(ValueError):
+            ColorChannelSalience(
+                center_sigma=center_sigma,
+                surround_sigma=surround_sigma,
+            )
 
 @dataclass
 class DepthSalienceSetup:
