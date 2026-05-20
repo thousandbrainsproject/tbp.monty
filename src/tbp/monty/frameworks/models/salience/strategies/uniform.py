@@ -14,7 +14,7 @@ import numpy.typing as npt
 from tbp.monty.frameworks.models.salience.strategies.protocol import SalienceStrategy
 
 
-class UniformSalienceStrategy(SalienceStrategy):
+class Uniform(SalienceStrategy):
     def __call__(
         self,
         rgba: npt.NDArray[np.int_],  # noqa: ARG002

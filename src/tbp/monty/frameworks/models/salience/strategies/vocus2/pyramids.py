@@ -15,9 +15,11 @@ import cv2
 import numpy as np
 import numpy.typing as npt
 
+from tbp.monty.frameworks.models.salience.strategies.vocus2.images import (
+    gaussian_blur,
+    resize,
+)
 from tbp.monty.frameworks.sensors import Resolution2D
-
-from .images import gaussian_blur, resize
 
 
 @dataclass(frozen=True)

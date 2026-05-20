@@ -7,6 +7,6 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 from .protocol import SalienceStrategy
-from .uniform import UniformSalienceStrategy
+from .uniform import Uniform
 
-__all__ = ["SalienceStrategy", "UniformSalienceStrategy"]
+__all__ = ["SalienceStrategy", "Uniform"]

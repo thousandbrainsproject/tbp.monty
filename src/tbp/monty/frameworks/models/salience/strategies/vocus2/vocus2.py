@@ -18,9 +18,11 @@ import numpy.typing as npt
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.salience.strategies import SalienceStrategy
-
-from .images import ColorSpaceConverter, rgb_to_opponent
-from .pyramids import (
+from tbp.monty.frameworks.models.salience.strategies.vocus2.images import (
+    ColorSpaceConverter,
+    rgb_to_opponent,
+)
+from tbp.monty.frameworks.models.salience.strategies.vocus2.pyramids import (
     Pyramid,
     PyramidCollapse,
     PyramidCombine,
