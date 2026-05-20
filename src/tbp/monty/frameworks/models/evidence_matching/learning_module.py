@@ -331,7 +331,6 @@ class EvidenceGraphLM(GraphLM):
     # =============== Public Interface Functions ===============
 
     # ------------------- Main Algorithm -----------------------
-
     def reset(self):
         """Reset evidence count and other variables."""
         # Now here, as opposed to the displacement and feature-location LMs,
