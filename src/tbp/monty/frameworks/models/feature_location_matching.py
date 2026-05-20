@@ -103,10 +103,7 @@ class FeatureGraphLM(GraphLM):
     # ------------------- Main Algorithm -----------------------
 
     def reset(self):
-        """Reset initial hypotheses.
-
-        Called by `GraphLM.reset_stm()`.
-        """
+        """Reset initial hypotheses."""
         (
             self.possible_matches,
             self.possible_paths,

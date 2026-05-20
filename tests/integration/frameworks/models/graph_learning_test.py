@@ -86,11 +86,11 @@ class TrainedGraphLM:
         return len(self.episodes)
 
     def reset_stm(self) -> None:
-        """Delegates pre_episode calls to the LM."""
+        """Reset short-term memory buffer."""
         self.learning_module.reset_stm()
 
     def fixme_reset_ground_truth(self, primary_target) -> None:
-        """Delegates pre_episode calls to the LM."""
+        """Reset internal state based on ground truth."""
         self.learning_module.fixme_reset_ground_truth(primary_target)
 
 
