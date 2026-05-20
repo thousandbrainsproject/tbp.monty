@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import unittest
 from dataclasses import dataclass
-from unittest.mock import ANY, Mock, patch, sentinel
+from unittest.mock import ANY, Mock, call, patch, sentinel
 
 import numpy as np
 import numpy.typing as npt
@@ -683,30 +683,164 @@ class Vocus2TestFromConfig(unittest.TestCase):
 
 
 class Vocus2Test(unittest.TestCase):
-    # @patch("cv2.split", return_value=Mock())
-    # def test_split(self, split_mock: Mock) -> None:
-    #     pass
     def test_color_space_converts_rgba(self) -> None:
-        rgba = np.array([[[255, 0, 0, 255]]], dtype=np.uint8)
+        color_mock = Mock()
+        color_mock.process.return_value = (Mock(), Mock())
+        Lab = np.array([[[1.0, 0, 0]]], dtype=np.float32)  # noqa: N806
         color_space_converter_mock = Mock()
-        vocus2 = Vocus2(color_space_converter=color_space_converter_mock)
-        vocus2(Mock(), rgba, Mock())
-        rgb = np.array([[[1.0, 0, 0]]], dtype=np.float32)
-        color_space_converter_mock.assert_called_once_with(rgb)
+        color_space_converter_mock.return_value = Lab
 
-    def test_creates_Lab_feature_maps(self) -> None:  # noqa: N802
-        pass
+        vocus2 = Vocus2(
+            color=color_mock,
+            color_space_converter=color_space_converter_mock,
+            combine=Mock(),
+            normalize=Mock(),
+        )
+
+        rgba = np.array([[[255, 0, 0, 255]]], dtype=np.uint8)
+
+        vocus2(Mock(), rgba, Mock())
+
+        color_space_converter_mock.assert_called_once()
+        call_args = color_space_converter_mock.call_args
+        self.assertTrue(np.allclose(call_args[0][0], rgba[:, :, :3]))
+
+    @patch("cv2.split", return_value=Mock())
+    def test_creates_Lab_feature_maps(self, split_mock: Mock) -> None:  # noqa: N802
+        split_mock.return_value = (sentinel.L, sentinel.a, sentinel.b)
+        color_mock = Mock()
+        color_mock.process.side_effect = [
+            (sentinel.L, sentinel.L_center),
+            (sentinel.a, Mock()),
+            (sentinel.b, Mock()),
+        ]
+        color_space_converter_mock = Mock()
+        combine_mock = Mock()
+
+        vocus2 = Vocus2(
+            color=color_mock,
+            color_space_converter=color_space_converter_mock,
+            combine=combine_mock,
+            normalize=Mock(),
+        )
+        rgba = np.array([[[255, 0, 0, 255]]], dtype=np.uint8)
+        ctx = Mock()
+
+        vocus2(ctx, rgba, Mock())
+
+        color_mock.process.assert_has_calls(
+            [
+                call(ctx, sentinel.L),
+                call(ctx, sentinel.a),
+                call(ctx, sentinel.b),
+            ]
+        )
+        combine_mock.assert_called_once_with(
+            {
+                "L": sentinel.L,
+                "a": sentinel.a,
+                "b": sentinel.b,
+            }
+        )
 
     def test_creates_depth_feature_map_if_depth_processor_is_provided(self) -> None:
-        pass
+        color_mock = Mock()
+        color_mock.process.return_value = (Mock(), Mock())
+        combine_mock = Mock()
+        depth_mock = Mock()
+        depth_mock.process.return_value = sentinel.depth_feature_map
+
+        vocus2 = Vocus2(
+            color=color_mock,
+            depth=depth_mock,
+            combine=combine_mock,
+            normalize=Mock(),
+        )
+        rgba = np.array([[[255, 0, 0, 255]]], dtype=np.uint8)
+        depth = Mock()
+        depth.astype.return_value = sentinel.depth
+        ctx = Mock()
+
+        vocus2(ctx, rgba, depth)
+
+        depth_mock.process.assert_called_once_with(ctx, sentinel.depth)
+        combine_mock.assert_called_once_with(
+            {
+                "L": ANY,
+                "a": ANY,
+                "b": ANY,
+                "depth": sentinel.depth_feature_map,
+            }
+        )
 
     def test_creates_orientation_feature_map_if_orientation_processor_is_provided(
         self,
     ) -> None:
-        pass
+        color_mock = Mock()
+        color_mock.process.side_effect = [
+            (Mock(), sentinel.L_center),
+            (Mock(), Mock()),
+            (Mock(), Mock()),
+        ]
+        combine_mock = Mock()
+        orientation_mock = Mock()
+        orientation_mock.process.return_value = sentinel.orientation_feature_map
+
+        vocus2 = Vocus2(
+            color=color_mock,
+            orientation=orientation_mock,
+            combine=combine_mock,
+            normalize=Mock(),
+        )
+        rgba = np.array([[[255, 0, 0, 255]]], dtype=np.uint8)
+        ctx = Mock()
+
+        vocus2(ctx, rgba, Mock())
+
+        orientation_mock.process.assert_called_once_with(ctx, sentinel.L_center)
+        combine_mock.assert_called_once_with(
+            {
+                "L": ANY,
+                "a": ANY,
+                "b": ANY,
+                "orientation": sentinel.orientation_feature_map,
+            }
+        )
 
     def test_combines_feature_maps(self) -> None:
-        pass
+        color_mock = Mock()
+        color_mock.process.side_effect = [
+            (sentinel.L, Mock()),
+            (sentinel.a, Mock()),
+            (sentinel.b, Mock()),
+        ]
+        depth_mock = Mock()
+        depth_mock.process.return_value = sentinel.depth_feature_map
+        orientation_mock = Mock()
+        orientation_mock.process.return_value = sentinel.orientation_feature_map
+        combine_mock = Mock()
+
+        vocus2 = Vocus2(
+            color=color_mock,
+            depth=depth_mock,
+            orientation=orientation_mock,
+            combine=combine_mock,
+            normalize=Mock(),
+        )
+        rgba = np.array([[[255, 0, 0, 255]]], dtype=np.uint8)
+        ctx = Mock()
+
+        vocus2(ctx, rgba, Mock())
+
+        combine_mock.assert_called_once_with(
+            {
+                "L": sentinel.L,
+                "a": sentinel.a,
+                "b": sentinel.b,
+                "depth": sentinel.depth_feature_map,
+                "orientation": sentinel.orientation_feature_map,
+            }
+        )
 
     def test_normalizes_salience_map(self) -> None:
         pass
