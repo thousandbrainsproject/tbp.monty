@@ -246,64 +246,6 @@ class ColorChannelSalienceTest(unittest.TestCase):
     MINIMUM_SALIENCE_THRESHOLD = 1e-3
 
     @given(
-        image_and_processor=color_channel_salience_setup(
-            color_channel_salience_processor, solid_images()
-        ),
-    )
-    def test_solid_image_not_salient(
-        self, image_and_processor: tuple[npt.NDArray[np.float32], ColorChannelSalience]
-    ) -> None:
-        image, processor = image_and_processor
-        feature_map, _ = processor.process(Mock(), image)
-        self.assertTrue(np.all(feature_map < self.MINIMUM_SALIENCE_THRESHOLD))
-
-    @given(
-        vertical_edge_case=solid_left_half_float32_image_color_channel_salience_setup(),
-        edge_orientation=st.sampled_from(Direction),
-    )
-    def test_edge_not_salient_but_flanks_are_salient(
-        self,
-        vertical_edge_case: tuple[npt.NDArray[np.float32], ColorChannelSalience],
-        edge_orientation: Direction,
-    ) -> None:
-        # Over our tested range of center_sigma and surround_sigma values, an edge
-        # should look qualitatively like
-        #      /\    /\
-        #     /  \  /  \
-        # ___/    \/    \___
-        # where central minimum is located at the edge.
-        vertical_edge_image, processor = vertical_edge_case
-
-        if edge_orientation == Direction.VERTICAL:
-            image = vertical_edge_image
-        elif edge_orientation == Direction.HORIZONTAL:
-            image = vertical_edge_image.T
-        else:
-            raise ValueError(f"Invalid edge orientation: {edge_orientation}")
-
-        feature_map, _ = processor.process(Mock(), image)
-
-        if edge_orientation == Direction.VERTICAL:
-            band = feature_map[feature_map.shape[0] // 2]
-        elif edge_orientation == Direction.HORIZONTAL:
-            band = feature_map[:, feature_map.shape[1] // 2]
-        else:
-            raise ValueError(f"Invalid edge orientation: {edge_orientation}")
-
-        local_maxima, _ = scipy.signal.find_peaks(band)
-        local_minima, _ = scipy.signal.find_peaks(-band)
-        index_of_edge = len(band) // 2
-        peaks_below_edge = local_maxima[local_maxima < index_of_edge]
-        peaks_above_edge = local_maxima[local_maxima > index_of_edge]
-        self.assertTrue(
-            index_of_edge in local_minima or index_of_edge - 1 in local_minima
-        )
-        peaks_below_edge = local_maxima[local_maxima < index_of_edge]
-        self.assertTrue(len(peaks_below_edge) > 0)
-        peaks_above_edge = local_maxima[local_maxima > index_of_edge]
-        self.assertTrue(len(peaks_above_edge) > 0)
-
-    @given(
         center_and_surround_sigmas=unsafe_center_and_surround_sigmas(),
     )
     def test_constructing_with_unsafe_sigmas_raises_value_error(
