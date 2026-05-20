@@ -439,6 +439,7 @@ class Vocus2(SalienceStrategy):
         config: Vocus2SalienceConfig,
         color_space_converter: ColorSpaceConverter = rgb_to_opponent,
         combine: MapCombine | None = None,
+        normalize: Normalize = range_normalize,
     ) -> Vocus2:
         """Create a Vocus2 salience strategy from a configuration.
 
@@ -450,6 +451,7 @@ class Vocus2(SalienceStrategy):
             config: The configuration to use.
             color_space_converter: The color space converter to use.
             combine: The combine function to use.
+            normalize: The normalization callable to use.
 
         Returns:
             A Vocus2 salience strategy.
@@ -486,6 +488,7 @@ class Vocus2(SalienceStrategy):
             orientation=orientation,
             color_space_converter=color_space_converter,
             combine=combine,
+            normalize=normalize,
         )
 
     def __call__(
