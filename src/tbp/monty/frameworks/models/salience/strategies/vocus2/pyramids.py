@@ -243,12 +243,6 @@ def laplacian_pyramid(pyr: Pyramid) -> Pyramid:
     return Pyramid(lap)
 
 
-"""
-- Operations on Pyramids
--------------------------------------------------------------------------------
-"""
-
-
 class PyramidCombine(Protocol):
     def __call__(self, pyramids: Sequence[Pyramid]) -> Pyramid: ...
 

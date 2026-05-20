@@ -514,7 +514,7 @@ class Vocus2TestFromConfig(unittest.TestCase):
         return_value=Mock(),
     )
     @patch(
-        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.Vocus2",
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2",
         return_value=Mock(),
     )
     def test_sigmas_scales_and_octaves_are_coupled_across_color_depth_and_orientation(
@@ -574,7 +574,7 @@ class Vocus2TestFromConfig(unittest.TestCase):
         return_value=Mock(),
     )
     @patch(
-        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.Vocus2",
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2",
         return_value=Mock(),
     )
     def test_no_depth_if_use_depth_is_false(
@@ -621,7 +621,7 @@ class Vocus2TestFromConfig(unittest.TestCase):
         return_value=Mock(),
     )
     @patch(
-        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.Vocus2",
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2",
         return_value=Mock(),
     )
     def test_no_orientation_if_use_orientation_is_false(
@@ -656,7 +656,7 @@ class Vocus2TestFromConfig(unittest.TestCase):
         )
 
     @patch(
-        "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.Vocus2",
+        "tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2",
         return_value=Mock(),
     )
     def test_color_space_converter_combine_and_normalize_are_passed_to_constructor(
