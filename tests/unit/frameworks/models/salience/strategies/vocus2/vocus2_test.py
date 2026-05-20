@@ -843,4 +843,22 @@ class Vocus2Test(unittest.TestCase):
         )
 
     def test_normalizes_salience_map(self) -> None:
-        pass
+        color_mock = Mock()
+        color_mock.process.return_value = (Mock(), Mock())
+        combine_mock = Mock()
+        combine_mock.return_value = sentinel.combined
+        normalize_mock = Mock()
+        normalize_return_mock = Mock()
+        normalize_return_mock.astype.return_value = sentinel.normalized
+        normalize_mock.return_value = normalize_return_mock
+        vocus2 = Vocus2(
+            color=color_mock,
+            combine=combine_mock,
+            normalize=normalize_mock,
+        )
+        rgba = np.array([[[255, 0, 0, 255]]], dtype=np.uint8)
+
+        result = vocus2(Mock(), rgba, Mock())
+
+        normalize_mock.assert_called_once_with(sentinel.combined)
+        self.assertIs(result, sentinel.normalized)
