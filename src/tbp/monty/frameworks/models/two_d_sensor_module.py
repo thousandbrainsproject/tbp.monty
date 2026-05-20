@@ -191,13 +191,16 @@ class TwoDSensorModule(SensorModule):
 
         observed_state = self._observation_processor.process(observation)
 
-        curvature_pose_vectors = observed_state.get_pose_vectors().copy()
-        true_surface_normal = observed_state.get_surface_normal().copy()
-
         # Only edges define pose for 2D sensor; reset curvature-based flag.
         observed_state.morphological_features["pose_fully_defined"] = False
 
+        curvature_pose_vectors = None
+        true_surface_normal = None
         if observed_state.use_state and observed_state.get_on_object():
+            # pose_vectors are only present when the patch center is on the object.
+            curvature_pose_vectors = observed_state.get_pose_vectors().copy()
+            true_surface_normal = observed_state.get_surface_normal().copy()
+
             self._update_tangent_frame(true_surface_normal)
             if self._extract_edges:
                 observed_state = self._extract_2d_edge(
