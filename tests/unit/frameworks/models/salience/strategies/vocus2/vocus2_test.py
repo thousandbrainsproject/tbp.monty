@@ -103,6 +103,50 @@ def safe_cs_sigmas(
 
 
 @st.composite
+def unsafe_cs_sigmas(
+    draw: st.DrawFn,
+    resolution: tuple[int, int],
+) -> tuple[float, float]:
+    min_dim_size = min(resolution)
+    min_fraction_center_sigma = 1.0 / min_dim_size
+    max_fraction_center_sigma = SafeOperatingLimits.max_fractional_central_sigma
+
+    fractional_center_sigma_too_low = st.floats(
+        min_value=0,
+        max_value=min_fraction_center_sigma,
+        exclude_max=True,
+    )
+    fractional_center_sigma_too_high = st.floats(
+        min_value=max_fraction_center_sigma,
+        max_value=SafeOperatingLimits.max_fractional_sigma,
+        exclude_min=True,
+    )
+    fractional_center_sigma = draw(
+        st.one_of(fractional_center_sigma_too_low, fractional_center_sigma_too_high)
+    )
+
+    fractional_surround_sigma_too_low = st.floats(
+        min_value=0,
+        max_value=fractional_center_sigma
+        + SafeOperatingLimits.min_fractional_sigma_separation,
+        exclude_max=True,
+    )
+    fractional_surround_sigma_too_high = st.floats(
+        min_value=fractional_center_sigma
+        + SafeOperatingLimits.min_fractional_sigma_separation,
+        max_value=2 * SafeOperatingLimits.max_fractional_sigma,
+        exclude_min=True,
+    )
+    fractional_surround_sigma = draw(
+        st.one_of(fractional_surround_sigma_too_low, fractional_surround_sigma_too_high)
+    )
+
+    center_sigma = fractional_center_sigma * min_dim_size
+    surround_sigma = fractional_surround_sigma * min_dim_size
+    return (center_sigma, surround_sigma)
+
+
+@st.composite
 def safe_images(draw: st.DrawFn) -> npt.NDArray[np.float32]:
     return draw(default_images(resolution=safe_resolutions()))
 
