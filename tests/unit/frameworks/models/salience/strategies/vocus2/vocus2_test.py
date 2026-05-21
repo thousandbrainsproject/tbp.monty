@@ -46,17 +46,22 @@ from tests.unit.frameworks.models.salience.strategies.vocus2.pyramids_test impor
 
 
 @st.composite
-def safe_resolutions(
-    draw: st.DrawFn,
-    min_dim_size: int = SafeOperatingLimits.min_image_dim_size,
-    max_dim_size: int = MAX_DIM_SIZE,
-) -> Resolution2D:
-    height = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
-    width = draw(st.integers(min_value=min_dim_size, max_value=max_dim_size))
+def safe_resolutions(draw: st.DrawFn) -> tuple[int, int]:
+    height = draw(
+        st.integers(
+            min_value=SafeOperatingLimits.min_image_dim_size, max_value=MAX_DIM_SIZE
+        )
+    )
+    width = draw(
+        st.integers(
+            min_value=SafeOperatingLimits.min_image_dim_size, max_value=MAX_DIM_SIZE
+        )
+    )
     return (height, width)
 
+
 @st.composite
-def unsafe_resolutions(draw: st.DrawFn) -> Resolution2D:
+def unsafe_resolutions(draw: st.DrawFn) -> tuple[int, int]:
     height = draw(
         st.integers(
             min_value=1,
@@ -88,6 +93,7 @@ def safe_cs_sigmas(
     )
     return (center_sigma, surround_sigma)
 
+
 @st.composite
 def unsafe_cs_sigmas(
     draw: st.DrawFn,
@@ -108,26 +114,15 @@ def unsafe_cs_sigmas(
 
 
 @st.composite
-def safe_images(
-    draw: st.DrawFn,
-    elements: st.SearchStrategy[float] | None = None,
-    unique: bool = False,
-) -> npt.NDArray[np.float32]:
-    return draw(
-        default_images(resolution=safe_resolutions(), elements=elements, unique=unique)
-    )
+def safe_images(draw: st.DrawFn) -> npt.NDArray[np.float32]:
+    return draw(default_images(resolution=safe_resolutions()))
 
 
 @st.composite
-def safe_solid_images(
-    draw: st.DrawFn,
-    elements: st.SearchStrategy[float] | None = None,
-) -> npt.NDArray[np.float32]:
-    elements = elements or default_image_values()
-    resolution = draw(safe_resolutions())
+def safe_solid_images(draw: st.DrawFn) -> npt.NDArray[np.float32]:
     return np.full(
-        resolution,
-        draw(elements),
+        draw(safe_resolutions()),
+        draw(default_image_values()),
         dtype=np.float32,
     )
 
@@ -139,11 +134,6 @@ def safe_filled_images(
 ) -> npt.NDArray[np.float32]:
     resolution = draw(safe_resolutions())
     return np.full(resolution, fill_value, dtype=np.float32)
-
-
-# --------------------------------------------------------------------------------------
-# Color Channel Salience
-# --------------------------------------------------------------------------------------
 
 
 @dataclass
