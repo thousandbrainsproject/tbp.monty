@@ -80,14 +80,28 @@ def safe_cs_sigmas(
     draw: st.DrawFn,
     resolution: tuple[int, int],
 ) -> tuple[float, float]:
-    center_sigma, surround_sigma = draw(
-        default_cs_sigmas(
-            resolution,
-            min_fractional_sigma_separation=SafeOperatingLimits.min_fractional_sigma_separation,
-            max_fractional_sigma=SafeOperatingLimits.max_fractional_sigma,
+    min_dim_size = min(resolution)
+    min_fraction_center_sigma = 1.0 / min_dim_size
+    max_fraction_center_sigma = SafeOperatingLimits.max_fractional_central_sigma
+    fractional_center_sigma = draw(
+        st.floats(
+            min_value=min_fraction_center_sigma, max_value=max_fraction_center_sigma
         )
     )
+
+    min_fractional_surround_sigma = (
+        fractional_center_sigma + SafeOperatingLimits.min_fractional_sigma_separation
+    )
+    fractional_surround_sigma = draw(
+        st.floats(
+            min_value=min_fractional_surround_sigma,
+            max_value=SafeOperatingLimits.max_fractional_sigma,
+        )
+    )
+    center_sigma = fractional_center_sigma * min_dim_size
+    surround_sigma = fractional_surround_sigma * min_dim_size
     return (center_sigma, surround_sigma)
+
 
 
 @st.composite

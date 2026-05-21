@@ -99,7 +99,8 @@ class NoOperatingLimits(OperatingLimits):
 @dataclass(frozen=True)
 class SafeOperatingLimits(OperatingLimits):
     min_image_dim_size: int = 64
-    min_fractional_sigma_separation: float = 0.01
+    min_fractional_sigma_separation: float = 0.02
+    max_fractional_central_sigma: float = 0.1
     max_fractional_sigma: float = 1.0
 
     @staticmethod
@@ -123,22 +124,31 @@ class SafeOperatingLimits(OperatingLimits):
                 "min_fractional_sigma_separation."
             )
 
-        # Check neither sigmas are outside of the allowed range.
-        sigma_info = [
-            (fractional_center_sigma, "Center"),
-            (fractional_surround_sigma, "Surround"),
-        ]
-        for fractional_sigma, sigma_name in sigma_info:
-            if fractional_sigma < min_fractional_sigma:
-                return ValueError(
-                    f"{sigma_name} sigma must be greater than or equal to "
-                    f"min fractional sigma ({min_fractional_sigma})"
-                )
-            if fractional_sigma > SafeOperatingLimits.max_fractional_sigma:
-                return ValueError(
-                    f"{sigma_name} sigma must be less than or equal to "
-                    f"max fractional sigma ({SafeOperatingLimits.max_fractional_sigma})"
-                )
+        # Check center sigma is within the allowed range.
+        center_min = min_image_dim_size * min_fractional_sigma
+        center_max = (
+            min_image_dim_size * SafeOperatingLimits.max_fractional_central_sigma
+        )
+        if not (center_min <= center_sigma <= center_max):
+            return ValueError(
+                f"When smallest image dimension is {min_image_dim_size}, "
+                f"Center sigma must be greater than or equal to {center_min} "
+                f"and less than or equal to {center_max}. You provided {center_sigma}."
+            )
+
+        # Check surround sigma is within the allowed range.
+        surround_min = min_image_dim_size * (
+            fractional_center_sigma
+            + SafeOperatingLimits.min_fractional_sigma_separation
+        )
+        surround_max = min_image_dim_size * SafeOperatingLimits.max_fractional_sigma
+        if not (surround_min <= surround_sigma <= surround_max):
+            return ValueError(
+                f"When smallest image dimension is {min_image_dim_size}, "
+                f"Surround sigma must be greater than or equal to {surround_min} "
+                f"and less than or equal to {surround_max}. "
+                f"You provided {surround_sigma}."
+            )
 
         return None
 
