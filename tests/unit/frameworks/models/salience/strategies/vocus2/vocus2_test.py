@@ -33,7 +33,6 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2 import (
 )
 from tests.unit.frameworks.models.salience.strategies.vocus2.pyramids_test import (
     MAX_DIM_SIZE,
-    default_cs_sigmas,
     default_image_values,
     default_images,
     default_max_octaves,
@@ -101,7 +100,6 @@ def safe_cs_sigmas(
     center_sigma = fractional_center_sigma * min_dim_size
     surround_sigma = fractional_surround_sigma * min_dim_size
     return (center_sigma, surround_sigma)
-
 
 
 @st.composite
