@@ -91,25 +91,6 @@ def safe_cs_sigmas(
 
 
 @st.composite
-def unsafe_cs_sigmas(
-    draw: st.DrawFn,
-    resolution: tuple[int, int],
-) -> tuple[float, float]:
-    min_dim_size = min(resolution)
-    # sigma > min_dim_size unsafe
-    # sigma in [0..1] unsafe
-    # surround <= center unsafe
-    center_sigma, surround_sigma = draw(
-        default_cs_sigmas(
-            resolution,
-            min_fractional_sigma_separation=SafeOperatingLimits.min_fractional_sigma_separation,
-            max_fractional_sigma=SafeOperatingLimits.max_fractional_sigma,
-        )
-    )
-    return (center_sigma, surround_sigma)
-
-
-@st.composite
 def safe_images(draw: st.DrawFn) -> npt.NDArray[np.float32]:
     return draw(default_images(resolution=safe_resolutions()))
 
@@ -240,16 +221,31 @@ class ColorChannelSalienceTest(unittest.TestCase):
         surround_salience = feature_map[surround].mean()
         self.assertTrue(box_salience > surround_salience)
 
-    def test_constructing_with_unsafe_sigmas_raises_value_error(
+    @given(image=default_images())
+    def test_sigmas_outside_of_operating_limits_raises_value_error_if_suppress_runtime_errors_is_false(  # noqa: E501
         self,
-        center_and_surround_sigmas: tuple[float, float],
+        image: npt.NDArray[np.float32],
     ) -> None:
-        center_sigma, surround_sigma = center_and_surround_sigmas
+        operating_limits = Mock()
+        operating_limits.validate.return_value = ValueError
+        color = ColorChannelSalience(operating_limits=operating_limits)
+        ctx = Mock(suppress_runtime_errors=False)
+
         with self.assertRaises(ValueError):
-            ColorChannelSalience(
-                center_sigma=center_sigma,
-                surround_sigma=surround_sigma,
-            )
+            color.process(ctx, image)
+
+    @settings(deadline=1000)
+    @given(image=default_images())
+    def test_sigmas_outside_of_operating_limits_does_not_raise_value_error_if_suppress_runtime_errors_is_true(  # noqa: E501
+        self,
+        image: npt.NDArray[np.float32],
+    ) -> None:
+        operating_limits = Mock()
+        operating_limits.validate.return_value = ValueError
+        color = ColorChannelSalience(operating_limits=operating_limits)
+        ctx = Mock(suppress_runtime_errors=True)
+
+        color.process(ctx, image)
 
 
 @dataclass
@@ -360,6 +356,31 @@ class DepthSalienceTest(unittest.TestCase):
         surround_salience = feature_map[surround].mean()
         self.assertTrue(box_salience > surround_salience)
 
+    @given(image=default_images())
+    def test_sigmas_outside_of_operating_limits_raises_value_error_if_suppress_runtime_errors_is_false(  # noqa: E501
+        self,
+        image: npt.NDArray[np.float32],
+    ) -> None:
+        operating_limits = Mock()
+        operating_limits.validate.return_value = ValueError
+        depth = DepthSalience(operating_limits=operating_limits)
+        ctx = Mock(suppress_runtime_errors=False)
+
+        with self.assertRaises(ValueError):
+            depth.process(ctx, image)
+
+    @settings(deadline=1000)
+    @given(image=default_images())
+    def test_sigmas_outside_of_operating_limits_does_not_raise_value_error_if_suppress_runtime_errors_is_true(  # noqa: E501
+        self,
+        image: npt.NDArray[np.float32],
+    ) -> None:
+        operating_limits = Mock()
+        operating_limits.validate.return_value = ValueError
+        depth = DepthSalience(operating_limits=operating_limits)
+        ctx = Mock(suppress_runtime_errors=True)
+
+        depth.process(ctx, image)
 
 @dataclass
 class OrientationSalienceSetup:
