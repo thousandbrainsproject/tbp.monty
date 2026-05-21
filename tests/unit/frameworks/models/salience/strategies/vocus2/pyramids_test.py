@@ -16,7 +16,7 @@ import cv2
 import numpy as np
 import numpy.testing as nptest
 import numpy.typing as npt
-from hypothesis import example, given, settings
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -577,7 +577,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         center_sigma=st.floats(min_value=1.0, max_value=10.0),
         ratio=st.floats(min_value=0.0, max_value=1.0),
     )
-    def test_raises_value_error_if_center_sigma_is_greater_than_or_equal_to_surround_sigma(
+    def test_raises_value_error_if_center_sigma_is_greater_than_or_equal_to_surround_sigma(  # noqa: E501
         self,
         center_sigma: float,
         ratio: float,
