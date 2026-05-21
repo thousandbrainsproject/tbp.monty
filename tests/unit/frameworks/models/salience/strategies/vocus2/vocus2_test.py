@@ -31,7 +31,6 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2 import (
     Vocus2SalienceConfig,
     range_normalize,
 )
-from tbp.monty.frameworks.sensors import Resolution2D
 from tests.unit.frameworks.models.salience.strategies.vocus2.pyramids_test import (
     MAX_DIM_SIZE,
     default_cs_sigmas,
@@ -40,9 +39,6 @@ from tests.unit.frameworks.models.salience.strategies.vocus2.pyramids_test impor
     default_max_octaves,
     default_n_scales,
 )
-
-# Parameters
-# -----------------------------------------------------------------------------
 
 
 @st.composite
@@ -255,6 +251,7 @@ class ColorChannelSalienceTest(unittest.TestCase):
                 surround_sigma=surround_sigma,
             )
 
+
 @dataclass
 class DepthSalienceSetup:
     processor: DepthSalience
@@ -362,11 +359,6 @@ class DepthSalienceTest(unittest.TestCase):
         box_salience = feature_map[box].mean()
         surround_salience = feature_map[surround].mean()
         self.assertTrue(box_salience > surround_salience)
-
-
-# --------------------------------------------------------------------------------------
-# Orientation Salience
-# --------------------------------------------------------------------------------------
 
 
 @dataclass
