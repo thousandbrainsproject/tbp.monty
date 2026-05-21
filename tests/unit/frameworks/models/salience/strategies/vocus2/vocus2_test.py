@@ -382,6 +382,7 @@ class DepthSalienceTest(unittest.TestCase):
 
         depth.process(ctx, image)
 
+
 @dataclass
 class OrientationSalienceSetup:
     processor: OrientationSalience
