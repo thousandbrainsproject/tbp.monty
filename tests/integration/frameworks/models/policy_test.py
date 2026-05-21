@@ -11,6 +11,8 @@
 import pytest
 
 from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
+from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.frameworks.models.motor_policies import (
     SurfacePolicyCurvatureInformed,
 )
@@ -255,7 +257,9 @@ class PolicyTest(unittest.TestCase):
                 "motor_system_config"
             ].policy_selector.policy.desired_object_distance
         )
-        exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.experiment)
+        exp: MontyExperiment = hydra.utils.instantiate(
+            self.surf_poor_initial_view_cfg.experiment
+        )
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -300,7 +304,9 @@ class PolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness and large saccade sizes, so
         that we are guaranteed to move off of the cube.
         """
-        exp = hydra.utils.instantiate(self.dist_fixed_action_cfg.experiment)
+        exp: MontyExperiment = hydra.utils.instantiate(
+            self.dist_fixed_action_cfg.experiment
+        )
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -419,7 +425,9 @@ class PolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness, so that we are guaranteed to move
         off of the cube.
         """
-        exp = hydra.utils.instantiate(self.surf_fixed_action_cfg.experiment)
+        exp: MontyExperiment = hydra.utils.instantiate(
+            self.surf_fixed_action_cfg.experiment
+        )
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -566,7 +574,9 @@ class PolicyTest(unittest.TestCase):
         Begins the episode by facing a cube whose surface is pointing away from
         the agent at an odd angle.
         """
-        exp = hydra.utils.instantiate(self.rotated_cube_view_cfg.experiment)
+        exp: MontyExperiment = hydra.utils.instantiate(
+            self.rotated_cube_view_cfg.experiment
+        )
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -880,7 +890,7 @@ class PolicyTest(unittest.TestCase):
     def core_evaluate_compute_goal_for_target_loc(
         self,
         ctx: RuntimeContext,
-        lm,
+        lm: LearningModule,
         policy,
         object_orientation,
         target_location_on_object,
@@ -938,7 +948,8 @@ class PolicyTest(unittest.TestCase):
             sender_type="SM",
         )
 
-        lm.pre_episode(
+        lm.reset_stm()
+        lm.fixme_reset_ground_truth(
             primary_target=dict(
                 object="dummy_object",
                 quat_rotation=[1.0, 0.0, 0.0, 0.0],  # Filler value

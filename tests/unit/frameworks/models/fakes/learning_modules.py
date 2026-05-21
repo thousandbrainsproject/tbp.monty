@@ -46,10 +46,16 @@ class FakeLearningModule(LearningModule):
         self.test_attr_1 = state_dict["test_attr_1"]
         self.test_attr_2 = state_dict["test_attr_2"]
 
-    def pre_episode(self) -> None:
+    def reset_stm(self) -> None:
         pass
 
-    def post_episode(self):
+    def fixme_reset_ground_truth(self, primary_target=None) -> None:
+        pass
+
+    def update_ltm_from_stm(self):
+        pass
+
+    def fixme_update_ground_truth(self):
         pass
 
     def set_experiment_mode(self, mode: ExperimentMode):

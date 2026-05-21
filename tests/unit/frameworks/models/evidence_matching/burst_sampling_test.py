@@ -6,6 +6,8 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -58,7 +60,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             # since we're not testing that.
             side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
         )
-        self.updater.hypotheses_displacer = hypotheses_displacer
+        self.updater._hypotheses_displacer = hypotheses_displacer
 
     def test_init_fails_when_passed_invalid_evidence_threshold_config(self) -> None:
         """Test that the updater only accepts "all" for evidence_threshold_config."""
@@ -583,24 +585,33 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         """
         sample_count = num_nodes * num_hyps_per_node
 
-        # Set up graph memory mocks
+        self.mock_graph_memory.get_feature_array = Mock(
+            return_value={"patch": np.zeros((num_nodes, 3))}
+        )
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
         )
+        mock_selector = Mock(select=Mock(return_value={"patch": False}))
 
-        # Set up updater with feature matching disabled
-        self.updater.use_features_for_matching = {"patch": False}
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights={},
+            graph_memory=self.mock_graph_memory,
+            max_match_distance=0,
+            tolerances={},
+            evidence_threshold_config="all",
+            features_for_matching_selector=mock_selector,
+        )
 
         # Use predefined poses to avoid needing rotation features
         euler_angles = [[0, 0, i * 30] for i in range(num_hyps_per_node)]
-        self.updater.initial_possible_poses = [
+        updater.initial_possible_poses = [
             Rotation.from_euler("xyz", pose, degrees=True).inv()
             for pose in euler_angles
         ]
 
         tracker = EvidenceSlopeTracker()
 
-        result = self.updater._sample_new_hypotheses(
+        result = updater._sample_new_hypotheses(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
             new_hypotheses_per_channel={"patch": sample_count},
@@ -629,7 +640,6 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         num_nodes = 5
         sample_count = 4  # Request 4 hypotheses (2 nodes * 2 hyps/node)
 
-        # Set up graph memory mocks
         mock_graph_memory = Mock()
         mock_graph_memory.get_feature_array = Mock(
             return_value={"patch": np.zeros((num_nodes, 3))}
@@ -640,6 +650,11 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
         )
+        mock_calculator = Mock()
+        mock_calculator.calculate = Mock(
+            return_value=np.array([0.1, 0.5, 0.3, 0.9, 0.2])
+        )
+        mock_selector = Mock(select=Mock(return_value={"patch": True}))
 
         updater = BurstSamplingHypothesesUpdater(
             feature_weights={"patch": {"feature1": 1.0}},
@@ -647,23 +662,17 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             max_match_distance=0,
             tolerances={"patch": {"feature1": 0.1}},
             evidence_threshold_config="all",
+            feature_evidence_calculator=mock_calculator,
             feature_evidence_increment=1,
+            features_for_matching_selector=mock_selector,
         )
-        updater.use_features_for_matching = {"patch": True}
 
         # Mock the hypotheses displacer
         hypotheses_displacer = Mock()
         hypotheses_displacer.displace_hypotheses_and_compute_evidence = Mock(
             side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
         )
-        updater.hypotheses_displacer = hypotheses_displacer
-
-        # Mock the feature evidence calculator
-        mock_calculator = Mock()
-        mock_calculator.calculate = Mock(
-            return_value=np.array([0.1, 0.5, 0.3, 0.9, 0.2])
-        )
-        updater.feature_evidence_calculator = mock_calculator
+        updater._hypotheses_displacer = hypotheses_displacer
 
         # Use predefined poses (initial possible poses)
         euler_angles = [[0, 0, 0], [0, 0, 180]]
@@ -689,30 +698,39 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         # Indices 3 and 1 have highest scores (0.5 and 0.9)
         self.assertTrue(np.all(result.evidence >= 0.5))
 
-    def test_sample_new_hypotheses_with_initial_poses_none(self) -> None:
-        """Test sampling new hypotheses when initial_possible_poses is None.
+    def test_sample_new_hypotheses_with_initial_possible_poses_informed(self) -> None:
+        """Test sampling new hypotheses when initial_possible_poses is "informed".
 
-        When initial_possible_poses is None, rotations should be computed using
+        When initial_possible_poses is "informed"", rotations should be computed using
         the graph rotation features.
         """
         num_nodes = 3
         sample_count = 4
 
-        self.updater.initial_possible_poses = None
-        self.updater.use_features_for_matching = {"patch": False}
-
-        # Set up graph memory mocks
+        self.mock_graph_memory.get_feature_array = Mock(
+            return_value={"patch": np.zeros((num_nodes, 3))}
+        )
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
         )
-
         # Each node has 3 orthonormal rotation vectors (3x3 matrix)
         # We use identity matrices here for simplicity
         self.mock_graph_memory.get_rotation_features_at_all_nodes = Mock(
             return_value=np.tile(np.eye(3), (3, 1, 1)).astype(np.float64)
         )
+        mock_selector = Mock(select=Mock(return_value={"patch": False}))
 
-        result = self.updater._sample_new_hypotheses(
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights={},
+            graph_memory=self.mock_graph_memory,
+            initial_possible_poses="informed",  # Note: this is the default value
+            max_match_distance=0,
+            tolerances={},
+            evidence_threshold_config="all",
+            features_for_matching_selector=mock_selector,
+        )
+
+        result = updater._sample_new_hypotheses(
             features={
                 "patch": {
                     "pose_fully_defined": True,
@@ -802,20 +820,31 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         num_selected_nodes = 2
         sample_count = num_selected_nodes * num_rotations
 
-        # Set up graph memory mocks
+        self.mock_graph_memory.get_feature_array = Mock(
+            return_value={"patch": np.zeros((num_nodes, 3))}
+        )
         self.mock_graph_memory.get_locations_in_graph = Mock(
             return_value=np.random.rand(num_nodes, 3)
+        )
+        mock_selector = Mock(select=Mock(return_value={"patch": False}))
+
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights={},
+            graph_memory=self.mock_graph_memory,
+            max_match_distance=0,
+            tolerances={},
+            evidence_threshold_config="all",
+            features_for_matching_selector=mock_selector,
         )
 
         # Set up updater with predefined rotations
         euler_angles = [[0, 0, i * 360 / num_rotations] for i in range(num_rotations)]
-        self.updater.initial_possible_poses = [
+        updater.initial_possible_poses = [
             Rotation.from_euler("xyz", pose, degrees=True).inv()
             for pose in euler_angles
         ]
-        self.updater.use_features_for_matching = {"patch": False}
 
-        result = self.updater._sample_new_hypotheses(
+        result = updater._sample_new_hypotheses(
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
             new_hypotheses_per_channel={"patch": sample_count},
@@ -826,7 +855,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
         # Verify poses are correctly tiled from initial_possible_poses
         expected_rot_mats = np.array(
-            [r.as_matrix() for r in self.updater.initial_possible_poses]
+            [r.as_matrix() for r in updater.initial_possible_poses]
         )
         expected_tiled = np.repeat(expected_rot_mats, num_selected_nodes, axis=0)
         np.testing.assert_array_almost_equal(result.poses, expected_tiled, decimal=5)

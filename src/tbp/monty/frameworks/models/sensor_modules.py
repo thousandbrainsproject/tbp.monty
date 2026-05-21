@@ -611,7 +611,6 @@ class CameraSM(SensorModule):
         # Tests check sm.features, not sure if this should be exposed
         self.features = features
         self.processed_obs: list[dict[str, Any]] = []
-        self.states: list[SensorState] = []
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
@@ -621,7 +620,6 @@ class CameraSM(SensorModule):
         self._percept_filter.reset()
         self.is_exploring = False
         self.processed_obs = []
-        self.states = []
 
     def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
@@ -671,7 +669,6 @@ class CameraSM(SensorModule):
 
         if not self.is_exploring:
             self.processed_obs.append(percept.__dict__)
-            self.states.append(self.state)
 
         return percept
 

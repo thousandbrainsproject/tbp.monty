@@ -175,6 +175,30 @@ class TwoDSensorModuleInitTest(unittest.TestCase):
         np.testing.assert_allclose(two_d_sm._previous_2d_location, [1.0, 2.0])
         np.testing.assert_allclose(two_d_sm._previous_3d_location, world_location)
 
+    def test_step_handles_off_object_percept_without_pose_vectors(self) -> None:
+        two_d_sm = make_2d_sm(edge_detector=Mock(return_value=make_no_edge()))
+        percept = Message(
+            location=np.array([1.0, 2.0, 3.0]),
+            morphological_features={"on_object": 0.0},
+            non_morphological_features={},
+            confidence=1.0,
+            use_state=False,
+            sender_id="test",
+            sender_type="SM",
+        )
+        two_d_sm._observation_processor.process = Mock(return_value=percept)
+
+        msg = two_d_sm.step(
+            ctx=RuntimeContext(rng=np.random.RandomState()),
+            observation=sentinel.raw_observation,
+            motor_only_step=False,
+        )
+
+        assert msg.use_state is False
+        assert "pose_vectors" not in msg.morphological_features
+        np.testing.assert_allclose(msg.displacement["displacement"], np.zeros(3))
+        assert two_d_sm._tangent_frame is None
+
     def test_like_how_monty_uses_two_d_sm(self) -> None:
         """Mimic how Monty might use SMs in aggregate_sensory_inputs().
 
@@ -196,7 +220,6 @@ class TwoDSensorModuleInitTest(unittest.TestCase):
         msg = two_d_sm.step(ctx, obs, motor_only_step=False)
 
         assert two_d_sm.state is not None
-        assert two_d_sm.states[-1] is two_d_sm.state
 
         assert msg.sender_id == two_d_sm.sensor_module_id
         assert msg.sender_type == "SM"

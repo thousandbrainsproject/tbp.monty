@@ -133,7 +133,6 @@ class TwoDSensorModule(SensorModule):
 
         self.features = features
         self.processed_obs = []
-        self.states = []
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
         self.edge_detector = edge_detector
@@ -149,7 +148,6 @@ class TwoDSensorModule(SensorModule):
         self._percept_filter.reset()
         self.is_exploring = False
         self.processed_obs = []
-        self.states = []
         self._previous_3d_location = None
         self._previous_2d_location = np.zeros(2)
         self._tangent_frame = None
@@ -193,13 +191,16 @@ class TwoDSensorModule(SensorModule):
 
         observed_state = self._observation_processor.process(observation)
 
-        curvature_pose_vectors = observed_state.get_pose_vectors().copy()
-        true_surface_normal = observed_state.get_surface_normal().copy()
-
         # Only edges define pose for 2D sensor; reset curvature-based flag.
         observed_state.morphological_features["pose_fully_defined"] = False
 
+        curvature_pose_vectors = None
+        true_surface_normal = None
         if observed_state.use_state and observed_state.get_on_object():
+            # pose_vectors are only present when the patch center is on the object.
+            curvature_pose_vectors = observed_state.get_pose_vectors().copy()
+            true_surface_normal = observed_state.get_surface_normal().copy()
+
             self._update_tangent_frame(true_surface_normal)
             if self._extract_edges:
                 observed_state = self._extract_2d_edge(
@@ -224,7 +225,6 @@ class TwoDSensorModule(SensorModule):
 
         if not self.is_exploring:
             self.processed_obs.append(observed_state.__dict__)
-            self.states.append(self.state)
 
         return observed_state
 

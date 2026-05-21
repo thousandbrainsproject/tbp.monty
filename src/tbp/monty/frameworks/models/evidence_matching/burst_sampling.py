@@ -27,6 +27,9 @@ from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator i
     DefaultFeatureEvidenceCalculator,
     FeatureEvidenceCalculator,
 )
+from tbp.monty.frameworks.models.evidence_matching.feature_evidence.scorer import (
+    DefaultFeatureEvidenceScorer,
+)
 from tbp.monty.frameworks.models.evidence_matching.features_for_matching.selector import (  # noqa: E501
     DefaultFeaturesForMatchingSelector,
     FeaturesForMatchingSelector,
@@ -208,10 +211,6 @@ class BurstSamplingHypothesesUpdater:
                 "'all' for `BurstSamplingHypothesesUpdater`"
             )
 
-        self.feature_evidence_calculator = feature_evidence_calculator
-        self.feature_evidence_increment = feature_evidence_increment
-        self.feature_weights = feature_weights
-        self.features_for_matching_selector = features_for_matching_selector
         self.sampling_multiplier = sampling_multiplier
         self.deletion_trigger_slope = deletion_trigger_slope
         self.sampling_burst_duration = sampling_burst_duration
@@ -219,24 +218,26 @@ class BurstSamplingHypothesesUpdater:
         self.graph_memory = graph_memory
         self.include_telemetry = include_telemetry
         self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
-        self.tolerances = tolerances
         self.umbilical_num_poses = umbilical_num_poses
 
-        self.use_features_for_matching = self.features_for_matching_selector.select(
-            feature_evidence_increment=self.feature_evidence_increment,
-            feature_weights=self.feature_weights,
-            tolerances=self.tolerances,
+        # TODO: Dependency inject a constructed FeatureEvidenceScorer instead
+        self._feature_evidence_scorer = DefaultFeatureEvidenceScorer(
+            graph_memory=self.graph_memory,
+            feature_weights=feature_weights,
+            tolerances=tolerances,
+            feature_evidence_calculator=feature_evidence_calculator,
+            feature_evidence_increment=feature_evidence_increment,
+            features_for_matching_selector=features_for_matching_selector,
         )
-        self.hypotheses_displacer = DefaultHypothesesDisplacer(
-            feature_evidence_increment=self.feature_evidence_increment,
-            feature_weights=self.feature_weights,
+        # TODO: Dependency inject a constructed HypothesesDisplacer instead
+        self._hypotheses_displacer = DefaultHypothesesDisplacer(
+            feature_weights=feature_weights,
             graph_memory=self.graph_memory,
             max_match_distance=max_match_distance,
             max_nneighbors=max_nneighbors,
             past_weight=past_weight,
             present_weight=present_weight,
-            tolerances=self.tolerances,
-            use_features_for_matching=self.use_features_for_matching,
+            feature_evidence_scorer=self._feature_evidence_scorer,
         )
 
         if self.sampling_multiplier < 0:
@@ -347,7 +348,7 @@ class BurstSamplingHypothesesUpdater:
         # should not be affected by the displacement from the last sensory input.
         if len(hypotheses_selection.ids_to_retain):
             existing_hypotheses, displacer_telemetry = (
-                self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
+                self._hypotheses_displacer.displace_hypotheses_and_compute_evidence(
                     displacement=displacement,
                     features=features,
                     evidence_update_threshold=evidence_update_threshold,
@@ -363,7 +364,9 @@ class BurstSamplingHypothesesUpdater:
         hypotheses_update = Hypotheses.concatenate(
             [existing_hypotheses, new_hypotheses]
         )
-        tracker.update(hypotheses_update.evidence)
+        tracker.update(
+            hypotheses_update.evidence, num_channels=len(input_channels_to_use)
+        )
 
         if self.include_telemetry:
             telemetry = asdict(
@@ -600,35 +603,19 @@ class BurstSamplingHypothesesUpdater:
         """
         num_hyps_per_node = self._num_hyps_per_node(features)
         # === Calculate selected evidence by top-k indices === #
-        if self.use_features_for_matching[input_channel]:
-            node_feature_evidence = self.feature_evidence_calculator.calculate(
-                channel_feature_array=self.graph_memory.get_feature_array(graph_id)[
-                    input_channel
-                ],
-                channel_feature_order=self.graph_memory.get_feature_order(graph_id)[
-                    input_channel
-                ],
-                channel_feature_weights=self.feature_weights[input_channel],
-                channel_query_features=features,
-                channel_tolerances=self.tolerances[input_channel],
-                input_channel=input_channel,
-            )
-            # Find the indices for the nodes with highest evidence scores. The sorting
-            # is done in ascending order, so extract the indices from the end of
-            # the argsort array. We get the needed number of nodes, not
-            # the number of needed hypotheses.
-            top_indices = np.argsort(node_feature_evidence)[
-                -int(count // num_hyps_per_node) :
-            ]
-            node_feature_evidence_filtered = (
-                node_feature_evidence[top_indices] * self.feature_evidence_increment
-            )
-        else:
-            num_nodes = self.graph_memory.get_locations_in_graph(
-                graph_id, input_channel
-            ).shape[0]
-            top_indices = np.arange(num_nodes)[: int(count // num_hyps_per_node)]
-            node_feature_evidence_filtered = np.zeros(len(top_indices))
+        node_feature_evidence = self._feature_evidence_scorer(
+            graph_id=graph_id,
+            input_channel=input_channel,
+            query_features=features,
+        )
+        # Find the indices for the nodes with highest evidence scores. The sorting
+        # is done in ascending order, so extract the indices from the end of
+        # the argsort array. We get the needed number of nodes, not
+        # the number of needed hypotheses.
+        top_indices = np.argsort(node_feature_evidence)[
+            -int(count // num_hyps_per_node) :
+        ]
+        node_feature_evidence_filtered = node_feature_evidence[top_indices]
 
         selected_feature_evidence = np.tile(
             node_feature_evidence_filtered, num_hyps_per_node

@@ -272,19 +272,41 @@ class LearningModule(metaclass=abc.ABCMeta):
     ###
     # Methods that interact with the experiment
     ###
+
     @abc.abstractmethod
-    def reset(self):
-        """Do things like reset buffers or possible_matches before training."""
+    def reset_stm(self) -> None:
+        """Reset short-term memory buffer.
+
+        Do things like reset buffers or possible_matches before training.
+        """
         pass
 
     @abc.abstractmethod
-    def pre_episode(self) -> None:
-        """Do things like reset buffers or possible_matches before training."""
+    def fixme_reset_ground_truth(self, primary_target=None) -> None:
+        """Reset internal state based on ground truth.
+
+        TODO Move this logic into `Experiment`.
+        A `LearningModule` should not have access
+        to "ground truth" information.
+
+        Args:
+            primary_target: The primary target for the learning module to recognize.
+        """
         pass
 
     @abc.abstractmethod
-    def post_episode(self):
-        """Do things like update object models with stored data after an episode."""
+    def update_ltm_from_stm(self) -> None:
+        """Update long-term memory from short-term memory buffer."""
+        pass
+
+    @abc.abstractmethod
+    def fixme_update_ground_truth(self) -> None:
+        """Update internal state based on ground truth.
+
+        TODO Move this logic into `Experiment`.
+        A `LearningModule` should not have access
+        to "ground truth" information.
+        """
         pass
 
     @abc.abstractmethod
@@ -356,11 +378,6 @@ class LMMemory(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_memory(self, observations):
         """Update models stored in memory given new observation & classification."""
-        pass
-
-    @abc.abstractmethod
-    def memory_consolidation(self):
-        """Consolidate/clean up models stored in memory."""
         pass
 
     ###
