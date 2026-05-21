@@ -131,8 +131,8 @@ def unsafe_cs_sigmas(
         exclude_max=True,
     )
     surround_sigma_too_high = st.floats(
-        min_value=center_sigma + min_separation,
-        max_value=max_sigma,
+        min_value=max_sigma,
+        max_value=2 * max_sigma,
         exclude_min=True,
     )
     surround_sigma = draw(st.one_of(surround_sigma_too_low, surround_sigma_too_high))
