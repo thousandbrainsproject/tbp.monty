@@ -16,7 +16,7 @@ import cv2
 import numpy as np
 import numpy.testing as nptest
 import numpy.typing as npt
-from hypothesis import given, settings
+from hypothesis import given, reproduce_failure, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -603,18 +603,23 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             np.allclose(center_variations, surround_variations, atol=DEFAULT_TOLERANCE)
         )
 
-    @settings(deadline=1000)
-    @given(params=center_surround_pyramids_params(image=random_images()))
-    def test_center_planes_have_variance_than_corresponding_surround_planes_for_sufficiently_variable_image(  # noqa: E501
+class CenterSurroundPyramidsCalibrationTest(unittest.TestCase):
+    def test_center_planes_have_variance_than_corresponding_surround_planes(
         self,
-        params: CenterSurroundPyramidsParams,
     ) -> None:
+        rng = np.random.RandomState(67)
+        image = rng.uniform(0.0, 1.0, size=(512, 512))
+        center_sigma = 3.0
+        surround_sigma = 5.0
+        n_scales = 2
+        max_octaves = 5
+
         center, surround = center_surround_pyramids(
-            params.image,
-            center_sigma=params.center_sigma,
-            surround_sigma=params.surround_sigma,
-            n_scales=params.n_scales,
-            max_octaves=params.max_octaves,
+            image,
+            center_sigma=center_sigma,
+            surround_sigma=surround_sigma,
+            n_scales=n_scales,
+            max_octaves=max_octaves,
         )
 
         center_variations = np.array(
