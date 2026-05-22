@@ -39,7 +39,7 @@ MAX_OCTAVES = 2 * (int(np.log2(MAX_DIM_SIZE)) + 1)
 MAX_SCALES = 5
 
 MAX_FRACTIONAL_CENTER_SIGMA = 0.1
-MAX_FRACTIONAL_SURROUND_SIGMA = 1.0
+MAX_FRACTIONAL_SURROUND_SIGMA = 0.5
 MIN_FRACTIONAL_SIGMA_SEPARATION = 0.02
 
 
@@ -476,12 +476,16 @@ def default_cs_sigmas(
         return (1.0, 1.0 + MIN_FRACTIONAL_SIGMA_SEPARATION)
 
     center_sigma = draw(
-        st.floats(min_value=min_center_sigma, max_value=max_center_sigma)
+        st.floats(
+            min_value=min_center_sigma,
+            max_value=max(min_center_sigma, max_center_sigma),
+        )
     )
+    min_surround_sigma = center_sigma + min_sigma_separation
     surround_sigma = draw(
         st.floats(
-            min_value=center_sigma + min_sigma_separation,
-            max_value=max_surround_sigma,
+            min_value=min_surround_sigma,
+            max_value=max(min_surround_sigma, max_surround_sigma),
         )
     )
     return (center_sigma, surround_sigma)
@@ -491,7 +495,6 @@ def default_cs_sigmas(
 def center_surround_pyramids_params(
     draw: st.DrawFn,
     image: st.SearchStrategy[npt.NDArray[np.float32]] | None = None,
-    cs_sigmas: st.SearchStrategy[tuple[float, float]] | None = None,
 ) -> CenterSurroundPyramidsParams:
     """Generate parameters for calls to `gaussian_pyramid`.
 
@@ -506,8 +509,7 @@ def center_surround_pyramids_params(
     image = image or default_images()
     _image = draw(image)
 
-    cs_sigmas = cs_sigmas or default_cs_sigmas(_image.shape)
-    center_sigma, surround_sigma = draw(cs_sigmas)
+    center_sigma, surround_sigma = draw(default_cs_sigmas(_image.shape))
 
     _n_scales = draw(default_n_scales())
 

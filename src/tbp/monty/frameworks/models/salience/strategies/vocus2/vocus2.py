@@ -134,7 +134,7 @@ class SafeOperatingLimits(OperatingLimits):
 
     min_image_dim_size: int = 64
     max_fractional_center_sigma: float = 0.1
-    max_fractional_surround_sigma: float = 1.0
+    max_fractional_surround_sigma: float = 0.5
     min_fractional_sigma_separation: float = 0.02
 
 
