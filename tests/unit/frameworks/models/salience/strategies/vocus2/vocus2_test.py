@@ -157,15 +157,6 @@ def safe_solid_images(draw: st.DrawFn) -> npt.NDArray[np.float32]:
     )
 
 
-@st.composite
-def safe_filled_images(
-    draw: st.DrawFn,
-    fill_value: float = 1.0,
-) -> npt.NDArray[np.float32]:
-    resolution = draw(safe_resolutions())
-    return np.full(resolution, fill_value, dtype=np.float32)
-
-
 @dataclass
 class ColorChannelSalienceSetup:
     processor: ColorChannelSalience
@@ -176,9 +167,8 @@ class ColorChannelSalienceSetup:
 @st.composite
 def color_channel_salience_setup(
     draw: st.DrawFn,
-    image: st.SearchStrategy[npt.NDArray[np.float32]] | None = None,
+    image: st.SearchStrategy[npt.NDArray[np.float32]],
 ) -> ColorChannelSalienceSetup:
-    image = image or safe_images()
     _image = draw(image)
 
     center_sigma, surround_sigma = draw(safe_cs_sigmas(resolution=_image.shape))
@@ -311,9 +301,8 @@ class DepthSalienceSetup:
 @st.composite
 def depth_salience_setup(
     draw: st.DrawFn,
-    image: st.SearchStrategy[npt.NDArray[np.float32]] | None = None,
+    image: st.SearchStrategy[npt.NDArray[np.float32]],
 ) -> DepthSalienceSetup:
-    image = image or safe_images()
     _image = draw(image)
 
     center_sigma, surround_sigma = draw(safe_cs_sigmas(resolution=_image.shape))
@@ -446,9 +435,8 @@ class OrientationSalienceSetup:
 @st.composite
 def orientation_salience_setup(
     draw: st.DrawFn,
-    image: st.SearchStrategy[npt.NDArray[np.float32]] | None = None,
+    image: st.SearchStrategy[npt.NDArray[np.float32]],
 ) -> OrientationSalienceSetup:
-    image = image or safe_images()
     _image = draw(image)
     center_sigma, surround_sigma = draw(safe_cs_sigmas(resolution=_image.shape))
 

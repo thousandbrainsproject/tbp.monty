@@ -340,7 +340,6 @@ class GaussianPyramidTest(unittest.TestCase):
     @given(
         params=gaussian_pyramid_params(
             image=default_images(),
-            # image_strategy=st.one_of(default_images(), random_images()),
         ),
     )
     def test_subsequent_planes_have_decreasing_variance(
@@ -418,7 +417,8 @@ class GaussianPyramidTest(unittest.TestCase):
 
             self.assertLess(delta, tolerance)
 
-    def test_subsequent_planes_have_decreasing_variance_strict_with_specific_example(
+class GaussianPyramidCalibrationTest(unittest.TestCase):
+    def test_subsequent_planes_have_decreasing_variance(
         self,
     ) -> None:
         # This is a more specific and stricter test than the one above.
@@ -554,7 +554,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(params=center_surround_pyramids_params())
-    def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes(  # noqa: E501
+    def test_center_planes_have_higher_variaiance_than_corresponding_surround_planes(
         self,
         params: CenterSurroundPyramidsParams,
     ) -> None:
@@ -578,7 +578,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(params=center_surround_pyramids_params(image=solid_images()))
-    def test_surround_planes_mean_local_variation_equals_corresponding_center_planes_for_solid_image(  # noqa: E501
+    def test_center_plane_variance_equals_corresponding_surround_plane_variance_for_solid_image(  # noqa: E501
         self,
         params: CenterSurroundPyramidsParams,
     ) -> None:
@@ -602,7 +602,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(params=center_surround_pyramids_params(image=random_images()))
-    def test_surround_planes_have_higher_mean_local_variation_than_corresponding_center_planes_for_sufficiently_variable_image(  # noqa: E501
+    def test_center_planes_have_variance_than_corresponding_surround_planes_for_sufficiently_variable_image(  # noqa: E501
         self,
         params: CenterSurroundPyramidsParams,
     ) -> None:
