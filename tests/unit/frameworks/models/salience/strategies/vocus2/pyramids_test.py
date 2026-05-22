@@ -417,6 +417,7 @@ class GaussianPyramidTest(unittest.TestCase):
 
             self.assertLess(delta, tolerance)
 
+
 class GaussianPyramidCalibrationTest(unittest.TestCase):
     def test_subsequent_planes_have_decreasing_variance(
         self,

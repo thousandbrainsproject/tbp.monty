@@ -137,7 +137,6 @@ class SafeOperatingLimits(OperatingLimits):
     max_fractional_surround_sigma: float = 0.5
     min_fractional_sigma_separation: float = 0.02
 
-
     @staticmethod
     def validate(
         min_image_dim_size: int,
