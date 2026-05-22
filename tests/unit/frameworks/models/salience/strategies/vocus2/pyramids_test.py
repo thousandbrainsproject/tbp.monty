@@ -38,13 +38,9 @@ MAX_DIM_SIZE = 512
 MAX_OCTAVES = 2 * (int(np.log2(MAX_DIM_SIZE)) + 1)
 MAX_SCALES = 5
 
-MAX_FRACTIONAL_SIGMA = 1.0
 MAX_FRACTIONAL_CENTER_SIGMA = 0.1
+MAX_FRACTIONAL_SURROUND_SIGMA = 1.0
 MIN_FRACTIONAL_SIGMA_SEPARATION = 0.02
-
-
-# Parameters
-# -----------------------------------------------------------------------------
 
 
 @st.composite
@@ -79,25 +75,18 @@ def default_max_octaves(
 def default_sigmas(
     draw: st.DrawFn,
     resolution: tuple[int, int],
-    min_fractional_sigma: float | None = None,
-    max_fractional_sigma: float = MAX_FRACTIONAL_SIGMA,
 ) -> float:
-    smallest_dim = min(resolution)
-    if smallest_dim == 1:
+    min_dim_size = min(resolution)
+    if min_dim_size == 1:
         return 1.0
 
-    smallest_fractional_sigma = 1 / smallest_dim
-    if min_fractional_sigma is None:
-        min_fractional_sigma = smallest_fractional_sigma
-
+    min_fractional_sigma = 1 / min_dim_size
     fractional_sigma = draw(
-        st.floats(min_value=min_fractional_sigma, max_value=max_fractional_sigma)
+        st.floats(
+            min_value=min_fractional_sigma, max_value=MAX_FRACTIONAL_SURROUND_SIGMA
+        )
     )
-    return fractional_sigma * smallest_dim
-
-
-# Images
-# -----------------------------------------------------------------------------
+    return fractional_sigma * min_dim_size
 
 
 @st.composite
@@ -165,10 +154,6 @@ def nonsolid_images(draw: st.DrawFn) -> npt.NDArray[np.float32]:
     )
 
 
-# Pyramids
-# -----------------------------------------------------------------------------
-
-
 @st.composite
 def default_pyramids(
     draw: st.DrawFn,
@@ -197,9 +182,6 @@ def default_pyramids(
                 dtype=np.float32,
             )
     return Pyramid(pyramid_data)
-
-
-# -----------------------------------------------------------------------------
 
 
 class PyramidTest(unittest.TestCase):
@@ -470,11 +452,6 @@ class GaussianPyramidTest(unittest.TestCase):
                 self.assertLess(delta, 0.0)
 
 
-# --------------------------------------------------------------------------------------
-# Center Surrouund Pyramid Tests
-# --------------------------------------------------------------------------------------
-
-
 @dataclass(frozen=True)
 class CenterSurroundPyramidsParams:
     image: npt.NDArray[np.float32]
@@ -488,52 +465,25 @@ class CenterSurroundPyramidsParams:
 def default_cs_sigmas(
     draw: st.DrawFn,
     resolution: tuple[int, int],
-    min_fractional_center_sigma: float | None = None,
-    max_fractional_center_sigma: float = MAX_FRACTIONAL_CENTER_SIGMA,
-    min_fractional_sigma_separation: float = MIN_FRACTIONAL_SIGMA_SEPARATION,
-    max_fractional_sigma: float = MAX_FRACTIONAL_SIGMA,
 ) -> tuple[float, float]:
-    smallest_dim = min(resolution)
-    if smallest_dim == 1:
-        return (1.0, 1.0 + min_fractional_sigma_separation)
+    min_dim_size = min(resolution)
+    min_center_sigma = 1.0
+    max_center_sigma = min_dim_size * MAX_FRACTIONAL_CENTER_SIGMA
+    max_surround_sigma = min_dim_size * MAX_FRACTIONAL_SURROUND_SIGMA
+    min_sigma_separation = min_dim_size * MIN_FRACTIONAL_SIGMA_SEPARATION
 
-    smallest_fractional_sigma = 1.0 / smallest_dim
+    if min_dim_size == 1:
+        return (1.0, 1.0 + MIN_FRACTIONAL_SIGMA_SEPARATION)
 
-    if min_fractional_center_sigma is None:
-        min_fractional_center_sigma = smallest_fractional_sigma
-    else:
-        min_fractional_center_sigma = max(
-            min_fractional_center_sigma, smallest_fractional_sigma
-        )
-    max_fractional_center_sigma = max(
-        min_fractional_center_sigma, max_fractional_center_sigma
+    center_sigma = draw(
+        st.floats(min_value=min_center_sigma, max_value=max_center_sigma)
     )
-    fractional_center_sigma = draw(
+    surround_sigma = draw(
         st.floats(
-            min_value=min_fractional_center_sigma,
-            max_value=max_fractional_center_sigma,
+            min_value=center_sigma + min_sigma_separation,
+            max_value=max_surround_sigma,
         )
     )
-
-    fractional_surround_sigma_min = (
-        fractional_center_sigma + min_fractional_sigma_separation
-    )
-    fractional_surround_sigma_max = max_fractional_sigma
-    if fractional_surround_sigma_max < fractional_surround_sigma_min:
-        fractional_surround_sigma_max = fractional_surround_sigma_min
-    if fractional_surround_sigma_max <= fractional_surround_sigma_min:
-        fractional_surround_sigma_max = (
-            fractional_surround_sigma_min + min_fractional_sigma_separation
-        )
-
-    fractional_surround_sigma = draw(
-        st.floats(
-            min_value=fractional_surround_sigma_min,
-            max_value=fractional_surround_sigma_max,
-        )
-    )
-    center_sigma = fractional_center_sigma * smallest_dim
-    surround_sigma = fractional_surround_sigma * smallest_dim
     return (center_sigma, surround_sigma)
 
 
@@ -672,11 +622,6 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
         )
         variations = center_variations - surround_variations
         self.assertTrue(all(variations >= 0))
-
-
-# --------------------------------------------------------------------------------------
-# Laplacian Pyramid Tests
-# --------------------------------------------------------------------------------------
 
 
 @st.composite

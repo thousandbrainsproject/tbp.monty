@@ -98,10 +98,45 @@ class NoOperatingLimits(OperatingLimits):
 
 @dataclass(frozen=True)
 class SafeOperatingLimits(OperatingLimits):
+    """Within these limits, Vocus2 was tested and has desired and predictable behavior.
+
+    Outside of these limits, Vocus2 may work as intended, may work not as expected,
+    or may not work at all. Use with caution.
+
+    The meaning of a smoothing kernel (sigma) size depends upon the resolution of the
+    image. For example, a smoothing kernel size of three may be considered large for a
+    64x64 image, but small for a 128x128 image. This matters because the smoothing
+    kernel size is what determines the _scale_ of the feature that is extracted from
+    the image.
+
+    For this reason, there are no suitable minimum and maximum sigmas that are
+    appropriate for all image resolutions. Instead, we express the sigma ranges as
+    fractions of the smallest image dimension (hence "fractional_" throughout).
+    For example, an image with resolution of 64x96, has a smallest image dimension of
+    64. The maximum fractional center sigma of 0.1 would mean a 6.4 pixels (0.1 * 64)
+    is the highest value that a center sigma can take and still be within safe operating
+    limits.
+
+
+    Attributes:
+        min_image_dim_size: The minimum (smallest) dimension of the images
+          being processed.
+        max_fractional_center_sigma: The largest (fractional) center sigma that is
+            still within safe operating limits.
+        max_fractional_surround_sigma: The largest (fractional) surround sigma that is
+            within safe operating limits.
+        min_fractional_sigma_separation: We expect that the surround sigma will be
+            greater than the center sigma. However, the surround sigma should be
+            meaningfully bigger than the center sigma. This is the minimum meaningful
+            separation between the center and surround sigmas. As explained above, this
+            is expressed as a fraction of the smallest image dimension.
+    """
+
     min_image_dim_size: int = 64
+    max_fractional_center_sigma: float = 0.1
+    max_fractional_surround_sigma: float = 1.0
     min_fractional_sigma_separation: float = 0.02
-    max_fractional_central_sigma: float = 0.1
-    max_fractional_sigma: float = 1.0
+
 
     @staticmethod
     def validate(
@@ -127,7 +162,7 @@ class SafeOperatingLimits(OperatingLimits):
         # Check center sigma is within the allowed range.
         center_min = min_image_dim_size * min_fractional_sigma
         center_max = (
-            min_image_dim_size * SafeOperatingLimits.max_fractional_central_sigma
+            min_image_dim_size * SafeOperatingLimits.max_fractional_center_sigma
         )
         if not (center_min <= center_sigma <= center_max):
             return ValueError(
@@ -141,7 +176,9 @@ class SafeOperatingLimits(OperatingLimits):
             fractional_center_sigma
             + SafeOperatingLimits.min_fractional_sigma_separation
         )
-        surround_max = min_image_dim_size * SafeOperatingLimits.max_fractional_sigma
+        surround_max = (
+            min_image_dim_size * SafeOperatingLimits.max_fractional_surround_sigma
+        )
         if not (surround_min <= surround_sigma <= surround_max):
             return ValueError(
                 f"When smallest image dimension is {min_image_dim_size}, "

@@ -80,25 +80,24 @@ def safe_cs_sigmas(
     resolution: tuple[int, int],
 ) -> tuple[float, float]:
     min_dim_size = min(resolution)
-    min_fraction_center_sigma = 1.0 / min_dim_size
-    max_fraction_center_sigma = SafeOperatingLimits.max_fractional_central_sigma
-    fractional_center_sigma = draw(
-        st.floats(
-            min_value=min_fraction_center_sigma, max_value=max_fraction_center_sigma
-        )
+    min_center_sigma = 1.0
+    max_center_sigma = min_dim_size * SafeOperatingLimits.max_fractional_center_sigma
+    min_sigma_separation = (
+        min_dim_size * SafeOperatingLimits.min_fractional_sigma_separation
+    )
+    max_surround_sigma = (
+        min_dim_size * SafeOperatingLimits.max_fractional_surround_sigma
     )
 
-    min_fractional_surround_sigma = (
-        fractional_center_sigma + SafeOperatingLimits.min_fractional_sigma_separation
+    center_sigma = draw(
+        st.floats(min_value=min_center_sigma, max_value=max_center_sigma)
     )
-    fractional_surround_sigma = draw(
+    surround_sigma = draw(
         st.floats(
-            min_value=min_fractional_surround_sigma,
-            max_value=SafeOperatingLimits.max_fractional_sigma,
+            min_value=center_sigma + min_sigma_separation,
+            max_value=max_surround_sigma,
         )
     )
-    center_sigma = fractional_center_sigma * min_dim_size
-    surround_sigma = fractional_surround_sigma * min_dim_size
     return (center_sigma, surround_sigma)
 
 
@@ -109,9 +108,13 @@ def unsafe_cs_sigmas(
 ) -> tuple[float, float]:
     min_dim_size = min(resolution)
     min_center_sigma = 1.0
-    max_center_sigma = min_dim_size * SafeOperatingLimits.max_fractional_central_sigma
-    min_separation = min_dim_size * SafeOperatingLimits.min_fractional_sigma_separation
-    max_sigma = min_dim_size * SafeOperatingLimits.max_fractional_sigma
+    max_center_sigma = min_dim_size * SafeOperatingLimits.max_fractional_center_sigma
+    min_sigma_separation = (
+        min_dim_size * SafeOperatingLimits.min_fractional_sigma_separation
+    )
+    max_surround_sigma = (
+        min_dim_size * SafeOperatingLimits.max_fractional_surround_sigma
+    )
 
     center_sigma_too_low = st.floats(
         min_value=0,
@@ -120,19 +123,19 @@ def unsafe_cs_sigmas(
     )
     center_sigma_too_high = st.floats(
         min_value=max_center_sigma,
-        max_value=max_sigma,
+        max_value=max_surround_sigma,
         exclude_min=True,
     )
     center_sigma = draw(st.one_of(center_sigma_too_low, center_sigma_too_high))
 
     surround_sigma_too_low = st.floats(
         min_value=0,
-        max_value=center_sigma + min_separation,
+        max_value=center_sigma + min_sigma_separation,
         exclude_max=True,
     )
     surround_sigma_too_high = st.floats(
-        min_value=max_sigma,
-        max_value=2 * max_sigma,
+        min_value=max_surround_sigma,
+        max_value=2 * max_surround_sigma,
         exclude_min=True,
     )
     surround_sigma = draw(st.one_of(surround_sigma_too_low, surround_sigma_too_high))
