@@ -25,6 +25,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.memento import Memento, Snapshotable
 
 __all__ = [
     "AgentObservations",
@@ -65,7 +66,7 @@ class Observations(Dict[AgentID, AgentObservations]):
     pass
 
 
-class Monty(metaclass=abc.ABCMeta):
+class Monty(Snapshotable, metaclass=abc.ABCMeta):
     def _matching_step(
         self,
         ctx: RuntimeContext,
@@ -227,13 +228,21 @@ class Monty(metaclass=abc.ABCMeta):
     ###
 
     @abc.abstractmethod
-    def state_dict(self):
-        """Return a serializable dict with everything needed to save/load monty."""
+    def state_dict(self) -> Memento:
+        """Get a memento representing the internal state of this object.
+
+        Returns:
+            State dict for logging and saving.
+        """
         pass
 
     @abc.abstractmethod
-    def load_state_dict(self, state_dict):
-        """Take a state dict as an argument and set state for monty and children."""
+    def load_state_dict(self, memento: Memento) -> None:
+        """Set the internal object state from a previously snapshot memento.
+
+        Args:
+            memento: State dict to load.
+        """
         pass
 
     ###
@@ -268,7 +277,7 @@ class Monty(metaclass=abc.ABCMeta):
         pass
 
 
-class LearningModule(metaclass=abc.ABCMeta):
+class LearningModule(Snapshotable, metaclass=abc.ABCMeta):
     ###
     # Methods that interact with the experiment
     ###
@@ -359,17 +368,25 @@ class LearningModule(metaclass=abc.ABCMeta):
     ###
 
     @abc.abstractmethod
-    def state_dict(self):
-        """Return a serializable dict with everything needed to save/load this LM."""
+    def state_dict(self) -> Memento:
+        """Get a memento representing the internal state of this object.
+
+        Returns:
+            State dict for logging and saving.
+        """
         pass
 
     @abc.abstractmethod
-    def load_state_dict(self, state_dict):
-        """Take a state dict as an argument and set state for this LM."""
+    def load_state_dict(self, memento: Memento) -> None:
+        """Set the internal object state from a previously snapshot memento.
+
+        Args:
+            memento: State dict to load.
+        """
         pass
 
 
-class LMMemory(metaclass=abc.ABCMeta):
+class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
     """Like a long-term memory storing all the knowledge an LM has."""
 
     ###
@@ -385,13 +402,21 @@ class LMMemory(metaclass=abc.ABCMeta):
     ###
 
     @abc.abstractmethod
-    def state_dict(self):
-        """Return a serializable dict with everything needed to save/load the memory."""
+    def state_dict(self) -> Memento:
+        """Get a memento representing the internal state of this object.
+
+        Returns:
+            State dict for logging and saving.
+        """
         pass
 
     @abc.abstractmethod
-    def load_state_dict(self):
-        """Take a state dict as an argument and set state for the memory."""
+    def load_state_dict(self, memento: Memento) -> None:
+        """Set the internal object state from a previously snapshot memento.
+
+        Args:
+            memento: State dict to load.
+        """
         pass
 
 

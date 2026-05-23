@@ -50,6 +50,7 @@ from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import VectorXYZ
+from tbp.monty.memento import Memento, Snapshotable
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -104,12 +105,16 @@ class MotorPolicyResult:
     status: PolicyStatus = PolicyStatus.READY
 
 
-class MotorPolicy(abc.ABC):
+class MotorPolicy(Snapshotable, abc.ABC):
     """The abstract scaffold for motor policies."""
 
     @abc.abstractmethod
-    def load_state_dict(self, state_dict: dict[str, Any]) -> None:
-        """Take a state dict as an argument and set state for policy."""
+    def load_state_dict(self, memento: Memento) -> None:
+        """Set the internal object state from a previously snapshot memento.
+
+        Args:
+            memento: State dict to load.
+        """
         pass
 
     @abc.abstractmethod
@@ -122,8 +127,12 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def state_dict(self) -> dict[str, Any]:
-        """Return a serializable dict with everything needed to save/load policy."""
+    def state_dict(self) -> Memento:
+        """Get a memento representing the internal state of this object.
+
+        Returns:
+            State dict for logging and saving.
+        """
         pass
 
     @abc.abstractmethod
@@ -197,10 +206,20 @@ class BasePolicy(MotorPolicy):
     def pre_episode(self, motor_system: MotorSystem) -> None:
         pass
 
-    def state_dict(self):
+    def state_dict(self) -> Memento:
+        """Get a memento representing the internal state of this object.
+
+        Returns:
+            State dict for logging and saving.
+        """
         return {}
 
-    def load_state_dict(self, state_dict: dict[str, Any]):
+    def load_state_dict(self, memento: Memento) -> None:
+        """Set the internal object state from a previously snapshot memento.
+
+        Args:
+            memento: State dict to load.
+        """
         pass
 
 
@@ -267,11 +286,21 @@ class InformedPolicyRandomWalk(MotorPolicy):
     def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
         self._undo_action = None
 
-    def state_dict(self) -> dict[str, Any]:
+    def state_dict(self) -> Memento:
+        """Get a memento representing the internal state of this object.
+
+        Returns:
+            State dict for logging and saving.
+        """
         return {"undo_action": self._undo_action}
 
-    def load_state_dict(self, state_dict: dict[str, Any]) -> None:
-        self._undo_action = state_dict["undo_action"]
+    def load_state_dict(self, memento: Memento) -> None:
+        """Set the internal object state from a previously snapshot memento.
+
+        Args:
+            memento: State dict to load.
+        """
+        self._undo_action = memento["undo_action"]
 
 
 def fixme_undo_last_action(
@@ -391,11 +420,21 @@ class PredefinedPolicy(MotorPolicy):
     def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
         self.episode_step = 0
 
-    def state_dict(self) -> dict[str, Any]:
+    def state_dict(self) -> Memento:
+        """Get a memento representing the internal state of this object.
+
+        Returns:
+            State dict for logging and saving.
+        """
         return {"episode_step": self.episode_step}
 
-    def load_state_dict(self, state_dict):
-        self.episode_step = state_dict["episode_step"]
+    def load_state_dict(self, memento: Memento) -> None:
+        """Set the internal object state from a previously snapshot memento.
+
+        Args:
+            memento: State dict to load.
+        """
+        self.episode_step = memento["episode_step"]
 
 
 class JumpToGoal(MotorPolicy):
@@ -421,14 +460,24 @@ class JumpToGoal(MotorPolicy):
         self._pre_jump_state: AgentState | None = None
         self._undo_actions: list[Action] = []
 
-    def load_state_dict(self, state_dict: dict[str, Any]) -> None:
-        self._agent_id = state_dict["agent_id"]
-        self._undo_action = state_dict["undo_action"]
-        self._is_undoing_jump = state_dict["is_undoing_jump"]
-        self._pre_jump_state = state_dict["pre_jump_state"]
-        self._undo_jump_actions = state_dict["undo_jump_actions"]
+    def load_state_dict(self, memento: Memento) -> None:
+        """Set the internal object state from a previously snapshot memento.
 
-    def state_dict(self) -> dict[str, Any]:
+        Args:
+            memento: State dict to load.
+        """
+        self._agent_id = memento["agent_id"]
+        self._undo_action = memento["undo_action"]
+        self._is_undoing_jump = memento["is_undoing_jump"]
+        self._pre_jump_state = memento["pre_jump_state"]
+        self._undo_jump_actions = memento["undo_jump_actions"]
+
+    def state_dict(self) -> Memento:
+        """Get a memento representing the internal state of this object.
+
+        Returns:
+            State dict for logging and saving.
+        """
         return {
             "agent_id": self._agent_id,
             "undo_action": self._undo_action,

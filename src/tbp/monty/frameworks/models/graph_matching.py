@@ -34,6 +34,7 @@ from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.geometry import Rotation
+from tbp.monty.memento import Memento
 
 __all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
 
@@ -222,7 +223,9 @@ class MontyForGraphMatching(MontyBase):
                 # TODO: handle target to graph id stuff here, but ignoring for now
 
         # Everything but lm dict for saving new model
-        new_state_dict = {k: v for k, v in state_dict.items() if k != "lm_dict"}
+        new_state_dict: Memento = {
+            k: v for k, v in state_dict.items() if k != "lm_dict"
+        }
         new_state_dict["lm_dict"] = lm_dict
         load_dir = parallel_dirs[0].parent
 
@@ -922,11 +925,11 @@ class GraphLM(LearningModule):
             dict(lm_processed_steps=lm_processed), update_time=False
         )
 
-    def state_dict(self):
-        """Get the full state dict for logging and saving.
+    def state_dict(self) -> Memento:
+        """Get a memento representing the internal state of this object.
 
         Returns:
-            Full state dict for logging and saving.
+            State dict for logging and saving.
         """
         return dict(
             graph_memory=self.graph_memory.state_dict(),
@@ -934,15 +937,15 @@ class GraphLM(LearningModule):
             graph_id_to_target=self.graph_id_to_target,
         )
 
-    def load_state_dict(self, state_dict):
-        """Load state dict.
+    def load_state_dict(self, memento: Memento) -> None:
+        """Set the internal object state from a previously snapshot memento.
 
         Args:
-            state_dict: State dict to load.
+            memento: State dict to load.
         """
-        self.graph_memory.load_state_dict(state_dict["graph_memory"])
-        self.target_to_graph_id = state_dict["target_to_graph_id"]
-        self.graph_id_to_target = state_dict["graph_id_to_target"]
+        self.graph_memory.load_state_dict(memento["graph_memory"])
+        self.target_to_graph_id = memento["target_to_graph_id"]
+        self.graph_id_to_target = memento["graph_id_to_target"]
 
     # ======================= Private ==========================
 
@@ -1285,19 +1288,29 @@ class GraphMemory(LMMemory):
                 node_features[key] = feature
         return node_features
 
-    def state_dict(self):
-        """Return state_dict."""
-        return self.models_in_memory
-
     def __len__(self):
         """Return number of graphs in memory."""
         return len(self.get_memory_ids())
 
     # ------------------ Logging & Saving ----------------------
-    def load_state_dict(self, state_dict):
-        """Load graphs from state dict and add to memory."""
+    def state_dict(self) -> Memento:
+        """Get a memento representing the internal state of this object.
+
+        Returns:
+            State dict for logging and saving.
+        """
+        return self.models_in_memory
+
+    def load_state_dict(self, memento: Memento) -> None:
+        """Set the internal object state from a previously snapshot memento.
+
+        Load graphs from state dict and add to memory.
+
+        Args:
+            memento: State dict to load.
+        """
         logger.info("loading models")
-        for obj_name, model in state_dict.items():
+        for obj_name, model in memento.items():
             logger.info(f"loading {obj_name} with features from {model.keys()}")
             # Add loaded graph to memory
             self._add_graph_to_memory(model, obj_name)

@@ -24,6 +24,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.memento import Memento
 
 __all__ = ["MontyBase"]
 
@@ -399,15 +400,25 @@ class MontyBase(Monty):
     # Methods for saving and loading
     ###
 
-    def load_state_dict(self, state_dict):
-        assert len(state_dict["lm_dict"]) == len(self.learning_modules)
+    def load_state_dict(self, memento: Memento) -> None:
+        """Set the internal object state from a previously snapshot memento.
+
+        Args:
+            memento: State dict to load.
+        """
+        assert len(memento["lm_dict"]) == len(self.learning_modules)
         lm_counter = 0
-        lm_dict = state_dict["lm_dict"]
+        lm_dict = memento["lm_dict"]
         for lm_key in lm_dict:
             self.learning_modules[lm_counter].load_state_dict(lm_dict[lm_key])
             lm_counter = lm_counter + 1
 
-    def state_dict(self):
+    def state_dict(self) -> Memento:
+        """Get a memento representing the internal state of this object.
+
+        Returns:
+            State dict for logging and saving.
+        """
         lm_dict = {
             i: module.state_dict() for i, module in enumerate(self.learning_modules)
         }
