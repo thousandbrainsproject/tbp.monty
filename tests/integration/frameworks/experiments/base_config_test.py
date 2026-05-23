@@ -133,11 +133,11 @@ class BaseConfigTest(unittest.TestCase):
 
         exp = hydra.utils.instantiate(config_1["experiment"])
         with exp:
-            # change something about exp.state that will be saved via state_dict
+            # change something about exp.state that will be saved via save_state_dir
             new_attr = False
             exp.model.learning_modules[0].test_attr_2 = new_attr
 
-            exp.save_state_dict()
+            exp.save_state_dir()
             prev_model = exp.model
 
         config_2: Mapping = OmegaConf.to_object(  # ignore: type[assignment]
