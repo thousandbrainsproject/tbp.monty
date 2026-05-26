@@ -315,7 +315,9 @@ class GaussianPyramidTest(unittest.TestCase):
             gaussian_pyramid(image, sigma=Mock(), n_scales=Mock())
 
     @given(params=gaussian_pyramid_params(sigma=st.just(1.0)))
-    def test_has_correct_shape(self, params: GaussianPyramidParams) -> None:
+    def test_shape_matches_shapes_computed_by_pyramid_octave_shapes(
+        self, params: GaussianPyramidParams
+    ) -> None:
         expected_octave_shapes = pyramid_octave_shapes(
             params.image.shape,
             max_octaves=params.max_octaves,
