@@ -140,9 +140,9 @@ def random_images(
     draw: st.DrawFn,
     resolution: st.SearchStrategy[tuple[int, int]] | None = None,
 ) -> npt.NDArray[np.float32]:
-    resolution = resolution or default_resolutions()
-    resolution = draw(resolution)
-    return np.random.uniform(size=resolution).astype(np.float32)
+    resolution_strategy = resolution or default_resolutions()
+    resolution_sample = draw(resolution_strategy)
+    return np.random.uniform(size=resolution_sample).astype(np.float32)
 
 
 @st.composite
