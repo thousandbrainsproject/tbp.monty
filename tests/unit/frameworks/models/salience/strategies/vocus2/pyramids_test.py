@@ -186,8 +186,8 @@ def default_pyramids(
 
 class PyramidTest(unittest.TestCase):
     @given(ndim=st.sampled_from([0, 1, 3, 4]))
-    def test_cannot_create_pyramid_with_non_2d_contents(self, ndim: int) -> None:
-        with self.assertRaises(AssertionError):
+    def test_raises_value_error_if_pyramid_is_not_2d(self, ndim: int) -> None:
+        with self.assertRaises(ValueError):
             Pyramid(np.zeros((2,) * ndim, dtype=object))
 
     def test_can_create_pyramid_with_2d_contents(self) -> None:

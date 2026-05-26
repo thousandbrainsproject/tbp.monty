@@ -27,8 +27,10 @@ class Pyramid:
     data: npt.NDArray[np.object_]
 
     def __post_init__(self):
-        assert self.data.ndim == 2
-        assert self.data.size > 0
+        if self.data.ndim != 2:
+            raise ValueError("Pyramid must have 2 dimensions.")
+        if self.data.size == 0:
+            raise ValueError("Pyramid must have data.")
 
     @property
     def shape(self) -> tuple[int, int]:
