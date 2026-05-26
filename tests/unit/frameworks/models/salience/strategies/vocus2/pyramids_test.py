@@ -603,6 +603,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             np.allclose(center_variations, surround_variations, atol=DEFAULT_TOLERANCE)
         )
 
+
 class CenterSurroundPyramidsCalibrationTest(unittest.TestCase):
     def test_center_planes_have_variance_than_corresponding_surround_planes(
         self,
