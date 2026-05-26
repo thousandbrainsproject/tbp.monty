@@ -247,11 +247,6 @@ class PyramidOctaveShapesTest(unittest.TestCase):
         self.assertLessEqual(len(computed_shapes), max_octaves)
 
 
-# --------------------------------------------------------------------------------------
-# Gaussian Pyramid Tests
-# --------------------------------------------------------------------------------------
-
-
 @dataclass(frozen=True)
 class GaussianPyramidParams:
     image: npt.NDArray[np.float32]
