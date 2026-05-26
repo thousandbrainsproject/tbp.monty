@@ -21,7 +21,7 @@ class Snapshotable(Protocol):
     """
 
     def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
+        """Snapshot a memento representing the internal state of this object.
 
         Returns:
             State dict for logging and saving.
@@ -29,7 +29,7 @@ class Snapshotable(Protocol):
         ...
 
     def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
+        """Load the internal object state from a previously snapshot memento.
 
         Args:
             memento: State dict to load.

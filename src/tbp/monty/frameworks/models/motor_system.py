@@ -24,6 +24,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
+from tbp.monty.memento import Memento, Snapshotable
 
 __all__ = ["MotorSystem"]
 
@@ -35,7 +36,7 @@ class SurfacePolicyActionDetailsTelemetry:
     z_defined_pc: list[tuple[np.ndarray, tuple[np.ndarray, np.ndarray]] | None]
 
 
-class MotorSystem:
+class MotorSystem(Snapshotable):
     """The basic motor system implementation."""
 
     def __init__(self, policy_selector: MotorPolicySelector) -> None:
@@ -44,7 +45,7 @@ class MotorSystem:
         Args:
             policy_selector: The motor policy selector to use.
         """
-        self._policy_selector = policy_selector
+        self._policy_selector: MotorPolicySelector = policy_selector
         # For each step, we store the actions produced by the policy and the current
         # motor system state as a (actions, state) tuple.
         self._action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]] = []
@@ -80,7 +81,7 @@ class MotorSystem:
             z_defined_pc=[],
         )
 
-    def state_dict(self) -> dict[str, Any]:
+    def state_dict(self) -> Memento:
         return self._policy_selector.state_dict()
 
     def __call__(

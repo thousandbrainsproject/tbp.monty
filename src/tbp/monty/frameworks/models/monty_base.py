@@ -401,11 +401,6 @@ class MontyBase(Monty):
     ###
 
     def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Args:
-            memento: State dict to load.
-        """
         assert len(memento["lm_dict"]) == len(self.learning_modules)
         lm_counter = 0
         lm_dict = memento["lm_dict"]
@@ -414,11 +409,6 @@ class MontyBase(Monty):
             lm_counter = lm_counter + 1
 
     def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
-
-        Returns:
-            State dict for logging and saving.
-        """
         lm_dict = {
             i: module.state_dict() for i, module in enumerate(self.learning_modules)
         }

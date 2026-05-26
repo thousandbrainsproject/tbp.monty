@@ -109,15 +109,6 @@ class MotorPolicy(Snapshotable, abc.ABC):
     """The abstract scaffold for motor policies."""
 
     @abc.abstractmethod
-    def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Args:
-            memento: State dict to load.
-        """
-        pass
-
-    @abc.abstractmethod
     def pre_episode(self, motor_system: MotorSystem) -> None:
         """Pre episode hook.
 
@@ -128,11 +119,10 @@ class MotorPolicy(Snapshotable, abc.ABC):
 
     @abc.abstractmethod
     def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
+        pass
 
-        Returns:
-            State dict for logging and saving.
-        """
+    @abc.abstractmethod
+    def load_state_dict(self, memento: Memento) -> None:
         pass
 
     @abc.abstractmethod
@@ -207,19 +197,9 @@ class BasePolicy(MotorPolicy):
         pass
 
     def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
-
-        Returns:
-            State dict for logging and saving.
-        """
         return {}
 
     def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Args:
-            memento: State dict to load.
-        """
         pass
 
 
@@ -287,19 +267,9 @@ class InformedPolicyRandomWalk(MotorPolicy):
         self._undo_action = None
 
     def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
-
-        Returns:
-            State dict for logging and saving.
-        """
         return {"undo_action": self._undo_action}
 
     def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Args:
-            memento: State dict to load.
-        """
         self._undo_action = memento["undo_action"]
 
 
@@ -421,19 +391,9 @@ class PredefinedPolicy(MotorPolicy):
         self.episode_step = 0
 
     def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
-
-        Returns:
-            State dict for logging and saving.
-        """
         return {"episode_step": self.episode_step}
 
     def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Args:
-            memento: State dict to load.
-        """
         self.episode_step = memento["episode_step"]
 
 
@@ -461,11 +421,6 @@ class JumpToGoal(MotorPolicy):
         self._undo_actions: list[Action] = []
 
     def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Args:
-            memento: State dict to load.
-        """
         self._agent_id = memento["agent_id"]
         self._undo_action = memento["undo_action"]
         self._is_undoing_jump = memento["is_undoing_jump"]
@@ -473,11 +428,6 @@ class JumpToGoal(MotorPolicy):
         self._undo_jump_actions = memento["undo_jump_actions"]
 
     def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
-
-        Returns:
-            State dict for logging and saving.
-        """
         return {
             "agent_id": self._agent_id,
             "undo_action": self._undo_action,

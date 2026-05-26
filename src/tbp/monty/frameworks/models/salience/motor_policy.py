@@ -68,24 +68,14 @@ class LookAtGoal(MotorPolicy):
         self._agent_id = agent_id
         self._sensor_id = sensor_id
 
-    def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Args:
-            memento: State dict to load.
-        """
-        self._agent_id = memento["agent_id"]
-        self._sensor_id = memento["sensor_id"]
-
     def pre_episode(self, motor_system: MotorSystem) -> None:
         pass
 
-    def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
+    def load_state_dict(self, memento: Memento) -> None:
+        self._agent_id = memento["agent_id"]
+        self._sensor_id = memento["sensor_id"]
 
-        Returns:
-            State dict for logging and saving.
-        """
+    def state_dict(self) -> Memento:
         return {
             "agent_id": self._agent_id,
             "sensor_id": self._sensor_id,

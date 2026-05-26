@@ -229,20 +229,10 @@ class Monty(Snapshotable, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
-
-        Returns:
-            State dict for logging and saving.
-        """
         pass
 
     @abc.abstractmethod
     def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Args:
-            memento: State dict to load.
-        """
         pass
 
     ###
@@ -369,20 +359,10 @@ class LearningModule(Snapshotable, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
-
-        Returns:
-            State dict for logging and saving.
-        """
         pass
 
     @abc.abstractmethod
     def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Args:
-            memento: State dict to load.
-        """
         pass
 
 
@@ -403,20 +383,10 @@ class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
-
-        Returns:
-            State dict for logging and saving.
-        """
         pass
 
     @abc.abstractmethod
     def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Args:
-            memento: State dict to load.
-        """
         pass
 
 
@@ -461,13 +431,9 @@ class GoalGenerator(metaclass=abc.ABCMeta):
         pass
 
 
-class SensorModule(metaclass=abc.ABCMeta):
+class SensorModule(Snapshotable, metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def state_dict(self):
-        """Return a serializable dict with this sensor module's state.
-
-        Includes everything needed to save/load this sensor module.
-        """
+    def state_dict(self) -> Memento:
         pass
 
     @abc.abstractmethod

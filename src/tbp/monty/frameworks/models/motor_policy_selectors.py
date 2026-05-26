@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
@@ -21,6 +21,7 @@ from tbp.monty.frameworks.models.motor_policies import (
     PolicyStatus,
 )
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
+from tbp.monty.memento import Memento, Snapshotable
 
 if TYPE_CHECKING:
     from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -49,10 +50,8 @@ def highest_confidence_goal(goals: list[Goal]) -> Goal:
     return sorted(goals, key=lambda x: x.confidence, reverse=True)[0]
 
 
-class MotorPolicySelector(Protocol):
+class MotorPolicySelector(Snapshotable, Protocol):
     def pre_episode(self, motor_system: MotorSystem) -> None: ...
-
-    def state_dict(self) -> dict[str, Any]: ...
 
     def __call__(
         self,
@@ -87,7 +86,7 @@ class SinglePolicySelector(MotorPolicySelector):
         self._policy.pre_episode(motor_system)
         self._selected_goals = []
 
-    def state_dict(self) -> dict[str, Any]:
+    def state_dict(self) -> Memento:
         return {
             "policy": self._policy.state_dict(),
             "selected_goals": self._selected_goals,
@@ -137,7 +136,7 @@ class DistantPolicySelector(MotorPolicySelector):
         self._selected_policies = []
         self._selected_goals = []
 
-    def state_dict(self) -> dict[str, Any]:
+    def state_dict(self) -> Memento:
         return {
             "jump_to_goal": self._jump_to_goal.state_dict(),
             "look_at_goal": self._look_at_goal.state_dict(),

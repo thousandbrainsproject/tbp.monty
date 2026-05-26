@@ -501,13 +501,6 @@ class DisplacementGraphMemory(GraphMemory):
 
     # ------------------ Logging & Saving ----------------------
     def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Load graphs into memory from a state_dict and add point pair features.
-
-        Args:
-            memento: State dict to load.
-        """
         logger.info("loading models")
         for obj_name, model in memento.items():
             logger.debug(f"loading {obj_name}: {model}")
