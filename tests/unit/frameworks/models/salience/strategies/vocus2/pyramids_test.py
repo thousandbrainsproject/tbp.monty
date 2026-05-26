@@ -29,7 +29,6 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2.pyramids import (
     pyramid_combine,
     pyramid_octave_shapes,
 )
-from tbp.monty.frameworks.sensors import Resolution2D
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.unit.statistics import mean_local_variation
 
@@ -47,7 +46,7 @@ MIN_FRACTIONAL_SIGMA_SEPARATION = 0.02
 @st.composite
 def default_resolutions(
     draw: st.DrawFn,
-) -> Resolution2D:
+) -> tuple[int, int]:
     height = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
     width = draw(st.integers(min_value=1, max_value=MAX_DIM_SIZE))
     return (height, width)
@@ -75,7 +74,7 @@ def default_max_octaves(
 @st.composite
 def default_sigmas(
     draw: st.DrawFn,
-    resolution: Resolution2D,
+    resolution: tuple[int, int],
 ) -> float:
     min_dim_size = min(resolution)
     if min_dim_size == 1:
@@ -105,7 +104,7 @@ def default_image_values(draw: st.DrawFn) -> float:
 @st.composite
 def default_images(
     draw: st.DrawFn,
-    resolution: st.SearchStrategy[Resolution2D] | None = None,
+    resolution: st.SearchStrategy[tuple[int, int]] | None = None,
     elements: st.SearchStrategy[float] | None = None,
     unique: bool = False,
 ) -> npt.NDArray[np.float32]:
@@ -124,7 +123,7 @@ def default_images(
 @st.composite
 def solid_images(
     draw: st.DrawFn,
-    resolution: st.SearchStrategy[Resolution2D] | None = None,
+    resolution: st.SearchStrategy[tuple[int, int]] | None = None,
     elements: st.SearchStrategy[float] | None = None,
 ) -> npt.NDArray[np.float32]:
     resolution = resolution or default_resolutions()
@@ -139,7 +138,7 @@ def solid_images(
 @st.composite
 def random_images(
     draw: st.DrawFn,
-    resolution: st.SearchStrategy[Resolution2D] | None = None,
+    resolution: st.SearchStrategy[tuple[int, int]] | None = None,
 ) -> npt.NDArray[np.float32]:
     resolution_strategy = resolution or default_resolutions()
     resolution_sample = draw(resolution_strategy)
@@ -159,7 +158,7 @@ def nonsolid_images(draw: st.DrawFn) -> npt.NDArray[np.float32]:
 def default_pyramids(
     draw: st.DrawFn,
     fill_value: float = 0.0,
-    resolution: st.SearchStrategy[Resolution2D] | None = None,
+    resolution: st.SearchStrategy[tuple[int, int]] | None = None,
     n_scales: st.SearchStrategy[int] | None = None,
     max_octaves: st.SearchStrategy[int | None] | None = None,
 ) -> Pyramid:
@@ -220,7 +219,7 @@ class PyramidOctaveShapesTest(unittest.TestCase):
     @given(resolution=default_resolutions())
     def test_generates_maximum_possible_shapes_when_max_level_is_none(
         self,
-        resolution: Resolution2D,
+        resolution: tuple[int, int],
     ) -> None:
         computed_shapes = pyramid_octave_shapes(resolution)
         expected_shapes = []
@@ -235,7 +234,7 @@ class PyramidOctaveShapesTest(unittest.TestCase):
     )
     def test_max_octaves_limits_number_of_shapes(
         self,
-        resolution: Resolution2D,
+        resolution: tuple[int, int],
         max_octaves: int,
     ) -> None:
         computed_shapes = pyramid_octave_shapes(resolution, max_octaves=max_octaves)
@@ -308,7 +307,7 @@ class GaussianPyramidTest(unittest.TestCase):
     )
     def test_raises_value_error_if_image_has_size_zero(
         self,
-        resolution: Resolution2D,
+        resolution: tuple[int, int],
     ) -> None:
         image = np.zeros(resolution, dtype=np.float32)
         with self.assertRaises(ValueError):
@@ -466,7 +465,7 @@ class CenterSurroundPyramidsParams:
 @st.composite
 def default_cs_sigmas(
     draw: st.DrawFn,
-    resolution: Resolution2D,
+    resolution: tuple[int, int],
 ) -> tuple[float, float]:
     min_dim_size = min(resolution)
     min_center_sigma = 1.0
@@ -694,7 +693,7 @@ class LaplacianPyramidTest(unittest.TestCase):
 
         def mock_resize(
             image: np.ndarray,
-            shape: Resolution2D,
+            shape: tuple[int, int],
             interpolation: int,  # noqa: ARG001
         ) -> np.ndarray:
             return np.full(shape, surround_fill, dtype=image.dtype)
@@ -824,7 +823,7 @@ class PyramidCollapseTest(unittest.TestCase):
 
         def mock_resize(
             image: np.ndarray,
-            shape: Resolution2D,
+            shape: tuple[int, int],
             interpolation: int,  # noqa: ARG001
         ) -> np.ndarray:
             return np.full(shape, resize_fill, dtype=image.dtype)
