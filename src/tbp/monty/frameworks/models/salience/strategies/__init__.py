@@ -8,5 +8,6 @@
 # https://opensource.org/licenses/MIT.
 from .protocol import SalienceStrategy
 from .uniform import Uniform
+from .vocus2 import Vocus2
 
-__all__ = ["SalienceStrategy", "Uniform"]
+__all__ = ["SalienceStrategy", "Uniform", "Vocus2"]
