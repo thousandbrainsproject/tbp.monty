@@ -49,6 +49,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     project_onto_tangent_plane,
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
+from tbp.monty.memento import Memento
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +162,7 @@ class TwoDSensorModule(SensorModule):
             rotation=agent.rotation * sensor.rotation,
         )
 
-    def state_dict(self):
+    def state_dict(self) -> Memento:
         state_dict = self._snapshot_telemetry.state_dict()
         state_dict.update(processed_observations=self.processed_obs)
         return state_dict

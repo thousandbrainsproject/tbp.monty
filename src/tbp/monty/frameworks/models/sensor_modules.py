@@ -38,6 +38,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 from tbp.monty.geometry import Rotation
+from tbp.monty.memento import Memento, Snapshotable
 
 __all__ = [
     "CameraSM",
@@ -56,7 +57,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-class SnapshotTelemetry:
+class SnapshotTelemetry(Snapshotable):
     """Keeps track of raw observation snapshot telemetry."""
 
     def __init__(self) -> None:
@@ -89,9 +90,7 @@ class SnapshotTelemetry:
             )
         )
 
-    def state_dict(
-        self,
-    ) -> dict[str, list[SensorObservation] | list[dict[str, np.ndarray]]]:
+    def state_dict(self) -> Memento:
         """Returns recorded raw observation snapshots.
 
         Returns:
@@ -412,7 +411,7 @@ class Probe(SensorModule):
 
         self._snapshot_telemetry = SnapshotTelemetry()
 
-    def state_dict(self):
+    def state_dict(self) -> Memento:
         return self._snapshot_telemetry.state_dict()
 
     def update_state(self, agent: AgentState):
@@ -630,7 +629,7 @@ class CameraSM(SensorModule):
             rotation=agent.rotation * sensor.rotation,
         )
 
-    def state_dict(self):
+    def state_dict(self) -> Memento:
         state_dict = self._snapshot_telemetry.state_dict()
         state_dict.update(processed_observations=self.processed_obs)
         return state_dict
