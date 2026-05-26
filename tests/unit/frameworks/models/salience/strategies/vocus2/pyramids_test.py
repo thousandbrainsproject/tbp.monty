@@ -349,37 +349,37 @@ class GaussianPyramidTest(unittest.TestCase):
         self,
         params: GaussianPyramidParams,
     ) -> None:
-        # Test that each plane in the pyramid is blurrier than its predecessor.
-        #
-        # Here we use standard deviation to quantify each plane's blurriness.
-        # Therefore, we want to show that the following holds for all i:
-        #
-        #                   std(plane[i]) > std(plane[i+1])
-        #
-        # In reality, the above condition will not hold due several factors.
-        #
-        #   1. Downsampling an image can slightly increase variance. There are mundane
-        #      and not concerning reasons for this.
-        #   2. Gaussian blur can also increase variance around the border. As planes
-        #      get smaller, the border pixels take up a larger fraction of the plane,
-        #      so boundary artifacts have an outsized impact on global variance.
-        #   3. Small planes also means fewer pixels, meaning our statistics get noisier
-        #      and less stable.
-        #   4. For solid (or nearly solid) images, artifacts due to the above causes
-        #      won't be counteracted out by variance reductions elsewhere in the image.
-        #
-        # If we naively add a tolerance to our checks and use it for every comparison,
-        # then we'd never be able to check that variance ever decreases. Instead,
-        # we'll start each comparison assuming a tolerance of 0 and widen it
-        # as necessary.
-        #
-        #   1. When comparing the last plane in octave i with the first plane in the
-        #      octave i+1, pad the tolerance with `downsampling_tolerance` to
-        #      accommodate for downsampling artifacts.
-        #   2. When comparing very small planes, pad the tolerance with
-        #      `small_plane_tolerance` to accommodate for statistical noise.
-        #      to accommodate for statistical noise.
-        #   3. When planes already have very low variance, we grant extra tolerance.
+        """Test that each plane in the pyramid is blurrier than its predecessor.
+
+        Here we use standard deviation to quantify each plane's blurriness.
+        Therefore, we want to show that the following holds for all i:
+
+                          std(plane[i]) > std(plane[i+1])
+
+        In reality, the above condition will not hold due several factors.
+
+          1. Downsampling an image can slightly increase variance. There are mundane
+             and not concerning reasons for this.
+          2. Gaussian blur can also increase variance around the border. As planes
+             get smaller, the border pixels take up a larger fraction of the plane,
+             so boundary artifacts have an outsized impact on global variance.
+          3. Small planes also means fewer pixels, meaning our statistics get noisier
+             and less stable.
+          4. For solid (or nearly solid) images, artifacts due to the above causes
+             won't be counteracted out by variance reductions elsewhere in the image.
+
+        If we naively add a tolerance to our checks and use it for every comparison,
+        then we'd never be able to check that variance ever decreases. Instead,
+        we'll start each comparison assuming a tolerance of 0 and widen it
+        as necessary.
+
+          1. When comparing the last plane in octave i with the first plane in the
+             octave i+1, pad the tolerance with `downsampling_tolerance` to
+             accommodate for downsampling artifacts.
+          2. When comparing very small planes, pad the tolerance with
+             `small_plane_tolerance` to accommodate for statistical noise.
+          3. When planes already have very low variance, grant extra tolerance.
+        """
         pyr = gaussian_pyramid(
             params.image,
             sigma=params.sigma,
