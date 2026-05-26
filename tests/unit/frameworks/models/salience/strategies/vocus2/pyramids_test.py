@@ -16,7 +16,7 @@ import cv2
 import numpy as np
 import numpy.testing as nptest
 import numpy.typing as npt
-from hypothesis import given, reproduce_failure, settings
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
