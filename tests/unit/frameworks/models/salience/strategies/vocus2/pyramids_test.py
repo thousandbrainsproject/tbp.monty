@@ -62,12 +62,18 @@ def default_max_octaves(
     draw: st.DrawFn,
     min_value: int = 1,
     max_value: int = MAX_OCTAVES,
-    allow_none: bool = True,
 ) -> int | None:
-    if allow_none:
-        return draw(
-            st.one_of(st.none(), st.integers(min_value=min_value, max_value=max_value))
-        )
+    return draw(
+        st.one_of(st.none(), st.integers(min_value=min_value, max_value=max_value))
+    )
+
+
+@st.composite
+def not_none_max_octaves(
+    draw: st.DrawFn,
+    min_value: int = 1,
+    max_value: int = MAX_OCTAVES,
+) -> int:
     return draw(st.integers(min_value=min_value, max_value=max_value))
 
 
@@ -230,7 +236,7 @@ class PyramidOctaveShapesTest(unittest.TestCase):
 
     @given(
         resolution=default_resolutions(),
-        max_octaves=default_max_octaves(allow_none=False),
+        max_octaves=not_none_max_octaves(),
     )
     def test_max_octaves_limits_number_of_shapes(
         self,
