@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 
-from tbp.monty.frameworks.models.salience.strategies.protocol import SalienceStrategy
+from tbp.monty.frameworks.models.salience.strategies import SalienceStrategy
 
 
 class Uniform(SalienceStrategy):
