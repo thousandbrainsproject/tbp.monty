@@ -733,11 +733,6 @@ class LaplacianPyramidTest(unittest.TestCase):
                     call_count += 1
 
 
-# --------------------------------------------------------------------------------------
-# Pyramid Combine Tests
-# --------------------------------------------------------------------------------------
-
-
 @st.composite
 def differently_shaped_pyramids(
     draw: st.DrawFn,
@@ -814,11 +809,6 @@ class PyramidCombineTest(unittest.TestCase):
                     ),
                 )
                 call_count += 1
-
-
-# --------------------------------------------------------------------------------------
-# Pyramid Collapse Tests
-# --------------------------------------------------------------------------------------
 
 
 class PyramidCollapseTest(unittest.TestCase):
