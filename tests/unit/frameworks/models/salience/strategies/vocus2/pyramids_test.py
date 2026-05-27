@@ -425,18 +425,17 @@ class GaussianPyramidCalibrationTest(unittest.TestCase):
     def test_subsequent_planes_have_decreasing_variance(
         self,
     ) -> None:
-        # This is a more specific and stricter test than the one above.
-        #
-        # While the more general test a wider range of inputs, it also has to make
-        # complex allowances for the many ways that spurious increases in global
-        # variance can be introduced. This made it impossible to definitely check
-        # for the basic properties we expect of a multi-scale gaussian pyramid 99.99%
-        # of the time.
-        #
-        # This test complements the more general test by performing maximally strict
-        # checks on a known example.
-        #
-        # If this fails, then something has changed that should probably be attended to.
+        """More specific and stricter test than `GaussianPyramidTest`.
+
+        While the more general `GaussianPyramidTest` tests a wider range of inputs, it
+        also has to make complex allowances for the many ways that spurious increases
+        in global variance can be introduced.
+
+        This test complements the more general `GaussianPyramidTest` by performing
+        maximally strict checks on a known, calibrated example.
+
+        If this fails, then something has changed that should probably be attended to.
+        """
         rng = np.random.RandomState(67)
         image = rng.uniform(0.0, 1.0, size=(512, 512))
         pyr = gaussian_pyramid(image, sigma=3.0, n_scales=2)
