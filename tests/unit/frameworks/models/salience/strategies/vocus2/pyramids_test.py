@@ -606,9 +606,18 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
 
 
 class CenterSurroundPyramidsCalibrationTest(unittest.TestCase):
-    def test_center_planes_have_variance_than_corresponding_surround_planes(
+    def test_center_planes_have_higher_variance_than_corresponding_surround_planes(
         self,
     ) -> None:
+        """More specific and stricter test than `CenterSurroundPyramidsTest`.
+
+        While the more general `CenterSurroundPyramidsTest` tests a wider range of
+        inputs, it makes an allowance for spurious increases in variance that can be
+        introduced.
+
+        This test complements the more general `CenterSurroundPyramidsTest` by
+        performing maximally strict checks on a known, calibrated example.
+        """
         rng = np.random.RandomState(67)
         image = rng.uniform(0.0, 1.0, size=(512, 512))
         center_sigma = 3.0
