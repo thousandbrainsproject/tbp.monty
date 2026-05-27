@@ -499,15 +499,14 @@ def center_surround_pyramids_params(
     draw: st.DrawFn,
     image: st.SearchStrategy[npt.NDArray[np.float32]] | None = None,
 ) -> CenterSurroundPyramidsParams:
-    """Generate parameters for calls to `gaussian_pyramid`.
+    """Generate parameters for calls to `center_surround_pyramids`.
 
     Args:
         draw: The hypothesis draw function.
         image: A strategy for generating images or None.
-        cs_sigmas: A strategy for generating sigmas or None.
 
     Returns:
-        The parameters for a call to `gaussian_pyramid`.
+        The parameters for a call to `center_surround_pyramids`.
     """
     image = image or default_images()
     _image = draw(image)
