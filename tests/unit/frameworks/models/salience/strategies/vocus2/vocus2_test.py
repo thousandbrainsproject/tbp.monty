@@ -600,7 +600,7 @@ def rectangular_mask(
     return data
 
 
-class Vocus2TestFromConfig(unittest.TestCase):
+class Vocus2FromConfigTest(unittest.TestCase):
     @patch(
         "tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.ColorChannelSalience",
         return_value=Mock(),
