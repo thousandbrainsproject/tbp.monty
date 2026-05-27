@@ -673,7 +673,9 @@ class LaplacianPyramidTest(unittest.TestCase):
     @given(
         input_pyramid=valid_input_pyramid_for_laplacian_pyramid(fill_value=FILL_VALUE),
     )
-    def test_has_correct_shape(self, input_pyramid: Pyramid) -> None:
+    def test_shape_same_as_input_pyramid_minus_one_octave(
+        self, input_pyramid: Pyramid
+    ) -> None:
         pyramid = laplacian_pyramid(input_pyramid)
         self.assertEqual(input_pyramid.n_octaves - 1, pyramid.n_octaves)
         self.assertEqual(input_pyramid.n_scales, pyramid.n_scales)
