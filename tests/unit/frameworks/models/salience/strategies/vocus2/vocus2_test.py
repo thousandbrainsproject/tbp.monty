@@ -74,11 +74,17 @@ def unsafe_resolutions(draw: st.DrawFn) -> tuple[int, int]:
     return (height, width)
 
 
-@st.composite
-def safe_cs_sigmas(
-    draw: st.DrawFn,
+def sigma_strategy_limits(
     resolution: tuple[int, int],
-) -> tuple[float, float]:
+) -> tuple[float, float, float, float]:
+    """Returns limits for generating center and surround sigmas for a given resolution.
+
+    Args:
+        resolution: The resolution of the image to generate sigmas for.
+
+    Returns:
+        Limits for generating center and surround sigmas.
+    """
     min_dim_size = min(resolution)
     min_center_sigma = 1.0
     max_center_sigma = min_dim_size * SafeOperatingLimits.max_fractional_center_sigma
@@ -87,6 +93,22 @@ def safe_cs_sigmas(
     )
     max_surround_sigma = (
         min_dim_size * SafeOperatingLimits.max_fractional_surround_sigma
+    )
+    return (
+        min_center_sigma,
+        max_center_sigma,
+        min_sigma_separation,
+        max_surround_sigma,
+    )
+
+
+@st.composite
+def safe_cs_sigmas(
+    draw: st.DrawFn,
+    resolution: tuple[int, int],
+) -> tuple[float, float]:
+    min_center_sigma, max_center_sigma, min_sigma_separation, max_surround_sigma = (
+        sigma_strategy_limits(resolution)
     )
 
     center_sigma = draw(
@@ -106,14 +128,8 @@ def unsafe_cs_sigmas(
     draw: st.DrawFn,
     resolution: tuple[int, int],
 ) -> tuple[float, float]:
-    min_dim_size = min(resolution)
-    min_center_sigma = 1.0
-    max_center_sigma = min_dim_size * SafeOperatingLimits.max_fractional_center_sigma
-    min_sigma_separation = (
-        min_dim_size * SafeOperatingLimits.min_fractional_sigma_separation
-    )
-    max_surround_sigma = (
-        min_dim_size * SafeOperatingLimits.max_fractional_surround_sigma
+    min_center_sigma, max_center_sigma, min_sigma_separation, max_surround_sigma = (
+        sigma_strategy_limits(resolution)
     )
 
     center_sigma_too_low = st.floats(
