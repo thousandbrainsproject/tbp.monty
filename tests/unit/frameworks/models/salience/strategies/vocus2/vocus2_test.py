@@ -202,6 +202,7 @@ def color_channel_salience_setup(
         box=None,
     )
 
+
 @dataclass
 class BoxSetup:
     center_sigma: float
