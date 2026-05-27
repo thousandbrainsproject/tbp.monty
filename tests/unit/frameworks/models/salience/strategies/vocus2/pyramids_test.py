@@ -691,8 +691,9 @@ class LaplacianPyramidTest(unittest.TestCase):
     ) -> None:
         data = np.zeros((1, 1), dtype=object)
         data[0, 0] = np.zeros((1, 1), dtype=np.float32)
+        input_pyramid = Pyramid(data)
         with self.assertRaises(ValueError):
-            laplacian_pyramid(Pyramid(data))
+            laplacian_pyramid(input_pyramid)
 
     @given(
         input_pyramid=valid_input_pyramid_for_laplacian_pyramid(fill_value=FILL_VALUE),
