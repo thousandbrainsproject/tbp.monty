@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import unittest
 from dataclasses import dataclass
+from typing import Sequence
 from unittest.mock import Mock, patch, sentinel
 
 import cv2
@@ -114,8 +115,8 @@ def default_images(
     elements: st.SearchStrategy[float] | None = None,
     unique: bool = False,
 ) -> npt.NDArray[np.float32]:
-    resolution = resolution or default_resolutions()
-    elements = elements or default_image_values()
+    resolution = resolution if resolution is not None else default_resolutions()
+    elements = elements if elements is not None else default_image_values()
     return draw(
         arrays(
             dtype=np.float32,
@@ -132,8 +133,8 @@ def solid_images(
     resolution: st.SearchStrategy[tuple[int, int]] | None = None,
     elements: st.SearchStrategy[float] | None = None,
 ) -> npt.NDArray[np.float32]:
-    resolution = resolution or default_resolutions()
-    elements = elements or default_image_values()
+    resolution = resolution if resolution is not None else default_resolutions()
+    elements = elements if elements is not None else default_image_values()
     return np.full(
         draw(resolution),
         draw(elements),
@@ -146,7 +147,9 @@ def random_images(
     draw: st.DrawFn,
     resolution: st.SearchStrategy[tuple[int, int]] | None = None,
 ) -> npt.NDArray[np.float32]:
-    resolution_strategy = resolution or default_resolutions()
+    resolution_strategy = (
+        resolution if resolution is not None else default_resolutions()
+    )
     resolution_sample = draw(resolution_strategy)
     return np.random.uniform(size=resolution_sample).astype(np.float32)
 
@@ -168,13 +171,13 @@ def default_pyramids(
     n_scales: st.SearchStrategy[int] | None = None,
     max_octaves: st.SearchStrategy[int | None] | None = None,
 ) -> Pyramid:
-    resolution = resolution or default_resolutions()
+    resolution = resolution if resolution is not None else default_resolutions()
     _resolution = draw(resolution)
 
-    n_scales = n_scales or default_n_scales()
+    n_scales = n_scales if n_scales is not None else default_n_scales()
     _n_scales = draw(n_scales)
 
-    max_octaves = max_octaves or default_max_octaves()
+    max_octaves = max_octaves if max_octaves is not None else default_max_octaves()
     _max_octaves = draw(max_octaves)
 
     octave_shapes = pyramid_octave_shapes(_resolution, max_octaves=_max_octaves)
@@ -279,16 +282,16 @@ def gaussian_pyramid_params(
     Returns:
         The parameters for a call to `gaussian_pyramid`.
     """
-    image = image or default_images()
+    image = image if image is not None else default_images()
     _image = draw(image)
 
-    sigma = sigma or default_sigmas(_image.shape)
+    sigma = sigma if sigma is not None else default_sigmas(_image.shape)
     _sigma = draw(sigma)
 
-    n_scales = n_scales or default_n_scales()
+    n_scales = n_scales if n_scales is not None else default_n_scales()
     _n_scales = draw(n_scales)
 
-    max_octaves = max_octaves or default_max_octaves()
+    max_octaves = max_octaves if max_octaves is not None else default_max_octaves()
     _max_octaves = draw(max_octaves)
 
     return GaussianPyramidParams(
@@ -508,7 +511,7 @@ def center_surround_pyramids_params(
     Returns:
         The parameters for a call to `center_surround_pyramids`.
     """
-    image = image or default_images()
+    image = image if image is not None else default_images()
     _image = draw(image)
 
     center_sigma, surround_sigma = draw(default_cs_sigmas(_image.shape))
@@ -644,27 +647,87 @@ class CenterSurroundPyramidsCalibrationTest(unittest.TestCase):
 
 
 @st.composite
+def image_shapes(
+    draw: st.DrawFn, min_value: int = 2, max_value: int = MAX_DIM_SIZE
+) -> tuple[int, int]:
+    height = draw(st.integers(min_value=min_value, max_value=max_value))
+    width = draw(st.integers(min_value=min_value, max_value=max_value))
+    return (height, width)
+
+
+@st.composite
 def valid_input_pyramid_for_laplacian_pyramid(
     draw: st.DrawFn,
     fill_value: float = 0.0,
+    image_shape: st.SearchStrategy[tuple[int, int]] | None = None,
+    n_scales: st.SearchStrategy[int] | None = None,
+    max_octaves: st.SearchStrategy[int | None] | None = None,
 ) -> Pyramid:
-    height = draw(st.integers(min_value=2, max_value=MAX_DIM_SIZE))
-    width = draw(st.integers(min_value=2, max_value=MAX_DIM_SIZE))
-    resolution = (height, width)
-    n_scales = draw(default_n_scales())
-    max_octaves = draw(st.one_of(st.none(), default_max_octaves(min_value=2)))
+    image_shape = image_shape if image_shape is not None else image_shapes()
+    _image_shape = draw(image_shape)
 
-    octave_shapes = pyramid_octave_shapes(resolution, max_octaves=max_octaves)
+    n_scales = n_scales if n_scales is not None else default_n_scales()
+    _n_scales = draw(n_scales)
+
+    max_octaves = (
+        max_octaves
+        if max_octaves is not None
+        else st.one_of(st.none(), default_max_octaves(min_value=2))
+    )
+    _max_octaves = draw(max_octaves)
+
+    octave_shapes = pyramid_octave_shapes(_image_shape, max_octaves=_max_octaves)
     n_octaves = len(octave_shapes)
-    pyramid_data = np.zeros((n_octaves, n_scales), dtype=object)
+    pyramid_data = np.zeros((n_octaves, _n_scales), dtype=object)
     for octave, octave_shape in enumerate(octave_shapes):
-        for scale in range(n_scales):
+        for scale in range(_n_scales):
             pyramid_data[octave, scale] = np.full(
                 octave_shape,
                 fill_value,
                 dtype=np.float32,
             )
     return Pyramid(pyramid_data)
+
+
+@st.composite
+def same_shape_valid_input_pyramids_for_laplacian_pyramid(
+    draw: st.DrawFn,
+    first_fill_value: float = 0.0,
+    second_fill_value: float = 1.0,
+    image_shape: st.SearchStrategy[tuple[int, int]] | None = None,
+    n_scales: st.SearchStrategy[int] | None = None,
+    max_octaves: st.SearchStrategy[int | None] | None = None,
+) -> tuple[Pyramid, Pyramid]:
+    image_shape = image_shape if image_shape is not None else image_shapes()
+    _image_shape = draw(image_shape)
+
+    n_scales = n_scales if n_scales is not None else default_n_scales()
+    _n_scales = draw(n_scales)
+
+    max_octaves = (
+        max_octaves
+        if max_octaves is not None
+        else st.one_of(st.none(), default_max_octaves(min_value=2))
+    )
+    _max_octaves = draw(max_octaves)
+
+    pyramid_1 = draw(
+        valid_input_pyramid_for_laplacian_pyramid(
+            fill_value=first_fill_value,
+            image_shape=st.just(_image_shape),
+            n_scales=st.just(_n_scales),
+            max_octaves=st.just(_max_octaves),
+        )
+    )
+    pyramid_2 = draw(
+        valid_input_pyramid_for_laplacian_pyramid(
+            fill_value=second_fill_value,
+            image_shape=st.just(_image_shape),
+            n_scales=st.just(_n_scales),
+            max_octaves=st.just(_max_octaves),
+        )
+    )
+    return (pyramid_1, pyramid_2)
 
 
 class LaplacianPyramidTest(unittest.TestCase):
@@ -769,15 +832,15 @@ class PyramidCombineTest(unittest.TestCase):
     @given(pyramids=differently_shaped_pyramids())
     def test_raises_value_error_if_pyramids_have_different_shapes(
         self,
-        pyramids: list[Pyramid],
+        pyramids: Sequence[Pyramid],
     ) -> None:
         with self.assertRaises(ValueError):
             pyramid_combine(pyramids, Mock())
 
-    @given(pyramid=valid_input_pyramid_for_laplacian_pyramid())
-    def test_returns_combined_pyramid_with_correct_shape_and_reduced_planes(
+    @given(pyramids=same_shape_valid_input_pyramids_for_laplacian_pyramid())
+    def test_returns_combined_pyramid_with_same_count_of_octaves_and_scales_and_reduced_planes(  # noqa: E501
         self,
-        pyramid: Pyramid,
+        pyramids: Sequence[Pyramid],
     ) -> None:
         reduce = Mock()
 
@@ -788,24 +851,25 @@ class PyramidCombineTest(unittest.TestCase):
 
         reduce.side_effect = mock_reduce
 
-        pyramids = [pyramid, pyramid]
         result = pyramid_combine(pyramids, reduce)
 
-        self.assertEqual(result.shape, pyramid.shape)
-        self.assertEqual(result.n_octaves, pyramid.n_octaves)
-        self.assertEqual(result.n_scales, pyramid.n_scales)
+        self.assertEqual(result.n_octaves, pyramids[0].n_octaves)
+        self.assertEqual(result.n_scales, pyramids[0].n_scales)
 
-        self.assertEqual(reduce.call_count, pyramid.size)
+        self.assertEqual(reduce.call_count, pyramids[0].size)
         call_count = 0
         for octave in range(result.n_octaves):
             for scale in range(result.n_scales):
                 call_args = reduce.call_args_list[call_count]
-                self.assertIs(call_args.args[0][0], pyramid.data[octave, scale])
-                self.assertIs(call_args.args[0][1], pyramid.data[octave, scale])
+                self.assertIs(call_args.args[0][0], pyramids[0].data[octave, scale])
+                self.assertIs(call_args.args[0][1], pyramids[1].data[octave, scale])
                 nptest.assert_array_equal(
                     result.data[octave, scale],
                     mock_reduce(
-                        (pyramid.data[octave, scale], pyramid.data[octave, scale])
+                        (
+                            pyramids[0].data[octave, scale],
+                            pyramids[1].data[octave, scale],
+                        )
                     ),
                 )
                 call_count += 1
