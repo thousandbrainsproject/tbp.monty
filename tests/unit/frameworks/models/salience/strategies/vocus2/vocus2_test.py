@@ -202,13 +202,20 @@ def color_channel_salience_setup(
         box=None,
     )
 
+@dataclass
+class BoxSetup:
+    center_sigma: float
+    surround_sigma: float
+    image: npt.NDArray[np.float32]
+    box: npt.NDArray[np.bool_]
+
 
 @st.composite
-def box_salience_setup(
+def box_setup(
     draw: st.DrawFn,
     on_value: float = 1.0,
     off_value: float = 0.0,
-) -> ColorChannelSalienceSetup:
+) -> BoxSetup:
     resolution = draw(safe_resolutions())
     cs_sigmas = safe_cs_sigmas(resolution=resolution)
     center_sigma, surround_sigma = draw(cs_sigmas)
@@ -232,9 +239,25 @@ def box_salience_setup(
     image = np.full(resolution, off_value, dtype=np.float32)
     image[box] = on_value
 
-    processor = ColorChannelSalience(
+    return BoxSetup(
         center_sigma=center_sigma,
         surround_sigma=surround_sigma,
+        image=image,
+        box=box,
+    )
+
+
+@st.composite
+def box_salience_setup(
+    draw: st.DrawFn,
+    on_value: float = 1.0,
+    off_value: float = 0.0,
+) -> ColorChannelSalienceSetup:
+    _box_setup = draw(box_setup(on_value=on_value, off_value=off_value))
+
+    processor = ColorChannelSalience(
+        center_sigma=_box_setup.center_sigma,
+        surround_sigma=_box_setup.surround_sigma,
         n_scales=draw(default_n_scales()),
         max_octaves=draw(default_max_octaves()),
         operating_limits=SafeOperatingLimits(),
@@ -242,8 +265,8 @@ def box_salience_setup(
 
     return ColorChannelSalienceSetup(
         processor=processor,
-        image=image,
-        box=box,
+        image=_box_setup.image,
+        box=_box_setup.box,
     )
 
 
@@ -343,32 +366,11 @@ def depth_box_salience_setup(
     on_value: float = 1.0,
     off_value: float = 0.0,
 ) -> DepthSalienceSetup:
-    resolution = draw(safe_resolutions())
-    cs_sigmas = safe_cs_sigmas(resolution=resolution)
-    center_sigma, surround_sigma = draw(cs_sigmas)
-
-    # Create a boolean mask that contains a box.
-    # Then draw it on a background image.
-    center = draw(
-        st.tuples(
-            st.integers(min_value=0, max_value=resolution[0]),
-            st.integers(min_value=0, max_value=resolution[1]),
-        )
-    )
-    width = draw(st.integers(min_value=1, max_value=resolution[1] // 2))
-    height = width
-    box = rectangular_mask(
-        resolution=resolution,
-        center=center,
-        width=width,
-        height=height,
-    )
-    image = np.full(resolution, off_value, dtype=np.float32)
-    image[box] = on_value
+    _box_setup = draw(box_setup(on_value=on_value, off_value=off_value))
 
     processor = DepthSalience(
-        center_sigma=center_sigma,
-        surround_sigma=surround_sigma,
+        center_sigma=_box_setup.center_sigma,
+        surround_sigma=_box_setup.surround_sigma,
         n_scales=draw(default_n_scales()),
         max_octaves=draw(default_max_octaves()),
         operating_limits=SafeOperatingLimits(),
@@ -376,8 +378,8 @@ def depth_box_salience_setup(
 
     return DepthSalienceSetup(
         processor=processor,
-        image=image,
-        box=box,
+        image=_box_setup.image,
+        box=_box_setup.box,
     )
 
 
