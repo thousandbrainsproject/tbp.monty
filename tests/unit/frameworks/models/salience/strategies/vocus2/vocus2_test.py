@@ -385,7 +385,7 @@ def depth_box_salience_setup(
 
 
 class DepthSalienceTest(unittest.TestCase):
-    MINIMUM_SALIENCE_THRESHOLD = 1e-4
+    MINIMUM_SALIENCE_THRESHOLD = 1e-3
 
     @settings(deadline=1000)
     @given(setup=depth_salience_setup(image=safe_solid_images()))
