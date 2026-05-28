@@ -227,13 +227,11 @@ def box_setup(
             st.integers(min_value=0, max_value=resolution[1]),
         )
     )
-    width = draw(st.integers(min_value=1, max_value=resolution[1] // 2))
-    height = width
-    box = rectangular_mask(
+    box_size = draw(st.integers(min_value=1, max_value=resolution[1] // 2))
+    box = square_mask(
         resolution=resolution,
         center=center,
-        width=width,
-        height=height,
+        box_size=box_size,
     )
     image = np.full(resolution, off_value, dtype=np.float32)
     image[box] = on_value
@@ -484,29 +482,28 @@ def orientation_box_salience_setup(draw: st.DrawFn) -> OrientationSalienceSetup:
     # Select location and size of the box that will contain the sinusoidal grating.
     min_box_width = round(2 * center_sigma)
     max_box_width = min(resolution) // 2
-    box_width = draw(st.integers(min_value=min_box_width, max_value=max_box_width))
-    box_height = box_width
+    box_size = draw(st.integers(min_value=min_box_width, max_value=max_box_width))
+    box_height = box_size
 
     min_box_y = box_height // 2
     max_box_y = resolution[0] - box_height // 2
     box_y = draw(st.integers(min_value=min_box_y, max_value=max_box_y))
 
-    min_box_x = box_width // 2
-    max_box_x = resolution[1] - box_width // 2
+    min_box_x = box_size // 2
+    max_box_x = resolution[1] - box_size // 2
     box_x = draw(st.integers(min_value=min_box_x, max_value=max_box_x))
 
     box_center = (box_y, box_x)
 
-    box = rectangular_mask(
+    box = square_mask(
         resolution=resolution,
         center=box_center,
-        width=box_width,
-        height=box_height,
+        box_size=box_size,
     )
 
     # Create sinusoisal grating image.
     min_wavelength = 2 * center_sigma
-    max_wavelength = box_width * 2
+    max_wavelength = box_size * 2
     wavelength = draw(st.floats(min_value=min_wavelength, max_value=max_wavelength))
     angle = draw(st.floats(min_value=0.0, max_value=np.pi))
     phase = draw(st.floats(min_value=0.0, max_value=2 * np.pi))
@@ -576,25 +573,19 @@ class OrientationSalienceTest(unittest.TestCase):
         self.assertTrue(box_salience > surround_salience)
 
 
-def rectangular_mask(
+def square_mask(
     resolution: tuple[int, int],
     center: tuple[int, int],
-    width: int,
-    height: int,
+    box_size: int,
 ) -> npt.NDArray[np.bool_]:
     y, x = center
-    if width == 1 and height == 1:
-        half_width = 1
-        half_height = 1
-    else:
-        half_width = int(width // 2)
-        half_height = int(height // 2)
+    half_box_size = max(1, box_size // 2)
 
     data = np.zeros(resolution, dtype=bool)
-    y1 = max(y - half_height, 0)
-    y2 = min(y + half_height, resolution[0])
-    x1 = max(x - half_width, 0)
-    x2 = min(x + half_width, resolution[1])
+    y1 = max(y - half_box_size, 0)
+    y2 = min(y + half_box_size, resolution[0])
+    x1 = max(x - half_box_size, 0)
+    x2 = min(x + half_box_size, resolution[1])
     data[y1:y2, x1:x2] = True
     return data
 
