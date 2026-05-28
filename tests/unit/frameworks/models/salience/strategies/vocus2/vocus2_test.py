@@ -186,6 +186,7 @@ def color_channel_salience_setup(
     image: st.SearchStrategy[npt.NDArray[np.float32]],
 ) -> ColorChannelSalienceSetup:
     _image = draw(image)
+    assert len(_image.shape) == 2
 
     center_sigma, surround_sigma = draw(safe_cs_sigmas(resolution=_image.shape))
     processor = ColorChannelSalience(
@@ -344,6 +345,7 @@ def depth_salience_setup(
     image: st.SearchStrategy[npt.NDArray[np.float32]],
 ) -> DepthSalienceSetup:
     _image = draw(image)
+    assert len(_image.shape) == 2
 
     center_sigma, surround_sigma = draw(safe_cs_sigmas(resolution=_image.shape))
     processor = DepthSalience(
@@ -477,7 +479,7 @@ def orientation_salience_setup(
 
 
 @st.composite
-def orientation_box_salience_setup(draw: st.DrawFn) -> DepthSalienceSetup:
+def orientation_box_salience_setup(draw: st.DrawFn) -> OrientationSalienceSetup:
     resolution = draw(safe_resolutions())
     cs_sigmas = safe_cs_sigmas(resolution=resolution)
     center_sigma, surround_sigma = draw(cs_sigmas)
