@@ -70,7 +70,8 @@ class MontyForGraphMatching(MontyBase):
         self.semantic_id_to_label = semantic_id_to_label
 
         for lm in self.learning_modules:
-            lm.pre_episode(primary_target)
+            lm.reset_stm()
+            lm.fixme_reset_ground_truth(primary_target)
 
         for sm in self.sensor_modules:
             sm.pre_episode()
@@ -559,14 +560,29 @@ class GraphLM(LearningModule):
     # =============== Public Interface Functions ===============
 
     # ------------------- Main Algorithm -----------------------
+
     def reset(self):
-        """NOTE: currently not used in public interface."""
+        """Reset initial hypotheses.
+
+        TODO integrate this into `reset_stm` and/or `fixme_reset_ground_truth`?
+        """
         (
             self.possible_paths,
             self.possible_poses,
         ) = self.graph_memory.get_initial_hypotheses()
 
-    def pre_episode(self, primary_target) -> None:
+    def reset_stm(self) -> None:
+        """Reset short-term memory buffer."""
+        self.reset()
+        self.buffer.reset()
+        if self.gsg is not None:
+            self.gsg.reset()
+        self.terminal_state = None
+        self.detected_object = None
+        self.detected_pose = [None for _ in range(7)]
+        self.detected_rotation_r = None
+
+    def fixme_reset_ground_truth(self, primary_target=None) -> None:
         """Set target object var and reset others from last episode.
 
         Args:
@@ -577,18 +593,11 @@ class GraphLM(LearningModule):
                 it is currently on, while it is attempting to classify the
                 primary_target)
         """
-        self.reset()
-        self.buffer.reset()
-        if self.gsg is not None:
-            self.gsg.reset()
-        self.primary_target = primary_target["object"]
-        self.primary_target_rotation_quat = primary_target["quat_rotation"]
+        if primary_target is not None:
+            self.primary_target = primary_target["object"]
+            self.primary_target_rotation_quat = primary_target["quat_rotation"]
         self.stepwise_target_object = None
         self.stepwise_targets_list = []
-        self.terminal_state = None
-        self.detected_object = None
-        self.detected_pose = [None for _ in range(7)]
-        self.detected_rotation_r = None
 
     def matching_step(
         self,

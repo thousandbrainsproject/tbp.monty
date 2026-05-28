@@ -175,6 +175,30 @@ class TwoDSensorModuleInitTest(unittest.TestCase):
         np.testing.assert_allclose(two_d_sm._previous_2d_location, [1.0, 2.0])
         np.testing.assert_allclose(two_d_sm._previous_3d_location, world_location)
 
+    def test_step_handles_off_object_percept_without_pose_vectors(self) -> None:
+        two_d_sm = make_2d_sm(edge_detector=Mock(return_value=make_no_edge()))
+        percept = Message(
+            location=np.array([1.0, 2.0, 3.0]),
+            morphological_features={"on_object": 0.0},
+            non_morphological_features={},
+            confidence=1.0,
+            use_state=False,
+            sender_id="test",
+            sender_type="SM",
+        )
+        two_d_sm._observation_processor.process = Mock(return_value=percept)
+
+        msg = two_d_sm.step(
+            ctx=RuntimeContext(rng=np.random.RandomState()),
+            observation=sentinel.raw_observation,
+            motor_only_step=False,
+        )
+
+        assert msg.use_state is False
+        assert "pose_vectors" not in msg.morphological_features
+        np.testing.assert_allclose(msg.displacement["displacement"], np.zeros(3))
+        assert two_d_sm._tangent_frame is None
+
     def test_like_how_monty_uses_two_d_sm(self) -> None:
         """Mimic how Monty might use SMs in aggregate_sensory_inputs().
 
@@ -325,6 +349,8 @@ class TwoDSensorModuleEdgeTest(unittest.TestCase):
         np.testing.assert_allclose(
             msg.morphological_features["pose_vectors"], original_pose
         )
+        assert msg.non_morphological_features["edge_strength"] == 0.0
+        assert msg.non_morphological_features["coherence"] == 0.0
 
     def test_extract_2d_edge_ignores_geometric_edge(self):
         observation = make_raw_observation(
@@ -351,8 +377,9 @@ class TwoDSensorModuleEdgeTest(unittest.TestCase):
         np.testing.assert_allclose(
             msg.morphological_features["pose_vectors"], original_pose
         )
-        assert "edge_strength" not in msg.non_morphological_features
-        assert "coherence" not in msg.non_morphological_features
+
+        assert msg.non_morphological_features["edge_strength"] == 0.0
+        assert msg.non_morphological_features["coherence"] == 0.0
 
 
 class TwoDSensorModuleTangentFrameTest(unittest.TestCase):

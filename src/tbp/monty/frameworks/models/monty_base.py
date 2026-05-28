@@ -10,13 +10,14 @@
 from __future__ import annotations
 
 import logging
-from typing import ClassVar
+from typing import ClassVar, Sequence
 
 from tbp.monty.cmp import Goal
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import (
+    LearningModule,
     Monty,
     Observations,
     RuntimeContext,
@@ -35,7 +36,7 @@ class MontyBase(Monty):
     def __init__(
         self,
         sensor_modules,
-        learning_modules,
+        learning_modules: Sequence[LearningModule],
         motor_system: MotorSystem,
         sm_to_agent_dict,
         sm_to_lm_matrix,
@@ -379,7 +380,7 @@ class MontyBase(Monty):
         self.reset_episode_steps()
         self.switch_to_matching_step()
         for lm in self.learning_modules:
-            lm.pre_episode()
+            lm.reset_stm()
 
         for sm in self.sensor_modules:
             sm.pre_episode()

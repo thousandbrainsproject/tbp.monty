@@ -12,7 +12,7 @@ import unittest
 
 import numpy as np
 import numpy.testing as nptest
-from hypothesis import given
+from hypothesis import assume, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 from scipy.spatial.transform import Rotation as ScipyRotation
@@ -250,8 +250,21 @@ class ScipyRotationsApproxEqualTest(unittest.TestCase):
     ) -> None:
         """Double-ledger test focused on and around the tolerance threshold."""
         b = ScipyRotation.from_rotvec(axis * angle) * a
-        expected = (a * b.inv()).magnitude() <= ROTATION_TOLERANCE_RADIANS
+        expected_magnitude = (a * b.inv()).magnitude()
+        expected = expected_magnitude <= ROTATION_TOLERANCE_RADIANS
         actual = scipy_rotations_approx_equal(a, b, tol=ROTATION_TOLERANCE_RADIANS)
+
+        # When our expected value gets infinitesimally close to the tolerance boundary,
+        # the test result becomes ambiguous. The double-ledger computes mathematically,
+        # but not numerically, identical values. The infinitesimal numerical difference
+        # near the tolerance boundary can make a difference between true and false.
+        # Therefore, we skip the test when we are so close to the boundary that
+        # numerical difference becomes significant and the test result becomes
+        # ambiguous.
+        ambiguity_threshold = 1e-14
+        assume(
+            abs(expected_magnitude - ROTATION_TOLERANCE_RADIANS) > ambiguity_threshold
+        )
         self.assertEqual(actual, expected)
 
 

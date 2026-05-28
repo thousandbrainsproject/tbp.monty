@@ -12,6 +12,7 @@ from __future__ import annotations
 import copy
 import datetime
 import logging
+import logging.config
 import pprint
 from pathlib import Path
 from typing import Any, Literal
@@ -339,6 +340,19 @@ class MontyExperiment:
 
         logger.info("logger initialized")
         logger.debug(pprint.pformat(self.config))
+
+        # Allow loading additional Python logging configurations from the
+        # Hydra configuration.
+        final_config = {
+            # Specify some defaults so we don't have to remember to configure
+            # them in Hydra.
+            "version": 1,
+            # TODO: This can be removed if we configure all the loggers via
+            #   the dictConfig call below.
+            "incremental": True,
+        }
+        final_config.update(logging_config)
+        logging.config.dictConfig(final_config)
 
     def init_monty_data_loggers(self, logging_config: dict[str, Any]) -> None:
         """Initialize Monty data loggers.

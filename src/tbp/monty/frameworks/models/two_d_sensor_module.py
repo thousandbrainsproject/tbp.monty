@@ -191,13 +191,16 @@ class TwoDSensorModule(SensorModule):
 
         observed_state = self._observation_processor.process(observation)
 
-        curvature_pose_vectors = observed_state.get_pose_vectors().copy()
-        true_surface_normal = observed_state.get_surface_normal().copy()
-
         # Only edges define pose for 2D sensor; reset curvature-based flag.
         observed_state.morphological_features["pose_fully_defined"] = False
 
+        curvature_pose_vectors = None
+        true_surface_normal = None
         if observed_state.use_state and observed_state.get_on_object():
+            # pose_vectors are only present when the patch center is on the object.
+            curvature_pose_vectors = observed_state.get_pose_vectors().copy()
+            true_surface_normal = observed_state.get_surface_normal().copy()
+
             self._update_tangent_frame(true_surface_normal)
             if self._extract_edges:
                 observed_state = self._extract_2d_edge(
@@ -243,8 +246,9 @@ class TwoDSensorModule(SensorModule):
                 saved before edge detection may overwrite pose_vectors.
 
         Returns:
-            Message with edge-based pose vectors if edge detected,
-            otherwise returns the original state unchanged.
+            Message with edge-based pose vectors if an edge is detected.
+            When no edge is detected, pose vectors are left unchanged and
+            `edge_strength`/`coherence` (if listed in features) are set to 0.0.
 
         Raises:
             RuntimeError: If edge features were requested but no edge detector
@@ -257,8 +261,18 @@ class TwoDSensorModule(SensorModule):
             )
 
         edge = self.edge_detector(observation)
+        edge_detected = edge.has_edge and not (edge.strength and edge.is_geometric_edge)
 
-        if not edge.has_edge or (edge.strength and edge.is_geometric_edge):
+        if "edge_strength" in self.features:
+            state.non_morphological_features["edge_strength"] = (
+                edge.strength if edge_detected else 0.0
+            )
+        if "coherence" in self.features:
+            state.non_morphological_features["coherence"] = (
+                edge.coherence if edge_detected else 0.0
+            )
+
+        if not edge_detected:
             return state
 
         pose_2d = _angle_to_pose_2d(
@@ -270,12 +284,6 @@ class TwoDSensorModule(SensorModule):
 
         state.morphological_features["pose_vectors"] = pose_2d
         state.morphological_features["pose_fully_defined"] = True
-
-        if "edge_strength" in self.features:
-            state.non_morphological_features["edge_strength"] = edge.strength
-        if "coherence" in self.features:
-            state.non_morphological_features["coherence"] = edge.coherence
-
         return state
 
     def _update_tangent_frame(self, surface_normal_3d: np.ndarray) -> None:
