@@ -284,6 +284,7 @@ def gaussian_pyramid_params(
     """
     image = image if image is not None else default_images()
     _image = draw(image)
+    assert len(_image.shape) == 2
 
     sigma = sigma if sigma is not None else default_sigmas(_image.shape)
     _sigma = draw(sigma)
@@ -322,7 +323,8 @@ class GaussianPyramidTest(unittest.TestCase):
         self, params: GaussianPyramidParams
     ) -> None:
         expected_octave_shapes = pyramid_octave_shapes(
-            params.image.shape,
+            params.image.shape,  # type: ignore[arg-type] # GuassianPyramidParams.image
+            # is 2D.
             max_octaves=params.max_octaves,
         )
         pyr = gaussian_pyramid(
@@ -440,7 +442,7 @@ class GaussianPyramidCalibrationTest(unittest.TestCase):
         If this fails, then something has changed that should probably be attended to.
         """
         rng = np.random.RandomState(67)
-        image = rng.uniform(0.0, 1.0, size=(512, 512))
+        image = rng.uniform(0.0, 1.0, size=(512, 512)).astype(np.float32)
         pyr = gaussian_pyramid(image, sigma=3.0, n_scales=2)
 
         planes = list(pyr.flat)
@@ -513,6 +515,7 @@ def center_surround_pyramids_params(
     """
     image = image if image is not None else default_images()
     _image = draw(image)
+    assert len(_image.shape) == 2
 
     center_sigma, surround_sigma = draw(default_cs_sigmas(_image.shape))
 
@@ -622,7 +625,7 @@ class CenterSurroundPyramidsCalibrationTest(unittest.TestCase):
         performing maximally strict checks on a known, calibrated example.
         """
         rng = np.random.RandomState(67)
-        image = rng.uniform(0.0, 1.0, size=(512, 512))
+        image = rng.uniform(0.0, 1.0, size=(512, 512)).astype(np.float32)
         center_sigma = 3.0
         surround_sigma = 5.0
         n_scales = 2
