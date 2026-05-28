@@ -455,6 +455,7 @@ class Vocus2(SalienceStrategy):
     on depth data.
 
     """
+
     def __init__(
         self,
         color: ColorChannelSalience,

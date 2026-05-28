@@ -109,7 +109,7 @@ def gaussian_pyramid(
 
     This implementation is based on code in the (VOCUS2 C++ implementation)[https://github.com/GeeeG/VOCUS2]
     from Lowe, D. G. (2004). "Distinctive image features from scale-invariant
-    keypoints". International Journal of Computer Vision. 60 (2): 91–110.
+    keypoints". International Journal of Computer Vision. 60 (2): 91-110.
 
     This creates a 2D pyramid structure:
     - Dimension 1 (octaves): Different resolutions (each half the previous)
