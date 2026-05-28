@@ -457,6 +457,8 @@ def orientation_salience_setup(
     image: st.SearchStrategy[npt.NDArray[np.float32]],
 ) -> OrientationSalienceSetup:
     _image = draw(image)
+    assert len(_image.shape) == 2
+
     center_sigma, surround_sigma = draw(safe_cs_sigmas(resolution=_image.shape))
 
     # Create the input pyramid
@@ -636,7 +638,8 @@ class Vocus2FromConfigTest(unittest.TestCase):
         depth_salience_mock.return_value = sentinel.depth
         orientation_salience_mock.return_value = sentinel.orientation
 
-        Vocus2.from_config.__func__(vocus2_mock, config)
+        Vocus2.from_config.__func__(vocus2_mock, config)  # type: ignore[attr-defined]
+        # A way to test a static method while replacing the `cls` argument with a mock.
 
         color_channel_salience_mock.assert_called_once_with(
             center_sigma=sentinel_center_sigma,
@@ -697,7 +700,8 @@ class Vocus2FromConfigTest(unittest.TestCase):
         depth_salience_mock.return_value = sentinel.depth
         orientation_salience_mock.return_value = sentinel.orientation
 
-        Vocus2.from_config.__func__(vocus2_mock, config)
+        Vocus2.from_config.__func__(vocus2_mock, config)  # type: ignore[attr-defined]
+        # A way to test a static method while replacing the `cls` argument with a mock.
 
         depth_salience_mock.assert_not_called()
         vocus2_mock.assert_called_once_with(
@@ -744,7 +748,8 @@ class Vocus2FromConfigTest(unittest.TestCase):
         depth_salience_mock.return_value = sentinel.depth
         orientation_salience_mock.return_value = sentinel.orientation
 
-        Vocus2.from_config.__func__(vocus2_mock, config)
+        Vocus2.from_config.__func__(vocus2_mock, config)  # type: ignore[attr-defined]
+        # A way to test a static method while replacing the `cls` argument with a mock.
 
         orientation_salience_mock.assert_not_called()
         vocus2_mock.assert_called_once_with(
@@ -766,7 +771,8 @@ class Vocus2FromConfigTest(unittest.TestCase):
     ) -> None:
         config = Vocus2SalienceConfig()
 
-        Vocus2.from_config.__func__(
+        Vocus2.from_config.__func__(  # type: ignore[attr-defined] # A way to test a
+            # static method while replacing the `cls` argument with a mock.
             vocus2_mock,
             config,
             color_space_converter=sentinel.color_space_converter,
