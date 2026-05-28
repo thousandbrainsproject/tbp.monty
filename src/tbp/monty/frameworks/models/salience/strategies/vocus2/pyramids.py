@@ -193,7 +193,7 @@ def center_surround_pyramids(
     if center_sigma >= surround_sigma:
         raise ValueError("Center sigma must be strictly less than surround sigma")
 
-    center: Pyramid = gaussian_pyramid(
+    center = gaussian_pyramid(
         image,
         sigma=center_sigma,
         n_scales=n_scales,
@@ -211,7 +211,7 @@ def center_surround_pyramids(
             center_img = center.data[octave, scale]
             surround_data[octave, scale] = gaussian_blur(center_img, scaled_sigma)
 
-    surround: Pyramid = Pyramid(surround_data)
+    surround = Pyramid(surround_data)
 
     return center, surround
 
@@ -312,6 +312,8 @@ def pyramid_collapse(
     """
     images = list(pyr.flat)
     target_shape = images[0].shape
+    # Type checker doesn't know that target_shape is a 2-tuple.
+    assert len(target_shape) == 2
     resized = []
     for img in images:
         if img.shape != target_shape:
