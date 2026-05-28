@@ -130,11 +130,11 @@ def gaussian_pyramid(
     if image.ndim != 2:
         raise ValueError(f"Image must be 2D. Has shape {image.shape}.")
 
-    # Calculate maximum number of octaves
+    # Type checker doesn't know that we just checked above that image.shape is a 2-tuple
+    assert len(image.shape) == 2
+
     shapes: list[tuple[int, int]] = pyramid_octave_shapes(
-        image.shape,  # type: ignore[arg-type] # We verified that the image is 2D above,
-        # so the shape is a 2-tuple.
-        max_octaves=max_octaves,
+        image.shape, max_octaves=max_octaves
     )
 
     # Compute pyramid as in Lowe 2004
