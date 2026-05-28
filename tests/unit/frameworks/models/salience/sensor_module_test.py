@@ -121,7 +121,7 @@ class SalienceSMTest(unittest.TestCase):
         goals = self.sensor_module.propose_goals()
 
         self.sensor_module._salience_strategy.assert_called_once_with(  # type: ignore[attr-defined]
-            rgba=data["rgba"], depth=data["depth"]
+            ctx=self.ctx, rgba=data["rgba"], depth=data["depth"]
         )
         on_object_observation.assert_called_once_with(data, sentinel.salience_map)
         self.sensor_module._return_inhibitor.assert_called_once_with(  # type: ignore[attr-defined]
