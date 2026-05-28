@@ -13,10 +13,13 @@ from typing import Protocol
 import numpy as np
 import numpy.typing as npt
 
+from tbp.monty.context import RuntimeContext
+
 
 class SalienceStrategy(Protocol):
     def __call__(
         self,
+        ctx: RuntimeContext,
         rgba: npt.NDArray[np.int_],
         depth: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]: ...

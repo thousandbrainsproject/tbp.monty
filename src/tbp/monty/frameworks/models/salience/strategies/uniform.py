@@ -11,12 +11,14 @@ from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.salience.strategies import SalienceStrategy
 
 
 class Uniform(SalienceStrategy):
     def __call__(
         self,
+        ctx: RuntimeContext,  # noqa: ARG002
         rgba: npt.NDArray[np.int_],  # noqa: ARG002
         depth: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:

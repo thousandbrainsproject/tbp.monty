@@ -100,7 +100,7 @@ class SalienceSM(SensorModule):
             return
 
         salience_map = self._salience_strategy(
-            rgba=observation["rgba"], depth=observation["depth"]
+            ctx=ctx, rgba=observation["rgba"], depth=observation["depth"]
         )
 
         on_object = on_object_observation(observation, salience_map)

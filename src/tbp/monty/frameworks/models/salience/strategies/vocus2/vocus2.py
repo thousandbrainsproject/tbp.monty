@@ -464,7 +464,7 @@ class Vocus2(SalienceStrategy):
         self._normalize = normalize
 
         if combine is None:
-            self._combine = WeightedMean(
+            self._combine: MapCombine = WeightedMean(
                 {
                     "L": 1,
                     "a": 1,
