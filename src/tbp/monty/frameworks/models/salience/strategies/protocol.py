@@ -20,6 +20,6 @@ class SalienceStrategy(Protocol):
     def __call__(
         self,
         ctx: RuntimeContext,
-        rgba: npt.NDArray[np.int_],
+        rgba: npt.NDArray[np.uint8],
         depth: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]: ...

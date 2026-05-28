@@ -16,15 +16,15 @@ import numpy.typing as npt
 
 
 class ColorSpaceConverter(Protocol):
-    def __call__(self, image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]: ...
+    def __call__(self, image: npt.NDArray[np.uint8]) -> npt.NDArray[np.float32]: ...
 
 
-def rgb_to_lab(image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]:
+def rgb_to_lab(image: npt.NDArray[np.uint8]) -> npt.NDArray[np.float32]:
     """Returns the CIE Lab color space of the image."""
     return cv2.cvtColor(image, cv2.COLOR_RGB2Lab).astype(np.float32) / 255.0
 
 
-def rgb_to_opponent(image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]:
+def rgb_to_opponent(image: npt.NDArray[np.uint8]) -> npt.NDArray[np.float32]:
     """Returns the Opponent color space of the image shifted and scaled to [0, 1]."""
     r, g, b = cv2.split(image.astype(np.float32))
     L = (r + g + b) / (3 * 255.0)  # noqa: N806
@@ -33,7 +33,7 @@ def rgb_to_opponent(image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]:
     return cv2.merge([L, a, b])
 
 
-def rgb_to_opponent_codi(image: npt.NDArray[np.int_]) -> npt.NDArray[np.float32]:
+def rgb_to_opponent_codi(image: npt.NDArray[np.uint8]) -> npt.NDArray[np.float32]:
     """Returns the Opponent color space of the image (Klein/Frintrop DAGM 2012)."""
     r, g, b = cv2.split(image.astype(np.float32))
     L = (r + g + b) / (3 * 255.0)  # noqa: N806

@@ -20,6 +20,7 @@ from parameterized import parameterized_class
 
 from tbp.monty.cmp import Goal
 from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
     OnObjectObservation,
@@ -112,10 +113,10 @@ class SalienceSMTest(unittest.TestCase):
         self.sensor_module._return_inhibitor.return_value = sentinel.ior_weights  # type: ignore[attr-defined]
         salience = 0.1 * np.array([1, 2, 3])
         self.sensor_module._weight_salience = MagicMock(return_value=salience)  # type: ignore[method-assign]
-        data: dict[str, Any] = {
-            "rgba": np.zeros((64, 64, 4)),
-            "depth": np.zeros((64, 64)),
-        }
+        data = SensorObservation(
+            rgba=np.zeros((64, 64, 4), dtype=np.uint8),
+            depth=np.zeros((64, 64)),
+        )
 
         self.sensor_module.step(self.ctx, data)
         goals = self.sensor_module.propose_goals()

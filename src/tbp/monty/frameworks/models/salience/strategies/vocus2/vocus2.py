@@ -537,7 +537,7 @@ class Vocus2(SalienceStrategy):
     def __call__(
         self,
         ctx: RuntimeContext,
-        rgba: npt.NDArray[np.int_],
+        rgba: npt.NDArray[np.uint8],
         depth: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
         # Get color and depth data into open-cv compatible formats.

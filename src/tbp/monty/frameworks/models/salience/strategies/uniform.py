@@ -19,7 +19,7 @@ class Uniform(SalienceStrategy):
     def __call__(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
-        rgba: npt.NDArray[np.int_],  # noqa: ARG002
+        rgba: npt.NDArray[np.uint8],  # noqa: ARG002
         depth: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
         return np.ones_like(depth)
