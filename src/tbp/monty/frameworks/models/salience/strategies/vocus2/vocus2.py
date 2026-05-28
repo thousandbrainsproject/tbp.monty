@@ -542,7 +542,7 @@ class Vocus2(SalienceStrategy):
     ) -> npt.NDArray[np.float64]:
         # Get color and depth data into open-cv compatible formats.
         rgb = rgba[:, :, :3]
-        depth = depth.astype(np.float32)
+        depth32 = depth.astype(np.float32)
 
         feature_maps = FeatureMaps({})
 
@@ -553,7 +553,7 @@ class Vocus2(SalienceStrategy):
         feature_maps["b"], _ = self._color.process(ctx, b)
 
         if self._depth:
-            feature_maps["depth"] = self._depth.process(ctx, depth)
+            feature_maps["depth"] = self._depth.process(ctx, depth32)
 
         if self._orientation:
             feature_maps["orientation"] = self._orientation.process(ctx, L_center)
