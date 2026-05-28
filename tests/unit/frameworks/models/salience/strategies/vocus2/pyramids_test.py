@@ -112,16 +112,16 @@ def default_image_values(draw: st.DrawFn) -> float:
 def default_images(
     draw: st.DrawFn,
     resolution: st.SearchStrategy[tuple[int, int]] | None = None,
-    elements: st.SearchStrategy[float] | None = None,
     unique: bool = False,
 ) -> npt.NDArray[np.float32]:
     resolution = resolution if resolution is not None else default_resolutions()
-    elements = elements if elements is not None else default_image_values()
+    elements = default_image_values()
     return draw(
         arrays(
             dtype=np.float32,
             shape=resolution,
             elements=elements,
+            fill=st.just(0.0),
             unique=unique,
         )
     )
@@ -131,10 +131,9 @@ def default_images(
 def solid_images(
     draw: st.DrawFn,
     resolution: st.SearchStrategy[tuple[int, int]] | None = None,
-    elements: st.SearchStrategy[float] | None = None,
 ) -> npt.NDArray[np.float32]:
     resolution = resolution if resolution is not None else default_resolutions()
-    elements = elements if elements is not None else default_image_values()
+    elements = default_image_values()
     return np.full(
         draw(resolution),
         draw(elements),
