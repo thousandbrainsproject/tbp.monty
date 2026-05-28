@@ -448,6 +448,13 @@ def range_normalize(
 
 
 class Vocus2(SalienceStrategy):
+    """Vocus2-based salience strategy.
+
+    This class is based on (VOCUS2)[https://github.com/GeeeG/VOCUS2]. It implements
+    most of VOCUS2's salience-based processing features but also extends it to operate
+    on depth data.
+
+    """
     def __init__(
         self,
         color: ColorChannelSalience,

@@ -20,12 +20,19 @@ class ColorSpaceConverter(Protocol):
 
 
 def rgb_to_lab(image: npt.NDArray[np.uint8]) -> npt.NDArray[np.float32]:
-    """Returns the CIE Lab color space of the image."""
+    """Returns the CIE Lab color space of the image.
+
+    This implementation comes from (VOCUS2)[https://github.com/GeeeG/VOCUS2/blob/19da5f334ee59c36853a5989030ff63bc82b9f28/src/VOCUS2.cpp#L834].
+
+    """
     return cv2.cvtColor(image, cv2.COLOR_RGB2Lab).astype(np.float32) / 255.0
 
 
 def rgb_to_opponent(image: npt.NDArray[np.uint8]) -> npt.NDArray[np.float32]:
-    """Returns the Opponent color space of the image shifted and scaled to [0, 1]."""
+    """Returns the Opponent color space of the image shifted and scaled to [0, 1].
+
+    This implementation comes from (VOCUS2)[https://github.com/GeeeG/VOCUS2/blob/19da5f334ee59c36853a5989030ff63bc82b9f28/src/VOCUS2.cpp#L846].
+    """
     r, g, b = cv2.split(image.astype(np.float32))
     L = (r + g + b) / (3 * 255.0)  # noqa: N806
     a = (r - g + 255.0) / (2 * 255.0)
@@ -34,7 +41,10 @@ def rgb_to_opponent(image: npt.NDArray[np.uint8]) -> npt.NDArray[np.float32]:
 
 
 def rgb_to_opponent_codi(image: npt.NDArray[np.uint8]) -> npt.NDArray[np.float32]:
-    """Returns the Opponent color space of the image (Klein/Frintrop DAGM 2012)."""
+    """Returns the Opponent color space of the image (Klein/Frintrop DAGM 2012).
+
+    This implementation comes from (VOCUS2)[https://github.com/GeeeG/VOCUS2/blob/19da5f334ee59c36853a5989030ff63bc82b9f28/src/VOCUS2.cpp#L862].
+    """
     r, g, b = cv2.split(image.astype(np.float32))
     L = (r + g + b) / (3 * 255.0)  # noqa: N806
     a = (r - g) / 255.0

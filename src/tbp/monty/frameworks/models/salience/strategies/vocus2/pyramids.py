@@ -107,6 +107,10 @@ def gaussian_pyramid(
 ) -> Pyramid:
     """Build multi-scale pyramid following Lowe 2004.
 
+    This implementation is based on code in the (VOCUS2 C++ implementation)[https://github.com/GeeeG/VOCUS2]
+    from Lowe, D. G. (2004). "Distinctive image features from scale-invariant
+    keypoints". International Journal of Computer Vision. 60 (2): 91–110.
+
     This creates a 2D pyramid structure:
     - Dimension 1 (octaves): Different resolutions (each half the previous)
     - Dimension 2 (scales): Different smoothing levels within each octave
