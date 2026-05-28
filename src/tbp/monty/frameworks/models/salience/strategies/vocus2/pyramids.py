@@ -19,7 +19,6 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2.images import (
     gaussian_blur,
     resize,
 )
-from tbp.monty.frameworks.sensors import Resolution2D
 
 
 @dataclass(frozen=True)
@@ -77,7 +76,7 @@ class Pyramid:
 def pyramid_octave_shapes(
     image_shape: tuple[int, int],
     max_octaves: int | None = None,
-) -> list[Resolution2D]:
+) -> list[tuple[int, int]]:
     """Compute the shapes of the pyramid levels.
 
     Args:
@@ -92,7 +91,7 @@ def pyramid_octave_shapes(
         max_possible_octaves = min(max_octaves, max_possible_octaves)
 
     cur_shape = image_shape
-    shapes: list[Resolution2D] = []
+    shapes: list[tuple[int, int]] = []
     while len(shapes) < max_possible_octaves and min(cur_shape) >= 1:
         shapes.append(cur_shape)
         cur_shape = (cur_shape[0] // 2, cur_shape[1] // 2)
@@ -133,7 +132,9 @@ def gaussian_pyramid(
 
     # Calculate maximum number of octaves
     shapes: list[tuple[int, int]] = pyramid_octave_shapes(
-        image.shape, max_octaves=max_octaves
+        image.shape,  # type: ignore[arg-type] # We verified that the image is 2D above,
+        # so the shape is a 2-tuple.
+        max_octaves=max_octaves,
     )
 
     # Compute pyramid as in Lowe 2004
