@@ -378,11 +378,11 @@ class OrientationSalience:
         gamma: float = 0.75,
         n_orientations: int = 4,
     ) -> dict[str, npt.NDArray[np.float32]]:
-        kernels = {}
+        kernels: dict[str, npt.NDArray[np.float32]] = {}
         filter_size = int(7 * sigma + 1) | 1
         for ori in range(n_orientations):
             theta = ori * np.pi / n_orientations
-            kernel = cv2.getGaborKernel(
+            kernel: npt.NDArray[np.float32] = cv2.getGaborKernel(
                 (filter_size, filter_size),
                 sigma=sigma,
                 theta=theta,
@@ -402,7 +402,7 @@ class OrientationSalience:
         pyr: Pyramid,
     ) -> npt.NDArray[np.float32]:
         feature_pyramids = {}
-        feature_maps = {}
+        feature_maps = FeatureMaps({})
         lap = laplacian_pyramid(pyr)
         for ori, kernel in self._kernels.items():
             p = np.zeros(lap.shape, dtype=object)
