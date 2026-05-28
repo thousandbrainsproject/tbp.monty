@@ -16,7 +16,6 @@ import numpy as np
 import numpy.typing as npt
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from scipy.ndimage import binary_dilation
 
 from tbp.monty.frameworks.models.salience.strategies.vocus2.images import (
     rgb_to_opponent,
@@ -295,8 +294,7 @@ class ColorChannelSalienceTest(unittest.TestCase):
         feature_map, _ = processor.process(Mock(), image)
 
         box = setup.box
-        dilated = binary_dilation(box, iterations=5)
-        surround = ~dilated
+        assert box is not None
         surround = ~box
 
         box_salience = feature_map[box].mean()
@@ -409,8 +407,7 @@ class DepthSalienceTest(unittest.TestCase):
         feature_map = processor.process(Mock(), image)
 
         box = setup.box
-        dilated = binary_dilation(box, iterations=5)
-        surround = ~dilated
+        assert box is not None
         surround = ~box
 
         box_salience = feature_map[box].mean()
@@ -571,8 +568,7 @@ class OrientationSalienceTest(unittest.TestCase):
         feature_map = processor.process(Mock(), pyramid)
 
         box = setup.box
-        dilated = binary_dilation(box, iterations=5)
-        surround = ~dilated
+        assert box is not None
         surround = ~box
 
         box_salience = feature_map[box].mean()
