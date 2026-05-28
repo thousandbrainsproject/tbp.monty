@@ -926,11 +926,6 @@ class GraphLM(LearningModule):
         )
 
     def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
-
-        Returns:
-            State dict for logging and saving.
-        """
         return dict(
             graph_memory=self.graph_memory.state_dict(),
             target_to_graph_id=self.target_to_graph_id,
@@ -938,11 +933,6 @@ class GraphLM(LearningModule):
         )
 
     def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Args:
-            memento: State dict to load.
-        """
         self.graph_memory.load_state_dict(memento["graph_memory"])
         self.target_to_graph_id = memento["target_to_graph_id"]
         self.graph_id_to_target = memento["graph_id_to_target"]
@@ -1294,21 +1284,9 @@ class GraphMemory(LMMemory):
 
     # ------------------ Logging & Saving ----------------------
     def state_dict(self) -> Memento:
-        """Get a memento representing the internal state of this object.
-
-        Returns:
-            State dict for logging and saving.
-        """
         return self.models_in_memory
 
     def load_state_dict(self, memento: Memento) -> None:
-        """Set the internal object state from a previously snapshot memento.
-
-        Load graphs from state dict and add to memory.
-
-        Args:
-            memento: State dict to load.
-        """
         logger.info("loading models")
         for obj_name, model in memento.items():
             logger.info(f"loading {obj_name} with features from {model.keys()}")
