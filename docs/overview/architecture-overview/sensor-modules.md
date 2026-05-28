@@ -9,4 +9,4 @@ A general principle of the system is that **any processing specific to a modalit
 
 ![Sensor modules receive and process the raw sensory input. This is then communicated via a common messaging protocol to a learning module which uses this to learn and recognize models of anything in the environment.](../../figures/overview/sm_and_lm.png#width=400px)
 
-See our [implementation documentation](../../how-monty-works/observations-transforms-sensor-modules.md) for details on how we implement sensor modules in Monty.
+See our [implementation documentation](../../how-monty-works/sensor-module.md) for details on how we implement sensor modules in Monty.

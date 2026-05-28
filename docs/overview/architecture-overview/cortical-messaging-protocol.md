@@ -22,4 +22,4 @@ The common reference frame also supports voting operations accounting for the re
 
 ![By using a common messaging protocol between sensor modules and learning modules, the system can easily be scaled in multiple dimensions. This provides a straightforward way for dealing with multiple sensory inputs from multiple modalities. Using multiple learning modules next to each other can improve robustness through votes between them. Additionally, stacking learning modules on top of each other allows for more complex, hierarchical processing of inputs and modeling compositional objects.](../../figures/overview/scaling.png)
 
-See our [implementation documentation](../../how-monty-works/observations-transforms-sensor-modules.md) for details on how we implement the CMP in Monty.
+See our [implementation documentation](../../how-monty-works/monty/messages-in-monty.md) for details on how we implement the CMP in Monty.
