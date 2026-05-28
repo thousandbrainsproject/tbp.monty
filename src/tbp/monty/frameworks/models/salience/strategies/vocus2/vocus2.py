@@ -73,11 +73,6 @@ class WeightedMean(MapCombine):
 
 
 class OperatingLimits(Protocol):
-    def validate_center_and_surround_sigma(
-        self, center_sigma: float, surround_sigma: float
-    ) -> ValueError | None: ...
-    def validate_image_dim_size(self, image_dim_size: int) -> ValueError | None: ...
-
     @staticmethod
     def validate(
         min_image_dim_size: int,
