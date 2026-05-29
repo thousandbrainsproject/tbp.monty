@@ -54,23 +54,6 @@ def safe_resolutions(draw: st.DrawFn) -> tuple[int, int]:
     return (height, width)
 
 
-@st.composite
-def unsafe_resolutions(draw: st.DrawFn) -> tuple[int, int]:
-    height = draw(
-        st.integers(
-            min_value=1,
-            max_value=SafeOperatingLimits.min_image_dim_size - 1,
-        )
-    )
-    width = draw(
-        st.integers(
-            min_value=1,
-            max_value=SafeOperatingLimits.min_image_dim_size - 1,
-        )
-    )
-    return (height, width)
-
-
 def sigma_strategy_limits(
     resolution: tuple[int, int],
 ) -> tuple[float, float, float, float]:
