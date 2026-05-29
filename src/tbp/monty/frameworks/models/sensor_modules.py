@@ -38,7 +38,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 from tbp.monty.geometry import Rotation
-from tbp.monty.memento import Memento, Snapshotable
+from tbp.monty.memento import Memento
 
 __all__ = [
     "CameraSM",
@@ -57,7 +57,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-class SnapshotTelemetry(Snapshotable):
+class SnapshotTelemetry:
     """Keeps track of raw observation snapshot telemetry."""
 
     def __init__(self) -> None:

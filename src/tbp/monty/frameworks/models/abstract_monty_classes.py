@@ -431,7 +431,7 @@ class GoalGenerator(metaclass=abc.ABCMeta):
         pass
 
 
-class SensorModule(Snapshotable, metaclass=abc.ABCMeta):
+class SensorModule(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def state_dict(self) -> Memento:
         pass

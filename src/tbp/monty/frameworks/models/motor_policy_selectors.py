@@ -21,7 +21,7 @@ from tbp.monty.frameworks.models.motor_policies import (
     PolicyStatus,
 )
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
-from tbp.monty.memento import Memento, Snapshotable
+from tbp.monty.memento import Memento
 
 if TYPE_CHECKING:
     from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -50,7 +50,7 @@ def highest_confidence_goal(goals: list[Goal]) -> Goal:
     return sorted(goals, key=lambda x: x.confidence, reverse=True)[0]
 
 
-class MotorPolicySelector(Snapshotable, Protocol):
+class MotorPolicySelector(Protocol):
     def pre_episode(self, motor_system: MotorSystem) -> None: ...
 
     def __call__(
