@@ -137,18 +137,6 @@ def solid_images(
 
 
 @st.composite
-def random_images(
-    draw: st.DrawFn,
-    resolution: st.SearchStrategy[tuple[int, int]] | None = None,
-) -> npt.NDArray[np.float32]:
-    resolution_strategy = (
-        resolution if resolution is not None else default_resolutions()
-    )
-    resolution_sample = draw(resolution_strategy)
-    return np.random.uniform(size=resolution_sample).astype(np.float32)
-
-
-@st.composite
 def default_pyramids(
     draw: st.DrawFn,
     fill_value: float = 0.0,
@@ -255,14 +243,10 @@ def gaussian_pyramid_params(
 
     Args:
         draw: The hypothesis draw function.
-        image: A strategy for generating images or None. Defaults to
-          `random_images`.
-        sigma: A strategy for generating sigmas or None. Defaults to
-          `sigmas`.
-        n_scales: A strategy for generating n_scales or None. Defaults to
-          `default_n_scales`.
-        max_octaves: A strategy for max_octaves or None. Defaults to
-          `default_max_octaves`.
+        image: A strategy for generating images or None.
+        sigma: A strategy for generating sigmas or None.
+        n_scales: A strategy for generating n_scales or None.
+        max_octaves: A strategy for max_octaves or None.
 
     Returns:
         The parameters for a call to `gaussian_pyramid`.
