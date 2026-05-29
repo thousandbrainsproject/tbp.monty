@@ -137,18 +137,10 @@ def solid_images(
 def default_pyramids(
     draw: st.DrawFn,
     fill_value: float = 0.0,
-    resolution: st.SearchStrategy[tuple[int, int]] | None = None,
-    n_scales: st.SearchStrategy[int] | None = None,
-    max_octaves: st.SearchStrategy[int | None] | None = None,
 ) -> Pyramid:
-    resolution = resolution if resolution is not None else default_resolutions()
-    _resolution = draw(resolution)
-
-    n_scales = n_scales if n_scales is not None else default_n_scales()
-    _n_scales = draw(n_scales)
-
-    max_octaves = max_octaves if max_octaves is not None else default_max_octaves()
-    _max_octaves = draw(max_octaves)
+    _resolution = draw(default_resolutions())
+    _n_scales = draw(default_n_scales())
+    _max_octaves = draw(default_max_octaves())
 
     octave_shapes = pyramid_octave_shapes(_resolution, max_octaves=_max_octaves)
     n_octaves = len(octave_shapes)
@@ -233,8 +225,6 @@ def gaussian_pyramid_params(
     draw: st.DrawFn,
     image: st.SearchStrategy[npt.NDArray[np.float32]] | None = None,
     sigma: st.SearchStrategy[float] | None = None,
-    n_scales: st.SearchStrategy[int] | None = None,
-    max_octaves: st.SearchStrategy[int | None] | None = None,
 ) -> GaussianPyramidParams:
     """Generate parameters for calls to `gaussian_pyramid`.
 
@@ -255,11 +245,8 @@ def gaussian_pyramid_params(
     sigma = sigma if sigma is not None else default_sigmas(_image.shape)
     _sigma = draw(sigma)
 
-    n_scales = n_scales if n_scales is not None else default_n_scales()
-    _n_scales = draw(n_scales)
-
-    max_octaves = max_octaves if max_octaves is not None else default_max_octaves()
-    _max_octaves = draw(max_octaves)
+    _n_scales = draw(default_n_scales())
+    _max_octaves = draw(default_max_octaves())
 
     return GaussianPyramidParams(
         image=_image,

@@ -157,11 +157,6 @@ def unsafe_cs_sigmas(
 
 
 @st.composite
-def safe_images(draw: st.DrawFn) -> npt.NDArray[np.float32]:
-    return draw(default_images(resolution=safe_resolutions()))
-
-
-@st.composite
 def safe_solid_images(draw: st.DrawFn) -> npt.NDArray[np.float32]:
     return np.full(
         draw(safe_resolutions()),
