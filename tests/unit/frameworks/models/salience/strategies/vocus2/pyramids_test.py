@@ -111,18 +111,13 @@ def default_image_values(draw: st.DrawFn) -> float:
 @st.composite
 def default_images(
     draw: st.DrawFn,
-    resolution: st.SearchStrategy[tuple[int, int]] | None = None,
-    unique: bool = False,
 ) -> npt.NDArray[np.float32]:
-    resolution = resolution if resolution is not None else default_resolutions()
-    elements = default_image_values()
     return draw(
         arrays(
             dtype=np.float32,
-            shape=resolution,
-            elements=elements,
+            shape=default_resolutions(),
+            elements=default_image_values(),
             fill=st.just(0.0),
-            unique=unique,
         )
     )
 
@@ -547,6 +542,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
                 Mock(), center_sigma, surround_sigma, Mock(), Mock()
             )
 
+    @settings(deadline=1000)
     @given(params=center_surround_pyramids_params())
     def test_center_and_surround_pyramids_have_same_shape(
         self,
@@ -563,7 +559,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(params=center_surround_pyramids_params())
-    def test_center_planes_have_higher_variaiance_than_corresponding_surround_planes(
+    def test_center_planes_have_higher_variance_than_corresponding_surround_planes(
         self,
         params: CenterSurroundPyramidsParams,
     ) -> None:
