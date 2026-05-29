@@ -104,42 +104,6 @@ def safe_cs_sigmas(
 
 
 @st.composite
-def unsafe_cs_sigmas(
-    draw: st.DrawFn,
-    resolution: tuple[int, int],
-) -> tuple[float, float]:
-    min_center_sigma, max_center_sigma, min_sigma_separation, max_surround_sigma = (
-        sigma_strategy_limits(resolution)
-    )
-
-    center_sigma_too_low = st.floats(
-        min_value=0,
-        max_value=min_center_sigma,
-        exclude_max=True,
-    )
-    center_sigma_too_high = st.floats(
-        min_value=max_center_sigma,
-        max_value=max_surround_sigma,
-        exclude_min=True,
-    )
-    center_sigma = draw(st.one_of(center_sigma_too_low, center_sigma_too_high))
-
-    surround_sigma_too_low = st.floats(
-        min_value=0,
-        max_value=center_sigma + min_sigma_separation,
-        exclude_max=True,
-    )
-    surround_sigma_too_high = st.floats(
-        min_value=max_surround_sigma,
-        max_value=2 * max_surround_sigma,
-        exclude_min=True,
-    )
-    surround_sigma = draw(st.one_of(surround_sigma_too_low, surround_sigma_too_high))
-
-    return (center_sigma, surround_sigma)
-
-
-@st.composite
 def safe_solid_images(draw: st.DrawFn) -> npt.NDArray[np.float32]:
     return np.full(
         draw(safe_resolutions()),
