@@ -125,13 +125,10 @@ def default_images(
 @st.composite
 def solid_images(
     draw: st.DrawFn,
-    resolution: st.SearchStrategy[tuple[int, int]] | None = None,
 ) -> npt.NDArray[np.float32]:
-    resolution = resolution if resolution is not None else default_resolutions()
-    elements = default_image_values()
     return np.full(
-        draw(resolution),
-        draw(elements),
+        draw(default_resolutions()),
+        draw(default_image_values()),
         dtype=np.float32,
     )
 
