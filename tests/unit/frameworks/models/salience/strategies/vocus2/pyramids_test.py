@@ -149,15 +149,6 @@ def random_images(
 
 
 @st.composite
-def nonsolid_images(draw: st.DrawFn) -> npt.NDArray[np.float32]:
-    return draw(
-        default_images().filter(
-            lambda img: not np.allclose(img, img[0, 0], atol=DEFAULT_TOLERANCE)
-        )
-    )
-
-
-@st.composite
 def default_pyramids(
     draw: st.DrawFn,
     fill_value: float = 0.0,
