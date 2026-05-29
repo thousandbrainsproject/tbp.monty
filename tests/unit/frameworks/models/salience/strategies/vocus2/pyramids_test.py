@@ -17,7 +17,6 @@ import cv2
 import numpy as np
 import numpy.testing as nptest
 import numpy.typing as npt
-import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
@@ -273,7 +272,6 @@ class GaussianPyramidTest(unittest.TestCase):
             gaussian_pyramid(image, sigma=Mock(), n_scales=Mock())
 
     @given(params=gaussian_pyramid_params(sigma=st.just(1.0)))
-    @pytest.mark.slow
     def test_shape_matches_shapes_computed_by_pyramid_octave_shapes(
         self, params: GaussianPyramidParams
     ) -> None:
@@ -305,7 +303,6 @@ class GaussianPyramidTest(unittest.TestCase):
             image=default_images(),
         ),
     )
-    @pytest.mark.slow
     def test_subsequent_planes_have_decreasing_variance(
         self,
         params: GaussianPyramidParams,
@@ -506,7 +503,6 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(params=center_surround_pyramids_params())
-    @pytest.mark.slow
     def test_center_and_surround_pyramids_have_same_shape(
         self,
         params: CenterSurroundPyramidsParams,
@@ -522,7 +518,6 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(params=center_surround_pyramids_params())
-    @pytest.mark.slow
     def test_center_planes_have_higher_variance_than_corresponding_surround_planes(
         self,
         params: CenterSurroundPyramidsParams,
@@ -682,7 +677,6 @@ class LaplacianPyramidTest(unittest.TestCase):
     @given(
         input_pyramid=valid_input_pyramid_for_laplacian_pyramid(fill_value=FILL_VALUE),
     )
-    @pytest.mark.slow
     def test_shape_same_as_input_pyramid_minus_one_octave(
         self, input_pyramid: Pyramid
     ) -> None:
@@ -708,7 +702,6 @@ class LaplacianPyramidTest(unittest.TestCase):
     @given(
         input_pyramid=valid_input_pyramid_for_laplacian_pyramid(fill_value=FILL_VALUE),
     )
-    @pytest.mark.slow
     def test_laplacian_planes_are_center_minus_resized_surround(
         self,
         input_pyramid: Pyramid,
@@ -777,7 +770,6 @@ class PyramidCombineTest(unittest.TestCase):
         self.assertIs(result, pyramid)
 
     @given(pyramids=differently_shaped_pyramids())
-    @pytest.mark.slow
     def test_raises_value_error_if_pyramids_have_different_shapes(
         self,
         pyramids: Sequence[Pyramid],
@@ -786,7 +778,6 @@ class PyramidCombineTest(unittest.TestCase):
             pyramid_combine(pyramids, Mock())
 
     @given(pyramids=same_shape_valid_input_pyramids_for_laplacian_pyramid())
-    @pytest.mark.slow
     def test_returns_combined_pyramid_with_same_count_of_octaves_and_scales_and_reduced_planes(  # noqa: E501
         self,
         pyramids: Sequence[Pyramid],
@@ -831,7 +822,6 @@ class PyramidCollapseTest(unittest.TestCase):
     @given(
         pyramid=default_pyramids(fill_value=INPUT_FILL_VALUE),
     )
-    @pytest.mark.slow
     def test_resize_only_called_on_planes_with_shapes_different_from_first_plane_and_returns_what_reduce_returns(  # noqa: E501
         self,
         pyramid: Pyramid,

@@ -12,7 +12,6 @@ import unittest
 
 import numpy as np
 import numpy.testing as nptest
-import pytest
 from hypothesis import assume, given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
@@ -160,7 +159,6 @@ class ScipyRotationsApproxEqualTest(unittest.TestCase):
             min_value=0, max_value=ROTATION_TOLERANCE_RADIANS - ROTATION_EXAMPLE_ERROR
         ),
     )
-    @pytest.mark.slow
     def test_returns_all_true_if_all_deltas_below_tolerance_for_multiple_rotations(
         self,
         a: ScipyRotation,
@@ -207,7 +205,6 @@ class ScipyRotationsApproxEqualTest(unittest.TestCase):
             max_value=2 * ROTATION_TOLERANCE_RADIANS,
         ),
     )
-    @pytest.mark.slow
     def test_returns_all_false_if_all_deltas_above_tolerance_for_multiple_rotations(
         self,
         a: ScipyRotation,
