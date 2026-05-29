@@ -740,11 +740,10 @@ class LaplacianPyramidTest(unittest.TestCase):
 @st.composite
 def differently_shaped_pyramids(
     draw: st.DrawFn,
-    fill_value: float = 1.0,
 ) -> tuple[Pyramid, Pyramid]:
-    pyramid_1 = draw(valid_input_pyramid_for_laplacian_pyramid(fill_value=fill_value))
+    pyramid_1 = draw(valid_input_pyramid_for_laplacian_pyramid(fill_value=1.0))
     pyramid_2 = draw(
-        valid_input_pyramid_for_laplacian_pyramid(fill_value=fill_value).filter(
+        valid_input_pyramid_for_laplacian_pyramid(fill_value=1.0).filter(
             lambda pyr: pyr.shape != pyramid_1.shape
         )
     )
