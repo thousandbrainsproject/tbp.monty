@@ -604,11 +604,9 @@ class CenterSurroundPyramidsCalibrationTest(unittest.TestCase):
 
 
 @st.composite
-def image_shapes(
-    draw: st.DrawFn, min_value: int = 2, max_value: int = MAX_DIM_SIZE
-) -> tuple[int, int]:
-    height = draw(st.integers(min_value=min_value, max_value=max_value))
-    width = draw(st.integers(min_value=min_value, max_value=max_value))
+def image_shapes(draw: st.DrawFn) -> tuple[int, int]:
+    height = draw(st.integers(min_value=2, max_value=MAX_DIM_SIZE))
+    width = draw(st.integers(min_value=2, max_value=MAX_DIM_SIZE))
     return (height, width)
 
 
@@ -649,28 +647,14 @@ def valid_input_pyramid_for_laplacian_pyramid(
 @st.composite
 def same_shape_valid_input_pyramids_for_laplacian_pyramid(
     draw: st.DrawFn,
-    first_fill_value: float = 0.0,
-    second_fill_value: float = 1.0,
-    image_shape: st.SearchStrategy[tuple[int, int]] | None = None,
-    n_scales: st.SearchStrategy[int] | None = None,
-    max_octaves: st.SearchStrategy[int | None] | None = None,
 ) -> tuple[Pyramid, Pyramid]:
-    image_shape = image_shape if image_shape is not None else image_shapes()
-    _image_shape = draw(image_shape)
-
-    n_scales = n_scales if n_scales is not None else default_n_scales()
-    _n_scales = draw(n_scales)
-
-    max_octaves = (
-        max_octaves
-        if max_octaves is not None
-        else st.one_of(st.none(), default_max_octaves(min_value=2))
-    )
-    _max_octaves = draw(max_octaves)
+    _image_shape = draw(image_shapes())
+    _n_scales = draw(default_n_scales())
+    _max_octaves = draw(default_max_octaves(min_value=2))
 
     pyramid_1 = draw(
         valid_input_pyramid_for_laplacian_pyramid(
-            fill_value=first_fill_value,
+            fill_value=0.0,
             image_shape=st.just(_image_shape),
             n_scales=st.just(_n_scales),
             max_octaves=st.just(_max_octaves),
@@ -678,7 +662,7 @@ def same_shape_valid_input_pyramids_for_laplacian_pyramid(
     )
     pyramid_2 = draw(
         valid_input_pyramid_for_laplacian_pyramid(
-            fill_value=second_fill_value,
+            fill_value=1.0,
             image_shape=st.just(_image_shape),
             n_scales=st.just(_n_scales),
             max_octaves=st.just(_max_octaves),
