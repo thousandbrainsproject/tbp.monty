@@ -17,6 +17,7 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 import numpy.typing as npt
+import pytest
 import quaternion as qt
 from hypothesis import given
 from hypothesis import strategies as st
@@ -319,6 +320,7 @@ class JumpToGoalTest(ParametrizedTestCase):
         agent_rotation=quaternions(),
         sensor_rotation=quaternions(),
     )
+    @pytest.mark.slow
     def test_returns_undo_actions_status_ready_if_undo_is_needed_regardless_of_new_goal(
         self,
         has_post_jump_goal: bool,

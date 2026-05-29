@@ -130,6 +130,7 @@ class ComputeArcFromTangentProjectionTest(unittest.TestCase):
 
 class DirectionalCurvatureTest(unittest.TestCase):
     @given(vectors=orthonormal_vectors(), ks=curvature_values())
+    @pytest.mark.slow
     def test_zero_direction_returns_zero(self, vectors, ks):
         pc1, pc2 = vectors
         k1, k2 = ks
@@ -147,6 +148,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
         ks=curvature_values(),
         vectors=orthonormal_vectors(),
     )
+    @pytest.mark.slow
     def test_euler_formula(self, angle, ks, vectors):
         pc1, pc2 = vectors
         k1, k2 = ks
@@ -169,6 +171,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
             lambda x: abs(x) > DEFAULT_TOLERANCE
         ),
     )
+    @pytest.mark.slow
     def test_non_orthogonal_pcs_raises(self, vectors, a_scaler):
         pc1, _ = vectors
         bad_pc2 = pc1 * a_scaler

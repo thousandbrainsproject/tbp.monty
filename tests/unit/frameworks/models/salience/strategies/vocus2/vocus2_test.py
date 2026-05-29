@@ -14,6 +14,7 @@ from unittest.mock import ANY, Mock, call, patch, sentinel
 
 import numpy as np
 import numpy.typing as npt
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -242,6 +243,7 @@ class ColorChannelSalienceTest(unittest.TestCase):
         self.assertTrue(box_salience > surround_salience)
 
     @given(image=default_images())
+    @pytest.mark.slow
     def test_sigmas_outside_of_operating_limits_raises_value_error_if_suppress_runtime_errors_is_false(  # noqa: E501
         self,
         image: npt.NDArray[np.float32],
@@ -256,6 +258,7 @@ class ColorChannelSalienceTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(image=default_images())
+    @pytest.mark.slow
     def test_sigmas_outside_of_operating_limits_does_not_raise_value_error_if_suppress_runtime_errors_is_true(  # noqa: E501
         self,
         image: npt.NDArray[np.float32],
@@ -355,6 +358,7 @@ class DepthSalienceTest(unittest.TestCase):
         self.assertTrue(box_salience > surround_salience)
 
     @given(image=default_images())
+    @pytest.mark.slow
     def test_sigmas_outside_of_operating_limits_raises_value_error_if_suppress_runtime_errors_is_false(  # noqa: E501
         self,
         image: npt.NDArray[np.float32],
@@ -369,6 +373,7 @@ class DepthSalienceTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(image=default_images())
+    @pytest.mark.slow
     def test_sigmas_outside_of_operating_limits_does_not_raise_value_error_if_suppress_runtime_errors_is_true(  # noqa: E501
         self,
         image: npt.NDArray[np.float32],
@@ -487,6 +492,7 @@ class OrientationSalienceTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(setup=orientation_salience_setup(image=safe_solid_images()))
+    @pytest.mark.slow
     def test_solid_image_not_salient(
         self,
         setup: OrientationSalienceSetup,
@@ -498,6 +504,7 @@ class OrientationSalienceTest(unittest.TestCase):
 
     @settings(deadline=1000)
     @given(setup=orientation_box_salience_setup())
+    @pytest.mark.slow
     def test_box_is_more_salient_than_surround(
         self,
         setup: OrientationSalienceSetup,

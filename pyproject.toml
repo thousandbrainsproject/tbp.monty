@@ -155,6 +155,9 @@ filterwarnings = [
     'ignore:.*:DeprecationWarning'
 ]
 junit_family = 'xunit1'
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+]
 
 [tool.autoimport.common_statements]
 "np" = "import numpy as np"
