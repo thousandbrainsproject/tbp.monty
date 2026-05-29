@@ -222,12 +222,14 @@ class EdgeDetector:
             )
 
         aggregated = self._aggregate_tensor(tensor_per_pixel, weights, total_weight)
-
-        if not self._passes_center_check(
+        edge_normal_angle = aggregated.edge_angle + np.pi / 2
+        edge_center_offset = self._compute_center_offset(
             weights,
             total_weight,
-            aggregated.gradient_theta,
-        ):
+            edge_normal_angle,
+        )
+
+        if not self._passes_center_check(edge_center_offset):
             return EdgeFeatures(
                 angle=None,
                 strength=0.0,
@@ -245,7 +247,11 @@ class EdgeDetector:
             angle=aggregated.edge_angle,
             strength=aggregated.edge_strength,
             coherence=aggregated.coherence,
-            is_geometric_edge=self._is_geometric_edge(depth, aggregated.edge_angle),
+            is_geometric_edge=self._is_geometric_edge(
+                depth,
+                aggregated.edge_angle,
+                edge_center_offset,
+            ),
             has_edge=has_edge,
         )
 
@@ -355,18 +361,36 @@ class EdgeDetector:
             xy=float(aggregated[0, 1]),
         )
 
-    def _passes_center_check(
-        self,
+    @staticmethod
+    def _compute_center_offset(
         weights: np.ndarray,
         total_weight: np.floating,
-        gradient_theta: float,
-    ) -> bool:
-        """Return True if the detected edge passes close enough to the patch center.
+        normal_angle: float,
+    ) -> np.floating:
+        """Estimate signed edge offset from the patch center along a normal.
 
         Args:
             weights: Per-pixel weights.
             total_weight: Sum of weights.
-            gradient_theta: Gradient direction in radians (normal to edge).
+            normal_angle: Direction perpendicular to the edge in radians.
+
+        Returns:
+            Weighted signed offset from the patch center in pixels.
+        """
+        h, w = weights.shape
+        r0, c0 = h // 2, w // 2
+        rows, cols = np.meshgrid(np.arange(h), np.arange(w), indexing="ij")
+
+        nx = np.cos(normal_angle)
+        ny = np.sin(normal_angle)
+        dist_normal = nx * (cols - c0) + ny * (rows - r0)
+        return np.sum(weights * dist_normal) / total_weight
+
+    def _passes_center_check(self, center_offset: float) -> bool:
+        """Return True if the detected edge passes close enough to the patch center.
+
+        Args:
+            center_offset: Signed edge offset from the patch center in pixels.
 
         Returns:
             True if edge passes the center check (or check is disabled).
@@ -374,21 +398,13 @@ class EdgeDetector:
         if self._max_center_offset is None:
             return True
 
-        h, w = weights.shape
-        r0, c0 = h // 2, w // 2
-        rows, cols = np.meshgrid(np.arange(h), np.arange(w), indexing="ij")
-
-        nx = np.cos(gradient_theta)
-        ny = np.sin(gradient_theta)
-        dist_normal = nx * (cols - c0) + ny * (rows - r0)
-        d_center = np.sum(weights * dist_normal) / total_weight
-
-        return abs(d_center) <= self._max_center_offset
+        return abs(center_offset) <= self._max_center_offset
 
     def _is_geometric_edge(
         self,
         depth_patch: np.ndarray,
         edge_theta: float,
+        edge_center_offset: float,
     ) -> bool:
         """Check if detected edge is a geometric edge (depth discontinuity).
 
@@ -398,15 +414,15 @@ class EdgeDetector:
         identify candidate texture edges that do not correspond to a 2D surface
         (such as where the red handle of a mug is seen against the black background
         of a simulator's void). This function computes the depth gradient perpendicular
-        to the detected edge direction and checks if it exceeds a threshold.
+        to the detected edge direction near the estimated RGB edge line and
+        checks if robust depth-edge evidence exceeds a threshold.
 
         Args:
             depth_patch: Depth image patch (same size as RGB patch used for edge
                 detection). Values should be in consistent units (e.g., meters).
             edge_theta: Edge tangent angle in radians from RGB edge detection.
-            depth_threshold: Maximum allowed depth gradient magnitude for texture
-                edges. Edges with perpendicular depth gradient above this value
-                are classified as geometric.
+            edge_center_offset: Signed RGB edge offset from the patch center along
+                the edge normal.
 
         Returns:
             True if edge is geometric, False if texture edge.
@@ -418,7 +434,19 @@ class EdgeDetector:
         nx = np.cos(edge_normal_angle)
         ny = np.sin(edge_normal_angle)
 
-        cy, cx = depth_patch.shape[0] // 2, depth_patch.shape[1] // 2
-        depth_gradient_perp = abs(nx * depth_dx[cy, cx] + ny * depth_dy[cy, cx])
+        h, w = depth_patch.shape
+        cy, cx = h // 2, w // 2
+        rows, cols = np.meshgrid(np.arange(h), np.arange(w), indexing="ij")
+        dist_normal = nx * (cols - cx) + ny * (rows - cy)
+        depth_edge_band = np.abs(dist_normal - edge_center_offset) <= 1.5
 
-        return depth_gradient_perp > self._depth_edge_threshold
+        if not np.any(depth_edge_band):
+            return False
+
+        depth_gradient_perp = np.abs(nx * depth_dx + ny * depth_dy)
+        depth_edge_evidence = np.percentile(
+            depth_gradient_perp[depth_edge_band],
+            95.0,
+        )
+
+        return depth_edge_evidence > self._depth_edge_threshold
