@@ -43,7 +43,7 @@ __all__ = [
 class SensorObservation(TypedDict, total=False):
     """Observations from a sensor."""
 
-    rgba: npt.NDArray[np.int_]  # TODO: Verify specific type
+    rgba: npt.NDArray[np.uint8]
     depth: npt.NDArray[np.float64]  # TODO: Verify specific type
     semantic: npt.NDArray[np.int_]  # TODO: Verify specific type
     semantic_3d: npt.NDArray[np.int_]  # TODO: Verify specific type
