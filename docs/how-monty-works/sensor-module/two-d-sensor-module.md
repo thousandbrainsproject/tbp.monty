@@ -8,7 +8,6 @@ title: TwoDSensorModule
 
 The module treats local texture edges as pose information and treats motion across the object as motion in a transported 2D coordinate system. This makes it possible to learn flattened edge layouts from curved surfaces while still sending `location`, `displacement`, and `pose_vectors` fields that downstream learning modules already understand.
 
-<!-- TODO: Need to figure out where to upload PDF -->
 For the detailed implementation notes, edge-detection math, movement derivation, and current experiment results, see the [TwoDSensorModule reference manual](). 
 
 ## What Problem It Solves
@@ -30,12 +29,14 @@ This keeps the representation compatible with Monty's existing learning modules 
 First, it detects a dominant texture-edge orientation in the RGB patch. The edge detector aggregates image-gradient evidence across the patch, scores whether there is a coherent edge, and rejects edges that look like depth discontinuities rather than texture on the object's surface. A detected logo edge can then become the pose feature that the learning module stores.
 
 Second, it tracks movement in a local 2D reference frame. As the sensor moves over a curved surface, the tangent plane changes from one point to the next. `TwoDSensorModule` maintains a transported tangent frame so that the local 2D axes move smoothly across the surface. It then projects each 3D step into that frame and applies a curvature-aware correction so the accumulated displacement better approximates distance along the surface rather than a flattened chord through space.
-<!-- TODO: Insert images of learned models for TBP Logo and Numenta Logo -->
 
 ## Recognizing Compositional Objects
 
+![Learned 2D surface models for logo-bearing objects across different supporting surfaces.](../../figures/how-monty-works/learned_surface_model.png)
+
+In current experiments, `TwoDSensorModule` can learn 2D surface models of logo-bearing objects in the Compositionality Dataset across several supporting surfaces, as shown above.  
+
 <!-- TODO: Add inference results (heatmap) --> 
-In current experiments, `TwoDSensorModule` can learn 2D surface models of logo-bearing objects in Compostionality Dataset across several surfaces as shown in the above figure.  
 
 Surface-transfer experiments also show that models learned on one surface can often recognize the same logo-bearing objects on another surface.  
 
