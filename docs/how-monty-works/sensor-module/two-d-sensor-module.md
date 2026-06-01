@@ -12,7 +12,7 @@ For the detailed implementation notes, edge-detection math, movement derivation,
 
 ## What Problem It Solves
 
-A standard RGBD sensor module (`CameraSM`) can estimate 3D locations, surface normals, and curvature directions at the center of a patch. That is useful for modeling 3D shape, but has difficulty distinguishing information that is 2D texture printed or painted onto a surface such as our [compostionality dataset](). For example, the TBP and Numenta logos on a disk or mug are defined by 2D edge layouts, even though the surface carrying the logo may be curved.
+A standard RGBD sensor module (`CameraSM`) can estimate 3D locations, surface normals, and curvature directions at the center of a patch. That is useful for modeling 3D shape, but has difficulty distinguishing information that is 2D texture printed or painted onto a surface such as our [compositionality dataset](../../overview/benchmark-experiments.md#compositional-datasets). For example, the TBP and Numenta logos on a disk or mug are defined by 2D edge layouts, even though the surface carrying the logo may be curved.
 
 `TwoDSensorModule` addresses this by building a local 2D model of the surface texture. It still starts from RGBD observations, but it changes the interpretation of the outgoing message:
 
@@ -34,7 +34,7 @@ Second, it tracks movement in a local 2D reference frame. As the sensor moves ov
 
 ![Learned 2D surface models for logo-bearing objects across different supporting surfaces.](../../figures/how-monty-works/learned_surface_model.png)
 
-In current experiments, `TwoDSensorModule` can learn 2D surface models of logo-bearing objects in the Compositionality Dataset across several supporting surfaces, as shown above.  
+In current experiments, `TwoDSensorModule` can learn 2D surface models of logo-bearing objects in the [compositionality dataset](../../overview/benchmark-experiments.md#compositional-datasets) across several supporting surfaces, as shown above.  
 
 Surface-transfer experiments also show that models learned on one surface can often recognize the same logo-bearing objects on another surface. The matrix below shows recognition accuracy when models are learned on each surface type and then used for inference on the same or a different supporting surface.
 
