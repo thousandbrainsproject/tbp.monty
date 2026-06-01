@@ -36,9 +36,9 @@ Second, it tracks movement in a local 2D reference frame. As the sensor moves ov
 
 In current experiments, `TwoDSensorModule` can learn 2D surface models of logo-bearing objects in the Compositionality Dataset across several supporting surfaces, as shown above.  
 
-<!-- TODO: Add inference results (heatmap) --> 
+Surface-transfer experiments also show that models learned on one surface can often recognize the same logo-bearing objects on another surface. The matrix below shows recognition accuracy when models are learned on each surface type and then used for inference on the same or a different supporting surface.
 
-Surface-transfer experiments also show that models learned on one surface can often recognize the same logo-bearing objects on another surface.  
+![Surface-transfer recognition accuracies for logo-bearing objects. Rows show the surface used for learning, columns show the surface used for inference, and each cell reports recognition accuracy for that train-test surface pairing.](../../figures/how-monty-works/surface_transfer_accuracies.png)
 
 ## Current Limitations
 
