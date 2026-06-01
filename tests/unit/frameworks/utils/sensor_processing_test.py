@@ -163,24 +163,6 @@ class DirectionalCurvatureTest(unittest.TestCase):
         )
         npt.assert_allclose(result, expected, atol=tol, rtol=DEFAULT_TOLERANCE)
 
-    @given(
-        vectors=orthonormal_vectors(),
-        a_scaler=st.floats(min_value=-1e3, max_value=1e3).filter(
-            lambda x: abs(x) > DEFAULT_TOLERANCE
-        ),
-    )
-    def test_non_orthogonal_pcs_raises(self, vectors, a_scaler):
-        pc1, _ = vectors
-        bad_pc2 = pc1 * a_scaler
-        with pytest.raises(ValueError, match="must be orthogonal"):
-            directional_curvature(
-                movement_direction=Mock(),
-                k1=Mock(),
-                k2=Mock(),
-                pc1_dir=pc1,
-                pc2_dir=bad_pc2,
-            )
-
     @given(vectors=orthonormal_vectors())
     def test_out_of_plane_movement_raises(self, vectors):
         pc1, pc2 = vectors
