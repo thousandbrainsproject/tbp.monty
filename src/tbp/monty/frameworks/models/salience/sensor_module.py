@@ -28,6 +28,7 @@ from tbp.monty.frameworks.models.salience.strategies import (
 )
 from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.memento import Memento
 
 __all__ = ["SalienceSM"]
 
@@ -61,7 +62,7 @@ class SalienceSM(SensorModule):
     def sensor_module_id(self) -> str:
         return self._sensor_module_id
 
-    def state_dict(self):
+    def state_dict(self) -> Memento:
         return self._snapshot_telemetry.state_dict()
 
     def update_state(self, agent: AgentState):
