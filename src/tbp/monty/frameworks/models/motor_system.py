@@ -45,7 +45,7 @@ class MotorSystem:
         Args:
             policy_selector: The motor policy selector to use.
         """
-        self._policy_selector: MotorPolicySelector = policy_selector
+        self._policy_selector = policy_selector
         # For each step, we store the actions produced by the policy and the current
         # motor system state as a (actions, state) tuple.
         self._action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]] = []
