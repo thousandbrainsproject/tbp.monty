@@ -38,7 +38,7 @@ experiment:
               - 1
           feature_weights:
             patch:
-              hsv: ${np.array:[1, 0.5, 0.5]}
+              hsv: ${np.array:[2, 0.5, 0.5]}
           x_percent_threshold: 20
           graph_delta_thresholds:
             patch:
