@@ -4,9 +4,9 @@ title: TwoDSensorModule
 
 # TwoDSensorModule
 
-`TwoDSensorModule` is a sensor module for learning 2D surface models of 3D objects. 
+`TwoDSensorModule` is a sensor module that enables learning 2D models of 2D objects that exist in a 3D world. 
 
-The module treats local texture edges as pose information and treats motion across the object as motion in a transported 2D coordinate system. This makes it possible to learn flattened edge layouts from curved surfaces while still sending `location`, `displacement`, and `pose_vectors` fields that downstream learning modules already understand.
+The module extracts local texture edges as morphological features, providing local pose information, analogous to the surface normal and principle curvature directions in the standard `CameraSM`. In addition, it treats motion across the surface of an object as motion in a transported 2D coordinate system. This makes it possible to learn flattened edge layouts from curved surfaces while still sending `location`, `displacement`, and `pose_vectors` fields that downstream learning modules already understand.
 
 For the detailed implementation notes, edge-detection math, movement derivation, and current experiment results, see the [TwoDSensorModule reference manual](https://www.overleaf.com/read/ppbgtdvrbvzz#e8f1c2).
 
@@ -36,7 +36,7 @@ Second, it tracks movement in a local 2D reference frame. As the sensor moves ov
 
 In current experiments, `TwoDSensorModule` can learn 2D surface models of logo-bearing objects in the [compositionality dataset](../../overview/benchmark-experiments.md#compositional-datasets) across several supporting surfaces, as shown above.  
 
-Surface-transfer experiments also show that models learned on one surface can often recognize the same logo-bearing objects on another surface. The matrix below shows recognition accuracy when models are learned on each surface type and then used for inference on the same or a different supporting surface.
+Surface-transfer experiments also show that models learned on one surface can generalize to the same logo object on another surface, despite distortions introduced by surface geometry. The matrix below shows recognition accuracy when models are learned on each surface type and then used for inference on the same or a different supporting surface.
 
 ![Surface-transfer recognition accuracies for logo-bearing objects. Rows show the surface used for learning, columns show the surface used for inference, and each cell reports recognition accuracy for that train-test surface pairing.](../../figures/how-monty-works/surface_transfer_accuracies.png)
 
@@ -46,4 +46,4 @@ The current implementation has several important constraints:
 
 - It detects one dominant texture edge per patch, so corners, repeated textures, or competing edges can produce ambiguous orientations.
 - It embeds the 2D chart in a 3D-shaped message by fixing `z = 0`. 
-- Curved surfaces with nonzero Gaussian curvature cannot be flattened without distortion, and the learned model depend on the exploration path for these objects.
+- Curved surfaces with nonzero Gaussian curvature cannot be flattened without distortion, and the learned model depends on the exploration path for these objects. In practice, the uncorrected distortions appear minimal. 
