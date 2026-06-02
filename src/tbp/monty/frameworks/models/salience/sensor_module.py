@@ -24,7 +24,7 @@ from tbp.monty.frameworks.models.salience.on_object_observation import (
 from tbp.monty.frameworks.models.salience.return_inhibitor import ReturnInhibitor
 from tbp.monty.frameworks.models.salience.strategies import (
     SalienceStrategy,
-    UniformSalienceStrategy,
+    Uniform,
 )
 from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
 from tbp.monty.frameworks.sensors import SensorID
@@ -45,9 +45,7 @@ class SalienceSM(SensorModule):
         self._sensor_module_id = sensor_module_id
         self._save_raw_obs = save_raw_obs
         self._salience_strategy = (
-            UniformSalienceStrategy()
-            if salience_strategy is None
-            else salience_strategy
+            Uniform() if salience_strategy is None else salience_strategy
         )
         self._return_inhibitor = (
             ReturnInhibitor() if return_inhibitor is None else return_inhibitor
@@ -103,7 +101,7 @@ class SalienceSM(SensorModule):
             return
 
         salience_map = self._salience_strategy(
-            rgba=observation["rgba"], depth=observation["depth"]
+            ctx=ctx, rgba=observation["rgba"], depth=observation["depth"]
         )
 
         on_object = on_object_observation(observation, salience_map)

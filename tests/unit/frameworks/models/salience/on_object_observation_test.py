@@ -30,7 +30,7 @@ class OnObjectObservationTest(unittest.TestCase):
         on_object_rows = slice(32 - 5, 32 + 5)
         on_object_cols = slice(32 - 5, 32 + 5)
 
-        rgba = np.zeros(image_shape + (4,), dtype=float)
+        rgba = np.zeros(image_shape + (4,), dtype=np.uint8)
 
         on_object = np.zeros(image_shape, dtype=bool)
         if central_region_on_object:

@@ -349,6 +349,8 @@ class TwoDSensorModuleEdgeTest(unittest.TestCase):
         np.testing.assert_allclose(
             msg.morphological_features["pose_vectors"], original_pose
         )
+        assert msg.non_morphological_features["edge_strength"] == 0.0
+        assert msg.non_morphological_features["coherence"] == 0.0
 
     def test_extract_2d_edge_ignores_geometric_edge(self):
         observation = make_raw_observation(
@@ -375,8 +377,9 @@ class TwoDSensorModuleEdgeTest(unittest.TestCase):
         np.testing.assert_allclose(
             msg.morphological_features["pose_vectors"], original_pose
         )
-        assert "edge_strength" not in msg.non_morphological_features
-        assert "coherence" not in msg.non_morphological_features
+
+        assert msg.non_morphological_features["edge_strength"] == 0.0
+        assert msg.non_morphological_features["coherence"] == 0.0
 
 
 class TwoDSensorModuleTangentFrameTest(unittest.TestCase):

@@ -13,6 +13,7 @@ import unittest
 from typing import NamedTuple
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 from hypothesis import example, given
 from hypothesis import strategies as st
@@ -180,7 +181,9 @@ def structure_tensors(draw, max_value=100.0, allow_zero_matrix=True):
     return StructureTensor(xx=Jxx, yy=Jyy, xy=Jxy)
 
 
-def make_angled_edge_patch(angle_rad: float, size: int = PATCH_SIZE) -> np.ndarray:
+def make_angled_edge_patch(
+    angle_rad: float, size: int = PATCH_SIZE
+) -> npt.NDArray[np.uint8]:
     """Generate a synthetic RGB patch with a half-plane edge through the center.
 
     Returns:
@@ -402,7 +405,7 @@ class TestEdgeDetector(ParametrizedTestCase):
         # Edge at right boundary, not at center
         patch = np.zeros((PATCH_SIZE, PATCH_SIZE, 3), dtype=np.uint8)
         patch[:, PATCH_SIZE - 4 :, :] = 255
-        alpha = np.ones((PATCH_SIZE, PATCH_SIZE, 3), dtype=np.float32)
+        alpha = np.ones((PATCH_SIZE, PATCH_SIZE, 3), dtype=np.uint8)
         rgba = np.concatenate((patch, alpha), axis=-1)
         obs = SensorObservation(
             rgba=rgba,
