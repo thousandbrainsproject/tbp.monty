@@ -8,7 +8,7 @@ title: TwoDSensorModule
 
 The module treats local texture edges as pose information and treats motion across the object as motion in a transported 2D coordinate system. This makes it possible to learn flattened edge layouts from curved surfaces while still sending `location`, `displacement`, and `pose_vectors` fields that downstream learning modules already understand.
 
-For the detailed implementation notes, edge-detection math, movement derivation, and current experiment results, see the [TwoDSensorModule reference manual](https://www.overleaf.com/project/6a1da43a0bc07c8a1d0a72e1). 
+For the detailed implementation notes, edge-detection math, movement derivation, and current experiment results, see the [TwoDSensorModule reference manual](https://www.overleaf.com/read/ppbgtdvrbvzz#e8f1c2).
 
 ## What Problem It Solves
 
