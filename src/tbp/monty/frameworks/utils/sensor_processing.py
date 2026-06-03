@@ -146,7 +146,9 @@ def directional_curvature(
         Normal curvature in the given direction.
 
     Raises:
-        ValueError: If pc1_dir and pc2_dir are not unit vectors.
+        ValueError: If pc1_dir and pc2_dir are not unit vectors, or if
+            movement_direction does not lie in the plane spanned by pc1_dir
+            and pc2_dir.
     """
     if not (is_unit_vector(pc1_dir) and is_unit_vector(pc2_dir)):
         raise ValueError("The pc1_dir and pc2_dir must be unit vectors.")
