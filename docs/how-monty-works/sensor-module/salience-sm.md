@@ -10,7 +10,7 @@ title: SalienceSM
 
 ## ReturnInhibitor
 
-Inhibition of return is a mechanism observed in attention and eye-movement systems. After attention has been drawn to a location, the nervous system becomes less likely to immediately return to that same location. This encourages exploration of new parts of the visual field and supports efficient scanning, because recently inspected locations are temporarily suppressed in favor of novel ones.
+Inhibition of return is a mechanism observed in attention and eye-movement systems. After attention has been drawn to a location, the nervous system becomes less likely to immediately return to that same location. This encourages exploration of new parts of the visual field and supports efficient scanning.
 
 In Monty, `ReturnInhibitor` implements this idea by keeping a decaying memory of recently visited locations. Each visited location is represented by a `DecayKernel`, whose influence is strongest at the visited point and decreases with both distance and time. The `DecayField` stores the active kernels, removes them once they have decayed far enough, and computes an inhibition weight for each candidate goal location. `SalienceSM` then uses those weights to reduce the salience of locations near recent fixations.
 
