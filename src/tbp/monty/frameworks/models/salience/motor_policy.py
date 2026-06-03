@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 import numpy as np
 
@@ -32,6 +31,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.geometry import Rotation
+from tbp.monty.memento import Memento
 
 logger = logging.getLogger(__name__)
 
@@ -64,23 +64,18 @@ class LookAtGoal(MotorPolicy):
         Args:
             agent_id: The agent ID
             sensor_id: The sensor ID
-            suppress_runtime_errors: Whether to suppress runtime errors. Runtime errors
-                can be raised when goal is None or invalid. When in an experimental
-                mode, we want to raise runtime errors by default. When in a production
-                mode, we want to suppress runtime errors by default. Currently, we run
-                a lot of experiments, so the current default is to raise runtime errors.
         """
         self._agent_id = agent_id
         self._sensor_id = sensor_id
 
-    def load_state_dict(self, state_dict: dict[str, Any]) -> None:
-        self._agent_id = state_dict["agent_id"]
-        self._sensor_id = state_dict["sensor_id"]
-
     def pre_episode(self, motor_system: MotorSystem) -> None:
         pass
 
-    def state_dict(self) -> dict[str, Any]:
+    def load_state_dict(self, memento: Memento) -> None:
+        self._agent_id = memento["agent_id"]
+        self._sensor_id = memento["sensor_id"]
+
+    def state_dict(self) -> Memento:
         return {
             "agent_id": self._agent_id,
             "sensor_id": self._sensor_id,

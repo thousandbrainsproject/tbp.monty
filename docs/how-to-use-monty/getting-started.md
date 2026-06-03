@@ -21,12 +21,15 @@ description: How to get the code running.
 > [!WARNING]
 > While the repository contains a `uv.lock` file, this is currently experimental and not supported. In the future this will change, but for now, avoid trying to use `uv` with this project.
 
-# 1. Get the Code
+# 1. Get [the Code](https://github.com/thousandbrainsproject/tbp.monty)
+
+## 1.1 Fork the Repository
 
 It is best practice (and required if you ever want to contribute code) first to **make a fork of our repository** and then make any changes on your local fork. To do this you can simply [visit our repository](https://github.com/thousandbrainsproject/tbp.monty) and click on the fork button as shown in the picture below. For more detailed instructions see the [GitHub documentation on Forks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo).
 
 ![](../figures/how-to-use-monty/fork.png)
 
+## 1.2 Clone the Repository
 
 Next, you need to **clone the repository onto your device**. To do that, open the terminal, navigate to the folder where you want the code to be downloaded and run `git clone repository_path.git`. You can find the `repository_path.git` on GitHub by clicking on the `<>Code` button as shown below. For more details see the [GitHub documentation on cloning](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo#cloning-your-forked-repository).
 
@@ -36,7 +39,7 @@ Next, you need to **clone the repository onto your device**. To do that, open th
 > [!NOTE]
 > If you want the same setup as we use at the Thousand Brains Project by default, clone the repository at `${HOME}/tbp/`. If you don't have a `tbp` folder in your home directory yet you can run `cd ~; mkdir tbp; cd tbp` to create it. It's not required to clone the code in this folder but it is the path we assume in our tutorials.
 
-## 1.2 Make Sure Your Local Copy is Up-to-Date
+## 1.3 Make Sure Your Local Copy is Up-to-Date
 
 If you just forked and cloned this repository, you may skip this step, but any other time you get back to this code, you will want to synchronize it to work with the latest changes.
 
@@ -49,14 +52,19 @@ You can also update your code using the terminal by calling `git fetch upstream;
 
 # 2. Set up Your Environment
 
+## 2.1 Install Conda
 Monty requires Conda to install its dependencies. For instructions on how to install Conda (Miniconda or Anaconda) on your machine see <https://conda.io/projects/conda/en/latest/user-guide/install/index.html>.
-
-To setup Monty, **use the conda commands below**. Make sure to `cd` into the `tbp.monty` directory before running these commands.
 
 > [!NOTE]
 > It is recommended to install Conda outside the `tbp.monty` repository (for example at `~/miniconda3`).
 
-Note that the commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture, and whether you are using the zsh shell or another shell.
+## 2.2 Setup Monty
+To setup Monty, **use the conda commands below**.
+
+**Make sure to `cd` into the `tbp.monty` directory before running these commands.**
+> [!NOTE]
+> The commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture,
+> and whether you are using the zsh shell or another shell.
 
 > [!NOTE]
 > On Apple Silicon we rely on Rosetta to run Intel binaries on ARM64 and include the `softwareupdate --install-rosetta` command in the commands below.
