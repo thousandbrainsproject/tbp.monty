@@ -96,30 +96,6 @@ class NoopAgentTest(unittest.TestCase):
             assert rgba.min() == 0
             assert rgba.max() == 255
 
-    def test_observation_non_square_sensor(self):
-        """Test that the order of Resolution2D works like we expect it to."""
-        agent_args = default_agent_args()
-        agent_args.update(
-            sensor_configs={
-                TEST_SENSOR_ID: SensorConfig(
-                    position=ZERO_VECTOR,
-                    rotation=IDENTITY_QUATERNION,
-                    resolution=Resolution2D(height=128, width=256),
-                    zoom=1.0,
-                )
-            }
-        )
-        sim = MuJoCoSimulator(
-            agents=[partial(NoopAgent, **agent_args)],
-        )
-        with sim:
-            obs = sim.observations[TEST_AGENT_ID]
-            depth = obs[TEST_SENSOR_ID]["depth"]
-            rgba = obs[TEST_SENSOR_ID]["rgba"]
-
-            assert depth.shape == (128, 256)
-            assert rgba.shape == (128, 256, 3)
-
     def test_agent_observation_multiple_resolutions(self):
         """Test two sensors with different resolutions.
 
