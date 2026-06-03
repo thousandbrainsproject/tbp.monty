@@ -219,7 +219,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             self.run_epoch()
         self.logger_handler.post_train(self.logger_args)
         # Save only at the end of pretraining
-        self.save_state_dict(output_dir=self.output_dir)
+        self.save_state_dir(output_dir=self.output_dir)
 
     def evaluate(self):
         """Use experiment just for supervised pretraining -> no eval."""
