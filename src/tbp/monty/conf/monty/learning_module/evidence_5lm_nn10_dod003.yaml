@@ -11,7 +11,7 @@ learning_module_0:
   _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
   feature_weights:
     patch:
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
       pose_vectors: ${np.ones:3}
       principal_curvatures_log: ${np.ones:2}
   tolerances:
@@ -39,7 +39,7 @@ learning_module_1:
   _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
   feature_weights:
     patch:
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
       pose_vectors: ${np.ones:3}
       principal_curvatures_log: ${np.ones:2}
   tolerances:
@@ -67,7 +67,7 @@ learning_module_2:
   _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
   feature_weights:
     patch:
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
       pose_vectors: ${np.ones:3}
       principal_curvatures_log: ${np.ones:2}
   tolerances:
@@ -95,7 +95,7 @@ learning_module_3:
   _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
   feature_weights:
     patch:
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
       pose_vectors: ${np.ones:3}
       principal_curvatures_log: ${np.ones:2}
   tolerances:
@@ -123,7 +123,7 @@ learning_module_4:
   _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
   feature_weights:
     patch:
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
       pose_vectors: ${np.ones:3}
       principal_curvatures_log: ${np.ones:2}
   tolerances:
