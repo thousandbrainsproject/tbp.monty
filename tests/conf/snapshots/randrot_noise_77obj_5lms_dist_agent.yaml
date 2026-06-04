@@ -40,7 +40,7 @@ experiment:
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
           feature_weights:
             patch:
-              hsv: ${np.array:[1, 0.5, 0.5]}
+              hsv: ${np.array:[2, 0.5, 0.5]}
               pose_vectors: ${np.ones:3}
               principal_curvatures_log: ${np.ones:2}
           tolerances:
@@ -70,7 +70,7 @@ experiment:
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
           feature_weights:
             patch:
-              hsv: ${np.array:[1, 0.5, 0.5]}
+              hsv: ${np.array:[2, 0.5, 0.5]}
               pose_vectors: ${np.ones:3}
               principal_curvatures_log: ${np.ones:2}
           tolerances:
@@ -100,7 +100,7 @@ experiment:
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
           feature_weights:
             patch:
-              hsv: ${np.array:[1, 0.5, 0.5]}
+              hsv: ${np.array:[2, 0.5, 0.5]}
               pose_vectors: ${np.ones:3}
               principal_curvatures_log: ${np.ones:2}
           tolerances:
@@ -130,7 +130,7 @@ experiment:
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
           feature_weights:
             patch:
-              hsv: ${np.array:[1, 0.5, 0.5]}
+              hsv: ${np.array:[2, 0.5, 0.5]}
               pose_vectors: ${np.ones:3}
               principal_curvatures_log: ${np.ones:2}
           tolerances:
@@ -160,7 +160,7 @@ experiment:
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
           feature_weights:
             patch:
-              hsv: ${np.array:[1, 0.5, 0.5]}
+              hsv: ${np.array:[2, 0.5, 0.5]}
               pose_vectors: ${np.ones:3}
               principal_curvatures_log: ${np.ones:2}
           tolerances:
@@ -230,7 +230,7 @@ experiment:
             distance: 0.01
           noise_params: ${constants.default_all_noise_params}
         sensor_module_5:
-          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
           sensor_module_id: view_finder
           save_raw_obs: true
       sm_to_agent_dict:

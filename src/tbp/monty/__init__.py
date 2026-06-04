@@ -8,7 +8,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-__version__ = "0.36.1"
+__version__ = "0.37.0"
 
 import sys
 
