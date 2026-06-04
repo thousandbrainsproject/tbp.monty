@@ -3,7 +3,7 @@ title: SM for RGBD data
 ---
 
 # Sensor Modules for RGBD Data
-Most of our experiments rely on RGBD cameras as sensors. Both the `CameraSM`, `Probe`, and `SalienceSM`, expect RGBD images as input. We use the depth channel in combination with proprioceptive information (camera location in space) to determine the location of the patch in the world.
+Most of our experiments rely on RGBD cameras as sensors. `CameraSM`, `Probe`, and `SalienceSM`, expect RGBD images as input. We use the depth channel in combination with proprioceptive information (camera location in space) to determine the location of the patch in the world.
 
 
 ## Surface Normals and Principal Curvatures
