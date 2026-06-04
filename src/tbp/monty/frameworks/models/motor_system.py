@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 
@@ -24,6 +24,9 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
+
+if TYPE_CHECKING:
+    from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 
 __all__ = ["MotorSystem"]
 
@@ -63,6 +66,16 @@ class MotorSystem:
     @property
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
+
+    @property
+    def policy(self) -> MotorPolicy | None:
+        """The policy exposed by the policy selector, if any.
+
+        Returns:
+            The policy exposed by the selector, or `None` if the selector does
+            not expose one.
+        """
+        return self._policy_selector.policy
 
     def pre_episode(self) -> None:
         """Pre episode hook."""

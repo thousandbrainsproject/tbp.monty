@@ -58,6 +58,15 @@ class ActionSampler:
             f"sample_{action_name}" for action_name in self._action_names
         ]
 
+    @property
+    def action_names(self) -> list[str]:
+        """Names of the action types this sampler can produce (e.g. `look_up`).
+
+        Returns:
+            A copy of the action type names this sampler can produce.
+        """
+        return list(self._action_names)
+
     def sample(self, agent_id: AgentID, rng: RandomState) -> Action:
         """Sample a random action from the available action types.
 
