@@ -676,7 +676,7 @@ class EvidenceGraphLM(GraphLM):
         Returns:
             The two most likely object IDs.
         """
-        graph_ids, graph_evidences = self.get_evidence_for_each_graph()
+        graph_ids, graph_evidences = self.evidence_for_each_graph()
 
         # If all hypothesis spaces are empty return None for both mlh ids. The gsg will
         # not generate a goal.
@@ -763,12 +763,18 @@ class EvidenceGraphLM(GraphLM):
             return possible_object_hypotheses_ids
         return np.empty((0,), dtype=np.int64)
 
-    def get_evidence_for_each_graph(
+    def evidence_for_each_graph(
         self,
     ) -> tuple[list[str], npt.NDArray[np.float64]]:
-        """Return maximum evidence count for a pose on each graph."""
+        """Return maximum evidence count for a pose on each graph.
+
+        Returns:
+            The ids of the graphs with a non-empty hypothesis space and the
+            maximum hypotheses evidence on each of them. When no graph has any
+            hypotheses yet, returns `(["patch_off_object"], [0])`.
+        """
         graph_ids = self.get_all_known_object_ids()
-        if graph_ids[0] not in self._hypotheses:
+        if not graph_ids or graph_ids[0] not in self._hypotheses:
             return ["patch_off_object"], np.array([0])
 
         available_graph_ids = []
@@ -780,6 +786,30 @@ class EvidenceGraphLM(GraphLM):
                 available_graph_evidences.append(np.max(evidence))
 
         return available_graph_ids, np.array(available_graph_evidences)
+
+    def num_hypotheses_for_each_graph(
+        self,
+    ) -> tuple[list[str], npt.NDArray[np.int64]]:
+        """Return the number of hypotheses for each non-empty graph.
+
+        Returns:
+            The ids of the graphs with a non-empty hypothesis space and the
+            number of hypotheses on each of them. When no graph has any
+            hypotheses yet, returns `(["patch_off_object"], [0])`.
+        """
+        graph_ids = self.get_all_known_object_ids()
+        if not graph_ids or graph_ids[0] not in self._hypotheses:
+            return ["patch_off_object"], np.array([0])
+
+        available_graph_ids = []
+        available_graph_counts = []
+        for graph_id in graph_ids:
+            evidence = self._hypotheses[graph_id].evidence
+            if len(evidence):
+                available_graph_ids.append(graph_id)
+                available_graph_counts.append(len(evidence))
+
+        return available_graph_ids, np.array(available_graph_counts)
 
     # ------------------ Logging & Saving ----------------------
     def collect_stats_to_save(self):
@@ -1141,7 +1171,7 @@ class EvidenceGraphLM(GraphLM):
             logger.info("no objects in memory yet.")
             return []
 
-        graph_ids, graph_evidences = self.get_evidence_for_each_graph()
+        graph_ids, graph_evidences = self.evidence_for_each_graph()
 
         if len(graph_ids) == 0:
             logger.info("All hypothesis spaces are empty. No possible matches.")
