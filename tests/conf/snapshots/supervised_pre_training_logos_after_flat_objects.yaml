@@ -2,6 +2,7 @@ experiment:
   config:
     do_eval: false
     do_train: true
+    plotter: null
     monty_config:
       monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
       monty_args:
@@ -248,7 +249,6 @@ experiment:
         _target_: wandb.util.generate_id
       wandb_group: debugging
       run_name: supervised_pre_training_logos_after_flat_objects
-    show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000

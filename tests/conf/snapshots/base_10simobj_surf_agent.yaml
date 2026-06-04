@@ -2,6 +2,7 @@ experiment:
   config:
     do_eval: true
     do_train: false
+    plotter: null
     monty_config:
       monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
       monty_args:
@@ -205,7 +206,6 @@ experiment:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
       run_name: base_10simobj_surf_agent
-    show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 5000

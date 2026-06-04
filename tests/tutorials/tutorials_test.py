@@ -52,8 +52,8 @@ class TutorialsTest(TestCase):
                 config_name="experiment",
                 overrides=[
                     "experiment=tutorial/surf_agent_2obj_eval",
-                    # Non-interactive
-                    "experiment.config.show_sensor_output=false",
+                    # Don't open a live plot window during the test.
+                    "experiment.config.plotter=null",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
                     "experiment.config.max_eval_steps=3",
@@ -140,9 +140,9 @@ class TutorialsTest(TestCase):
                 config_name="experiment",
                 overrides=[
                     "experiment=tutorial/monty_meets_world_2dimage_inference",
-                    # Non-interactive
                     "experiment.config.logging.wandb_handlers=[]",
-                    "experiment.config.show_sensor_output=false",
+                    # Don't open a live plot window during the test.
+                    "experiment.config.plotter=null",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
                     "experiment.config.max_eval_steps=3",

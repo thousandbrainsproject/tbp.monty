@@ -2,6 +2,7 @@ experiment:
   config:
     do_eval: false
     do_train: true
+    plotter: null
     monty_config:
       monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
       monty_args:
@@ -183,7 +184,6 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: debugging
-    show_sensor_output: false
     max_train_steps: 2000
     max_eval_steps: 500
     max_total_steps: 5000

@@ -181,11 +181,11 @@ defaults:
   - /env_interface: tutorial_eval_2obj_predefined_r3
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
   - /logging: basic_info_monty_runs
+  - /plotter: monitor
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
-    show_sensor_output: true
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 5000

@@ -2,6 +2,12 @@ experiment:
   config:
     do_eval: true
     do_train: false
+    plotter:
+      _target_: tbp.monty.frameworks.utils.live_plotter.LivePlotter
+      sensor_module_id: patch
+      learning_module_id: learning_module_0
+      interactive: false
+      max_delay: 2.0
     monty_config:
       monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
       monty_args:
@@ -199,7 +205,6 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: gm_eval_runs
-    show_sensor_output: true
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 5000
