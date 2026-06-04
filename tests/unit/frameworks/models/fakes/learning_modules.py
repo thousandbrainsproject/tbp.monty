@@ -13,6 +13,7 @@ from tbp.monty.cmp import Goal
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
+from tbp.monty.memento import Memento
 
 __all__ = ["FakeLearningModule"]
 
@@ -39,12 +40,12 @@ class FakeLearningModule(LearningModule):
     def send_out_vote(self):
         pass
 
-    def state_dict(self):
+    def state_dict(self) -> Memento:
         return dict(test_attr_1=self.test_attr_1, test_attr_2=self.test_attr_2)
 
-    def load_state_dict(self, state_dict):
-        self.test_attr_1 = state_dict["test_attr_1"]
-        self.test_attr_2 = state_dict["test_attr_2"]
+    def load_state_dict(self, memento: Memento) -> None:
+        self.test_attr_1 = memento["test_attr_1"]
+        self.test_attr_2 = memento["test_attr_2"]
 
     def reset_stm(self) -> None:
         pass
