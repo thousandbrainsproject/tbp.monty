@@ -118,7 +118,7 @@ class NoopAgentTest(unittest.TestCase):
                 "view_finder": SensorConfig(
                     position=ZERO_VECTOR,
                     rotation=IDENTITY_QUATERNION,
-                    resolution=Resolution2D((256, 256)),
+                    resolution=Resolution2D(height=256, width=256),
                     zoom=1.0,
                 ),
             }

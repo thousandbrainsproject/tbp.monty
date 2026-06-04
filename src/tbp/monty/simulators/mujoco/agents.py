@@ -128,7 +128,7 @@ class Embodiment(Agent):
                 name=f"{self.id}.{sensor_id}",
                 pos=sensor_cfg["position"],
                 quat=sensor_cfg["rotation"],
-                resolution=sensor_cfg["resolution"],
+                # Camera resolution isn't used in MuJoCo, so we're not setting it.
                 fovy=DEFAULT_CAMERA_FOVY / sensor_cfg["zoom"],
             )
 

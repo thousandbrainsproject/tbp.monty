@@ -18,8 +18,8 @@ env_init_args:
             - 0.0
             - 0.0
           resolution:
-            - 64
-            - 64
+            width: 64
+            height: 64
           zoom: 10.0
         view_finder:
           position:
@@ -32,8 +32,8 @@ env_init_args:
             - 0.0
             - 0.0
           resolution:
-            - 64
-            - 64
+            width: 64
+            height: 64
           zoom: 1.0
       position:
         - 0.0
