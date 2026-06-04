@@ -16,7 +16,7 @@ A standard RGBD sensor module (`CameraSM`) can estimate 3D locations, surface no
 
 `TwoDSensorModule` addresses this by building a local 2D model of the surface texture. It still starts from RGBD observations, but it changes the interpretation of the outgoing message:
 
-- The first two coordinates of `location` and `displacement` are the learned 2D surface model.
+- The first two coordinates of `location` and `displacement` capture movement in a 2D plane, corresponding to movement along the surface of the object.
 - The third coordinate is fixed at zero for compatibility with Monty's 3D-shaped message fields.
 - When a reliable texture edge is detected, `pose_vectors` represents the local 2D edge direction rather than the original 3D curvature frame.
 
