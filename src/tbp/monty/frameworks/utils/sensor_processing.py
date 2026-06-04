@@ -101,11 +101,6 @@ def arc_from_projection(
     return float(np.copysign(arc_length, tangent_projection))
 
 
-def is_orthogonal(v1: ArrayLike, v2: ArrayLike, tolerance: float = 1e-6) -> bool:
-    dot = np.dot(v1, v2)
-    return np.allclose(dot, 0.0, atol=tolerance)
-
-
 def is_unit_vector(vector: ArrayLike, tolerance: float = 1e-6) -> bool:
     return np.allclose(np.linalg.norm(vector), 1.0, atol=tolerance)
 
@@ -151,13 +146,10 @@ def directional_curvature(
         Normal curvature in the given direction.
 
     Raises:
-        ValueError: If pc1_dir and pc2_dir are not orthogonal, or if
+        ValueError: If pc1_dir and pc2_dir are not unit vectors, or if
             movement_direction does not lie in the plane spanned by pc1_dir
             and pc2_dir.
     """
-    if not is_orthogonal(pc1_dir, pc2_dir):
-        raise ValueError("The pc1_dir and pc2_dir must be orthogonal.")
-
     if not (is_unit_vector(pc1_dir) and is_unit_vector(pc2_dir)):
         raise ValueError("The pc1_dir and pc2_dir must be unit vectors.")
 

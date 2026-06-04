@@ -4,7 +4,7 @@ defaults:
   - /monty: evidencegraph_exp1000_emin_t3_tot2500
   - /monty/motor_system_config: distant_5
   - /monty/learning_module: evidence_1lm_nn10_dod003
-  - /monty/sensor_module: camera_dist_noise_raw1
+  - /monty/sensor_module: camera_dist_noise_raw1_salience
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_dist_agent_semantics0
   - /env_interface: eval_simobj_random
