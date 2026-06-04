@@ -10,13 +10,14 @@
 from __future__ import annotations
 
 import abc
-from typing import Dict, TypedDict
+from typing import Any, Collection, Dict, Protocol, Sequence, TypedDict
 
 import numpy as np
 import numpy.typing as npt
 
-from tbp.monty.cmp import Goal
+from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.model import ExperimentLearningModule
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -267,90 +268,105 @@ class Monty(Snapshotable, metaclass=abc.ABCMeta):
         pass
 
 
-class LearningModule(Snapshotable, metaclass=abc.ABCMeta):
+class RuntimeLearningModule(Protocol):
+    """Monty runtime interface to a Learning Module."""
+
+    def matching_step(
+        self, ctx: RuntimeContext, observations: Sequence[Message]
+    ) -> None:
+        """Matching / inference step called inside of monty._step_learning_modules."""
+        ...
+
+    def exploratory_step(
+        self, ctx: RuntimeContext, observations: Sequence[Message]
+    ) -> None:
+        """Model building step called inside of monty._step_learning_modules."""
+        ...
+
+    def receive_votes(self, votes: Collection[Any]) -> None:
+        """Process inbound voting data.
+
+        TODO Use `Message` type for votes rather than ad-hoc data?
+
+        Args:
+            votes: A collection of votes from other learning modules.
+        """
+        ...
+
+    def send_out_vote(self) -> Any:
+        """This method defines what data are sent to other learning modules.
+
+        TODO Use `Message` type for votes rather than ad-hoc data?
+        """
+        ...
+
+    def propose_goals(self) -> Sequence[Goal]:
+        """Return the goals proposed by this LM's GSG if they exist.
+
+        Returns:
+            A collection of proposed Goals.
+        """
+        ...
+
+    def get_output(self) -> Message | None:
+        """Return learning module output (same format as input)."""
+        ...
+
+
+class LearningModule(
+    RuntimeLearningModule, Snapshotable, ExperimentLearningModule, metaclass=abc.ABCMeta
+):
     ###
     # Methods that interact with the experiment
     ###
 
     @abc.abstractmethod
     def reset_stm(self) -> None:
-        """Reset short-term memory buffer.
-
-        Do things like reset buffers or possible_matches before training.
-        """
         pass
 
     @abc.abstractmethod
     def fixme_reset_ground_truth(self, primary_target=None) -> None:
-        """Reset internal state based on ground truth.
-
-        TODO Move this logic into `Experiment`.
-        A `LearningModule` should not have access
-        to "ground truth" information.
-
-        Args:
-            primary_target: The primary target for the learning module to recognize.
-        """
         pass
 
     @abc.abstractmethod
     def update_ltm_from_stm(self) -> None:
-        """Update long-term memory from short-term memory buffer."""
         pass
 
     @abc.abstractmethod
     def fixme_update_ground_truth(self) -> None:
-        """Update internal state based on ground truth.
-
-        TODO Move this logic into `Experiment`.
-        A `LearningModule` should not have access
-        to "ground truth" information.
-        """
         pass
 
     @abc.abstractmethod
     def set_experiment_mode(self, mode: ExperimentMode) -> None:
-        """Set the experiment mode.
-
-        Update state variables based on which method (train or evaluate) is being called
-        at the experiment level.
-
-        Args:
-            mode: The experiment mode.
-        """
         pass
 
     ###
     # Methods that define the algorithm
     ###
     @abc.abstractmethod
-    def matching_step(self, ctx: RuntimeContext):
-        """Matching / inference step called inside of monty._step_learning_modules."""
+    def matching_step(self, ctx: RuntimeContext, observations: Sequence[Message] = ()):
         pass
 
     @abc.abstractmethod
-    def exploratory_step(self, ctx: RuntimeContext):
-        """Model building step called inside of monty._step_learning_modules."""
+    def exploratory_step(
+        self, ctx: RuntimeContext, observations: Sequence[Message] = ()
+    ):
         pass
 
     @abc.abstractmethod
     def receive_votes(self, votes):
-        """Process voting data sent out from other learning modules."""
         pass
 
     @abc.abstractmethod
     def send_out_vote(self):
-        """This method defines what data are sent to other learning modules."""
         pass
 
     @abc.abstractmethod
     def propose_goals(self) -> list[Goal]:
-        """Return the goals proposed by this LM's GSG if they exist."""
         pass
 
     @abc.abstractmethod
-    def get_output(self):
-        """Return learning module output (same format as input)."""
+    def get_output(self) -> Message | None:
         pass
 
     ###

@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import ClassVar
+from typing import ClassVar, Sequence
 
 import numpy as np
 import torch
@@ -605,7 +605,7 @@ class GraphLM(LearningModule):
     def matching_step(
         self,
         ctx: RuntimeContext,
-        observations,
+        observations: Sequence[Message] = (),
     ):
         """Update the possible matches given an observation."""
         first_movement_detected = self._agent_moved_since_reset()
@@ -634,7 +634,7 @@ class GraphLM(LearningModule):
     def exploratory_step(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
-        observations,
+        observations: Sequence[Message] = (),
     ):
         """Step without trying to recognize object (updating possible matches)."""
         buffer_data = self._add_displacements(observations)
@@ -687,14 +687,14 @@ class GraphLM(LearningModule):
                     self.possible_matches.pop(vote)
             self._add_votes_to_buffer_stats(vote_data)
 
-    def get_output(self):
+    def get_output(self) -> Message | None:
         """Return the output of the learning module.
 
         Is currently only implemented for the evidence LM since the other LM versions
         do not have a notion of MLH and therefore can't produce an output until the last
         step of the episode.
         """
-        pass
+        return None
 
     def propose_goals(self) -> list[Goal]:
         """Return the goals proposed by this LM's GSG.
