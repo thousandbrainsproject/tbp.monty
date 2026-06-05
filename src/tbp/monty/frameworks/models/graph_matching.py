@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import ClassVar, Sequence
+from typing import Any, ClassVar, Collection, Sequence
 
 import numpy as np
 import torch
@@ -652,7 +652,7 @@ class GraphLM(LearningModule):
         if self.mode is ExperimentMode.TRAIN and len(self.buffer) > 0:
             self._update_target_graph_mapping(self.detected_object, self.primary_target)
 
-    def send_out_vote(self):
+    def send_out_vote(self) -> Any:
         """Send out list of objects that are not possible matches.
 
         By sending out the negative matches we avoid the problem that
@@ -671,21 +671,19 @@ class GraphLM(LearningModule):
         )
         return vote
 
-    def receive_votes(self, vote_data):
+    def receive_votes(self, votes: Collection[Any]) -> None:
         """Remove object ids that come in from the votes.
 
         Args:
-            vote_data: set of objects that other LMs excluded from possible matches
+            votes: set of objects that other LMs excluded from possible matches
         """
-        if (vote_data is not None) and (
-            self.buffer.get_num_observations_on_object() > 0
-        ):
+        if votes and (self.buffer.get_num_observations_on_object() > 0):
             current_possible_matches = self.get_possible_matches()
-            for vote in vote_data:
+            for vote in votes:
                 if vote in current_possible_matches:
                     logger.debug(f"REMOVING {vote} FROM MATCHES")
                     self.possible_matches.pop(vote)
-            self._add_votes_to_buffer_stats(vote_data)
+            self._add_votes_to_buffer_stats(votes)
 
     def get_output(self) -> Message | None:
         """Return the output of the learning module.

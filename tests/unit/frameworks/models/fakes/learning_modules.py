@@ -9,7 +9,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Any, Collection, Sequence
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
@@ -38,10 +38,10 @@ class FakeLearningModule(LearningModule):
     ) -> None:
         pass
 
-    def receive_votes(self, inputs):
+    def receive_votes(self, votes: Collection[Any]) -> None:
         pass
 
-    def send_out_vote(self):
+    def send_out_vote(self) -> Any:
         pass
 
     def state_dict(self) -> Memento:
@@ -69,5 +69,5 @@ class FakeLearningModule(LearningModule):
     def propose_goals(self) -> list[Goal]:
         return []
 
-    def get_output(self):
+    def get_output(self) -> Message | None:
         pass

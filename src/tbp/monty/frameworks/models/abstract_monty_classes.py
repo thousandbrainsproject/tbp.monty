@@ -17,7 +17,7 @@ import numpy.typing as npt
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
-from tbp.monty.experiment.model import ExperimentLearningModule
+from tbp.monty.experiment.learning_module import ExperimentLearningModule
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
