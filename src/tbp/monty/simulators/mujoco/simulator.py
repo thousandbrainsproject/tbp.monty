@@ -37,12 +37,17 @@ from tbp.monty.frameworks.environments.environment import (
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.sensors import Resolution2D
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.mujoco.agents import Agent
 from tbp.monty.simulators.mujoco.objects import (
     ObjectMetadata,
     load_object_metadata,
 )
+
+# Scaling factor to make MuJoCo primitives roughly the same size
+# as their Habitat counterparts. This was determined by trial and error.
+DEFAULT_HABITAT_SCALE = (0.05, 0.05, 0.05)
 
 if TYPE_CHECKING:
     from functools import partial
@@ -56,6 +61,16 @@ PRIMITIVE_OBJECTS = {
     "cylinder": mjtGeom.mjGEOM_CYLINDER,
     "ellipsoid": mjtGeom.mjGEOM_ELLIPSOID,
     "sphere": mjtGeom.mjGEOM_SPHERE,
+}
+
+# Define primitives with the same names as Habitat uses so we don't
+# have to define new environment interface configurations during the
+# transition period.
+# TODO: remove once Habitat is gone and the test configs are updated to use
+#   MuJoCo names for these objects.
+HABITAT_PRIMITIVE_OBJECTS = {
+    "capsule3DSolid": mjtGeom.mjGEOM_CAPSULE,
+    "cubeSolid": mjtGeom.mjGEOM_BOX,
 }
 
 DEFAULT_RESOLUTION = Resolution2D(width=64, height=64)
@@ -275,6 +290,18 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
 
         if name in PRIMITIVE_OBJECTS:
             self._add_primitive_object(obj_name, name, position, rotation, scale)
+        elif name in HABITAT_PRIMITIVE_OBJECTS:
+            # Habitat primitive objects are much smaller than the default MuJoCo ones
+            # so we need to adjust the default scale.
+            if scale == (1.0, 1.0, 1.0):
+                scale = DEFAULT_HABITAT_SCALE
+            else:
+                scale = (
+                    scale[0] * DEFAULT_HABITAT_SCALE[0],
+                    scale[1] * DEFAULT_HABITAT_SCALE[1],
+                    scale[2] * DEFAULT_HABITAT_SCALE[2],
+                )
+            self._add_primitive_object(obj_name, name, position, rotation, scale)
         else:
             self._add_custom_object(obj_name, name, position, rotation, scale)
         self._object_count += 1
@@ -408,15 +435,31 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             rotation: Initial orientation of the object.
             scale: Initial scale of the object.
         """
+        # In Habitat, the capsule is initially oriented with the round portions at the
+        # top and bottom along the vertical Y axis. MuJoCo places the capsule with the
+        # round ends pointing towards and away from the agent along the Z axis.
+        # To mimic Habitat's behaviour, we need to rotate the primitive object to
+        # include that orientation change.
+        habitat_correction_rot = Rotation.from_euler("x", -90, degrees=True)
+        rotation_rot = Rotation.from_quat(rotation)
+        rotation_rot = rotation_rot * habitat_correction_rot
+        rotation_quat = rotation_rot.as_quat()
+
         world_body: MjsBody = self.spec.worldbody
-        geom_type = PRIMITIVE_OBJECTS[object_type]
+
+        # TODO: remove try and except clauses when Habitat is removed
+        try:
+            geom_type = PRIMITIVE_OBJECTS[object_type]
+        except KeyError:
+            geom_type = HABITAT_PRIMITIVE_OBJECTS[object_type]
+
         # TODO: should we encapsulate primitive objects into bodies?
         world_body.add_geom(
             name=obj_name,
             type=geom_type,
             size=scale,
             pos=position,
-            quat=rotation,
+            quat=rotation_quat,
         )
 
     @property

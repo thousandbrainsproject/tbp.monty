@@ -55,11 +55,26 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
     def setup_experiment(self, config):
         super().setup_experiment(config)
         if "agents" in config["environment"]["env_init_args"]:
-            self.sensor_pos = np.array(
-                config["environment"]["env_init_args"]["agents"]["agent_args"][
-                    "positions"
-                ]
-            )
+            agents_config = config["environment"]["env_init_args"]["agents"]
+            # Habitat agents are configured using `agent_args`.
+            # This code has always assumed there is only one.
+            if "agent_args" in agents_config:
+                self.sensor_pos = np.array(
+                    config["environment"]["env_init_args"]["agents"]["agent_args"][
+                        "positions"
+                    ]
+                )
+            else:
+                # MuJoCo agents are configured using a list of partially applied
+                # agent constructors.
+                # TODO: support more than one agent, this assumes there's only one.
+
+                # Introspect the first agent partial to determine what the
+                # original sensor positions were.
+                sensor_cfgs = agents_config[0].keywords["sensor_configs"]
+                self.sensor_pos = np.array(
+                    sensor["position"] for sensor in sensor_cfgs.values()
+                )
         else:
             self.sensor_pos = np.array([0, 0, 0])
 
