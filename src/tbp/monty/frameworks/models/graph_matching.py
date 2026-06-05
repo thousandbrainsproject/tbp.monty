@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 from typing import ClassVar, Sequence
-from typing import ClassVar, Sequence
 
 import numpy as np
 import torch

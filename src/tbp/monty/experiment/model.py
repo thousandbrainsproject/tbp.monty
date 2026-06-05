@@ -11,6 +11,10 @@ from typing import Protocol
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 
+__all__ = [
+    "ExperimentLearningModule",
+]
+
 
 class ExperimentLearningModule(Protocol):
     """Experiment interface to a Learning Module."""

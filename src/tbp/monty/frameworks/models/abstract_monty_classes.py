@@ -37,6 +37,7 @@ __all__ = [
     "ObjectModel",
     "Observations",
     "RuntimeContext",
+    "RuntimeLearningModule",
     "SensorModule",
     "SensorObservation",
 ]
@@ -272,15 +273,25 @@ class RuntimeLearningModule(Protocol):
     """Monty runtime interface to a Learning Module."""
 
     def matching_step(
-        self, ctx: RuntimeContext, observations: Sequence[Message]
+        self, ctx: RuntimeContext, percepts: Sequence[Message]
     ) -> None:
-        """Matching / inference step called inside of monty._step_learning_modules."""
+        """Matching / inference step called inside of monty._step_learning_modules.
+
+        Args:
+            ctx: The runtime context.
+            percepts: The percepts intended for this learning module.
+        """
         ...
 
     def exploratory_step(
-        self, ctx: RuntimeContext, observations: Sequence[Message]
+        self, ctx: RuntimeContext, percepts: Sequence[Message]
     ) -> None:
-        """Model building step called inside of monty._step_learning_modules."""
+        """Model building step called inside of monty._step_learning_modules.
+
+        Args:
+            ctx: The runtime context.
+            percepts: The percepts intended for this learning module.
+        """
         ...
 
     def receive_votes(self, votes: Collection[Any]) -> None:
@@ -345,24 +356,12 @@ class LearningModule(
     ###
     @abc.abstractmethod
     def matching_step(self, ctx: RuntimeContext, percepts: Sequence[Message]) -> None:
-        """Matching / inference step called inside of monty._step_learning_modules.
-
-        Args:
-            ctx: The runtime context.
-            percepts: The percepts intended for this learning module.
-        """
         pass
 
     @abc.abstractmethod
     def exploratory_step(
         self, ctx: RuntimeContext, percepts: Sequence[Message]
     ) -> None:
-        """Model building step called inside of monty._step_learning_modules.
-
-        Args:
-            ctx: The runtime context.
-            percepts: The percepts intended for this learning module.
-        """
         pass
 
     @abc.abstractmethod
