@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from functools import partial
+from typing import ClassVar
 from unittest import TestCase
 
 import hypothesis.strategies as st
@@ -36,7 +37,7 @@ from tbp.monty.math import (
     DEFAULT_TOLERANCE,
 )
 from tbp.monty.simulators.mujoco import MuJoCoSimulator
-from tbp.monty.simulators.mujoco.agents import DistantAgent, SurfaceAgent
+from tbp.monty.simulators.mujoco.agents import Agent, DistantAgent, SurfaceAgent
 from tbp.monty.simulators.mujoco.simulator import ActuateMethodMissing
 from tests.unit.simulators.mujoco.noop_agent_test import (
     TEST_AGENT_ID,
@@ -125,7 +126,7 @@ def orient_vertical_position(
 ) -> np.ndarray:
     """Helper to calculate position after an OrientVertical action.
 
-    Starts from the origin looking down the positive-Z axis.
+    Starts from the origin looking down the negative-Z axis.
 
     Returns:
         position after the OrientVertical action.
@@ -150,6 +151,9 @@ class ActionsTest(TestCase):
     the agent classes.
     """
 
+    sim: ClassVar[MuJoCoSimulator]
+    agent_class: ClassVar[type[Agent]]
+
     @classmethod
     def setUpClass(cls):
         # Use a single shared simulator since Hypothesis will rerun the
@@ -158,7 +162,7 @@ class ActionsTest(TestCase):
         cls.sim = MuJoCoSimulator(
             agents=[
                 partial(
-                    cls.agent_class,  # type: ignore[attr-defined]
+                    cls.agent_class,
                     **default_agent_args(),
                 )
             ]

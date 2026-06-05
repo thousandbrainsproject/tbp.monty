@@ -138,7 +138,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.data_path = Path(data_path) if data_path else None
         self._raise_actuate_missing = raise_actuate_missing
 
-        self._agent_partials = agents or []
+        self._agent_partials = [] if agents is None else agents
         self._agents = {}
         self._create_agents()
         self._loaded_custom_types: set[str] = set()

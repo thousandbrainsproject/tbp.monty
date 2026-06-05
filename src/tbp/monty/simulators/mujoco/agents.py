@@ -243,14 +243,14 @@ class Embodiment(Agent):
         delta_theta_rot = Rotation.from_euler("xyz", (0, delta_theta, 0), degrees=True)
         rotation = Rotation.from_quat(self.rotation)
         new_rotation = rotation * delta_theta_rot
-        self.rotation = new_rotation.as_quat()
+        self.rotation = cast("QuaternionWXYZ", tuple(new_rotation.as_quat()))
 
     def pitch(self, delta_phi: float) -> None:
         """Pitch the embodiment by delta_phi degrees."""
         delta_phi_rot = Rotation.from_euler("xyz", (delta_phi, 0, 0), degrees=True)
         rotation = Rotation.from_quat(self.rotation)
         new_rotation = rotation * delta_phi_rot
-        self.rotation = new_rotation.as_quat()
+        self.rotation = cast("QuaternionWXYZ", tuple(new_rotation.as_quat()))
 
     def pitch_sensor(self, delta_phi: float, constraint: float | None) -> None:
         """Pitch the sensor body by delta_phi degrees while remaining constrained.
@@ -385,7 +385,7 @@ class DistantAgent(Agent):
         """Moves the agent along its Z axis.
 
         If a negative distance is supplied, the agent will instead move backwards
-        towards the positive-Z direction.
+        along its Z axis.
         """
         # The "forward" direction is in the negative-Z direction, so we need to
         # negate the distance we've been given.
@@ -396,6 +396,8 @@ class DistantAgent(Agent):
 
         If a negative angle is supplied, the agent will instead rotate to the left.
         """
+        # Yaw degrees are positive in the anticlockwise direction and negative in the
+        # clockwise direction, so we need to negate the degrees we were given.
         self._embodiment.yaw(-action.rotation_degrees)
 
     def actuate_turn_left(self, action: TurnLeft) -> None:
@@ -477,6 +479,8 @@ class SurfaceAgent(Agent):
         the agent around the target object.
         """
         self._embodiment.move_along_local_axis(-action.left_distance, axis=Axis.X)
+        # OrientHorizontal represents the rotation using clockwise angles, and
+        # we are using anticlockwise angles for yaw, so we need to negate the value.
         self._embodiment.yaw(-action.rotation_degrees)
         self._embodiment.move_along_local_axis(-action.forward_distance, axis=Axis.Z)
 
