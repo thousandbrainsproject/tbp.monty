@@ -272,9 +272,7 @@ class Monty(Snapshotable, metaclass=abc.ABCMeta):
 class RuntimeLearningModule(Protocol):
     """Monty runtime interface to a Learning Module."""
 
-    def matching_step(
-        self, ctx: RuntimeContext, percepts: Sequence[Message]
-    ) -> None:
+    def matching_step(self, ctx: RuntimeContext, percepts: Sequence[Message]) -> None:
         """Matching / inference step called inside of monty._step_learning_modules.
 
         Args:
