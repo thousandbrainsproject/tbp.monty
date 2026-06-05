@@ -46,6 +46,6 @@ sensor_module_4:
     distance: 0.01
   noise_params: ${constants.default_all_noise_params}
 sensor_module_5:
-  _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+  _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
   sensor_module_id: view_finder
   save_raw_obs: true

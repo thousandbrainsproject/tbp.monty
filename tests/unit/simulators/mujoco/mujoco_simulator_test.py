@@ -12,13 +12,16 @@ from functools import partial
 from pathlib import Path
 from unittest.mock import Mock
 
+import hypothesis.strategies as st
 import numpy as np
 import pytest
+from hypothesis import assume, given
 from mujoco import mjtGeom
 from unittest_parametrize import ParametrizedTestCase, parametrize
 
 from tbp.monty.frameworks.actions.actions import LookUp
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.sensors import Resolution2D
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR
 from tbp.monty.simulators.mujoco.simulator import (
     DEFAULT_RESOLUTION,
@@ -291,3 +294,45 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
 
         with sim, pytest.raises(AttributeError):
             sim.step([action])
+
+    @given(
+        width_1=st.integers(min_value=1, max_value=64),
+        height_1=st.integers(min_value=1, max_value=64),
+        width_2=st.integers(min_value=1, max_value=64),
+        height_2=st.integers(min_value=1, max_value=64),
+    )
+    def test_renderer_for_res_returns_different_renderers(
+        self,
+        width_1,
+        height_1,
+        width_2,
+        height_2,
+    ) -> None:
+        """When different resolutions are requested, renderers should be different."""
+        assume(width_1 != width_2 or height_1 != height_2)
+
+        sim = MuJoCoSimulator()
+
+        renderer_1 = sim.renderer_for_res(Resolution2D(height=height_1, width=width_1))
+        renderer_2 = sim.renderer_for_res(Resolution2D(height=height_2, width=width_2))
+
+        assert renderer_1 is not renderer_2
+        assert renderer_1.width == width_1
+        assert renderer_1.height == height_1
+        assert renderer_2.width == width_2
+        assert renderer_2.height == height_2
+
+    @given(
+        width=st.integers(min_value=1, max_value=64),
+        height=st.integers(min_value=1, max_value=64),
+    )
+    def test_renderer_for_res_returns_same_renderer(self, width, height) -> None:
+        """When the same resolutions are requested, renderers should be same object."""
+        sim = MuJoCoSimulator()
+
+        renderer_1 = sim.renderer_for_res(Resolution2D(height=height, width=width))
+        renderer_2 = sim.renderer_for_res(Resolution2D(height=height, width=width))
+
+        assert renderer_1 is renderer_2
+        assert renderer_1.width == width
+        assert renderer_1.height == height

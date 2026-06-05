@@ -37,7 +37,7 @@ Configs with `multi` in the name have additional distractor objects, in addition
 ![](../figures/overview/multi_obj_environments.png)
 
 
-Configs with `_dist_agent` in the name use the distant agent for inference (by default they still use the models learned with the surface agent). This means that the sensor is fixed in one location and can only tilt up, down, left, and right following a random walk. When using the model-based hypothesis-testing policy, the agent can also "jump" to new locations in space. Configs with `surf_agent` in the name use the surface agent for inference which can freely move around the entire object. Both the surface and the distant agent can execute model-based actions using the hypothesis testing policy. For more details, see our documentation on [policies](../how-monty-works/policy.md).
+Configs with `_dist_agent` in the name use the distant agent for inference (by default they still use the models learned with the surface agent). This means that the sensor is fixed in one location and can only tilt up, down, left, and right following a random walk. When using the model-based hypothesis-testing policy, the agent can also "jump" to new locations in space. Configs with `surf_agent` in the name use the surface agent for inference which can freely move around the entire object. Both the surface and the distant agent can execute model-based actions using the hypothesis testing policy. For more details, see our documentation on [policies](../how-monty-works/motor-system/policy.md).
 
 Configs with `base` in their name test each object in the 14 orientations in which they were learned. No noise is added to the sensor.
 

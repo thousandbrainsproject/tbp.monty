@@ -28,7 +28,7 @@ Each learning module produces a motor output. The motor output is formalized as 
 
 Hierarchy can also be leveraged for goals, where a more abstract goal in a high-level learning module can be achieved by decomposing it into simpler goals for lower-level learning modules. Importantly, the same learning modules that learn models of objects are used to generate goals, enabling hierarchical, model-based policies, no matter how novel the task.
 
-See our [implementation documentation](../../how-monty-works/policy.md) for details on how we implement policies in Monty.
+See our [implementation documentation](../../how-monty-works/motor-system/policy.md) for details on how we implement policies in Monty.
 
 # Sub-Cortical Motor Areas
 
