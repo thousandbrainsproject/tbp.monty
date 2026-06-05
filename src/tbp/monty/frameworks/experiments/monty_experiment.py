@@ -12,6 +12,7 @@ from __future__ import annotations
 import copy
 import datetime
 import logging
+import logging.config
 import pprint
 from pathlib import Path
 from typing import Any, Literal
@@ -340,6 +341,19 @@ class MontyExperiment:
         logger.info("logger initialized")
         logger.debug(pprint.pformat(self.config))
 
+        # Allow loading additional Python logging configurations from the
+        # Hydra configuration.
+        final_config = {
+            # Specify some defaults so we don't have to remember to configure
+            # them in Hydra.
+            "version": 1,
+            # TODO: This can be removed if we configure all the loggers via
+            #   the dictConfig call below.
+            "incremental": True,
+        }
+        final_config.update(logging_config)
+        logging.config.dictConfig(final_config)
+
     def init_monty_data_loggers(self, logging_config: dict[str, Any]) -> None:
         """Initialize Monty data loggers.
 
@@ -567,7 +581,7 @@ class MontyExperiment:
     def post_epoch(self):
         """Call sub post_epoch functions and save state dict."""
         # NOTE: maybe an option not to save everything every epoch?
-        self.save_state_dict(output_dir=self.output_dir / f"{self.train_epochs}")
+        self.save_state_dir(output_dir=self.output_dir / f"{self.train_epochs}")
         self.logger_handler.post_epoch(self.logger_args)
 
         if self.experiment_mode is ExperimentMode.TRAIN:
@@ -619,8 +633,8 @@ class MontyExperiment:
             time_stamp=datetime.datetime.now(),
         )
 
-    def save_state_dict(self, output_dir=None):
-        """Save state_dict of experiment and model."""
+    def save_state_dir(self, output_dir=None):
+        """Save state of experiment and model to the filesystem."""
         model_state_dict = self.model.state_dict()
         exp_state_dict = self.state_dict()
         output_dir = output_dir if output_dir is not None else self.output_dir
@@ -643,8 +657,8 @@ class MontyExperiment:
             torch.save(exp_state_dict, output_dir / "exp_state_dict.pt")
             torch.save(self.config, output_dir / "config.pt")
 
-    def load_state_dict(self, load_dir):
-        """Load state_dict of previous experiment."""
+    def load_state_dir(self, load_dir):
+        """Load state of previous experiment from the filesystem."""
         load_dir = Path(load_dir)
         model_state_dict = torch.load(load_dir / "model.pt")
         exp_state_dict = torch.load(load_dir / "exp_state_dict.pt")

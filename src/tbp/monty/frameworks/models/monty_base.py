@@ -10,19 +10,21 @@
 from __future__ import annotations
 
 import logging
-from typing import ClassVar
+from typing import ClassVar, Sequence
 
 from tbp.monty.cmp import Goal
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import (
+    LearningModule,
     Monty,
     Observations,
     RuntimeContext,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.memento import Memento
 
 __all__ = ["MontyBase"]
 
@@ -35,7 +37,7 @@ class MontyBase(Monty):
     def __init__(
         self,
         sensor_modules,
-        learning_modules,
+        learning_modules: Sequence[LearningModule],
         motor_system: MotorSystem,
         sm_to_agent_dict,
         sm_to_lm_matrix,
@@ -379,7 +381,7 @@ class MontyBase(Monty):
         self.reset_episode_steps()
         self.switch_to_matching_step()
         for lm in self.learning_modules:
-            lm.pre_episode()
+            lm.reset_stm()
 
         for sm in self.sensor_modules:
             sm.pre_episode()
@@ -388,23 +390,25 @@ class MontyBase(Monty):
         self._goals = []
 
     def post_episode(self):
+        # At the end of an episode we ask each learning module
+        # to update their long-term memory from their short-term buffer.
         for lm in self.learning_modules:
-            lm.post_episode()
-        # for sm in self.sensor_modules: sm.post_episode() unused & removed
+            lm.update_ltm_from_stm()
+            lm.fixme_update_ground_truth()
 
     ###
     # Methods for saving and loading
     ###
 
-    def load_state_dict(self, state_dict):
-        assert len(state_dict["lm_dict"]) == len(self.learning_modules)
+    def load_state_dict(self, memento: Memento) -> None:
+        assert len(memento["lm_dict"]) == len(self.learning_modules)
         lm_counter = 0
-        lm_dict = state_dict["lm_dict"]
+        lm_dict = memento["lm_dict"]
         for lm_key in lm_dict:
             self.learning_modules[lm_counter].load_state_dict(lm_dict[lm_key])
             lm_counter = lm_counter + 1
 
-    def state_dict(self):
+    def state_dict(self) -> Memento:
         lm_dict = {
             i: module.state_dict() for i, module in enumerate(self.learning_modules)
         }

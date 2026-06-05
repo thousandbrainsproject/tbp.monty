@@ -85,9 +85,13 @@ class TrainedGraphLM:
         """Number of episodes/objects this LM was trained on."""
         return len(self.episodes)
 
-    def pre_episode(self, primary_target) -> None:
-        """Delegates pre_episode calls to the LM."""
-        self.learning_module.pre_episode(primary_target)
+    def reset_stm(self) -> None:
+        """Reset short-term memory buffer."""
+        self.learning_module.reset_stm()
+
+    def fixme_reset_ground_truth(self, primary_target) -> None:
+        """Reset internal state based on ground truth."""
+        self.learning_module.fixme_reset_ground_truth(primary_target)
 
 
 class GraphLearningTest(BaseGraphTest):
@@ -566,7 +570,8 @@ class GraphLearningTest(BaseGraphTest):
             offset = np.zeros(3)
 
         graph_lm.mode = ExperimentMode.TRAIN
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.reset_stm()
+        graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
 
         offset_obs = []
         for observation in observations:
@@ -581,7 +586,8 @@ class GraphLearningTest(BaseGraphTest):
             graph_lm.buffer.get_current_location(input_channel="first")
         )
 
-        graph_lm.post_episode()
+        graph_lm.update_ltm_from_stm()
+        graph_lm.fixme_update_ground_truth()
         return offset_obs
 
     def get_gm_with_fake_object(self):
@@ -645,7 +651,8 @@ class GraphLearningTest(BaseGraphTest):
 
         graph_lm.mode = ExperimentMode.EVAL
         # Don't need to give target object since we are not logging performance
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.reset_stm()
+        graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             graph_lm.matching_step(self.ctx, [observation])
             self.assertEqual(
@@ -682,7 +689,8 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.reset_stm()
+        graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             graph_lm.matching_step(self.ctx, [observation])
             print(graph_lm.get_possible_matches())
@@ -719,7 +727,8 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.reset_stm()
+        graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             observation.location = observation.location + np.ones(3)
             graph_lm.matching_step(self.ctx, [observation])
@@ -762,7 +771,8 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.reset_stm()
+        graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             graph_lm.matching_step(self.ctx, [observation])
             self.assertEqual(
@@ -799,7 +809,8 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.reset_stm()
+        graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
         for i, observation in enumerate(fake_obs_test):
             graph_lm.matching_step(self.ctx, [observation])
             if i == 0:
@@ -823,7 +834,8 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.reset_stm()
+        graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             graph_lm.matching_step(self.ctx, [observation])
             self.assertEqual(
@@ -842,7 +854,8 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.reset_stm()
+        graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
         for step, observation in enumerate(fake_obs_test):
             graph_lm.matching_step(self.ctx, [observation])
             if step == 0:
@@ -872,7 +885,8 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm = self.get_gm_with_fake_object()
 
         graph_lm.mode = ExperimentMode.EVAL
-        graph_lm.pre_episode(primary_target=self.placeholder_target)
+        graph_lm.reset_stm()
+        graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
             if not observation.use_state:
                 pass

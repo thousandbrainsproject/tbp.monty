@@ -16,6 +16,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import torch
 
+from tbp.monty.memento import Memento
+
 if TYPE_CHECKING:
     from tbp.monty.cmp import Message
 
@@ -73,8 +75,7 @@ class DisplacementGraphLM(GraphLM):
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
     def reset(self):
-        """Call this before each episode."""
-        # reset possible matches for paths on objects
+        """Reset possible matches for paths on objects."""
         (
             self.possible_matches,
             self.possible_paths,
@@ -499,10 +500,9 @@ class DisplacementGraphMemory(GraphMemory):
         )
 
     # ------------------ Logging & Saving ----------------------
-    def load_state_dict(self, state_dict):
-        """Load graphs into memory from a state_dict and add point pair features."""
+    def load_state_dict(self, memento: Memento) -> None:
         logger.info("loading models")
-        for obj_name, model in state_dict.items():
+        for obj_name, model in memento.items():
             logger.debug(f"loading {obj_name}: {model}")
             for input_channel in model:
                 if (self.match_attribute == "PPF") and (

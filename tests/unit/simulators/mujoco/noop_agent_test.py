@@ -93,8 +93,8 @@ class NoopAgentTest(unittest.TestCase):
             assert depth.max() >= 5.0
             # TODO: these might be too sensitive to variations, such
             #   as lighting.
-            assert rgba.min() == 0.0
-            assert rgba.max() == 255.0
+            assert rgba.min() == 0
+            assert rgba.max() == 255
 
     def test_agent_observation_multiple_resolutions(self):
         """Test two sensors with different resolutions.
@@ -118,7 +118,7 @@ class NoopAgentTest(unittest.TestCase):
                 "view_finder": SensorConfig(
                     position=ZERO_VECTOR,
                     rotation=IDENTITY_QUATERNION,
-                    resolution=Resolution2D((256, 256)),
+                    resolution=Resolution2D(height=256, width=256),
                     zoom=1.0,
                 ),
             }

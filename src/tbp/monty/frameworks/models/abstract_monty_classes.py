@@ -25,6 +25,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.memento import Memento, Snapshotable
 
 __all__ = [
     "AgentObservations",
@@ -43,7 +44,7 @@ __all__ = [
 class SensorObservation(TypedDict, total=False):
     """Observations from a sensor."""
 
-    rgba: npt.NDArray[np.int_]  # TODO: Verify specific type
+    rgba: npt.NDArray[np.uint8]
     depth: npt.NDArray[np.float64]  # TODO: Verify specific type
     semantic: npt.NDArray[np.int_]  # TODO: Verify specific type
     semantic_3d: npt.NDArray[np.int_]  # TODO: Verify specific type
@@ -65,7 +66,7 @@ class Observations(Dict[AgentID, AgentObservations]):
     pass
 
 
-class Monty(metaclass=abc.ABCMeta):
+class Monty(Snapshotable, metaclass=abc.ABCMeta):
     def _matching_step(
         self,
         ctx: RuntimeContext,
@@ -227,13 +228,11 @@ class Monty(metaclass=abc.ABCMeta):
     ###
 
     @abc.abstractmethod
-    def state_dict(self):
-        """Return a serializable dict with everything needed to save/load monty."""
+    def state_dict(self) -> Memento:
         pass
 
     @abc.abstractmethod
-    def load_state_dict(self, state_dict):
-        """Take a state dict as an argument and set state for monty and children."""
+    def load_state_dict(self, memento: Memento) -> None:
         pass
 
     ###
@@ -268,23 +267,45 @@ class Monty(metaclass=abc.ABCMeta):
         pass
 
 
-class LearningModule(metaclass=abc.ABCMeta):
+class LearningModule(Snapshotable, metaclass=abc.ABCMeta):
     ###
     # Methods that interact with the experiment
     ###
+
     @abc.abstractmethod
-    def reset(self):
-        """Do things like reset buffers or possible_matches before training."""
+    def reset_stm(self) -> None:
+        """Reset short-term memory buffer.
+
+        Do things like reset buffers or possible_matches before training.
+        """
         pass
 
     @abc.abstractmethod
-    def pre_episode(self) -> None:
-        """Do things like reset buffers or possible_matches before training."""
+    def fixme_reset_ground_truth(self, primary_target=None) -> None:
+        """Reset internal state based on ground truth.
+
+        TODO Move this logic into `Experiment`.
+        A `LearningModule` should not have access
+        to "ground truth" information.
+
+        Args:
+            primary_target: The primary target for the learning module to recognize.
+        """
         pass
 
     @abc.abstractmethod
-    def post_episode(self):
-        """Do things like update object models with stored data after an episode."""
+    def update_ltm_from_stm(self) -> None:
+        """Update long-term memory from short-term memory buffer."""
+        pass
+
+    @abc.abstractmethod
+    def fixme_update_ground_truth(self) -> None:
+        """Update internal state based on ground truth.
+
+        TODO Move this logic into `Experiment`.
+        A `LearningModule` should not have access
+        to "ground truth" information.
+        """
         pass
 
     @abc.abstractmethod
@@ -337,17 +358,15 @@ class LearningModule(metaclass=abc.ABCMeta):
     ###
 
     @abc.abstractmethod
-    def state_dict(self):
-        """Return a serializable dict with everything needed to save/load this LM."""
+    def state_dict(self) -> Memento:
         pass
 
     @abc.abstractmethod
-    def load_state_dict(self, state_dict):
-        """Take a state dict as an argument and set state for this LM."""
+    def load_state_dict(self, memento: Memento) -> None:
         pass
 
 
-class LMMemory(metaclass=abc.ABCMeta):
+class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
     """Like a long-term memory storing all the knowledge an LM has."""
 
     ###
@@ -358,23 +377,16 @@ class LMMemory(metaclass=abc.ABCMeta):
         """Update models stored in memory given new observation & classification."""
         pass
 
-    @abc.abstractmethod
-    def memory_consolidation(self):
-        """Consolidate/clean up models stored in memory."""
-        pass
-
     ###
     # Saving, loading
     ###
 
     @abc.abstractmethod
-    def state_dict(self):
-        """Return a serializable dict with everything needed to save/load the memory."""
+    def state_dict(self) -> Memento:
         pass
 
     @abc.abstractmethod
-    def load_state_dict(self):
-        """Take a state dict as an argument and set state for the memory."""
+    def load_state_dict(self, memento: Memento) -> None:
         pass
 
 
@@ -421,11 +433,7 @@ class GoalGenerator(metaclass=abc.ABCMeta):
 
 class SensorModule(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def state_dict(self):
-        """Return a serializable dict with this sensor module's state.
-
-        Includes everything needed to save/load this sensor module.
-        """
+    def state_dict(self) -> Memento:
         pass
 
     @abc.abstractmethod

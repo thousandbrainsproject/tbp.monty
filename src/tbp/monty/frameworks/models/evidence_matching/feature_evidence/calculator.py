@@ -22,7 +22,6 @@ class FeatureEvidenceCalculator(Protocol):
         channel_feature_weights: dict,
         channel_query_features: dict,
         channel_tolerances: dict,
-        input_channel: str,
     ) -> np.ndarray: ...
 
 
@@ -40,7 +39,6 @@ class DefaultFeatureEvidenceCalculator:
         channel_feature_weights: dict,
         channel_query_features: dict,
         channel_tolerances: dict,
-        input_channel: str,  # noqa: ARG003
     ) -> np.ndarray:
         """Calculate the feature evidence for all nodes stored in a graph.
 
@@ -62,8 +60,6 @@ class DefaultFeatureEvidenceCalculator:
                 against the stored features, keyed by feature name.
             channel_tolerances: Per-feature tolerance, the largest
                 difference that still produces non-zero evidence.
-            input_channel: The channel the observation came from, used to
-                select which features in the graph to compare against.
 
         Returns:
             The feature evidence for all nodes, shape `(n_nodes,)`.

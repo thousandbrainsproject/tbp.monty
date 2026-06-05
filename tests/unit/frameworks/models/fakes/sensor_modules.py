@@ -19,6 +19,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState
+from tbp.monty.memento import Memento
 
 __all__ = ["FakeSensorModule"]
 
@@ -30,8 +31,8 @@ class FakeSensorModule(SensorModule):
         super().__init__()
         self.sensor_module_id = sensor_module_id
 
-    def state_dict(self):
-        pass
+    def state_dict(self) -> Memento:
+        return {}
 
     def update_state(self, agent: AgentState):
         pass

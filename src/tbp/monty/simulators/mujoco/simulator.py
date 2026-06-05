@@ -58,7 +58,7 @@ PRIMITIVE_OBJECTS = {
     "sphere": mjtGeom.mjGEOM_SPHERE,
 }
 
-DEFAULT_RESOLUTION = Resolution2D((64, 64))
+DEFAULT_RESOLUTION = Resolution2D(width=64, height=64)
 
 
 MuJoCoAgentFactory = Callable[["MuJoCoSimulator"], Agent]
@@ -130,7 +130,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # of the agents, especially when we start to add more structure to them.
         self._object_count = 0
 
-        self._renderers: dict[Resolution2D, Renderer] = {}
+        self._renderers: dict[tuple[int, int], Renderer] = {}
         self._recompile()
 
     def _recompile(self) -> None:
@@ -154,7 +154,8 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         if self._agents:
             render_resolution = self._max_sensor_resolution()
         g = self.spec.visual.global_
-        g.offwidth, g.offheight = render_resolution
+        g.offheight = render_resolution["height"]
+        g.offwidth = render_resolution["width"]
 
     def _configure_lights(self):
         """Configure the lights as needed.
@@ -192,11 +193,12 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         Returns:
             a renderer of the specified resolution
         """
-        if resolution not in self._renderers:
-            self._renderers[resolution] = Renderer(
-                width=resolution[0], height=resolution[1], model=self.model
+        resolution_key = (resolution["height"], resolution["width"])
+        if resolution_key not in self._renderers:
+            self._renderers[resolution_key] = Renderer(
+                height=resolution["height"], width=resolution["width"], model=self.model
             )
-        return self._renderers[resolution]
+        return self._renderers[resolution_key]
 
     def _create_agents(self) -> None:
         self._agents = {}
@@ -225,9 +227,9 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         ]
         for sensor_cfg in sensor_configs:
             for sensor in sensor_cfg.values():
-                max_width = max(max_width, sensor["resolution"][0])
-                max_height = max(max_height, sensor["resolution"][1])
-        return Resolution2D((max_width, max_height))
+                max_height = max(max_height, sensor["resolution"]["height"])
+                max_width = max(max_width, sensor["resolution"]["width"])
+        return Resolution2D(height=max_height, width=max_width)
 
     def remove_all_objects(self) -> None:
         self.spec = MjSpec()

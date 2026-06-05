@@ -6,7 +6,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from typing import NewType, Tuple, TypedDict
+from typing import NewType, TypedDict
 
 __all__ = ["Resolution2D", "SensorConfig", "SensorID"]
 
@@ -16,8 +16,11 @@ SensorID = NewType("SensorID", str)
 """Unique identifier for a sensor."""
 
 
-Resolution2D = NewType("Resolution2D", Tuple[int, int])
-"""Pixel resolution of a sensor, in width and height."""
+class Resolution2D(TypedDict):
+    """Pixel resolution of a sensor."""
+
+    width: int
+    height: int
 
 
 class SensorConfig(TypedDict):

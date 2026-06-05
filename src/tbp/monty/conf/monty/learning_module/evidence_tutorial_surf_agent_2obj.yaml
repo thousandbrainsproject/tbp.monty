@@ -17,7 +17,7 @@ learning_module_0:
     patch:
       # Weighting saturation and value less since these might change under different
       # lighting conditions.
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
   # Most likely hypothesis needs to have 20% more evidence than the others to
   # be considered certain enough to trigger a terminal condition (match).
   x_percent_threshold: 20
