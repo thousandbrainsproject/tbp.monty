@@ -2,7 +2,10 @@ experiment:
   config:
     do_eval: false
     do_train: true
-    plotter: null
+    plotter:
+      _target_: tbp.monty.frameworks.plotters.live_plotter.LivePlotter
+      interactive: false
+      max_delay: 2.0
     monty_config:
       monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
       monty_args:

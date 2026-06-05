@@ -1,5 +1,3 @@
 # @package experiment.config.plotter
 _target_: tbp.monty.frameworks.plotters.live_plotter.LivePlotter
-sensor_module_id: patch
-learning_module_id: learning_module_0
 interactive: true
