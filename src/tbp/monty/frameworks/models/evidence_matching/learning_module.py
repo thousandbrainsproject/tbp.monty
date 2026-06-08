@@ -471,7 +471,7 @@ class EvidenceGraphLM(GraphLM):
             }
         return vote
 
-    def get_output(self):
+    def get_output(self) -> Message | None:
         """Return the most likely hypothesis in same format as LM input.
 
         The input to an LM at the moment is a dict of features at a location. The
