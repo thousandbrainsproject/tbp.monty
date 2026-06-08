@@ -274,7 +274,7 @@ class Embodiment(Agent):
         """Set the location and rotation of the embodiment to the provided values."""
         # TODO: replace with a property setter using a Pose object
         self.position = location
-        self.rotation = np.array(rotation)
+        self.rotation = rotation
 
     def set_sensor_rotation(self, rotation_quat: QuaternionWXYZ) -> None:
         """Sets the orientation of the sensor body, relative to the embodiment.

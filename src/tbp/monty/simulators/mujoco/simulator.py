@@ -107,8 +107,8 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     spec: MjSpec
     model: MjModel
     data: MjData
-    data_path: Path | None
 
+    _data_path: Path | None
     _raise_actuate_missing: bool
     _agent_partials: Sequence[MuJoCoAgentFactory]
     _agents: dict[AgentID, Agent]
@@ -135,7 +135,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.spec = MjSpec()
         self.model = self.spec.compile()
         self.data = MjData(self.model)
-        self.data_path = Path(data_path) if data_path else None
+        self._data_path = Path(data_path) if data_path else None
         self._raise_actuate_missing = raise_actuate_missing
 
         self._agent_partials = [] if agents is None else agents
@@ -345,12 +345,12 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             MissingObjectTexture: When the texture map is missing.
             MissingObjectModel: When the object is missing.
         """
-        if not self.data_path:
+        if not self._data_path:
             raise DataPathNotConfigured(
                 "Cannot load custom objects in simulator, "
                 "'data_path' is not configured."
             )
-        path = self.data_path / object_type
+        path = self._data_path / object_type
         texture_path = path / "texture_map.png"
         model_path = path / "textured.obj"
 
