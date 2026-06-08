@@ -50,6 +50,7 @@
 - [sensor-module](how-monty-works/sensor-module.md)
   - [sm-for-rgbd-data](how-monty-works/sm-for-rgbd-data.md)
   - [salience-sm](how-monty-works/sensor-module/salience-sm.md)
+  - [two-d-sensor-module](how-monty-works/sensor-module/two-d-sensor-module.md)
 - [learning-module](how-monty-works/learning-module.md)
   - [object-models](how-monty-works/learning-module/object-models.md)
   - [learning-module-outputs](how-monty-works/learning-module/learning-module-outputs.md)

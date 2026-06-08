@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import ClassVar
+from typing import ClassVar, Sequence
 
 import numpy as np
 import torch
@@ -242,7 +242,7 @@ class MontyForGraphMatching(MontyBase):
         for i in range(len(self.learning_modules)):
             sensory_inputs = self._collect_inputs_to_lm(i)
             # If LM has any inputs, take a step
-            if sensory_inputs is not None:
+            if sensory_inputs:
                 self._set_stepwise_targets(self.learning_modules[i], sensory_inputs)
 
                 if self.step_type == "matching_step":
@@ -605,13 +605,13 @@ class GraphLM(LearningModule):
     def matching_step(
         self,
         ctx: RuntimeContext,
-        observations,
-    ):
+        percepts: Sequence[Message],
+    ) -> None:
         """Update the possible matches given an observation."""
         first_movement_detected = self._agent_moved_since_reset()
-        buffer_data = self._add_displacements(observations)
+        buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
-        self.buffer.append_input_percepts(observations)
+        self.buffer.append_input_percepts(percepts)
 
         if first_movement_detected:
             logger.debug("performing matching step.")
@@ -619,14 +619,14 @@ class GraphLM(LearningModule):
             logger.debug("we have not moved yet.")
 
         self._compute_possible_matches(
-            ctx, observations, first_movement_detected=first_movement_detected
+            ctx, percepts, first_movement_detected=first_movement_detected
         )
 
         if len(self.get_possible_matches()) == 0:
             self.set_individual_ts(terminal_state="no_match")
 
         if self.gsg is not None:
-            self.gsg.step(ctx, observations)
+            self.gsg.step(ctx, percepts)
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
@@ -634,12 +634,12 @@ class GraphLM(LearningModule):
     def exploratory_step(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
-        observations,
-    ):
+        percepts: Sequence[Message],
+    ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
-        buffer_data = self._add_displacements(observations)
+        buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
-        self.buffer.append_input_percepts(observations)
+        self.buffer.append_input_percepts(percepts)
 
     def update_ltm_from_stm(self):
         """If training, update memory from buffer."""
@@ -1001,7 +1001,7 @@ class GraphLM(LearningModule):
 
     # ------------------------ Helper --------------------------
 
-    def _add_displacements(self, percepts: list[Message]) -> list[Message]:
+    def _add_displacements(self, percepts: Sequence[Message]) -> Sequence[Message]:
         """Compute and add a single displacement vector to all percepts.
 
         Computes one displacement by comparing the current average SM location from
