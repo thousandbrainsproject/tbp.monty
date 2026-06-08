@@ -10,15 +10,17 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from functools import partial
-from typing import ClassVar
+from typing import Callable, ClassVar, Generator
 from unittest import TestCase
 
 import hypothesis.strategies as st
 import numpy as np
+import numpy.typing as npt
 import pytest
 import quaternion as qt
 from hypothesis import example, given, settings
 from parameterized import parameterized_class
+from typing_extensions import Concatenate, ParamSpec, Self
 
 from tbp.monty.frameworks.actions.actions import (
     LookDown,
@@ -35,9 +37,11 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import (
     DEFAULT_TOLERANCE,
+    QuaternionWXYZ,
+    VectorXYZ,
 )
 from tbp.monty.simulators.mujoco import MuJoCoSimulator
-from tbp.monty.simulators.mujoco.agents import Agent, DistantAgent, SurfaceAgent
+from tbp.monty.simulators.mujoco.agents import DistantAgent, SurfaceAgent
 from tbp.monty.simulators.mujoco.simulator import ActuateMethodMissing
 from tests.unit.simulators.mujoco.noop_agent_test import (
     TEST_AGENT_ID,
@@ -51,25 +55,32 @@ from tests.unit.simulators.mujoco.strategies import (
     x_rotation_quaterion,
 )
 
+P = ParamSpec("P")
 
-@contextmanager
-def sim_resetter(sim: MuJoCoSimulator):
-    """A context manager that resets the simulator on exit.
+
+def sim_reset(
+    fn: Callable[Concatenate[ActionsTest, P], None],
+) -> Callable[Concatenate[ActionsTest, P], None]:
+    """A test decorator that resets the simulator on exit.
 
     Needed because Hypothesis runs all the test cases for a @given test in one run
     without calling TestCase.setUp and TestCase.tearDown in between.
 
-    Yields:
-        the sim object, for use in the `with` statement.
+    Returns:
+        decorated actuate test method
     """
-    try:
-        yield sim
-    finally:
-        sim.reset()
+
+    def wrapper(self: ActionsTest, /, *args: P.args, **kwargs: P.kwargs) -> None:
+        try:
+            return fn(self, *args, **kwargs)
+        finally:
+            self.sim.reset()
+
+    return wrapper
 
 
 @contextmanager
-def skip_on_missing_actuate():
+def skip_on_missing_actuate() -> Generator[None, None, None]:
     """A test decorator that skips tests for missing actuate methods.
 
     Not all agents implement all actuate methods, so we skip the tests that
@@ -84,7 +95,7 @@ def skip_on_missing_actuate():
         )
 
 
-def agent_test_name_func(
+def agent_test_name(
     cls: type,
     num: int,  # noqa: ARG001
     params_dict: dict[str, type],
@@ -104,7 +115,7 @@ def agent_test_name_func(
 
 def orient_horizontal_position(
     left: float = 0.0, forward: float = 0.0, theta: float = 0.0
-) -> np.ndarray:
+) -> npt.NDArray[np.float64]:
     """Helper to calculate position after an OrientHorizontal action.
 
     Starts from the origin looking down the negative-Z axis.
@@ -123,7 +134,7 @@ def orient_horizontal_position(
 
 def orient_vertical_position(
     down: float = 0.0, forward: float = 0.0, phi: float = 0.0
-) -> np.ndarray:
+) -> npt.NDArray[np.float64]:
     """Helper to calculate position after an OrientVertical action.
 
     Starts from the origin looking down the negative-Z axis.
@@ -142,7 +153,7 @@ def orient_vertical_position(
 
 @parameterized_class(
     [{"agent_class": DistantAgent}, {"agent_class": SurfaceAgent}],
-    class_name_func=agent_test_name_func,
+    class_name_func=agent_test_name,
 )
 class ActionsTest(TestCase):
     """This tests the actuate methods on the agents.
@@ -152,13 +163,13 @@ class ActionsTest(TestCase):
     """
 
     sim: ClassVar[MuJoCoSimulator]
-    agent_class: ClassVar[type[Agent]]
+    agent_class: ClassVar[type]
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         # Use a single shared simulator since Hypothesis will rerun the
         # tests multiple times, and this cuts down on the runtime, but
-        # leads to other complications, see `sim_resetter` above.
+        # leads to other complications, see `sim_reset` above.
         cls.sim = MuJoCoSimulator(
             agents=[
                 partial(
@@ -169,19 +180,22 @@ class ActionsTest(TestCase):
         )
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         cls.sim.close()
 
-    def tearDown(self):
-        self.sim.remove_all_objects()
+    def tearDown(self) -> None:
+        self.sim.reset()
 
-    @skip_on_missing_actuate()
     @given(
         final_position=position(),
         final_rotation=unit_quaternion(),
     )
     @settings(deadline=None)
-    def test_set_agent_pose(self, final_position, final_rotation):
+    @skip_on_missing_actuate()
+    @sim_reset
+    def test_set_agent_pose(
+        self: Self, /, final_position: VectorXYZ, final_rotation: QuaternionWXYZ
+    ) -> None:
         action = SetAgentPose(
             agent_id=TEST_AGENT_ID,
             location=final_position,
@@ -193,7 +207,6 @@ class ActionsTest(TestCase):
         assert agent_state.position == final_position
         assert agent_state.rotation == qt.quaternion(*final_rotation)
 
-    @skip_on_missing_actuate()
     @given(
         sensor_rotation=x_rotation_quaterion(),
     )
@@ -201,7 +214,11 @@ class ActionsTest(TestCase):
     # equivalent rotation.
     @example(sensor_rotation=(-0.4161468365471424, 0.9092974268256817, 0.0, 0.0))
     @settings(deadline=None)
-    def test_set_sensor_rotation(self, sensor_rotation):
+    @skip_on_missing_actuate()
+    @sim_reset
+    def test_set_sensor_rotation(
+        self: Self, /, sensor_rotation: QuaternionWXYZ
+    ) -> None:
         action = SetSensorRotation(
             agent_id=TEST_AGENT_ID, rotation_quat=sensor_rotation
         )
@@ -216,55 +233,57 @@ class ActionsTest(TestCase):
         expected_rot = Rotation.from_quat(sensor_rotation)
         assert expected_rot.approx_equal(sensor_rot)
 
-    @skip_on_missing_actuate()
     @given(distance=st.floats(min_value=0.0, max_value=10.0))
     @settings(deadline=None)
-    def test_move_forward(self, distance):
+    @skip_on_missing_actuate()
+    @sim_reset
+    def test_move_forward(self: Self, /, distance: float) -> None:
         action = MoveForward(agent_id=TEST_AGENT_ID, distance=distance)
-        with sim_resetter(self.sim):
-            self.sim.step([action])
 
-            agent_state = self.sim.states[TEST_AGENT_ID]
-            # Moving forward moves the agent in the negative Z direction, so the
-            # moved distance will be the negative of the requested distance.
-            assert agent_state.position == (0.0, 0.0, -distance)
+        self.sim.step([action])
 
-    @skip_on_missing_actuate()
+        agent_state = self.sim.states[TEST_AGENT_ID]
+        # Moving forward moves the agent in the negative Z direction, so the
+        # moved distance will be the negative of the requested distance.
+        assert agent_state.position == (0.0, 0.0, -distance)
+
     @given(delta_theta=st.floats(min_value=-180.0, max_value=180.0))
     @settings(deadline=None)
-    def test_turn_right(self, delta_theta):
+    @skip_on_missing_actuate()
+    @sim_reset
+    def test_turn_right(self: Self, /, delta_theta: float) -> None:
         action = TurnRight(agent_id=TEST_AGENT_ID, rotation_degrees=delta_theta)
-        with sim_resetter(self.sim):
-            self.sim.step([action])
 
-            agent_state = self.sim.states[TEST_AGENT_ID]
-            agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
-            expected_rot = Rotation.from_euler(
-                "xyz", [0.0, -delta_theta, 0.0], degrees=True
-            )
+        self.sim.step([action])
 
-            assert agent_rot.approx_equal(expected_rot)
+        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
+        expected_rot = Rotation.from_euler(
+            "xyz", [0.0, -delta_theta, 0.0], degrees=True
+        )
 
-    @skip_on_missing_actuate()
+        assert agent_rot.approx_equal(expected_rot)
+
     @given(delta_theta=st.floats(min_value=-180.0, max_value=180.0))
     @settings(deadline=None)
-    def test_turn_left(self, delta_theta):
-        action = TurnLeft(agent_id=TEST_AGENT_ID, rotation_degrees=delta_theta)
-        with sim_resetter(self.sim):
-            self.sim.step([action])
-
-            agent_state = self.sim.states[TEST_AGENT_ID]
-            agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
-            expected_rot = Rotation.from_euler(
-                "xyz", [0.0, delta_theta, 0.0], degrees=True
-            )
-
-            assert agent_rot.approx_equal(expected_rot)
-
     @skip_on_missing_actuate()
+    @sim_reset
+    def test_turn_left(self: Self, /, delta_theta: float) -> None:
+        action = TurnLeft(agent_id=TEST_AGENT_ID, rotation_degrees=delta_theta)
+
+        self.sim.step([action])
+
+        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
+        expected_rot = Rotation.from_euler("xyz", [0.0, delta_theta, 0.0], degrees=True)
+
+        assert agent_rot.approx_equal(expected_rot)
+
     @given(angles=constrained_angle())
     @settings(deadline=None)
-    def test_look_up(self, angles):
+    @skip_on_missing_actuate()
+    @sim_reset
+    def test_look_up(self: Self, /, angles: tuple[float, float]) -> None:
         """Test LookUp actions with angles less than constraint move by that angle."""
         angle, constraint = angles
         action = LookUp(
@@ -274,21 +293,23 @@ class ActionsTest(TestCase):
         )
         expected_rot = Rotation.from_euler("xyz", [angle, 0.0, 0.0], degrees=True)
 
-        with sim_resetter(self.sim):
-            self.sim.step([action])
-            sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
-            sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
+        self.sim.step([action])
+        sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
+        sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
 
-            assert sensor_rot.approx_equal(expected_rot)
+        assert sensor_rot.approx_equal(expected_rot)
 
-    @skip_on_missing_actuate()
     @given(
         delta_phi1=st.floats(min_value=-180.0, max_value=180.0),
         delta_phi2=st.floats(min_value=-180.0, max_value=180.0),
         phi_limit=st.floats(min_value=0.0, max_value=180.0),
     )
     @settings(deadline=None)
-    def test_multiple_look_up_constrained(self, delta_phi1, delta_phi2, phi_limit):
+    @skip_on_missing_actuate()
+    @sim_reset
+    def test_multiple_look_up_constrained(
+        self: Self, /, delta_phi1: float, delta_phi2: float, phi_limit: float
+    ) -> None:
         """Test that multiple LookUp actions are properly constrained."""
         actions = [
             LookUp(
@@ -303,18 +324,18 @@ class ActionsTest(TestCase):
             ),
         ]
 
-        with sim_resetter(self.sim):
-            self.sim.step(actions)
-            sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
-            sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
+        self.sim.step(actions)
+        sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
+        sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
 
-            pitch, _, _ = sensor_rot.as_euler("xyz", degrees=True)
-            assert abs(pitch) <= phi_limit + DEFAULT_TOLERANCE
+        pitch, _, _ = sensor_rot.as_euler("xyz", degrees=True)
+        assert abs(pitch) <= phi_limit + DEFAULT_TOLERANCE
 
-    @skip_on_missing_actuate()
     @given(angles=constrained_angle())
     @settings(deadline=None)
-    def test_look_down(self, angles):
+    @skip_on_missing_actuate()
+    @sim_reset
+    def test_look_down(self: Self, /, angles: tuple[float, float]) -> None:
         """Test LookDown actions with angles less than constraint move by that angle."""
         angle, constraint = angles
         action = LookDown(
@@ -324,21 +345,23 @@ class ActionsTest(TestCase):
         )
         expected_rot = Rotation.from_euler("xyz", [-angle, 0.0, 0.0], degrees=True)
 
-        with sim_resetter(self.sim):
-            self.sim.step([action])
-            sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
-            sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
+        self.sim.step([action])
+        sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
+        sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
 
-            assert sensor_rot.approx_equal(expected_rot)
+        assert sensor_rot.approx_equal(expected_rot)
 
-    @skip_on_missing_actuate()
     @given(
         delta_phi1=st.floats(min_value=-180.0, max_value=180.0),
         delta_phi2=st.floats(min_value=-180.0, max_value=180.0),
         phi_limit=st.floats(min_value=0.0, max_value=180.0),
     )
     @settings(deadline=None)
-    def test_multiple_look_down_constrained(self, delta_phi1, delta_phi2, phi_limit):
+    @skip_on_missing_actuate()
+    @sim_reset
+    def test_multiple_look_down_constrained(
+        self: Self, /, delta_phi1: float, delta_phi2: float, phi_limit: float
+    ) -> None:
         """Test that multiple LookDown actions are properly constrained."""
         actions = [
             LookDown(
@@ -353,15 +376,13 @@ class ActionsTest(TestCase):
             ),
         ]
 
-        with sim_resetter(self.sim):
-            self.sim.step(actions)
-            sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
-            sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
+        self.sim.step(actions)
+        sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
+        sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
 
-            pitch, _, _ = sensor_rot.as_euler("xyz", degrees=True)
-            assert abs(pitch) <= phi_limit + DEFAULT_TOLERANCE
+        pitch, _, _ = sensor_rot.as_euler("xyz", degrees=True)
+        assert abs(pitch) <= phi_limit + DEFAULT_TOLERANCE
 
-    @skip_on_missing_actuate()
     @given(
         delta_theta=st.floats(min_value=-180.0, max_value=180.0),
         # 10 meters seems like a good upper limit given the size of our
@@ -370,8 +391,10 @@ class ActionsTest(TestCase):
         forward_distance=st.floats(min_value=0.0, max_value=10.0),
     )
     @settings(deadline=None)
+    @skip_on_missing_actuate()
+    @sim_reset
     def test_orient_horizontal(
-        self, delta_theta: float, left_distance: float, forward_distance: float
+        self: Self, /, delta_theta: float, left_distance: float, forward_distance: float
     ) -> None:
         """Tests the OrientHorizontal action.
 
@@ -394,31 +417,31 @@ class ActionsTest(TestCase):
             left_distance=left_distance,
         )
 
-        with sim_resetter(self.sim):
-            self.sim.step([action])
-            agent_state = self.sim.states[TEST_AGENT_ID]
-            agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
-            agent_pos = agent_state.position
+        self.sim.step([action])
+        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
+        agent_pos = agent_state.position
 
-            expected_rot = Rotation.from_euler("y", -delta_theta, degrees=True)
-            expected_pos = orient_horizontal_position(
-                left=left_distance,
-                forward=forward_distance,
-                theta=delta_theta,
-            )
+        expected_rot = Rotation.from_euler("y", -delta_theta, degrees=True)
+        expected_pos = orient_horizontal_position(
+            left=left_distance,
+            forward=forward_distance,
+            theta=delta_theta,
+        )
 
-            assert agent_rot.approx_equal(expected_rot)
-            np.testing.assert_allclose(agent_pos, expected_pos)
+        assert agent_rot.approx_equal(expected_rot)
+        np.testing.assert_allclose(agent_pos, expected_pos)
 
-    @skip_on_missing_actuate()
     @given(
         delta_phi=st.floats(min_value=-180.0, max_value=180.0),
         down_distance=st.floats(min_value=0.0, max_value=10.0),
         forward_distance=st.floats(min_value=0.0, max_value=10.0),
     )
     @settings(deadline=None)
+    @skip_on_missing_actuate()
+    @sim_reset
     def test_orient_vertical(
-        self, delta_phi: float, down_distance: float, forward_distance: float
+        self: Self, /, delta_phi: float, down_distance: float, forward_distance: float
     ) -> None:
         """Tests the OrientVertical action.
 
@@ -431,27 +454,27 @@ class ActionsTest(TestCase):
             down_distance=down_distance,
         )
 
-        with sim_resetter(self.sim):
-            self.sim.step([action])
-            agent_state = self.sim.states[TEST_AGENT_ID]
-            agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
-            agent_pos = agent_state.position
+        self.sim.step([action])
+        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
+        agent_pos = agent_state.position
 
-            expected_rot = Rotation.from_euler("x", delta_phi, degrees=True)
-            expected_pos = orient_vertical_position(
-                down=down_distance, forward=forward_distance, phi=delta_phi
-            )
+        expected_rot = Rotation.from_euler("x", delta_phi, degrees=True)
+        expected_pos = orient_vertical_position(
+            down=down_distance, forward=forward_distance, phi=delta_phi
+        )
 
-            assert agent_rot.approx_equal(expected_rot)
-            np.testing.assert_allclose(agent_pos, expected_pos)
+        assert agent_rot.approx_equal(expected_rot)
+        np.testing.assert_allclose(agent_pos, expected_pos)
 
-    @skip_on_missing_actuate()
     @given(
         distance=st.floats(min_value=0.0, max_value=10.0),
         theta=st.floats(min_value=-np.pi, max_value=np.pi),
     )
     @settings(deadline=None)
-    def test_move_tangentially(self, distance: float, theta: float) -> None:
+    @skip_on_missing_actuate()
+    @sim_reset
+    def test_move_tangentially(self: Self, /, distance: float, theta: float) -> None:
         # Offset used in the code that generates MoveTangentially actions to set
         # the origin angle to the positive Y axis instead of the positive X axis.
         offset = np.pi / 2
@@ -466,11 +489,10 @@ class ActionsTest(TestCase):
             direction=tuple(direction_vector),
         )
 
-        with sim_resetter(self.sim):
-            self.sim.step([action])
-            agent_state = self.sim.states[TEST_AGENT_ID]
-            agent_pos = agent_state.position
+        self.sim.step([action])
+        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_pos = agent_state.position
 
-            expected_pos = direction_vector * distance
+        expected_pos = direction_vector * distance
 
-            np.testing.assert_allclose(agent_pos, expected_pos)
+        np.testing.assert_allclose(agent_pos, expected_pos)
