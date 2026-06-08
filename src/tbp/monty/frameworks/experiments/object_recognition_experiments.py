@@ -163,7 +163,7 @@ class MontyGeneralizationExperiment(MontyObjectRecognitionExperiment):
         """Pre episode where we pass target object to the model for logging."""
         if "model.pt" not in self.model_path.parts:
             model_path = self.model_path / "model.pt"
-        state_dict = torch.load(model_path)
+        state_dict = torch.load(model_path, weights_only=False)
         print(f"loading models again from {model_path}")
         self.model.load_state_dict(state_dict)
         super().pre_episode()

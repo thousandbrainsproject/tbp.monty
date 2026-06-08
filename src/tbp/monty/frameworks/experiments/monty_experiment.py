@@ -185,7 +185,7 @@ class MontyExperiment:
         if model_path:
             if "model.pt" not in model_path.parts:
                 model_path = model_path / "model.pt"
-            state_dict = torch.load(model_path)
+            state_dict = torch.load(model_path, weights_only=False)
             model.load_state_dict(state_dict)
 
         return model
@@ -660,9 +660,9 @@ class MontyExperiment:
     def load_state_dir(self, load_dir):
         """Load state of previous experiment from the filesystem."""
         load_dir = Path(load_dir)
-        model_state_dict = torch.load(load_dir / "model.pt")
-        exp_state_dict = torch.load(load_dir / "exp_state_dict.pt")
-        config = torch.load(load_dir / "config.pt")
+        model_state_dict = torch.load(load_dir / "model.pt", weights_only=False)
+        exp_state_dict = torch.load(load_dir / "exp_state_dict.pt", weights_only=False)
+        config = torch.load(load_dir / "config.pt", weights_only=False)
         state_dict_keys = self.state_dict().keys()
 
         self.model.load_state_dict(model_state_dict)

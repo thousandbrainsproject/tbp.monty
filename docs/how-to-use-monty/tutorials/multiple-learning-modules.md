@@ -204,7 +204,7 @@ from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 project_dir = Path("~/tbp/results/monty/projects").expanduser()
 model_name = "dist_agent_5lm_2obj_train"
 model_path = project_dir / model_name / "pretrained" / "model.pt"
-state_dict = torch.load(model_path)
+state_dict = torch.load(model_path, weights_only=False)
 
 fig = plt.figure(figsize=(8, 3))
 for lm_id in range(5):
