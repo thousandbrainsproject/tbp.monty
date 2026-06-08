@@ -295,7 +295,7 @@ class RuntimeLearningModule(Protocol):
     def receive_votes(self, votes: Collection[Any]) -> None:
         """Process inbound voting data.
 
-        TODO Use `Message` type for votes rather than ad-hoc data?
+        TODO: Use `Message` type for votes rather than ad-hoc data?
 
         Args:
             votes: A collection of votes from other learning modules.
@@ -305,7 +305,10 @@ class RuntimeLearningModule(Protocol):
     def send_out_vote(self) -> Any:
         """This method defines what data are sent to other learning modules.
 
-        TODO Use `Message` type for votes rather than ad-hoc data?
+        TODO: Use `Message` type for votes rather than ad-hoc data?
+
+        Returns:
+            This learning module's voting data.
         """
         ...
 
@@ -363,11 +366,11 @@ class LearningModule(
         pass
 
     @abc.abstractmethod
-    def receive_votes(self, votes):
+    def receive_votes(self, votes: Collection[Any]) -> None:
         pass
 
     @abc.abstractmethod
-    def send_out_vote(self):
+    def send_out_vote(self) -> Any:
         pass
 
     @abc.abstractmethod
