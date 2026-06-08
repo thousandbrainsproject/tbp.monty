@@ -162,7 +162,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # Step the simulation so all objects are in their initial positions.
         mj_forward(self.model, self.data)
 
-    def _configure_spec_settings(self):
+    def _configure_spec_settings(self) -> None:
         """Set all the relevant global settings on the spec object."""
         self.spec.option.gravity = (0.0, 0.0, 0.0)
         # Configure the maximum rendering resolution for the off-screen buffer.
@@ -175,7 +175,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         g.offheight = render_resolution["height"]
         g.offwidth = render_resolution["width"]
 
-    def _configure_lights(self):
+    def _configure_lights(self) -> None:
         """Configure the lights as needed.
 
         We're attempting to recreate the lighting setup we were getting from Habitat,
@@ -241,7 +241,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # configs were, so we can determine the maximum resolution needed.
         sensor_configs = [
             p.keywords["sensor_configs"]
-            for p in cast("list[partial]", self._agent_partials)
+            for p in cast("list[partial[Agent]]", self._agent_partials)
         ]
         for sensor_cfg in sensor_configs:
             for sensor in sensor_cfg.values():
@@ -296,7 +296,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         position: VectorXYZ,
         rotation: QuaternionWXYZ,
         scale: VectorXYZ,
-    ):
+    ) -> None:
         """Adds a custom object loaded from the data_path to the scene.
 
         This assumes that each object's files are stored in a directory in the
@@ -465,7 +465,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     def close(self) -> None:
         self._close_renderers()
 
-    def _close_renderers(self):
+    def _close_renderers(self) -> None:
         for renderer in self._renderers.values():
             renderer.close()
         self._renderers = {}
