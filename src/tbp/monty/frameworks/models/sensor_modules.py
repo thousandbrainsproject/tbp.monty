@@ -19,6 +19,10 @@ from skimage.color import rgb2hsv
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.environment_utils.transform_handlers import (
+    TransformContext,
+    TransformPipeline,
+)
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
     SensorObservation,
@@ -551,6 +555,7 @@ class CameraSM(SensorModule):
         self,
         sensor_module_id: str,
         features: list[str],
+        transform_pipeline: TransformPipeline | None = None,
         save_raw_obs: bool = False,
         pc1_is_pc2_threshold: int = 10,
         noise_params: dict[str, Any] | None = None,
@@ -564,6 +569,7 @@ class CameraSM(SensorModule):
             features: Which features to extract. In [on_object, rgba, surface_normal,
                 principal_curvatures, curvature_directions, gaussian_curvature,
                 mean_curvature]
+            transform_pipeline: Head of the observation transform pipeline.
             save_raw_obs: Whether to save raw sensory input for logging.
             pc1_is_pc2_threshold: Maximum difference between pc1 and pc2 to be
                 classified as being roughly the same (ignore curvature directions).
@@ -613,6 +619,11 @@ class CameraSM(SensorModule):
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
+        self.transform_pipeline = (
+            transform_pipeline
+            if transform_pipeline is not None
+            else TransformPipeline([])
+        )
 
     def pre_episode(self) -> None:
         self._snapshot_telemetry.reset()
@@ -628,6 +639,7 @@ class CameraSM(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
+        self.agent_state = agent  # Need agent state for context in transform pipeline
 
     def state_dict(self) -> Memento:
         state_dict = self._snapshot_telemetry.state_dict()
@@ -640,7 +652,7 @@ class CameraSM(SensorModule):
         observation: SensorObservation,
         motor_only_step: bool = False,
     ) -> Message | None:
-        """Turn raw observations into dict of features at location.
+        """Transform raw observations and turn into dict of features at location.
 
         Args:
             ctx: The runtime context.
@@ -655,6 +667,9 @@ class CameraSM(SensorModule):
             self._snapshot_telemetry.raw_observation(
                 observation, self.state.rotation, self.state.position
             )
+
+        tf_context = TransformContext(ctx.rng, self.agent_state)
+        self.transform_pipeline(tf_context, observation)
 
         percept = self._observation_processor.process(observation)
 
