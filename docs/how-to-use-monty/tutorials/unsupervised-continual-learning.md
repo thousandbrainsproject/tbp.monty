@@ -157,7 +157,7 @@ from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 def load_graph(exp_dir: Path, epoch: int, object_name: str) -> GraphObjectModel:
     model_path = exp_dir / str(epoch) / "model.pt"
-    state_dict = torch.load(model_path)
+    state_dict = torch.load(model_path, weights_only=False)
     return state_dict["lm_dict"][0]["graph_memory"][object_name]["patch"]
 
 

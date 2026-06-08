@@ -198,7 +198,7 @@ class MontyForGraphMatching(MontyBase):
     def load_state_dict_from_parallel(self, parallel_dirs, save=False):
         lm_dict = {}
         for pdir in parallel_dirs:
-            state_dict = torch.load(pdir / "model.pt")
+            state_dict = torch.load(pdir / "model.pt", weights_only=False)
             for lm in state_dict["lm_dict"]:
                 if lm not in lm_dict:
                     lm_dict[lm] = dict(

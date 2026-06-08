@@ -78,9 +78,12 @@ class RunParallelTest(unittest.TestCase):
             self.output_dir
             / self.supervised_pre_training_cfg.experiment.config.logging.run_name
             / "pretrained"
-            / "model.pt"
+            / "model.pt",
+            weights_only=False,
         )
-        serial_model = torch.load(self.output_dir / "pretrained" / "model.pt")
+        serial_model = torch.load(
+            self.output_dir / "pretrained" / "model.pt", weights_only=False
+        )
 
         # Same objects
         self.assertEqual(

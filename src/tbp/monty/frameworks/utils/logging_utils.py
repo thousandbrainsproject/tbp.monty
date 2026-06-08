@@ -80,7 +80,7 @@ def load_models_from_dir(exp_path, pretrained_dict=None):
 
     if pretrained_dict is not None:
         lm_models["pretrained"] = {}
-        state_dict = torch.load(Path(pretrained_dict) / "model.pt")
+        state_dict = torch.load(Path(pretrained_dict) / "model.pt", weights_only=False)
         for lm_id in list(state_dict["lm_dict"].keys()):
             pretrained_models = state_dict["lm_dict"][lm_id]["graph_memory"]
             lm_models["pretrained"][lm_id] = pretrained_models
@@ -88,7 +88,7 @@ def load_models_from_dir(exp_path, pretrained_dict=None):
     for child in Path(exp_path).iterdir():
         folder = child.name
         if folder.isnumeric():
-            state_dict = torch.load(child / "model.pt")
+            state_dict = torch.load(child / "model.pt", weights_only=False)
             for lm_id in list(state_dict["lm_dict"].keys()):
                 epoch_models = state_dict["lm_dict"][lm_id]["graph_memory"]
                 if folder not in lm_models:

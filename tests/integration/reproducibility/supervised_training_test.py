@@ -58,6 +58,6 @@ class SupervisedTrainingTest(unittest.TestCase):
                 / "model.pt"
             )
 
-        serial_model = torch.load(serial_model_path)
-        parallel_model = torch.load(parallel_model_path)
+        serial_model = torch.load(serial_model_path, weights_only=False)
+        parallel_model = torch.load(parallel_model_path, weights_only=False)
         assert_trained_models_equal(serial_model, parallel_model)
