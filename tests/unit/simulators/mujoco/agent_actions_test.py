@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from functools import partial
-from typing import Callable, ClassVar, Generator
+from typing import Callable, ClassVar, Generator, cast
 from unittest import TestCase
 
 import hypothesis.strategies as st
@@ -37,11 +37,13 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import (
     DEFAULT_TOLERANCE,
+    IDENTITY_QUATERNION,
+    ZERO_VECTOR,
     QuaternionWXYZ,
     VectorXYZ,
 )
 from tbp.monty.simulators.mujoco import MuJoCoSimulator
-from tbp.monty.simulators.mujoco.agents import DistantAgent, SurfaceAgent
+from tbp.monty.simulators.mujoco.agents import Axis, DistantAgent, SurfaceAgent
 from tbp.monty.simulators.mujoco.simulator import ActuateMethodMissing
 from tests.unit.simulators.mujoco.noop_agent_test import (
     TEST_AGENT_ID,
@@ -431,6 +433,21 @@ class ActionsTest(TestCase):
 
         assert agent_rot.approx_equal(expected_rot)
         np.testing.assert_allclose(agent_pos, expected_pos)
+        # Invariant: the agent shouldn't ever leave the XZ plane as a result of
+        # an OrientHorizontal action.
+        assert agent_pos[Axis.Y] == expected_pos[Axis.Y], (
+            "OrientHorizontal action not constrained to the XZ plane."
+        )
+        # Property: the distance from the starting position to the final position
+        # should match the Law of Cosines.
+        a, b = left_distance, forward_distance
+        theta = np.deg2rad(90 - delta_theta)
+        expected_distance = np.sqrt(a**2 + b**2 - 2 * a * b * np.cos(theta))
+        np.testing.assert_allclose(
+            np.linalg.norm(agent_pos),
+            expected_distance,
+            err_msg="OrientHorizontal action does not obey the Law of Cosines.",
+        )
 
     @given(
         delta_phi=st.floats(min_value=-180.0, max_value=180.0),
@@ -466,6 +483,23 @@ class ActionsTest(TestCase):
 
         assert agent_rot.approx_equal(expected_rot)
         np.testing.assert_allclose(agent_pos, expected_pos)
+        assert agent_rot.approx_equal(expected_rot)
+        np.testing.assert_allclose(agent_pos, expected_pos)
+        # Invariant: the agent shouldn't ever leave the YZ plane as a result of
+        # an OrientHorizontal action.
+        assert agent_pos[Axis.X] == expected_pos[Axis.X], (
+            "OrientVertical action not constrained to the YZ plane."
+        )
+        # Property: the distance from the starting position to the final position
+        # should match the Law of Cosines.
+        a, b = down_distance, forward_distance
+        phi = np.deg2rad(90 - delta_phi)
+        expected_distance = np.sqrt(a**2 + b**2 - 2 * a * b * np.cos(phi))
+        np.testing.assert_allclose(
+            np.linalg.norm(agent_pos),
+            expected_distance,
+            err_msg="OrientVertical action does not obey the Law of Cosines.",
+        )
 
     @given(
         distance=st.floats(min_value=0.0, max_value=10.0),
@@ -491,8 +525,53 @@ class ActionsTest(TestCase):
 
         self.sim.step([action])
         agent_state = self.sim.states[TEST_AGENT_ID]
-        agent_pos = agent_state.position
+        agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
 
         expected_pos = direction_vector * distance
 
-        np.testing.assert_allclose(agent_pos, expected_pos)
+        np.testing.assert_allclose(agent_state.position, expected_pos)
+
+        # Invariant: MoveTangentially should not rotate the agent's orientation.
+        expected_rot = Rotation.from_euler("xyz", ZERO_VECTOR)
+        assert agent_rot.approx_equal(expected_rot), (
+            "MoveTangentially rotated the agent."
+        )
+
+    @given(
+        distance=st.floats(min_value=0.0, max_value=10.0),
+        theta=st.floats(min_value=-np.pi, max_value=np.pi),
+        invert_vector=st.booleans(),
+    )
+    @settings(deadline=None)
+    @skip_on_missing_actuate()
+    @sim_reset
+    def test_move_tangentially_obeys_inverse_property(
+        self: Self, /, distance: float, theta: float, invert_vector: bool
+    ) -> None:
+        # Offset used in the code that generates MoveTangentially actions to set
+        # the origin angle to the positive Y axis instead of the positive X axis.
+        offset = np.pi / 2
+        # Since we're starting from the origin, we can directly calculate this
+        # value without having to apply it to the agent's starting position.
+        direction_vector = np.array(
+            [np.cos(theta - offset), np.sin(theta + offset), 0.0]
+        )
+        action = MoveTangentially(
+            agent_id=TEST_AGENT_ID, distance=distance, direction=tuple(direction_vector)
+        )
+        # We can only invert one of the two values to get an inverse action, so
+        # we test both possibilties.
+        inverse_distance = distance if invert_vector else -distance
+        inverse_direction = direction_vector * -1 if invert_vector else direction_vector
+        inverse_action = MoveTangentially(
+            agent_id=TEST_AGENT_ID,
+            distance=inverse_distance,
+            direction=cast("VectorXYZ", tuple(inverse_direction)),
+        )
+
+        self.sim.step([action, inverse_action])
+        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
+
+        assert agent_rot.approx_equal(Rotation.from_quat(IDENTITY_QUATERNION))
+        np.testing.assert_allclose(ZERO_VECTOR, agent_state.position)
