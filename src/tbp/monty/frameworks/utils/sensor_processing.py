@@ -70,6 +70,8 @@ def local_ternary_pattern(
         )
 
     h, w = gray_patch.shape
+    # Use meshgrid to create a grid of coordinates that can be shifted in parallel
+    # for each neighbor comparison.
     yy, xx = np.meshgrid(
         np.arange(h, dtype=np.float32),
         np.arange(w, dtype=np.float32),
@@ -87,16 +89,21 @@ def local_ternary_pattern(
         dy = -radius * np.sin(theta)
         dx = radius * np.cos(theta)
 
-        # Perform bilinear sampling to get the neighbor value as the weighted average of
-        # the four nearest neighbors. This is useful for cases where the radius
-        # parameter does not land exactly on pixel coordinates.
+        # Use shift to determine all neighbor locations, then perform bilinear sampling
+        # to get the neighbor value as the weighted average of the four nearest pixels.
+        # This is useful for cases where the radius parameter does not land exactly on
+        # pixel coordinates.
         neighbor = bilinear_sample(gray_patch, yy + dy, xx + dx)
 
-        pos_bit = neighbor >= (gray_patch + threshold)
-        neg_bit = neighbor <= (gray_patch - threshold)
+        pos_bit = (neighbor >= (gray_patch + threshold)).astype(np.uint32)
+        neg_bit = (neighbor <= (gray_patch - threshold)).astype(np.uint32)
 
-        codes_pos |= pos_bit.astype(np.uint32) << i
-        codes_neg |= neg_bit.astype(np.uint32) << i
+        # For each pixel in the original patch shift the bit values left by i with <<
+        # operator (equivalent to multiplying by 2^i). This ensures each neighbor's bit
+        # value contributes uniquely to the final code. Then accumulate the bit values
+        # using the bitwise OR operator.
+        codes_pos |= pos_bit << i
+        codes_neg |= neg_bit << i
 
     return codes_pos, codes_neg
 
