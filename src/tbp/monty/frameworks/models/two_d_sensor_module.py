@@ -189,7 +189,7 @@ class TwoDSensorModule(SensorModule):
                 observation, self.state.rotation, self.state.position
             )
 
-        observed_state: Message = self._observation_processor.process(observation)
+        observed_state = self._observation_processor.process(observation)
 
         # Only edges define pose for 2D sensor; reset curvature-based flag.
         observed_state.morphological_features["pose_fully_defined"] = False

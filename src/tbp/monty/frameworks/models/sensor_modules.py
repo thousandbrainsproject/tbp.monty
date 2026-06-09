@@ -653,7 +653,7 @@ class CameraSM(SensorModule):
                 observation, self.state.rotation, self.state.position
             )
 
-        percept: Message = self._observation_processor.process(observation)
+        percept = self._observation_processor.process(observation)
 
         if percept.use_state:
             percept = self._message_noise(percept, rng=ctx.rng)

@@ -467,7 +467,7 @@ class RuntimeSensorModule(Protocol):
         """Update the proprioceptive state for this Sensor Module.
 
         Args:
-            agent: The proprioceptive state of the Agent.
+            agent: The proprioceptive state of this sensor module's Agent.
         """
         ...
 
@@ -485,7 +485,7 @@ class RuntimeSensorModule(Protocol):
             motor_only_step: Whether the current step is a motor-only step.
 
         Returns:
-            Percept with features and morphological features.
+            An optional percept with features and morphological features.
         """
         ...
 
@@ -493,7 +493,7 @@ class RuntimeSensorModule(Protocol):
         """Return the goals proposed by this Sensor Module.
 
         Returns:
-            A collection of proposed Goals.
+            A sequence of proposed Goals.
         """
         ...
 

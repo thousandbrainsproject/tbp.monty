@@ -39,9 +39,6 @@ class FakeSensorModule(SensorModule):
     def update_state(self, agent: AgentState) -> None:
         pass
 
-    # def set_experiment_mode(self, mode: ExperimentMode):
-    #     pass
-
     def step(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
