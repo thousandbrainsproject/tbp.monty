@@ -28,12 +28,12 @@ logger = logging.getLogger(__name__)
 FLAT_THRESHOLD = 0.001
 
 def local_ternary_pattern(
-    grey_patch: np.ndarray,
+    gray_patch: np.ndarray,
     n_neighbors: int = 8,
     radius: float = 1.0,
     threshold: float = 5.0,
 ) -> np.ndarray:
-    """Compute Local Ternary Pattern features for a greyscale image patch.
+    """Compute Local Ternary Pattern features for a grayscale image patch.
 
     This implementation leverages the standard split-LTP formulation from Tan and
     Triggs (2010):
@@ -46,17 +46,100 @@ def local_ternary_pattern(
         concat(histogram(positive_codes), histogram(negative_codes))
 
     Args:
-        grey_patch: Greyscale image patch.
+        gray_patch: grayscale image patch.
         n_neighbors: Number of neighbors to consider in the circular neighborhood.
         radius: Radius of the neighborhood in pixels.
         threshold: Threshold for the local ternary pattern.
 
     Returns:
         Local Ternary Pattern features.
-    """
 
-    pass
+    Raises:
+        ValueError: If `n_neighbors` is not positive, `radius` is not positive,
+            `threshold` is negative, or `gray_patch` is not 2D.
+    """
+    if n_neighbors <= 0:
+        raise ValueError(f"`n_neighbors` must be positive, got {n_neighbors}.")
+    if radius <= 0:
+        raise ValueError(f"`radius` must be positive, got {radius}.")
+    if threshold < 0:
+        raise ValueError(f"`threshold` must be >= 0, got {threshold}.")
+    if gray_patch.ndim != 2:
+        raise ValueError(
+            "Must provide a 2D grayscale image patch, got shape", gray_patch.shape
+        )
+
+    h, w = gray_patch.shape
+    yy, xx = np.meshgrid(
+        np.arange(h, dtype=np.float32),
+        np.arange(w, dtype=np.float32),
+        indexing="ij",
+    )
+
+    print(np.shape(yy), np.shape(xx))
+
+    codes_pos = np.zeros((h, w), dtype=np.uint32)
+    codes_neg = np.zeros((h, w), dtype=np.uint32)
+
+    # Sample the circular neighborhood, travelling clockwise.
+    for i in range(n_neighbors):
+        theta = 2.0 * np.pi * i / n_neighbors
+        dy = -radius * np.sin(theta)
+        dx = radius * np.cos(theta)
+
+        # Perform bilinear sampling to get the neighbor value as the weighted average of
+        # the four nearest neighbors. This is useful for cases where the radius
+        # parameter does not land exactly on pixel coordinates.
+        neighbor = bilinear_sample(gray_patch, yy + dy, xx + dx)
+
+        pos_bit = neighbor >= (gray_patch + threshold)
+        neg_bit = neighbor <= (gray_patch - threshold)
+
+        codes_pos |= pos_bit.astype(np.uint32) << i
+        codes_neg |= neg_bit.astype(np.uint32) << i
+
     return None
+
+def bilinear_sample(
+    image: np.ndarray,
+    y: np.ndarray,
+    x: np.ndarray,
+) -> np.ndarray:
+    """Sample image at floating-point coordinates using bilinear interpolation.
+
+    Coordinates outside the image are clipped to the nearest valid boundary.
+
+    Args:
+        image: Image to sample.
+        y: Y coordinates to sample.
+        x: X coordinates to sample.
+
+    Returns:
+        Sampled image values.
+    """
+    h, w = image.shape
+
+    y = np.clip(y, 0.0, h - 1.0)
+    x = np.clip(x, 0.0, w - 1.0)
+
+    y0 = np.floor(y).astype(np.int32)
+    x0 = np.floor(x).astype(np.int32)
+    y1 = np.clip(y0 + 1, 0, h - 1)
+    x1 = np.clip(x0 + 1, 0, w - 1)
+
+    wy = y - y0
+    wx = x - x0
+
+    top_left = image[y0, x0]
+    top_right = image[y0, x1]
+    bottom_left = image[y1, x0]
+    bottom_right = image[y1, x1]
+
+    top = top_left * (1.0 - wx) + top_right * wx
+    bottom = bottom_left * (1.0 - wx) + bottom_right * wx
+
+    return top * (1.0 - wy) + bottom * wy
+
 
 def arc_from_projection(
     tangent_projection: float,
