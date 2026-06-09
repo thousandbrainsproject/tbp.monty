@@ -2,9 +2,7 @@ experiment:
   config:
     do_eval: true
     do_train: false
-    plotter:
-      _target_: tbp.monty.frameworks.plotters.live_plotter.LivePlotter
-      interactive: true
+    plotter: null
     monty_config:
       monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
       monty_args:
