@@ -24,7 +24,9 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     arc_from_projection,
     bilinear_sample,
     directional_curvature,
+    local_ternary_pattern_and_hist,
     ltp_codes,
+    ror_encoding,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     normalize,
@@ -528,3 +530,199 @@ class LocalTernaryPatternTest(unittest.TestCase):
                     ref_pos, ref_neg = ltp_codes_loop(patch, **config)
                     npt.assert_array_equal(pos, ref_pos)
                     npt.assert_array_equal(neg, ref_neg)
+
+
+def euler_totient(n: int) -> int:
+    """Count integers in ``[1, n]`` that are coprime with ``n``.
+
+    Args:
+        n: Positive integer to evaluate.
+
+    Returns:
+        The value of Euler's totient ``phi(n)``.
+    """
+    result, d = n, 2
+    n_remaining = n
+    while d * d <= n_remaining:
+        if n_remaining % d == 0:
+            while n_remaining % d == 0:
+                n_remaining //= d
+            result -= result // d
+        d += 1
+    if n_remaining > 1:
+        result -= result // n_remaining
+    return result
+
+
+def binary_necklace_count(n_bits: int) -> int:
+    """Number of distinct binary necklaces of length ``n_bits``.
+
+    This is the count of equivalence classes of ``n_bits``-bit codes under
+    cyclic rotation, i.e. the number of rotation-invariant (ROR) bins. Given by
+    Burnside's lemma: ``(1 / n) * sum_{d | n} phi(d) * 2^(n / d)``.
+
+    Args:
+        n_bits: Length of the binary codes (the number of LTP neighbors).
+
+    Returns:
+        Number of distinct rotation classes.
+    """
+    total = sum(
+        euler_totient(d) * (2 ** (n_bits // d))
+        for d in range(1, n_bits + 1)
+        if n_bits % d == 0
+    )
+    return total // n_bits
+
+
+def rotate_right(code: int, n_bits: int) -> int:
+    """Rotate the ``n_bits`` low bits of ``code`` right by one position.
+
+    Args:
+        code: Code to rotate.
+        n_bits: Bit width of the code.
+
+    Returns:
+        The rotated code.
+    """
+    return ((code >> 1) | ((code & 1) << (n_bits - 1))) & ((1 << n_bits) - 1)
+
+
+def all_rotations(code: int, n_bits: int) -> set[int]:
+    """Return every cyclic rotation of ``code`` (``n_bits`` wide)."""
+    rotations = set()
+    current = code
+    for _ in range(n_bits):
+        rotations.add(current)
+        current = rotate_right(current, n_bits)
+    return rotations
+
+
+class RorEncodingTest(unittest.TestCase):
+    def test_known_mapping_for_four_neighbors(self):
+        # Hand-derived canonical (minimum-rotation) classes for 4-bit codes:
+        #   {0}, {1,2,4,8}, {3,6,9,12}, {5,10}, {7,11,13,14}, {15}
+        # remapped to dense bins 0..5 in ascending canonical order.
+        codes = np.arange(16, dtype=np.uint32).reshape(1, 16)
+        encoded, n_bins = ror_encoding(codes, n_neighbors=4)
+        expected = [0, 1, 1, 2, 1, 3, 2, 4, 1, 2, 3, 4, 2, 4, 4, 5]
+        npt.assert_array_equal(encoded.ravel(), expected)
+        assert n_bins == 6
+
+    def test_n_bins_equals_binary_necklace_count(self):
+        for n_neighbors in (1, 2, 3, 4, 5, 8):
+            with self.subTest(n_neighbors=n_neighbors):
+                codes = np.arange(1 << n_neighbors, dtype=np.uint32)
+                _, n_bins = ror_encoding(codes, n_neighbors=n_neighbors)
+                assert n_bins == binary_necklace_count(n_neighbors)
+
+    def test_rotations_share_a_bin(self):
+        n_neighbors = 8
+        all_codes = np.arange(1 << n_neighbors, dtype=np.uint32)
+        encoded, _ = ror_encoding(all_codes, n_neighbors=n_neighbors)
+        lut = encoded.ravel()
+        for code in (0b00010110, 0b00000001, 0b10110100, 0b01010101):
+            with self.subTest(code=code):
+                bins = {lut[r] for r in all_rotations(code, n_neighbors)}
+                assert len(bins) == 1
+
+    def test_distinct_necklaces_get_distinct_bins(self):
+        # One representative from each 4-bit rotation class -> all-distinct bins.
+        representatives = np.array([0, 1, 3, 5, 7, 15], dtype=np.uint32)
+        encoded, n_bins = ror_encoding(representatives, n_neighbors=4)
+        assert len(np.unique(encoded)) == len(representatives)
+        assert n_bins == len(representatives)
+
+    def test_preserves_shape_and_returns_int_codes(self):
+        rng = np.random.default_rng(0)
+        codes = rng.integers(0, 256, size=(5, 7)).astype(np.uint32)
+        encoded, _ = ror_encoding(codes, n_neighbors=8)
+        assert encoded.shape == codes.shape
+        assert np.issubdtype(encoded.dtype, np.integer)
+
+    def test_zero_and_all_ones_are_singleton_classes(self):
+        n_neighbors = 8
+        codes = np.array([0, (1 << n_neighbors) - 1], dtype=np.uint32)
+        encoded, n_bins = ror_encoding(codes, n_neighbors=n_neighbors)
+        # All-zeros is the smallest canonical -> first bin; all-ones is the
+        # largest canonical -> last bin.
+        assert encoded[0] == 0
+        assert encoded[1] == n_bins - 1
+
+    def test_encoded_values_within_bin_range(self):
+        all_codes = np.arange(256, dtype=np.uint32)
+        encoded, n_bins = ror_encoding(all_codes, n_neighbors=8)
+        assert encoded.min() >= 0
+        assert encoded.max() == n_bins - 1
+
+    def test_float_n_neighbors_raises_type_error(self):
+        # ISSUE: the signature annotates ``n_neighbors: float``, but the body
+        # uses ``1 << n_neighbors`` which requires an int. A genuine float
+        # therefore raises, so the annotation is misleading (should be int).
+        codes = np.arange(16, dtype=np.uint32)
+        with pytest.raises(TypeError):
+            ror_encoding(codes, n_neighbors=4.0)
+
+    def test_out_of_range_code_raises_index_error(self):
+        # ISSUE: codes are assumed to be < 2**n_neighbors; larger values index
+        # past the lookup table instead of being validated.
+        codes = np.array([16], dtype=np.uint32)  # only 0..15 valid for n=4
+        with pytest.raises(IndexError):
+            ror_encoding(codes, n_neighbors=4)
+
+
+class LocalTernaryPatternAndHistTest(unittest.TestCase):
+    def test_output_is_1d_float32(self):
+        patch = np.random.default_rng(0).uniform(0.0, 255.0, size=(8, 8))
+        hist = local_ternary_pattern_and_hist(patch, n_neighbors=8)
+        assert hist.ndim == 1
+        assert hist.dtype == np.float32
+
+    def test_length_is_twice_the_bin_count(self):
+        patch = np.random.default_rng(1).uniform(0.0, 255.0, size=(8, 8))
+        for n_neighbors in (4, 8):
+            with self.subTest(n_neighbors=n_neighbors):
+                hist = local_ternary_pattern_and_hist(patch, n_neighbors=n_neighbors)
+                assert hist.shape == (2 * binary_necklace_count(n_neighbors),)
+
+    def test_length_is_independent_of_patch_content_and_shape(self):
+        rng = np.random.default_rng(2)
+        first = local_ternary_pattern_and_hist(
+            rng.uniform(0.0, 255.0, size=(8, 8)), n_neighbors=8
+        )
+        second = local_ternary_pattern_and_hist(
+            rng.uniform(0.0, 255.0, size=(13, 4)), n_neighbors=8
+        )
+        third = local_ternary_pattern_and_hist(
+            np.zeros((5, 5)), n_neighbors=8
+        )
+        assert first.shape == second.shape == third.shape
+
+    def test_histogram_is_non_negative_and_normalized(self):
+        patch = np.random.default_rng(3).uniform(0.0, 255.0, size=(10, 10))
+        hist = local_ternary_pattern_and_hist(patch, n_neighbors=8)
+        assert np.all(hist >= 0.0)
+        # NOTE: normalization divides by (sum + 1e-6), so the result sums to
+        # *almost* 1 rather than exactly 1.
+        npt.assert_allclose(hist.sum(), 1.0, atol=1e-3)
+        assert hist.sum() <= 1.0
+
+    def test_flat_patch_mass_collapses_into_zero_bins(self):
+        # With threshold > 0 no neighbor differs from the center, so every pixel
+        # produces code 0 in both the positive and negative maps. All mass lands
+        # in the first bin of each half (indices 0 and n_bins).
+        n_bins = binary_necklace_count(8)
+        hist = local_ternary_pattern_and_hist(
+            np.full((6, 6), 50.0), n_neighbors=8, threshold=1.0
+        )
+        npt.assert_array_equal(np.flatnonzero(hist), [0, n_bins])
+
+    def test_invalid_arguments_propagate_value_errors(self):
+        with pytest.raises(ValueError, match="n_neighbors"):
+            local_ternary_pattern_and_hist(np.zeros((3, 3)), n_neighbors=0)
+        with pytest.raises(ValueError, match="radius"):
+            local_ternary_pattern_and_hist(np.zeros((3, 3)), radius=0.0)
+        with pytest.raises(ValueError, match="threshold"):
+            local_ternary_pattern_and_hist(np.zeros((3, 3)), threshold=-1.0)
+        with pytest.raises(ValueError, match="2D"):
+            local_ternary_pattern_and_hist(np.zeros((3, 3, 3)))
