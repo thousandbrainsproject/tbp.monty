@@ -27,6 +27,36 @@ logger = logging.getLogger(__name__)
 
 FLAT_THRESHOLD = 0.001
 
+def local_ternary_pattern(
+    grey_patch: np.ndarray,
+    n_neighbors: int = 8,
+    radius: float = 1.0,
+    threshold: float = 5.0,
+) -> np.ndarray:
+    """Compute Local Ternary Pattern features for a greyscale image patch.
+
+    This implementation leverages the standard split-LTP formulation from Tan and
+    Triggs (2010):
+    - Positive pattern: neighbor >= center + threshold
+    - Negative pattern: neighbor <= center - threshold
+
+    Encoding makes use of the ROR rotation-invariant encoding scheme.
+
+    The final feature vector is:
+        concat(histogram(positive_codes), histogram(negative_codes))
+
+    Args:
+        grey_patch: Greyscale image patch.
+        n_neighbors: Number of neighbors to consider in the circular neighborhood.
+        radius: Radius of the neighborhood in pixels.
+        threshold: Threshold for the local ternary pattern.
+
+    Returns:
+        Local Ternary Pattern features.
+    """
+
+    pass
+    return None
 
 def arc_from_projection(
     tangent_projection: float,
