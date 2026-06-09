@@ -221,6 +221,8 @@ ignore = [
     # TBP-specific, deliberately ignored rules
     "N818", # N818: error-suffix-on-exception-name
     "COM812", # COM812: Trailing comma missing
+    "RET501", # RET501: Do not explicitly `return None` in function if it is the only possible return value
+    "PLR1711", # PLR1711: Useless `return` statement at end of function
     # End of deliberately ignored rules
     # Original inherited flake8 ignores
     "D1", # D1XX: Missing Docstrings

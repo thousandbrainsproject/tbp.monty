@@ -433,7 +433,7 @@ class Probe(SensorModule):
                 observation, self.state.rotation, self.state.position
             )
 
-        return None  # noqa: PLR1711, RET501
+        return None
 
     def reset(self) -> None:
         self._snapshot_telemetry.reset()
