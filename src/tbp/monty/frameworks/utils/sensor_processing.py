@@ -76,7 +76,7 @@ def local_ternary_pattern(
         indexing="ij",
     )
 
-    print(np.shape(yy), np.shape(xx))
+    # print(np.shape(yy), np.shape(xx))
 
     codes_pos = np.zeros((h, w), dtype=np.uint32)
     codes_neg = np.zeros((h, w), dtype=np.uint32)
@@ -98,7 +98,7 @@ def local_ternary_pattern(
         codes_pos |= pos_bit.astype(np.uint32) << i
         codes_neg |= neg_bit.astype(np.uint32) << i
 
-    return None
+    return codes_pos, codes_neg
 
 def bilinear_sample(
     image: np.ndarray,

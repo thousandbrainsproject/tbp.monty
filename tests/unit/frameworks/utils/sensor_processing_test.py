@@ -7,6 +7,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import unittest
 from unittest.mock import Mock
 
@@ -15,11 +17,14 @@ import numpy.testing as npt
 import pytest
 from hypothesis import assume, example, given
 from hypothesis import strategies as st
+from scipy.ndimage import map_coordinates
 
 from tbp.monty.frameworks.utils.sensor_processing import (
     FLAT_THRESHOLD,
     arc_from_projection,
+    bilinear_sample,
     directional_curvature,
+    local_ternary_pattern,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     normalize,
@@ -198,3 +203,328 @@ class DirectionalCurvatureTest(unittest.TestCase):
                 pc1_dir=pc1,
                 pc2_dir=scaled_pc2,
             )
+
+
+def map_coordinates_bilinear_sample(
+    image: np.ndarray, y: np.ndarray, x: np.ndarray
+) -> np.ndarray:
+    """Reference bilinear sampler built on ``scipy.ndimage.map_coordinates``.
+
+    This mirrors ``bilinear_sample``: ``order=1`` performs bilinear interpolation
+    and ``mode="nearest"`` clamps out-of-bounds coordinates to the nearest edge.
+
+    Args:
+        image: Image to sample.
+        y: Y coordinates (row) to sample.
+        x: X coordinates (column) to sample.
+
+    Returns:
+        Sampled image values.
+    """
+    return map_coordinates(
+        image,
+        np.stack([y, x]),  # shape (2, N) -- row coords, then col coords
+        order=1,  # order=1 => bilinear
+        mode="nearest",  # clip out-of-bounds to nearest edge
+    )
+
+
+def local_ternary_pattern_loop(
+    gray_patch: np.ndarray,
+    n_neighbors: int = 8,
+    radius: float = 1.0,
+    threshold: float = 5.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Explicit, non-vectorized reference for ``local_ternary_pattern``.
+
+    Loops over every pixel and every neighbor and re-derives the bilinear
+    neighbor value one element at a time, so it shares no array-level machinery
+    with the implementation under test.
+
+    Note:
+        The implementation builds its coordinate grid as ``float32``
+        (``np.arange(..., dtype=np.float32)``), so neighbor offsets are rounded
+        to ``float32`` before sampling. We reproduce that here with explicit
+        ``np.float32`` casts; otherwise the higher-precision coordinates would
+        flip equality bits whenever a neighbor sits exactly on the threshold.
+
+    Args:
+        gray_patch: Grayscale image patch.
+        n_neighbors: Number of neighbors in the circular neighborhood.
+        radius: Radius of the neighborhood in pixels.
+        threshold: Threshold for the local ternary pattern.
+
+    Returns:
+        Tuple of ``(codes_pos, codes_neg)`` code maps.
+    """
+    h, w = gray_patch.shape
+    codes_pos = np.zeros((h, w), dtype=np.uint32)
+    codes_neg = np.zeros((h, w), dtype=np.uint32)
+
+    for y in range(h):
+        for x in range(w):
+            center = gray_patch[y, x]
+            for i in range(n_neighbors):
+                theta = 2.0 * np.pi * i / n_neighbors
+                ny = np.float32(y) + np.float32(-radius * np.sin(theta))
+                nx = np.float32(x) + np.float32(radius * np.cos(theta))
+
+                # Clamp to the valid image region (matches np.clip in the impl).
+                ny = min(max(ny, 0.0), h - 1.0)
+                nx = min(max(nx, 0.0), w - 1.0)
+
+                y0 = int(np.floor(ny))
+                x0 = int(np.floor(nx))
+                y1 = min(y0 + 1, h - 1)
+                x1 = min(x0 + 1, w - 1)
+                wy = ny - y0
+                wx = nx - x0
+
+                top = gray_patch[y0, x0] * (1.0 - wx) + gray_patch[y0, x1] * wx
+                bottom = gray_patch[y1, x0] * (1.0 - wx) + gray_patch[y1, x1] * wx
+                neighbor = top * (1.0 - wy) + bottom * wy
+
+                if neighbor >= center + threshold:
+                    codes_pos[y, x] |= np.uint32(1) << i
+                if neighbor <= center - threshold:
+                    codes_neg[y, x] |= np.uint32(1) << i
+
+    return codes_pos, codes_neg
+
+
+class BilinearSampleTest(unittest.TestCase):
+    def test_integer_coordinates_return_exact_pixels(self):
+        image = np.arange(12, dtype=np.float64).reshape(3, 4)
+        y, x = np.meshgrid(np.arange(3.0), np.arange(4.0), indexing="ij")
+        sampled = bilinear_sample(image, y.ravel(), x.ravel())
+        npt.assert_allclose(sampled, image.ravel())
+
+    def test_midpoint_between_two_pixels_is_their_average(self):
+        image = np.array([[0.0, 10.0], [20.0, 30.0]])
+        # Halfway along the top row -> mean(0, 10) = 5.
+        npt.assert_allclose(
+            bilinear_sample(image, np.array([0.0]), np.array([0.5])), [5.0]
+        )
+        # Halfway down the left column -> mean(0, 20) = 10.
+        npt.assert_allclose(
+            bilinear_sample(image, np.array([0.5]), np.array([0.0])), [10.0]
+        )
+
+    def test_center_of_2x2_is_mean_of_four_corners(self):
+        image = np.array([[0.0, 10.0], [20.0, 30.0]])
+        npt.assert_allclose(
+            bilinear_sample(image, np.array([0.5]), np.array([0.5])), [15.0]
+        )
+
+    def test_known_weighted_interpolation(self):
+        # Sample (y=0.25, x=0.75) on a 2x2 patch.
+        #   top    = 0 * 0.25 + 10 * 0.75 = 7.5
+        #   bottom = 20 * 0.25 + 30 * 0.75 = 27.5
+        #   value  = 7.5 * 0.75 + 27.5 * 0.25 = 12.5
+        image = np.array([[0.0, 10.0], [20.0, 30.0]])
+        npt.assert_allclose(
+            bilinear_sample(image, np.array([0.25]), np.array([0.75])), [12.5]
+        )
+
+    def test_out_of_bounds_clamps_to_nearest_edge(self):
+        image = np.array([[0.0, 10.0], [20.0, 30.0]])
+        # Far past every edge -> the respective corner pixel.
+        npt.assert_allclose(
+            bilinear_sample(image, np.array([-5.0]), np.array([-5.0])), [0.0]
+        )
+        npt.assert_allclose(
+            bilinear_sample(image, np.array([99.0]), np.array([99.0])), [30.0]
+        )
+        # Out of bounds on one axis only still interpolates the other axis.
+        npt.assert_allclose(
+            bilinear_sample(image, np.array([-1.0]), np.array([0.5])), [5.0]
+        )
+
+    def test_preserves_input_shape(self):
+        image = np.arange(25, dtype=np.float64).reshape(5, 5)
+        y = np.full((3, 2), 1.5)
+        x = np.full((3, 2), 2.5)
+        assert bilinear_sample(image, y, x).shape == (3, 2)
+
+
+class BilinearSampleVsMapCoordinatesTest(unittest.TestCase):
+    """Compare ``bilinear_sample`` against the ``map_coordinates`` reference."""
+
+    def test_equivalent_for_in_bounds_float_coordinates(self):
+        rng = np.random.default_rng(0)
+        image = rng.uniform(0.0, 255.0, size=(7, 9))
+        y = rng.uniform(0.0, 6.0, size=500)
+        x = rng.uniform(0.0, 8.0, size=500)
+        npt.assert_allclose(
+            bilinear_sample(image, y, x),
+            map_coordinates_bilinear_sample(image, y, x),
+            atol=1e-12,
+        )
+
+    def test_equivalent_for_out_of_bounds_float_coordinates(self):
+        # np.clip on the coordinates is equivalent to map_coordinates'
+        # per-axis "nearest" clamping for separable bilinear interpolation,
+        # so the two agree even outside the image.
+        rng = np.random.default_rng(1)
+        image = rng.uniform(0.0, 255.0, size=(7, 9))
+        y = rng.uniform(-4.0, 10.0, size=500)
+        x = rng.uniform(-4.0, 12.0, size=500)
+        npt.assert_allclose(
+            bilinear_sample(image, y, x),
+            map_coordinates_bilinear_sample(image, y, x),
+            atol=1e-12,
+        )
+
+    def test_equivalent_on_dense_coordinate_sweep(self):
+        rng = np.random.default_rng(2)
+        image = rng.uniform(0.0, 1.0, size=(5, 5))
+        gy, gx = np.meshgrid(
+            np.linspace(-1.0, 5.0, 40), np.linspace(-1.0, 5.0, 40), indexing="ij"
+        )
+        npt.assert_allclose(
+            bilinear_sample(image, gy, gx),
+            map_coordinates_bilinear_sample(image, gy, gx),
+            atol=1e-12,
+        )
+
+    def test_deviates_for_integer_images(self):
+        # This is the one place the two implementations disagree:
+        # map_coordinates defaults its output dtype to the input dtype, so an
+        # integer image is interpolated in integer arithmetic, whereas
+        # bilinear_sample always returns floating-point values.
+        rng = np.random.default_rng(3)
+        float_image = rng.uniform(0.0, 255.0, size=(6, 6))
+        int_image = float_image.astype(np.int64)
+        y = rng.uniform(0.0, 5.0, size=200)
+        x = rng.uniform(0.0, 5.0, size=200)
+
+        impl = bilinear_sample(int_image, y, x)
+        reference = map_coordinates_bilinear_sample(int_image, y, x)
+
+        assert np.issubdtype(impl.dtype, np.floating)
+        assert np.issubdtype(reference.dtype, np.integer)
+        # They genuinely differ at fractional sample points...
+        assert np.any(np.abs(impl - reference) > 1e-9)
+        # ...but only because of integer rounding (bounded below one unit).
+        assert np.max(np.abs(impl - reference)) < 1.0
+
+    def test_integer_deviation_disappears_when_image_is_float(self):
+        # Casting the same integer values to float removes the disagreement.
+        rng = np.random.default_rng(3)
+        int_image = rng.uniform(0.0, 255.0, size=(6, 6)).astype(np.int64)
+        float_image = int_image.astype(np.float64)
+        y = rng.uniform(0.0, 5.0, size=200)
+        x = rng.uniform(0.0, 5.0, size=200)
+        npt.assert_allclose(
+            bilinear_sample(float_image, y, x),
+            map_coordinates_bilinear_sample(float_image, y, x),
+            atol=1e-12,
+        )
+
+
+class LocalTernaryPatternTest(unittest.TestCase):
+    def test_invalid_n_neighbors_raises(self):
+        with pytest.raises(ValueError, match="n_neighbors"):
+            local_ternary_pattern(np.zeros((3, 3)), n_neighbors=0)
+
+    def test_invalid_radius_raises(self):
+        with pytest.raises(ValueError, match="radius"):
+            local_ternary_pattern(np.zeros((3, 3)), radius=0.0)
+
+    def test_negative_threshold_raises(self):
+        with pytest.raises(ValueError, match="threshold"):
+            local_ternary_pattern(np.zeros((3, 3)), threshold=-1.0)
+
+    def test_non_2d_patch_raises(self):
+        with pytest.raises(ValueError, match="2D"):
+            local_ternary_pattern(np.zeros((3, 3, 3)))
+
+    def test_output_shape_and_dtype(self):
+        patch = np.zeros((4, 5))
+        codes_pos, codes_neg = local_ternary_pattern(patch, n_neighbors=8)
+        assert codes_pos.shape == (4, 5)
+        assert codes_neg.shape == (4, 5)
+        assert codes_pos.dtype == np.uint32
+        assert codes_neg.dtype == np.uint32
+
+    def test_known_cross_pattern_center(self):
+        # Center (30) is darker than all four axis neighbors (50), so with
+        # n_neighbors=4 every positive bit is set: 0b1111 = 15, and no
+        # negative bit is set.
+        patch = np.array(
+            [[10.0, 50.0, 10.0], [50.0, 30.0, 50.0], [10.0, 50.0, 10.0]]
+        )
+        codes_pos, codes_neg = local_ternary_pattern(
+            patch, n_neighbors=4, radius=1.0, threshold=0.0
+        )
+        assert codes_pos[1, 1] == 0b1111
+        assert codes_neg[1, 1] == 0
+
+    def test_known_single_direction_bright(self):
+        # Only the right neighbor (bit 0 for n_neighbors=4) is brighter.
+        patch = np.array(
+            [[0.0, 0.0, 0.0], [0.0, 0.0, 100.0], [0.0, 0.0, 0.0]]
+        )
+        codes_pos, codes_neg = local_ternary_pattern(
+            patch, n_neighbors=4, radius=1.0, threshold=5.0
+        )
+        assert codes_pos[1, 1] == 0b0001
+        assert codes_neg[1, 1] == 0
+
+    def test_known_single_direction_dark(self):
+        # Center bright, only the right neighbor is darker -> negative bit 0.
+        patch = np.array(
+            [[100.0, 100.0, 100.0], [100.0, 100.0, 0.0], [100.0, 100.0, 100.0]]
+        )
+        codes_pos, codes_neg = local_ternary_pattern(
+            patch, n_neighbors=4, radius=1.0, threshold=5.0
+        )
+        assert codes_pos[1, 1] == 0
+        assert codes_neg[1, 1] == 0b0001
+
+    def test_center_darker_than_all_neighbors_sets_every_positive_bit(self):
+        patch = np.full((3, 3), 100.0)
+        patch[1, 1] = 0.0
+        codes_pos, codes_neg = local_ternary_pattern(
+            patch, n_neighbors=8, radius=1.0, threshold=5.0
+        )
+        # All eight positive bits set, no negative bits.
+        assert codes_pos[1, 1] == 0b11111111
+        assert codes_neg[1, 1] == 0
+
+    def test_center_brighter_than_all_neighbors_sets_every_negative_bit(self):
+        patch = np.zeros((3, 3))
+        patch[1, 1] = 100.0
+        codes_pos, codes_neg = local_ternary_pattern(
+            patch, n_neighbors=8, radius=1.0, threshold=5.0
+        )
+        assert codes_pos[1, 1] == 0
+        assert codes_neg[1, 1] == 0b11111111
+
+    def test_flat_patch_with_threshold_sets_no_bits(self):
+        # No neighbor differs from the center by more than the threshold.
+        patch = np.full((5, 5), 42.0)
+        codes_pos, codes_neg = local_ternary_pattern(
+            patch, n_neighbors=8, radius=1.0, threshold=1.0
+        )
+        npt.assert_array_equal(codes_pos, np.zeros((5, 5), dtype=np.uint32))
+        npt.assert_array_equal(codes_neg, np.zeros((5, 5), dtype=np.uint32))
+
+    def test_matches_non_vectorized_loop(self):
+        rng = np.random.default_rng(7)
+        configs = [
+            dict(n_neighbors=8, radius=1.0, threshold=5.0),
+            dict(n_neighbors=4, radius=1.0, threshold=0.0),
+            dict(n_neighbors=8, radius=2.0, threshold=3.0),
+            dict(n_neighbors=12, radius=1.5, threshold=10.0),
+            dict(n_neighbors=16, radius=2.5, threshold=0.0),
+        ]
+        shapes = [(6, 7), (5, 5), (8, 4), (3, 9)]
+        for config in configs:
+            for shape in shapes:
+                with self.subTest(config=config, shape=shape):
+                    patch = rng.uniform(0.0, 255.0, size=shape)
+                    pos, neg = local_ternary_pattern(patch, **config)
+                    ref_pos, ref_neg = local_ternary_pattern_loop(patch, **config)
+                    npt.assert_array_equal(pos, ref_pos)
+                    npt.assert_array_equal(neg, ref_neg)
