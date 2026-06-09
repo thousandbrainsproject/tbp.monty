@@ -58,7 +58,7 @@ PRIMITIVE_OBJECTS = {
     "sphere": mjtGeom.mjGEOM_SPHERE,
 }
 
-DEFAULT_RESOLUTION = Resolution2D((64, 64))
+DEFAULT_RESOLUTION = Resolution2D(width=64, height=64)
 
 
 MuJoCoAgentFactory = Callable[["MuJoCoSimulator"], Agent]
@@ -83,6 +83,15 @@ class DataPathNotConfigured(RuntimeError):
 class ActuateMethodMissing(RuntimeError):
     """The simulator applied an action to an agent that lacks that actuate method."""
 
+    agent_class: type
+    method_name: str
+
+    def __init__(self, agent_class: type, method_name: str) -> None:
+        msg = f"{agent_class.__name__} does not understand '{method_name}'"
+        super().__init__(msg)
+        self.agent_class = agent_class
+        self.method_name = method_name
+
 
 class MuJoCoSimulator(SimulatedObjectEnvironment):
     """Simulator implementation for MuJoCo.
@@ -94,6 +103,18 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     To allow programmatic editing of the scene, we're using an MjSpec that we will
     recompile the model and data from whenever an object is added or removed.
     """
+
+    spec: MjSpec
+    model: MjModel
+    data: MjData
+
+    _data_path: Path | None
+    _raise_actuate_missing: bool
+    _agent_partials: Sequence[MuJoCoAgentFactory]
+    _agents: dict[AgentID, Agent]
+    _loaded_custom_types: set[str]
+    _object_count: int
+    _renderers: dict[tuple[int, int], Renderer]
 
     def __init__(
         self,
@@ -111,17 +132,14 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             raise_actuate_missing: whether to raise an exception when an agent
               does not have an actuate method for an Action.
         """
-        if agents is None:
-            agents: Sequence[MuJoCoAgentFactory] = []
-
         self.spec = MjSpec()
-        self.model: MjModel = self.spec.compile()
+        self.model = self.spec.compile()
         self.data = MjData(self.model)
-        self.data_path = Path(data_path) if data_path else None
+        self._data_path = Path(data_path) if data_path else None
         self._raise_actuate_missing = raise_actuate_missing
 
-        self._agent_partials = agents
-        self._agents: dict[AgentID, Agent] = {}
+        self._agent_partials = [] if agents is None else agents
+        self._agents = {}
         self._create_agents()
         self._loaded_custom_types: set[str] = set()
 
@@ -130,7 +148,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # of the agents, especially when we start to add more structure to them.
         self._object_count = 0
 
-        self._renderers: dict[Resolution2D, Renderer] = {}
+        self._renderers = {}
         self._recompile()
 
     def _recompile(self) -> None:
@@ -144,7 +162,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # Step the simulation so all objects are in their initial positions.
         mj_forward(self.model, self.data)
 
-    def _configure_spec_settings(self):
+    def _configure_spec_settings(self) -> None:
         """Set all the relevant global settings on the spec object."""
         self.spec.option.gravity = (0.0, 0.0, 0.0)
         # Configure the maximum rendering resolution for the off-screen buffer.
@@ -154,9 +172,10 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         if self._agents:
             render_resolution = self._max_sensor_resolution()
         g = self.spec.visual.global_
-        g.offwidth, g.offheight = render_resolution
+        g.offheight = render_resolution["height"]
+        g.offwidth = render_resolution["width"]
 
-    def _configure_lights(self):
+    def _configure_lights(self) -> None:
         """Configure the lights as needed.
 
         We're attempting to recreate the lighting setup we were getting from Habitat,
@@ -192,11 +211,12 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         Returns:
             a renderer of the specified resolution
         """
-        if resolution not in self._renderers:
-            self._renderers[resolution] = Renderer(
-                width=resolution[0], height=resolution[1], model=self.model
+        resolution_key = (resolution["height"], resolution["width"])
+        if resolution_key not in self._renderers:
+            self._renderers[resolution_key] = Renderer(
+                height=resolution["height"], width=resolution["width"], model=self.model
             )
-        return self._renderers[resolution]
+        return self._renderers[resolution_key]
 
     def _create_agents(self) -> None:
         self._agents = {}
@@ -221,13 +241,13 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # configs were, so we can determine the maximum resolution needed.
         sensor_configs = [
             p.keywords["sensor_configs"]
-            for p in cast("list[partial]", self._agent_partials)
+            for p in cast("list[partial[Agent]]", self._agent_partials)
         ]
         for sensor_cfg in sensor_configs:
             for sensor in sensor_cfg.values():
-                max_width = max(max_width, sensor["resolution"][0])
-                max_height = max(max_height, sensor["resolution"][1])
-        return Resolution2D((max_width, max_height))
+                max_height = max(max_height, sensor["resolution"]["height"])
+                max_width = max(max_width, sensor["resolution"]["width"])
+        return Resolution2D(height=max_height, width=max_width)
 
     def remove_all_objects(self) -> None:
         self.spec = MjSpec()
@@ -276,7 +296,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         position: VectorXYZ,
         rotation: QuaternionWXYZ,
         scale: VectorXYZ,
-    ):
+    ) -> None:
         """Adds a custom object loaded from the data_path to the scene.
 
         This assumes that each object's files are stored in a directory in the
@@ -325,12 +345,12 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             MissingObjectTexture: When the texture map is missing.
             MissingObjectModel: When the object is missing.
         """
-        if not self.data_path:
+        if not self._data_path:
             raise DataPathNotConfigured(
                 "Cannot load custom objects in simulator, "
                 "'data_path' is not configured."
             )
-        path = self.data_path / object_type
+        path = self._data_path / object_type
         texture_path = path / "texture_map.png"
         model_path = path / "textured.obj"
 
@@ -417,7 +437,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     def step(
         self, actions: Sequence[Action]
     ) -> tuple[Observations, ProprioceptiveState]:
-        logger.debug(f"{actions=}")
         for action in actions:
             agent = self._agents[action.agent_id]
             logger.debug(f"Applying {action} to {agent}")
@@ -426,9 +445,11 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             except AttributeError as exc:
                 # Only catch missing actuate methods, propagate any other errors
                 if exc.name and exc.name.startswith("actuate_"):
-                    msg = f"{exc.obj} does not understand '{exc.name}'"
                     if self._raise_actuate_missing:
-                        raise ActuateMethodMissing(msg) from None
+                        raise ActuateMethodMissing(
+                            agent_class=exc.obj.__class__, method_name=exc.name
+                        ) from None
+                    msg = f"{exc.obj} does not understand {exc.name}"
                     logger.warning(msg)
                     continue
                 raise
@@ -444,7 +465,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     def close(self) -> None:
         self._close_renderers()
 
-    def _close_renderers(self):
+    def _close_renderers(self) -> None:
         for renderer in self._renderers.values():
             renderer.close()
         self._renderers = {}

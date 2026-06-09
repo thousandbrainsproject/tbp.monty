@@ -14,7 +14,7 @@ learning_module_0:
     max_nneighbors: 10
   feature_weights:
     patch_0:
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
   tolerances:
     patch_0:
       hsv: ${np.array:[0.1, 0.2, 0.2]}
@@ -33,7 +33,7 @@ learning_module_1:
     max_nneighbors: 10
   feature_weights:
     patch_1:
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
   tolerances:
     patch_1:
       hsv: ${np.array:[0.1, 0.2, 0.2]}
@@ -52,7 +52,7 @@ learning_module_2:
     max_nneighbors: 10
   feature_weights:
     patch_2:
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
   tolerances:
     patch_2:
       hsv: ${np.array:[0.1, 0.2, 0.2]}
@@ -71,7 +71,7 @@ learning_module_3:
     max_nneighbors: 10
   feature_weights:
     patch_3:
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
   tolerances:
     patch_3:
       hsv: ${np.array:[0.1, 0.2, 0.2]}
@@ -90,7 +90,7 @@ learning_module_4:
     max_nneighbors: 10
   feature_weights:
     patch_4:
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
   tolerances:
     patch_4:
       hsv: ${np.array:[0.1, 0.2, 0.2]}

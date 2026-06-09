@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import ClassVar
+from typing import Any, ClassVar, Collection, Sequence
 
 import numpy as np
 import torch
@@ -34,6 +34,7 @@ from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.geometry import Rotation
+from tbp.monty.memento import Memento
 
 __all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
 
@@ -197,7 +198,7 @@ class MontyForGraphMatching(MontyBase):
     def load_state_dict_from_parallel(self, parallel_dirs, save=False):
         lm_dict = {}
         for pdir in parallel_dirs:
-            state_dict = torch.load(pdir / "model.pt")
+            state_dict = torch.load(pdir / "model.pt", weights_only=False)
             for lm in state_dict["lm_dict"]:
                 if lm not in lm_dict:
                     lm_dict[lm] = dict(
@@ -222,7 +223,9 @@ class MontyForGraphMatching(MontyBase):
                 # TODO: handle target to graph id stuff here, but ignoring for now
 
         # Everything but lm dict for saving new model
-        new_state_dict = {k: v for k, v in state_dict.items() if k != "lm_dict"}
+        new_state_dict: Memento = {
+            k: v for k, v in state_dict.items() if k != "lm_dict"
+        }
         new_state_dict["lm_dict"] = lm_dict
         load_dir = parallel_dirs[0].parent
 
@@ -239,7 +242,7 @@ class MontyForGraphMatching(MontyBase):
         for i in range(len(self.learning_modules)):
             sensory_inputs = self._collect_inputs_to_lm(i)
             # If LM has any inputs, take a step
-            if sensory_inputs is not None:
+            if sensory_inputs:
                 self._set_stepwise_targets(self.learning_modules[i], sensory_inputs)
 
                 if self.step_type == "matching_step":
@@ -602,13 +605,13 @@ class GraphLM(LearningModule):
     def matching_step(
         self,
         ctx: RuntimeContext,
-        observations,
-    ):
+        percepts: Sequence[Message],
+    ) -> None:
         """Update the possible matches given an observation."""
         first_movement_detected = self._agent_moved_since_reset()
-        buffer_data = self._add_displacements(observations)
+        buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
-        self.buffer.append_input_percepts(observations)
+        self.buffer.append_input_percepts(percepts)
 
         if first_movement_detected:
             logger.debug("performing matching step.")
@@ -616,14 +619,14 @@ class GraphLM(LearningModule):
             logger.debug("we have not moved yet.")
 
         self._compute_possible_matches(
-            ctx, observations, first_movement_detected=first_movement_detected
+            ctx, percepts, first_movement_detected=first_movement_detected
         )
 
         if len(self.get_possible_matches()) == 0:
             self.set_individual_ts(terminal_state="no_match")
 
         if self.gsg is not None:
-            self.gsg.step(ctx, observations)
+            self.gsg.step(ctx, percepts)
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
@@ -631,12 +634,12 @@ class GraphLM(LearningModule):
     def exploratory_step(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
-        observations,
-    ):
+        percepts: Sequence[Message],
+    ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
-        buffer_data = self._add_displacements(observations)
+        buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
-        self.buffer.append_input_percepts(observations)
+        self.buffer.append_input_percepts(percepts)
 
     def update_ltm_from_stm(self):
         """If training, update memory from buffer."""
@@ -649,7 +652,7 @@ class GraphLM(LearningModule):
         if self.mode is ExperimentMode.TRAIN and len(self.buffer) > 0:
             self._update_target_graph_mapping(self.detected_object, self.primary_target)
 
-    def send_out_vote(self):
+    def send_out_vote(self) -> Any:
         """Send out list of objects that are not possible matches.
 
         By sending out the negative matches we avoid the problem that
@@ -668,30 +671,28 @@ class GraphLM(LearningModule):
         )
         return vote
 
-    def receive_votes(self, vote_data):
+    def receive_votes(self, votes: Collection[Any]) -> None:
         """Remove object ids that come in from the votes.
 
         Args:
-            vote_data: set of objects that other LMs excluded from possible matches
+            votes: set of objects that other LMs excluded from possible matches
         """
-        if (vote_data is not None) and (
-            self.buffer.get_num_observations_on_object() > 0
-        ):
+        if votes and (self.buffer.get_num_observations_on_object() > 0):
             current_possible_matches = self.get_possible_matches()
-            for vote in vote_data:
+            for vote in votes:
                 if vote in current_possible_matches:
                     logger.debug(f"REMOVING {vote} FROM MATCHES")
                     self.possible_matches.pop(vote)
-            self._add_votes_to_buffer_stats(vote_data)
+            self._add_votes_to_buffer_stats(votes)
 
-    def get_output(self):
+    def get_output(self) -> Message | None:
         """Return the output of the learning module.
 
         Is currently only implemented for the evidence LM since the other LM versions
         do not have a notion of MLH and therefore can't produce an output until the last
         step of the episode.
         """
-        pass
+        return None
 
     def propose_goals(self) -> list[Goal]:
         """Return the goals proposed by this LM's GSG.
@@ -922,27 +923,17 @@ class GraphLM(LearningModule):
             dict(lm_processed_steps=lm_processed), update_time=False
         )
 
-    def state_dict(self):
-        """Get the full state dict for logging and saving.
-
-        Returns:
-            Full state dict for logging and saving.
-        """
+    def state_dict(self) -> Memento:
         return dict(
             graph_memory=self.graph_memory.state_dict(),
             target_to_graph_id=self.target_to_graph_id,
             graph_id_to_target=self.graph_id_to_target,
         )
 
-    def load_state_dict(self, state_dict):
-        """Load state dict.
-
-        Args:
-            state_dict: State dict to load.
-        """
-        self.graph_memory.load_state_dict(state_dict["graph_memory"])
-        self.target_to_graph_id = state_dict["target_to_graph_id"]
-        self.graph_id_to_target = state_dict["graph_id_to_target"]
+    def load_state_dict(self, memento: Memento) -> None:
+        self.graph_memory.load_state_dict(memento["graph_memory"])
+        self.target_to_graph_id = memento["target_to_graph_id"]
+        self.graph_id_to_target = memento["graph_id_to_target"]
 
     # ======================= Private ==========================
 
@@ -1008,7 +999,7 @@ class GraphLM(LearningModule):
 
     # ------------------------ Helper --------------------------
 
-    def _add_displacements(self, percepts: list[Message]) -> list[Message]:
+    def _add_displacements(self, percepts: Sequence[Message]) -> Sequence[Message]:
         """Compute and add a single displacement vector to all percepts.
 
         Computes one displacement by comparing the current average SM location from
@@ -1285,19 +1276,17 @@ class GraphMemory(LMMemory):
                 node_features[key] = feature
         return node_features
 
-    def state_dict(self):
-        """Return state_dict."""
-        return self.models_in_memory
-
     def __len__(self):
         """Return number of graphs in memory."""
         return len(self.get_memory_ids())
 
     # ------------------ Logging & Saving ----------------------
-    def load_state_dict(self, state_dict):
-        """Load graphs from state dict and add to memory."""
+    def state_dict(self) -> Memento:
+        return self.models_in_memory
+
+    def load_state_dict(self, memento: Memento) -> None:
         logger.info("loading models")
-        for obj_name, model in state_dict.items():
+        for obj_name, model in memento.items():
             logger.info(f"loading {obj_name} with features from {model.keys()}")
             # Add loaded graph to memory
             self._add_graph_to_memory(model, obj_name)

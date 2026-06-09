@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import ClassVar, Sequence
 
-from tbp.monty.cmp import Goal
+from tbp.monty.cmp import Goal, Message
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
@@ -24,6 +24,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.memento import Memento
 
 __all__ = ["MontyBase"]
 
@@ -234,7 +235,7 @@ class MontyBase(Monty):
             sensory_inputs = self._collect_inputs_to_lm(i)
             getattr(self.learning_modules[i], self.step_type)(ctx, sensory_inputs)
 
-    def _collect_inputs_to_lm(self, lm_id):
+    def _collect_inputs_to_lm(self, lm_id: int) -> list[Message]:
         """Use sm_to_lm_matrix and lm_to_lm_matrix to collect inputs to LM i.
 
         Args:
@@ -255,8 +256,10 @@ class MontyBase(Monty):
         # Combine sensory inputs from SMs and LMs to LM i
         return self._combine_inputs(sensory_inputs_from_sms, sensory_inputs_from_lms)
 
-    def _combine_inputs(self, inputs_from_sms, inputs_from_lms) -> dict | None:
-        """Combine all inputs to an LM into one dict.
+    def _combine_inputs(
+        self, inputs_from_sms: Sequence[Message], inputs_from_lms: Sequence[Message]
+    ) -> list[Message]:
+        """Combine all inputs to an LM into one list of Messages.
 
         An LM only receives input from another LM if it also receives input from
         an SM. This makes sure that we keep a coarser resolution in the higher
@@ -268,13 +271,13 @@ class MontyBase(Monty):
         in a good way, combine_input or LM selection may have to become part of LM class
 
         Args:
-            inputs_from_sms: List of dicts of SM outputs.
-            inputs_from_lms: List of dicts of LM outputs.
+            inputs_from_sms: Sequence of Messages from SMs.
+            inputs_from_lms: Sequence of Messages from LMs.
 
         Returns:
-            Combined features and location from all inputs with interesting features.
+            Combined list of Messages from all inputs with interesting features.
             If there are no inputs or none of them are deemed interesting (i.e. off
-            object or low confidence LM) this returns None.
+            object or low confidence LM) this returns an empty list.
         """
         combined_inputs = [
             inputs_from_sms[i]
@@ -283,7 +286,7 @@ class MontyBase(Monty):
         ]
         if len(combined_inputs) == 0:
             # If we have no sensory input, we also don't use LM input
-            return None
+            return combined_inputs
 
         for lm_input in inputs_from_lms:
             if lm_input.use_state:
@@ -399,15 +402,15 @@ class MontyBase(Monty):
     # Methods for saving and loading
     ###
 
-    def load_state_dict(self, state_dict):
-        assert len(state_dict["lm_dict"]) == len(self.learning_modules)
+    def load_state_dict(self, memento: Memento) -> None:
+        assert len(memento["lm_dict"]) == len(self.learning_modules)
         lm_counter = 0
-        lm_dict = state_dict["lm_dict"]
+        lm_dict = memento["lm_dict"]
         for lm_key in lm_dict:
             self.learning_modules[lm_counter].load_state_dict(lm_dict[lm_key])
             lm_counter = lm_counter + 1
 
-    def state_dict(self):
+    def state_dict(self) -> Memento:
         lm_dict = {
             i: module.state_dict() for i, module in enumerate(self.learning_modules)
         }

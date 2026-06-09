@@ -133,11 +133,11 @@ class BaseConfigTest(unittest.TestCase):
 
         exp = hydra.utils.instantiate(config_1["experiment"])
         with exp:
-            # change something about exp.state that will be saved via state_dict
+            # change something about exp.state that will be saved via save_state_dir
             new_attr = False
             exp.model.learning_modules[0].test_attr_2 = new_attr
 
-            exp.save_state_dict()
+            exp.save_state_dir()
             prev_model = exp.model
 
         config_2: Mapping = OmegaConf.to_object(  # ignore: type[assignment]
@@ -156,8 +156,8 @@ class BaseConfigTest(unittest.TestCase):
             new_lm = exp_2.model.learning_modules[0]
             self.assertEqual(new_lm.test_attr_2, new_attr, "attrs did not match")
 
-            # Use explicit load_state_dict function instead of setup_experiment
-            exp_2.load_state_dict(exp.output_dir)
+            # Use explicit load_state_dir function instead of setup_experiment
+            exp_2.load_state_dir(exp.output_dir)
 
             # Test 1: untouched attributes are saved and loaded correctly
             prev_attr_1_value = prev_model.learning_modules[0].test_attr_1

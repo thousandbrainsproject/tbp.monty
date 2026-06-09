@@ -24,6 +24,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
+from tbp.monty.memento import Memento
 
 if TYPE_CHECKING:
     from tbp.monty.frameworks.models.motor_policies import MotorPolicy
@@ -93,7 +94,7 @@ class MotorSystem:
             z_defined_pc=[],
         )
 
-    def state_dict(self) -> dict[str, Any]:
+    def state_dict(self) -> Memento:
         return self._policy_selector.state_dict()
 
     def __call__(

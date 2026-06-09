@@ -56,7 +56,7 @@ def make_message(
     if pose_vectors is None:
         pose_vectors = np.identity(3)
     if principal_curvatures is None:
-        principal_curvatures = np.identity(3)
+        principal_curvatures = np.zeros(2)
 
     morphological_features = {
         "pose_vectors": pose_vectors,

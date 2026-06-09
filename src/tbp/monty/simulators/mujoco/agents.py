@@ -21,6 +21,9 @@ from tbp.monty.frameworks.actions.actions import (
     LookDown,
     LookUp,
     MoveForward,
+    MoveTangentially,
+    OrientHorizontal,
+    OrientVertical,
     SetAgentPose,
     SetSensorRotation,
     TurnLeft,
@@ -128,7 +131,7 @@ class Embodiment(Agent):
                 name=f"{self.id}.{sensor_id}",
                 pos=sensor_cfg["position"],
                 quat=sensor_cfg["rotation"],
-                resolution=sensor_cfg["resolution"],
+                # Camera resolution isn't used in MuJoCo, so we're not setting it.
                 fovy=DEFAULT_CAMERA_FOVY / sensor_cfg["zoom"],
             )
 
@@ -240,22 +243,30 @@ class Embodiment(Agent):
         delta_theta_rot = Rotation.from_euler("xyz", (0, delta_theta, 0), degrees=True)
         rotation = Rotation.from_quat(self.rotation)
         new_rotation = rotation * delta_theta_rot
-        self.rotation = new_rotation.as_quat()
+        self.rotation = cast("QuaternionWXYZ", tuple(new_rotation.as_quat()))
 
-    def pitch(self, delta_phi: float, constraint: float) -> None:
+    def pitch(self, delta_phi: float) -> None:
+        """Pitch the embodiment by delta_phi degrees."""
+        delta_phi_rot = Rotation.from_euler("xyz", (delta_phi, 0, 0), degrees=True)
+        rotation = Rotation.from_quat(self.rotation)
+        new_rotation = rotation * delta_phi_rot
+        self.rotation = cast("QuaternionWXYZ", tuple(new_rotation.as_quat()))
+
+    def pitch_sensor(self, delta_phi: float, constraint: float | None) -> None:
         """Pitch the sensor body by delta_phi degrees while remaining constrained.
 
         Note: this DOES NOT change the orientation of the embodiment.
         """
-        new_pitch = self._sensor_pitch + delta_phi
+        if constraint is not None:
+            # If the new pitch is outside the constrained range, we want to
+            # calculate the maximum amount of movement we can do while staying
+            # within the range.
+            new_pitch = self._sensor_pitch + delta_phi
 
-        # If the new pitch is outside the constrained range, we want to
-        # calculate the maximum amount of movement we can do while staying
-        # within the range.
-        if new_pitch > constraint:
-            delta_phi = constraint - self._sensor_pitch
-        elif new_pitch < -constraint:
-            delta_phi = -constraint - self._sensor_pitch
+            if new_pitch > constraint:
+                delta_phi = constraint - self._sensor_pitch
+            elif new_pitch < -constraint:
+                delta_phi = -constraint - self._sensor_pitch
 
         self._sensor_pitch += delta_phi
 
@@ -263,7 +274,7 @@ class Embodiment(Agent):
         """Set the location and rotation of the embodiment to the provided values."""
         # TODO: replace with a property setter using a Pose object
         self.position = location
-        self.rotation = np.array(rotation)
+        self.rotation = rotation
 
     def set_sensor_rotation(self, rotation_quat: QuaternionWXYZ) -> None:
         """Sets the orientation of the sensor body, relative to the embodiment.
@@ -348,6 +359,7 @@ class DistantAgent(Agent):
         return f"{self.__class__.__name__}(id={self.id})"
 
     def actuate_set_agent_pose(self, action: SetAgentPose) -> None:
+        """Directly sets the agent's position and location."""
         rotation = action.rotation_quat
         if isinstance(rotation, qt.quaternion):
             # TODO: Fix all the places SetAgentPose is created
@@ -358,6 +370,7 @@ class DistantAgent(Agent):
         self._embodiment.set_pose(action.location, rotation)
 
     def actuate_set_sensor_rotation(self, action: SetSensorRotation) -> None:
+        """Directly sets the sensors' pitch (X-axis rotation)."""
         rotation = action.rotation_quat
         if isinstance(rotation, qt.quaternion):
             # TODO: Fix all the places SetSensorRotation is created
@@ -369,16 +382,161 @@ class DistantAgent(Agent):
         self._embodiment.set_sensor_rotation(rotation)
 
     def actuate_move_forward(self, action: MoveForward) -> None:
-        self._embodiment.move_along_local_axis(distance=-action.distance, axis=Axis.Z)
+        """Moves the agent along its Z axis.
+
+        If a negative distance is supplied, the agent will instead move backwards
+        along its Z axis.
+        """
+        # The "forward" direction is in the negative-Z direction, so we need to
+        # negate the distance we've been given.
+        self._embodiment.move_along_local_axis(-action.distance, axis=Axis.Z)
 
     def actuate_turn_right(self, action: TurnRight) -> None:
+        """Rotates the agent around its Y axis to the right.
+
+        If a negative angle is supplied, the agent will instead rotate to the left.
+        """
+        # Yaw degrees are positive in the anticlockwise direction and negative in the
+        # clockwise direction, so we need to negate the degrees we were given.
         self._embodiment.yaw(-action.rotation_degrees)
 
     def actuate_turn_left(self, action: TurnLeft) -> None:
+        """Rotates the agent around its Y axis to the left.
+
+        If a negative angle is supplied, the agent will instead rotate to the right.
+        """
         self._embodiment.yaw(action.rotation_degrees)
 
     def actuate_look_up(self, action: LookUp) -> None:
-        self._embodiment.pitch(action.rotation_degrees, action.constraint_degrees)
+        """Pitches the sensors up around the sensors' X axis.
+
+        This DOES NOT pitch the agent itself. A negative angle will result in the
+        sensors being pitched down instead.
+        """
+        self._embodiment.pitch_sensor(
+            action.rotation_degrees, action.constraint_degrees
+        )
 
     def actuate_look_down(self, action: LookDown) -> None:
-        self._embodiment.pitch(-action.rotation_degrees, action.constraint_degrees)
+        """Pitches the sensors down around the sensors' X axis.
+
+        This DOES NOT pitch the agent itself. A negative angle will result in the
+        sensors being pitched up instead.
+        """
+        self._embodiment.pitch_sensor(
+            -action.rotation_degrees, action.constraint_degrees
+        )
+
+
+class SurfaceAgent(Agent):
+    """A multi-sensor agent for sensing objects with a surface sensor."""
+
+    def __init__(
+        self,
+        simulator: MuJoCoSimulator,
+        agent_id: AgentID,
+        sensor_configs: dict[SensorID, SensorConfig],
+        position: VectorXYZ = ZERO_VECTOR,
+        rotation: QuaternionWXYZ = IDENTITY_QUATERNION,
+    ):
+        self._embodiment = Embodiment(
+            simulator, agent_id, sensor_configs, position, rotation
+        )
+        self.id = agent_id
+
+    @property
+    def state(self) -> AgentState:
+        return self._embodiment.state
+
+    @property
+    def observations(self) -> AgentObservations:
+        return self._embodiment.observations
+
+    def reset(self) -> None:
+        self._embodiment.reset()
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(id={self.id})"
+
+    def actuate_move_forward(self, action: MoveForward) -> None:
+        """Moves the agent along its Z axis.
+
+        If a negative distance is supplied, the agent will instead move backwards
+        towards the positive-Z direction.
+        """
+        # The "forward" direction is in the negative-Z direction, so we need to
+        # negate the distance we've been given.
+        self._embodiment.move_along_local_axis(-action.distance, axis=Axis.Z)
+
+    def actuate_orient_horizontal(self, action: OrientHorizontal) -> None:
+        """Reorients the agent in the horizontal direction.
+
+        The result of an OrientHorizontal action is to try to orbit the agent around
+        the object horizontally, using the distances and angle to determine where it
+        ends up.
+
+        The provided values are ASSUMED by this method to be calculated to orbit
+        the agent around the target object.
+        """
+        self._embodiment.move_along_local_axis(-action.left_distance, axis=Axis.X)
+        # OrientHorizontal represents the rotation using clockwise angles, and
+        # we are using anticlockwise angles for yaw, so we need to negate the value.
+        self._embodiment.yaw(-action.rotation_degrees)
+        self._embodiment.move_along_local_axis(-action.forward_distance, axis=Axis.Z)
+
+    def actuate_orient_vertical(self, action: OrientVertical) -> None:
+        """Reorients the agent in the vertical direction.
+
+        The result of an OrientVertical action is to try to orbit the agent around
+        the object vertically, using the distances and angle to determine where it
+        ends up.
+
+        The provided values are ASSUMED by this method to be calculated to orbit
+        the agent around the target object.
+        """
+        self._embodiment.move_along_local_axis(-action.down_distance, axis=Axis.Y)
+        self._embodiment.pitch(action.rotation_degrees)
+        self._embodiment.move_along_local_axis(-action.forward_distance, axis=Axis.Z)
+
+    def actuate_move_tangentially(self, action: MoveTangentially) -> None:
+        """Move the agent in a direction tangential to the direction it is facing.
+
+        This method ASSUMES a few things about the direction in the received action.
+        - The direction is a unit vector with a magnitude of 1.
+        - The direction is a vector tangential to the direction the agent is facing.
+
+        If either of these assumptions is not true, this code will produce erroneous
+        results.
+        """
+        if action.distance == 0.0:
+            return
+        direction = np.array(action.direction)
+
+        rotation = Rotation.from_quat(self._embodiment.rotation)
+        direction_rel_world = rotation.apply(direction)
+        self._embodiment.position = (
+            np.array(self._embodiment.position) + direction_rel_world * action.distance
+        )
+
+    def actuate_set_agent_pose(self, action: SetAgentPose) -> None:
+        """Directly sets the agent's position and location."""
+        rotation = action.rotation_quat
+        if isinstance(rotation, qt.quaternion):
+            # TODO: Fix all the places SetAgentPose is created
+            logger.warning(
+                "SetAgentPose rotation is a qt.quaternion and not a QuaternionWXYZ."
+            )
+            rotation = cast("QuaternionWXYZ", tuple(qt.as_float_array(rotation)))
+        self._embodiment.set_pose(action.location, rotation)
+
+    def actuate_set_sensor_rotation(self, action: SetSensorRotation) -> None:
+        """Directly sets the sensors' pitch (X-axis rotation)."""
+        rotation = action.rotation_quat
+        if isinstance(rotation, qt.quaternion):
+            # TODO: Fix all the places SetSensorRotation is created
+            logger.warning(
+                "SetSensorRotation rotation is a qt.quaternion and "
+                "not a QuaternionWXYZ."
+            )
+            rotation = cast("QuaternionWXYZ", tuple(qt.as_float_array(rotation)))
+        self._embodiment.set_sensor_rotation(rotation)

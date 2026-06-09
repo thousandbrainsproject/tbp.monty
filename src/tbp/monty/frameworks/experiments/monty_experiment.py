@@ -183,7 +183,7 @@ class MontyExperiment:
         if model_path:
             if "model.pt" not in model_path.parts:
                 model_path = model_path / "model.pt"
-            state_dict = torch.load(model_path)
+            state_dict = torch.load(model_path, weights_only=False)
             model.load_state_dict(state_dict)
 
         return model
@@ -620,7 +620,7 @@ class MontyExperiment:
     def post_epoch(self):
         """Call sub post_epoch functions and save state dict."""
         # NOTE: maybe an option not to save everything every epoch?
-        self.save_state_dict(output_dir=self.output_dir / f"{self.train_epochs}")
+        self.save_state_dir(output_dir=self.output_dir / f"{self.train_epochs}")
         self.logger_handler.post_epoch(self.logger_args)
 
         if self.experiment_mode is ExperimentMode.TRAIN:
@@ -672,8 +672,8 @@ class MontyExperiment:
             time_stamp=datetime.datetime.now(),
         )
 
-    def save_state_dict(self, output_dir=None):
-        """Save state_dict of experiment and model."""
+    def save_state_dir(self, output_dir=None):
+        """Save state of experiment and model to the filesystem."""
         model_state_dict = self.model.state_dict()
         exp_state_dict = self.state_dict()
         output_dir = output_dir if output_dir is not None else self.output_dir
@@ -696,12 +696,12 @@ class MontyExperiment:
             torch.save(exp_state_dict, output_dir / "exp_state_dict.pt")
             torch.save(self.config, output_dir / "config.pt")
 
-    def load_state_dict(self, load_dir):
-        """Load state_dict of previous experiment."""
+    def load_state_dir(self, load_dir):
+        """Load state of previous experiment from the filesystem."""
         load_dir = Path(load_dir)
-        model_state_dict = torch.load(load_dir / "model.pt")
-        exp_state_dict = torch.load(load_dir / "exp_state_dict.pt")
-        config = torch.load(load_dir / "config.pt")
+        model_state_dict = torch.load(load_dir / "model.pt", weights_only=False)
+        exp_state_dict = torch.load(load_dir / "exp_state_dict.pt", weights_only=False)
+        config = torch.load(load_dir / "config.pt", weights_only=False)
         state_dict_keys = self.state_dict().keys()
 
         self.model.load_state_dict(model_state_dict)

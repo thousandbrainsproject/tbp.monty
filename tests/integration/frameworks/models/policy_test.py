@@ -956,7 +956,7 @@ class PolicyTest(unittest.TestCase):
             ),
         )
 
-        lm.matching_step(ctx, observations=[Message(**fake_percept_config)])
+        lm.matching_step(ctx, [Message(**fake_percept_config)])
 
         # GSG handles computing the motor goal
         motor_goal = lm.gsg._compute_goal_for_target_loc(

@@ -1,7 +1,7 @@
 ---
 title: Monty
 ---
-**The Monty class contains everything an agent needs to model and interact with the environment.** It contains (1) [sensor modules](sensor-module.md) (2) sensorimotor learning systems (also called [learning modules](learning-module.md)), and (3) a motor system for taking action (see [here](policy.md)). The Monty class manages the communication between these components using the cortical messaging protocol (see [here](../overview/architecture-overview/cortical-messaging-protocol.md))
+**The Monty class contains everything an agent needs to model and interact with the environment.** It contains (1) [sensor modules](sensor-module.md) (2) sensorimotor learning systems (also called [learning modules](learning-module.md)), and (3) a motor system for taking action (see [here](motor-system/policy.md)). The Monty class manages the communication between these components using the cortical messaging protocol (see [here](../overview/architecture-overview/cortical-messaging-protocol.md))
 
 A Monty instance can be arbitrarily customized as long as it implements a handful of types of abstract methods listed below.
 

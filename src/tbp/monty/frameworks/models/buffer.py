@@ -14,7 +14,7 @@ import dataclasses
 import json
 import logging
 import time
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Literal
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Literal, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -105,7 +105,7 @@ class FeatureAtLocationBuffer:
             return 0
         return np.count_nonzero(~np.isnan(self.locations[input_channel][:, 0]))
 
-    def append(self, percepts: list[Message]) -> None:
+    def append(self, percepts: Sequence[Message]) -> None:
         """Add a list of percepts to the buffer. Must be features at locations.
 
         TODO S: Store messages instead of list of percepts?
@@ -530,7 +530,7 @@ class FeatureAtLocationBuffer:
         self.locations[input_channel] = padded_locs
         self.locations[input_channel][-1] = location
 
-    def _store_displacement_and_location(self, percepts: list[Message]) -> None:
+    def _store_displacement_and_location(self, percepts: Sequence[Message]) -> None:
         """Store the global displacement and location from the current step.
 
         Computes the average location across SM input channels (to be used for
@@ -538,7 +538,7 @@ class FeatureAtLocationBuffer:
         the first SM percept.
 
         Args:
-            percepts: List of Message objects from the current step.
+            percepts: Sequence of Message objects from the current step.
         """
         sm_percepts = [p for p in percepts if p.sender_type == "SM"]
         current_location = np.mean([p.location for p in sm_percepts], axis=0)
