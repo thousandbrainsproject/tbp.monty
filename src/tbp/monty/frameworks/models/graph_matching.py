@@ -75,7 +75,7 @@ class MontyForGraphMatching(MontyBase):
             lm.fixme_reset_ground_truth(primary_target)
 
         for sm in self.sensor_modules:
-            sm.pre_episode()
+            sm.reset()
 
         self.motor_system.pre_episode()
         self._goals = []

@@ -13,7 +13,6 @@ import numpy as np
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
     SensorObservation,
@@ -34,24 +33,21 @@ class FakeSensorModule(SensorModule):
     def state_dict(self) -> Memento:
         return {}
 
-    def update_state(self, agent: AgentState):
+    def reset(self) -> None:
         pass
 
-    def pre_episode(self) -> None:
+    def update_state(self, agent: AgentState) -> None:
         pass
 
-    def post_episode(self):
-        pass
-
-    def set_experiment_mode(self, mode: ExperimentMode):
-        pass
+    # def set_experiment_mode(self, mode: ExperimentMode):
+    #     pass
 
     def step(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
         observation: SensorObservation,
         motor_only_step: bool = False,  # noqa: ARG002
-    ):
+    ) -> Message:
         """Returns a dummy/placeholder message."""
         return Message(
             location=np.zeros(3),
