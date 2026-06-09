@@ -27,7 +27,79 @@ logger = logging.getLogger(__name__)
 
 FLAT_THRESHOLD = 0.001
 
-def local_ternary_pattern(
+def local_ternary_pattern_and_hist(
+    gray_patch: np.ndarray,
+    n_neighbors: int = 8,
+    radius: float = 1.0,
+    threshold: float = 5.0,
+):
+    """Compute Local Ternary Pattern features and histogram for a grayscale image patch.
+
+    This implementation leverages the standard split-LTP formulation from Tan and
+    Triggs (2010):
+    - Positive pattern: neighbor >= center + threshold
+    - Negative pattern: neighbor <= center - threshold
+
+    Encoding makes use of the ROR rotation-invariant encoding scheme.
+
+    Args:
+        gray_patch: grayscale image patch.
+        n_neighbors: Number of neighbors to consider in the circular neighborhood.
+        radius: Radius of the neighborhood in pixels.
+        threshold: Threshold for the local ternary pattern.
+
+    Returns:
+        Local Ternary Pattern features and histogram.
+    """
+    codes_pos_raw, codes_neg_raw = ltp_codes(
+        gray_patch, n_neighbors=n_neighbors, radius=radius, threshold=threshold
+    )
+
+    codes_pos, n_bins_pos = ror_encoding(codes_pos_raw, n_neighbors=n_neighbors)
+    codes_neg, n_bins_neg = ror_encoding(codes_neg_raw, n_neighbors=n_neighbors)
+
+    hist_pos = np.bincount(codes_pos.ravel(), minlength=n_bins_pos).astype(np.float32)
+    hist_neg = np.bincount(codes_neg.ravel(), minlength=n_bins_neg).astype(np.float32)
+
+    histogram = np.concatenate([hist_pos, hist_neg]).astype(np.float32, copy=False)
+
+    histogram /= histogram.sum() + 1e-6
+
+    return histogram
+
+
+def ror_encoding(codes: np.ndarray, n_neighbors: float) -> tuple[np.ndarray, int]:
+    """Encode codes using the ROR rotation-invariant encoding scheme.
+
+    Args:
+        codes: Codes to encode.
+        n_neighbors: Number of neighbors to consider in the circular neighborhood.
+
+    Returns:
+        Encoded codes and number of bins.
+    """
+    n_codes = 1 << n_neighbors
+    mask = n_codes - 1
+    canonical = np.empty(n_codes, dtype=np.int32)
+
+    for code in range(n_codes):
+        x = code
+        min_code = code
+        for _ in range(1, n_neighbors):
+            x = ((x >> 1) | ((x & 1) << (n_neighbors - 1))) & mask
+            min_code = min(min_code, x)
+        canonical[code] = min_code
+
+    unique_vals = np.unique(canonical)
+    remap = {old: new for new, old in enumerate(unique_vals)}
+    lut = np.array([remap[v] for v in canonical], dtype=np.int32)
+    n_bins = len(unique_vals)
+    encoded = lut[codes.astype(np.int32, copy=False)]
+
+    return encoded, n_bins
+
+
+def ltp_codes(
     gray_patch: np.ndarray,
     n_neighbors: int = 8,
     radius: float = 1.0,

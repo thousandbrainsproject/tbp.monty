@@ -24,7 +24,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     arc_from_projection,
     bilinear_sample,
     directional_curvature,
-    local_ternary_pattern,
+    ltp_codes,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     normalize,
@@ -229,13 +229,13 @@ def map_coordinates_bilinear_sample(
     )
 
 
-def local_ternary_pattern_loop(
+def ltp_codes_loop(
     gray_patch: np.ndarray,
     n_neighbors: int = 8,
     radius: float = 1.0,
     threshold: float = 5.0,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Explicit, non-vectorized reference for ``local_ternary_pattern``.
+    """Explicit, non-vectorized reference for ``ltp_codes``.
 
     Loops over every pixel and every neighbor and re-derives the bilinear
     neighbor value one element at a time, so it shares no array-level machinery
@@ -425,23 +425,23 @@ class BilinearSampleVsMapCoordinatesTest(unittest.TestCase):
 class LocalTernaryPatternTest(unittest.TestCase):
     def test_invalid_n_neighbors_raises(self):
         with pytest.raises(ValueError, match="n_neighbors"):
-            local_ternary_pattern(np.zeros((3, 3)), n_neighbors=0)
+            ltp_codes(np.zeros((3, 3)), n_neighbors=0)
 
     def test_invalid_radius_raises(self):
         with pytest.raises(ValueError, match="radius"):
-            local_ternary_pattern(np.zeros((3, 3)), radius=0.0)
+            ltp_codes(np.zeros((3, 3)), radius=0.0)
 
     def test_negative_threshold_raises(self):
         with pytest.raises(ValueError, match="threshold"):
-            local_ternary_pattern(np.zeros((3, 3)), threshold=-1.0)
+            ltp_codes(np.zeros((3, 3)), threshold=-1.0)
 
     def test_non_2d_patch_raises(self):
         with pytest.raises(ValueError, match="2D"):
-            local_ternary_pattern(np.zeros((3, 3, 3)))
+            ltp_codes(np.zeros((3, 3, 3)))
 
     def test_output_shape_and_dtype(self):
         patch = np.zeros((4, 5))
-        codes_pos, codes_neg = local_ternary_pattern(patch, n_neighbors=8)
+        codes_pos, codes_neg = ltp_codes(patch, n_neighbors=8)
         assert codes_pos.shape == (4, 5)
         assert codes_neg.shape == (4, 5)
         assert codes_pos.dtype == np.uint32
@@ -454,7 +454,7 @@ class LocalTernaryPatternTest(unittest.TestCase):
         patch = np.array(
             [[10.0, 50.0, 10.0], [50.0, 30.0, 50.0], [10.0, 50.0, 10.0]]
         )
-        codes_pos, codes_neg = local_ternary_pattern(
+        codes_pos, codes_neg = ltp_codes(
             patch, n_neighbors=4, radius=1.0, threshold=0.0
         )
         assert codes_pos[1, 1] == 0b1111
@@ -465,7 +465,7 @@ class LocalTernaryPatternTest(unittest.TestCase):
         patch = np.array(
             [[0.0, 0.0, 0.0], [0.0, 0.0, 100.0], [0.0, 0.0, 0.0]]
         )
-        codes_pos, codes_neg = local_ternary_pattern(
+        codes_pos, codes_neg = ltp_codes(
             patch, n_neighbors=4, radius=1.0, threshold=5.0
         )
         assert codes_pos[1, 1] == 0b0001
@@ -476,7 +476,7 @@ class LocalTernaryPatternTest(unittest.TestCase):
         patch = np.array(
             [[100.0, 100.0, 100.0], [100.0, 100.0, 0.0], [100.0, 100.0, 100.0]]
         )
-        codes_pos, codes_neg = local_ternary_pattern(
+        codes_pos, codes_neg = ltp_codes(
             patch, n_neighbors=4, radius=1.0, threshold=5.0
         )
         assert codes_pos[1, 1] == 0
@@ -485,7 +485,7 @@ class LocalTernaryPatternTest(unittest.TestCase):
     def test_center_darker_than_all_neighbors_sets_every_positive_bit(self):
         patch = np.full((3, 3), 100.0)
         patch[1, 1] = 0.0
-        codes_pos, codes_neg = local_ternary_pattern(
+        codes_pos, codes_neg = ltp_codes(
             patch, n_neighbors=8, radius=1.0, threshold=5.0
         )
         # All eight positive bits set, no negative bits.
@@ -495,7 +495,7 @@ class LocalTernaryPatternTest(unittest.TestCase):
     def test_center_brighter_than_all_neighbors_sets_every_negative_bit(self):
         patch = np.zeros((3, 3))
         patch[1, 1] = 100.0
-        codes_pos, codes_neg = local_ternary_pattern(
+        codes_pos, codes_neg = ltp_codes(
             patch, n_neighbors=8, radius=1.0, threshold=5.0
         )
         assert codes_pos[1, 1] == 0
@@ -504,7 +504,7 @@ class LocalTernaryPatternTest(unittest.TestCase):
     def test_flat_patch_with_threshold_sets_no_bits(self):
         # No neighbor differs from the center by more than the threshold.
         patch = np.full((5, 5), 42.0)
-        codes_pos, codes_neg = local_ternary_pattern(
+        codes_pos, codes_neg = ltp_codes(
             patch, n_neighbors=8, radius=1.0, threshold=1.0
         )
         npt.assert_array_equal(codes_pos, np.zeros((5, 5), dtype=np.uint32))
@@ -524,7 +524,7 @@ class LocalTernaryPatternTest(unittest.TestCase):
             for shape in shapes:
                 with self.subTest(config=config, shape=shape):
                     patch = rng.uniform(0.0, 255.0, size=shape)
-                    pos, neg = local_ternary_pattern(patch, **config)
-                    ref_pos, ref_neg = local_ternary_pattern_loop(patch, **config)
+                    pos, neg = ltp_codes(patch, **config)
+                    ref_pos, ref_neg = ltp_codes_loop(patch, **config)
                     npt.assert_array_equal(pos, ref_pos)
                     npt.assert_array_equal(neg, ref_neg)
