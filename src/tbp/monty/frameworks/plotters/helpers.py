@@ -16,6 +16,7 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
+import quaternion as qt
 from matplotlib.collections import LineCollection
 from matplotlib.lines import Line2D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -405,19 +406,19 @@ class EvidenceHistory:
             burst_steps.append(step)
 
     @staticmethod
-    def _in_burst(learning_module: EvidenceGraphLM) -> bool | None:
+    def _in_burst(learning_module: EvidenceGraphLM) -> bool:
         """Whether the LM's burst-sampling updater is currently in a burst.
 
         Args:
             learning_module: The learning module whose updater is inspected.
 
         Returns:
-            `None` when the LM does not use a `BurstSamplingHypothesesUpdater` (so the
-            caller can hide the info), otherwise whether a burst is in progress.
+            True when the LM uses a `BurstSamplingHypothesesUpdater` and a burst is in
+            progress, False otherwise.
         """
         updater = learning_module.hypotheses_updater
         if not isinstance(updater, BurstSamplingHypothesesUpdater):
-            return None
+            return False
         return updater.sampling_burst_steps > 0
 
 
@@ -859,7 +860,8 @@ class FeatureInset:
             pose_fully_defined = bool(morph.get("pose_fully_defined", False))
             self._draw_edge(pose_vectors, pose_fully_defined, color)
         else:
-            self._draw_surface(pose_vectors, color)
+            rotation = sm.state.rotation if sm.state is not None else None
+            self._draw_surface(pose_vectors, color, rotation)
 
     def _draw_lm_name(self, rect: list[float], channel: str) -> None:
         """Show the name of the object being passed on a learning-module channel.
@@ -893,19 +895,24 @@ class FeatureInset:
         self,
         pose_vectors: npt.NDArray[np.float64],
         color: npt.NDArray[np.float64],
+        rotation: qt.quaternion | None,
     ) -> None:
         """Draw the local 3D surface as a tilted square with its outward normal.
 
-        The square lies in the tangent plane spanned by the two principal-curvature
-        directions and is colored by the sensed hsv; the arrow points along the surface
-        normal. The camera looks straight down `+z` (the XY-plane view), so that it
-        mirrors the agent's pose in the viewfinder.
+        The pose vectors arrive in the world frame, so they are first rotated into the
+        sensor's local frame by the inverse of the sensor's world rotation. The square
+        then lies in the tangent plane spanned by the two principal-curvature directions
+        and is colored by the sensed hsv; the arrow points along the surface normal.
 
         Args:
             pose_vectors: The `(3, 3)` pose vectors (normal, then two tangents).
             color: The face color (the sensed hsv as RGB, or gray when absent).
+            rotation: The sensor's world rotation, used to map the pose vectors into the
+                agent's frame; `None` leaves them in the world frame.
         """
         ax = self.clear()
+        if rotation is not None:
+            pose_vectors = qt.rotate_vectors(rotation.inverse(), pose_vectors)
         normal = unit(pose_vectors[0])
         tangent_u = unit(pose_vectors[1])
         tangent_v = unit(pose_vectors[2])

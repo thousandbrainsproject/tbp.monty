@@ -466,6 +466,10 @@ class MontyExperiment:
     ) -> list[Action]:
         """Draw the current state and, if interactive, return the user-chosen action.
 
+        The user only overrides an action while the agent is on the object and the
+        step is a user choice step (e.g. the surface policy's tangential step); the
+        policy's automatic corrections and off-object self-positioning run unchanged.
+
         Args:
             ctx: The runtime context supplying the random state.
             observations: The observations from the most recent step.
@@ -477,10 +481,19 @@ class MontyExperiment:
         """
         if self.plotter is None:
             return actions
+
         self.plotter.update(observations, step)
-        if self.plotter.interactive and not self.model.is_done:
-            return self.plotter.override_action(ctx.rng)
-        return actions
+
+        if not self.plotter.interactive or self.model.is_done:
+            return actions
+
+        percept = self.model.sensor_module_outputs[0]
+        on_object = percept.get_on_object()
+        user_choice = self.plotter.awaits_choice(actions)
+        if not on_object or not user_choice:
+            return actions
+
+        return self.plotter.override_action(ctx, actions)
 
     def run_episode(self) -> None:
         """Run one episode until model.is_done."""

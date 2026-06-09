@@ -164,11 +164,9 @@ class SimulatorPanel:
         ax = self.ax_rgb
         ax.cla()
         ax.set_axis_off()
-        ax.set_title("Patch")
         patch = agent_obs.get(sm_id) if sm_id is not None else None
         if patch is not None and "rgba" in patch:
             ax.imshow(np.asarray(patch["rgba"]))
-            ax.set_title("Patch (RGB)")
 
 
 class MontyPanel:

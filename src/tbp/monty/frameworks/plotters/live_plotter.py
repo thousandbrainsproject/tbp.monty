@@ -33,8 +33,7 @@ from tbp.monty.frameworks.plotters.panels import (
 )
 
 if TYPE_CHECKING:
-    from numpy.random import RandomState
-
+    from tbp.monty.context import RuntimeContext
     from tbp.monty.frameworks.actions.actions import Action
     from tbp.monty.frameworks.models.abstract_monty_classes import (
         LearningModule,
@@ -64,9 +63,9 @@ class LivePlotter:
       a matching step, the displayed LM's per-object evidence and number-of-hypotheses
       line plots.
 
-    A non-interactive plotter exposes a `Speed` slider; an interactive plotter exposes
-    one button per action the policy's sampler can produce (plus "End episode") and
-    overrides the executed action via `override_action`.
+    A non-interactive plotter exposes a `Speed` slider; an interactive plotter instead
+    shows the four exploration heading buttons (plus a jump button when one is offered
+    and "End episode") and overrides the executed action via `override_action`.
 
     When the displayed learning module lacks the evidence-LM inference API, the Monty
     and Details matching-step panels degrade to a placeholder rather than raising.
@@ -126,10 +125,7 @@ class LivePlotter:
 
         Detects whether the displayed learning module supports the inference and buffer
         panels and resets the per-episode history. When interactive, derives the action
-        buttons from the policy's action sampler. Then builds the matplotlib figure for
-        this episode, closing the previous episode's figure first so figures don't
-        accumulate across a multi-object / multi-rotation run. Must be called once per
-        episode.
+        buttons from the model's interactive policy. Must be called once per episode.
 
         Args:
             model: The Monty model whose sensor and learning modules are plotted.
@@ -188,7 +184,10 @@ class LivePlotter:
         self._selector = SelectorBar(
             self.fig, self._monty_spec, self._channel_view, self._redraw
         )
-        self._controls.build(self.fig)
+        if self.interactive:
+            self._controls.build(self.fig, self._simulator.ax_rgb)
+        else:
+            self._controls.build(self.fig)
 
         if is_interactive_backend():
             self.fig.show()
@@ -197,8 +196,10 @@ class LivePlotter:
         """Draw the current state, never blocking for an action.
 
         The frame is stashed so selector-button clicks can repaint it without new
-        observations. A non-interactive plotter applies its speed-slider pause/halt
-        here; interactive blocking lives only in `override_action`.
+        observations. An interactive plotter draws no choice buttons here (they are
+        built on demand in `override_action`); a non-interactive plotter applies its
+        speed-slider pause/halt here. Interactive blocking lives only in
+        `override_action`.
 
         Args:
             observations: The observations from the most recent step.
@@ -247,20 +248,37 @@ class LivePlotter:
             return
         self._render(self._last_observations, self._last_step)
 
-    def override_action(self, rng: RandomState) -> list[Action]:
-        """Block until a button is clicked, then return the user's chosen action.
+    def awaits_choice(self, proposed: list[Action]) -> bool:
+        """Whether the user should choose this step's action.
 
-        Delegates to the interactive `ActionButtons` control, which blocks on the
-        figure's event loop, samples the chosen action, and raises `StopIteration` on
-        "End episode".
+        Delegates to the interactive `ActionButtons` control's policy.
 
         Args:
-            rng: The random state used to sample the chosen action.
+            proposed: The actions the model computed for this step.
+
+        Returns:
+            True when this step is a user choice point.
+        """
+        return self._controls.awaits_choice(proposed)
+
+    def override_action(
+        self, ctx: RuntimeContext, proposed: list[Action]
+    ) -> list[Action]:
+        """Block until a button is clicked, then return the user's chosen action.
+
+        Delegates to the interactive `ActionButtons` control, which draws this step's
+        buttons, blocks on the figure's event loop, asks the interactive policy to
+        compute the chosen action (or returns the proposed jump when "jump" is
+        clicked), and raises `StopIteration` on "End episode".
+
+        Args:
+            ctx: The runtime context supplying the random state.
+            proposed: The actions the Monty computed for this step.
 
         Returns:
             The actions to execute next, built from the user's button choice.
         """
-        return self._controls.override_action(rng)
+        return self._controls.override_action(ctx, proposed)
 
     def close(self) -> None:
         """Close the final figure and drop widget references."""

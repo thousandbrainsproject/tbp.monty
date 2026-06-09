@@ -9,89 +9,227 @@
 from __future__ import annotations
 
 import contextlib
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, ClassVar
 
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, Slider
 
-if TYPE_CHECKING:
-    from matplotlib.figure import Figure
-    from numpy.random import RandomState
+from tbp.monty.frameworks.actions.actions import SetAgentPose
+from tbp.monty.frameworks.plotters.policies import HEADINGS, interactive_policy_for
 
-    from tbp.monty.frameworks.actions.action_samplers import ActionSampler
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+    from matplotlib.backend_bases import KeyEvent
+    from matplotlib.figure import Figure
+
+    from tbp.monty.context import RuntimeContext
     from tbp.monty.frameworks.actions.actions import Action
     from tbp.monty.frameworks.models.abstract_monty_classes import Monty
     from tbp.monty.frameworks.plotters.helpers import ChannelView
+    from tbp.monty.frameworks.plotters.policies import InteractivePolicy
+
+
+END_EPISODE = "End episode"
+JUMP = "jump"
 
 
 class ActionButtons:
-    """The interactive stepping control: one button per action sampler action.
+    """The interactive stepping control: a heading D-pad plus jump / end episode.
 
-    Renders one button per action the policy's action sampler can produce, plus an
-    "End episode" button, along the bottom of the figure. `override_action` blocks on
-    the figure's event loop until a button is clicked, then samples and returns the
-    chosen action. The policy and its sampler are validated up front, so an unusable
-    policy fails at construction rather than mid-episode.
+    The buttons are rebuilt each time the user is asked to choose, so only the choices
+    that can act this step are shown rather than greyed out. The four exploration
+    headings (up / down / left / right) wrap around the RGB patch as a D-pad, each
+    pointing the way it moves the sensor. A centered "jump" button appears whenever the
+    model proposes a hypothesis-testing jump, and a centered "End episode" button is
+    always present.
+
+    `override_action` blocks on the figure's event loop until a button is clicked or its
+    keyboard shortcut is pressed (WASD or arrow keys for the headings, space for jump,
+    delete for end episode). The matplotlib quit keys (q) still close the figure window.
+    The interactive policy is built up front, so an unsupported policy fails at
+    construction rather than mid-episode.
     """
 
+    _KEYMAP: ClassVar[dict[str, str]] = {
+        "w": "up",
+        "up": "up",
+        "s": "down",
+        "down": "down",
+        "a": "left",
+        "left": "left",
+        "d": "right",
+        "right": "right",
+        " ": JUMP,
+        "delete": END_EPISODE,
+    }
+
     def __init__(self, model: Monty) -> None:
-        """Derive and validate the action sampler from the model's policy.
+        """Build the interactive policy adapter from the model's motor policy.
 
         Args:
             model: The Monty model whose motor system exposes the policy.
-
-        Raises:
-            ValueError: When the policy is missing or exposes no usable sampler.
         """
         self.model = model
         self.fig: Figure | None = None
+        self._patch_ax: Axes | None = None
         self._selected: str | None = None
-        self._buttons: list[Button] = []
-        policy = model.motor_system.policy
-        if policy is None:
-            raise ValueError(
-                "Interactive plotter requires a policy exposing an action sampler, "
-                "but the motor system's selector exposes no policy."
-            )
-        if not hasattr(policy, "action_sampler") or not hasattr(policy, "agent_id"):
-            raise ValueError(
-                "Interactive plotter requires a policy with an `action_sampler` "
-                f"and `agent_id`; {type(policy).__name__} exposes neither."
-            )
-        self._sampler: ActionSampler = policy.action_sampler
-        self._agent_id: str = policy.agent_id
-        self.action_names: list[str] = list(self._sampler.action_names)
-        if not self.action_names:
-            raise ValueError(
-                "Interactive plotter requires a policy whose action sampler can "
-                "produce at least one action, but it produced none."
-            )
+        self._buttons: dict[str, Button] = {}
+        self._policy: InteractivePolicy = interactive_policy_for(model)
 
-    def build(self, fig: Figure) -> None:
-        """Add one button per action name plus an "End episode" button.
+    def build(self, fig: Figure, patch_ax: Axes) -> None:
+        """Bind the figure and the RGB-patch axis the heading D-pad wraps.
+
+        Buttons are created on demand in `override_action`, so nothing is drawn yet.
 
         Args:
-            fig: The figure to place the buttons along the bottom of.
+            fig: The figure to place the buttons on.
+            patch_ax: The RGB-patch axis the up/down/left/right buttons are arranged
+                around.
         """
         self.fig = fig
-        labels = self.action_names + ["End episode"]
-        n = len(labels)
-        for i, label in enumerate(labels):
-            # [left, bottom, width, height]
-            ax_btn = fig.add_axes([0.02 + i * (0.96 / n), 0.03, 0.96 / n - 0.01, 0.07])
-            btn = Button(ax_btn, label)
-            btn.on_clicked(lambda _event, lbl=label: self._on_click(lbl))
-            self._buttons.append(btn)
+        self._patch_ax = patch_ax
 
-    def override_action(self, rng: RandomState) -> list[Action]:
-        """Block until a button is clicked, then return the user's chosen action.
+        # Drop matplotlib's default key bindings.
+        manager = fig.canvas.manager
+        if getattr(manager, "key_press_handler_id", None) is not None:
+            fig.canvas.mpl_disconnect(manager.key_press_handler_id)
+        fig.canvas.mpl_connect("key_press_event", self._on_key)
 
-        The wait is guarded on `self._selected`, so a pre-set selection skips the event
-        loop entirely. Selector-button clicks repaint the figure without setting
-        `self._selected`, so they do not end the wait.
+    @staticmethod
+    def _is_jump(proposed: list[Action]) -> bool:
+        """Whether the model proposes a hypothesis-testing jump this step.
 
         Args:
-            rng: The random state used to sample the chosen action.
+            proposed: The actions the model computed for this step.
+
+        Returns:
+            True when the proposed actions begin with a `SetAgentPose` teleport.
+        """
+        return bool(proposed) and isinstance(proposed[0], SetAgentPose)
+
+    def awaits_choice(self, proposed: list[Action]) -> bool:
+        """Whether the user should choose this step's action.
+
+        A jump is always a choice point so the user can accept it or move instead;
+        otherwise the wrapped policy decides (e.g. the surface policy's tangential
+        step).
+
+        Args:
+            proposed: The actions the model computed for this step.
+
+        Returns:
+            True when this step is a user choice point.
+        """
+        return self._is_jump(proposed) or self._policy.awaits_choice(proposed)
+
+    def _rebuild(self, headings: list[str], specials: list[str]) -> None:
+        """Replace the choice buttons: a D-pad around the patch, specials centered.
+
+        Args:
+            headings: The exploration headings (up / down / left / right) to wrap
+                around the RGB patch as a D-pad.
+            specials: The centered buttons below the figure ("jump" when offered, then
+                "End episode"), in left-to-right order.
+        """
+        for button in self._buttons.values():
+            button.ax.remove()
+        self._buttons = {}
+        dpad = self._dpad_rects()
+        for heading in headings:
+            self._add_button(heading, dpad[heading])
+        for label, rect in self._special_rects(specials).items():
+            self._add_button(label, rect)
+
+        # Force a full redraw so the new buttons replace the old ones immediately.
+        self.fig.canvas.draw_idle()
+        self.fig.canvas.flush_events()
+
+    def _add_button(self, label: str, rect: list[float]) -> None:
+        """Add a single choice button at a figure-fraction rectangle.
+
+        Args:
+            label: The button label, also the selection it records when clicked.
+            rect: The `[left, bottom, width, height]` figure-fraction placement.
+        """
+        ax_btn = self.fig.add_axes(rect)
+        btn = Button(ax_btn, label)
+        btn.on_clicked(lambda _event, lbl=label: self._on_click(lbl))
+        self._buttons[label] = btn
+
+    def _patch_rect(self):
+        """The rendered RGB patch's figure-fraction box, not the axis cell's.
+
+        `imshow` centers the square patch within the wider axis cell (equal aspect),
+        so the axis position is far wider than the image; the buttons must hug the
+        image. The drawn image artist's window extent reflects that centering, so it
+        is transformed to figure fractions. Falls back to the axis cell when the patch
+        has not been drawn (e.g. a placeholder step).
+
+        Returns:
+            The `Bbox` of the rendered patch in figure-fraction coordinates.
+        """
+        images = self._patch_ax.images
+        if not images:
+            return self._patch_ax.get_position(self.fig)
+        extent = images[-1].get_window_extent()
+        return extent.transformed(self.fig.transFigure.inverted())
+
+    def _dpad_rects(self) -> dict[str, list[float]]:
+        """Lay the four heading buttons around the RGB patch as a D-pad.
+
+        Each button is a thin bar hugging one edge of the patch and spanning most of
+        that edge.
+
+        Returns:
+            The `[left, bottom, width, height]` rectangle per heading.
+        """
+        p = self._patch_rect()
+        width, height = p.x1 - p.x0, p.y1 - p.y0
+        h_thick, v_thick, gap = 0.03, 0.04, 0.006
+        bar_w, bar_h = width * 0.8, height * 0.8
+        cx = p.x0 + (width - bar_w) / 2
+        cy = p.y0 + (height - bar_h) / 2
+        return {
+            "up": [cx, p.y1 + gap, bar_w, h_thick],
+            "down": [cx, p.y0 - gap - h_thick, bar_w, h_thick],
+            "left": [max(0.0, p.x0 - gap - v_thick), cy, v_thick, bar_h],
+            "right": [p.x1 + gap, cy, v_thick, bar_h],
+        }
+
+    @staticmethod
+    def _special_rects(specials: list[str]) -> dict[str, list[float]]:
+        """Center the jump / end-episode buttons in a row at the figure's bottom.
+
+        Args:
+            specials: The button labels, in left-to-right order.
+
+        Returns:
+            The `[left, bottom, width, height]` rectangle per label.
+        """
+        bw, bh, gap, bottom = 0.12, 0.05, 0.02, 0.04
+        total = len(specials) * bw + (len(specials) - 1) * gap
+        left = 0.5 - total / 2
+        return {
+            label: [left + i * (bw + gap), bottom, bw, bh]
+            for i, label in enumerate(specials)
+        }
+
+    def override_action(
+        self, ctx: RuntimeContext, proposed: list[Action]
+    ) -> list[Action]:
+        """Draw this step's buttons, block until one is clicked, return its action.
+
+        The buttons are the policy's headings wrapped around the patch, plus a "jump"
+        button when `proposed` is a hypothesis-testing jump, plus "End episode". The
+        wait is guarded on `self._selected`, so a pre-set selection skips the event
+        loop entirely. Selector-button clicks repaint the figure without setting
+        `self._selected`, so they do not end the wait. Clicking "jump" executes the
+        proposed jump unchanged; any other heading is computed by the interactive
+        policy from the current motor-system state.
+
+        Args:
+            ctx: The runtime context supplying the random state.
+            proposed: The actions the model computed for this step.
 
         Returns:
             The actions to execute next, built from the user's button choice.
@@ -101,31 +239,52 @@ class ActionButtons:
                 that have not reached a terminal state to time_out so the episode logs
                 cleanly.
         """
+        specials = [JUMP, END_EPISODE] if self._is_jump(proposed) else [END_EPISODE]
+        self._rebuild(list(HEADINGS), specials)
+
         while self._selected is None:
             self.fig.canvas.start_event_loop(0.1)
         selected, self._selected = self._selected, None
-        if selected == "End episode":
+        if selected == END_EPISODE:
             self.model.deal_with_time_out()
             raise StopIteration
+        if selected == JUMP:
+            return proposed
 
-        action_method: Callable[[str, RandomState], Action] = getattr(
-            self._sampler, f"sample_{selected}"
-        )
-        return [action_method(self._agent_id, rng)]
+        state = self.model.motor_system.action_sequence[-1][1]
+        return self._policy.compute(ctx, selected, state)
 
     def close(self) -> None:
         """Drop the button references."""
-        self._buttons = []
+        self._buttons = {}
 
     def _on_click(self, label: str) -> None:
         """Record the clicked action and stop the blocking event loop.
 
         Args:
-            label: The clicked button's label (an action name or "End episode").
+            label: The clicked button's label (a heading, jump, or "End episode").
         """
         self._selected = label
         with contextlib.suppress(Exception):
             self.fig.canvas.stop_event_loop()
+
+    def _on_key(self, event: KeyEvent) -> None:
+        """Select the action bound to a key, if its button is shown this step.
+
+        Mirrors `_on_click`: keys map to the same labels as the buttons (WASD or arrow
+        keys for the headings, space for jump, delete for end episode), and a key is
+        ignored unless its button is currently drawn (e.g. space does nothing when no
+        jump is offered). The matplotlib quit keys (q) still close the figure window.
+
+        Args:
+            event: The matplotlib key-press event.
+        """
+        if event.key in plt.rcParams["keymap.quit"]:
+            plt.close(self.fig)
+            return
+        label = self._KEYMAP.get(event.key)
+        if label is not None and label in self._buttons:
+            self._on_click(label)
 
 
 class SpeedSlider:
