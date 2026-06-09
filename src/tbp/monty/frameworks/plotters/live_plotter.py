@@ -68,15 +68,22 @@ class FeatureInset:
     survives the host axes being removed and re-added. It repositions when its host
     rectangle moves and re-creates its axis only when the matplotlib projection flips
     between 3D and non-3D (an axis cannot switch projection in place).
+
+    `draw` renders the selected channel's live feature into the inset, reading the
+    channel resolution from a `ChannelView`: a 2D sensor module's detected edge, a 3D
+    sensor module's local surface and normal, or the name of the object passed on a
+    learning-module channel.
     """
 
-    def __init__(self, fig: Figure) -> None:
-        """Initialize an empty inset bound to a figure.
+    def __init__(self, fig: Figure, channel_view: ChannelView) -> None:
+        """Initialize an empty inset bound to a figure and channel view.
 
         Args:
             fig: The figure the inset draws on.
+            channel_view: The selection and channel resolution the drawn feature reads.
         """
         self.fig = fig
+        self.channel_view = channel_view
         self.ax: Axes | None = None
         self.projection: str | None = None
         self._border = None
@@ -162,6 +169,189 @@ class FeatureInset:
                 artist.remove()
         self.ax = self._border = self._title = None
         self.projection = self._rect = None
+
+    def draw(self, channel: str | None, rect: list[float]) -> None:
+        """Draw one channel's live input feature into the inset.
+
+        The content depends on the channel's source: a 2D sensor module draws its
+        detected edge, a 3D sensor module draws its local surface and normal, and a
+        learning-module channel shows the name of the object currently being passed.
+
+        Args:
+            channel: The channel whose live feature is drawn.
+            rect: The `[left, bottom, width, height]` inset rectangle.
+        """
+        sender_type = (
+            self.channel_view.lm.buffer.channel_sender_types.get(channel)
+            if channel is not None
+            else None
+        )
+        if sender_type == "SM":
+            sm = self.channel_view.resolve_sm_channel(channel)
+            self._draw_from_sm(rect, sm)
+        elif sender_type == "LM":
+            self._draw_lm_name(rect, channel)
+        else:
+            self.ensure("text", rect)
+            self._draw_message("no channel")
+
+    def _draw_from_sm(self, rect: list[float], sm: SensorModule | None) -> None:
+        """Draw a sensor module's detected feature, colored by the sensed hsv.
+
+        For a 3D sensor module the inset is a small 3D axis showing the local surface as
+        a tilted square plane with an arrow along its outward normal. For a 2D sensor
+        module it is a flat axis showing the detected edge as a line. Off-object or
+        degraded observations carry no pose, so every access is guarded and the inset
+        shows a message instead.
+
+        Args:
+            rect: The `[left, bottom, width, height]` inset rectangle.
+            sm: The sensor module feeding the channel.
+        """
+        is_2d = isinstance(sm, TwoDSensorModule)
+        self.ensure("2d" if is_2d else "3d", rect)
+        processed = sm.processed_obs if sm is not None else []
+        if not processed:
+            self._draw_message("no pose")
+            return
+        obs = processed[-1]
+        morph, non_morph = (
+            obs["morphological_features"],
+            obs["non_morphological_features"],
+        )
+        pose_vectors = morph.get("pose_vectors")
+        if pose_vectors is None:
+            self._draw_message("off object")
+            return
+        pose_vectors = np.asarray(pose_vectors)
+
+        hsv = non_morph.get("hsv")
+        if hsv is not None:
+            color = mcolors.hsv_to_rgb(np.clip(np.asarray(hsv, dtype=float), 0.0, 1.0))
+        else:
+            color = np.array([0.5, 0.5, 0.5])
+
+        if is_2d:
+            pose_fully_defined = bool(morph.get("pose_fully_defined", False))
+            self._draw_edge(pose_vectors, pose_fully_defined, color)
+        else:
+            self._draw_surface(pose_vectors, color)
+
+    def _draw_lm_name(self, rect: list[float], channel: str) -> None:
+        """Show the name of the object being passed on a learning-module channel.
+
+        Args:
+            rect: The `[left, bottom, width, height]` inset rectangle.
+            channel: The learning-module channel.
+        """
+        self.ensure("text", rect)
+        ax = self.clear()
+        source_lm = self.channel_view.resolve_lm_channel(channel)
+        name = "-"
+        if source_lm is not None:
+            mlh = source_lm.get_current_mlh()
+            graph_id = mlh.get("graph_id") if mlh else None
+            if graph_id and graph_id != "no_observations_yet":
+                name = str(graph_id)
+        ax.text(0.5, 0.5, name, ha="center", va="center", transform=ax.transAxes)
+
+    def _draw_message(self, message: str) -> None:
+        """Clear the inset and show a centered message.
+
+        Args:
+            message: The text to display (e.g. "off object").
+        """
+        ax = self.clear()
+        text = ax.text2D if self.projection == "3d" else ax.text
+        text(0.5, 0.5, message, ha="center", va="center", transform=ax.transAxes)
+
+    def _draw_surface(
+        self,
+        pose_vectors: npt.NDArray[np.float64],
+        color: npt.NDArray[np.float64],
+    ) -> None:
+        """Draw the local 3D surface as a tilted square with its outward normal.
+
+        The square lies in the tangent plane spanned by the two principal-curvature
+        directions and is colored by the sensed hsv; the arrow points along the surface
+        normal. The camera looks straight down `+z` (the XY-plane view), so that it
+        mirrors the agent's pose in the viewfinder.
+
+        Args:
+            pose_vectors: The `(3, 3)` pose vectors (normal, then two tangents).
+            color: The face color (the sensed hsv as RGB, or gray when absent).
+        """
+        ax = self.clear()
+        normal = unit(pose_vectors[0])
+        tangent_u = unit(pose_vectors[1])
+        tangent_v = unit(pose_vectors[2])
+        corners = np.array(
+            [
+                0.5 * (tangent_u + tangent_v),
+                0.5 * (tangent_u - tangent_v),
+                0.5 * (-tangent_u - tangent_v),
+                0.5 * (-tangent_u + tangent_v),
+            ]
+        )
+        ax.add_collection3d(
+            Poly3DCollection(
+                [corners], facecolors=[color], edgecolors="black", linewidths=0.5
+            )
+        )
+        ax.quiver(
+            0,
+            0,
+            0,
+            normal[0],
+            normal[1],
+            normal[2],
+            length=0.8,
+            color="black",
+            linewidth=2,
+            arrow_length_ratio=0.3,
+        )
+        ax.set_xlim(-1, 1)
+        ax.set_ylim(-1, 1)
+        ax.set_zlim(-1, 1)
+        ax.set_box_aspect((1, 1, 1))
+        ax.view_init(elev=90, azim=-90)
+
+    def _draw_edge(
+        self,
+        pose_vectors: npt.NDArray[np.float64],
+        pose_fully_defined: bool,
+        color: npt.NDArray[np.float64],
+    ) -> None:
+        """Draw the detected 2D edge as a centered line colored by the sensed hsv.
+
+        Args:
+            pose_vectors: The `(3, 3)` pose vectors (normal, edge tangent, edge perp).
+            pose_fully_defined: Whether an edge defines the pose this step.
+            color: The line color (the sensed hsv as RGB, or gray when absent).
+        """
+        ax = self.clear()
+        tangent = np.asarray(pose_vectors[1][:2], dtype=float)
+        norm = np.linalg.norm(tangent)
+        if not pose_fully_defined or norm < 1e-9:
+            ax.text(
+                0.5,
+                0.5,
+                "No edge detected",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+            )
+            return
+        vec = tangent / norm * 0.4
+        ax.plot(
+            [0.5 - vec[0], 0.5 + vec[0]],
+            [0.5 - vec[1], 0.5 + vec[1]],
+            color=color,
+            lw=3,
+        )
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.set_aspect("equal")
 
 
 class SimulatorPanel:
@@ -652,9 +842,9 @@ class DetailsPanel:
     number-of-hypotheses line plots during matching steps, or a centered placeholder.
     Axes are rebuilt only when the active mode or channel count changes, to avoid
     flicker. The selection and per-channel features come from a `ChannelView` and the
-    accumulated line-plot series from an `EvidenceHistory`; the "Input Feature" insets
-    stacked over each buffer plot are filled by a `draw_channel_feature` callback shared
-    with the Monty section.
+    accumulated line-plot series from an `EvidenceHistory`. The "Input Feature" inset
+    stacked over each buffer plot is a `FeatureInset`, the same widget the Monty section
+    uses.
     """
 
     def __init__(
@@ -663,7 +853,6 @@ class DetailsPanel:
         spec,
         channel_view: ChannelView,
         history: EvidenceHistory,
-        draw_channel_feature: Callable[[FeatureInset, str | None, list[float]], None],
     ) -> None:
         """Bind the Details column to its figure region and data sources.
 
@@ -672,14 +861,11 @@ class DetailsPanel:
             spec: The Details column's gridspec subplot spec.
             channel_view: The selected LM/channel and per-channel feature accessors.
             history: The per-LM evidence and hypothesis-count history.
-            draw_channel_feature: Callback drawing a channel's live feature into a
-                `FeatureInset` at a given rectangle, shared with the Monty section.
         """
         self.fig = fig
         self.spec = spec
         self.channel_view = channel_view
         self.history = history
-        self.draw_channel_feature = draw_channel_feature
         self._insets: dict[str, FeatureInset] = {}
         self._axes: list[Axes] = []
         self._proj_axes: list[list[Axes]] = []
@@ -717,7 +903,7 @@ class DetailsPanel:
             cell = main_ax.get_position(self.fig)
             height = (cell.y1 - cell.y0) * 0.45
             rect = corner_rect(cell, width_frac=0.4, height=height)
-            self.draw_channel_feature(self._insets[channel], channel, rect)
+            self._insets[channel].draw(channel, rect)
 
     def draw_inference(self) -> None:
         """Draw the displayed LM's evidence and hypothesis-count line plots."""
@@ -789,7 +975,7 @@ class DetailsPanel:
                 self._insets.pop(channel).remove()
         for channel in channels:
             if channel not in self._insets:
-                self._insets[channel] = FeatureInset(self.fig)
+                self._insets[channel] = FeatureInset(self.fig, self.channel_view)
 
     def _clear_insets(self) -> None:
         """Remove every feature inset (when leaving the per-channel layout)."""
@@ -1118,7 +1304,6 @@ class LivePlotter:
             self._details_spec,
             self._channel_view,
             self._history,
-            self._draw_channel_feature,
         )
         self._draw_section_dividers()
         self._build_selector_buttons()
@@ -1341,207 +1526,10 @@ class LivePlotter:
     def _draw_feature_inset(self) -> None:
         """Draw the Monty section's "Input Feature" inset for the selected channel."""
         if self._monty_inset is None:
-            self._monty_inset = FeatureInset(self.fig)
+            self._monty_inset = FeatureInset(self.fig, self._channel_view)
         monty = self._monty_spec.get_position(self.fig)
         rect = corner_rect(monty, width_frac=0.32, height=0.18, top_pad=0.07)
-        self._draw_channel_feature(self._monty_inset, self._channel_view.channel, rect)
-
-    def _draw_channel_feature(
-        self, inset: FeatureInset, channel: str | None, rect: list[float]
-    ) -> None:
-        """Draw one channel's live input feature into a corner inset.
-
-        The content depends on the channel's source: a 2D sensor module draws its
-        detected edge, a 3D sensor module draws its local surface and normal, and a
-        learning-module channel shows the name of the object currently being passed.
-
-        Args:
-            inset: The inset to draw into.
-            channel: The channel whose live feature is drawn.
-            rect: The `[left, bottom, width, height]` inset rectangle.
-        """
-        sender_type = (
-            self._channel_view.lm.buffer.channel_sender_types.get(channel)
-            if channel is not None
-            else None
-        )
-        if sender_type == "SM":
-            sm = self._channel_view.resolve_sm_channel(channel)
-            self._draw_feature_from_sm(inset, rect, sm)
-        elif sender_type == "LM":
-            self._draw_feature_lm_name(inset, rect, channel)
-        else:
-            inset.ensure("text", rect)
-            self._draw_feature_message(inset, "no channel")
-
-    def _draw_feature_from_sm(
-        self, inset: FeatureInset, rect: list[float], sm: SensorModule | None
-    ) -> None:
-        """Draw a sensor module's detected feature, colored by the sensed hsv.
-
-        For a 3D sensor module the inset is a small 3D axis showing the local surface as
-        a tilted square plane with an arrow along its outward normal. For a 2D sensor
-        module it is a flat axis showing the detected edge as a line. Off-object or
-        degraded observations carry no pose, so every access is guarded and the inset
-        shows a message instead.
-
-        Args:
-            inset: The inset to draw into.
-            rect: The `[left, bottom, width, height]` inset rectangle.
-            sm: The sensor module feeding the channel.
-        """
-        is_2d = isinstance(sm, TwoDSensorModule)
-        inset.ensure("2d" if is_2d else "3d", rect)
-        processed = sm.processed_obs if sm is not None else []
-        if not processed:
-            self._draw_feature_message(inset, "no pose")
-            return
-        obs = processed[-1]
-        morph, non_morph = (
-            obs["morphological_features"],
-            obs["non_morphological_features"],
-        )
-        pose_vectors = morph.get("pose_vectors")
-        if pose_vectors is None:
-            self._draw_feature_message(inset, "off object")
-            return
-        pose_vectors = np.asarray(pose_vectors)
-
-        hsv = non_morph.get("hsv")
-        if hsv is not None:
-            color = mcolors.hsv_to_rgb(np.clip(np.asarray(hsv, dtype=float), 0.0, 1.0))
-        else:
-            color = np.array([0.5, 0.5, 0.5])
-
-        if is_2d:
-            pose_fully_defined = bool(morph.get("pose_fully_defined", False))
-            self._draw_feature_edge(inset, pose_vectors, pose_fully_defined, color)
-        else:
-            self._draw_feature_surface(inset, pose_vectors, color)
-
-    def _draw_feature_lm_name(
-        self, inset: FeatureInset, rect: list[float], channel: str
-    ) -> None:
-        """Show the name of the object being passed on a learning-module channel.
-
-        Args:
-            inset: The inset to draw into.
-            rect: The `[left, bottom, width, height]` inset rectangle.
-            channel: The learning-module channel.
-        """
-        inset.ensure("text", rect)
-        ax = inset.clear()
-        source_lm = self._channel_view.resolve_lm_channel(channel)
-        name = "-"
-        if source_lm is not None:
-            mlh = source_lm.get_current_mlh()
-            graph_id = mlh.get("graph_id") if mlh else None
-            if graph_id and graph_id != "no_observations_yet":
-                name = str(graph_id)
-        ax.text(0.5, 0.5, name, ha="center", va="center", transform=ax.transAxes)
-
-    def _draw_feature_message(self, inset: FeatureInset, message: str) -> None:
-        """Clear an inset and show a centered message.
-
-        Args:
-            inset: The inset to draw into.
-            message: The text to display (e.g. "off object").
-        """
-        ax = inset.clear()
-        text = ax.text2D if inset.projection == "3d" else ax.text
-        text(0.5, 0.5, message, ha="center", va="center", transform=ax.transAxes)
-
-    def _draw_feature_surface(
-        self,
-        inset: FeatureInset,
-        pose_vectors: npt.NDArray[np.float64],
-        color: npt.NDArray[np.float64],
-    ) -> None:
-        """Draw the local 3D surface as a tilted square with its outward normal.
-
-        The square lies in the tangent plane spanned by the two principal-curvature
-        directions and is colored by the sensed hsv; the arrow points along the surface
-        normal. The camera looks straight down `+z` (the XY-plane view), so that it
-        mirrors the agent's pose in the viewfinder.
-
-        Args:
-            inset: The inset to draw into.
-            pose_vectors: The `(3, 3)` pose vectors (normal, then two tangents).
-            color: The face color (the sensed hsv as RGB, or gray when absent).
-        """
-        ax = inset.clear()
-        normal = unit(pose_vectors[0])
-        tangent_u = unit(pose_vectors[1])
-        tangent_v = unit(pose_vectors[2])
-        corners = np.array(
-            [
-                0.5 * (tangent_u + tangent_v),
-                0.5 * (tangent_u - tangent_v),
-                0.5 * (-tangent_u - tangent_v),
-                0.5 * (-tangent_u + tangent_v),
-            ]
-        )
-        ax.add_collection3d(
-            Poly3DCollection(
-                [corners], facecolors=[color], edgecolors="black", linewidths=0.5
-            )
-        )
-        ax.quiver(
-            0,
-            0,
-            0,
-            normal[0],
-            normal[1],
-            normal[2],
-            length=0.8,
-            color="black",
-            linewidth=2,
-            arrow_length_ratio=0.3,
-        )
-        ax.set_xlim(-1, 1)
-        ax.set_ylim(-1, 1)
-        ax.set_zlim(-1, 1)
-        ax.set_box_aspect((1, 1, 1))
-        ax.view_init(elev=90, azim=-90)
-
-    def _draw_feature_edge(
-        self,
-        inset: FeatureInset,
-        pose_vectors: npt.NDArray[np.float64],
-        pose_fully_defined: bool,
-        color: npt.NDArray[np.float64],
-    ) -> None:
-        """Draw the detected 2D edge as a centered line colored by the sensed hsv.
-
-        Args:
-            inset: The inset to draw into.
-            pose_vectors: The `(3, 3)` pose vectors (normal, edge tangent, edge perp).
-            pose_fully_defined: Whether an edge defines the pose this step.
-            color: The line color (the sensed hsv as RGB, or gray when absent).
-        """
-        ax = inset.clear()
-        tangent = np.asarray(pose_vectors[1][:2], dtype=float)
-        norm = np.linalg.norm(tangent)
-        if not pose_fully_defined or norm < 1e-9:
-            ax.text(
-                0.5,
-                0.5,
-                "No edge detected",
-                ha="center",
-                va="center",
-                transform=ax.transAxes,
-            )
-            return
-        vec = tangent / norm * 0.4
-        ax.plot(
-            [0.5 - vec[0], 0.5 + vec[0]],
-            [0.5 - vec[1], 0.5 + vec[1]],
-            color=color,
-            lw=3,
-        )
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.set_aspect("equal")
+        self._monty_inset.draw(self._channel_view.channel, rect)
 
     def _clear_monty_axes(self) -> None:
         """Remove the main Monty axis and any projection axes below it."""
