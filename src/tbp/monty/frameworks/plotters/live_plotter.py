@@ -36,6 +36,7 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
 )
 from tbp.monty.frameworks.models.two_d_sensor_module import TwoDSensorModule
 from tbp.monty.frameworks.plotters.helpers import (
+    corner_rect,
     draw_2d_segments,
     draw_buffer_series,
     is_3d,
@@ -643,6 +644,273 @@ class ChannelView:
         return [(pts, None, None)]
 
 
+class DetailsPanel:
+    """The Details column: per-channel buffer stacks, or inference line plots.
+
+    Owns the Details column's single physical region and its mode state machine: a
+    per-channel buffer grid during exploratory steps, the displayed LM's evidence and
+    number-of-hypotheses line plots during matching steps, or a centered placeholder.
+    Axes are rebuilt only when the active mode or channel count changes, to avoid
+    flicker. The selection and per-channel features come from a `ChannelView` and the
+    accumulated line-plot series from an `EvidenceHistory`; the "Input Feature" insets
+    stacked over each buffer plot are filled by a `draw_channel_feature` callback shared
+    with the Monty section.
+    """
+
+    def __init__(
+        self,
+        fig: Figure,
+        spec,
+        channel_view: ChannelView,
+        history: EvidenceHistory,
+        draw_channel_feature: Callable[[FeatureInset, str | None, list[float]], None],
+    ) -> None:
+        """Bind the Details column to its figure region and data sources.
+
+        Args:
+            fig: The figure to draw on.
+            spec: The Details column's gridspec subplot spec.
+            channel_view: The selected LM/channel and per-channel feature accessors.
+            history: The per-LM evidence and hypothesis-count history.
+            draw_channel_feature: Callback drawing a channel's live feature into a
+                `FeatureInset` at a given rectangle, shared with the Monty section.
+        """
+        self.fig = fig
+        self.spec = spec
+        self.channel_view = channel_view
+        self.history = history
+        self.draw_channel_feature = draw_channel_feature
+        self._insets: dict[str, FeatureInset] = {}
+        self._axes: list[Axes] = []
+        self._proj_axes: list[list[Axes]] = []
+        self._mode: str | None = None
+        self._channel_count: int | None = None
+        self._inference_legend = None
+        self._evidence_steps: list[int] = []
+        self._evidence_history: dict[str, list[float]] = {}
+        self._num_hyp_history: dict[str, list[float]] = {}
+        self._burst_steps: list[int] = []
+
+    def draw_buffer_grid(
+        self, channels: list[str], points: dict[str, npt.NDArray[np.float64]]
+    ) -> None:
+        """Draw one stacked plot group per channel's buffer (exploratory step).
+
+        Args:
+            channels: The channel ids with at least one location.
+            points: The per-channel non-padded location points.
+        """
+        self._ensure_grid(len(channels))
+        self._sync_insets(channels)
+        for main_ax, proj_axes, channel in zip(
+            self._axes, self._proj_axes, channels
+        ):
+            groups = self.channel_view.channel_groups(channel, points[channel])
+            draw_buffer_series(
+                main_ax,
+                proj_axes,
+                groups,
+                title=str(channel),
+                title_fontsize=8,
+                show_ticks=False,
+            )
+            cell = main_ax.get_position(self.fig)
+            height = (cell.y1 - cell.y0) * 0.45
+            rect = corner_rect(cell, width_frac=0.4, height=height)
+            self.draw_channel_feature(self._insets[channel], channel, rect)
+
+    def draw_inference(self) -> None:
+        """Draw the displayed LM's evidence and hypothesis-count line plots."""
+        self._select_active_history()
+        self._ensure_lines()
+        self._draw_object_series(
+            self._evidence_ax,
+            self._evidence_history,
+            "Highest evidence per object",
+            "evidence",
+        )
+        self._draw_object_series(
+            self._num_hyp_ax,
+            self._num_hyp_history,
+            "Number of hypotheses per object",
+            "hypotheses",
+        )
+        self._draw_inference_legend()
+
+    def draw_placeholder(self, message: str) -> None:
+        """Draw a centered placeholder message spanning the Details column.
+
+        Args:
+            message: The text to display.
+        """
+        if self._mode != "placeholder":
+            self._clear_insets()
+            self._clear_axes()
+            self._axes = [self.fig.add_subplot(self.spec)]
+            self._mode = "placeholder"
+            self._channel_count = None
+
+        ax = self._axes[0]
+        ax.cla()
+        ax.set_axis_off()
+        ax.text(
+            0.5,
+            0.5,
+            message,
+            ha="center",
+            va="center",
+            wrap=True,
+            transform=ax.transAxes,
+        )
+
+    def _clear_axes(self) -> None:
+        """Remove every main and projection axis in the Details column."""
+        for ax in self._axes:
+            ax.remove()
+        for axes in self._proj_axes:
+            for ax in axes:
+                ax.remove()
+        self._axes = []
+        self._proj_axes = []
+
+    def _sync_insets(self, channels: list[str]) -> None:
+        """Match the feature insets to the channels currently stacked in the column.
+
+        Drops insets for channels no longer shown and creates one per new channel, so
+        each stacked Details panel carries the same "Input Feature" inset as the Monty
+        section.
+
+        Args:
+            channels: The channel ids stacked in the Details column this frame.
+        """
+        wanted = set(channels)
+        for channel in list(self._insets):
+            if channel not in wanted:
+                self._insets.pop(channel).remove()
+        for channel in channels:
+            if channel not in self._insets:
+                self._insets[channel] = FeatureInset(self.fig)
+
+    def _clear_insets(self) -> None:
+        """Remove every feature inset (when leaving the per-channel layout)."""
+        for inset in self._insets.values():
+            inset.remove()
+        self._insets = {}
+
+    def _ensure_grid(self, n: int) -> None:
+        """Rebuild the column as `n` stacked per-channel plot groups.
+
+        Each channel group is a 3D cloud over a row of three 2D projections. Rebuilds
+        only when the channel count changes, to avoid flicker.
+
+        Args:
+            n: The number of stacked per-channel plot groups.
+        """
+        if self._mode == "grid" and self._channel_count == n:
+            return
+        self._clear_axes()
+        outer = GridSpecFromSubplotSpec(n, 1, subplot_spec=self.spec, hspace=0.25)
+        for i in range(n):
+            inner = GridSpecFromSubplotSpec(
+                2,
+                3,
+                subplot_spec=outer[i, 0],
+                height_ratios=[3, 1],
+                hspace=0.1,
+                wspace=0.15,
+            )
+            self._axes.append(self.fig.add_subplot(inner[0, :], projection="3d"))
+            self._proj_axes.append(
+                [self.fig.add_subplot(inner[1, j]) for j in range(3)]
+            )
+        self._mode = "grid"
+        self._channel_count = n
+
+    def _ensure_lines(self) -> None:
+        """Rebuild the column as two line plots with the legend between them."""
+        if self._mode == "lines":
+            return
+        self._clear_insets()
+        self._clear_axes()
+        grid = GridSpecFromSubplotSpec(
+            3,
+            1,
+            subplot_spec=self.spec,
+            height_ratios=[1, 0.5, 1],
+            hspace=0.4,
+        )
+        self._evidence_ax = self.fig.add_subplot(grid[0, 0])
+        self._legend_ax = self.fig.add_subplot(grid[1, 0])
+        self._legend_ax.set_axis_off()
+        self._num_hyp_ax = self.fig.add_subplot(grid[2, 0])
+        self._axes = [self._evidence_ax, self._legend_ax, self._num_hyp_ax]
+        self._mode = "lines"
+        self._channel_count = None
+
+    def _select_active_history(self) -> None:
+        """Point the line-plot history fields at the displayed LM's accumulated data."""
+        lm_id = self.channel_view.lm.learning_module_id
+        self._evidence_steps = self.history.steps_by_lm.setdefault(lm_id, [])
+        self._evidence_history = self.history.evidence_by_lm.setdefault(lm_id, {})
+        self._num_hyp_history = self.history.num_hyp_by_lm.setdefault(lm_id, {})
+        self._burst_steps = self.history.burst_steps_by_lm.setdefault(lm_id, [])
+
+    def _draw_object_series(
+        self,
+        ax: Axes,
+        history: dict[str, list[float]],
+        title: str,
+        ylabel: str,
+    ) -> None:
+        """Redraw one per-object line plot with burst markers.
+
+        Iterating `self._evidence_history` key order in both plots keeps each object's
+        color consistent across them. The shared legend is drawn separately beneath the
+        MLH panel by `_draw_inference_legend`.
+
+        Args:
+            ax: The axis to redraw.
+            history: The per-object value history to plot.
+            title: The plot title.
+            ylabel: The y-axis label.
+        """
+        ax.cla()
+        for graph_id in self._evidence_history:
+            ax.plot(self._evidence_steps, history[graph_id], label=graph_id)
+        for i, burst_step in enumerate(self._burst_steps):
+            ax.axvline(
+                burst_step,
+                linestyle="--",
+                color="red",
+                label="burst" if i == 0 else None,
+            )
+        ax.set_title(title)
+        ax.set_xlabel("step")
+        ax.set_ylabel(ylabel)
+
+    def _draw_inference_legend(self) -> None:
+        """Place the shared per-object legend between the two line plots.
+
+        The legend would otherwise run off the figure's right edge, so it is drawn in a
+        dedicated axis squeezed between the evidence and hypotheses plots, with the
+        handles gathered from the line plots.
+        """
+        if self._inference_legend is not None:
+            self._inference_legend.remove()
+            self._inference_legend = None
+        handles, labels = self._num_hyp_ax.get_legend_handles_labels()
+        if not handles:
+            return
+        self._inference_legend = self._legend_ax.legend(
+            handles,
+            labels,
+            loc="center",
+            ncol=2,
+            fontsize=10,
+            borderaxespad=0.0,
+        )
+
+
 class LivePlotter:
     """Live plotter implementing the `Plotter` Protocol for training and inference.
 
@@ -802,10 +1070,6 @@ class LivePlotter:
     def _reset_episode_state(self) -> None:
         """Reset the per-episode history, selection, and axis-layout bookkeeping."""
         self._history = EvidenceHistory()
-        self._evidence_steps: list[int] = []
-        self._evidence_history: dict[str, list[float]] = {}
-        self._num_hyp_history: dict[str, list[float]] = {}
-        self._burst_steps: list[int] = []
         self._selected: str | None = None
         self._buttons: list[Button] = []
         self._slider: Slider | None = None
@@ -815,12 +1079,6 @@ class LivePlotter:
         self._monty_projection: str | None = None
         self._monty_proj_axes: list[Axes] = []
         self._monty_inset: FeatureInset | None = None
-        self._details_insets: dict[str, FeatureInset] = {}
-        self._details_axes: list[Axes] = []
-        self._details_proj_axes: list[list[Axes]] = []
-        self._details_mode: str | None = None
-        self._details_channel_count: int | None = None
-        self._inference_legend = None
         self._last_observations: Observations | None = None
         self._last_step: int | None = None
 
@@ -855,6 +1113,13 @@ class LivePlotter:
 
         self._simulator = SimulatorPanel(self.fig, self._sim_spec)
         self._ax_monty = self.fig.add_subplot(self._monty_spec)
+        self._details = DetailsPanel(
+            self.fig,
+            self._details_spec,
+            self._channel_view,
+            self._history,
+            self._draw_channel_feature,
+        )
         self._draw_section_dividers()
         self._build_selector_buttons()
 
@@ -960,7 +1225,7 @@ class LivePlotter:
         self._channel_button = None
         self._simulator = None
         self._monty_inset = None
-        self._details_insets = {}
+        self._details = None
 
     def _build_action_buttons(self) -> None:
         """Add one button per action name plus an "End episode" button."""
@@ -1078,31 +1343,8 @@ class LivePlotter:
         if self._monty_inset is None:
             self._monty_inset = FeatureInset(self.fig)
         monty = self._monty_spec.get_position(self.fig)
-        rect = self._corner_rect(monty, width_frac=0.32, height=0.18, top_pad=0.07)
+        rect = corner_rect(monty, width_frac=0.32, height=0.18, top_pad=0.07)
         self._draw_channel_feature(self._monty_inset, self._channel_view.channel, rect)
-
-    def _corner_rect(
-        self,
-        bbox,
-        width_frac: float,
-        height: float,
-        top_pad: float = 0.0,
-    ) -> list[float]:
-        """Figure-coordinate rectangle for a corner inset over a host panel.
-
-        Args:
-            bbox: The host panel's figure-coordinate bounding box.
-            width_frac: The inset width as a fraction of the host panel's width.
-            height: The inset height in figure coordinates.
-            top_pad: Gap in figure coordinates between the host's top and the inset.
-
-        Returns:
-            The `[left, bottom, width, height]` rectangle in the panel's top-left
-            corner.
-        """
-        width = (bbox.x1 - bbox.x0) * width_frac
-        top = bbox.y1 - top_pad
-        return [bbox.x0 + 0.005, top - height, width, height]
 
     def _draw_channel_feature(
         self, inset: FeatureInset, channel: str | None, rect: list[float]
@@ -1370,120 +1612,6 @@ class LivePlotter:
             transform=ax.transAxes,
         )
 
-    def _clear_details_axes(self) -> None:
-        """Remove every main and projection axis in the Details column."""
-        for ax in self._details_axes:
-            ax.remove()
-        for axes in self._details_proj_axes:
-            for ax in axes:
-                ax.remove()
-        self._details_axes = []
-        self._details_proj_axes = []
-
-    def _sync_details_insets(self, channels: list[str]) -> None:
-        """Match the Details feature insets to the channels currently stacked there.
-
-        Drops insets for channels no longer shown and creates one per new channel, so
-        each stacked Details panel carries the same "Input Feature" inset as the Monty
-        section.
-
-        Args:
-            channels: The channel ids stacked in the Details column this frame.
-        """
-        wanted = set(channels)
-        for channel in list(self._details_insets):
-            if channel not in wanted:
-                self._details_insets.pop(channel).remove()
-        for channel in channels:
-            if channel not in self._details_insets:
-                self._details_insets[channel] = FeatureInset(self.fig)
-
-    def _clear_details_insets(self) -> None:
-        """Remove every Details feature inset (when leaving the per-channel layout)."""
-        for inset in self._details_insets.values():
-            inset.remove()
-        self._details_insets = {}
-
-    def _ensure_details_grid(self, n: int) -> None:
-        """Rebuild the Details column as `n` stacked per-channel plot groups.
-
-        Each channel group is a 3D cloud over a row of three 2D projections. Rebuilds
-        only when the channel count changes, to avoid flicker.
-
-        Args:
-            n: The number of stacked per-channel plot groups.
-        """
-        if self._details_mode == "grid" and self._details_channel_count == n:
-            return
-        self._clear_details_axes()
-        outer = GridSpecFromSubplotSpec(
-            n, 1, subplot_spec=self._details_spec, hspace=0.25
-        )
-        for i in range(n):
-            inner = GridSpecFromSubplotSpec(
-                2,
-                3,
-                subplot_spec=outer[i, 0],
-                height_ratios=[3, 1],
-                hspace=0.1,
-                wspace=0.15,
-            )
-            self._details_axes.append(
-                self.fig.add_subplot(inner[0, :], projection="3d")
-            )
-            self._details_proj_axes.append(
-                [self.fig.add_subplot(inner[1, j]) for j in range(3)]
-            )
-        self._details_mode = "grid"
-        self._details_channel_count = n
-
-    def _ensure_details_lines(self) -> None:
-        """Rebuild the Details column as two line plots with the legend between them."""
-        if self._details_mode == "lines":
-            return
-        self._clear_details_insets()
-        self._clear_details_axes()
-        grid = GridSpecFromSubplotSpec(
-            3,
-            1,
-            subplot_spec=self._details_spec,
-            height_ratios=[1, 0.5, 1],
-            hspace=0.4,
-        )
-        self._evidence_ax = self.fig.add_subplot(grid[0, 0])
-        self._legend_ax = self.fig.add_subplot(grid[1, 0])
-        self._legend_ax.set_axis_off()
-        self._num_hyp_ax = self.fig.add_subplot(grid[2, 0])
-        self._details_axes = [self._evidence_ax, self._legend_ax, self._num_hyp_ax]
-        self._details_mode = "lines"
-        self._details_channel_count = None
-
-    def _draw_details_placeholder(self, message: str) -> None:
-        """Draw a centered placeholder message spanning the Details column.
-
-        Args:
-            message: The text to display.
-        """
-        if self._details_mode != "placeholder":
-            self._clear_details_insets()
-            self._clear_details_axes()
-            self._details_axes = [self.fig.add_subplot(self._details_spec)]
-            self._details_mode = "placeholder"
-            self._details_channel_count = None
-
-        ax = self._details_axes[0]
-        ax.cla()
-        ax.set_axis_off()
-        ax.text(
-            0.5,
-            0.5,
-            message,
-            ha="center",
-            va="center",
-            wrap=True,
-            transform=ax.transAxes,
-        )
-
     def _draw_training(self) -> None:
         """Draw the exploratory-step panels from the LM buffer.
 
@@ -1501,7 +1629,7 @@ class LivePlotter:
         channels = [c for c in points if points[c].size]
         if not channels:
             self._draw_monty_placeholder("no observations yet")
-            self._draw_details_placeholder("no observations yet")
+            self._details.draw_placeholder("no observations yet")
             return
 
         selected = self._channel_view.channel
@@ -1514,9 +1642,9 @@ class LivePlotter:
 
         others = [c for c in channels if c != selected]
         if others:
-            self._draw_buffer_per_channel(others, points)
+            self._details.draw_buffer_grid(others, points)
         else:
-            self._draw_details_placeholder("no other channels")
+            self._details.draw_placeholder("no other channels")
 
     def _draw_selected_channel(
         self, channel: str, pts: npt.NDArray[np.float64]
@@ -1569,34 +1697,6 @@ class LivePlotter:
         draw_2d_segments(ax, x, y, colors, edge_mask, tangents)
         ax.set_title("")
 
-    def _draw_buffer_per_channel(
-        self, channels: list[str], points: dict[str, npt.NDArray[np.float64]]
-    ) -> None:
-        """Draw one Details plot group per channel's buffer.
-
-        Args:
-            channels: The channel ids with at least one location.
-            points: The per-channel non-padded location points.
-        """
-        self._ensure_details_grid(len(channels))
-        self._sync_details_insets(channels)
-        for main_ax, proj_axes, channel in zip(
-            self._details_axes, self._details_proj_axes, channels
-        ):
-            groups = self._channel_view.channel_groups(channel, points[channel])
-            draw_buffer_series(
-                main_ax,
-                proj_axes,
-                groups,
-                title=str(channel),
-                title_fontsize=8,
-                show_ticks=False,
-            )
-            cell = main_ax.get_position(self.fig)
-            height = (cell.y1 - cell.y0) * 0.45
-            rect = self._corner_rect(cell, width_frac=0.4, height=height)
-            self._draw_channel_feature(self._details_insets[channel], channel, rect)
-
     def _draw_inference(self) -> None:
         """Draw the matching-step panels (MLH graph and line plots).
 
@@ -1608,20 +1708,10 @@ class LivePlotter:
             lm_name = type(self._channel_view.lm).__name__
             placeholder = f"Inference view not available for {lm_name}"
             self._draw_monty_placeholder(placeholder)
-            self._draw_details_placeholder(placeholder)
+            self._details.draw_placeholder(placeholder)
             return
-        self._select_active_history()
         self._draw_mlh()
-        self._draw_evidence_plots()
-        self._draw_inference_legend()
-
-    def _select_active_history(self) -> None:
-        """Point the line-plot history fields at the displayed LM's accumulated data."""
-        lm_id = self._channel_view.lm.learning_module_id
-        self._evidence_steps = self._history.steps_by_lm.setdefault(lm_id, [])
-        self._evidence_history = self._history.evidence_by_lm.setdefault(lm_id, {})
-        self._num_hyp_history = self._history.num_hyp_by_lm.setdefault(lm_id, {})
-        self._burst_steps = self._history.burst_steps_by_lm.setdefault(lm_id, [])
+        self._details.draw_inference()
 
     def _draw_mlh(self) -> None:
         """Render the most likely hypothesis graph and its location marker.
@@ -1757,74 +1847,3 @@ class LivePlotter:
             zorder=3,
         )
         ax.set_title(f"MLH ({mlh['graph_id']})")
-
-    def _draw_evidence_plots(self) -> None:
-        """Redraw both inference line plots from the accumulated history."""
-        self._ensure_details_lines()
-        self._draw_object_series(
-            self._evidence_ax,
-            self._evidence_history,
-            "Highest evidence per object",
-            "evidence",
-        )
-        self._draw_object_series(
-            self._num_hyp_ax,
-            self._num_hyp_history,
-            "Number of hypotheses per object",
-            "hypotheses",
-        )
-
-    def _draw_object_series(
-        self,
-        ax: Axes,
-        history: dict[str, list[float]],
-        title: str,
-        ylabel: str,
-    ) -> None:
-        """Redraw one per-object line plot with burst markers.
-
-        Iterating `self._evidence_history` key order in both plots keeps each object's
-        color consistent across them. The shared legend is drawn separately beneath the
-        MLH panel by `_draw_inference_legend`.
-
-        Args:
-            ax: The axis to redraw.
-            history: The per-object value history to plot.
-            title: The plot title.
-            ylabel: The y-axis label.
-        """
-        ax.cla()
-        for graph_id in self._evidence_history:
-            ax.plot(self._evidence_steps, history[graph_id], label=graph_id)
-        for i, burst_step in enumerate(self._burst_steps):
-            ax.axvline(
-                burst_step,
-                linestyle="--",
-                color="red",
-                label="burst" if i == 0 else None,
-            )
-        ax.set_title(title)
-        ax.set_xlabel("step")
-        ax.set_ylabel(ylabel)
-
-    def _draw_inference_legend(self) -> None:
-        """Place the shared per-object legend between the two line plots.
-
-        The legend would otherwise run off the figure's right edge, so it is drawn in a
-        dedicated axis squeezed between the evidence and hypotheses plots, with the
-        handles gathered from the line plots.
-        """
-        if self._inference_legend is not None:
-            self._inference_legend.remove()
-            self._inference_legend = None
-        handles, labels = self._num_hyp_ax.get_legend_handles_labels()
-        if not handles:
-            return
-        self._inference_legend = self._legend_ax.legend(
-            handles,
-            labels,
-            loc="center",
-            ncol=2,
-            fontsize=10,
-            borderaxespad=0.0,
-        )

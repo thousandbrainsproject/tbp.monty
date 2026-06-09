@@ -110,6 +110,28 @@ def frame_center_half(
     return center, size / 2
 
 
+def corner_rect(
+    bbox,
+    width_frac: float,
+    height: float,
+    top_pad: float = 0.0,
+) -> list[float]:
+    """Figure-coordinate rectangle for a corner inset over a host panel.
+
+    Args:
+        bbox: The host panel's figure-coordinate bounding box.
+        width_frac: The inset width as a fraction of the host panel's width.
+        height: The inset height in figure coordinates.
+        top_pad: Gap in figure coordinates between the host's top and the inset.
+
+    Returns:
+        The `[left, bottom, width, height]` rectangle in the panel's top-left corner.
+    """
+    width = (bbox.x1 - bbox.x0) * width_frac
+    top = bbox.y1 - top_pad
+    return [bbox.x0 + 0.005, top - height, width, height]
+
+
 def planar_style(
     n: int,
     hsv: npt.NDArray[np.float64] | None,
