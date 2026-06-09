@@ -81,25 +81,71 @@ def ror_encoding(codes: np.ndarray, n_neighbors: int) -> tuple[np.ndarray, int]:
     Raises:
         ValueError: If the max value of codes exceeds the number of codes.
     """
+    # Each code is an `n_neighbors`-bit pattern, so the value space spans every
+    # integer in [0, 2**n_neighbors). `n_codes` is therefore the total number of
+    # distinct raw codes the encoding must be able to handle.
     n_codes = 2 ** n_neighbors
+    # `mask` has its lowest `n_neighbors` bits set to 1 (e.g. 0b1111 for 4
+    # neighbors). Bitwise-ANDing with it discards any bits above bit n_neighbors-1,
+    # keeping rotated values confined to the valid `n_neighbors`-bit range.
     mask = n_codes - 1
+    # Lookup table mapping every possible raw code to its canonical (rotation
+    # invariant) representative. Pre-allocated to length `n_codes` so each code's
+    # canonical value can be stored at the index equal to the code itself.
     canonical = np.empty(n_codes, dtype=np.int32)
 
+    # Defensive check: a code value at or above `n_codes` would require more than
+    # `n_neighbors` bits and cannot be indexed into `canonical`/`lut`, so reject it.
     if codes.max() >= n_codes:
         raise ValueError(f"Max value of codes exceeds the number of codes, got {codes.max()} >= {n_codes}")
 
+    # Build the canonical form for every possible code. The ROR (Rotate to the
+    # minimum) scheme defines two codes as equivalent if one is a circular bit
+    # rotation of the other; the canonical representative is the numerically
+    # smallest value reachable by rotating the bit pattern. This is what makes the
+    # final encoding invariant to rotation of the circular neighborhood.
     for code in range(n_codes):
+        # `x` holds the current rotation of the bit pattern, starting from the
+        # unrotated code.
         x = code
+        # Track the smallest value seen across all rotations; initialized to the
+        # code itself (the zero-rotation case).
         min_code = code
+        # Apply each of the remaining `n_neighbors - 1` distinct circular
+        # rotations. Together with the starting value these cover every rotation
+        # of the pattern exactly once.
         for _ in range(1, n_neighbors):
+            # Perform a one-bit circular right rotation of the `n_neighbors`-bit
+            # value:
+            #   `x >> 1` shifts every bit one position toward the least significant
+            #       end, dropping the old bit 0.
+            #   `(x & 1) << (n_neighbors - 1)` takes that dropped bit 0 and wraps it
+            #       around into the most significant bit position.
+            #   The `|` merges the shifted body with the wrapped-around bit, and the
+            #       `& mask` clears anything above the valid bit range.
             x = ((x >> 1) | ((x & 1) << (n_neighbors - 1))) & mask
+            # Keep the minimum over all rotations encountered so far.
             min_code = min(min_code, x)
+        # Store the canonical (minimum-rotation) representative for this code.
         canonical[code] = min_code
 
+    # The distinct canonical values are the actual rotation-invariant equivalence
+    # classes. `np.unique` returns them sorted, giving a stable, deterministic
+    # ordering of the classes.
     unique_vals = np.unique(canonical)
+    # Map each canonical value to a compact, contiguous bin index in [0, n_bins).
+    # This compresses the sparse canonical values down to a dense range suitable
+    # for histogramming.
     remap = {old: new for new, old in enumerate(unique_vals)}
+    # Compose the two mappings (raw code -> canonical value -> dense bin index)
+    # into a single lookup table indexed directly by raw code value.
     lut = np.array([remap[v] for v in canonical], dtype=np.int32)
+    # The number of distinct rotation-invariant classes is the number of output
+    # bins the encoding produces.
     n_bins = len(unique_vals)
+    # Apply the lookup table to the input codes via fancy indexing, translating
+    # every raw code into its dense rotation-invariant bin index in one vectorized
+    # operation.
     encoded = lut[codes.astype(np.int32, copy=False)]
 
     return encoded, n_bins
