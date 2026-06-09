@@ -32,7 +32,7 @@ def local_ternary_pattern_and_hist(
     n_neighbors: int = 8,
     radius: float = 1.0,
     threshold: float = 5.0,
-):
+) -> np.ndarray:
     """Compute Local Ternary Pattern features and histogram for a grayscale image patch.
 
     This implementation leverages the standard split-LTP formulation from Tan and
@@ -68,7 +68,7 @@ def local_ternary_pattern_and_hist(
     return histogram
 
 
-def ror_encoding(codes: np.ndarray, n_neighbors: float) -> tuple[np.ndarray, int]:
+def ror_encoding(codes: np.ndarray, n_neighbors: int) -> tuple[np.ndarray, int]:
     """Encode codes using the ROR rotation-invariant encoding scheme.
 
     Args:
@@ -78,9 +78,12 @@ def ror_encoding(codes: np.ndarray, n_neighbors: float) -> tuple[np.ndarray, int
     Returns:
         Encoded codes and number of bins.
     """
-    n_codes = 1 << n_neighbors
+    n_codes = 2 ** n_neighbors
     mask = n_codes - 1
     canonical = np.empty(n_codes, dtype=np.int32)
+
+    if codes.max() >= n_codes:
+        raise ValueError(f"Max value of codes exceeds the number of codes, got {codes.max()} >= {n_codes}")
 
     for code in range(n_codes):
         x = code
