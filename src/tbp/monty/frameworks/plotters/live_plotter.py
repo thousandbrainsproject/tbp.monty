@@ -1097,6 +1097,303 @@ class DetailsPanel:
         )
 
 
+class MontyPanel:
+    """The Monty column: the selected channel's main graph and its feature inset.
+
+    Owns the Monty column's single physical region, the axis-layout state machine, and
+    the "Input Feature" corner inset stacked over it. During an exploratory step it
+    draws the selected channel's buffered points (a flat edge cloud for a 2D sensor
+    module, else a 3D cube with three head-on projections); during a matching step it
+    draws the displayed LM's most likely hypothesis graph and location marker; otherwise
+    a centered placeholder. Axes are rebuilt only when the layout or projection changes
+    (a matplotlib axis cannot switch between 2D and 3D in place), to avoid flicker. The
+    selection and per-channel features come from a `ChannelView`.
+    """
+
+    def __init__(self, fig: Figure, spec, channel_view: ChannelView) -> None:
+        """Bind the Monty column to its figure region and selection.
+
+        Lays out the initial single 2D axis, matching the layout the placeholder and
+        inference 2D views start from.
+
+        Args:
+            fig: The figure to draw on.
+            spec: The Monty column's gridspec subplot spec.
+            channel_view: The selected LM/channel and per-channel feature accessors.
+        """
+        self.fig = fig
+        self.spec = spec
+        self.channel_view = channel_view
+        self._ax = fig.add_subplot(spec)
+        self._mode: str | None = "single"
+        self._projection: str | None = None
+        self._proj_axes: list[Axes] = []
+        self._inset: FeatureInset | None = None
+
+    def draw_placeholder(self, message: str) -> None:
+        """Draw a centered placeholder message in the Monty panel.
+
+        Args:
+            message: The text to display.
+        """
+        ax = self._ensure_projection(None)
+        ax.cla()
+        ax.set_axis_off()
+        ax.text(
+            0.5,
+            0.5,
+            message,
+            ha="center",
+            va="center",
+            wrap=True,
+            transform=ax.transAxes,
+        )
+
+    def draw_selected_channel(
+        self, channel: str, pts: npt.NDArray[np.float64]
+    ) -> None:
+        """Draw the selected channel's buffered points (exploratory step).
+
+        A 2D sensor-module channel is drawn as a flat edge cloud mirroring the inference
+        2D view; every other channel is drawn as a 3D cube with three head-on
+        projections, since a partially built 3D graph may look planar by chance.
+
+        Args:
+            channel: The selected input channel.
+            pts: The channel's `(M, 3)` non-padded location points.
+        """
+        if isinstance(self.channel_view.resolve_sm_channel(channel), TwoDSensorModule):
+            self._draw_selected_channel_2d(channel, pts)
+            return
+        main_ax, proj_axes = self._ensure_projected()
+        groups = self.channel_view.channel_groups(channel, pts)
+        draw_buffer_series(
+            main_ax,
+            proj_axes,
+            groups,
+            title="",
+            title_fontsize=None,
+        )
+
+    def draw_mlh(self) -> None:
+        """Render the most likely hypothesis graph and its location marker.
+
+        Uses the selected channel's stored graph when that channel is part of the MLH
+        graph, otherwise the graph's first sensor-module channel. Falls back to a "No
+        MLH" placeholder when there is no current hypothesis or the graph cannot be
+        retrieved. Planar graphs are drawn as edge-oriented segments; all other graphs
+        as a 3D point cloud.
+        """
+        lm = self.channel_view.lm
+        graph = None
+        mlh = lm.get_current_mlh()
+        if mlh and mlh.get("graph_id") not in (None, "no_observations_yet"):
+            graph_id = mlh["graph_id"]
+            if graph_id in lm.graph_memory.get_memory_ids():
+                channel = self._mlh_channel(graph_id)
+                if channel is not None:
+                    graph = lm.graph_memory.get_graph(graph_id, channel)
+
+        if graph is None or getattr(graph, "pos", None) is None:
+            self.draw_placeholder("No MLH")
+            return
+        pos = np.asarray(graph.pos)
+        if len(pos) == 0:
+            self.draw_placeholder("No MLH")
+            return
+
+        color = self._mlh_marker_color(mlh, lm.object_evidence_threshold)
+        if is_3d(pos):
+            ax = self._ensure_projection("3d")
+            self._show_mlh_3d(ax, mlh, pos, color)
+        else:
+            ax = self._ensure_projection(None)
+            self._show_mlh_2d(ax, mlh, graph, pos, color)
+
+    def draw_feature_inset(self) -> None:
+        """Draw the Monty section's "Input Feature" inset for the selected channel."""
+        if self._inset is None:
+            self._inset = FeatureInset(self.fig, self.channel_view)
+        monty = self.spec.get_position(self.fig)
+        rect = corner_rect(monty, width_frac=0.32, height=0.18, top_pad=0.07)
+        self._inset.draw(self.channel_view.channel, rect)
+
+    def _clear_axes(self) -> None:
+        """Remove the main Monty axis and any projection axes below it."""
+        self._ax.remove()
+        for ax in self._proj_axes:
+            ax.remove()
+        self._proj_axes = []
+
+    def _ensure_projection(self, projection: str | None) -> Axes:
+        """Recreate the Monty axis as a single panel with the given projection.
+
+        A matplotlib axis cannot switch between 2D and 3D in place, so the axis is
+        removed and re-added whenever the layout or projection changes.
+
+        Args:
+            projection: The desired projection (`"3d"` or `None` for 2D).
+
+        Returns:
+            The current single Monty axis with the requested projection.
+        """
+        if self._mode == "single" and self._projection == projection:
+            return self._ax
+        self._clear_axes()
+        self._ax = self.fig.add_subplot(self.spec, projection=projection)
+        self._mode = "single"
+        self._projection = projection
+        return self._ax
+
+    def _ensure_projected(self) -> tuple[Axes, list[Axes]]:
+        """Lay the Monty column out as a 3D cloud over a row of three projections.
+
+        Returns:
+            The 3D main axis and the three 2D projection axes (XY, XZ, YZ).
+        """
+        if self._mode == "projected":
+            return self._ax, self._proj_axes
+        self._clear_axes()
+        grid = GridSpecFromSubplotSpec(
+            2,
+            3,
+            subplot_spec=self.spec,
+            height_ratios=[3, 1],
+            hspace=0.3,
+            wspace=0.35,
+        )
+        self._ax = self.fig.add_subplot(grid[0, :], projection="3d")
+        self._proj_axes = [self.fig.add_subplot(grid[1, j]) for j in range(3)]
+        self._mode = "projected"
+        self._projection = "3d"
+        return self._ax, self._proj_axes
+
+    def _draw_selected_channel_2d(
+        self, channel: str, pts: npt.NDArray[np.float64]
+    ) -> None:
+        """Draw a 2D sensor-module channel's buffer as a planar edge cloud.
+
+        Mirrors the inference 2D MLH view: a single flat rectilinear axis of
+        hsv-colored dots with dashed segments along the edge tangent where the pose is
+        fully defined, rather than the 3D cube and projections used for 3D channels.
+
+        Args:
+            channel: The selected 2D sensor-module channel.
+            pts: The channel's `(M, 3)` non-padded location points.
+        """
+        ax = self._ensure_projection(None)
+        ax.cla()
+        x, y = pts[:, 0], pts[:, 1]
+        colors, edge_mask, tangents = planar_style(
+            len(x),
+            self.channel_view.aligned_feature(channel, "hsv"),
+            self.channel_view.aligned_feature(channel, "pose_fully_defined"),
+            self.channel_view.aligned_feature(channel, "pose_vectors"),
+        )
+        draw_2d_segments(ax, x, y, colors, edge_mask, tangents)
+        ax.set_title("")
+
+    def _mlh_channel(self, graph_id: str) -> str | None:
+        """Choose which channel's stored graph to render for the MLH.
+
+        Args:
+            graph_id: The MLH graph id.
+
+        Returns:
+            The selected channel when it is part of the graph, else the graph's first
+            sensor-module channel, else `None` when the graph has no sensor channel.
+        """
+        lm = self.channel_view.lm
+        channels = lm.get_input_channels_in_graph(graph_id)
+        if self.channel_view.channel in channels:
+            return self.channel_view.channel
+        sender_types = lm.buffer.channel_sender_types
+        sm_channels = [c for c in channels if sender_types.get(c) == "SM"]
+        return sm_channels[0] if sm_channels else None
+
+    @staticmethod
+    def _mlh_marker_color(mlh: dict, evidence_threshold: float | None) -> str:
+        """Color the MLH marker by whether its evidence clears the threshold.
+
+        Args:
+            mlh: The current most likely hypothesis.
+            evidence_threshold: The object evidence threshold, or `None`.
+
+        Returns:
+            `"red"` when above threshold (or threshold unknown), else `"gray"`.
+        """
+        if evidence_threshold is None:
+            return "red"
+        return "red" if mlh["evidence"] > evidence_threshold else "gray"
+
+    def _show_mlh_3d(
+        self, ax: Axes, mlh: dict, pos: npt.NDArray[np.float64], mlh_color: str
+    ) -> None:
+        """Render a 3D graph as a point cloud with the MLH location marked.
+
+        Args:
+            ax: The 3D Monty axis.
+            mlh: The current most likely hypothesis.
+            pos: The graph node positions, shape `(N, 3)`.
+            mlh_color: The MLH location marker color.
+        """
+        ax.cla()
+        ax.scatter(pos[:, 1], pos[:, 0], pos[:, 2], c="black", s=2)
+        ax.scatter(
+            mlh["location"][1],
+            mlh["location"][0],
+            mlh["location"][2],
+            c=mlh_color,
+            s=15,
+        )
+        ax.set_title(f"MLH ({mlh['graph_id']})")
+        ax.set_axis_off()
+        ax.set_aspect("equal")
+
+    def _show_mlh_2d(
+        self,
+        ax: Axes,
+        mlh: dict,
+        graph: GraphObjectModel,
+        pos: npt.NDArray[np.float64],
+        mlh_color: str,
+    ) -> None:
+        """Render a 2D SM graph as hsv-colored, edge-oriented segments.
+
+        Args:
+            ax: The 2D Monty axis.
+            mlh: The current most likely hypothesis.
+            graph: The MLH graph object model.
+            pos: The graph node positions, shape `(N, >=2)`.
+            mlh_color: The MLH location marker color.
+        """
+        ax.cla()
+        x, y = pos[:, 0], pos[:, 1]
+        fm = graph.feature_mapping
+        graph_feature = {
+            name: np.asarray(graph.get_values_for_feature(name))
+            for name in ("hsv", "pose_fully_defined", "pose_vectors")
+            if name in fm
+        }
+        colors, edge_mask, tangents = planar_style(
+            len(x),
+            graph_feature.get("hsv"),
+            graph_feature.get("pose_fully_defined"),
+            graph_feature.get("pose_vectors"),
+        )
+        draw_2d_segments(ax, x, y, colors, edge_mask, tangents)
+        ax.plot(
+            mlh["location"][0],
+            mlh["location"][1],
+            "x",
+            color=mlh_color,
+            markersize=8,
+            markeredgewidth=2,
+            zorder=3,
+        )
+        ax.set_title(f"MLH ({mlh['graph_id']})")
+
+
 class LivePlotter:
     """Live plotter implementing the `Plotter` Protocol for training and inference.
 
@@ -1261,10 +1558,6 @@ class LivePlotter:
         self._slider: Slider | None = None
         self._lm_button: Button | None = None
         self._channel_button: Button | None = None
-        self._monty_mode: str | None = "single"
-        self._monty_projection: str | None = None
-        self._monty_proj_axes: list[Axes] = []
-        self._monty_inset: FeatureInset | None = None
         self._last_observations: Observations | None = None
         self._last_step: int | None = None
 
@@ -1298,7 +1591,7 @@ class LivePlotter:
         self._details_spec = outer[0, 2]
 
         self._simulator = SimulatorPanel(self.fig, self._sim_spec)
-        self._ax_monty = self.fig.add_subplot(self._monty_spec)
+        self._monty = MontyPanel(self.fig, self._monty_spec, self._channel_view)
         self._details = DetailsPanel(
             self.fig,
             self._details_spec,
@@ -1353,7 +1646,7 @@ class LivePlotter:
             self._draw_training()
         else:
             self._draw_inference()
-        self._draw_feature_inset()
+        self._monty.draw_feature_inset()
 
         self.fig.canvas.draw_idle()
         self.fig.canvas.flush_events()
@@ -1409,7 +1702,7 @@ class LivePlotter:
         self._lm_button = None
         self._channel_button = None
         self._simulator = None
-        self._monty_inset = None
+        self._monty = None
         self._details = None
 
     def _build_action_buttons(self) -> None:
@@ -1523,83 +1816,6 @@ class LivePlotter:
                 )
             )
 
-    def _draw_feature_inset(self) -> None:
-        """Draw the Monty section's "Input Feature" inset for the selected channel."""
-        if self._monty_inset is None:
-            self._monty_inset = FeatureInset(self.fig, self._channel_view)
-        monty = self._monty_spec.get_position(self.fig)
-        rect = corner_rect(monty, width_frac=0.32, height=0.18, top_pad=0.07)
-        self._monty_inset.draw(self._channel_view.channel, rect)
-
-    def _clear_monty_axes(self) -> None:
-        """Remove the main Monty axis and any projection axes below it."""
-        self._ax_monty.remove()
-        for ax in self._monty_proj_axes:
-            ax.remove()
-        self._monty_proj_axes = []
-
-    def _ensure_monty_projection(self, projection: str | None) -> Axes:
-        """Recreate the Monty axis as a single panel with the given projection.
-
-        A matplotlib axis cannot switch between 2D and 3D in place, so the axis is
-        removed and re-added whenever the layout or projection changes.
-
-        Args:
-            projection: The desired projection (`"3d"` or `None` for 2D).
-
-        Returns:
-            The current single Monty axis with the requested projection.
-        """
-        if self._monty_mode == "single" and self._monty_projection == projection:
-            return self._ax_monty
-        self._clear_monty_axes()
-        self._ax_monty = self.fig.add_subplot(self._monty_spec, projection=projection)
-        self._monty_mode = "single"
-        self._monty_projection = projection
-        return self._ax_monty
-
-    def _ensure_monty_projected(self) -> tuple[Axes, list[Axes]]:
-        """Lay the Monty column out as a 3D cloud over a row of three projections.
-
-        Returns:
-            The 3D main axis and the three 2D projection axes (XY, XZ, YZ).
-        """
-        if self._monty_mode == "projected":
-            return self._ax_monty, self._monty_proj_axes
-        self._clear_monty_axes()
-        grid = GridSpecFromSubplotSpec(
-            2,
-            3,
-            subplot_spec=self._monty_spec,
-            height_ratios=[3, 1],
-            hspace=0.3,
-            wspace=0.35,
-        )
-        self._ax_monty = self.fig.add_subplot(grid[0, :], projection="3d")
-        self._monty_proj_axes = [self.fig.add_subplot(grid[1, j]) for j in range(3)]
-        self._monty_mode = "projected"
-        self._monty_projection = "3d"
-        return self._ax_monty, self._monty_proj_axes
-
-    def _draw_monty_placeholder(self, message: str) -> None:
-        """Draw a centered placeholder message in the Monty panel.
-
-        Args:
-            message: The text to display.
-        """
-        ax = self._ensure_monty_projection(None)
-        ax.cla()
-        ax.set_axis_off()
-        ax.text(
-            0.5,
-            0.5,
-            message,
-            ha="center",
-            va="center",
-            wrap=True,
-            transform=ax.transAxes,
-        )
-
     def _draw_training(self) -> None:
         """Draw the exploratory-step panels from the LM buffer.
 
@@ -1616,7 +1832,7 @@ class LivePlotter:
         }
         channels = [c for c in points if points[c].size]
         if not channels:
-            self._draw_monty_placeholder("no observations yet")
+            self._monty.draw_placeholder("no observations yet")
             self._details.draw_placeholder("no observations yet")
             return
 
@@ -1624,66 +1840,15 @@ class LivePlotter:
         selected_pts = points.get(selected) if selected is not None else None
         if selected_pts is None or not selected_pts.size:
             label = selected if selected is not None else "channel"
-            self._draw_monty_placeholder(f"no observations on {label}")
+            self._monty.draw_placeholder(f"no observations on {label}")
         else:
-            self._draw_selected_channel(selected, selected_pts)
+            self._monty.draw_selected_channel(selected, selected_pts)
 
         others = [c for c in channels if c != selected]
         if others:
             self._details.draw_buffer_grid(others, points)
         else:
             self._details.draw_placeholder("no other channels")
-
-    def _draw_selected_channel(
-        self, channel: str, pts: npt.NDArray[np.float64]
-    ) -> None:
-        """Draw the selected channel's buffered points in the Monty panel.
-
-        A 2D sensor-module channel is drawn as a flat edge cloud mirroring the inference
-        2D view; every other channel is drawn as a 3D cube with three head-on
-        projections, since a partially built 3D graph may look planar by chance.
-
-        Args:
-            channel: The selected input channel.
-            pts: The channel's `(M, 3)` non-padded location points.
-        """
-        if isinstance(self._channel_view.resolve_sm_channel(channel), TwoDSensorModule):
-            self._draw_selected_channel_2d(channel, pts)
-            return
-        main_ax, proj_axes = self._ensure_monty_projected()
-        groups = self._channel_view.channel_groups(channel, pts)
-        draw_buffer_series(
-            main_ax,
-            proj_axes,
-            groups,
-            title="",
-            title_fontsize=None,
-        )
-
-    def _draw_selected_channel_2d(
-        self, channel: str, pts: npt.NDArray[np.float64]
-    ) -> None:
-        """Draw a 2D sensor-module channel's buffer as a planar edge cloud.
-
-        Mirrors the inference 2D MLH view: a single flat rectilinear axis of
-        hsv-colored dots with dashed segments along the edge tangent where the pose is
-        fully defined, rather than the 3D cube and projections used for 3D channels.
-
-        Args:
-            channel: The selected 2D sensor-module channel.
-            pts: The channel's `(M, 3)` non-padded location points.
-        """
-        ax = self._ensure_monty_projection(None)
-        ax.cla()
-        x, y = pts[:, 0], pts[:, 1]
-        colors, edge_mask, tangents = planar_style(
-            len(x),
-            self._channel_view.aligned_feature(channel, "hsv"),
-            self._channel_view.aligned_feature(channel, "pose_fully_defined"),
-            self._channel_view.aligned_feature(channel, "pose_vectors"),
-        )
-        draw_2d_segments(ax, x, y, colors, edge_mask, tangents)
-        ax.set_title("")
 
     def _draw_inference(self) -> None:
         """Draw the matching-step panels (MLH graph and line plots).
@@ -1695,143 +1860,8 @@ class LivePlotter:
         if not self._channel_view.supports_evidence:
             lm_name = type(self._channel_view.lm).__name__
             placeholder = f"Inference view not available for {lm_name}"
-            self._draw_monty_placeholder(placeholder)
+            self._monty.draw_placeholder(placeholder)
             self._details.draw_placeholder(placeholder)
             return
-        self._draw_mlh()
+        self._monty.draw_mlh()
         self._details.draw_inference()
-
-    def _draw_mlh(self) -> None:
-        """Render the most likely hypothesis graph and its location marker.
-
-        Uses the selected channel's stored graph when that channel is part of the MLH
-        graph, otherwise the graph's first sensor-module channel. Falls back to a "No
-        MLH" placeholder when there is no current hypothesis or the graph cannot be
-        retrieved. Planar graphs are drawn as edge-oriented segments; all other graphs
-        as a 3D point cloud.
-        """
-        lm = self._channel_view.lm
-        graph = None
-        mlh = lm.get_current_mlh()
-        if mlh and mlh.get("graph_id") not in (None, "no_observations_yet"):
-            graph_id = mlh["graph_id"]
-            if graph_id in lm.graph_memory.get_memory_ids():
-                channel = self._mlh_channel(graph_id)
-                if channel is not None:
-                    graph = lm.graph_memory.get_graph(graph_id, channel)
-
-        if graph is None or getattr(graph, "pos", None) is None:
-            self._draw_monty_placeholder("No MLH")
-            return
-        pos = np.asarray(graph.pos)
-        if len(pos) == 0:
-            self._draw_monty_placeholder("No MLH")
-            return
-
-        color = self._mlh_marker_color(mlh, lm.object_evidence_threshold)
-        if is_3d(pos):
-            ax = self._ensure_monty_projection("3d")
-            self._show_mlh_3d(ax, mlh, pos, color)
-        else:
-            ax = self._ensure_monty_projection(None)
-            self._show_mlh_2d(ax, mlh, graph, pos, color)
-
-    def _mlh_channel(self, graph_id: str) -> str | None:
-        """Choose which channel's stored graph to render for the MLH.
-
-        Args:
-            graph_id: The MLH graph id.
-
-        Returns:
-            The selected channel when it is part of the graph, else the graph's first
-            sensor-module channel, else `None` when the graph has no sensor channel.
-        """
-        lm = self._channel_view.lm
-        channels = lm.get_input_channels_in_graph(graph_id)
-        if self._channel_view.channel in channels:
-            return self._channel_view.channel
-        sender_types = lm.buffer.channel_sender_types
-        sm_channels = [c for c in channels if sender_types.get(c) == "SM"]
-        return sm_channels[0] if sm_channels else None
-
-    @staticmethod
-    def _mlh_marker_color(mlh: dict, evidence_threshold: float | None) -> str:
-        """Color the MLH marker by whether its evidence clears the threshold.
-
-        Args:
-            mlh: The current most likely hypothesis.
-            evidence_threshold: The object evidence threshold, or `None`.
-
-        Returns:
-            `"red"` when above threshold (or threshold unknown), else `"gray"`.
-        """
-        if evidence_threshold is None:
-            return "red"
-        return "red" if mlh["evidence"] > evidence_threshold else "gray"
-
-    def _show_mlh_3d(
-        self, ax: Axes, mlh: dict, pos: npt.NDArray[np.float64], mlh_color: str
-    ) -> None:
-        """Render a 3D graph as a point cloud with the MLH location marked.
-
-        Args:
-            ax: The 3D Monty axis.
-            mlh: The current most likely hypothesis.
-            pos: The graph node positions, shape `(N, 3)`.
-            mlh_color: The MLH location marker color.
-        """
-        ax.cla()
-        ax.scatter(pos[:, 1], pos[:, 0], pos[:, 2], c="black", s=2)
-        ax.scatter(
-            mlh["location"][1],
-            mlh["location"][0],
-            mlh["location"][2],
-            c=mlh_color,
-            s=15,
-        )
-        ax.set_title(f"MLH ({mlh['graph_id']})")
-        ax.set_axis_off()
-        ax.set_aspect("equal")
-
-    def _show_mlh_2d(
-        self,
-        ax: Axes,
-        mlh: dict,
-        graph: GraphObjectModel,
-        pos: npt.NDArray[np.float64],
-        mlh_color: str,
-    ) -> None:
-        """Render a 2D SM graph as hsv-colored, edge-oriented segments.
-
-        Args:
-            ax: The 2D Monty axis.
-            mlh: The current most likely hypothesis.
-            graph: The MLH graph object model.
-            pos: The graph node positions, shape `(N, >=2)`.
-            mlh_color: The MLH location marker color.
-        """
-        ax.cla()
-        x, y = pos[:, 0], pos[:, 1]
-        fm = graph.feature_mapping
-        graph_feature = {
-            name: np.asarray(graph.get_values_for_feature(name))
-            for name in ("hsv", "pose_fully_defined", "pose_vectors")
-            if name in fm
-        }
-        colors, edge_mask, tangents = planar_style(
-            len(x),
-            graph_feature.get("hsv"),
-            graph_feature.get("pose_fully_defined"),
-            graph_feature.get("pose_vectors"),
-        )
-        draw_2d_segments(ax, x, y, colors, edge_mask, tangents)
-        ax.plot(
-            mlh["location"][0],
-            mlh["location"][1],
-            "x",
-            color=mlh_color,
-            markersize=8,
-            markeredgewidth=2,
-            zorder=3,
-        )
-        ax.set_title(f"MLH ({mlh['graph_id']})")
