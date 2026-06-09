@@ -221,9 +221,7 @@ class MontyPanel:
             transform=ax.transAxes,
         )
 
-    def draw_selected_channel(
-        self, channel: str, pts: npt.NDArray[np.float64]
-    ) -> None:
+    def draw_selected_channel(self, channel: str, pts: npt.NDArray[np.float64]) -> None:
         """Draw the selected channel's buffered points (exploratory step).
 
         A 2D sensor-module channel is drawn as a flat edge cloud mirroring the inference
@@ -520,9 +518,7 @@ class DetailsPanel:
         """
         self._ensure_grid(len(channels))
         self._sync_insets(channels)
-        for main_ax, proj_axes, channel in zip(
-            self._axes, self._proj_axes, channels
-        ):
+        for main_ax, proj_axes, channel in zip(self._axes, self._proj_axes, channels):
             groups = self.channel_view.channel_groups(channel, points[channel])
             draw_buffer_series(
                 main_ax,
