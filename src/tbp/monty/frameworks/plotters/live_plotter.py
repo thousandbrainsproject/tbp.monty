@@ -1394,6 +1394,243 @@ class MontyPanel:
         ax.set_title(f"MLH ({mlh['graph_id']})")
 
 
+class ActionButtons:
+    """The interactive stepping control: one button per action sampler action.
+
+    Renders one button per action the policy's action sampler can produce, plus an
+    "End episode" button, along the bottom of the figure. `override_action` blocks on
+    the figure's event loop until a button is clicked, then samples and returns the
+    chosen action. The policy and its sampler are validated up front, so an unusable
+    policy fails at construction rather than mid-episode.
+    """
+
+    def __init__(self, model: Monty) -> None:
+        """Derive and validate the action sampler from the model's policy.
+
+        Args:
+            model: The Monty model whose motor system exposes the policy.
+
+        Raises:
+            ValueError: When the policy is missing or exposes no usable sampler.
+        """
+        self.model = model
+        self.fig: Figure | None = None
+        self._selected: str | None = None
+        self._buttons: list[Button] = []
+        policy = model.motor_system.policy
+        if policy is None:
+            raise ValueError(
+                "Interactive plotter requires a policy exposing an action sampler, "
+                "but the motor system's selector exposes no policy."
+            )
+        if not hasattr(policy, "action_sampler") or not hasattr(policy, "agent_id"):
+            raise ValueError(
+                "Interactive plotter requires a policy with an `action_sampler` "
+                f"and `agent_id`; {type(policy).__name__} exposes neither."
+            )
+        self._sampler: ActionSampler = policy.action_sampler
+        self._agent_id: str = policy.agent_id
+        self.action_names: list[str] = list(self._sampler.action_names)
+        if not self.action_names:
+            raise ValueError(
+                "Interactive plotter requires a policy whose action sampler can "
+                "produce at least one action, but it produced none."
+            )
+
+    def build(self, fig: Figure) -> None:
+        """Add one button per action name plus an "End episode" button.
+
+        Args:
+            fig: The figure to place the buttons along the bottom of.
+        """
+        self.fig = fig
+        labels = self.action_names + ["End episode"]
+        n = len(labels)
+        for i, label in enumerate(labels):
+            # [left, bottom, width, height]
+            ax_btn = fig.add_axes([0.02 + i * (0.96 / n), 0.03, 0.96 / n - 0.01, 0.07])
+            btn = Button(ax_btn, label)
+            btn.on_clicked(lambda _event, lbl=label: self._on_click(lbl))
+            self._buttons.append(btn)
+
+    def override_action(self, rng: RandomState) -> list[Action]:
+        """Block until a button is clicked, then return the user's chosen action.
+
+        The wait is guarded on `self._selected`, so a pre-set selection skips the event
+        loop entirely. Selector-button clicks repaint the figure without setting
+        `self._selected`, so they do not end the wait.
+
+        Args:
+            rng: The random state used to sample the chosen action.
+
+        Returns:
+            The actions to execute next, built from the user's button choice.
+
+        Raises:
+            StopIteration: When the user clicks "End episode", after setting any LMs
+                that have not reached a terminal state to time_out so the episode logs
+                cleanly.
+        """
+        while self._selected is None:
+            self.fig.canvas.start_event_loop(0.1)
+        selected, self._selected = self._selected, None
+        if selected == "End episode":
+            self.model.deal_with_time_out()
+            raise StopIteration
+
+        action_method: Callable[[str, RandomState], Action] = getattr(
+            self._sampler, f"sample_{selected}"
+        )
+        return [action_method(self._agent_id, rng)]
+
+    def close(self) -> None:
+        """Drop the button references."""
+        self._buttons = []
+
+    def _on_click(self, label: str) -> None:
+        """Record the clicked action and stop the blocking event loop.
+
+        Args:
+            label: The clicked button's label (an action name or "End episode").
+        """
+        self._selected = label
+        with contextlib.suppress(Exception):
+            self.fig.canvas.stop_event_loop()
+
+
+class SpeedSlider:
+    """The non-interactive stepping control: a speed slider that paces playback.
+
+    Renders a `Speed` slider along the bottom of the figure and, after each step,
+    pauses for a duration derived from the slider value: full speed runs without delay,
+    an intermediate value pauses proportionally up to `max_delay`, and zero halts until
+    the slider is moved.
+    """
+
+    def __init__(self, max_delay: float) -> None:
+        """Initialize the slider control.
+
+        Args:
+            max_delay: Maximum pause in seconds at the slowest non-halting speed.
+        """
+        self.max_delay = max_delay
+        self.fig: Figure | None = None
+        self._slider: Slider | None = None
+
+    def build(self, fig: Figure) -> None:
+        """Add the speed slider along the bottom of the figure.
+
+        Args:
+            fig: The figure to place the slider on.
+        """
+        self.fig = fig
+        ax_slider = fig.add_axes([0.07, 0.05, 0.86, 0.03])
+        self._slider = Slider(ax_slider, "Speed", 0.0, 1.0, valinit=1.0)
+
+    def pause(self) -> None:
+        """Pause (or halt) between steps according to the speed slider."""
+        if self._slider is None:
+            return
+        delay = self._pause_seconds(float(self._slider.val))
+        if delay is None:
+            while float(self._slider.val) <= 0.0:
+                self.fig.canvas.start_event_loop(0.1)
+        elif delay > 0.0:
+            plt.pause(delay)
+
+    def _pause_seconds(self, speed: float) -> float | None:
+        """Map a speed slider value in [0, 1] to a pause duration.
+
+        Args:
+            speed: The slider value; 1 = no delay, 0 = halt indefinitely.
+
+        Returns:
+            `None` to halt (speed 0), `0.0` for full speed (speed >= 1), else a
+            positive pause bounded by `max_delay`.
+        """
+        if speed <= 0.0:
+            return None
+        if speed >= 1.0:
+            return 0.0
+        return self.max_delay * (1.0 - speed)
+
+    def close(self) -> None:
+        """Drop the slider reference."""
+        self._slider = None
+
+
+class SelectorBar:
+    """The displayed-LM and selected-channel cycling buttons above the Monty column.
+
+    Two buttons in the figure's top margin, under the `Step N` title, that cycle the
+    `ChannelView`'s displayed learning module and selected input channel. Each click
+    advances the selection, updates the button captions, and triggers a repaint through
+    the `on_change` callback so the new selection is visible immediately, even while a
+    blocking event loop is running. The clicks never set the action selection, so they
+    are inert with respect to the interactive action wait.
+    """
+
+    def __init__(
+        self,
+        fig: Figure,
+        spec,
+        channel_view: ChannelView,
+        on_change: Callable[[], None],
+    ) -> None:
+        """Lay out the two cycling buttons over the Monty column's top margin.
+
+        Args:
+            fig: The figure to draw on.
+            spec: The Monty column's subplot spec, used to position the buttons.
+            channel_view: The selection the buttons cycle.
+            on_change: Repaints the last frame after a selection change.
+        """
+        self.fig = fig
+        self.channel_view = channel_view
+        self._on_change = on_change
+        monty = spec.get_position(fig)
+        width = monty.x1 - monty.x0
+        bottom, height = 0.91, 0.03
+        lm_label, channel_label = channel_view.labels()
+
+        ax_lm = fig.add_axes([monty.x0, bottom, width * 0.48, height])
+        self._lm_button = Button(ax_lm, lm_label)
+        self._lm_button.on_clicked(self._on_cycle_lm)
+
+        ax_channel = fig.add_axes(
+            [monty.x0 + width * 0.52, bottom, width * 0.48, height]
+        )
+        self._channel_button = Button(ax_channel, channel_label)
+        self._channel_button.on_clicked(self._on_cycle_channel)
+
+    def refresh_labels(self) -> None:
+        """Update both button captions to the current selection."""
+        lm_label, channel_label = self.channel_view.labels()
+        self._lm_button.label.set_text(lm_label)
+        self._channel_button.label.set_text(channel_label)
+
+    def _on_cycle_lm(self, _event: object) -> None:
+        """Advance to the next learning module and repaint.
+
+        Args:
+            _event: The matplotlib button event (unused).
+        """
+        self.channel_view.cycle_lm()
+        self.refresh_labels()
+        self._on_change()
+
+    def _on_cycle_channel(self, _event: object) -> None:
+        """Advance to the next input channel of the displayed LM and repaint.
+
+        Args:
+            _event: The matplotlib button event (unused).
+        """
+        if not self.channel_view.cycle_channel():
+            return
+        self.refresh_labels()
+        self._on_change()
+
+
 class LivePlotter:
     """Live plotter implementing the `Plotter` Protocol for training and inference.
 
@@ -1446,6 +1683,7 @@ class LivePlotter:
         self.figsize = figsize
 
         self.fig = None
+        self._controls: ActionButtons | SpeedSlider | None = None
 
     def _lm_building_graph(self, lm: LearningModule) -> bool:
         """Whether a learning module is building a graph this step.
@@ -1471,22 +1709,6 @@ class LivePlotter:
             and lm.learning_module_id in self.model.supervised_lm_ids
         )
 
-    def _pause_seconds(self, speed: float) -> float | None:
-        """Map a speed slider value in [0, 1] to a pause duration.
-
-        Args:
-            speed: The slider value; 1 = no delay, 0 = halt indefinitely.
-
-        Returns:
-            `None` to halt (speed 0), `0.0` for full speed (speed >= 1), else a
-            positive pause bounded by `max_delay`.
-        """
-        if speed <= 0.0:
-            return None
-        if speed >= 1.0:
-            return 0.0
-        return self.max_delay * (1.0 - speed)
-
     def initialize(self, model: Monty) -> None:
         """Resolve the displayed LM and build the figure, axes, and widgets.
 
@@ -1502,7 +1724,9 @@ class LivePlotter:
         """
         self.model = model
         self._resolve_episode_targets(model)
-        self._setup_interactive_sampler(model)
+        self._controls = (
+            ActionButtons(model) if self.interactive else SpeedSlider(self.max_delay)
+        )
         self._reset_episode_state()
         self._build_figure()
 
@@ -1514,50 +1738,9 @@ class LivePlotter:
         """
         self._channel_view = ChannelView(model)
 
-    def _setup_interactive_sampler(self, model: Monty) -> None:
-        """Derive the action sampler and button names from the policy.
-
-        A non-interactive plotter clears the sampler state and returns.
-
-        Args:
-            model: The Monty model whose motor system exposes the policy.
-
-        Raises:
-            ValueError: When interactive but the policy exposes no usable sampler.
-        """
-        self._sampler: ActionSampler | None = None
-        self._agent_id: str | None = None
-        self._action_names: list[str] = []
-        if not self.interactive:
-            return
-        policy = model.motor_system.policy
-        if policy is None:
-            raise ValueError(
-                "Interactive plotter requires a policy exposing an action sampler, "
-                "but the motor system's selector exposes no policy."
-            )
-        if not hasattr(policy, "action_sampler") or not hasattr(policy, "agent_id"):
-            raise ValueError(
-                "Interactive plotter requires a policy with an `action_sampler` "
-                f"and `agent_id`; {type(policy).__name__} exposes neither."
-            )
-        self._sampler = policy.action_sampler
-        self._agent_id = policy.agent_id
-        self._action_names = list(self._sampler.action_names)
-        if not self._action_names:
-            raise ValueError(
-                "Interactive plotter requires a policy whose action sampler can "
-                "produce at least one action, but it produced none."
-            )
-
     def _reset_episode_state(self) -> None:
         """Reset the per-episode history, selection, and axis-layout bookkeeping."""
         self._history = EvidenceHistory()
-        self._selected: str | None = None
-        self._buttons: list[Button] = []
-        self._slider: Slider | None = None
-        self._lm_button: Button | None = None
-        self._channel_button: Button | None = None
         self._last_observations: Observations | None = None
         self._last_step: int | None = None
 
@@ -1599,12 +1782,10 @@ class LivePlotter:
             self._history,
         )
         self._draw_section_dividers()
-        self._build_selector_buttons()
-
-        if self.interactive:
-            self._build_action_buttons()
-        else:
-            self._build_speed_slider()
+        self._selector = SelectorBar(
+            self.fig, self._monty_spec, self._channel_view, self._redraw
+        )
+        self._controls.build(self.fig)
 
         if is_interactive_backend():
             self.fig.show()
@@ -1627,7 +1808,7 @@ class LivePlotter:
         self._history.accumulate(self.model.learning_modules, step)
         self._render(observations, step)
         if not self.interactive:
-            self._apply_speed_pause()
+            self._controls.pause()
 
     def _render(self, observations: Observations, step: int) -> None:
         """Draw every section for one frame.
@@ -1638,7 +1819,7 @@ class LivePlotter:
         """
         self.fig.suptitle(f"Step {step}")
         if self._channel_view.ensure_channel():
-            self._refresh_selector_labels()
+            self._selector.refresh_labels()
 
         sm, sm_id = self._channel_view.simulator_sm()
         self._simulator.draw(observations, sm, sm_id)
@@ -1664,136 +1845,29 @@ class LivePlotter:
     def override_action(self, rng: RandomState) -> list[Action]:
         """Block until a button is clicked, then return the user's chosen action.
 
-        The wait is guarded on `self._selected`, so a pre-set selection skips the event
-        loop entirely. Selector-button clicks repaint the figure without setting
-        `self._selected`, so they do not end the wait.
+        Delegates to the interactive `ActionButtons` control, which blocks on the
+        figure's event loop, samples the chosen action, and raises `StopIteration` on
+        "End episode".
 
         Args:
             rng: The random state used to sample the chosen action.
 
         Returns:
             The actions to execute next, built from the user's button choice.
-
-        Raises:
-            StopIteration: When the user clicks "End episode", after setting any LMs
-                that have not reached a terminal state to time_out so the episode logs
-                cleanly.
         """
-        while self._selected is None:
-            self.fig.canvas.start_event_loop(0.1)
-        selected, self._selected = self._selected, None
-        if selected == "End episode":
-            self.model.deal_with_time_out()
-            raise StopIteration
-
-        action_method: Callable[[str, RandomState], Action] = getattr(
-            self._sampler, f"sample_{selected}"
-        )
-
-        return [action_method(self._agent_id, rng)]
+        return self._controls.override_action(rng)
 
     def close(self) -> None:
         """Close the final figure and drop widget references."""
         if self.fig is not None:
             plt.close(self.fig)
             self.fig = None
-        self._buttons = []
-        self._slider = None
-        self._lm_button = None
-        self._channel_button = None
+        if self._controls is not None:
+            self._controls.close()
+        self._selector = None
         self._simulator = None
         self._monty = None
         self._details = None
-
-    def _build_action_buttons(self) -> None:
-        """Add one button per action name plus an "End episode" button."""
-        labels = self._action_names + ["End episode"]
-        n = len(labels)
-        for i, label in enumerate(labels):
-            # [left, bottom, width, height]
-            ax_btn = self.fig.add_axes(
-                [0.02 + i * (0.96 / n), 0.03, 0.96 / n - 0.01, 0.07]
-            )
-            btn = Button(ax_btn, label)
-            btn.on_clicked(lambda _event, lbl=label: self._on_click(lbl))
-            self._buttons.append(btn)
-
-    def _on_click(self, label: str) -> None:
-        """Record the clicked action and stop the blocking event loop.
-
-        Args:
-            label: The clicked button's label (an action name or "End episode").
-        """
-        self._selected = label
-        with contextlib.suppress(Exception):
-            self.fig.canvas.stop_event_loop()
-
-    def _build_speed_slider(self) -> None:
-        """Add the non-interactive speed slider."""
-        ax_slider = self.fig.add_axes([0.07, 0.05, 0.86, 0.03])
-        self._slider = Slider(ax_slider, "Speed", 0.0, 1.0, valinit=1.0)
-
-    def _apply_speed_pause(self) -> None:
-        """Pause (or halt) between steps according to the speed slider."""
-        if self._slider is None:
-            return
-        delay = self._pause_seconds(float(self._slider.val))
-        if delay is None:
-            while float(self._slider.val) <= 0.0:
-                self.fig.canvas.start_event_loop(0.1)
-        elif delay > 0.0:
-            plt.pause(delay)
-
-    def _build_selector_buttons(self) -> None:
-        """Add the displayed-LM and selected-channel cycling buttons.
-
-        The buttons sit in the top margin above the Monty column, under the `Step N`
-        title. Their clicks cycle the selection and repaint the figure but never set
-        `self._selected`, so they are inert with respect to the action wait.
-        """
-        monty = self._monty_spec.get_position(self.fig)
-        width = monty.x1 - monty.x0
-        bottom, height = 0.91, 0.03
-        lm_label, channel_label = self._channel_view.labels()
-
-        ax_lm = self.fig.add_axes([monty.x0, bottom, width * 0.48, height])
-        self._lm_button = Button(ax_lm, lm_label)
-        self._lm_button.on_clicked(self._on_cycle_lm)
-
-        ax_channel = self.fig.add_axes(
-            [monty.x0 + width * 0.52, bottom, width * 0.48, height]
-        )
-        self._channel_button = Button(ax_channel, channel_label)
-        self._channel_button.on_clicked(self._on_cycle_channel)
-
-    def _refresh_selector_labels(self) -> None:
-        """Update both selector button captions to the current selection."""
-        lm_label, channel_label = self._channel_view.labels()
-        if self._lm_button is not None:
-            self._lm_button.label.set_text(lm_label)
-        if self._channel_button is not None:
-            self._channel_button.label.set_text(channel_label)
-
-    def _on_cycle_lm(self, _event: object) -> None:
-        """Advance to the next learning module and repaint.
-
-        Args:
-            _event: The matplotlib button event (unused).
-        """
-        self._channel_view.cycle_lm()
-        self._refresh_selector_labels()
-        self._redraw()
-
-    def _on_cycle_channel(self, _event: object) -> None:
-        """Advance to the next input channel of the displayed LM and repaint.
-
-        Args:
-            _event: The matplotlib button event (unused).
-        """
-        if not self._channel_view.cycle_channel():
-            return
-        self._refresh_selector_labels()
-        self._redraw()
 
     def _draw_section_dividers(self) -> None:
         """Draw vertical separators in the gaps between the three column sections."""
