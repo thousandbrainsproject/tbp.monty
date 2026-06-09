@@ -379,6 +379,270 @@ class EvidenceHistory:
         return updater.sampling_burst_steps > 0
 
 
+class ChannelView:
+    """The selected learning module and input channel, with channel resolution.
+
+    Owns the runtime selection — which learning module is displayed and which of its
+    input channels is selected — and answers the resolution and feature queries the
+    panels read from that selection: the channels in the displayed LM, the sensor or
+    learning module feeding a channel, the sensor module driving the Simulator, and the
+    per-channel buffer features aligned to their valid points. Both the displayed LM and
+    the selected channel cycle at runtime through the two selector buttons.
+    """
+
+    def __init__(self, model: Monty) -> None:
+        """Select the first learning module and defer the channel default.
+
+        The selected channel starts unset and is defaulted on first use by
+        `ensure_channel`, once the displayed LM's buffer has channels.
+
+        Args:
+            model: The Monty model whose sensor and learning modules are read.
+        """
+        self.model = model
+        self.lm_index = 0
+        self.lm = model.learning_modules[0]
+        self.channel: str | None = None
+        self.supports_evidence = isinstance(self.lm, EvidenceGraphLM)
+
+    def cycle_lm(self) -> None:
+        """Advance to the next learning module, resetting the channel to its default.
+
+        Switching the displayed LM recomputes whether the inference panels are supported
+        and selects that LM's default channel.
+        """
+        self.lm_index = (self.lm_index + 1) % len(self.model.learning_modules)
+        self.lm = self.model.learning_modules[self.lm_index]
+        self.supports_evidence = isinstance(self.lm, EvidenceGraphLM)
+        self.channel = self.default_channel()
+
+    def cycle_channel(self) -> bool:
+        """Advance to the next input channel of the displayed LM.
+
+        Returns:
+            True when the channel advanced, False when the displayed LM has no channels.
+        """
+        channels = self.lm_channels()
+        if not channels:
+            return False
+        if self.channel in channels:
+            index = (channels.index(self.channel) + 1) % len(channels)
+        else:
+            index = 0
+        self.channel = channels[index]
+        return True
+
+    def ensure_channel(self) -> bool:
+        """Default the selected channel on first use once the buffer has channels.
+
+        Returns:
+            True when the channel was just defaulted, False when it was already set.
+        """
+        if self.channel is None:
+            self.channel = self.default_channel()
+            return True
+        return False
+
+    def labels(self) -> tuple[str, str]:
+        """Return the current `(learning module, channel)` selector button labels.
+
+        Returns:
+            The displayed-LM label and the selected-channel label.
+        """
+        return (
+            f"LM: {self.lm.learning_module_id}",
+            f"ch: {self.channel or '-'}",
+        )
+
+    def lm_channels(self) -> list[str]:
+        """Return the displayed LM's input channels in observation order.
+
+        Returns:
+            The channel ids (sender ids) seen in the displayed LM's buffer.
+        """
+        return list(self.lm.buffer.channel_sender_types)
+
+    def default_channel(self) -> str | None:
+        """Return the displayed LM's default channel: the first sensor-module channel.
+
+        Returns:
+            The first SM channel, else the first channel of any type, else `None` when
+            the buffer holds no channels yet.
+        """
+        channels = self.lm_channels()
+        sender_types = self.lm.buffer.channel_sender_types
+        sm_channels = [c for c in channels if sender_types.get(c) == "SM"]
+        if sm_channels:
+            return sm_channels[0]
+        return channels[0] if channels else None
+
+    def resolve_sm_channel(self, channel: str | None) -> SensorModule | None:
+        """Resolve an SM channel id to its sensor module instance.
+
+        Args:
+            channel: The channel id to resolve.
+
+        Returns:
+            The matching sensor module, or `None` when the channel is not a sensor
+            module channel or no module carries that id.
+        """
+        if channel is None:
+            return None
+        if self.lm.buffer.channel_sender_types.get(channel) != "SM":
+            return None
+        return next(
+            (s for s in self.model.sensor_modules if s.sensor_module_id == channel),
+            None,
+        )
+
+    def resolve_lm_channel(self, channel: str | None) -> LearningModule | None:
+        """Resolve an LM channel id to its source learning module instance.
+
+        Args:
+            channel: The channel id to resolve.
+
+        Returns:
+            The matching learning module, or `None` when the channel is not a
+            learning-module channel or no module carries that id.
+        """
+        if channel is None:
+            return None
+        if self.lm.buffer.channel_sender_types.get(channel) != "LM":
+            return None
+        return next(
+            (m for m in self.model.learning_modules if m.learning_module_id == channel),
+            None,
+        )
+
+    def simulator_sm(self) -> tuple[SensorModule | None, str | None]:
+        """Return the sensor module to drive the Simulator section.
+
+        Follows the selected channel when it is a sensor module; otherwise falls back to
+        the displayed LM's first sensor-module channel so the view finder and RGB patch
+        stay meaningful even when an LM channel is selected.
+
+        Returns:
+            The `(sensor_module, sensor_module_id)` pair, or `(None, None)` when the
+            displayed LM has no sensor-module channel yet.
+        """
+        sm = self.resolve_sm_channel(self.channel)
+        if sm is not None:
+            return sm, self.channel
+        sender_types = self.lm.buffer.channel_sender_types
+        for channel in self.lm_channels():
+            if sender_types.get(channel) == "SM":
+                sm = self.resolve_sm_channel(channel)
+                if sm is not None:
+                    return sm, channel
+        return None, None
+
+    @staticmethod
+    def channel_points(
+        locations: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.float64]:
+        """Return the non-NaN-padded location rows for one buffer channel.
+
+        Args:
+            locations: The padded `(N, 3)` location buffer for a single channel.
+
+        Returns:
+            The `(M, 3)` rows whose first coordinate is not NaN, or an empty `(0, 3)`
+            array when the buffer is empty or not yet shaped.
+        """
+        if locations.ndim != 2 or locations.shape[0] == 0 or locations.shape[1] < 3:
+            return np.empty((0, 3))
+        return locations[~np.isnan(locations[:, 0])]
+
+    def aligned_feature(
+        self, channel: str, attr: str
+    ) -> npt.NDArray[np.float64] | None:
+        """Return one buffer feature aligned row-for-row with a channel's valid points.
+
+        The buffer pads every per-channel feature to the location length, so the rows
+        kept by `channel_points` (non-NaN location) index the feature identically.
+
+        Args:
+            channel: The buffer input channel to read.
+            attr: The feature name (e.g. `"hsv"` or `"object_id"`).
+
+        Returns:
+            The `(M, K)` feature rows for the channel's valid points, or `None` when the
+            feature is absent, mis-shaped, or missing at any of those points.
+        """
+        channel_feats = self.lm.buffer.features.get(channel)
+        if not channel_feats or attr not in channel_feats:
+            return None
+        arr = np.asarray(channel_feats[attr], dtype=float)
+        locations = np.asarray(self.lm.buffer.locations[channel])
+        if arr.ndim != 2 or arr.shape[0] != locations.shape[0]:
+            return None
+        valid = arr[~np.isnan(locations[:, 0])]
+        if valid.size == 0 or np.isnan(valid).any():
+            return None
+        return valid
+
+    def object_id_names(self, channel: str) -> dict[int, str]:
+        """Map an LM channel's numeric object ids back to their object names.
+
+        A learning-module channel carries each point's object as a numeric `object_id`
+        feature (a hash of the object name). The source learning module knows the names
+        of the objects it has learned, so re-hashing each known name inverts the feature
+        and recovers the human-readable name shown in the legend, matching the text in
+        the "Input Feature" inset.
+
+        Args:
+            channel: The buffer input channel being colored.
+
+        Returns:
+            A `{numeric object id: object name}` mapping, empty when the channel is not
+            a learning-module channel feeding object ids.
+        """
+        source_lm = self.resolve_lm_channel(channel)
+        if not isinstance(source_lm, EvidenceGraphLM):
+            return {}
+        return {
+            sum(ord(c) for c in graph_id): graph_id
+            for graph_id in source_lm.graph_memory.get_memory_ids()
+        }
+
+    def channel_groups(
+        self, channel: str, pts: npt.NDArray[np.float64]
+    ) -> list[tuple[npt.NDArray[np.float64], object, str | None]]:
+        """Resolve the per-channel coloring for a point cloud.
+
+        Patch channels carry an `hsv` feature, so their points are colored by hue with
+        no legend. Learning-module channels instead carry an `object_id` feature, so
+        their points are grouped and colored by object id with a legend. When both are
+        present `hsv` wins; when neither is, the points fall back to the color cycle.
+
+        Args:
+            channel: The buffer input channel being drawn.
+            pts: The channel's `(M, 3)` valid points (as returned by `channel_points`).
+
+        Returns:
+            The `(points, color, label)` groups to draw for this channel.
+        """
+        hsv = self.aligned_feature(channel, "hsv")
+        if hsv is not None and hsv.shape[0] == pts.shape[0] and hsv.shape[1] >= 3:
+            colors = mcolors.hsv_to_rgb(np.clip(hsv[:, :3], 0.0, 1.0))
+            return [(pts, colors, None)]
+
+        object_id = self.aligned_feature(channel, "object_id")
+        if object_id is not None and object_id.shape[0] == pts.shape[0]:
+            ids = object_id[:, 0]
+            names = self.object_id_names(channel)
+            unique_ids = np.unique(ids)
+            cmap = plt.get_cmap("tab10" if len(unique_ids) <= 10 else "tab20")
+            groups = []
+            for i, uid in enumerate(unique_ids):
+                selected = pts[ids == uid]
+                label = names.get(int(uid), f"object {int(uid)}")
+                groups.append((selected, cmap(i % cmap.N), label))
+            return groups
+
+        return [(pts, None, None)]
+
+
 class LivePlotter:
     """Live plotter implementing the `Plotter` Protocol for training and inference.
 
@@ -472,110 +736,6 @@ class LivePlotter:
             return 0.0
         return self.max_delay * (1.0 - speed)
 
-    @staticmethod
-    def _channel_points(locations: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-        """Return the non-NaN-padded location rows for one buffer channel.
-
-        Args:
-            locations: The padded `(N, 3)` location buffer for a single channel.
-
-        Returns:
-            The `(M, 3)` rows whose first coordinate is not NaN, or an empty `(0, 3)`
-            array when the buffer is empty or not yet shaped.
-        """
-        if locations.ndim != 2 or locations.shape[0] == 0 or locations.shape[1] < 3:
-            return np.empty((0, 3))
-        return locations[~np.isnan(locations[:, 0])]
-
-    def _aligned_feature(
-        self, channel: str, attr: str
-    ) -> npt.NDArray[np.float64] | None:
-        """Return one buffer feature aligned row-for-row with a channel's valid points.
-
-        The buffer pads every per-channel feature to the location length, so the rows
-        kept by `_channel_points` (non-NaN location) index the feature identically.
-
-        Args:
-            channel: The buffer input channel to read.
-            attr: The feature name (e.g. `"hsv"` or `"object_id"`).
-
-        Returns:
-            The `(M, K)` feature rows for the channel's valid points, or `None` when the
-            feature is absent, mis-shaped, or missing at any of those points.
-        """
-        channel_feats = self.lm.buffer.features.get(channel)
-        if not channel_feats or attr not in channel_feats:
-            return None
-        arr = np.asarray(channel_feats[attr], dtype=float)
-        locations = np.asarray(self.lm.buffer.locations[channel])
-        if arr.ndim != 2 or arr.shape[0] != locations.shape[0]:
-            return None
-        valid = arr[~np.isnan(locations[:, 0])]
-        if valid.size == 0 or np.isnan(valid).any():
-            return None
-        return valid
-
-    def _details_groups(
-        self, channel: str, pts: npt.NDArray[np.float64]
-    ) -> list[tuple[npt.NDArray[np.float64], object, str | None]]:
-        """Resolve the per-channel coloring for a point cloud.
-
-        Patch channels carry an `hsv` feature, so their points are colored by hue with
-        no legend. Learning-module channels instead carry an `object_id` feature, so
-        their points are grouped and colored by object id with a legend. When both are
-        present `hsv` wins; when neither is, the points fall back to the color cycle.
-
-        Args:
-            channel: The buffer input channel being drawn.
-            pts: The channel's `(M, 3)` valid points (as returned by `_channel_points`).
-
-        Returns:
-            The `(points, color, label)` groups to draw for this channel.
-        """
-        hsv = self._aligned_feature(channel, "hsv")
-        if hsv is not None and hsv.shape[0] == pts.shape[0] and hsv.shape[1] >= 3:
-            colors = mcolors.hsv_to_rgb(np.clip(hsv[:, :3], 0.0, 1.0))
-            return [(pts, colors, None)]
-
-        object_id = self._aligned_feature(channel, "object_id")
-        if object_id is not None and object_id.shape[0] == pts.shape[0]:
-            ids = object_id[:, 0]
-            names = self._object_id_names(channel)
-            unique_ids = np.unique(ids)
-            cmap = plt.get_cmap("tab10" if len(unique_ids) <= 10 else "tab20")
-            groups = []
-            for i, uid in enumerate(unique_ids):
-                selected = pts[ids == uid]
-                label = names.get(int(uid), f"object {int(uid)}")
-                groups.append((selected, cmap(i % cmap.N), label))
-            return groups
-
-        return [(pts, None, None)]
-
-    def _object_id_names(self, channel: str) -> dict[int, str]:
-        """Map an LM channel's numeric object ids back to their object names.
-
-        A learning-module channel carries each point's object as a numeric `object_id`
-        feature (a hash of the object name). The source learning module knows the names
-        of the objects it has learned, so re-hashing each known name inverts the feature
-        and recovers the human-readable name shown in the legend, matching the text in
-        the "Input Feature" inset.
-
-        Args:
-            channel: The buffer input channel being colored.
-
-        Returns:
-            A `{numeric object id: object name}` mapping, empty when the channel is not
-            a learning-module channel feeding object ids.
-        """
-        source_lm = self._resolve_lm_channel(channel)
-        if not isinstance(source_lm, EvidenceGraphLM):
-            return {}
-        return {
-            sum(ord(c) for c in graph_id): graph_id
-            for graph_id in source_lm.graph_memory.get_memory_ids()
-        }
-
     def initialize(self, model: Monty) -> None:
         """Resolve the displayed LM and build the figure, axes, and widgets.
 
@@ -596,14 +756,12 @@ class LivePlotter:
         self._build_figure()
 
     def _resolve_episode_targets(self, model: Monty) -> None:
-        """Select the default displayed learning module and detect its panels.
+        """Build the channel view selecting the default displayed LM and channel.
 
         Args:
             model: The Monty model whose learning modules are plotted.
         """
-        self._lm_index = 0
-        self.lm = model.learning_modules[0]
-        self._supports_evidence = isinstance(self.lm, EvidenceGraphLM)
+        self._channel_view = ChannelView(model)
 
     def _setup_interactive_sampler(self, model: Monty) -> None:
         """Derive the action sampler and button names from the policy.
@@ -648,7 +806,6 @@ class LivePlotter:
         self._evidence_history: dict[str, list[float]] = {}
         self._num_hyp_history: dict[str, list[float]] = {}
         self._burst_steps: list[int] = []
-        self._channel: str | None = None
         self._selected: str | None = None
         self._buttons: list[Button] = []
         self._slider: Slider | None = None
@@ -737,13 +894,12 @@ class LivePlotter:
             step: The index of the current step within the episode.
         """
         self.fig.suptitle(f"Step {step}")
-        if self._channel is None:
-            self._channel = self._default_channel()
+        if self._channel_view.ensure_channel():
             self._refresh_selector_labels()
 
-        sm, sm_id = self._simulator_sm()
+        sm, sm_id = self._channel_view.simulator_sm()
         self._simulator.draw(observations, sm, sm_id)
-        if self._lm_building_graph(self.lm):
+        if self._lm_building_graph(self._channel_view.lm):
             self._draw_training()
         else:
             self._draw_inference()
@@ -855,7 +1011,7 @@ class LivePlotter:
         monty = self._monty_spec.get_position(self.fig)
         width = monty.x1 - monty.x0
         bottom, height = 0.91, 0.03
-        lm_label, channel_label = self._selector_labels()
+        lm_label, channel_label = self._channel_view.labels()
 
         ax_lm = self.fig.add_axes([monty.x0, bottom, width * 0.48, height])
         self._lm_button = Button(ax_lm, lm_label)
@@ -867,20 +1023,9 @@ class LivePlotter:
         self._channel_button = Button(ax_channel, channel_label)
         self._channel_button.on_clicked(self._on_cycle_channel)
 
-    def _selector_labels(self) -> tuple[str, str]:
-        """Return the current `(learning module, channel)` button labels.
-
-        Returns:
-            The displayed-LM label and the selected-channel label.
-        """
-        return (
-            f"LM: {self.lm.learning_module_id}",
-            f"ch: {self._channel or '-'}",
-        )
-
     def _refresh_selector_labels(self) -> None:
         """Update both selector button captions to the current selection."""
-        lm_label, channel_label = self._selector_labels()
+        lm_label, channel_label = self._channel_view.labels()
         if self._lm_button is not None:
             self._lm_button.label.set_text(lm_label)
         if self._channel_button is not None:
@@ -889,17 +1034,10 @@ class LivePlotter:
     def _on_cycle_lm(self, _event: object) -> None:
         """Advance to the next learning module and repaint.
 
-        Switching the displayed LM resets the selected channel to that LM's default and
-        recomputes whether the inference panels are supported.
-
         Args:
             _event: The matplotlib button event (unused).
         """
-        learning_modules = self.model.learning_modules
-        self._lm_index = (self._lm_index + 1) % len(learning_modules)
-        self.lm = learning_modules[self._lm_index]
-        self._supports_evidence = isinstance(self.lm, EvidenceGraphLM)
-        self._channel = self._default_channel()
+        self._channel_view.cycle_lm()
         self._refresh_selector_labels()
         self._redraw()
 
@@ -909,98 +1047,10 @@ class LivePlotter:
         Args:
             _event: The matplotlib button event (unused).
         """
-        channels = self._lm_channels()
-        if not channels:
+        if not self._channel_view.cycle_channel():
             return
-        if self._channel in channels:
-            index = (channels.index(self._channel) + 1) % len(channels)
-        else:
-            index = 0
-        self._channel = channels[index]
         self._refresh_selector_labels()
         self._redraw()
-
-    def _lm_channels(self) -> list[str]:
-        """Return the displayed LM's input channels in observation order.
-
-        Returns:
-            The channel ids (sender ids) seen in the displayed LM's buffer.
-        """
-        return list(self.lm.buffer.channel_sender_types)
-
-    def _default_channel(self) -> str | None:
-        """Return the displayed LM's default channel: the first sensor-module channel.
-
-        Returns:
-            The first SM channel, else the first channel of any type, else `None` when
-            the buffer holds no channels yet.
-        """
-        channels = self._lm_channels()
-        sender_types = self.lm.buffer.channel_sender_types
-        sm_channels = [c for c in channels if sender_types.get(c) == "SM"]
-        if sm_channels:
-            return sm_channels[0]
-        return channels[0] if channels else None
-
-    def _resolve_sm_channel(self, channel: str | None) -> SensorModule | None:
-        """Resolve an SM channel id to its sensor module instance.
-
-        Args:
-            channel: The channel id to resolve.
-
-        Returns:
-            The matching sensor module, or `None` when the channel is not a sensor
-            module channel or no module carries that id.
-        """
-        if channel is None:
-            return None
-        if self.lm.buffer.channel_sender_types.get(channel) != "SM":
-            return None
-        return next(
-            (s for s in self.model.sensor_modules if s.sensor_module_id == channel),
-            None,
-        )
-
-    def _resolve_lm_channel(self, channel: str | None) -> LearningModule | None:
-        """Resolve an LM channel id to its source learning module instance.
-
-        Args:
-            channel: The channel id to resolve.
-
-        Returns:
-            The matching learning module, or `None` when the channel is not a
-            learning-module channel or no module carries that id.
-        """
-        if channel is None:
-            return None
-        if self.lm.buffer.channel_sender_types.get(channel) != "LM":
-            return None
-        return next(
-            (m for m in self.model.learning_modules if m.learning_module_id == channel),
-            None,
-        )
-
-    def _simulator_sm(self) -> tuple[SensorModule | None, str | None]:
-        """Return the sensor module to drive the Simulator section.
-
-        Follows the selected channel when it is a sensor module; otherwise falls back to
-        the displayed LM's first sensor-module channel so the view finder and RGB patch
-        stay meaningful even when an LM channel is selected.
-
-        Returns:
-            The `(sensor_module, sensor_module_id)` pair, or `(None, None)` when the
-            displayed LM has no sensor-module channel yet.
-        """
-        sm = self._resolve_sm_channel(self._channel)
-        if sm is not None:
-            return sm, self._channel
-        sender_types = self.lm.buffer.channel_sender_types
-        for channel in self._lm_channels():
-            if sender_types.get(channel) == "SM":
-                sm = self._resolve_sm_channel(channel)
-                if sm is not None:
-                    return sm, channel
-        return None, None
 
     def _draw_section_dividers(self) -> None:
         """Draw vertical separators in the gaps between the three column sections."""
@@ -1029,7 +1079,7 @@ class LivePlotter:
             self._monty_inset = FeatureInset(self.fig)
         monty = self._monty_spec.get_position(self.fig)
         rect = self._corner_rect(monty, width_frac=0.32, height=0.18, top_pad=0.07)
-        self._draw_channel_feature(self._monty_inset, self._channel, rect)
+        self._draw_channel_feature(self._monty_inset, self._channel_view.channel, rect)
 
     def _corner_rect(
         self,
@@ -1069,12 +1119,13 @@ class LivePlotter:
             rect: The `[left, bottom, width, height]` inset rectangle.
         """
         sender_type = (
-            self.lm.buffer.channel_sender_types.get(channel)
+            self._channel_view.lm.buffer.channel_sender_types.get(channel)
             if channel is not None
             else None
         )
         if sender_type == "SM":
-            self._draw_feature_from_sm(inset, rect, self._resolve_sm_channel(channel))
+            sm = self._channel_view.resolve_sm_channel(channel)
+            self._draw_feature_from_sm(inset, rect, sm)
         elif sender_type == "LM":
             self._draw_feature_lm_name(inset, rect, channel)
         else:
@@ -1138,7 +1189,7 @@ class LivePlotter:
         """
         inset.ensure("text", rect)
         ax = inset.clear()
-        source_lm = self._resolve_lm_channel(channel)
+        source_lm = self._channel_view.resolve_lm_channel(channel)
         name = "-"
         if source_lm is not None:
             mlh = source_lm.get_current_mlh()
@@ -1442,9 +1493,10 @@ class LivePlotter:
         3D with three head-on 2D projections beneath it. Degrades to a placeholder when
         there are no observations yet.
         """
-        locations = self.lm.buffer.locations
+        locations = self._channel_view.lm.buffer.locations
         points = {
-            c: self._channel_points(np.asarray(locs)) for c, locs in locations.items()
+            c: self._channel_view.channel_points(np.asarray(locs))
+            for c, locs in locations.items()
         }
         channels = [c for c in points if points[c].size]
         if not channels:
@@ -1452,7 +1504,7 @@ class LivePlotter:
             self._draw_details_placeholder("no observations yet")
             return
 
-        selected = self._channel
+        selected = self._channel_view.channel
         selected_pts = points.get(selected) if selected is not None else None
         if selected_pts is None or not selected_pts.size:
             label = selected if selected is not None else "channel"
@@ -1479,11 +1531,11 @@ class LivePlotter:
             channel: The selected input channel.
             pts: The channel's `(M, 3)` non-padded location points.
         """
-        if isinstance(self._resolve_sm_channel(channel), TwoDSensorModule):
+        if isinstance(self._channel_view.resolve_sm_channel(channel), TwoDSensorModule):
             self._draw_selected_channel_2d(channel, pts)
             return
         main_ax, proj_axes = self._ensure_monty_projected()
-        groups = self._details_groups(channel, pts)
+        groups = self._channel_view.channel_groups(channel, pts)
         draw_buffer_series(
             main_ax,
             proj_axes,
@@ -1510,9 +1562,9 @@ class LivePlotter:
         x, y = pts[:, 0], pts[:, 1]
         colors, edge_mask, tangents = planar_style(
             len(x),
-            self._aligned_feature(channel, "hsv"),
-            self._aligned_feature(channel, "pose_fully_defined"),
-            self._aligned_feature(channel, "pose_vectors"),
+            self._channel_view.aligned_feature(channel, "hsv"),
+            self._channel_view.aligned_feature(channel, "pose_fully_defined"),
+            self._channel_view.aligned_feature(channel, "pose_vectors"),
         )
         draw_2d_segments(ax, x, y, colors, edge_mask, tangents)
         ax.set_title("")
@@ -1531,7 +1583,7 @@ class LivePlotter:
         for main_ax, proj_axes, channel in zip(
             self._details_axes, self._details_proj_axes, channels
         ):
-            groups = self._details_groups(channel, points[channel])
+            groups = self._channel_view.channel_groups(channel, points[channel])
             draw_buffer_series(
                 main_ax,
                 proj_axes,
@@ -1552,8 +1604,9 @@ class LivePlotter:
         history accumulated in `update`. Degrades to placeholders when the displayed LM
         lacks the evidence-LM inference API.
         """
-        if not self._supports_evidence:
-            placeholder = f"Inference view not available for {type(self.lm).__name__}"
+        if not self._channel_view.supports_evidence:
+            lm_name = type(self._channel_view.lm).__name__
+            placeholder = f"Inference view not available for {lm_name}"
             self._draw_monty_placeholder(placeholder)
             self._draw_details_placeholder(placeholder)
             return
@@ -1564,7 +1617,7 @@ class LivePlotter:
 
     def _select_active_history(self) -> None:
         """Point the line-plot history fields at the displayed LM's accumulated data."""
-        lm_id = self.lm.learning_module_id
+        lm_id = self._channel_view.lm.learning_module_id
         self._evidence_steps = self._history.steps_by_lm.setdefault(lm_id, [])
         self._evidence_history = self._history.evidence_by_lm.setdefault(lm_id, {})
         self._num_hyp_history = self._history.num_hyp_by_lm.setdefault(lm_id, {})
@@ -1579,14 +1632,15 @@ class LivePlotter:
         retrieved. Planar graphs are drawn as edge-oriented segments; all other graphs
         as a 3D point cloud.
         """
+        lm = self._channel_view.lm
         graph = None
-        mlh = self.lm.get_current_mlh()
+        mlh = lm.get_current_mlh()
         if mlh and mlh.get("graph_id") not in (None, "no_observations_yet"):
             graph_id = mlh["graph_id"]
-            if graph_id in self.lm.graph_memory.get_memory_ids():
+            if graph_id in lm.graph_memory.get_memory_ids():
                 channel = self._mlh_channel(graph_id)
                 if channel is not None:
-                    graph = self.lm.graph_memory.get_graph(graph_id, channel)
+                    graph = lm.graph_memory.get_graph(graph_id, channel)
 
         if graph is None or getattr(graph, "pos", None) is None:
             self._draw_monty_placeholder("No MLH")
@@ -1596,7 +1650,7 @@ class LivePlotter:
             self._draw_monty_placeholder("No MLH")
             return
 
-        color = self._mlh_marker_color(mlh, self.lm.object_evidence_threshold)
+        color = self._mlh_marker_color(mlh, lm.object_evidence_threshold)
         if is_3d(pos):
             ax = self._ensure_monty_projection("3d")
             self._show_mlh_3d(ax, mlh, pos, color)
@@ -1614,10 +1668,11 @@ class LivePlotter:
             The selected channel when it is part of the graph, else the graph's first
             sensor-module channel, else `None` when the graph has no sensor channel.
         """
-        channels = self.lm.get_input_channels_in_graph(graph_id)
-        if self._channel in channels:
-            return self._channel
-        sender_types = self.lm.buffer.channel_sender_types
+        lm = self._channel_view.lm
+        channels = lm.get_input_channels_in_graph(graph_id)
+        if self._channel_view.channel in channels:
+            return self._channel_view.channel
+        sender_types = lm.buffer.channel_sender_types
         sm_channels = [c for c in channels if sender_types.get(c) == "SM"]
         return sm_channels[0] if sm_channels else None
 
