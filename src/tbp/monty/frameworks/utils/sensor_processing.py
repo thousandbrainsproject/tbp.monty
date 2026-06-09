@@ -139,14 +139,14 @@ def ror_encoding(codes: np.ndarray, n_neighbors: int) -> tuple[np.ndarray, int]:
     remap = {old: new for new, old in enumerate(unique_vals)}
     # Compose the two mappings (raw code -> canonical value -> dense bin index)
     # into a single lookup table indexed directly by raw code value.
-    lut = np.array([remap[v] for v in canonical], dtype=np.int32)
+    look_up_table = np.array([remap[v] for v in canonical], dtype=np.int32)
     # The number of distinct rotation-invariant classes is the number of output
     # bins the encoding produces.
     n_bins = len(unique_vals)
     # Apply the lookup table to the input codes via fancy indexing, translating
     # every raw code into its dense rotation-invariant bin index in one vectorized
     # operation.
-    encoded = lut[codes.astype(np.int32, copy=False)]
+    encoded = look_up_table[codes.astype(np.int32, copy=False)]
 
     return encoded, n_bins
 
