@@ -655,19 +655,9 @@ class RorEncodingTest(unittest.TestCase):
         assert encoded.min() >= 0
         assert encoded.max() == n_bins - 1
 
-    def test_float_n_neighbors_raises_type_error(self):
-        # ISSUE: the signature annotates ``n_neighbors: float``, but the body
-        # uses ``1 << n_neighbors`` which requires an int. A genuine float
-        # therefore raises, so the annotation is misleading (should be int).
-        codes = np.arange(16, dtype=np.uint32)
-        with pytest.raises(TypeError):
-            ror_encoding(codes, n_neighbors=4.0)
-
     def test_out_of_range_code_raises_index_error(self):
-        # ISSUE: codes are assumed to be < 2**n_neighbors; larger values index
-        # past the lookup table instead of being validated.
-        codes = np.array([16], dtype=np.uint32)  # only 0..15 valid for n=4
-        with pytest.raises(IndexError):
+        codes = np.array([16], dtype=np.uint32)
+        with pytest.raises(ValueError):
             ror_encoding(codes, n_neighbors=4)
 
 

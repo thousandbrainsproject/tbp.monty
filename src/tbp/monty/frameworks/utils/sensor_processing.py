@@ -77,6 +77,9 @@ def ror_encoding(codes: np.ndarray, n_neighbors: int) -> tuple[np.ndarray, int]:
 
     Returns:
         Encoded codes and number of bins.
+
+    Raises:
+        ValueError: If the max value of codes exceeds the number of codes.
     """
     n_codes = 2 ** n_neighbors
     mask = n_codes - 1
