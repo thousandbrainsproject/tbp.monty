@@ -197,7 +197,7 @@ class SelectorBar:
     advances the selection, updates the button captions, and triggers a repaint through
     the `on_change` callback so the new selection is visible immediately, even while a
     blocking event loop is running. The clicks never set the action selection, so they
-    are inert with respect to the interactive action wait.
+    don't interfere with the interactive action wait.
     """
 
     def __init__(

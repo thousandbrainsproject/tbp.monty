@@ -46,20 +46,20 @@ if TYPE_CHECKING:
 class LivePlotter:
     """Live plotter implementing the `Plotter` Protocol for training and inference.
 
-    Renders a 3-section view of the *selected input channel* of the *displayed*
-    learning module. Both the displayed learning module and the selected input channel
-    are switchable at runtime through two cycling buttons placed under the `Step N`
-    title; the learning module and channel are discovered from the model rather than
-    configured by id.
+    Renders a 3-section view of the selected input channel of the displayed
+    learning module. You can switch both the displayed learning module and the selected
+    input channel at runtime with two cycling buttons under the `Step N` title. The
+    learning module and channel are discovered from the model rather than configured by
+    id.
 
     - Simulator: view finder and RGB patch of the sensor module feeding the selected
       (or, for an LM channel, the displayed LM's first sensor) channel.
     - Monty: the main graph of the selected channel, with an "Input Feature" corner
       inset showing the live feature on that channel (a 2D edge, a 3D surface, or, for a
       learning-module channel, the name of the object being passed). During an
-      exploratory step the main graph is the channel's buffered points; during a
+      exploratory step the main graph is the channel's buffer points; during a
       matching step it is the most likely hypothesis graph plus its location marker.
-    - Details: during an exploratory step, a per-channel stack of the *other* channels'
+    - Details: during an exploratory step, a per-channel stack of the other channels'
       buffers, each carrying the same "Input Feature" inset as the Monty section; during
       a matching step, the displayed LM's per-object evidence and number-of-hypotheses
       line plots.
@@ -278,9 +278,9 @@ class LivePlotter:
         """Draw the exploratory-step panels from the LM buffer.
 
         The Monty panel shows the selected channel's buffered points; the Details panel
-        stacks one plot group per *other* channel. While the graph is still being built
-        we cannot tell whether the points are planar, so every buffer view is drawn in
-        3D with three head-on 2D projections beneath it. Degrades to a placeholder when
+        stacks one plot group per other channel. While the graph is still being built we
+        cannot tell whether the points are planar, so every buffer view is drawn in 3D
+        with three head-on 2D projections beneath it. Falls back to a placeholder when
         there are no observations yet.
         """
         locations = self._channel_view.lm.buffer.locations
@@ -296,7 +296,7 @@ class LivePlotter:
 
         selected = self._channel_view.channel
         selected_pts = points.get(selected) if selected is not None else None
-        if selected_pts is None or not selected_pts.size:
+        if selected is None or selected_pts is None or not selected_pts.size:
             label = selected if selected is not None else "channel"
             self._monty.draw_placeholder(f"no observations on {label}")
         else:

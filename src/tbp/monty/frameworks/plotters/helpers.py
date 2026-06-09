@@ -366,7 +366,7 @@ class EvidenceHistory:
             if isinstance(lm, EvidenceGraphLM):
                 self._append(lm, step)
 
-    def _append(self, lm: LearningModule, step: int) -> None:
+    def _append(self, lm: EvidenceGraphLM, step: int) -> None:
         """Append one learning module's evidence and hypothesis counts to its history.
 
         One series per object id with a non-empty hypothesis space; objects appearing
@@ -405,7 +405,7 @@ class EvidenceHistory:
             burst_steps.append(step)
 
     @staticmethod
-    def _in_burst(learning_module: LearningModule) -> bool | None:
+    def _in_burst(learning_module: EvidenceGraphLM) -> bool | None:
         """Whether the LM's burst-sampling updater is currently in a burst.
 
         Args:
@@ -424,8 +424,8 @@ class EvidenceHistory:
 class ChannelView:
     """The selected learning module and input channel, with channel resolution.
 
-    Owns the runtime selection — which learning module is displayed and which of its
-    input channels is selected — and answers the resolution and feature queries the
+    Owns the runtime selection (which learning module is displayed and which of its
+    input channels is selected) and answers the resolution and feature queries the
     panels read from that selection: the channels in the displayed LM, the sensor or
     learning module feeding a channel, the sensor module driving the Simulator, and the
     per-channel buffer features aligned to their valid points. Both the displayed LM and
@@ -675,7 +675,7 @@ class ChannelView:
             names = self.object_id_names(channel)
             unique_ids = np.unique(ids)
             cmap = plt.get_cmap("tab10" if len(unique_ids) <= 10 else "tab20")
-            groups = []
+            groups: list[tuple[npt.NDArray[np.float64], object, str | None]] = []
             for i, uid in enumerate(unique_ids):
                 selected = pts[ids == uid]
                 label = names.get(int(uid), f"object {int(uid)}")
@@ -712,7 +712,7 @@ class FeatureInset:
         self.projection: str | None = None
         self._border = None
         self._title = None
-        self._rect: tuple[float, float, float, float] | None = None
+        self._rect: tuple[float, ...] | None = None
 
     def ensure(self, projection: str, rect: list[float]) -> Axes:
         """Return the inset axis with the requested projection, positioned at `rect`.
@@ -813,7 +813,7 @@ class FeatureInset:
         if sender_type == "SM":
             sm = self.channel_view.resolve_sm_channel(channel)
             self._draw_from_sm(rect, sm)
-        elif sender_type == "LM":
+        elif channel is not None and sender_type == "LM":
             self._draw_lm_name(rect, channel)
         else:
             self.ensure("text", rect)
