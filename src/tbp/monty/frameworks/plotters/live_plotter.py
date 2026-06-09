@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import contextlib
-import math
 from typing import TYPE_CHECKING, Callable
 
 import matplotlib as mpl
@@ -17,7 +16,6 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from matplotlib.collections import LineCollection
 from matplotlib.gridspec import GridSpecFromSubplotSpec
 from matplotlib.lines import Line2D
 from matplotlib.widgets import Button, Slider
@@ -37,6 +35,14 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.two_d_sensor_module import TwoDSensorModule
+from tbp.monty.frameworks.plotters.helpers import (
+    draw_2d_segments,
+    draw_buffer_series,
+    is_3d,
+    is_interactive_backend,
+    planar_style,
+    unit,
+)
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.plot_utils import add_patch_outline_to_view_finder
 
@@ -54,16 +60,7 @@ if TYPE_CHECKING:
     from tbp.monty.frameworks.models.object_model import GraphObjectModel
 
 
-def _is_interactive_backend() -> bool:
-    """Whether the active matplotlib backend can run a blocking event loop.
-
-    Returns:
-        True if the current backend is an interactive (GUI) backend.
-    """
-    return mpl.get_backend() in mpl.rcsetup.interactive_bk
-
-
-class _FeatureInset:
+class FeatureInset:
     """A figure-level "Input Feature" corner inset over a host panel.
 
     Owns its axis, white border box, and title independently of any gridspec, so it
@@ -166,6 +163,222 @@ class _FeatureInset:
         self.projection = self._rect = None
 
 
+class SimulatorPanel:
+    """The Simulator section: a view finder above the RGB patch the sensor sees.
+
+    Owns its two axes within the figure's left column and redraws them each frame from
+    the driving sensor module's observations. Which sensor module drives the section is
+    resolved by the plotter (it follows the selected channel, or the displayed LM's
+    first sensor-module channel) and passed in per draw.
+    """
+
+    def __init__(self, fig: Figure, spec) -> None:
+        """Lay out the view-finder and RGB-patch axes in the Simulator column.
+
+        Args:
+            fig: The figure to draw on.
+            spec: The Simulator column's gridspec subplot spec.
+        """
+        self.fig = fig
+        sim_grid = GridSpecFromSubplotSpec(
+            2, 1, subplot_spec=spec, height_ratios=[2, 1], hspace=0.3
+        )
+        self.ax_view = fig.add_subplot(sim_grid[0, 0])
+        self.ax_rgb = fig.add_subplot(sim_grid[1, 0])
+
+    def draw(
+        self,
+        observations: Observations,
+        sm: SensorModule | None,
+        sm_id: str | None,
+    ) -> None:
+        """Draw the view finder and RGB patch for the driving sensor module.
+
+        Args:
+            observations: The observations from the most recent step.
+            sm: The sensor module driving the section, or `None` when the displayed LM
+                has no sensor-module channel yet.
+            sm_id: The id of that sensor module, or `None`.
+        """
+        agent_id = (
+            self._resolve_obs_agent_id(observations, sm_id)
+            if sm_id is not None
+            else None
+        )
+        agent_obs: AgentObservations = (
+            observations.get(agent_id, {}) if agent_id is not None else {}
+        )
+        self._draw_view_finder(agent_obs, sm, sm_id)
+        self._draw_rgb_patch(agent_obs, sm_id)
+
+    @staticmethod
+    def _resolve_obs_agent_id(
+        observations: Observations, sensor_module_id: str
+    ) -> AgentID | None:
+        """Find the agent id whose observations contain the given sensor module.
+
+        Args:
+            observations: The observations from the most recent step.
+            sensor_module_id: The sensor module id to search for.
+
+        Returns:
+            The matching agent id, or `None` if no agent carries the sensor module.
+        """
+        for agent_id, agent_observations in observations.items():
+            if sensor_module_id in agent_observations:
+                return agent_id
+        return None
+
+    def _draw_view_finder(
+        self,
+        agent_obs: AgentObservations,
+        sm: SensorModule | None,
+        sm_id: str | None,
+    ) -> None:
+        """Draw the view finder, outlining the patch when a pixel location is known.
+
+        Args:
+            agent_obs: The observing agent's per-sensor observations this step.
+            sm: The sensor module driving the Simulator (for its raw-pixel telemetry).
+            sm_id: The id of that sensor module, used to read its patch observation.
+        """
+        ax = self.ax_view
+        ax.cla()
+        ax.set_title("View finder")
+        ax.set_axis_off()
+        if SensorID("view_finder") not in agent_obs:
+            return
+        rgba = np.asarray(agent_obs[SensorID("view_finder")]["rgba"])
+        raw = sm._snapshot_telemetry.raw_observations if sm is not None else []
+        patch_obs = agent_obs.get(sm_id) if sm_id is not None else None
+        has_outline = (
+            len(raw) > 0
+            and "pixel_loc" in raw[-1]
+            and patch_obs is not None
+            and "depth" in patch_obs
+        )
+        if has_outline:
+            patch_size = np.asarray(patch_obs["depth"]).shape[0]
+            rgba = add_patch_outline_to_view_finder(
+                rgba, np.array(raw[-1]["pixel_loc"]), patch_size
+            )
+        ax.imshow(rgba, zorder=-99)
+        if not has_outline:
+            shape = rgba.shape
+            ax.add_patch(
+                plt.Rectangle(
+                    (shape[1] * 4.5 // 10, shape[0] * 4.5 // 10),
+                    shape[1] / 10,
+                    shape[0] / 10,
+                    fc="none",
+                    ec="white",
+                )
+            )
+
+    def _draw_rgb_patch(self, agent_obs: AgentObservations, sm_id: str | None) -> None:
+        """Draw what the sensor module sees, preferring RGB over depth.
+
+        Args:
+            agent_obs: The observing agent's per-sensor observations this step.
+            sm_id: The id of the sensor module driving the Simulator.
+        """
+        ax = self.ax_rgb
+        ax.cla()
+        ax.set_axis_off()
+        ax.set_title("Patch")
+        patch = agent_obs.get(sm_id) if sm_id is not None else None
+        if patch is not None and "rgba" in patch:
+            ax.imshow(np.asarray(patch["rgba"]))
+            ax.set_title("Patch (RGB)")
+
+
+class EvidenceHistory:
+    """Per-LM accumulation of object evidence and hypothesis counts over an episode.
+
+    Holds one record per learning module so the displayed LM can switch mid-episode and
+    still reveal a fully populated history. Pure data: the Details section reads it to
+    draw the evidence and number-of-hypotheses line plots.
+    """
+
+    def __init__(self) -> None:
+        self.steps_by_lm: dict[str, list[int]] = {}
+        self.evidence_by_lm: dict[str, dict[str, list[float]]] = {}
+        self.num_hyp_by_lm: dict[str, dict[str, list[float]]] = {}
+        self.burst_steps_by_lm: dict[str, list[int]] = {}
+        self._last_accumulated_step: int | None = None
+
+    def accumulate(self, learning_modules: list[LearningModule], step: int) -> None:
+        """Record this step's evidence history for every evidence-supporting LM.
+
+        Accumulates once per step regardless of how many times the frame is redrawn, so
+        switching the displayed LM mid-episode reveals a fully populated history.
+
+        Args:
+            learning_modules: All of the model's learning modules.
+            step: The index of the current step within the episode.
+        """
+        if self._last_accumulated_step == step:
+            return
+        self._last_accumulated_step = step
+        for lm in learning_modules:
+            if isinstance(lm, EvidenceGraphLM):
+                self._append(lm, step)
+
+    def _append(self, lm: LearningModule, step: int) -> None:
+        """Append one learning module's evidence and hypothesis counts to its history.
+
+        One series per object id with a non-empty hypothesis space; objects appearing
+        late are NaN-backfilled so every series aligns to the LM's step list. Steps with
+        a sampling burst are recorded for vertical markers.
+
+        Args:
+            lm: The learning module whose current state is recorded.
+            step: The index of the current step within the episode.
+        """
+        mlh = lm.get_current_mlh()
+        if not mlh or mlh.get("graph_id") == "no_observations_yet":
+            return
+
+        graph_ids, evidences = lm.evidence_for_each_graph()
+        _, num_hyps = lm.num_hypotheses_for_each_graph()
+        evidence_by_id = dict(zip(graph_ids, evidences))
+        num_hyp_by_id = dict(zip(graph_ids, num_hyps))
+
+        lm_id = lm.learning_module_id
+        steps = self.steps_by_lm.setdefault(lm_id, [])
+        evidence_history = self.evidence_by_lm.setdefault(lm_id, {})
+        num_hyp_history = self.num_hyp_by_lm.setdefault(lm_id, {})
+        burst_steps = self.burst_steps_by_lm.setdefault(lm_id, [])
+
+        steps.append(step)
+        n = len(steps)
+        for graph_id in graph_ids:
+            if graph_id not in evidence_history:
+                evidence_history[graph_id] = [np.nan] * (n - 1)
+                num_hyp_history[graph_id] = [np.nan] * (n - 1)
+        for graph_id in evidence_history:
+            evidence_history[graph_id].append(evidence_by_id.get(graph_id, np.nan))
+            num_hyp_history[graph_id].append(num_hyp_by_id.get(graph_id, np.nan))
+        if self._in_burst(lm):
+            burst_steps.append(step)
+
+    @staticmethod
+    def _in_burst(learning_module: LearningModule) -> bool | None:
+        """Whether the LM's burst-sampling updater is currently in a burst.
+
+        Args:
+            learning_module: The learning module whose updater is inspected.
+
+        Returns:
+            `None` when the LM does not use a `BurstSamplingHypothesesUpdater` (so the
+            caller can hide the info), otherwise whether a burst is in progress.
+        """
+        updater = learning_module.hypotheses_updater
+        if not isinstance(updater, BurstSamplingHypothesesUpdater):
+            return None
+        return updater.sampling_burst_steps > 0
+
+
 class LivePlotter:
     """Live plotter implementing the `Plotter` Protocol for training and inference.
 
@@ -258,22 +471,6 @@ class LivePlotter:
         if speed >= 1.0:
             return 0.0
         return self.max_delay * (1.0 - speed)
-
-    @staticmethod
-    def _in_burst(learning_module: LearningModule) -> bool | None:
-        """Whether the LM's burst-sampling updater is currently in a burst.
-
-        Args:
-            learning_module: The learning module whose updater is inspected.
-
-        Returns:
-            `None` when the LM does not use a `BurstSamplingHypothesesUpdater` (so the
-            caller can hide the info), otherwise whether a burst is in progress.
-        """
-        updater = learning_module.hypotheses_updater
-        if not isinstance(updater, BurstSamplingHypothesesUpdater):
-            return None
-        return updater.sampling_burst_steps > 0
 
     @staticmethod
     def _channel_points(locations: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
@@ -379,193 +576,6 @@ class LivePlotter:
             for graph_id in source_lm.graph_memory.get_memory_ids()
         }
 
-    @staticmethod
-    def _is_3d(pts: npt.NDArray[np.float64]) -> bool:
-        """Whether a point cloud has a real third dimension.
-
-        A 2D sensor module pins every location to the `z = 0` plane, so a non-zero
-        spread in z marks a genuine 3D graph. Only meaningful once all points are known
-        (inference); a partially built graph may look planar by chance.
-
-        Args:
-            pts: The `(M, 3)` locations to inspect.
-
-        Returns:
-            True when the points vary in z, False otherwise.
-        """
-        return pts.shape[1] >= 3 and not np.allclose(pts[:, 2], 0.0)
-
-    def _frame_center_half(
-        self,
-        pts: npt.NDArray[np.float64],
-        base_size: float = 0.05,
-        step: float = 0.05,
-    ) -> tuple[npt.NDArray[np.float64], float]:
-        """Center and half-side of the square/cube enclosing `pts`.
-
-        The frame starts at `base_size` and grows in `step` increments, so it only
-        ever changes size when points cross a step boundary rather than rescaling
-        continuously with every new observation. Works for 2D `(M, 2)` or 3D
-        `(M, 3)` points, so the flat 2D channel view and the 3D buffer view share it.
-
-        Args:
-            pts: The `(M, 2)` or `(M, 3)` points the frame must enclose.
-            base_size: Side length in meters of the smallest square/cube frame.
-            step: Increment in meters by which the frame grows when points exceed it.
-
-        Returns:
-            The per-axis center and the frame's half side length.
-        """
-        low = pts[:, :3].min(axis=0)
-        high = pts[:, :3].max(axis=0)
-        center = (low + high) / 2
-
-        span = float((high - low).max())
-        size = base_size
-        if span > size:
-            size += step * math.ceil((span - base_size) / step)
-
-        return center, size / 2
-
-    def _draw_buffer_series(
-        self,
-        main_ax: Axes,
-        proj_axes: list[Axes],
-        groups: list[tuple[npt.NDArray[np.float64], object, str | None]],
-        title: str,
-        title_fontsize: int | None,
-        show_ticks: bool = True,
-    ) -> None:
-        """Draw point-cloud groups in a 3D axis plus its three 2D projections.
-
-        The 3D cube and all three projections share one stepped frame, so each head-on
-        view uses the same width and height as the corresponding cube faces. A legend is
-        drawn only when at least one group carries a label.
-
-        Args:
-            main_ax: The 3D axis for the point cloud.
-            proj_axes: The three 2D axes for the XY/XZ/YZ projections.
-            groups: The `(points, color, label)` groups to overlay, where `color` is
-                `None` (cycle), a single color, or a per-point `(M, 3)` RGB array, and
-                `label` is the legend entry or `None` to omit it.
-            title: The title for the 3D axis.
-            title_fontsize: Font size for the 3D title, or `None` for the default.
-            show_ticks: Whether to draw axis ticks; `False` drops them on every panel so
-                the small stacked Details plots stay readable.
-        """
-        main_ax.cla()
-        main_ax.set_title(title, fontsize=title_fontsize)
-        all_points = [pts for pts, _, _ in groups]
-        stacked = np.concatenate(all_points)
-        center, half = self._frame_center_half(stacked)
-        for pts, color, label in groups:
-            main_ax.scatter(
-                pts[:, 0],
-                pts[:, 1],
-                pts[:, 2],
-                s=6,
-                label=label,
-                **self._color_kwarg(color),
-            )
-        main_ax.set_xlim(center[0] - half, center[0] + half)
-        main_ax.set_ylim(center[1] - half, center[1] + half)
-        main_ax.set_zlim(center[2] - half, center[2] + half)
-        main_ax.set_box_aspect((1, 1, 1))
-        if not show_ticks:
-            main_ax.set_xticks([])
-            main_ax.set_yticks([])
-            main_ax.set_zticks([])
-        if any(label is not None for _, _, label in groups):
-            main_ax.legend(fontsize=8, loc="best")
-
-        # The three head-on 2D projections, as (x_dim, y_dim, label).
-        projections = ((0, 1, "XY"), (0, 2, "XZ"), (1, 2, "YZ"))
-        for ax, (a, b, name) in zip(proj_axes, projections):
-            ax.cla()
-            for pts, color, _ in groups:
-                ax.scatter(pts[:, a], pts[:, b], s=4, **self._color_kwarg(color))
-            ax.set_xlim(center[a] - half, center[a] + half)
-            ax.set_ylim(center[b] - half, center[b] + half)
-            ax.set_aspect("equal")
-            ax.set_title(name, fontsize=7)
-            if show_ticks:
-                ax.tick_params(labelsize=6)
-            else:
-                ax.set_xticks([])
-                ax.set_yticks([])
-
-    @staticmethod
-    def _color_kwarg(color: object) -> dict:
-        """Map a group color to the right scatter color keyword.
-
-        Args:
-            color: `None` to use the axis color cycle, a per-point `(M, 3)` RGB array,
-                or a single matplotlib color.
-
-        Returns:
-            `{}` for the cycle, `{"c": color}` for a per-point array, else
-            `{"color": color}` for a single color.
-        """
-        if color is None:
-            return {}
-        if isinstance(color, np.ndarray) and color.ndim == 2:
-            return {"c": color}
-        return {"color": color}
-
-    def _append_lm_history(self, lm: LearningModule, step: int) -> None:
-        """Append one learning module's evidence and hypothesis counts to its history.
-
-        One series per object id with a non-empty hypothesis space; objects appearing
-        late are NaN-backfilled so every series aligns to the LM's step list. Steps with
-        a sampling burst are recorded for vertical markers.
-
-        Args:
-            lm: The learning module whose current state is recorded.
-            step: The index of the current step within the episode.
-        """
-        mlh = lm.get_current_mlh()
-        if not mlh or mlh.get("graph_id") == "no_observations_yet":
-            return
-
-        graph_ids, evidences = lm.evidence_for_each_graph()
-        _, num_hyps = lm.num_hypotheses_for_each_graph()
-        evidence_by_id = dict(zip(graph_ids, evidences))
-        num_hyp_by_id = dict(zip(graph_ids, num_hyps))
-
-        lm_id = lm.learning_module_id
-        steps = self._evidence_steps_by_lm.setdefault(lm_id, [])
-        evidence_history = self._evidence_history_by_lm.setdefault(lm_id, {})
-        num_hyp_history = self._num_hyp_history_by_lm.setdefault(lm_id, {})
-        burst_steps = self._burst_steps_by_lm.setdefault(lm_id, [])
-
-        steps.append(step)
-        n = len(steps)
-        for graph_id in graph_ids:
-            if graph_id not in evidence_history:
-                evidence_history[graph_id] = [np.nan] * (n - 1)
-                num_hyp_history[graph_id] = [np.nan] * (n - 1)
-        for graph_id in evidence_history:
-            evidence_history[graph_id].append(evidence_by_id.get(graph_id, np.nan))
-            num_hyp_history[graph_id].append(num_hyp_by_id.get(graph_id, np.nan))
-        if self._in_burst(lm):
-            burst_steps.append(step)
-
-    def _accumulate_all_lm_histories(self, step: int) -> None:
-        """Record this step's evidence history for every evidence-supporting LM.
-
-        Accumulates once per step regardless of how many times the frame is redrawn, so
-        switching the displayed LM mid-episode reveals a fully populated history.
-
-        Args:
-            step: The index of the current step within the episode.
-        """
-        if self._last_accumulated_step == step:
-            return
-        self._last_accumulated_step = step
-        for lm in self.model.learning_modules:
-            if isinstance(lm, EvidenceGraphLM):
-                self._append_lm_history(lm, step)
-
     def initialize(self, model: Monty) -> None:
         """Resolve the displayed LM and build the figure, axes, and widgets.
 
@@ -633,11 +643,7 @@ class LivePlotter:
 
     def _reset_episode_state(self) -> None:
         """Reset the per-episode history, selection, and axis-layout bookkeeping."""
-        self._evidence_steps_by_lm: dict[str, list[int]] = {}
-        self._evidence_history_by_lm: dict[str, dict[str, list[float]]] = {}
-        self._num_hyp_history_by_lm: dict[str, dict[str, list[float]]] = {}
-        self._burst_steps_by_lm: dict[str, list[int]] = {}
-        self._last_accumulated_step: int | None = None
+        self._history = EvidenceHistory()
         self._evidence_steps: list[int] = []
         self._evidence_history: dict[str, list[float]] = {}
         self._num_hyp_history: dict[str, list[float]] = {}
@@ -651,8 +657,8 @@ class LivePlotter:
         self._monty_mode: str | None = "single"
         self._monty_projection: str | None = None
         self._monty_proj_axes: list[Axes] = []
-        self._monty_inset: _FeatureInset | None = None
-        self._details_insets: dict[str, _FeatureInset] = {}
+        self._monty_inset: FeatureInset | None = None
+        self._details_insets: dict[str, FeatureInset] = {}
         self._details_axes: list[Axes] = []
         self._details_proj_axes: list[list[Axes]] = []
         self._details_mode: str | None = None
@@ -671,7 +677,7 @@ class LivePlotter:
             RuntimeError: When interactive but the active backend cannot run the
                 blocking event loop (e.g. the headless `Agg` backend).
         """
-        if self.interactive and not _is_interactive_backend():
+        if self.interactive and not is_interactive_backend():
             raise RuntimeError(
                 "Interactive plotter requires a GUI matplotlib backend (e.g. TkAgg / "
                 f"QtAgg); the current backend {mpl.get_backend()!r} cannot run "
@@ -690,7 +696,7 @@ class LivePlotter:
         self._monty_spec = outer[0, 1]
         self._details_spec = outer[0, 2]
 
-        self._build_simulator_axes()
+        self._simulator = SimulatorPanel(self.fig, self._sim_spec)
         self._ax_monty = self.fig.add_subplot(self._monty_spec)
         self._draw_section_dividers()
         self._build_selector_buttons()
@@ -700,7 +706,7 @@ class LivePlotter:
         else:
             self._build_speed_slider()
 
-        if _is_interactive_backend():
+        if is_interactive_backend():
             self.fig.show()
 
     def update(self, observations: Observations, step: int) -> None:
@@ -718,7 +724,7 @@ class LivePlotter:
             return
         self._last_observations = observations
         self._last_step = step
-        self._accumulate_all_lm_histories(step)
+        self._history.accumulate(self.model.learning_modules, step)
         self._render(observations, step)
         if not self.interactive:
             self._apply_speed_pause()
@@ -735,7 +741,8 @@ class LivePlotter:
             self._channel = self._default_channel()
             self._refresh_selector_labels()
 
-        self._draw_simulator(observations)
+        sm, sm_id = self._simulator_sm()
+        self._simulator.draw(observations, sm, sm_id)
         if self._lm_building_graph(self.lm):
             self._draw_training()
         else:
@@ -795,6 +802,7 @@ class LivePlotter:
         self._slider = None
         self._lm_button = None
         self._channel_button = None
+        self._simulator = None
         self._monty_inset = None
         self._details_insets = {}
 
@@ -994,14 +1002,6 @@ class LivePlotter:
                     return sm, channel
         return None, None
 
-    def _build_simulator_axes(self) -> None:
-        """Lay out the view-finder and RGB-patch axes."""
-        sim_grid = GridSpecFromSubplotSpec(
-            2, 1, subplot_spec=self._sim_spec, height_ratios=[2, 1], hspace=0.3
-        )
-        self._ax_view = self.fig.add_subplot(sim_grid[0, 0])
-        self._ax_rgb = self.fig.add_subplot(sim_grid[1, 0])
-
     def _draw_section_dividers(self) -> None:
         """Draw vertical separators in the gaps between the three column sections."""
         sim = self._sim_spec.get_position(self.fig)
@@ -1023,107 +1023,10 @@ class LivePlotter:
                 )
             )
 
-    def _resolve_obs_agent_id(
-        self, observations: Observations, sensor_module_id: str
-    ) -> AgentID | None:
-        """Find the agent id whose observations contain the given sensor module.
-
-        Args:
-            observations: The observations from the most recent step.
-            sensor_module_id: The sensor module id to search for.
-
-        Returns:
-            The matching agent id, or `None` if no agent carries the sensor module.
-        """
-        for agent_id, agent_observations in observations.items():
-            if sensor_module_id in agent_observations:
-                return agent_id
-        return None
-
-    def _draw_simulator(self, observations: Observations) -> None:
-        """Draw the Simulator section (view finder and RGB patch).
-
-        Args:
-            observations: The observations from the most recent step.
-        """
-        sm, sm_id = self._simulator_sm()
-        agent_id = (
-            self._resolve_obs_agent_id(observations, sm_id)
-            if sm_id is not None
-            else None
-        )
-        agent_obs: AgentObservations = (
-            observations.get(agent_id, {}) if agent_id is not None else {}
-        )
-        self._draw_view_finder(agent_obs, sm, sm_id)
-        self._draw_rgb_patch(agent_obs, sm_id)
-
-    def _draw_view_finder(
-        self,
-        agent_obs: AgentObservations,
-        sm: SensorModule | None,
-        sm_id: str | None,
-    ) -> None:
-        """Draw the view finder, outlining the patch when a pixel location is known.
-
-        Args:
-            agent_obs: The observing agent's per-sensor observations this step.
-            sm: The sensor module driving the Simulator (for its raw-pixel telemetry).
-            sm_id: The id of that sensor module, used to read its patch observation.
-        """
-        ax = self._ax_view
-        ax.cla()
-        ax.set_title("View finder")
-        ax.set_axis_off()
-        if SensorID("view_finder") not in agent_obs:
-            return
-        rgba = np.asarray(agent_obs[SensorID("view_finder")]["rgba"])
-        raw = sm._snapshot_telemetry.raw_observations if sm is not None else []
-        patch_obs = agent_obs.get(sm_id) if sm_id is not None else None
-        has_outline = (
-            len(raw) > 0
-            and "pixel_loc" in raw[-1]
-            and patch_obs is not None
-            and "depth" in patch_obs
-        )
-        if has_outline:
-            patch_size = np.asarray(patch_obs["depth"]).shape[0]
-            rgba = add_patch_outline_to_view_finder(
-                rgba, np.array(raw[-1]["pixel_loc"]), patch_size
-            )
-        ax.imshow(rgba, zorder=-99)
-        if not has_outline:
-            shape = rgba.shape
-            ax.add_patch(
-                plt.Rectangle(
-                    (shape[1] * 4.5 // 10, shape[0] * 4.5 // 10),
-                    shape[1] / 10,
-                    shape[0] / 10,
-                    fc="none",
-                    ec="white",
-                )
-            )
-
-    def _draw_rgb_patch(self, agent_obs: AgentObservations, sm_id: str | None) -> None:
-        """Draw what the sensor module sees, preferring RGB over depth.
-
-        Args:
-            agent_obs: The observing agent's per-sensor observations this step.
-            sm_id: The id of the sensor module driving the Simulator.
-        """
-        ax = self._ax_rgb
-        ax.cla()
-        ax.set_axis_off()
-        ax.set_title("Patch")
-        patch = agent_obs.get(sm_id) if sm_id is not None else None
-        if patch is not None and "rgba" in patch:
-            ax.imshow(np.asarray(patch["rgba"]))
-            ax.set_title("Patch (RGB)")
-
     def _draw_feature_inset(self) -> None:
         """Draw the Monty section's "Input Feature" inset for the selected channel."""
         if self._monty_inset is None:
-            self._monty_inset = _FeatureInset(self.fig)
+            self._monty_inset = FeatureInset(self.fig)
         monty = self._monty_spec.get_position(self.fig)
         rect = self._corner_rect(monty, width_frac=0.32, height=0.18, top_pad=0.07)
         self._draw_channel_feature(self._monty_inset, self._channel, rect)
@@ -1152,7 +1055,7 @@ class LivePlotter:
         return [bbox.x0 + 0.005, top - height, width, height]
 
     def _draw_channel_feature(
-        self, inset: _FeatureInset, channel: str | None, rect: list[float]
+        self, inset: FeatureInset, channel: str | None, rect: list[float]
     ) -> None:
         """Draw one channel's live input feature into a corner inset.
 
@@ -1179,7 +1082,7 @@ class LivePlotter:
             self._draw_feature_message(inset, "no channel")
 
     def _draw_feature_from_sm(
-        self, inset: _FeatureInset, rect: list[float], sm: SensorModule | None
+        self, inset: FeatureInset, rect: list[float], sm: SensorModule | None
     ) -> None:
         """Draw a sensor module's detected feature, colored by the sensed hsv.
 
@@ -1224,7 +1127,7 @@ class LivePlotter:
             self._draw_feature_surface(inset, pose_vectors, color)
 
     def _draw_feature_lm_name(
-        self, inset: _FeatureInset, rect: list[float], channel: str
+        self, inset: FeatureInset, rect: list[float], channel: str
     ) -> None:
         """Show the name of the object being passed on a learning-module channel.
 
@@ -1244,7 +1147,7 @@ class LivePlotter:
                 name = str(graph_id)
         ax.text(0.5, 0.5, name, ha="center", va="center", transform=ax.transAxes)
 
-    def _draw_feature_message(self, inset: _FeatureInset, message: str) -> None:
+    def _draw_feature_message(self, inset: FeatureInset, message: str) -> None:
         """Clear an inset and show a centered message.
 
         Args:
@@ -1257,7 +1160,7 @@ class LivePlotter:
 
     def _draw_feature_surface(
         self,
-        inset: _FeatureInset,
+        inset: FeatureInset,
         pose_vectors: npt.NDArray[np.float64],
         color: npt.NDArray[np.float64],
     ) -> None:
@@ -1274,9 +1177,9 @@ class LivePlotter:
             color: The face color (the sensed hsv as RGB, or gray when absent).
         """
         ax = inset.clear()
-        normal = self._unit(pose_vectors[0])
-        tangent_u = self._unit(pose_vectors[1])
-        tangent_v = self._unit(pose_vectors[2])
+        normal = unit(pose_vectors[0])
+        tangent_u = unit(pose_vectors[1])
+        tangent_v = unit(pose_vectors[2])
         corners = np.array(
             [
                 0.5 * (tangent_u + tangent_v),
@@ -1310,7 +1213,7 @@ class LivePlotter:
 
     def _draw_feature_edge(
         self,
-        inset: _FeatureInset,
+        inset: FeatureInset,
         pose_vectors: npt.NDArray[np.float64],
         pose_fully_defined: bool,
         color: npt.NDArray[np.float64],
@@ -1346,20 +1249,6 @@ class LivePlotter:
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.set_aspect("equal")
-
-    @staticmethod
-    def _unit(vec: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-        """Return `vec` normalized to unit length, or unchanged if near zero.
-
-        Args:
-            vec: The vector to normalize.
-
-        Returns:
-            The unit vector, or the original vector when its norm is negligible.
-        """
-        vec = np.asarray(vec, dtype=float)
-        norm = np.linalg.norm(vec)
-        return vec / norm if norm > 1e-9 else vec
 
     def _clear_monty_axes(self) -> None:
         """Remove the main Monty axis and any projection axes below it."""
@@ -1456,7 +1345,7 @@ class LivePlotter:
                 self._details_insets.pop(channel).remove()
         for channel in channels:
             if channel not in self._details_insets:
-                self._details_insets[channel] = _FeatureInset(self.fig)
+                self._details_insets[channel] = FeatureInset(self.fig)
 
     def _clear_details_insets(self) -> None:
         """Remove every Details feature inset (when leaving the per-channel layout)."""
@@ -1595,7 +1484,7 @@ class LivePlotter:
             return
         main_ax, proj_axes = self._ensure_monty_projected()
         groups = self._details_groups(channel, pts)
-        self._draw_buffer_series(
+        draw_buffer_series(
             main_ax,
             proj_axes,
             groups,
@@ -1619,13 +1508,13 @@ class LivePlotter:
         ax = self._ensure_monty_projection(None)
         ax.cla()
         x, y = pts[:, 0], pts[:, 1]
-        colors, edge_mask, tangents = self._planar_style(
+        colors, edge_mask, tangents = planar_style(
             len(x),
             self._aligned_feature(channel, "hsv"),
             self._aligned_feature(channel, "pose_fully_defined"),
             self._aligned_feature(channel, "pose_vectors"),
         )
-        self._draw_2d_segments(ax, x, y, colors, edge_mask, tangents)
+        draw_2d_segments(ax, x, y, colors, edge_mask, tangents)
         ax.set_title("")
 
     def _draw_buffer_per_channel(
@@ -1643,7 +1532,7 @@ class LivePlotter:
             self._details_axes, self._details_proj_axes, channels
         ):
             groups = self._details_groups(channel, points[channel])
-            self._draw_buffer_series(
+            draw_buffer_series(
                 main_ax,
                 proj_axes,
                 groups,
@@ -1676,10 +1565,10 @@ class LivePlotter:
     def _select_active_history(self) -> None:
         """Point the line-plot history fields at the displayed LM's accumulated data."""
         lm_id = self.lm.learning_module_id
-        self._evidence_steps = self._evidence_steps_by_lm.setdefault(lm_id, [])
-        self._evidence_history = self._evidence_history_by_lm.setdefault(lm_id, {})
-        self._num_hyp_history = self._num_hyp_history_by_lm.setdefault(lm_id, {})
-        self._burst_steps = self._burst_steps_by_lm.setdefault(lm_id, [])
+        self._evidence_steps = self._history.steps_by_lm.setdefault(lm_id, [])
+        self._evidence_history = self._history.evidence_by_lm.setdefault(lm_id, {})
+        self._num_hyp_history = self._history.num_hyp_by_lm.setdefault(lm_id, {})
+        self._burst_steps = self._history.burst_steps_by_lm.setdefault(lm_id, [])
 
     def _draw_mlh(self) -> None:
         """Render the most likely hypothesis graph and its location marker.
@@ -1708,7 +1597,7 @@ class LivePlotter:
             return
 
         color = self._mlh_marker_color(mlh, self.lm.object_evidence_threshold)
-        if self._is_3d(pos):
+        if is_3d(pos):
             ax = self._ensure_monty_projection("3d")
             self._show_mlh_3d(ax, mlh, pos, color)
         else:
@@ -1771,96 +1660,6 @@ class LivePlotter:
         ax.set_axis_off()
         ax.set_aspect("equal")
 
-    def _planar_style(
-        self,
-        n: int,
-        hsv: npt.NDArray[np.float64] | None,
-        flags: npt.NDArray[np.float64] | None,
-        pose: npt.NDArray[np.float64] | None,
-    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.bool_], npt.NDArray | None]:
-        """Resolve per-point colors, an edge mask, and edge tangents for a planar cloud.
-
-        Shared by the inference MLH view (reading graph features) and the training
-        buffer view of a 2D sensor-module channel (reading buffer features), so both
-        render the same way from whichever source supplies the raw feature arrays.
-
-        Args:
-            n: The number of points.
-            hsv: The `(n, >=3)` hsv feature, or `None` to fall back to dark gray.
-            flags: The `(n, 1)` pose_fully_defined feature, or `None` for no edges.
-            pose: The `(n, 9)` flattened pose vectors, or `None` for no tangents.
-
-        Returns:
-            The `(n, 3)` colors, the `(n,)` edge mask, and the `(E, 2)` edge tangents of
-            the masked points (or `None` when no edge defines a pose).
-        """
-        if hsv is not None and hsv.shape[0] == n and hsv.shape[1] >= 3:
-            colors = mcolors.hsv_to_rgb(np.clip(hsv[:, :3], 0.0, 1.0))
-        else:
-            colors = np.full((n, 3), 0.2)
-        if flags is not None and flags.shape[0] == n:
-            edge_mask = flags[:, 0].astype(bool)
-        else:
-            edge_mask = np.zeros(n, dtype=bool)
-        if edge_mask.any() and pose is not None and pose.shape[0] == n:
-            tangents = pose[edge_mask, 3:5]
-        else:
-            tangents = None
-        return colors, edge_mask, tangents
-
-    def _draw_2d_segments(
-        self,
-        ax: Axes,
-        x: npt.NDArray[np.float64],
-        y: npt.NDArray[np.float64],
-        colors: npt.NDArray[np.float64],
-        edge_mask: npt.NDArray[np.bool_],
-        tangents: npt.NDArray[np.float64] | None,
-    ) -> None:
-        """Draw a planar cloud as hsv-colored dots with edge-oriented segments.
-
-        Nodes where an edge defines the pose are drawn as short dashed segments along
-        the edge tangent; the rest are drawn as dots. Shared by the inference MLH view
-        and the training buffer view of a 2D sensor-module channel. The view uses the
-        same stepped square frame as the 3D buffer view, so it starts at the base size
-        and grows in steps as points accumulate rather than rescaling continuously.
-
-        Args:
-            ax: The 2D axis to draw into.
-            x: The x coordinates, shape `(N,)`.
-            y: The y coordinates, shape `(N,)`.
-            colors: The per-point `(N, 3)` RGB colors.
-            edge_mask: The boolean `(N,)` mask of points where an edge defines the pose.
-            tangents: The `(E, 2)` edge tangents of the masked points, or `None`.
-        """
-        ax.scatter(
-            x[~edge_mask], y[~edge_mask], color=colors[~edge_mask], s=6, zorder=1
-        )
-        center, half = self._frame_center_half(np.stack([x, y], axis=1))
-        if edge_mask.any() and tangents is not None and len(tangents):
-            unit = tangents / np.clip(
-                np.linalg.norm(tangents, axis=1, keepdims=True), 1e-9, None
-            )
-            seg_half = 0.04 * half
-            centers = np.stack([x[edge_mask], y[edge_mask]], axis=1)
-            segments = np.stack(
-                [centers - seg_half * unit, centers + seg_half * unit], axis=1
-            )
-            ax.add_collection(
-                LineCollection(
-                    segments,
-                    colors=colors[edge_mask],
-                    linestyles="--",
-                    linewidths=1.2,
-                    zorder=2,
-                )
-            )
-        ax.set_xlim(center[0] - half, center[0] + half)
-        ax.set_ylim(center[1] - half, center[1] + half)
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.set_aspect("equal")
-
     def _show_mlh_2d(
         self,
         ax: Axes,
@@ -1886,13 +1685,13 @@ class LivePlotter:
             for name in ("hsv", "pose_fully_defined", "pose_vectors")
             if name in fm
         }
-        colors, edge_mask, tangents = self._planar_style(
+        colors, edge_mask, tangents = planar_style(
             len(x),
             graph_feature.get("hsv"),
             graph_feature.get("pose_fully_defined"),
             graph_feature.get("pose_vectors"),
         )
-        self._draw_2d_segments(ax, x, y, colors, edge_mask, tangents)
+        draw_2d_segments(ax, x, y, colors, edge_mask, tangents)
         ax.plot(
             mlh["location"][0],
             mlh["location"][1],
