@@ -23,6 +23,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     arc_from_projection,
     bilinear_sample,
     directional_curvature,
+    get_ltp_texture_feature_vector,
     local_ternary_pattern_and_hist,
     ltp_codes,
     ror_encoding,
@@ -222,14 +223,10 @@ def ltp_codes_loop(
         Neighbor values are obtained from the same ``bilinear_sample`` primitive
         used by the implementation (sampling one coordinate at a time), so the
         reference is independent of which interpolation backend ``bilinear_sample``
-        happens to use. This matters at ``threshold == 0``: there the ``>=``/``<=``
-        comparisons become exact-equality ties whenever a neighbor coincides with
-        the center (e.g. border pixels whose offset is clipped back onto the
-        center row/column), and sub-epsilon differences between interpolation
-        backends would otherwise flip individual bits. The coordinate is built
-        exactly as the implementation does -- a ``float32`` grid value plus the
-        ``float32``-cast neighbor offset -- so the sampled value matches bit for
-        bit.
+        happens to use. The coordinate is built exactly as the implementation
+        does -- a ``float32`` grid value plus the ``float32``-cast neighbor
+        offset -- so the sampled value matches bit for bit even when a neighbor
+        lands very close to the ``center +/- threshold`` decision boundary.
 
     Args:
         gray_patch: Grayscale image patch.
@@ -334,6 +331,12 @@ class LocalTernaryPatternTest(unittest.TestCase):
         with pytest.raises(ValueError, match="threshold"):
             ltp_codes(np.zeros((3, 3)), threshold=-1.0)
 
+    def test_zero_threshold_raises(self):
+        # A threshold of 0 degenerates the split-LTP into an LBP-style code and is
+        # not allowed.
+        with pytest.raises(ValueError, match="threshold"):
+            ltp_codes(np.zeros((3, 3)), threshold=0.0)
+
     def test_non_2d_patch_raises(self):
         with pytest.raises(ValueError, match="2D"):
             ltp_codes(np.zeros((3, 3, 3)))
@@ -347,14 +350,14 @@ class LocalTernaryPatternTest(unittest.TestCase):
         assert codes_neg.dtype == np.uint32
 
     def test_known_cross_pattern_center(self):
-        # Center (30) is darker than all four axis neighbors (50), so with
-        # n_neighbors=4 every positive bit is set: 0b1111 = 15, and no
-        # negative bit is set.
+        # Center (30) is darker than all four axis neighbors (50) by more than the
+        # threshold, so with n_neighbors=4 every positive bit is set:
+        # 0b1111 = 15, and no negative bit is set.
         patch = np.array(
             [[10.0, 50.0, 10.0], [50.0, 30.0, 50.0], [10.0, 50.0, 10.0]]
         )
         codes_pos, codes_neg = ltp_codes(
-            patch, n_neighbors=4, radius=1.0, threshold=0.0
+            patch, n_neighbors=4, radius=1.0, threshold=5.0
         )
         assert codes_pos[1, 1] == 0b1111
         assert codes_neg[1, 1] == 0
@@ -413,10 +416,10 @@ class LocalTernaryPatternTest(unittest.TestCase):
         rng = np.random.default_rng(7)
         configs = [
             dict(n_neighbors=8, radius=1.0, threshold=5.0),
-            dict(n_neighbors=4, radius=1.0, threshold=0.0),
+            dict(n_neighbors=4, radius=1.0, threshold=1.0),
             dict(n_neighbors=8, radius=2.0, threshold=3.0),
             dict(n_neighbors=12, radius=1.5, threshold=10.0),
-            dict(n_neighbors=16, radius=2.5, threshold=0.0),
+            dict(n_neighbors=16, radius=2.5, threshold=2.0),
         ]
         shapes = [(6, 7), (5, 5), (8, 4), (3, 9)]
         for config in configs:
@@ -614,3 +617,76 @@ class LocalTernaryPatternAndHistTest(unittest.TestCase):
             local_ternary_pattern_and_hist(np.zeros((3, 3)), threshold=-1.0)
         with pytest.raises(ValueError, match="2D"):
             local_ternary_pattern_and_hist(np.zeros((3, 3, 3)))
+
+    def test_zero_threshold_raises(self):
+        # A threshold of exactly 0 degenerates LTP into an LBP-style code and must
+        # be rejected.
+        with pytest.raises(ValueError, match="threshold"):
+            local_ternary_pattern_and_hist(
+                np.zeros((3, 3)), n_neighbors=8, threshold=0.0
+            )
+
+
+def _ltp_config(n_neighbors=8, radius=1.0, threshold=5.0):
+    """Build a single-method LTP texture-extraction config.
+
+    Returns:
+        Config dict in the form consumed by ``get_ltp_texture_feature_vector``.
+    """
+    return {
+        "texture_extraction": {
+            "local_ternary_pattern": {
+                "n_neighbors": n_neighbors,
+                "radius": radius,
+                "threshold": threshold,
+            }
+        }
+    }
+
+
+class GetLtpTextureFeatureVectorTest(unittest.TestCase):
+    def test_single_scale_matches_direct_call(self):
+        patch = np.random.default_rng(10).uniform(0.0, 255.0, size=(8, 8))
+        result = get_ltp_texture_feature_vector(
+            patch, _ltp_config(n_neighbors=8, radius=1.0, threshold=5.0)
+        )
+        expected = local_ternary_pattern_and_hist(
+            patch, n_neighbors=8, radius=1.0, threshold=5.0
+        )
+        npt.assert_array_equal(result, expected)
+
+    def test_single_scale_is_normalized(self):
+        patch = np.random.default_rng(11).uniform(0.0, 255.0, size=(8, 8))
+        result = get_ltp_texture_feature_vector(patch, _ltp_config())
+        assert np.all(result >= 0.0)
+        npt.assert_allclose(result.sum(), 1.0, atol=1e-3)
+        assert result.sum() <= 1.0
+
+    def test_multi_scale_concatenates_and_normalizes(self):
+        patch = np.random.default_rng(12).uniform(0.0, 255.0, size=(10, 10))
+        scales = [
+            {"local_ternary_pattern": {"n_neighbors": 8, "radius": 1.0,
+                                       "threshold": 5.0}},
+            {"local_ternary_pattern": {"n_neighbors": 8, "radius": 2.0,
+                                       "threshold": 5.0}},
+        ]
+        config = {"texture_extraction": {"multi_scale": scales}}
+        result = get_ltp_texture_feature_vector(patch, config)
+
+        scale_0 = get_ltp_texture_feature_vector(
+            patch, {"texture_extraction": scales[0]}
+        )
+        scale_1 = get_ltp_texture_feature_vector(
+            patch, {"texture_extraction": scales[1]}
+        )
+        # Length is the sum of the per-scale histogram lengths.
+        assert result.shape == (scale_0.shape[0] + scale_1.shape[0],)
+        # The combined (renormalized) vector is a probability distribution.
+        assert np.all(result >= 0.0)
+        npt.assert_allclose(result.sum(), 1.0, atol=1e-3)
+        assert result.dtype == np.float32
+
+    def test_unknown_method_raises(self):
+        config = {"texture_extraction": {"not_a_real_method": {}}}
+        with pytest.raises(ValueError, match="Unknown texture extraction method"):
+            get_ltp_texture_feature_vector(np.zeros((4, 4)), config)

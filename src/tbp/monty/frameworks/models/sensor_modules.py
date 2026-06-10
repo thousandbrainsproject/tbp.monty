@@ -174,10 +174,22 @@ class ObservationProcessor:
             is_surface_sm: Surface SMs do not require that the central pixel is
                 "on object" in order to process the observation (i.e., extract
                 features). Defaults to False.
+            ltp_config: Configuration for the Local Ternary Pattern (LTP) texture
+                feature extraction. Required when "ltp" is in `features`. Defaults
+                to None.
+
+        Raises:
+            ValueError: If "ltp" is in `features` but no `ltp_config` is provided.
         """
         for feature in features:
             assert feature in self.POSSIBLE_FEATURES, (
                 f"{feature} not part of {self.POSSIBLE_FEATURES}"
+            )
+        if "ltp" in features and ltp_config is None:
+            raise ValueError(
+                "`ltp` is in the requested features but no `ltp_config` was "
+                "provided. Pass an `ltp_config` describing the texture extraction "
+                "method (see get_ltp_texture_feature_vector)."
             )
         self._features = features
         self._is_surface_sm = is_surface_sm
@@ -571,6 +583,7 @@ class CameraSM(SensorModule):
         noise_params: dict[str, Any] | None = None,
         is_surface_sm: bool = False,
         delta_thresholds: dict[str, Any] | None = None,
+        ltp_config: dict[str, Any] | None = None,
     ) -> None:
         """Initialize Sensor Module.
 
@@ -591,6 +604,10 @@ class CameraSM(SensorModule):
                 check whether the current state's features are significantly different
                 from the previous with tolerances set according to `delta_thresholds`.
                 Defaults to None.
+            ltp_config: Configuration for the Local Ternary Pattern (LTP) texture
+                feature extraction. Required when "ltp" is in `features`. See
+                :func:`tbp.monty.frameworks.utils.sensor_processing.get_ltp_texture_feature_vector`
+                for the expected structure. Defaults to None.
 
         Note:
             When using feature-at-location matching with graphs, surface_normal and
@@ -605,6 +622,7 @@ class CameraSM(SensorModule):
             sensor_module_id=sensor_module_id,
             pc1_is_pc2_threshold=pc1_is_pc2_threshold,
             is_surface_sm=is_surface_sm,
+            ltp_config=ltp_config,
         )
         # TODO: With DefaultMessageNoise not getting RNG on init anymore,
         #       then we can initialize CameraSM with MessageNoise, instead

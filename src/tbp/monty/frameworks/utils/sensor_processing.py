@@ -39,7 +39,7 @@ def get_ltp_texture_feature_vector(image_array: np.ndarray, config) -> np.ndarra
             n_neighbors=method_config["n_neighbors"],
             radius=method_config["radius"],
             threshold=method_config["threshold"],
-        ).histogram
+        )
 
     elif method_name == "multi_scale":
         all_hists = []
@@ -121,15 +121,19 @@ def ltp_codes(
         gray_patch: grayscale image patch.
         n_neighbors: Number of neighbors to consider in the circular neighborhood.
         radius: Radius of the neighborhood in pixels.
-        threshold: Threshold for the local ternary pattern - for it to be LTP, must be
-        greater than 0 by definition.
+        threshold: Threshold for the local ternary pattern. Must be strictly greater
+            than 0 by definition: the threshold defines the "dead zone" around the
+            center value within which neighbors are treated as equal. A threshold of
+            0 removes this dead zone and degenerates the split-LTP into a more
+            LBP-style code (a neighbor equal to the center would set both the
+            positive and negative bits), so it is not allowed.
 
     Returns:
         Local Ternary Pattern features.
 
     Raises:
         ValueError: If `n_neighbors` is not positive, `radius` is not positive,
-            `threshold` is negative, or `gray_patch` is not 2D.
+            `threshold` is not positive, or `gray_patch` is not 2D.
     """
     if n_neighbors <= 0:
         raise ValueError(f"`n_neighbors` must be positive, got {n_neighbors}.")

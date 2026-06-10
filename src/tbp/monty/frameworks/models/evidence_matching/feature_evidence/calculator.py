@@ -75,6 +75,11 @@ class DefaultFeatureEvidenceCalculator:
         categorical_var = np.zeros(n_cols, dtype=bool)
         histogram_var = np.zeros(n_cols, dtype=bool)
 
+        # Column ranges (start, end) occupied by each histogram feature, so that the
+        # chi-square distance can be computed per histogram rather than across all
+        # columns lumped together.
+        histogram_slices: list[tuple[int, int]] = []
+
         start_idx = 0
         for feature in channel_feature_order:
             if feature in cls.SKIP_FEATURES:
@@ -86,18 +91,36 @@ class DefaultFeatureEvidenceCalculator:
             end_idx = start_idx + feature_length
             feature_list[start_idx:end_idx] = channel_query_features[feature]
             tolerance_list[start_idx:end_idx] = channel_tolerances[feature]
-            feature_weight_list[start_idx:end_idx] = channel_feature_weights[feature]
 
             if feature in cls.CIRCULAR_FEATURES:
                 # H is circular, S and V are numeric
                 circular_var[start_idx] = True
                 numeric_var[start_idx + 1 : end_idx] = True
+                feature_weight_list[start_idx:end_idx] = channel_feature_weights[
+                    feature
+                ]
             elif feature in cls.CATEGORICAL_FEATURES:
                 categorical_var[start_idx:end_idx] = True
+                feature_weight_list[start_idx:end_idx] = channel_feature_weights[
+                    feature
+                ]
             elif feature in cls.HISTOGRAM_FEATURES:
                 histogram_var[start_idx:end_idx] = True
+                histogram_slices.append((start_idx, end_idx))
+                # A histogram occupies one column per bin but is conceptually a
+                # single feature. Each bin column receives the same per-node
+                # chi-square distance, so we spread the feature weight evenly across
+                # the bins. This keeps the histogram's contribution to the weighted
+                # average equal to `channel_feature_weights[feature]`, independent of
+                # the number of bins.
+                feature_weight_list[start_idx:end_idx] = (
+                    channel_feature_weights[feature] / feature_length
+                )
             else:
                 numeric_var[start_idx:end_idx] = True
+                feature_weight_list[start_idx:end_idx] = channel_feature_weights[
+                    feature
+                ]
 
             start_idx = end_idx
 
@@ -122,12 +145,24 @@ class DefaultFeatureEvidenceCalculator:
         feature_differences[:, categorical_var] = (
             channel_feature_array[:, categorical_var] != feature_list[categorical_var]
         ).astype(channel_feature_array.dtype)
-        # Use Chi-2 distance for histogram features
-        feature_differences[:, histogram_var] = cv2.compareHist(
-            channel_feature_array[:, histogram_var],
-            feature_list[histogram_var],
-            cv2.HISTCMP_CHISQR,
-        )
+        # Use Chi-2 distance for histogram features. The distance is computed per
+        # node between the stored histogram and the query histogram, and broadcast
+        # across the histogram's bin columns (each bin shares the same distance and a
+        # correspondingly reduced weight). cv2.compareHist requires single-precision
+        # float input, hence the explicit cast.
+        for hist_start, hist_end in histogram_slices:
+            query_hist = feature_list[hist_start:hist_end].astype(np.float32)
+            stored_hists = channel_feature_array[:, hist_start:hist_end].astype(
+                np.float32
+            )
+            chi_distances = np.array(
+                [
+                    cv2.compareHist(stored_hist, query_hist, cv2.HISTCMP_CHISQR)
+                    for stored_hist in stored_hists
+                ],
+                dtype=channel_feature_array.dtype,
+            )
+            feature_differences[:, hist_start:hist_end] = chi_distances[:, np.newaxis]
         # any difference < tolerance should be positive evidence
         # any difference >= tolerance should be 0 evidence
         feature_evidence = np.clip(tolerance_list - feature_differences, 0, np.inf)

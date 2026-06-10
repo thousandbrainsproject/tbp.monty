@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import unittest
 
+import cv2
 import numpy as np
 import numpy.typing as npt
 from hypothesis import given
@@ -207,6 +208,102 @@ class DefaultFeatureEvidenceCalculatorTest(unittest.TestCase):
             feature_order=["pose_vectors", "curvature", "pose_fully_defined"],
         )
         np.testing.assert_array_equal(baseline, with_skip)
+
+    def test_histogram_identical_to_query_gives_full_evidence(self) -> None:
+        # A node whose stored histogram equals the query histogram has chi-square
+        # distance 0 and therefore receives evidence 1.
+        query_hist = [0.1, 0.2, 0.3, 0.4]
+        stored = np.array([query_hist], dtype=np.float64)
+        evidence = self._calculate(
+            stored=stored,
+            query={"ltp": query_hist},
+            tolerances={"ltp": 1.0},
+            weights={"ltp": 1.0},
+            feature_order=["ltp"],
+        )
+        np.testing.assert_allclose(evidence, [1.0], atol=1e-9)
+
+    def test_histogram_evidence_matches_chi_square_decay(self) -> None:
+        # Per-node evidence is clip(tol - chi, 0) / tol, where chi is cv2's
+        # chi-square distance between the stored and query histograms.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored = np.array(
+            [
+                [0.25, 0.25, 0.25, 0.25],  # identical -> chi 0
+                [0.40, 0.20, 0.20, 0.20],  # mildly different
+                [0.90, 0.05, 0.03, 0.02],  # very different
+            ],
+            dtype=np.float64,
+        )
+        tolerance = 0.5
+        evidence = self._calculate(
+            stored=stored,
+            query={"ltp": query_hist},
+            tolerances={"ltp": tolerance},
+            weights={"ltp": 1.0},
+            feature_order=["ltp"],
+        )
+
+        query_f32 = np.array(query_hist, dtype=np.float32)
+        expected = []
+        for row in stored:
+            chi = cv2.compareHist(
+                row.astype(np.float32), query_f32, cv2.HISTCMP_CHISQR
+            )
+            expected.append(max(0.0, 1.0 - chi / tolerance))
+        np.testing.assert_allclose(evidence, expected, atol=1e-6)
+
+    def test_histogram_distance_at_or_above_tolerance_gives_zero(self) -> None:
+        query_hist = [1.0, 0.0, 0.0, 0.0]
+        # Stored mass is entirely in a different bin -> large chi-square distance.
+        stored = np.array([[0.0, 0.0, 0.0, 1.0]], dtype=np.float64)
+        evidence = self._calculate(
+            stored=stored,
+            query={"ltp": query_hist},
+            tolerances={"ltp": 0.5},
+            weights={"ltp": 1.0},
+            feature_order=["ltp"],
+        )
+        np.testing.assert_allclose(evidence, [0.0], atol=1e-9)
+
+    def test_histogram_contributes_as_single_feature_in_average(self) -> None:
+        # The histogram weight is spread across its bins so that, combined with a
+        # numeric feature, the result is the weight-combination of the two
+        # per-feature evidences (the histogram is not counted once per bin).
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored_hist = [0.40, 0.20, 0.20, 0.20]
+        curvature_stored = 2.0
+        curvature_query = 2.5
+        curvature_tol = 1.0
+        ltp_tol = 0.5
+        ltp_weight = 3.0
+        curvature_weight = 1.0
+
+        stored = np.array(
+            [[curvature_stored, *stored_hist]],
+            dtype=np.float64,
+        )
+        evidence = self._calculate(
+            stored=stored,
+            query={"curvature": curvature_query, "ltp": query_hist},
+            tolerances={"curvature": curvature_tol, "ltp": ltp_tol},
+            weights={"curvature": curvature_weight, "ltp": ltp_weight},
+            feature_order=["curvature", "ltp"],
+        )
+
+        curvature_ev = max(
+            0.0, 1.0 - abs(curvature_stored - curvature_query) / curvature_tol
+        )
+        chi = cv2.compareHist(
+            np.array(stored_hist, dtype=np.float32),
+            np.array(query_hist, dtype=np.float32),
+            cv2.HISTCMP_CHISQR,
+        )
+        ltp_ev = max(0.0, 1.0 - chi / ltp_tol)
+        expected = (
+            curvature_ev * curvature_weight + ltp_ev * ltp_weight
+        ) / (curvature_weight + ltp_weight)
+        np.testing.assert_allclose(evidence, [expected], atol=1e-6)
 
 
 if __name__ == "__main__":
