@@ -174,7 +174,8 @@ def ltp_codes(
         gray_patch: grayscale image patch.
         n_neighbors: Number of neighbors to consider in the circular neighborhood.
         radius: Radius of the neighborhood in pixels.
-        threshold: Threshold for the local ternary pattern.
+        threshold: Threshold for the local ternary pattern - for it to be LTP, must be
+        greater than 0 by definition.
 
     Returns:
         Local Ternary Pattern features.
@@ -188,7 +189,7 @@ def ltp_codes(
     if radius <= 0:
         raise ValueError(f"`radius` must be positive, got {radius}.")
     if threshold <= 0:
-        raise ValueError(f"`threshold` must be >= 0, got {threshold}.")
+        raise ValueError(f"`threshold` must be > 0, got {threshold}.")
     if gray_patch.ndim != 2:
         raise ValueError(
             "Must provide a 2D grayscale image patch, got shape", gray_patch.shape
