@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 FLAT_THRESHOLD = 0.001
 
-def get_texture_feature_vector(image_array: np.ndarray, config) -> np.ndarray:
+def get_ltp_texture_feature_vector(image_array: np.ndarray, config) -> np.ndarray:
     texture_extraction_config = config["texture_extraction"]
 
     method_name, method_config = next(iter(texture_extraction_config.items()))
@@ -45,7 +45,7 @@ def get_texture_feature_vector(image_array: np.ndarray, config) -> np.ndarray:
         all_hists = []
         for nested_cfg in method_config:
             nested_texture_config = {"texture_extraction": nested_cfg}
-            result = get_texture_feature_vector(image_array, nested_texture_config)
+            result = get_ltp_texture_feature_vector(image_array, nested_texture_config)
             hist = np.asarray(result, dtype=np.float32)
             all_hists.append(hist)
 
@@ -57,7 +57,6 @@ def get_texture_feature_vector(image_array: np.ndarray, config) -> np.ndarray:
         raise ValueError(f"Unknown texture extraction method: {method_name}")
 
     return result
-
 
 def local_ternary_pattern_and_hist(
     gray_patch: np.ndarray,

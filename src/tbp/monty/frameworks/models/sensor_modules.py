@@ -13,9 +13,10 @@ import logging
 from enum import Enum
 from typing import Any, ClassVar, Protocol
 
+import cv2
 import numpy as np
 import quaternion as qt
-from skimage.color import rgb2hsv
+from skimage.color import rgb2gray, rgb2hsv
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
@@ -29,6 +30,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.sensor_processing import (
+    get_ltp_texture_feature_vector,
     log_sign,
     principal_curvatures,
     scale_clip,
@@ -132,6 +134,7 @@ class ObservationProcessor:
         "mean_depth",
         "rgba",
         "hsv",
+        "ltp",
         "pose_vectors",
         "principal_curvatures",
         "principal_curvatures_log",
@@ -154,6 +157,7 @@ class ObservationProcessor:
         surface_normal_method=SurfaceNormalMethod.TLS,
         weight_curvature=True,
         is_surface_sm=False,
+        ltp_config=None,
     ) -> None:
         """Initializes the ObservationProcessor.
 
@@ -181,6 +185,7 @@ class ObservationProcessor:
         self._sensor_module_id = sensor_module_id
         self._surface_normal_method = surface_normal_method
         self._weight_curvature = weight_curvature
+        self._ltp_config = ltp_config
 
     def process(self, observation: SensorObservation) -> Message:
         """Processes observation.
@@ -318,6 +323,16 @@ class ObservationProcessor:
             rgba = rgba_feat[center_row_col, center_row_col]
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
+        if "ltp" in self._features:
+            rgb_patch = rgba_feat[:, :, :3]
+            gray_patch = rgb2gray(rgb_patch)
+            if np.max(gray_patch) <= 1.0:
+                # NOTE this is a brittle check, e.g. if black image is passed
+                gray_patch = gray_patch * 255.0
+                gray_patch = gray_patch.astype(np.uint8)
+            hist = get_ltp_texture_feature_vector(gray_patch, self._ltp_config)
+
+            features["ltp"] = hist.astype(float)
 
         # Note we only determine curvature if we could determine a valid surface normal
         if any(feat in self.CURVATURE_FEATURES for feat in self._features) and valid_sn:
@@ -755,6 +770,25 @@ class FeatureChangeFilter(PerceptFilter):
                 if angle_between >= self._delta_thresholds[feature][0]:
                     logger.debug(
                         f"new point because of {feature} angle : {angle_between}"
+                    )
+                    return True
+
+            elif feature == "ltp":
+                ltp_delta_threshold = self._delta_thresholds[feature]
+                if ltp_delta_threshold == 0:
+                    return True
+
+                # Compute a Chi-2 distance between the last percept's LTP histogram
+                # and the current percept's LTP histogram, and check if it's above the
+                # threshold
+                chi_distance = cv2.compareHist(
+                    last_feat, current_feat, cv2.HISTCMP_CHISQR
+                )
+
+                if chi_distance > ltp_delta_threshold:
+                    logger.debug(
+                        "new point because of LTP "
+                        f"chi distance: {chi_distance}"
                     )
                     return True
 
