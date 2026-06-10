@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+import cv2
 import numpy as np
 
 
@@ -29,6 +30,7 @@ class DefaultFeatureEvidenceCalculator:
     SKIP_FEATURES = frozenset({"pose_vectors", "pose_fully_defined"})
     CIRCULAR_FEATURES = frozenset({"hsv"})
     CATEGORICAL_FEATURES = frozenset({"object_id"})
+    HISTOGRAM_FEATURES = frozenset({"ltp"})
     CIRCULAR_RANGE = 1
 
     @classmethod
@@ -71,6 +73,7 @@ class DefaultFeatureEvidenceCalculator:
         numeric_var = np.zeros(n_cols, dtype=bool)
         circular_var = np.zeros(n_cols, dtype=bool)
         categorical_var = np.zeros(n_cols, dtype=bool)
+        histogram_var = np.zeros(n_cols, dtype=bool)
 
         start_idx = 0
         for feature in channel_feature_order:
@@ -91,12 +94,14 @@ class DefaultFeatureEvidenceCalculator:
                 numeric_var[start_idx + 1 : end_idx] = True
             elif feature in cls.CATEGORICAL_FEATURES:
                 categorical_var[start_idx:end_idx] = True
+            elif feature in cls.HISTOGRAM_FEATURES:
+                histogram_var[start_idx:end_idx] = True
             else:
                 numeric_var[start_idx:end_idx] = True
 
             start_idx = end_idx
 
-        assert (numeric_var ^ circular_var ^ categorical_var).all(), (
+        assert (numeric_var ^ circular_var ^ categorical_var ^ histogram_var).all(), (
             "feature kind masks must be mutually exclusive and exhaustive"
         )
 
@@ -117,7 +122,12 @@ class DefaultFeatureEvidenceCalculator:
         feature_differences[:, categorical_var] = (
             channel_feature_array[:, categorical_var] != feature_list[categorical_var]
         ).astype(channel_feature_array.dtype)
-
+        # Use Chi-2 distance for histogram features
+        feature_differences[:, histogram_var] = cv2.compareHist(
+            channel_feature_array[:, histogram_var],
+            feature_list[histogram_var],
+            cv2.HISTCMP_CHISQR,
+        )
         # any difference < tolerance should be positive evidence
         # any difference >= tolerance should be 0 evidence
         feature_evidence = np.clip(tolerance_list - feature_differences, 0, np.inf)
