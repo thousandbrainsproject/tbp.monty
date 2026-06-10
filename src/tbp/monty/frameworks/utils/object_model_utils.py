@@ -10,6 +10,7 @@
 
 import logging
 
+import cv2
 import numpy as np
 import torch
 
@@ -141,6 +142,20 @@ def already_in_list(
                 elif feature == "distance":
                     pass
                     # Already dealt with in vectorized form
+
+                elif feature == "ltp":
+                    ltp_delta_threshold = graph_delta_thresholds[feature]
+                    if ltp_delta_threshold == 0:
+                        redundant_point = False
+                        break
+                    chi_distance = cv2.compareHist(
+                        features[feature][feature_idx],
+                        features[feature][query_id],
+                        cv2.HISTCMP_CHISQR,
+                    )
+                    if chi_distance > ltp_delta_threshold:
+                        redundant_point = False
+                        break
 
                 else:
                     delta_change = np.abs(
