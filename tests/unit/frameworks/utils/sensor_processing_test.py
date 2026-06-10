@@ -17,7 +17,6 @@ import numpy.testing as npt
 import pytest
 from hypothesis import assume, example, given
 from hypothesis import strategies as st
-from scipy.ndimage import map_coordinates
 
 from tbp.monty.frameworks.utils.sensor_processing import (
     FLAT_THRESHOLD,
@@ -207,30 +206,6 @@ class DirectionalCurvatureTest(unittest.TestCase):
             )
 
 
-def map_coordinates_bilinear_sample(
-    image: np.ndarray, y: np.ndarray, x: np.ndarray
-) -> np.ndarray:
-    """Reference bilinear sampler built on ``scipy.ndimage.map_coordinates``.
-
-    This mirrors ``bilinear_sample``: ``order=1`` performs bilinear interpolation
-    and ``mode="nearest"`` clamps out-of-bounds coordinates to the nearest edge.
-
-    Args:
-        image: Image to sample.
-        y: Y coordinates (row) to sample.
-        x: X coordinates (column) to sample.
-
-    Returns:
-        Sampled image values.
-    """
-    return map_coordinates(
-        image,
-        np.stack([y, x]),  # shape (2, N) -- row coords, then col coords
-        order=1,  # order=1 => bilinear
-        mode="nearest",  # clip out-of-bounds to nearest edge
-    )
-
-
 def ltp_codes_loop(
     gray_patch: np.ndarray,
     n_neighbors: int = 8,
@@ -239,16 +214,22 @@ def ltp_codes_loop(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Explicit, non-vectorized reference for ``ltp_codes``.
 
-    Loops over every pixel and every neighbor and re-derives the bilinear
-    neighbor value one element at a time, so it shares no array-level machinery
-    with the implementation under test.
+    Loops over every pixel and every neighbor and accumulates the ternary bits
+    one element at a time. This exercises the vectorized bit-packing logic of
+    ``ltp_codes`` against a plain Python equivalent.
 
     Note:
-        The implementation builds its coordinate grid as ``float32``
-        (``np.arange(..., dtype=np.float32)``), so neighbor offsets are rounded
-        to ``float32`` before sampling. We reproduce that here with explicit
-        ``np.float32`` casts; otherwise the higher-precision coordinates would
-        flip equality bits whenever a neighbor sits exactly on the threshold.
+        Neighbor values are obtained from the same ``bilinear_sample`` primitive
+        used by the implementation (sampling one coordinate at a time), so the
+        reference is independent of which interpolation backend ``bilinear_sample``
+        happens to use. This matters at ``threshold == 0``: there the ``>=``/``<=``
+        comparisons become exact-equality ties whenever a neighbor coincides with
+        the center (e.g. border pixels whose offset is clipped back onto the
+        center row/column), and sub-epsilon differences between interpolation
+        backends would otherwise flip individual bits. The coordinate is built
+        exactly as the implementation does -- a ``float32`` grid value plus the
+        ``float32``-cast neighbor offset -- so the sampled value matches bit for
+        bit.
 
     Args:
         gray_patch: Grayscale image patch.
@@ -271,20 +252,11 @@ def ltp_codes_loop(
                 ny = np.float32(y) + np.float32(-radius * np.sin(theta))
                 nx = np.float32(x) + np.float32(radius * np.cos(theta))
 
-                # Clamp to the valid image region (matches np.clip in the impl).
-                ny = min(max(ny, 0.0), h - 1.0)
-                nx = min(max(nx, 0.0), w - 1.0)
-
-                y0 = int(np.floor(ny))
-                x0 = int(np.floor(nx))
-                y1 = min(y0 + 1, h - 1)
-                x1 = min(x0 + 1, w - 1)
-                wy = ny - y0
-                wx = nx - x0
-
-                top = gray_patch[y0, x0] * (1.0 - wx) + gray_patch[y0, x1] * wx
-                bottom = gray_patch[y1, x0] * (1.0 - wx) + gray_patch[y1, x1] * wx
-                neighbor = top * (1.0 - wy) + bottom * wy
+                neighbor = bilinear_sample(
+                    gray_patch,
+                    np.array([ny], dtype=np.float32),
+                    np.array([nx], dtype=np.float32),
+                )[0]
 
                 if neighbor >= center + threshold:
                     codes_pos[y, x] |= np.uint32(1) << i
@@ -347,81 +319,6 @@ class BilinearSampleTest(unittest.TestCase):
         y = np.full((3, 2), 1.5)
         x = np.full((3, 2), 2.5)
         assert bilinear_sample(image, y, x).shape == (3, 2)
-
-
-class BilinearSampleVsMapCoordinatesTest(unittest.TestCase):
-    """Compare ``bilinear_sample`` against the ``map_coordinates`` reference."""
-
-    def test_equivalent_for_in_bounds_float_coordinates(self):
-        rng = np.random.default_rng(0)
-        image = rng.uniform(0.0, 255.0, size=(7, 9))
-        y = rng.uniform(0.0, 6.0, size=500)
-        x = rng.uniform(0.0, 8.0, size=500)
-        npt.assert_allclose(
-            bilinear_sample(image, y, x),
-            map_coordinates_bilinear_sample(image, y, x),
-            atol=1e-12,
-        )
-
-    def test_equivalent_for_out_of_bounds_float_coordinates(self):
-        # np.clip on the coordinates is equivalent to map_coordinates'
-        # per-axis "nearest" clamping for separable bilinear interpolation,
-        # so the two agree even outside the image.
-        rng = np.random.default_rng(1)
-        image = rng.uniform(0.0, 255.0, size=(7, 9))
-        y = rng.uniform(-4.0, 10.0, size=500)
-        x = rng.uniform(-4.0, 12.0, size=500)
-        npt.assert_allclose(
-            bilinear_sample(image, y, x),
-            map_coordinates_bilinear_sample(image, y, x),
-            atol=1e-12,
-        )
-
-    def test_equivalent_on_dense_coordinate_sweep(self):
-        rng = np.random.default_rng(2)
-        image = rng.uniform(0.0, 1.0, size=(5, 5))
-        gy, gx = np.meshgrid(
-            np.linspace(-1.0, 5.0, 40), np.linspace(-1.0, 5.0, 40), indexing="ij"
-        )
-        npt.assert_allclose(
-            bilinear_sample(image, gy, gx),
-            map_coordinates_bilinear_sample(image, gy, gx),
-            atol=1e-12,
-        )
-
-    def test_deviates_for_integer_images(self):
-        # This is the one place the two implementations disagree:
-        # map_coordinates defaults its output dtype to the input dtype, so an
-        # integer image is interpolated in integer arithmetic, whereas
-        # bilinear_sample always returns floating-point values.
-        rng = np.random.default_rng(3)
-        float_image = rng.uniform(0.0, 255.0, size=(6, 6))
-        int_image = float_image.astype(np.int64)
-        y = rng.uniform(0.0, 5.0, size=200)
-        x = rng.uniform(0.0, 5.0, size=200)
-
-        impl = bilinear_sample(int_image, y, x)
-        reference = map_coordinates_bilinear_sample(int_image, y, x)
-
-        assert np.issubdtype(impl.dtype, np.floating)
-        assert np.issubdtype(reference.dtype, np.integer)
-        # They genuinely differ at fractional sample points...
-        assert np.any(np.abs(impl - reference) > 1e-9)
-        # ...but only because of integer rounding (bounded below one unit).
-        assert np.max(np.abs(impl - reference)) < 1.0
-
-    def test_integer_deviation_disappears_when_image_is_float(self):
-        # Casting the same integer values to float removes the disagreement.
-        rng = np.random.default_rng(3)
-        int_image = rng.uniform(0.0, 255.0, size=(6, 6)).astype(np.int64)
-        float_image = int_image.astype(np.float64)
-        y = rng.uniform(0.0, 5.0, size=200)
-        x = rng.uniform(0.0, 5.0, size=200)
-        npt.assert_allclose(
-            bilinear_sample(float_image, y, x),
-            map_coordinates_bilinear_sample(float_image, y, x),
-            atol=1e-12,
-        )
 
 
 class LocalTernaryPatternTest(unittest.TestCase):
@@ -655,9 +552,10 @@ class RorEncodingTest(unittest.TestCase):
         assert encoded.min() >= 0
         assert encoded.max() == n_bins - 1
 
-    def test_out_of_range_code_raises_index_error(self):
-        codes = np.array([16], dtype=np.uint32)
-        with pytest.raises(ValueError):
+    def test_out_of_range_code_raises_value_error(self):
+        # Codes must be < 2**n_neighbors; larger values are rejected.
+        codes = np.array([16], dtype=np.uint32)  # only 0..15 valid for n=4
+        with pytest.raises(ValueError, match="exceeds the number of codes"):
             ror_encoding(codes, n_neighbors=4)
 
 

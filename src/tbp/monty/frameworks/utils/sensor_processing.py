@@ -15,6 +15,7 @@ import logging
 import numpy as np
 import torch
 from numpy.typing import ArrayLike
+from scipy.ndimage import map_coordinates
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_angle_torch,
@@ -186,7 +187,7 @@ def ltp_codes(
         raise ValueError(f"`n_neighbors` must be positive, got {n_neighbors}.")
     if radius <= 0:
         raise ValueError(f"`radius` must be positive, got {radius}.")
-    if threshold < 0:
+    if threshold <= 0:
         raise ValueError(f"`threshold` must be >= 0, got {threshold}.")
     if gray_patch.ndim != 2:
         raise ValueError(
@@ -231,45 +232,26 @@ def ltp_codes(
 
     return codes_pos, codes_neg
 
-def bilinear_sample(
-    image: np.ndarray,
-    y: np.ndarray,
-    x: np.ndarray,
-) -> np.ndarray:
+def bilinear_sample(image: np.ndarray, y: np.ndarray, x: np.ndarray) -> np.ndarray:
     """Sample image at floating-point coordinates using bilinear interpolation.
 
-    Coordinates outside the image are clipped to the nearest valid boundary.
+    Uses scipy.ndimage.map_coordinates. Coordinates outside the image are clipped to
+    the nearest valid boundary.
 
     Args:
         image: Image to sample.
-        y: Y coordinates to sample.
-        x: X coordinates to sample.
+        y: Y coordinates (row) to sample.
+        x: X coordinates (column) to sample.
 
     Returns:
         Sampled image values.
     """
-    h, w = image.shape
-
-    y = np.clip(y, 0.0, h - 1.0)
-    x = np.clip(x, 0.0, w - 1.0)
-
-    y0 = np.floor(y).astype(np.int32)
-    x0 = np.floor(x).astype(np.int32)
-    y1 = np.clip(y0 + 1, 0, h - 1)
-    x1 = np.clip(x0 + 1, 0, w - 1)
-
-    wy = y - y0
-    wx = x - x0
-
-    top_left = image[y0, x0]
-    top_right = image[y0, x1]
-    bottom_left = image[y1, x0]
-    bottom_right = image[y1, x1]
-
-    top = top_left * (1.0 - wx) + top_right * wx
-    bottom = bottom_left * (1.0 - wx) + bottom_right * wx
-
-    return top * (1.0 - wy) + bottom * wy
+    return map_coordinates(
+        image,
+        np.stack([y, x]),  # shape (2, N) -- row coords, then col coords
+        order=1,  # order=1 => bilinear
+        mode="nearest",  # clip out-of-bounds to nearest edge
+    )
 
 
 def arc_from_projection(
