@@ -540,6 +540,7 @@ jobs:
         continue-on-error: true
         run: |
           export MUJOCO_GL=egl
+          export EGL_PLATFORM=headless
           mkdir -p test_results/pytest
           uv run --frozen pytest src tests \
             --cov --cov-context=test --cov-report html --cov-report term \
