@@ -12,6 +12,9 @@ train_env_interface_args:
   - blotchy_softball
   - woven_softball
   - zigzagged_softball
+  - mug
+  - bowl
+  - banana
   object_init_sampler:
     _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
     rotations: ${constants.rotations_all}
