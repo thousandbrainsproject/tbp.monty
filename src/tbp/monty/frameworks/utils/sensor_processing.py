@@ -69,6 +69,86 @@ def local_ternary_pattern_and_hist(
     return histogram
 
 
+def ltp_codes(
+    gray_patch: np.ndarray,
+    n_neighbors: int = 8,
+    radius: float = 1.0,
+    threshold: float = 5.0,
+) -> np.ndarray:
+    """Compute Local Ternary Pattern features for a grayscale image patch.
+
+    This implementation leverages the standard split-LTP formulation from Tan and
+    Triggs (2010):
+    - Positive pattern: neighbor >= center + threshold
+    - Negative pattern: neighbor <= center - threshold
+
+    Encoding makes use of the ROR rotation-invariant encoding scheme.
+
+    The final feature vector is:
+        concat(histogram(positive_codes), histogram(negative_codes))
+
+    Args:
+        gray_patch: grayscale image patch.
+        n_neighbors: Number of neighbors to consider in the circular neighborhood.
+        radius: Radius of the neighborhood in pixels.
+        threshold: Threshold for the local ternary pattern - for it to be LTP, must be
+        greater than 0 by definition.
+
+    Returns:
+        Local Ternary Pattern features.
+
+    Raises:
+        ValueError: If `n_neighbors` is not positive, `radius` is not positive,
+            `threshold` is negative, or `gray_patch` is not 2D.
+    """
+    if n_neighbors <= 0:
+        raise ValueError(f"`n_neighbors` must be positive, got {n_neighbors}.")
+    if radius <= 0:
+        raise ValueError(f"`radius` must be positive, got {radius}.")
+    if threshold <= 0:
+        raise ValueError(f"`threshold` must be > 0, got {threshold}.")
+    if gray_patch.ndim != 2:
+        raise ValueError(
+            "Must provide a 2D grayscale image patch, got shape", gray_patch.shape
+        )
+
+    h, w = gray_patch.shape
+    # Use meshgrid to create a grid of coordinates that can be shifted in parallel
+    # for each neighbor comparison.
+    yy, xx = np.meshgrid(
+        np.arange(h, dtype=np.float32),
+        np.arange(w, dtype=np.float32),
+        indexing="ij",
+    )
+
+    codes_pos = np.zeros((h, w), dtype=np.uint32)
+    codes_neg = np.zeros((h, w), dtype=np.uint32)
+
+    # Sample the circular neighborhood, travelling clockwise.
+    for i in range(n_neighbors):
+        theta = 2.0 * np.pi * i / n_neighbors
+        dy = -radius * np.sin(theta)
+        dx = radius * np.cos(theta)
+
+        # Use shift to determine all neighbor locations, then perform bilinear sampling
+        # to get the neighbor value as the weighted average of the four nearest pixels.
+        # This is useful for cases where the radius parameter does not land exactly on
+        # pixel coordinates.
+        neighbor = bilinear_sample(gray_patch, yy + dy, xx + dx)
+
+        pos_bit = (neighbor >= (gray_patch + threshold)).astype(np.uint32)
+        neg_bit = (neighbor <= (gray_patch - threshold)).astype(np.uint32)
+
+        # For each pixel in the original patch shift the bit values left by i with <<
+        # operator (equivalent to multiplying by 2^i). This ensures each neighbor's bit
+        # value contributes uniquely to the final code. Then accumulate the bit values
+        # using the bitwise OR operator.
+        codes_pos |= pos_bit << i
+        codes_neg |= neg_bit << i
+
+    return codes_pos, codes_neg
+
+
 def ror_encoding(codes: np.ndarray, n_neighbors: int) -> tuple[np.ndarray, int]:
     """Encode codes using the ROR rotation-invariant encoding scheme.
 
@@ -150,88 +230,6 @@ def ror_encoding(codes: np.ndarray, n_neighbors: int) -> tuple[np.ndarray, int]:
     encoded = look_up_table[codes.astype(np.int32, copy=False)]
 
     return encoded, n_bins
-
-
-def ltp_codes(
-    gray_patch: np.ndarray,
-    n_neighbors: int = 8,
-    radius: float = 1.0,
-    threshold: float = 5.0,
-) -> np.ndarray:
-    """Compute Local Ternary Pattern features for a grayscale image patch.
-
-    This implementation leverages the standard split-LTP formulation from Tan and
-    Triggs (2010):
-    - Positive pattern: neighbor >= center + threshold
-    - Negative pattern: neighbor <= center - threshold
-
-    Encoding makes use of the ROR rotation-invariant encoding scheme.
-
-    The final feature vector is:
-        concat(histogram(positive_codes), histogram(negative_codes))
-
-    Args:
-        gray_patch: grayscale image patch.
-        n_neighbors: Number of neighbors to consider in the circular neighborhood.
-        radius: Radius of the neighborhood in pixels.
-        threshold: Threshold for the local ternary pattern - for it to be LTP, must be
-        greater than 0 by definition.
-
-    Returns:
-        Local Ternary Pattern features.
-
-    Raises:
-        ValueError: If `n_neighbors` is not positive, `radius` is not positive,
-            `threshold` is negative, or `gray_patch` is not 2D.
-    """
-    if n_neighbors <= 0:
-        raise ValueError(f"`n_neighbors` must be positive, got {n_neighbors}.")
-    if radius <= 0:
-        raise ValueError(f"`radius` must be positive, got {radius}.")
-    if threshold <= 0:
-        raise ValueError(f"`threshold` must be > 0, got {threshold}.")
-    if gray_patch.ndim != 2:
-        raise ValueError(
-            "Must provide a 2D grayscale image patch, got shape", gray_patch.shape
-        )
-
-    h, w = gray_patch.shape
-    # Use meshgrid to create a grid of coordinates that can be shifted in parallel
-    # for each neighbor comparison.
-    yy, xx = np.meshgrid(
-        np.arange(h, dtype=np.float32),
-        np.arange(w, dtype=np.float32),
-        indexing="ij",
-    )
-
-    # print(np.shape(yy), np.shape(xx))
-
-    codes_pos = np.zeros((h, w), dtype=np.uint32)
-    codes_neg = np.zeros((h, w), dtype=np.uint32)
-
-    # Sample the circular neighborhood, travelling clockwise.
-    for i in range(n_neighbors):
-        theta = 2.0 * np.pi * i / n_neighbors
-        dy = -radius * np.sin(theta)
-        dx = radius * np.cos(theta)
-
-        # Use shift to determine all neighbor locations, then perform bilinear sampling
-        # to get the neighbor value as the weighted average of the four nearest pixels.
-        # This is useful for cases where the radius parameter does not land exactly on
-        # pixel coordinates.
-        neighbor = bilinear_sample(gray_patch, yy + dy, xx + dx)
-
-        pos_bit = (neighbor >= (gray_patch + threshold)).astype(np.uint32)
-        neg_bit = (neighbor <= (gray_patch - threshold)).astype(np.uint32)
-
-        # For each pixel in the original patch shift the bit values left by i with <<
-        # operator (equivalent to multiplying by 2^i). This ensures each neighbor's bit
-        # value contributes uniquely to the final code. Then accumulate the bit values
-        # using the bitwise OR operator.
-        codes_pos |= pos_bit << i
-        codes_neg |= neg_bit << i
-
-    return codes_pos, codes_neg
 
 def bilinear_sample(image: np.ndarray, y: np.ndarray, x: np.ndarray) -> np.ndarray:
     """Sample image at floating-point coordinates using bilinear interpolation.
