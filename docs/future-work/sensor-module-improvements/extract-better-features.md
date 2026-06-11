@@ -21,3 +21,6 @@ In the short term, we would like to extract richer features, such as using HTM's
 In the longer-term, given the "sub-cortical" nature of this sensory processing, we might also consider neural-network based feature extraction, such as shallow convolutional neural networks, however please see [our FAQ on why Monty does not currently use deep learning](../../how-monty-works/faq-monty.md#why-does-monty-not-make-use-of-deep-learning).
 
 Note that regardless of the approach taken, features should be rotation invariant. For example, a textured pattern should be detected regardless of the sensor's orientation, and the representation of that texture should not be affected by the sensor's orientation.
+
+> [!NOTE]
+> See [this PR](https://github.com/thousandbrainsproject/tbp.monty/pull/967) for a prototype of using LTP to extract more sophisticated features that are rotation and translation invariant and don't require training.
