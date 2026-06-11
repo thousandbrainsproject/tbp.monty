@@ -59,11 +59,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             # Habitat agents are configured using `agent_args`.
             # This code has always assumed there is only one.
             if "agent_args" in agents_config:
-                self.sensor_pos = np.array(
-                    config["environment"]["env_init_args"]["agents"]["agent_args"][
-                        "positions"
-                    ]
-                )
+                self.sensor_pos = np.array(agents_config["agent_args"]["positions"])
             else:
                 # MuJoCo agents are configured using a list of partially applied
                 # agent constructors.

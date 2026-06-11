@@ -628,7 +628,7 @@ def run_episodes_parallel(
     print(f"Wandb setup took {time.time() - start_time} seconds")
     start_time = time.time()
 
-    # Create a multiprocesing Context so that we can set the start method to "spawn".
+    # Create a multiprocessing Context so that we can set the start method to "spawn".
     # The default on MacOS is "spawn", but on Linux systems it uses "fork" by default.
     # The "fork" method causes issues with the MuJoCo simulator's GL context, causing
     # the system to hang when trying to render an image.
