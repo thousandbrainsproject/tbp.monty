@@ -792,25 +792,10 @@ class FeatureChangeFilter(PerceptFilter):
                     return True
 
             elif feature == "ltp":
-                ltp_delta_threshold = self._delta_thresholds[feature]
-                if ltp_delta_threshold == 0:
-                    return True
-
-                # Compute a Chi-2 distance between the last percept's LTP histogram
-                # and the current percept's LTP histogram, and check if it's above the
-                # threshold
-                chi_distance = cv2.compareHist(
-                    last_feat.astype(np.float32),
-                    current_feat.astype(np.float32),
-                    cv2.HISTCMP_CHISQR,
-                )
-
-                if chi_distance > ltp_delta_threshold:
-                    logger.debug(
-                        "new point because of LTP "
-                        f"chi distance: {chi_distance}"
-                    )
-                    return True
+                pass
+                # Never use LTP for FeatureChange SM, so as to ensure that its
+                # inclusion (or absense) does not modify the number of points
+                # observed at inference time.
 
             else:
                 delta_change = np.abs(last_feat - current_feat)

@@ -144,18 +144,10 @@ def already_in_list(
                     # Already dealt with in vectorized form
 
                 elif feature == "ltp":
-                    ltp_delta_threshold = graph_delta_thresholds[feature]
-                    if ltp_delta_threshold == 0:
-                        redundant_point = False
-                        break
-                    chi_distance = cv2.compareHist(
-                        features[feature][feature_idx].astype(np.float32),
-                        features[feature][query_id].astype(np.float32),
-                        cv2.HISTCMP_CHISQR,
-                    )
-                    if chi_distance > ltp_delta_threshold:
-                        redundant_point = False
-                        break
+                    pass
+                    # Never use LTP for redundancy checking, so as to ensure it
+                    # does not modify the number of points in the graph when
+                    # included.
 
                 else:
                     delta_change = np.abs(
