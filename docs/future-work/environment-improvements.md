@@ -11,6 +11,5 @@ These are the things we would like to implement:
 - [Set up object manipulation benchmark tasks and evaluation measures](environment-improvements/set-up-object-manipulation-benchmark-tasks-and-evaluation-measures.md)
 - [Create dataset and metrics to evaluate categories and generalization](environment-improvements/create-dataset-and-metrics-to-evaluate-categories-and-generalization.md)
 - [Create dataset to test new feature-morphology pairs](environment-improvements/create-dataset-to-test-new-feature-morphology-pairs.md)
-- [Simplify simulator protocol](environment-improvements/simplify-simulator-protocol.md)
 
 !snippet[../snippets/contributing-tasks.md]

@@ -72,17 +72,23 @@ If you're writing a publication that references the Thousand Brains Project, ple
 
 If you would like to refer to Monty's capabilities and advantages over deep learning, please cite
 
-[Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://arxiv.org/abs/2507.04494):
+[Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://doi.org/10.1162/NECO.a.1508):
 ```
-@misc{leadholm2025thousandbrainssystemssensorimotorintelligence,
-      title={Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference}, 
-      author={Niels Leadholm and Viviane Clay and Scott Knudstrup and Hojae Lee and Jeff Hawkins},
-      year={2025},
-      eprint={2507.04494},
-      archivePrefix={arXiv},
-      primaryClass={cs.AI},
-      url={https://arxiv.org/abs/2507.04494}, 
+@article{thousand-brains_systems_2026,
+	title = {Thousand-{Brains} {Systems}: {Sensorimotor} {Intelligence} for {Rapid}, {Robust} {Learning} and {Inference}},
+	volume = {38},
+	issn = {0899-7667, 1530-888X},
+	url = {https://direct.mit.edu/neco/article/38/6/845/136222/Thousand-Brains-Systems-Sensorimotor-Intelligence},
+	doi = {10.1162/NECO.a.1508},
+	number = {6},
+	urldate = {2026-06-10},
+	journal = {Neural Computation},
+	author = {Leadholm, Niels and Clay, Viviane and Knudstrup, Scott and Lee, Hojae and Hawkins, Jeff},
+      month = may,
+	year = {2026},
+	pages = {845--896},
 }
+
 ```
 
 If you would like to reference the theory behind this novel AI approach, here you can find a list of [neuroscience theory papers](https://thousandbrainsproject.readme.io/docs/further-reading#our-papers).

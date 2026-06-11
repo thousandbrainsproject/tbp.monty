@@ -86,7 +86,7 @@ class TwoDSensorModule(SensorModule):
         edge_detector: EdgeDetector | None = None,
         noise_params: dict[str, Any] | None = None,
         delta_thresholds: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Initialize 2D Sensor Module.
 
         Args:
@@ -144,7 +144,7 @@ class TwoDSensorModule(SensorModule):
         self._previous_2d_location: np.ndarray = np.zeros(2)
         self._tangent_frame: TangentFrame | None = None
 
-    def pre_episode(self) -> None:
+    def reset(self) -> None:
         self._snapshot_telemetry.reset()
         self._percept_filter.reset()
         self.is_exploring = False
@@ -153,8 +153,7 @@ class TwoDSensorModule(SensorModule):
         self._previous_2d_location = np.zeros(2)
         self._tangent_frame = None
 
-    def update_state(self, agent: AgentState):
-        """Update information about the sensor's location and rotation."""
+    def update_state(self, agent: AgentState) -> None:
         sensor = agent.sensors[SensorID(self.sensor_module_id)]
         self.state = SensorState(
             position=agent.position

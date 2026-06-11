@@ -21,6 +21,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     Monty,
     Observations,
     RuntimeContext,
+    SensorModule,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
@@ -36,7 +37,7 @@ class MontyBase(Monty):
 
     def __init__(
         self,
-        sensor_modules,
+        sensor_modules: Sequence[SensorModule],
         learning_modules: Sequence[LearningModule],
         motor_system: MotorSystem,
         sm_to_agent_dict,
@@ -47,7 +48,7 @@ class MontyBase(Monty):
         min_train_steps,
         num_exploratory_steps,
         max_total_steps,
-    ):
+    ) -> None:
         """Initialize the base class.
 
         Args:
@@ -379,6 +380,7 @@ class MontyBase(Monty):
         # for sm in self.sensor_modules: sm.set_experiment_mode() unused & removed
 
     def pre_episode(self):
+        # TODO: move most (all?) of this logic to Experiment
         self._is_done = False
         self.reset_episode_steps()
         self.switch_to_matching_step()
@@ -386,7 +388,7 @@ class MontyBase(Monty):
             lm.reset_stm()
 
         for sm in self.sensor_modules:
-            sm.pre_episode()
+            sm.reset()
 
         self.motor_system.pre_episode()
         self._goals = []
@@ -473,14 +475,14 @@ class MontyBase(Monty):
         return agent_obs[sensor_module_id]
 
     @property
-    def is_motor_only_step(self):
+    def is_motor_only_step(self) -> bool:
         return self.motor_system.motor_only_step
 
     @property
-    def is_done(self):
+    def is_done(self) -> bool:
         return self._is_done
 
-    def set_done(self):
+    def set_done(self) -> None:
         self._is_done = True
 
     @property

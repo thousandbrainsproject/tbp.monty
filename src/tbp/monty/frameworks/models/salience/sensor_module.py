@@ -65,7 +65,7 @@ class SalienceSM(SensorModule):
     def state_dict(self) -> Memento:
         return self._snapshot_telemetry.state_dict()
 
-    def update_state(self, agent: AgentState):
+    def update_state(self, agent: AgentState) -> None:
         """Update information about the sensor's location and rotation."""
         sensor = agent.sensors[SensorID(self.sensor_module_id)]
         self.state = SensorState(
@@ -163,8 +163,7 @@ class SalienceSM(SensorModule):
 
         return (weighted_salience - min_) / scale
 
-    def pre_episode(self) -> None:
-        """This method is called before each episode."""
+    def reset(self) -> None:
         self._goals.clear()
         self._return_inhibitor.reset()
         self._snapshot_telemetry.reset()

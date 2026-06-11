@@ -7,5 +7,8 @@ improved-metric: features-and-morphology, transfer, deformations, generalization
 output-type: prototype, monty-feature, PR
 skills: python, research, monty, computer-vision
 contributor: hlee9212
-status: in-progress
+status: completed
 ---
+
+> [!NOTE]
+> See our documentation of the [TwoDSensorModule](https://docs.thousandbrains.org/docs/twodsensormodule-1) for more details on how this was implemented and the capabilities it unlocks.

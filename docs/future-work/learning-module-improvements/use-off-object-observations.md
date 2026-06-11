@@ -7,8 +7,11 @@ improved-metric: numsteps
 output-type: analysis, PR
 skills: python, research, monty, refactoring
 contributor: hlee9212
-status: scoping
+status: paused
 ---
+
+> [!NOTE]
+> See [this research meeting](https://youtu.be/ncAEi1OmtAE?si=1SScjWhlDfCTCbil) and [this working group video](https://youtu.be/nScF_Zt1XKo?si=A191FJSy05TEQMZb) where we discussed the topic further.
 
 There are a few instances where Monty can move off of an object, sensing nothing/empty space (or at least no morphological features). For example, this can occur due to a saccade moving off the object and pointing at a void (such as the sky), or a touch-based agent leaving the surface of an object.
 
