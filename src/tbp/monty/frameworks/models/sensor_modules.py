@@ -344,7 +344,7 @@ class ObservationProcessor:
                 gray_patch = gray_patch.astype(np.uint8)
             hist = get_ltp_texture_feature_vector(gray_patch, self._ltp_config)
 
-            features["ltp"] = hist.astype(float)
+            features["ltp"] = hist.astype(np.float32)
 
         # Note we only determine curvature if we could determine a valid surface normal
         if any(feat in self.CURVATURE_FEATURES for feat in self._features) and valid_sn:
@@ -800,7 +800,9 @@ class FeatureChangeFilter(PerceptFilter):
                 # and the current percept's LTP histogram, and check if it's above the
                 # threshold
                 chi_distance = cv2.compareHist(
-                    last_feat, current_feat, cv2.HISTCMP_CHISQR
+                    last_feat.astype(np.float32),
+                    current_feat.astype(np.float32),
+                    cv2.HISTCMP_CHISQR,
                 )
 
                 if chi_distance > ltp_delta_threshold:

@@ -149,8 +149,8 @@ def already_in_list(
                         redundant_point = False
                         break
                     chi_distance = cv2.compareHist(
-                        features[feature][feature_idx],
-                        features[feature][query_id],
+                        features[feature][feature_idx].astype(np.float32),
+                        features[feature][query_id].astype(np.float32),
                         cv2.HISTCMP_CHISQR,
                     )
                     if chi_distance > ltp_delta_threshold:

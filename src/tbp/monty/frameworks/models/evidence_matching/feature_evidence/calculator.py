@@ -157,7 +157,11 @@ class DefaultFeatureEvidenceCalculator:
             )
             chi_distances = np.array(
                 [
-                    cv2.compareHist(stored_hist, query_hist, cv2.HISTCMP_CHISQR)
+                    cv2.compareHist(
+                        stored_hist.astype(np.float32),
+                        query_hist.astype(np.float32),
+                        cv2.HISTCMP_CHISQR,
+                    )
                     for stored_hist in stored_hists
                 ],
                 dtype=channel_feature_array.dtype,
