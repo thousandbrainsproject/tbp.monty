@@ -218,3 +218,4 @@
 \b[Kk]eyframes?\b
 \bFrintrop\b
 \b[Oo]pponency\b
+\bExcalidraw\b

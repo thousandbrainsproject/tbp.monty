@@ -33,9 +33,9 @@ The current **Maintainers** are listed in the [MAINTAINERS file](https://github.
 - Triage, review, and comment on issues.
 - Triage and comment on pull requests.
 - Review and merge assigned pull requests.
-- Serve as the primary point of contact for assigned [Requests For Comments (RFCs)](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc).
-- Propose disposition of [RFCs](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc) (e.g., merge or close).
-- Approve or abstain from the disposition of [RFCs](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc).
+- Serve as the primary point of contact for assigned [Requests For Comments (RFCs)](https://docs.thousandbrains.org/docs/request-for-comments-rfc).
+- Propose disposition of [RFCs](https://docs.thousandbrains.org/docs/request-for-comments-rfc) (e.g., merge or close).
+- Approve or abstain from the disposition of [RFCs](https://docs.thousandbrains.org/docs/request-for-comments-rfc).
 
 ## Alumni Maintainers
 

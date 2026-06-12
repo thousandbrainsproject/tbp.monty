@@ -118,7 +118,7 @@ print_version_tool = [
 
 [project.urls]
 Homepage = 'https://thousandbrainsproject.org'
-Documentation = 'https://thousandbrainsproject.readme.io/docs'
+Documentation = 'https://docs.thousandbrains.org/docs'
 Repository = 'https://github.com/thousandbrainsproject.tbp.monty'
 Issues = 'https://github.com/thousandbrainsproject/tbp.monty/issues'
 

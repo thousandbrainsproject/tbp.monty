@@ -235,7 +235,7 @@ jobs:
           if ! cat changed_files_filtered.txt | xargs ruff check --select CPY001 --config lint.flake8-copyright.notice-rgx='"Copyright\\s+.*2026"' -v
           then
             echo "One or more modified files did not update the copyright date range to include the current year."
-            echo "See https://thousandbrainsproject.readme.io/docs/code-style-guide#source-code-copyright-and-license-header for details."
+            echo "See https://docs.thousandbrains.org/docs/code-style-guide#source-code-copyright-and-license-header for details."
             exit 1
           fi
 
@@ -540,6 +540,7 @@ jobs:
         continue-on-error: true
         run: |
           export MUJOCO_GL=egl
+          export EGL_PLATFORM=headless
           mkdir -p test_results/pytest
           uv run --frozen pytest src tests \
             --cov --cov-context=test --cov-report html --cov-report term \

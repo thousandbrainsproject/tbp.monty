@@ -6,27 +6,30 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from typing import NewType, TypedDict
+from dataclasses import dataclass
+from typing import NewType
 
 __all__ = ["Resolution2D", "SensorConfig", "SensorID"]
 
-from tbp.monty.math import QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
 
 SensorID = NewType("SensorID", str)
 """Unique identifier for a sensor."""
 
 
-class Resolution2D(TypedDict):
+@dataclass
+class Resolution2D:
     """Pixel resolution of a sensor."""
 
     width: int
     height: int
 
 
-class SensorConfig(TypedDict):
+@dataclass
+class SensorConfig:
     """A sensor configuration, mapping to our configs in Hydra."""
 
-    position: VectorXYZ
-    rotation: QuaternionWXYZ
     resolution: Resolution2D
-    zoom: float
+    position: VectorXYZ = ZERO_VECTOR
+    rotation: QuaternionWXYZ = IDENTITY_QUATERNION
+    zoom: float = 1.0
