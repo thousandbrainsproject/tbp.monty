@@ -18,7 +18,7 @@ from typing import ClassVar
 import hydra
 import pandas as pd
 import torch
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 
 from tbp.monty.frameworks.run_parallel import main
 from tests import HYDRA_ROOT
@@ -51,7 +51,6 @@ class RunParallelTest(unittest.TestCase):
             exp.run()
 
         # parallel run
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(cls.supervised_pre_training_cfg)
 
     @classmethod
@@ -130,7 +129,6 @@ class RunParallelTest(unittest.TestCase):
             exp.run()
 
         # parallel run
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.eval_cfg)
 
         eval_dir = self.output_dir / "eval"
@@ -162,7 +160,6 @@ class RunParallelTest(unittest.TestCase):
             exp.run()
 
         # parallel run
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.eval_lt_cfg)
 
         eval_dir_lt = self.output_dir / "lt"
@@ -172,6 +169,7 @@ class RunParallelTest(unittest.TestCase):
         pcsv_lt = pd.read_csv(parallel_eval_dir_lt / "eval_stats.csv")
 
         # Remove columns that are not the same in the parallel and serial runs.
+        # See comment in test_eval_parallel_equals_serial_when_epochs_equals_rotations.
         drop_cols = ["time", "stepwise_performance", "stepwise_target_object"]
         scsv_lt = scsv_lt.drop(columns=drop_cols)
         pcsv_lt = pcsv_lt.drop(columns=drop_cols)
@@ -187,7 +185,6 @@ class RunParallelTest(unittest.TestCase):
             exp.run()
 
         # parallel run
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.eval_gt_cfg)
 
         eval_dir_gt = self.output_dir / "gt"
@@ -196,6 +193,8 @@ class RunParallelTest(unittest.TestCase):
         scsv_gt = pd.read_csv(eval_dir_gt / "eval_stats.csv")
         pcsv_gt = pd.read_csv(parallel_eval_dir_gt / "eval_stats.csv")
 
+        # Remove columns that are not the same in the parallel and serial runs.
+        # See comment in test_eval_parallel_equals_serial_when_epochs_equals_rotations.
         drop_cols = ["time", "stepwise_performance", "stepwise_target_object"]
         scsv_gt = scsv_gt.drop(columns=drop_cols)
         pcsv_gt = pcsv_gt.drop(columns=drop_cols)
