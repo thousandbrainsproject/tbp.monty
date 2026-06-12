@@ -24,7 +24,7 @@ jobs:
           if [[ ! $PR_TITLE =~ $pattern ]]; then
             echo "This PR title is missing a Conventional Commits label."
             echo "A maintainer will update it appropriately during triage."
-            echo "See https://thousandbrainsproject.readme.io/docs/triage#title-1"
+            echo "See https://docs.thousandbrains.org/docs/triage#title-1"
             exit 1
           fi
 

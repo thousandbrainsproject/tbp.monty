@@ -3,22 +3,14 @@ title: Open Questions
 description: Below is a simple outline of some of the open questions that we are currently exploring.
 ---
 
-For more details, we also encourage checking out our [Future Work Roadmap](../future-work/project-roadmap.md) and related sections, where we go into some possible approaches to these questions.
+For more details, we also encourage checking out our [Future Work Roadmap](../future-work/project-roadmap.md) and related sections, where we go into some possible approaches to these questions. For a more detailed overview of open questions and our thoughts around them, see [this Excalidraw board](https://link.excalidraw.com/readonly/9iANwzrO9EdPxJpCE5LS).
+
+For in depth discussions of many of these questions, see the brainstorming videos on [our YouTube channel](https://www.youtube.com/@thousandbrainsproject).
 
 # Learning Modules/Modeling
 
-## Object Behaviors
-
-- How are object behaviors represented?
-- How are they recognized?
-
 ## Object Models
 - Where do we have a model of general physics? Can every LM learn the basic physics necessary for the objects it models (e.g. fluid-like behavior in some, cloth-like behavior in others)? Or are some LMs more specialized for this?
-
-## Object Transformations
-
-- How are they represented?
-- How are they recognized?
 
 ## Scale
 
@@ -27,15 +19,15 @@ For more details, we also encourage checking out our [Future Work Roadmap](../fu
 
 ## Learning
 - How does it work that I can learn an object using vision but then recognize it using touch? (in Monty the Sensor Module can simply be switched out but how would it work in the brain? Or how would it work in a multimodal Monty system without rewiring the SM to LM connections or explicitly copying models?)
-- Should there be some form of memory consolidation?
+- How does memory consolidation and forgetting work?
 - How do we learn where an object begins and where it ends? What defines a sub-component of an object?
 
 # Sensor Modules
 
-
 # Policies
 ## Model-Based Policies
 - How are goals decomposed into sub-goals?
+- How are goals defined and communicated?
 
 ## Model-Free Policies and the Motor System
 - How does the motor system decide which goal to carry out (given that every/many LMs produce goals)?

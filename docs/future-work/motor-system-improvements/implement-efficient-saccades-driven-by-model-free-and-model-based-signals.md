@@ -7,7 +7,7 @@ improved-metric: numsteps, accuracy, learning, goal-policy, multi-object
 output-type: RFC, prototype, monty-feature, PR, experiments, analysis, publication
 skills: research, literature-review, python, monty, refactoring, computer-vision
 contributor: scottcanoe
-status: in-progress
+status: completed
 ---
 
 Currently the main way that the distant agent moves is by performing small, random, saccade-like movements. In addition, the entire agent can teleport to a received goal in order to e.g. test a hypothesis. We would like to implement the ability to perform larger saccades that are driven by both model-free and model-based signals, depending on the situation.

@@ -18,6 +18,7 @@ import numpy.typing as npt
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.learning_module import ExperimentLearningModule
+from tbp.monty.experiment.sensor_module import ExperimentSensorModule
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -459,13 +460,51 @@ class GoalGenerator(metaclass=abc.ABCMeta):
         pass
 
 
-class SensorModule(metaclass=abc.ABCMeta):
+class RuntimeSensorModule(Protocol):
+    """Monty runtime interface to a Sensor Module."""
+
+    def update_state(self, agent: AgentState) -> None:
+        """Update the proprioceptive state for this Sensor Module.
+
+        Args:
+            agent: The proprioceptive state of this sensor module's Agent.
+        """
+        ...
+
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observation: SensorObservation,
+        motor_only_step: bool = False,
+    ) -> Message | None:
+        """Execute a time-step for the Sensor Module.
+
+        Args:
+            ctx: The runtime context.
+            observation: Sensor observation.
+            motor_only_step: Whether the current step is a motor-only step.
+
+        Returns:
+            An optional percept with features and morphological features.
+        """
+        ...
+
+    def propose_goals(self) -> Sequence[Goal]:
+        """Return the goals proposed by this Sensor Module.
+
+        Returns:
+            A sequence of proposed Goals.
+        """
+        ...
+
+
+class SensorModule(RuntimeSensorModule, ExperimentSensorModule, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def state_dict(self) -> Memento:
         pass
 
     @abc.abstractmethod
-    def update_state(self, agent: AgentState):
+    def update_state(self, agent: AgentState) -> None:
         pass
 
     @abc.abstractmethod
@@ -474,21 +513,12 @@ class SensorModule(metaclass=abc.ABCMeta):
         ctx: RuntimeContext,
         observation: SensorObservation,
         motor_only_step: bool = False,
-    ):
-        """Called on each step.
-
-        Args:
-            ctx: The runtime context.
-            observation: Sensor observation.
-            motor_only_step: Whether the current step is a motor-only step.
-        """
-        pass
-
-    @abc.abstractmethod
-    def pre_episode(self) -> None:
-        """This method is called before each episode."""
+    ) -> Message | None:
         pass
 
     def propose_goals(self) -> list[Goal]:
-        """Return the goals proposed by this Sensor Module."""
         return []
+
+    @abc.abstractmethod
+    def reset(self) -> None:
+        pass

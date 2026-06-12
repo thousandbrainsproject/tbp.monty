@@ -9,6 +9,7 @@ skills: python, visualizations
 contributor: ramyamounir
 status: evergreen
 ---
+[tbp.plot overview](https://www.youtube.com/watch?v=5GrnX66X8kA)
 
 We would like to continue to improve the visualizations available during learning and inference in Monty. Good visualizations are valuable for research, as they make it easier to debug and understand Monty's behavior. Such tools are also useful for education and for anyone first learning about Monty.
 

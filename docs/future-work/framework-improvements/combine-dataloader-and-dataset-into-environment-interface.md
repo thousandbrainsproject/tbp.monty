@@ -10,4 +10,4 @@ contributor: annark
 status: completed
 ---
 
-For more details see [this Discourse thread](https://thousandbrains.discourse.group/t/combine-dataloader-and-dataset-class-into-environmentinterface/751).
+For more details see [this Discourse thread](https://forum.thousandbrains.org/t/combine-dataloader-and-dataset-class-into-environmentinterface/751).

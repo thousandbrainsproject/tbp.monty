@@ -35,7 +35,7 @@ DOCUMENT_PREFIX = "- "
 INDENTATION_UNIT = "  "  # Single indentation level
 
 # URLs that are checked
-README_URL = "https://thousandbrainsproject.readme.io"
+README_URL = "https://docs.thousandbrains.org"
 
 
 def create_hierarchy_file(output_dir, hierarchy):

@@ -32,14 +32,14 @@ Watch the video:
 
 # Ultrasound Perception
 
-![](../figures/community/ultrasound_robot.jpg)
+[Monty for Ultrasound - A Real World Challenge](https://youtu.be/qhrHyTYVPgo?si=J5xmF6PtSERiZ-vV)
 
 Using sensorimotor AI to guide ultrasound.
 
 Follow the [ultrasound tutorial](../how-to-use-monty/tutorials/using-monty-for-robotics.md#example-2-ultrasound) for more details.
 
-See the [ultrasound_perception repository](https://github.com/thousandbrainsproject/ultrasound_perception) for more information.
+See the [ultrasound_perception repository](https://github.com/thousandbrainsproject/ultrasound_perception) for more information. The repository  also includes a downloadable dataset and benchmarks.
 
-Watch the video:
+Watch the video of the first demo:
 
 [2025-05 Ultrasound Presentation and Demo](https://www.youtube.com/watch?v=-zrq0oTJudo)
