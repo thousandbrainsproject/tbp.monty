@@ -34,39 +34,24 @@ experiment:
               rotation_degrees: 5.0
       learning_modules:
         learning_module_0:
+          hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
+          hypotheses_updater_args:
+            max_nneighbors: 5
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
-          max_match_distance: 0.01
-          tolerances:
-            patch_0:
-              hsv: ${np.array:[0.1, 1, 1]}
-              principal_curvatures_log: ${np.ones:2}
-          feature_weights: {}
-          max_graph_size: 0.3
-          num_model_voxels_per_dim: 200
-          max_nodes_per_graph: 2000
-          gsg:
-            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
-            goal_tolerances:
-              location: 0.015
-            elapsed_steps_factor: 10
-            min_post_goal_success_steps: 5
-            x_percent_scale_factor: 0.75
-            desired_object_distance: 0.03
-        learning_module_1:
-          _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
-          max_match_distance: 0.01
-          tolerances:
-            patch_1:
-              hsv: ${np.array:[0.1, 1, 1]}
-              principal_curvatures_log: ${np.ones:2}
-            learning_module_0:
-              object_id: 1
           feature_weights:
-            learning_module_0:
-              object_id: 1
-          max_graph_size: 0.4
-          num_model_voxels_per_dim: 200
-          max_nodes_per_graph: 2000
+            patch:
+              hsv: ${np.array:[2, 0.5, 0.5]}
+              pose_vectors: ${np.ones:3}
+              principal_curvatures_log: ${np.ones:2}
+          tolerances:
+            patch:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+              principal_curvatures_log: ${np.ones:2}
+          max_match_distance: 0.01
+          x_percent_threshold: 20
+          evidence_threshold_config: all
+          max_graph_size: 0.3
+          num_model_voxels_per_dim: 100
           gsg:
             _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
             goal_tolerances:
@@ -78,14 +63,12 @@ experiment:
       sensor_modules:
         sensor_module_0:
           _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
-          sensor_module_id: patch_0
+          sensor_module_id: patch
           features:
           - pose_vectors
           - pose_fully_defined
           - on_object
           - object_coverage
-          - min_depth
-          - mean_depth
           - hsv
           - principal_curvatures_log
           delta_thresholds:
@@ -100,44 +83,17 @@ experiment:
             - 2
             - 2
             distance: 0.01
-          save_raw_obs: true
+          save_raw_obs: false
         sensor_module_1:
-          _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
-          sensor_module_id: patch_1
-          features:
-          - pose_vectors
-          - pose_fully_defined
-          - on_object
-          - object_coverage
-          - hsv
-          - principal_curvatures_log
-          delta_thresholds:
-            on_object: 0
-            n_steps: 100
-            hsv:
-            - 0.2
-            - 0.2
-            - 0.2
-            pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
-            principal_curvatures_log:
-            - 4
-            - 4
-            distance: 0.05
-          save_raw_obs: true
-        sensor_module_2:
-          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
           sensor_module_id: view_finder
-          save_raw_obs: true
+          save_raw_obs: false
       sm_to_agent_dict:
-        patch_0: agent_id_0
-        patch_1: agent_id_0
+        patch: agent_id_0
         view_finder: agent_id_0
       sm_to_lm_matrix:
       - - 0
-      - - 1
-      lm_to_lm_matrix:
-      - []
-      - - 0
+      lm_to_lm_matrix: null
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:
@@ -149,13 +105,12 @@ experiment:
           - -0.1
         scene_id: null
         seed: 42
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/compositional_objects}
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/retextured_ycb}
         agents:
           agent_args:
             agent_id: agent_id_0
             sensor_ids:
-            - patch_0
-            - patch_1
+            - patch
             - view_finder
             height: 0.0
             position:
@@ -167,12 +122,7 @@ experiment:
               - 64
             - - 64
               - 64
-            - - 64
-              - 64
             positions:
-            - - 0.0
-              - 0.0
-              - 0.0
             - - 0.0
               - 0.0
               - 0.0
@@ -188,17 +138,11 @@ experiment:
               - 0.0
               - 0.0
               - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
             semantics:
-            - false
             - false
             - false
             zooms:
             - 10.0
-            - 5.0
             - 1.0
           agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
       env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
@@ -209,12 +153,9 @@ experiment:
       - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
         agent_id: agent_id_0
         sensor_ids:
-        - patch_0
-        - patch_1
+        - patch
         - view_finder
         resolutions:
-        - - 64
-          - 64
         - - 64
           - 64
         - - 64
@@ -222,115 +163,23 @@ experiment:
         world_coord: true
         zooms:
         - 10.0
-        - 5.0
         - 1.0
         get_all_points: true
         use_semantic_sensor: false
     eval_env_interface_args:
-      parent_to_child_mapping:
-        001_cube:
-        - 001_cube
-        002_cube_tbp_horz:
-        - 001_cube
-        - 021_logo_tbp
-        003_cube_tbp_vert:
-        - 001_cube
-        - 021_logo_tbp
-        004_cube_numenta_horz:
-        - 001_cube
-        - 022_logo_numenta
-        005_cube_numenta_vert:
-        - 001_cube
-        - 022_logo_numenta
-        006_disk:
-        - 006_disk
-        007_disk_tbp_horz:
-        - 006_disk
-        - 021_logo_tbp
-        008_disk_tbp_vert:
-        - 006_disk
-        - 021_logo_tbp
-        009_disk_numenta_horz:
-        - 006_disk
-        - 022_logo_numenta
-        010_disk_numenta_vert:
-        - 006_disk
-        - 022_logo_numenta
-        011_cylinder:
-        - 011_cylinder
-        012_cylinder_tbp_horz:
-        - 011_cylinder
-        - 021_logo_tbp
-        013_cylinder_tbp_vert:
-        - 011_cylinder
-        - 021_logo_tbp
-        014_cylinder_numenta_horz:
-        - 011_cylinder
-        - 022_logo_numenta
-        015_cylinder_numenta_vert:
-        - 011_cylinder
-        - 022_logo_numenta
-        016_sphere:
-        - 016_sphere
-        017_sphere_tbp_horz:
-        - 016_sphere
-        - 021_logo_tbp
-        018_sphere_tbp_vert:
-        - 016_sphere
-        - 021_logo_tbp
-        019_sphere_numenta_horz:
-        - 016_sphere
-        - 022_logo_numenta
-        020_sphere_numenta_vert:
-        - 016_sphere
-        - 022_logo_numenta
-        021_logo_tbp:
-        - 021_logo_tbp
-        022_logo_numenta:
-        - 022_logo_numenta
-        023_mug:
-        - 023_mug
-        024_mug_tbp_horz:
-        - 023_mug
-        - 021_logo_tbp
-        025_mug_tbp_vert:
-        - 023_mug
-        - 021_logo_tbp
-        026_mug_numenta_horz:
-        - 023_mug
-        - 022_logo_numenta
-        027_mug_numenta_vert:
-        - 023_mug
-        - 022_logo_numenta
-        028_mug_tbp_horz_bent:
-        - 023_mug
-        - 021_logo_tbp
+      parent_to_child_mapping: null
       object_names:
-      - 001_cube
-      - 006_disk
-      - 002_cube_tbp_horz
-      - 004_cube_numenta_horz
-      - 007_disk_tbp_horz
-      - 009_disk_numenta_horz
-      - 011_cylinder
-      - 016_sphere
-      - 023_mug
-      - 012_cylinder_tbp_horz
-      - 014_cylinder_numenta_horz
-      - 017_sphere_tbp_horz
-      - 019_sphere_numenta_horz
-      - 024_mug_tbp_horz
-      - 026_mug_numenta_horz
-      - 003_cube_tbp_vert
-      - 005_cube_numenta_vert
-      - 008_disk_tbp_vert
-      - 010_disk_numenta_vert
-      - 013_cylinder_tbp_vert
-      - 015_cylinder_numenta_vert
-      - 018_sphere_tbp_vert
-      - 020_sphere_numenta_vert
-      - 025_mug_tbp_vert
-      - 027_mug_numenta_vert
+      - baseball
+      - porous_baseball
+      - matted_baseball
+      - flecked_baseball
+      - softball
+      - blotchy_softball
+      - woven_softball
+      - zigzagged_softball
+      - mug
+      - bowl
+      - banana
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
         rotations: ${constants.rotations_all}
@@ -340,7 +189,7 @@ experiment:
         sensor_id: view_finder
       - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
         agent_id: agent_id_0
-        sensor_id: patch_0
+        sensor_id: patch
         allow_translation: false
         max_orientation_attempts: 3
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
@@ -354,19 +203,19 @@ experiment:
       python_log_level: WARNING
       python_log_to_file: true
       python_log_to_stderr: true
-      output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/evidence_eval_runs/logs}
+      output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs}
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
-      run_name: infer_comp_lvl3_with_comp_models
+      run_name: base_config_11retexturedobj_dist_agent
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: 3
+    model_name_or_path: ${constants.retextured_pretrained_dir}/supervised_pre_training_11retextured_obj/pretrained/
     n_eval_epochs: ${constants.rotations_all_count}
-    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_objects_with_logos_lvl3_comp_models/pretrained/
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
