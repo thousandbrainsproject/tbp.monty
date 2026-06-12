@@ -129,10 +129,10 @@ class Embodiment(Agent):
         for sensor_id, sensor_cfg in self._sensor_configs.items():
             sensor_body.add_camera(
                 name=f"{self.id}.{sensor_id}",
-                pos=sensor_cfg["position"],
-                quat=sensor_cfg["rotation"],
+                pos=sensor_cfg.position,
+                quat=sensor_cfg.rotation,
                 # Camera resolution isn't used in MuJoCo, so we're not setting it.
-                fovy=DEFAULT_CAMERA_FOVY / sensor_cfg["zoom"],
+                fovy=DEFAULT_CAMERA_FOVY / sensor_cfg.zoom,
             )
 
     @property
@@ -177,7 +177,7 @@ class Embodiment(Agent):
     def observations(self) -> AgentObservations:
         obs = AgentObservations()
         for sensor_id, sensor_cfg in self._sensor_configs.items():
-            renderer = self.sim.renderer_for_res(sensor_cfg["resolution"])
+            renderer = self.sim.renderer_for_res(sensor_cfg.resolution)
             renderer.update_scene(self.sim.data, camera=f"{self.id}.{sensor_id}")
             rgba_data = renderer.render()
 
@@ -212,9 +212,7 @@ class Embodiment(Agent):
             # configured position of the sensor (rel. agent) to compute positions.
             # This constraint can be removed by computing the sensor's position
             # relative agent from their world coordinates.
-            sensor_pos_rel_agent = sensor_body_rot_rel_agent.apply(
-                sensor_cfg["position"]
-            )
+            sensor_pos_rel_agent = sensor_body_rot_rel_agent.apply(sensor_cfg.position)
             sensor_states[sensor_id] = SensorState(
                 position=cast("VectorXYZ", tuple(sensor_pos_rel_agent)),
                 rotation=sensor_body_rot_quat,

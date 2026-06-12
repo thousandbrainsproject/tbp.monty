@@ -36,7 +36,7 @@ from tbp.monty.frameworks.environments.environment import (
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
-from tbp.monty.frameworks.sensors import Resolution2D
+from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.mujoco.agents import Agent
@@ -73,6 +73,8 @@ HABITAT_PRIMITIVE_OBJECTS = {
     "cubeSolid": mjtGeom.mjGEOM_BOX,
 }
 
+# Default rendering resolution in the event that there are no sensor
+# configurations, e.g. in tests.
 DEFAULT_RESOLUTION = Resolution2D(width=64, height=64)
 
 
@@ -187,8 +189,8 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         if self._agents:
             render_resolution = self._max_sensor_resolution()
         g = self.spec.visual.global_
-        g.offheight = render_resolution["height"]
-        g.offwidth = render_resolution["width"]
+        g.offheight = render_resolution.height
+        g.offwidth = render_resolution.width
 
     def _configure_lights(self) -> None:
         """Configure the lights as needed.
@@ -226,10 +228,10 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         Returns:
             a renderer of the specified resolution
         """
-        resolution_key = (resolution["height"], resolution["width"])
+        resolution_key = (resolution.height, resolution.width)
         if resolution_key not in self._renderers:
             self._renderers[resolution_key] = Renderer(
-                height=resolution["height"], width=resolution["width"], model=self.model
+                height=resolution.height, width=resolution.width, model=self.model
             )
         return self._renderers[resolution_key]
 
@@ -254,14 +256,14 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         max_width = max_height = 0
         # Introspect the agent partials to determine what the original sensor
         # configs were, so we can determine the maximum resolution needed.
-        sensor_configs = [
+        agent_sensor_cfgs: list[dict[SensorID, SensorConfig]] = [
             p.keywords["sensor_configs"]
             for p in cast("list[partial[Agent]]", self._agent_partials)
         ]
-        for sensor_cfg in sensor_configs:
-            for sensor in sensor_cfg.values():
-                max_height = max(max_height, sensor["resolution"]["height"])
-                max_width = max(max_width, sensor["resolution"]["width"])
+        for sensor_cfgs in agent_sensor_cfgs:
+            for sensor_cfg in sensor_cfgs.values():
+                max_height = max(max_height, sensor_cfg.resolution.height)
+                max_width = max(max_width, sensor_cfg.resolution.width)
         return Resolution2D(height=max_height, width=max_width)
 
     def remove_all_objects(self) -> None:
