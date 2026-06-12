@@ -16,7 +16,6 @@ from pathlib import Path
 
 import hydra
 import numpy as np
-from omegaconf import OmegaConf
 
 from tbp.monty.frameworks.run import main
 from tests import HYDRA_ROOT
