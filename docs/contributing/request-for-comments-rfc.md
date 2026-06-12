@@ -43,7 +43,7 @@ A hastily proposed RFC can hurt its chances of acceptance. Low-quality proposals
 
 Although there is no single way to prepare for submitting an RFC, it is generally a good idea to pursue feedback from other project developers beforehand to ascertain that the RFC may be desirable; having a consistent impact on the project requires concerted effort toward consensus-building.
 
-The most common preparation for writing and submitting an RFC is **discussing the idea on the** [Monty Researcher/Developer Forum](https://thousandbrains.discourse.group/)  **or submitting an issue or feature request**.
+The most common preparation for writing and submitting an RFC is **discussing the idea on the** [Monty Researcher/Developer Forum](https://forum.thousandbrains.org/)  **or submitting an issue or feature request**.
 
 # Overall Workflow
 

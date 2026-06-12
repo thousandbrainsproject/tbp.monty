@@ -28,7 +28,7 @@ There is no specific format required for these meetups. Organizers have flexibil
 ## Coordination
 
 To organize a meetup and coordinate with the Thousand Brains Project team:
-- Reach out on the forum (thousandbrains.discourse.group) to discuss your plans
+- Reach out on the forum (forum.thousandbrains.org) to discuss your plans
 - Share details about your location, proposed format, and what support you might need
 - The TBP team can help connect you with speakers and provide content materials
 

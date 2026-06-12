@@ -197,7 +197,7 @@ class LookAtGoalTest(unittest.TestCase):
 
         # Monty uses the "right-up-backward" convention, so the forward direction
         # vector is [0, 0, -1].
-        # See: https://thousandbrainsproject.readme.io/docs/conventions
+        # See: https://docs.thousandbrains.org/docs/conventions
         rotation = Rotation.from_euler(
             "xyz",
             [look_up.rotation_degrees, turn_left.rotation_degrees, 0],

@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def upload(new_hierarchy, file_path: str, rdme: ReadMe):
     logger.info(f"Uploading export folder: {file_path}")
-    logger.info(f"URL: https://thousandbrainsproject.readme.io/v{rdme.version}/docs")
+    logger.info(f"URL: https://docs.thousandbrains.org/v{rdme.version}/docs")
     rdme.create_version_if_not_exists()
     to_be_deleted = get_all_categories_docs(rdme)
 

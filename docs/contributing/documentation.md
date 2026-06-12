@@ -191,7 +191,10 @@ See the [README.md](https://github.com/thousandbrainsproject/tbp.monty/blob/main
 
 # Images
 
-See the [Style Guide](style-guide.md#images) images section for details about creating and referencing images correctly.
+See the [Style Guide images](style-guide.md#images) section for details about creating and referencing images correctly.
+
+# Videos
+See the [Style Guide videos](style-guide.md#videos) section for details about creating and referencing videos correctly.
 
 # VS Code Snippets
 

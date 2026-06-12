@@ -27,7 +27,7 @@ Bounding evidence through methods such as [exponential moving averages](https://
 However, these techniques compress historical information and cause memory to fade over time.
 Monty loses the influence of important past features, such as a mug handle, as a result, recognition can become less accurate in long sequences.
 
-A promising direction is to pair bounded evidence with [saliency driven saccades](https://thousandbrainsproject.readme.io/docs/implement-efficient-saccades-driven-by-model-free-and-model-based-signals) or other attention mechanisms.
+A promising direction is to pair bounded evidence with [saliency driven saccades](https://docs.thousandbrains.org/docs/implement-efficient-saccades-driven-by-model-free-and-model-based-signals) or other attention mechanisms.
 If the system consistently revisits the key discriminative features that are important for recognition, and does so efficiently, then those features remain present in recent history.
 
 This is still an open problem. Ideas around this issue are welcome.

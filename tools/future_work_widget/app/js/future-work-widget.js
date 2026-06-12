@@ -9,7 +9,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-const DOCS_BASE_URL = 'https://thousandbrainsproject.readme.io/docs/';
+const DOCS_BASE_URL = 'https://docs.thousandbrains.org/docs/';
 const GITHUB_EDIT_BASE_URL = 'https://github.com/thousandbrainsproject/tbp.monty/edit/main/';
 const GITHUB_AVATAR_URL = 'https://github.com';
 const EXTERNAL_LINK_ICON = 'fa-external-link-alt';

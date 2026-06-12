@@ -16,7 +16,7 @@ description: How to get the code running.
 > - [Windows native](https://github.com/thousandbrainsproject/tbp.monty/issues/52)
 > - [Raspberry Pi](https://github.com/thousandbrainsproject/tbp.monty/issues/85)
 >
-> If you run into problems, please let us know by [opening a GitHub issue](https://github.com/thousandbrainsproject/tbp.monty/issues/new/choose) or [posting in the Monty Code section of our forum](https://thousandbrains.discourse.group/c/monty-code/6).
+> If you run into problems, please let us know by [opening a GitHub issue](https://github.com/thousandbrainsproject/tbp.monty/issues/new/choose) or [posting in the Monty Code section of our forum](https://forum.thousandbrains.org/c/monty-code/6).
 
 > [!WARNING]
 > While the repository contains a `uv.lock` file, this is currently experimental and not supported. In the future this will change, but for now, avoid trying to use `uv` with this project.
@@ -235,4 +235,4 @@ If you would like to contribute to the project, you can have a look at the many 
 
 You can also have a look at the [capabilities of Monty](../overview/vision-of-the-thousand-brains-project/capabilities-of-the-system.md) and our [project roadmap](../future-work/project-roadmap.md) to get an idea of what Monty is currently capable of and what features our team is actively working on.
 
-If you run into any issues or questions, please head over to our [Discourse forum](https://thousandbrains.discourse.group/) or [open an Issue](../contributing/contributing.md#report-an-issue). We are always happy to help!
+If you run into any issues or questions, please head over to our [Discourse forum](https://forum.thousandbrains.org/) or [open an Issue](../contributing/contributing.md#report-an-issue). We are always happy to help!
