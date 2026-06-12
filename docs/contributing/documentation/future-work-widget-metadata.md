@@ -14,7 +14,7 @@ rfc: https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0015_futu
 estimated-scope: medium
 improved-metric: community-engagement
 output-type: documentation
-skills: github-actions, python, github-readme-sync-tool, S3, JS, HTML, CSS
+skills: github-actions, python, github-readme-sync-tool, s3, javascript, html, css
 contributor: codeallthethingz
 status: in-progress
 ---
@@ -48,7 +48,7 @@ Very roughly, how big of a chunk of work is this? [Edit future-work-estimated-sc
 !snippet[../../snippets/future-work-estimated-scope.md]
 
 > [!NOTE] Notes on Some of the Fields
-> **small** tasks in the future work table are usually still multi-day efforts. We only put reasonably large chunks of work into our future work documentation as even those marked as small need to be large enough to justify the effort of writing up a detailed future work page. For smaller items, check out our [GitHub issues](https://github.com/thousandbrainsproject/tbp.monty/issues) and other [ways to contribute](../../contributing/why-contribute.md). You can also have a look at the TODO comments throughout the Monty codebase or help up remove one of the many currently ignored ruff lint rules (listed in [pyproject.toml](../../../pyproject.toml)).
+> **small** tasks in the future work table are usually still multi-day efforts. We only put reasonably large chunks of work into our future work documentation as even those marked as small need to be large enough to justify the effort of writing up a detailed future work page. For smaller items, check out our [GitHub issues](https://github.com/thousandbrainsproject/tbp.monty/issues) and other [ways to contribute](../../contributing/why-contribute.md). You can also have a look at the TODO comments throughout the Monty codebase or help us remove one of the many currently ignored ruff lint rules (listed in [pyproject.toml](../../../pyproject.toml)).
 > 
 > **medium** tasks are usually multi-week efforts that require several pieces of output (e.g. several PRs, data analysis, write ups, iterative testing, ...)
 > 
