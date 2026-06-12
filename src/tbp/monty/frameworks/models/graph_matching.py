@@ -77,7 +77,7 @@ class MontyForGraphMatching(MontyBase):
         for sm in self.sensor_modules:
             sm.reset()
 
-        self.motor_system.pre_episode()
+        self.motor_system.reset()
         self._goals = []
 
         logger.debug(
