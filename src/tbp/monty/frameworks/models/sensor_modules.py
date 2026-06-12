@@ -13,7 +13,6 @@ import logging
 from enum import Enum
 from typing import Any, ClassVar, Protocol
 
-import cv2
 import numpy as np
 import quaternion as qt
 from skimage.color import rgb2gray, rgb2hsv
@@ -733,7 +732,7 @@ class FeatureChangeFilter(PerceptFilter):
         """Reset buffer and is_exploring flag."""
         self._last_percept = None
 
-    def _check_feature_change(self, percept: Message) -> bool:
+    def _check_feature_change(self, percept: Message) -> bool:  # noqa: C901
         """Check feature change between last transmitted observation.
 
         Args:
@@ -795,7 +794,7 @@ class FeatureChangeFilter(PerceptFilter):
                 pass
                 # Never use LTP for FeatureChange SM, so as to ensure that its
                 # inclusion (or absense) does not modify the number of points
-                # observed at inference time.
+                # observed
 
             else:
                 delta_change = np.abs(last_feat - current_feat)

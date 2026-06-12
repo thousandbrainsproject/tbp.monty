@@ -14,6 +14,7 @@ from unittest.mock import Mock
 
 import numpy as np
 import pytest
+from skimage.color import rgb2gray
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.models.sensor_modules import CameraSM
@@ -114,8 +115,6 @@ class CameraSMLtpTest(unittest.TestCase):
     def test_process_ltp_matches_direct_extraction(self) -> None:
         # The histogram produced by the SM matches a direct call on the grayscale
         # patch, confirming the ltp_config is plumbed through unchanged.
-        from skimage.color import rgb2gray
-
         obs = _make_on_object_observation(seed=3)
         sm = CameraSM(
             sensor_module_id="patch",

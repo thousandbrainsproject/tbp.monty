@@ -10,7 +10,6 @@
 
 import logging
 
-import cv2
 import numpy as np
 import torch
 
@@ -139,15 +138,12 @@ def already_in_list(
                         redundant_point = False
                         break
 
-                elif feature == "distance":
-                    pass
-                    # Already dealt with in vectorized form
-
-                elif feature == "ltp":
+                elif feature in {"distance", "ltp"}:
                     pass
                     # Never use LTP for redundancy checking, so as to ensure it
                     # does not modify the number of points in the graph when
                     # included.
+                    # For distance, we already deal with it in vectorized form.
 
                 else:
                     delta_change = np.abs(
