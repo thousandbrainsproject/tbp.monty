@@ -106,7 +106,7 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
         return self._action_sequence
 
     def reset(self) -> None:
-        # TODO: Passing self to policy pre_episode is a hack. What we should be
+        # TODO: Passing self to policy reset() is a hack. What we should be
         # doing is using a positioning procedure for surface agents instead.
         # We only do this so that SurfacePolicy and its descendants can set
         # motor_only_step to True.
