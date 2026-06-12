@@ -71,6 +71,10 @@ PRIMITIVE_OBJECTS = {
 HABITAT_PRIMITIVE_OBJECTS = {
     "capsule3DSolid": mjtGeom.mjGEOM_CAPSULE,
     "cubeSolid": mjtGeom.mjGEOM_BOX,
+    "cylinderSolid": mjtGeom.mjGEOM_CYLINDER,
+    # We're substituting a sphere for a cone because MuJoCo lacks a
+    # cone primitive object as an option.
+    "coneSolid": mjtGeom.mjGEOM_SPHERE,
 }
 
 # Default rendering resolution in the event that there are no sensor
