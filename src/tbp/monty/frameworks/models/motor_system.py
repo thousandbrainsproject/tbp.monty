@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Protocol, Sequence
+from typing import Any, Literal, Protocol, Sequence
 
 import numpy as np
 
@@ -18,6 +18,7 @@ from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.motor_system import ExperimentMotorSystem
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policy_selectors import MotorPolicySelector
 from tbp.monty.frameworks.models.motor_system_state import (
@@ -79,7 +80,7 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
         self._policy_selector = policy_selector
         # For each step, we store the actions produced by the policy and the current
         # motor system state as a (actions, state) tuple.
-        self._action_sequence: list[tuple[list[Action], MotorSystemState]] = []
+        self._action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]] = []
 
         # TODO: When the motor system is encapsulated within Monty, then motor_only_step
         #       attribute should be moved to Monty itself instead.
@@ -102,7 +103,7 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
         self._motor_only_step = value
 
     @property
-    def action_sequence(self) -> list[tuple[list[Action], MotorSystemState]]:
+    def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
 
     def reset(self) -> None:
