@@ -31,6 +31,11 @@ if TYPE_CHECKING:
 # four; what each one does depends on the policy.
 HEADINGS = ("up", "down", "left", "right")
 
+# The shared step-size multiplier window for the interactive slider. The slider widget
+# never changes between policies; each policy declares its own absolute default step,
+# and the executed step is that default scaled by the slider value (1.0 = the default).
+STEP_SCALE_MIN, STEP_SCALE_MAX, STEP_SCALE_INIT = 0.1, 3.0, 1.0
+
 
 class InteractivePolicy(Protocol):
     """What the interactive plotter needs to drive a policy by hand.
@@ -60,6 +65,7 @@ class InteractivePolicy(Protocol):
         ctx: RuntimeContext,
         name: str,
         state: MotorSystemState,
+        scale: float = 1.0,
     ) -> list[Action]:
         """Compute the action for the chosen heading from the current motor state.
 
@@ -67,6 +73,7 @@ class InteractivePolicy(Protocol):
             ctx: The runtime context supplying the random state.
             name: The selected heading.
             state: The current state of the motor system.
+            scale: Multiplier on the policy's default step; 1.0 = the declared default.
 
         Returns:
             The actions to execute next.
@@ -89,6 +96,10 @@ class SampledInteractivePolicy:
         "right": "turn_right",
     }
 
+    # The interactive default rotation per heading, in degrees. Scaled by the slider
+    # multiplier; declared here rather than read from the sampler.
+    DEFAULT_ROTATION_DEGREES: ClassVar[float] = 5.0
+
     def __init__(self, policy: BasePolicy | InformedPolicyRandomWalk) -> None:
         """Initialize the adapter from a sampler-driven policy.
 
@@ -106,9 +117,12 @@ class SampledInteractivePolicy:
         ctx: RuntimeContext,
         name: str,
         state: MotorSystemState,  # noqa: ARG002
+        scale: float = 1.0,
     ) -> list[Action]:
         sample = getattr(self._sampler, f"sample_{self._HEADINGS[name]}")
-        return [sample(self._agent_id, ctx.rng)]
+        action = sample(self._agent_id, ctx.rng)
+        action.rotation_degrees = self.DEFAULT_ROTATION_DEGREES * scale
+        return [action]
 
 
 class SurfaceInteractivePolicy:
@@ -126,6 +140,11 @@ class SurfaceInteractivePolicy:
         "left": (-1.0, 0.0, 0.0),
         "right": (1.0, 0.0, 0.0),
     }
+
+    # The interactive default tangential step, in meters. Matches the surface sampler's
+    # `translation_distance` default. Scaled by the slider multiplier; declared here
+    # rather than read from the sampler.
+    DEFAULT_DISTANCE: ClassVar[float] = 0.004
 
     def __init__(self, policy: SurfacePolicy) -> None:
         """Initialize the adapter from a surface policy.
@@ -145,12 +164,14 @@ class SurfaceInteractivePolicy:
         ctx: RuntimeContext,
         name: str,
         state: MotorSystemState,
+        scale: float = 1.0,
     ) -> list[Action]:
         agent_frame_heading = self._HEADINGS[name]
         action = self._sampler.sample_move_tangentially(self._agent_id, ctx.rng)
         action.direction = tuple(
             qt.rotate_vectors(state[self._agent_id].rotation, agent_frame_heading)
         )
+        action.distance = self.DEFAULT_DISTANCE * scale
         return [action]
 
 

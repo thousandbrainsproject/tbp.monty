@@ -15,7 +15,13 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, Slider
 
 from tbp.monty.frameworks.actions.actions import SetAgentPose
-from tbp.monty.frameworks.plotters.policies import HEADINGS, interactive_policy_for
+from tbp.monty.frameworks.plotters.policies import (
+    HEADINGS,
+    STEP_SCALE_INIT,
+    STEP_SCALE_MAX,
+    STEP_SCALE_MIN,
+    interactive_policy_for,
+)
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -48,6 +54,11 @@ class ActionButtons:
     delete for end episode). The matplotlib quit keys (q) still close the figure window.
     The interactive policy is built up front, so an unsupported policy fails at
     construction rather than mid-episode.
+
+    A persistent `Step Multiplier` slider centered beneath the D-pad scales the
+    exploration headings' step size: the executed action is the policy's default step
+    times the slider multiplier. The slider is built once and its value carries across
+    steps; jumps are unaffected.
     """
 
     _KEYMAP: ClassVar[dict[str, str]] = {
@@ -74,6 +85,7 @@ class ActionButtons:
         self._patch_ax: Axes | None = None
         self._selected: str | None = None
         self._buttons: dict[str, Button] = {}
+        self._step_slider: Slider | None = None
         self._policy: InteractivePolicy = interactive_policy_for(model)
 
     def build(self, fig: Figure, patch_ax: Axes) -> None:
@@ -88,6 +100,22 @@ class ActionButtons:
         """
         self.fig = fig
         self._patch_ax = patch_ax
+
+        # The step-size multiplier slider is persistent (built once here, not in
+        # `_rebuild`), so its value carries across choice points. It is centered beneath
+        # the D-pad; `_rebuild` re-centers it once the patch's real extent is known. The
+        # caption sits below the track (centered) so it does not collide with the D-pad.
+        ax_step = fig.add_axes(self._step_slider_rect())
+        self._step_slider = Slider(
+            ax_step,
+            "Step Multiplier",
+            STEP_SCALE_MIN,
+            STEP_SCALE_MAX,
+            valinit=STEP_SCALE_INIT,
+        )
+        self._step_slider.label.set_position((0.5, -0.8))
+        self._step_slider.label.set_horizontalalignment("center")
+        self._step_slider.label.set_verticalalignment("top")
 
         # Drop matplotlib's default key bindings.
         manager = fig.canvas.manager
@@ -139,6 +167,11 @@ class ActionButtons:
             self._add_button(heading, dpad[heading])
         for label, rect in self._special_rects(specials).items():
             self._add_button(label, rect)
+
+        # Re-center the slider now that the patch's real extent is known (the build-time
+        # placement used the axis-cell fallback before any patch was drawn).
+        if self._step_slider is not None:
+            self._step_slider.ax.set_position(self._step_slider_rect())
 
         # Force a full redraw so the new buttons replace the old ones immediately.
         self.fig.canvas.draw_idle()
@@ -196,6 +229,19 @@ class ActionButtons:
             "right": [p.x1 + gap, cy, v_thick, bar_h],
         }
 
+    def _step_slider_rect(self) -> list[float]:
+        """Place the step-size slider centered beneath the D-pad's `down` bar.
+
+        Matches the `down` bar's left and width so the slider aligns under the D-pad,
+        sitting a small gap below it.
+
+        Returns:
+            The `[left, bottom, width, height]` figure-fraction placement.
+        """
+        left, down_bottom, bar_w, _ = self._dpad_rects()["down"]
+        slider_h, gap = 0.03, 0.05
+        return [left, down_bottom - gap - slider_h, bar_w, slider_h]
+
     @staticmethod
     def _special_rects(specials: list[str]) -> dict[str, list[float]]:
         """Center the jump / end-episode buttons in a row at the figure's bottom.
@@ -252,11 +298,17 @@ class ActionButtons:
             return proposed
 
         state = self.model.motor_system.action_sequence[-1][1]
-        return self._policy.compute(ctx, selected, state)
+        scale = (
+            self._step_slider.val
+            if self._step_slider is not None
+            else STEP_SCALE_INIT
+        )
+        return self._policy.compute(ctx, selected, state, scale)
 
     def close(self) -> None:
-        """Drop the button references."""
+        """Drop the button and slider references."""
         self._buttons = {}
+        self._step_slider = None
 
     def _on_click(self, label: str) -> None:
         """Record the clicked action and stop the blocking event loop.
