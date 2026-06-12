@@ -49,7 +49,7 @@ class RuntimeMotorSystem(Protocol):
         proprioceptive_state: ProprioceptiveState,
         percept: Message,
         goals: Sequence[Goal],
-    ) -> Sequence[Action]:
+    ) -> list[Action]:
         """Defines the structure for __call__.
 
         Delegates to the motor policy.
@@ -79,7 +79,7 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
         self._policy_selector = policy_selector
         # For each step, we store the actions produced by the policy and the current
         # motor system state as a (actions, state) tuple.
-        self._action_sequence: list[tuple[Sequence[Action], MotorSystemState]] = []
+        self._action_sequence: list[tuple[list[Action], MotorSystemState]] = []
 
         # TODO: When the motor system is encapsulated within Monty, then motor_only_step
         #       attribute should be moved to Monty itself instead.
@@ -102,7 +102,7 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
         self._motor_only_step = value
 
     @property
-    def action_sequence(self) -> Sequence[tuple[Sequence[Action], MotorSystemState]]:
+    def action_sequence(self) -> list[tuple[list[Action], MotorSystemState]]:
         return self._action_sequence
 
     def reset(self) -> None:
@@ -130,7 +130,7 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
         proprioceptive_state: ProprioceptiveState,
         percept: Message,
         goals: Sequence[Goal],
-    ) -> Sequence[Action]:
+    ) -> list[Action]:
         motor_system_state = MotorSystemState(proprioceptive_state)
         policy_result = self._policy_selector(
             ctx, observations, motor_system_state, percept, goals
