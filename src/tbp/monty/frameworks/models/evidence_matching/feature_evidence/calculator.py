@@ -76,7 +76,7 @@ class DefaultFeatureEvidenceCalculator:
         histogram_var = np.zeros(n_cols, dtype=bool)
 
         # Column ranges (start, end) occupied by each histogram feature, so that the
-        # chi-square distance can be computed per histogram rather than across all
+        # Hellinger distance can be computed per histogram rather than across all
         # columns lumped together.
         histogram_slices: list[tuple[int, int]] = []
 
@@ -109,7 +109,7 @@ class DefaultFeatureEvidenceCalculator:
                 histogram_slices.append((start_idx, end_idx))
                 # A histogram occupies one column per bin but is conceptually a
                 # single feature. Each bin column receives the same per-node
-                # chi-square distance, so we spread the feature weight evenly across
+                # Hellinger distance, so we spread the feature weight evenly across
                 # the bins. This keeps the histogram's contribution to the weighted
                 # average equal to `channel_feature_weights[feature]`, independent of
                 # the number of bins.
@@ -145,28 +145,32 @@ class DefaultFeatureEvidenceCalculator:
         feature_differences[:, categorical_var] = (
             channel_feature_array[:, categorical_var] != feature_list[categorical_var]
         ).astype(channel_feature_array.dtype)
-        # Use Chi-2 distance for histogram features. The distance is computed per
+        # Use Hellinger distance for histogram features. The distance is computed per
         # node between the stored histogram and the query histogram, and broadcast
         # across the histogram's bin columns (each bin shares the same distance and a
-        # correspondingly reduced weight). cv2.compareHist requires single-precision
-        # float input, hence the explicit cast.
+        # correspondingly reduced weight). Hellinger is bounded in [0, 1] and
+        # symmetric, which makes the tolerance easy to interpret and avoids the
+        # unbounded blow-up that an asymmetric chi-square produces on the sparse,
+        # spiky LTP histograms (small stored bins dominate the score). cv2.compareHist
+        # with HISTCMP_BHATTACHARYYA returns the Hellinger distance and requires
+        # single-precision float input, hence the explicit cast.
         for hist_start, hist_end in histogram_slices:
             query_hist = feature_list[hist_start:hist_end].astype(np.float32)
             stored_hists = channel_feature_array[:, hist_start:hist_end].astype(
                 np.float32
             )
-            chi_distances = np.array(
+            hist_distances = np.array(
                 [
                     cv2.compareHist(
                         stored_hist.astype(np.float32),
                         query_hist.astype(np.float32),
-                        cv2.HISTCMP_CHISQR,
+                        cv2.HISTCMP_BHATTACHARYYA,
                     )
                     for stored_hist in stored_hists
                 ],
                 dtype=channel_feature_array.dtype,
             )
-            feature_differences[:, hist_start:hist_end] = chi_distances[:, np.newaxis]
+            feature_differences[:, hist_start:hist_end] = hist_distances[:, np.newaxis]
         # any difference < tolerance should be positive evidence
         # any difference >= tolerance should be 0 evidence
         feature_evidence = np.clip(tolerance_list - feature_differences, 0, np.inf)

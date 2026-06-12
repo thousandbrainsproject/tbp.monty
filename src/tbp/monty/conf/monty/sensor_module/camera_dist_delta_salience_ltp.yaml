@@ -17,6 +17,7 @@ sensor_module_0:
         n_neighbors: 8
         radius: 1.0
         threshold: 5.0
+        method: uniform
   delta_thresholds:
     on_object: 0
     n_steps: 20

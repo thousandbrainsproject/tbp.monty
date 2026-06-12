@@ -210,7 +210,7 @@ class DefaultFeatureEvidenceCalculatorTest(unittest.TestCase):
         np.testing.assert_array_equal(baseline, with_skip)
 
     def test_histogram_identical_to_query_gives_full_evidence(self) -> None:
-        # A node whose stored histogram equals the query histogram has chi-square
+        # A node whose stored histogram equals the query histogram has Hellinger
         # distance 0 and therefore receives evidence 1.
         query_hist = [0.1, 0.2, 0.3, 0.4]
         stored = np.array([query_hist], dtype=np.float64)
@@ -223,13 +223,13 @@ class DefaultFeatureEvidenceCalculatorTest(unittest.TestCase):
         )
         np.testing.assert_allclose(evidence, [1.0], atol=1e-9)
 
-    def test_histogram_evidence_matches_chi_square_decay(self) -> None:
-        # Per-node evidence is clip(tol - chi, 0) / tol, where chi is cv2's
-        # chi-square distance between the stored and query histograms.
+    def test_histogram_evidence_matches_hellinger_decay(self) -> None:
+        # Per-node evidence is clip(tol - dist, 0) / tol, where dist is cv2's
+        # Hellinger (Bhattacharyya) distance between the stored and query histograms.
         query_hist = [0.25, 0.25, 0.25, 0.25]
         stored = np.array(
             [
-                [0.25, 0.25, 0.25, 0.25],  # identical -> chi 0
+                [0.25, 0.25, 0.25, 0.25],  # identical -> distance 0
                 [0.40, 0.20, 0.20, 0.20],  # mildly different
                 [0.90, 0.05, 0.03, 0.02],  # very different
             ],
@@ -247,15 +247,15 @@ class DefaultFeatureEvidenceCalculatorTest(unittest.TestCase):
         query_f32 = np.array(query_hist, dtype=np.float32)
         expected = []
         for row in stored:
-            chi = cv2.compareHist(
-                row.astype(np.float32), query_f32, cv2.HISTCMP_CHISQR
+            dist = cv2.compareHist(
+                row.astype(np.float32), query_f32, cv2.HISTCMP_BHATTACHARYYA
             )
-            expected.append(max(0.0, 1.0 - chi / tolerance))
+            expected.append(max(0.0, 1.0 - dist / tolerance))
         np.testing.assert_allclose(evidence, expected, atol=1e-6)
 
     def test_histogram_distance_at_or_above_tolerance_gives_zero(self) -> None:
         query_hist = [1.0, 0.0, 0.0, 0.0]
-        # Stored mass is entirely in a different bin -> large chi-square distance.
+        # Stored mass is entirely in a different bin -> maximal Hellinger distance (1).
         stored = np.array([[0.0, 0.0, 0.0, 1.0]], dtype=np.float64)
         evidence = self._calculate(
             stored=stored,
@@ -294,12 +294,12 @@ class DefaultFeatureEvidenceCalculatorTest(unittest.TestCase):
         curvature_ev = max(
             0.0, 1.0 - abs(curvature_stored - curvature_query) / curvature_tol
         )
-        chi = cv2.compareHist(
+        dist = cv2.compareHist(
             np.array(stored_hist, dtype=np.float32),
             np.array(query_hist, dtype=np.float32),
-            cv2.HISTCMP_CHISQR,
+            cv2.HISTCMP_BHATTACHARYYA,
         )
-        ltp_ev = max(0.0, 1.0 - chi / ltp_tol)
+        ltp_ev = max(0.0, 1.0 - dist / ltp_tol)
         expected = (
             curvature_ev * curvature_weight + ltp_ev * ltp_weight
         ) / (curvature_weight + ltp_weight)

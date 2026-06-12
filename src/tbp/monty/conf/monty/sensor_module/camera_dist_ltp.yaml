@@ -23,6 +23,7 @@ sensor_module_0:
         n_neighbors: 8
         radius: 1.0
         threshold: 5.0
+        method: uniform
   save_raw_obs: false
 sensor_module_1:
   _target_: tbp.monty.frameworks.models.sensor_modules.Probe

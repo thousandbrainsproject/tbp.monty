@@ -34,6 +34,17 @@ LTP_CONFIG = {
     }
 }
 
+UNIFORM_LTP_CONFIG = {
+    "texture_extraction": {
+        "local_ternary_pattern": {
+            "n_neighbors": 8,
+            "radius": 1.0,
+            "threshold": 5.0,
+            "method": "uniform",
+        }
+    }
+}
+
 
 def _make_on_object_observation(seed: int = 0) -> SensorObservation:
     """Build a synthetic on-object distant-agent observation.
@@ -61,6 +72,44 @@ def _make_on_object_observation(seed: int = 0) -> SensorObservation:
     semantic_3d[:, 1] = ys.ravel()
     semantic_3d[:, 2] = zs.ravel()
     semantic_3d[:, 3] = 1  # on object
+
+    obs = SensorObservation(
+        rgba=rgba, depth=depth, cam_to_world=np.identity(4)
+    )
+    obs.update(semantic_3d=semantic_3d, sensor_frame_data=semantic_3d.copy())
+    return obs
+
+
+def _make_partially_on_object_observation(seed: int = 0) -> SensorObservation:
+    """Build an observation whose right-hand columns are off the object.
+
+    The patch center stays on object (so the SM extracts features), but the
+    rightmost quarter of pixels are background (semantic id 0). This lets us
+    verify that the on-object mask actually changes the texture histogram.
+
+    Returns:
+        A SensorObservation with a partially on-object semantic map.
+    """
+    rng = np.random.default_rng(seed)
+    rgb = rng.integers(0, 256, size=(PATCH_SIZE, PATCH_SIZE, 3), dtype=np.uint8)
+    alpha = np.full((PATCH_SIZE, PATCH_SIZE, 1), 255, dtype=np.uint8)
+    rgba = np.concatenate([rgb, alpha], axis=-1)
+    depth = np.ones((PATCH_SIZE, PATCH_SIZE), dtype=np.float32)
+
+    xs, ys = np.meshgrid(
+        np.linspace(-0.05, 0.05, PATCH_SIZE),
+        np.linspace(-0.05, 0.05, PATCH_SIZE),
+    )
+    zs = 0.1 + 0.2 * xs + 0.05 * ys
+    semantic_3d = np.zeros((PATCH_SIZE * PATCH_SIZE, 4), dtype=np.float64)
+    semantic_3d[:, 0] = xs.ravel()
+    semantic_3d[:, 1] = ys.ravel()
+    semantic_3d[:, 2] = zs.ravel()
+
+    on_object_grid = np.ones((PATCH_SIZE, PATCH_SIZE), dtype=bool)
+    # Mark the rightmost quarter of columns as off object (background).
+    on_object_grid[:, (3 * PATCH_SIZE) // 4 :] = False
+    semantic_3d[:, 3] = on_object_grid.ravel().astype(np.float64)
 
     obs = SensorObservation(
         rgba=rgba, depth=depth, cam_to_world=np.identity(4)
@@ -134,6 +183,53 @@ class CameraSMLtpTest(unittest.TestCase):
         np.testing.assert_allclose(
             percept.non_morphological_features["ltp"], expected, rtol=0, atol=1e-9
         )
+
+    def test_process_ltp_excludes_off_object_pixels(self) -> None:
+        # The SM histograms only on-object pixels, so its output matches a
+        # masked direct extraction and differs from the unmasked one.
+        obs = _make_partially_on_object_observation(seed=5)
+        sm = CameraSM(
+            sensor_module_id="patch",
+            features=["on_object", "ltp"],
+            ltp_config=UNIFORM_LTP_CONFIG,
+        )
+        sm.pre_episode()
+        ctx = Mock()
+        ctx.rng = np.random.RandomState(0)
+        percept = sm.step(ctx, obs)
+
+        gray = (rgb2gray(obs["rgba"][:, :, :3]) * 255.0).astype(np.uint8)
+        mask = (obs["semantic_3d"][:, 3] > 0).reshape(gray.shape)
+        expected_masked = get_ltp_texture_feature_vector(
+            gray, UNIFORM_LTP_CONFIG, mask=mask
+        )
+        expected_unmasked = get_ltp_texture_feature_vector(gray, UNIFORM_LTP_CONFIG)
+
+        np.testing.assert_allclose(
+            percept.non_morphological_features["ltp"],
+            expected_masked,
+            rtol=0,
+            atol=1e-9,
+        )
+        # The mask must actually matter: excluding the background changes the
+        # histogram relative to using the whole patch.
+        assert not np.allclose(expected_masked, expected_unmasked)
+
+    def test_process_uniform_histogram_has_expected_length(self) -> None:
+        # n_neighbors=8 -> p*(p-1)+3 = 59 uniform bins per sign, concatenated.
+        sm = CameraSM(
+            sensor_module_id="patch",
+            features=["on_object", "ltp"],
+            ltp_config=UNIFORM_LTP_CONFIG,
+        )
+        sm.pre_episode()
+        ctx = Mock()
+        ctx.rng = np.random.RandomState(0)
+        percept = sm.step(ctx, _make_on_object_observation())
+
+        ltp = np.asarray(percept.non_morphological_features["ltp"])
+        assert ltp.shape == (2 * (8 * 7 + 3),)
+        np.testing.assert_allclose(ltp.sum(), 1.0, atol=1e-3)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Literal
 
 import numpy as np
 import torch
@@ -28,7 +29,35 @@ logger = logging.getLogger(__name__)
 
 FLAT_THRESHOLD = 0.001
 
-def get_ltp_texture_feature_vector(image_array: np.ndarray, config) -> np.ndarray:
+# Supported encoding schemes that map raw LTP codes onto histogram bins.
+#   "ror": rotation-invariant (rotate-to-minimum); orientation is discarded.
+#   "uniform": rotation-variant uniform patterns; orientation is preserved.
+LTPEncoding = Literal["ror", "uniform"]
+
+def get_ltp_texture_feature_vector(
+    image_array: np.ndarray,
+    config,
+    mask: np.ndarray | None = None,
+) -> np.ndarray:
+    """Build an LTP texture feature vector for an image patch.
+
+    Args:
+        image_array: 2D grayscale image patch.
+        config: Texture-extraction config. Must contain a ``texture_extraction``
+            entry keyed by either ``local_ternary_pattern`` (with
+            ``n_neighbors``, ``radius``, ``threshold``, and an optional
+            ``method`` of ``"ror"`` or ``"uniform"``) or ``multi_scale`` (a list
+            of such configs whose histograms are concatenated and renormalized).
+        mask: Optional boolean array, same shape as ``image_array``, selecting
+            which pixels contribute to the histogram. Pixels where the mask is
+            ``False`` (e.g. off-object background) are excluded.
+
+    Returns:
+        The normalized texture histogram.
+
+    Raises:
+        ValueError: If the texture extraction method is unknown.
+    """
     texture_extraction_config = config["texture_extraction"]
 
     method_name, method_config = next(iter(texture_extraction_config.items()))
@@ -39,13 +68,17 @@ def get_ltp_texture_feature_vector(image_array: np.ndarray, config) -> np.ndarra
             n_neighbors=method_config["n_neighbors"],
             radius=method_config["radius"],
             threshold=method_config["threshold"],
+            method=method_config.get("method", "ror"),
+            mask=mask,
         )
 
     elif method_name == "multi_scale":
         all_hists = []
         for nested_cfg in method_config:
             nested_texture_config = {"texture_extraction": nested_cfg}
-            result = get_ltp_texture_feature_vector(image_array, nested_texture_config)
+            result = get_ltp_texture_feature_vector(
+                image_array, nested_texture_config, mask=mask
+            )
             hist = np.asarray(result, dtype=np.float32)
             all_hists.append(hist)
 
@@ -63,6 +96,8 @@ def local_ternary_pattern_and_hist(
     n_neighbors: int = 8,
     radius: float = 1.0,
     threshold: float = 5.0,
+    method: LTPEncoding = "ror",
+    mask: np.ndarray | None = None,
 ) -> np.ndarray:
     """Compute Local Ternary Pattern features and histogram for a grayscale image patch.
 
@@ -71,26 +106,53 @@ def local_ternary_pattern_and_hist(
     - Positive pattern: neighbor >= center + threshold
     - Negative pattern: neighbor <= center - threshold
 
-    Encoding makes use of the ROR rotation-invariant encoding scheme.
+    The positive and negative codes are encoded with the requested ``method`` and
+    histogrammed separately, then concatenated and L1-normalized.
 
     Args:
         gray_patch: grayscale image patch.
         n_neighbors: Number of neighbors to consider in the circular neighborhood.
         radius: Radius of the neighborhood in pixels.
         threshold: Threshold for the local ternary pattern.
+        method: Encoding scheme mapping raw codes to histogram bins, either
+            ``"ror"`` (rotation invariant) or ``"uniform"`` (rotation variant,
+            orientation preserving).
+        mask: Optional boolean array, same shape as ``gray_patch``, selecting
+            which pixels contribute to the histogram. Pixels where the mask is
+            ``False`` (e.g. off-object background) are excluded. The LTP codes
+            are still computed over the full patch, so masked-in pixels near the
+            mask boundary continue to sample their (possibly masked-out)
+            neighbors.
 
     Returns:
         Local Ternary Pattern features and histogram.
+
+    Raises:
+        ValueError: If ``mask`` is provided but its shape does not match
+            ``gray_patch``.
     """
     codes_pos_raw, codes_neg_raw = ltp_codes(
         gray_patch, n_neighbors=n_neighbors, radius=radius, threshold=threshold
     )
 
-    codes_pos, n_bins_pos = ror_encoding(codes_pos_raw, n_neighbors=n_neighbors)
-    codes_neg, n_bins_neg = ror_encoding(codes_neg_raw, n_neighbors=n_neighbors)
+    codes_pos, n_bins_pos = encode_ltp_codes(codes_pos_raw, n_neighbors, method)
+    codes_neg, n_bins_neg = encode_ltp_codes(codes_neg_raw, n_neighbors, method)
 
-    hist_pos = np.bincount(codes_pos.ravel(), minlength=n_bins_pos).astype(np.float32)
-    hist_neg = np.bincount(codes_neg.ravel(), minlength=n_bins_neg).astype(np.float32)
+    if mask is None:
+        pos_values = codes_pos.ravel()
+        neg_values = codes_neg.ravel()
+    else:
+        mask = np.asarray(mask, dtype=bool)
+        if mask.shape != gray_patch.shape:
+            raise ValueError(
+                "`mask` shape must match `gray_patch` shape, got "
+                f"{mask.shape} vs {gray_patch.shape}."
+            )
+        pos_values = codes_pos[mask]
+        neg_values = codes_neg[mask]
+
+    hist_pos = np.bincount(pos_values, minlength=n_bins_pos).astype(np.float32)
+    hist_neg = np.bincount(neg_values, minlength=n_bins_neg).astype(np.float32)
 
     histogram = np.concatenate([hist_pos, hist_neg]).astype(np.float32, copy=False)
 
@@ -266,6 +328,107 @@ def ror_encoding(codes: np.ndarray, n_neighbors: int) -> tuple[np.ndarray, int]:
     encoded = look_up_table[codes.astype(np.int32, copy=False)]
 
     return encoded, n_bins
+
+
+def uniform_encoding(codes: np.ndarray, n_neighbors: int) -> tuple[np.ndarray, int]:
+    """Encode codes using a rotation-variant uniform-pattern scheme.
+
+    A code is "uniform" if its circular bit pattern contains at most two
+    0<->1 transitions, i.e. it consists of a single contiguous (possibly
+    wrapping) run of ones. Uniform patterns are the texturally meaningful
+    primitives (spots, flat regions, edges, corners); all non-uniform patterns
+    are lumped into a single bin.
+
+    Unlike :func:`ror_encoding`, this scheme is *not* rotation invariant: each
+    uniform pattern is identified by both its number of ones and the position
+    where its run of ones starts, so orientation information is preserved. The
+    bin layout is fixed for a given ``n_neighbors`` (it is built over every
+    possible code, independent of the input), which keeps histograms produced
+    from different patches mutually comparable.
+
+    For ``p = n_neighbors`` the bins are laid out as:
+        - bin 0: the all-zeros pattern,
+        - bin 1: the all-ones pattern,
+        - bins ``2 .. p*(p-1)+1``: partial uniform patterns, indexed by
+          ``2 + (ones - 1) * p + run_start``,
+        - bin ``p*(p-1)+2`` (the last bin): all non-uniform patterns,
+    for a total of ``p*(p-1) + 3`` bins.
+
+    Args:
+        codes: Codes to encode. Values must be in ``[0, 2**n_neighbors)``.
+        n_neighbors: Number of neighbors in the circular neighborhood.
+
+    Returns:
+        Encoded codes (same shape as ``codes``) and the number of bins.
+
+    Raises:
+        ValueError: If the max value of ``codes`` exceeds the number of codes.
+    """
+    p = n_neighbors
+    n_codes = 1 << p
+    if codes.size and int(codes.max()) >= n_codes:
+        raise ValueError(
+            f"Max code value {int(codes.max())} exceeds the number of codes {n_codes}"
+        )
+
+    n_bins = p * (p - 1) + 3
+    all_zeros_bin = 0
+    all_ones_bin = 1
+    non_uniform_bin = n_bins - 1
+
+    bit_positions = np.arange(p)
+    look_up_table = np.empty(n_codes, dtype=np.int32)
+    for code in range(n_codes):
+        # Unpack the code into its `p` bits (bit i corresponds to neighbor i,
+        # matching the convention used in `ltp_codes`).
+        bits = (code >> bit_positions) & 1
+        # Count circular 0<->1 transitions; <= 2 means a single run of ones.
+        transitions = int(np.count_nonzero(bits != np.roll(bits, -1)))
+        ones = int(bits.sum())
+        if transitions > 2:
+            look_up_table[code] = non_uniform_bin
+        elif ones == 0:
+            look_up_table[code] = all_zeros_bin
+        elif ones == p:
+            look_up_table[code] = all_ones_bin
+        else:
+            # The run of ones starts at the unique index whose bit is 1 while its
+            # (circular) predecessor is 0. This is well defined for uniform
+            # patterns and stays correct when the run wraps past index 0.
+            preceding_bits = np.roll(bits, 1)
+            run_start = int(np.argmax((bits == 1) & (preceding_bits == 0)))
+            look_up_table[code] = 2 + (ones - 1) * p + run_start
+
+    encoded = look_up_table[codes.astype(np.int64, copy=False)]
+
+    return encoded, n_bins
+
+
+def encode_ltp_codes(
+    codes: np.ndarray, n_neighbors: int, method: LTPEncoding = "ror"
+) -> tuple[np.ndarray, int]:
+    """Encode raw LTP codes into histogram bins using the requested scheme.
+
+    Args:
+        codes: Raw LTP codes.
+        n_neighbors: Number of neighbors in the circular neighborhood.
+        method: Either ``"ror"`` (rotation invariant) or ``"uniform"``
+            (rotation variant, orientation preserving).
+
+    Returns:
+        Encoded codes (same shape as ``codes``) and the number of bins.
+
+    Raises:
+        ValueError: If ``method`` is not a supported encoding scheme.
+    """
+    if method == "ror":
+        return ror_encoding(codes, n_neighbors=n_neighbors)
+    if method == "uniform":
+        return uniform_encoding(codes, n_neighbors=n_neighbors)
+    raise ValueError(
+        f"Unknown LTP encoding method {method!r}; use 'ror' or 'uniform'."
+    )
+
 
 def bilinear_sample(image: np.ndarray, y: np.ndarray, x: np.ndarray) -> np.ndarray:
     """Sample image at floating-point coordinates using bilinear interpolation.

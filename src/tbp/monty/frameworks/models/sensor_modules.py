@@ -336,12 +336,17 @@ class ObservationProcessor:
             features["hsv"] = hsv
         if "ltp" in self._features:
             rgb_patch = rgba_feat[:, :, :3]
-            gray_patch = rgb2gray(rgb_patch)
-            if np.max(gray_patch) <= 1.0:
-                # NOTE this is a brittle check, e.g. if black image is passed
-                gray_patch = gray_patch * 255.0
-                gray_patch = gray_patch.astype(np.uint8)
-            hist = get_ltp_texture_feature_vector(gray_patch, self._ltp_config)
+            gray_patch = rgb2gray(rgb_patch)  # Returned as float in [0, 1]
+            gray_patch = gray_patch * 255.0
+            gray_patch = gray_patch.astype(np.uint8)
+            # Restrict the texture histogram to on-object pixels. The (typically
+            # uniform) background otherwise contributes a large, object-independent
+            # mode that washes out the discriminative texture signal and makes
+            # different objects' histograms look spuriously similar.
+            on_object_mask = (obs_3d[:, 3] > 0).reshape(gray_patch.shape)
+            hist = get_ltp_texture_feature_vector(
+                gray_patch, self._ltp_config, mask=on_object_mask
+            )
 
             features["ltp"] = hist.astype(np.float32)
 
