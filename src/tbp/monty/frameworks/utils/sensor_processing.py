@@ -212,7 +212,9 @@ def ror_encoding(codes: np.ndarray, n_neighbors: int) -> tuple[np.ndarray, int]:
     # Defensive check: a code value at or above `n_codes` would require more than
     # `n_neighbors` bits and cannot be indexed into `canonical`/`lut`, so reject it.
     if codes.max() >= n_codes:
-        raise ValueError(f"Too many codes, got {codes.max()} >= {n_codes}")
+        raise ValueError(
+            f"Max code value {codes.max()} exceeds the number of codes {n_codes}"
+        )
 
     # Build the canonical form for every possible code. The ROR (Rotate to the
     # minimum) scheme defines two codes as equivalent if one is a circular bit
