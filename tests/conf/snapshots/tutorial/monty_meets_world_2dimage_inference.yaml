@@ -2,6 +2,10 @@ experiment:
   config:
     do_eval: true
     do_train: false
+    plotter:
+      _target_: tbp.monty.frameworks.plotters.live_plotter.LivePlotter
+      interactive: false
+      max_delay: 2.0
     monty_config:
       monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
       monty_args:
@@ -195,7 +199,6 @@ experiment:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
       run_name: monty_meets_world_2dimage_inference
-    show_sensor_output: true
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000

@@ -45,7 +45,6 @@ experiment:
     model_name_or_path: ''
     min_lms_match: 1
     seed: 42
-    show_sensor_output: false
     supervised_lm_ids: all
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
@@ -129,7 +128,6 @@ experiment:
     min_lms_match: 3
     python_log_level: DEBUG
     seed: 42
-    show_sensor_output: false
     supervised_lm_ids: []
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}

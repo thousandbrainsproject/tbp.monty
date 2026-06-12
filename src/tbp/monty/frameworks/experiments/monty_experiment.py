@@ -41,7 +41,6 @@ from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )
-from tbp.monty.frameworks.utils.live_plotter import LivePlotter
 
 __all__ = ["MontyExperiment"]
 
@@ -79,15 +78,13 @@ class MontyExperiment:
         else:
             self.model_path = None
         self.min_lms_match = config["min_lms_match"]
-        self.show_sensor_output = config["show_sensor_output"]
         self.supervised_lm_ids = config["supervised_lm_ids"]
         if self.supervised_lm_ids == "all":
             self.supervised_lm_ids = list(
                 self.config["monty_config"]["learning_modules"].keys()
             )
 
-        if self.show_sensor_output:
-            self.live_plotter = LivePlotter()
+        self.plotter = config.pop("plotter", None)
 
         self.train_episodes = config.get("episode", 0)
         self.eval_episodes = config.get("episode", 0)
@@ -166,12 +163,13 @@ class MontyExperiment:
             sm_to_lm_matrix=sm_to_lm_matrix,
             lm_to_lm_matrix=lm_to_lm_matrix,
             lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
-            # Pass any leftover configuration paramters downstream to monty_class
+            # Pass any leftover configuration parameters downstream to monty_class
             **monty_config,
             # FIXME: Kept for backward compatibility
             **monty_args,
         )
         model.min_lms_match = self.min_lms_match
+        model.supervised_lm_ids = self.supervised_lm_ids
 
         if monty_args["num_exploratory_steps"] > self.max_total_steps:
             new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
@@ -459,6 +457,44 @@ class MontyExperiment:
         """Hook for anything you want to do after a step."""
         self.logger_handler.post_step(self.logger_args)
 
+    def _plot_and_maybe_override(
+        self,
+        ctx: RuntimeContext,
+        observations,
+        step: int,
+        actions: list[Action],
+    ) -> list[Action]:
+        """Draw the current state and, if interactive, return the user-chosen action.
+
+        The user only overrides an action while the agent is on the object and the
+        step is a user choice step (e.g. the surface policy's tangential step); the
+        policy's automatic corrections and off-object self-positioning run unchanged.
+
+        Args:
+            ctx: The runtime context supplying the random state.
+            observations: The observations from the most recent step.
+            step: The index of the current step within the episode.
+            actions: The actions returned by the model for the next step.
+
+        Returns:
+            The actions to execute next, unchanged or overridden by the user.
+        """
+        if self.plotter is None:
+            return actions
+
+        self.plotter.update(observations, step)
+
+        if not self.plotter.interactive or self.model.is_done:
+            return actions
+
+        percept = self.model.sensor_module_outputs[0]
+        on_object = percept.get_on_object()
+        user_choice = self.plotter.awaits_choice(actions)
+        if not on_object or not user_choice:
+            return actions
+
+        return self.plotter.override_action(ctx, actions)
+
     def run_episode(self) -> None:
         """Run one episode until model.is_done."""
         self.pre_episode()
@@ -471,6 +507,9 @@ class MontyExperiment:
             self.pre_step(step, observations)
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
+                actions = self._plot_and_maybe_override(
+                    ctx, observations, step, actions
+                )
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used
@@ -513,8 +552,8 @@ class MontyExperiment:
 
         self.logger_handler.pre_episode(self.logger_args)
 
-        if self.show_sensor_output:
-            self.live_plotter.initialize_online_plotting()
+        if self.plotter is not None:
+            self.plotter.initialize(self.model)
 
     def post_episode(self, steps):
         """Call post_episode on elements in experiment and increment counters.
@@ -671,6 +710,9 @@ class MontyExperiment:
             setattr(self, k, exp_state_dict[k])
 
     def close(self):
+        if self.plotter is not None:
+            self.plotter.close()
+
         env = getattr(self, "env", None)
         if env is not None:
             env.close()

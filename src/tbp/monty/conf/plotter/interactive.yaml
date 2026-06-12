@@ -1,0 +1,3 @@
+# @package experiment.config.plotter
+_target_: tbp.monty.frameworks.plotters.live_plotter.LivePlotter
+interactive: true

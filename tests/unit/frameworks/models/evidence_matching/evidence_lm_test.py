@@ -140,6 +140,22 @@ class EvidenceLMTest(BaseGraphTest):
 
         return graph_lm
 
+    def test_per_graph_stats_for_empty_memory(self):
+        """Per-graph stats methods return the off-object for empty memory."""
+        graph_lm = EvidenceGraphLM(
+            max_match_distance=0.005,
+            tolerances={"patch": {"hsv": [0.1, 1, 1]}},
+            feature_weights={"patch": {"hsv": np.array([1, 0, 0])}},
+            max_graph_size=10,
+        )
+        self.assertEqual(graph_lm.get_all_known_object_ids(), [])
+        for ids, values in (
+            graph_lm.evidence_for_each_graph(),
+            graph_lm.num_hypotheses_for_each_graph(),
+        ):
+            self.assertEqual(ids, ["patch_off_object"])
+            np.testing.assert_array_equal(values, [0])
+
     def test_symmetry_recognition(self):
         fake_obs_test = copy.deepcopy(self.fake_obs_symmetric)
         # Get LM with object learned from fake_obs

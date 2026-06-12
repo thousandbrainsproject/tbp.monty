@@ -51,6 +51,16 @@ def highest_confidence_goal(goals: list[Goal]) -> Goal:
 
 
 class MotorPolicySelector(Protocol):
+    @property
+    def policy(self) -> MotorPolicy | None:
+        """The policy this selector exposes, if any.
+
+        Returns:
+            The policy carrying the action sampler and agent id, or `None` if
+            this selector exposes no such policy.
+        """
+        ...
+
     def pre_episode(self, motor_system: MotorSystem) -> None: ...
 
     def __call__(
@@ -81,6 +91,10 @@ class SinglePolicySelector(MotorPolicySelector):
         self._policy = policy
         # TODO: Get rid of this once we have another path for telemetry.
         self._selected_goals: list[Goal | None] = []
+
+    @property
+    def policy(self) -> MotorPolicy | None:
+        return self._policy
 
     def pre_episode(self, motor_system: MotorSystem) -> None:
         self._policy.pre_episode(motor_system)
@@ -126,6 +140,12 @@ class DistantPolicySelector(MotorPolicySelector):
         # telemetry
         self._selected_policies: list[MotorPolicy] = []
         self._selected_goals: list[Goal | None] = []
+
+    @property
+    def policy(self) -> MotorPolicy | None:
+        # The goal-driven jump_to_goal / look_at_goal policies carry no action
+        # sampler, so the default fall-back policy is the one to expose.
+        return self._default
 
     def pre_episode(self, motor_system: MotorSystem) -> None:
         self._jump_to_goal.pre_episode(motor_system)
