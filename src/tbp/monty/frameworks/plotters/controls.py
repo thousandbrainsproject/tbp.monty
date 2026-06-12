@@ -299,9 +299,7 @@ class ActionButtons:
 
         state = self.model.motor_system.action_sequence[-1][1]
         scale = (
-            self._step_slider.val
-            if self._step_slider is not None
-            else STEP_SCALE_INIT
+            self._step_slider.val if self._step_slider is not None else STEP_SCALE_INIT
         )
         return self._policy.compute(ctx, selected, state, scale)
 
