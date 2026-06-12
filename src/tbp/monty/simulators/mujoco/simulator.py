@@ -47,7 +47,7 @@ from tbp.monty.simulators.mujoco.objects import (
 
 # Scaling factor to make MuJoCo primitives roughly the same size
 # as their Habitat counterparts. This was determined by trial and error.
-DEFAULT_HABITAT_SCALE = (0.05, 0.05, 0.05)
+HABITAT_SCALING_FACTOR = (0.05, 0.05, 0.05)
 
 if TYPE_CHECKING:
     from functools import partial
@@ -293,14 +293,11 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         elif name in HABITAT_PRIMITIVE_OBJECTS:
             # Habitat primitive objects are much smaller than the default MuJoCo ones
             # so we need to adjust the default scale.
-            if scale == (1.0, 1.0, 1.0):
-                scale = DEFAULT_HABITAT_SCALE
-            else:
-                scale = (
-                    scale[0] * DEFAULT_HABITAT_SCALE[0],
-                    scale[1] * DEFAULT_HABITAT_SCALE[1],
-                    scale[2] * DEFAULT_HABITAT_SCALE[2],
-                )
+            scale = (
+                scale[0] * HABITAT_SCALING_FACTOR[0],
+                scale[1] * HABITAT_SCALING_FACTOR[1],
+                scale[2] * HABITAT_SCALING_FACTOR[2],
+            )
             self._add_primitive_object(obj_name, name, position, rotation, scale)
         else:
             self._add_custom_object(obj_name, name, position, rotation, scale)

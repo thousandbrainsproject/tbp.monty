@@ -57,7 +57,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         if "agents" in config["environment"]["env_init_args"]:
             agents_config = config["environment"]["env_init_args"]["agents"]
             # Habitat agents are configured using `agent_args`.
-            # This code has always assumed there is only one.
+            # The way we configure Habitat agents only allows for one agent.
             if "agent_args" in agents_config:
                 self.sensor_pos = np.array(agents_config["agent_args"]["positions"])
             else:
