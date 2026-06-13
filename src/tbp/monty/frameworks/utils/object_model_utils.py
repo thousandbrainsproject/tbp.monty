@@ -138,9 +138,12 @@ def already_in_list(
                         redundant_point = False
                         break
 
-                elif feature == "distance":
+                elif feature in {"distance", "ltp"}:
                     pass
-                    # Already dealt with in vectorized form
+                    # Never use LTP for redundancy checking, so as to ensure it
+                    # does not modify the number of points in the graph when
+                    # included.
+                    # For distance, we already deal with it in vectorized form.
 
                 else:
                     delta_change = np.abs(

@@ -15,6 +15,7 @@ import logging
 import numpy as np
 import torch
 from numpy.typing import ArrayLike
+from scipy.ndimage import map_coordinates
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_angle_torch,
@@ -26,6 +27,266 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 logger = logging.getLogger(__name__)
 
 FLAT_THRESHOLD = 0.001
+
+def get_ltp_texture_feature_vector(image_array: np.ndarray, config) -> np.ndarray:
+    texture_extraction_config = config["texture_extraction"]
+
+    method_name, method_config = next(iter(texture_extraction_config.items()))
+
+    if method_name == "local_ternary_pattern":
+        result = local_ternary_pattern_and_hist(
+            image_array,
+            n_neighbors=method_config["n_neighbors"],
+            radius=method_config["radius"],
+            threshold=method_config["threshold"],
+        )
+
+    elif method_name == "multi_scale":
+        all_hists = []
+        for nested_cfg in method_config:
+            nested_texture_config = {"texture_extraction": nested_cfg}
+            result = get_ltp_texture_feature_vector(image_array, nested_texture_config)
+            hist = np.asarray(result, dtype=np.float32)
+            all_hists.append(hist)
+
+        multi_hist = np.concatenate(all_hists)
+        multi_hist /= multi_hist.sum() + 1e-6
+        return multi_hist
+
+    else:
+        raise ValueError(f"Unknown texture extraction method: {method_name}")
+
+    return result
+
+def local_ternary_pattern_and_hist(
+    gray_patch: np.ndarray,
+    n_neighbors: int = 8,
+    radius: float = 1.0,
+    threshold: float = 5.0,
+) -> np.ndarray:
+    """Compute Local Ternary Pattern features and histogram for a grayscale image patch.
+
+    This implementation leverages the standard split-LTP formulation from Tan and
+    Triggs (2010):
+    - Positive pattern: neighbor >= center + threshold
+    - Negative pattern: neighbor <= center - threshold
+
+    Encoding makes use of the ROR rotation-invariant encoding scheme.
+
+    Args:
+        gray_patch: grayscale image patch.
+        n_neighbors: Number of neighbors to consider in the circular neighborhood.
+        radius: Radius of the neighborhood in pixels.
+        threshold: Threshold for the local ternary pattern.
+
+    Returns:
+        Local Ternary Pattern features and histogram.
+    """
+    codes_pos_raw, codes_neg_raw = ltp_codes(
+        gray_patch, n_neighbors=n_neighbors, radius=radius, threshold=threshold
+    )
+
+    codes_pos, n_bins_pos = ror_encoding(codes_pos_raw, n_neighbors=n_neighbors)
+    codes_neg, n_bins_neg = ror_encoding(codes_neg_raw, n_neighbors=n_neighbors)
+
+    hist_pos = np.bincount(codes_pos.ravel(), minlength=n_bins_pos).astype(np.float32)
+    hist_neg = np.bincount(codes_neg.ravel(), minlength=n_bins_neg).astype(np.float32)
+
+    histogram = np.concatenate([hist_pos, hist_neg]).astype(np.float32, copy=False)
+
+    histogram /= histogram.sum() + 1e-6
+
+    return histogram
+
+
+def ltp_codes(
+    gray_patch: np.ndarray,
+    n_neighbors: int = 8,
+    radius: float = 1.0,
+    threshold: float = 5.0,
+) -> np.ndarray:
+    """Compute Local Ternary Pattern features for a grayscale image patch.
+
+    This implementation leverages the standard split-LTP formulation from Tan and
+    Triggs (2010):
+    - Positive pattern: neighbor >= center + threshold
+    - Negative pattern: neighbor <= center - threshold
+
+    Encoding makes use of the ROR rotation-invariant encoding scheme.
+
+    The final feature vector is:
+        concat(histogram(positive_codes), histogram(negative_codes))
+
+    Args:
+        gray_patch: grayscale image patch.
+        n_neighbors: Number of neighbors to consider in the circular neighborhood.
+        radius: Radius of the neighborhood in pixels.
+        threshold: Threshold for the local ternary pattern. Must be strictly greater
+            than 0 by definition: the threshold defines the "dead zone" around the
+            center value within which neighbors are treated as equal. A threshold of
+            0 removes this dead zone and degenerates the split-LTP into a more
+            LBP-style code (a neighbor equal to the center would set both the
+            positive and negative bits), so it is not allowed.
+
+    Returns:
+        Local Ternary Pattern features.
+
+    Raises:
+        ValueError: If `n_neighbors` is not positive, `radius` is not positive,
+            `threshold` is not positive, or `gray_patch` is not 2D.
+    """
+    if n_neighbors <= 0:
+        raise ValueError(f"`n_neighbors` must be positive, got {n_neighbors}.")
+    if radius <= 0:
+        raise ValueError(f"`radius` must be positive, got {radius}.")
+    if threshold <= 0:
+        raise ValueError(f"`threshold` must be > 0, got {threshold}.")
+    if gray_patch.ndim != 2:
+        raise ValueError(
+            "Must provide a 2D grayscale image patch, got shape", gray_patch.shape
+        )
+
+    h, w = gray_patch.shape
+    # Use meshgrid to create a grid of coordinates that can be shifted in parallel
+    # for each neighbor comparison.
+    yy, xx = np.meshgrid(
+        np.arange(h, dtype=np.float32),
+        np.arange(w, dtype=np.float32),
+        indexing="ij",
+    )
+
+    codes_pos = np.zeros((h, w), dtype=np.uint32)
+    codes_neg = np.zeros((h, w), dtype=np.uint32)
+
+    # Sample the circular neighborhood, travelling clockwise.
+    for i in range(n_neighbors):
+        theta = 2.0 * np.pi * i / n_neighbors
+        dy = -radius * np.sin(theta)
+        dx = radius * np.cos(theta)
+
+        # Use shift to determine all neighbor locations, then perform bilinear sampling
+        # to get the neighbor value as the weighted average of the four nearest pixels.
+        # This is useful for cases where the radius parameter does not land exactly on
+        # pixel coordinates.
+        neighbor = bilinear_sample(gray_patch, yy + dy, xx + dx)
+
+        pos_bit = (neighbor >= (gray_patch + threshold)).astype(np.uint32)
+        neg_bit = (neighbor <= (gray_patch - threshold)).astype(np.uint32)
+
+        # For each pixel in the original patch shift the bit values left by i with <<
+        # operator (equivalent to multiplying by 2^i). This ensures each neighbor's bit
+        # value contributes uniquely to the final code. Then accumulate the bit values
+        # using the bitwise OR operator.
+        codes_pos |= pos_bit << i
+        codes_neg |= neg_bit << i
+
+    return codes_pos, codes_neg
+
+
+def ror_encoding(codes: np.ndarray, n_neighbors: int) -> tuple[np.ndarray, int]:
+    """Encode codes using the ROR rotation-invariant encoding scheme.
+
+    Args:
+        codes: Codes to encode.
+        n_neighbors: Number of neighbors to consider in the circular neighborhood.
+
+    Returns:
+        Encoded codes and number of bins.
+
+    Raises:
+        ValueError: If the max value of codes exceeds the number of codes.
+    """
+    # Each code is an `n_neighbors`-bit pattern, so the value space spans every
+    # integer in [0, 2**n_neighbors). `n_codes` is therefore the total number of
+    # distinct raw codes the encoding must be able to handle.
+    n_codes = 2 ** n_neighbors
+    # `mask` has its lowest `n_neighbors` bits set to 1 (e.g. 0b1111 for 4
+    # neighbors). Bitwise-ANDing with it discards any bits above bit n_neighbors-1,
+    # keeping rotated values confined to the valid `n_neighbors`-bit range.
+    mask = n_codes - 1
+    # Lookup table mapping every possible raw code to its canonical (rotation
+    # invariant) representative. Pre-allocated to length `n_codes` so each code's
+    # canonical value can be stored at the index equal to the code itself.
+    canonical = np.empty(n_codes, dtype=np.int32)
+
+    # Defensive check: a code value at or above `n_codes` would require more than
+    # `n_neighbors` bits and cannot be indexed into `canonical`/`lut`, so reject it.
+    if codes.max() >= n_codes:
+        raise ValueError(
+            f"Max code value {codes.max()} exceeds the number of codes {n_codes}"
+        )
+
+    # Build the canonical form for every possible code. The ROR (Rotate to the
+    # minimum) scheme defines two codes as equivalent if one is a circular bit
+    # rotation of the other; the canonical representative is the numerically
+    # smallest value reachable by rotating the bit pattern. This is what makes the
+    # final encoding invariant to rotation of the circular neighborhood.
+    for code in range(n_codes):
+        # `x` holds the current rotation of the bit pattern, starting from the
+        # unrotated code.
+        x = code
+        # Track the smallest value seen across all rotations; initialized to the
+        # code itself (the zero-rotation case).
+        min_code = code
+        # Apply each of the remaining `n_neighbors - 1` distinct circular
+        # rotations. Together with the starting value these cover every rotation
+        # of the pattern exactly once.
+        for _ in range(1, n_neighbors):
+            # Perform a one-bit circular right rotation of the `n_neighbors`-bit
+            # value:
+            #   `x >> 1` shifts every bit one position toward the least significant
+            #       end, dropping the old bit 0.
+            #   `(x & 1) << (n_neighbors - 1)` takes that dropped bit 0 and wraps it
+            #       around into the most significant bit position.
+            #   The `|` merges the shifted body with the wrapped-around bit, and the
+            #       `& mask` clears anything above the valid bit range.
+            x = ((x >> 1) | ((x & 1) << (n_neighbors - 1))) & mask
+            # Keep the minimum over all rotations encountered so far.
+            min_code = min(min_code, x)
+        # Store the canonical (minimum-rotation) representative for this code.
+        canonical[code] = min_code
+
+    # The distinct canonical values are the actual rotation-invariant equivalence
+    # classes. `np.unique` returns them sorted, giving a stable, deterministic
+    # ordering of the classes.
+    unique_vals = np.unique(canonical)
+    # Map each canonical value to a compact, contiguous bin index in [0, n_bins).
+    # This compresses the sparse canonical values down to a dense range suitable
+    # for histogramming.
+    remap = {old: new for new, old in enumerate(unique_vals)}
+    # Compose the two mappings (raw code -> canonical value -> dense bin index)
+    # into a single lookup table indexed directly by raw code value.
+    look_up_table = np.array([remap[v] for v in canonical], dtype=np.int32)
+    # The number of distinct rotation-invariant classes is the number of output
+    # bins the encoding produces.
+    n_bins = len(unique_vals)
+    # Apply the lookup table to the input codes via fancy indexing, translating
+    # every raw code into its dense rotation-invariant bin index in one vectorized
+    # operation.
+    encoded = look_up_table[codes.astype(np.int32, copy=False)]
+
+    return encoded, n_bins
+
+def bilinear_sample(image: np.ndarray, y: np.ndarray, x: np.ndarray) -> np.ndarray:
+    """Sample image at floating-point coordinates using bilinear interpolation.
+
+    Uses scipy.ndimage.map_coordinates. Coordinates outside the image are clipped to
+    the nearest valid boundary.
+
+    Args:
+        image: Image to sample.
+        y: Y coordinates (row) to sample.
+        x: X coordinates (column) to sample.
+
+    Returns:
+        Sampled image values.
+    """
+    return map_coordinates(
+        image,
+        np.stack([y, x]),  # shape (2, N) -- row coords, then col coords
+        order=1,  # order=1 => bilinear
+        mode="nearest",  # clip out-of-bounds to nearest edge
+    )
 
 
 def arc_from_projection(

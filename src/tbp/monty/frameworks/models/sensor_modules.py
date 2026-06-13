@@ -15,7 +15,7 @@ from typing import Any, ClassVar, Protocol
 
 import numpy as np
 import quaternion as qt
-from skimage.color import rgb2hsv
+from skimage.color import rgb2gray, rgb2hsv
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
@@ -29,6 +29,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.sensor_processing import (
+    get_ltp_texture_feature_vector,
     log_sign,
     principal_curvatures,
     scale_clip,
@@ -132,6 +133,7 @@ class ObservationProcessor:
         "mean_depth",
         "rgba",
         "hsv",
+        "ltp",
         "pose_vectors",
         "principal_curvatures",
         "principal_curvatures_log",
@@ -154,6 +156,7 @@ class ObservationProcessor:
         surface_normal_method=SurfaceNormalMethod.TLS,
         weight_curvature=True,
         is_surface_sm=False,
+        ltp_config=None,
     ) -> None:
         """Initializes the ObservationProcessor.
 
@@ -170,10 +173,22 @@ class ObservationProcessor:
             is_surface_sm: Surface SMs do not require that the central pixel is
                 "on object" in order to process the observation (i.e., extract
                 features). Defaults to False.
+            ltp_config: Configuration for the Local Ternary Pattern (LTP) texture
+                feature extraction. Required when "ltp" is in `features`. Defaults
+                to None.
+
+        Raises:
+            ValueError: If "ltp" is in `features` but no `ltp_config` is provided.
         """
         for feature in features:
             assert feature in self.POSSIBLE_FEATURES, (
                 f"{feature} not part of {self.POSSIBLE_FEATURES}"
+            )
+        if "ltp" in features and ltp_config is None:
+            raise ValueError(
+                "`ltp` is in the requested features but no `ltp_config` was "
+                "provided. Pass an `ltp_config` describing the texture extraction "
+                "method (see get_ltp_texture_feature_vector)."
             )
         self._features = features
         self._is_surface_sm = is_surface_sm
@@ -181,6 +196,7 @@ class ObservationProcessor:
         self._sensor_module_id = sensor_module_id
         self._surface_normal_method = surface_normal_method
         self._weight_curvature = weight_curvature
+        self._ltp_config = ltp_config
 
     def process(self, observation: SensorObservation) -> Message:
         """Processes observation.
@@ -318,6 +334,16 @@ class ObservationProcessor:
             rgba = rgba_feat[center_row_col, center_row_col]
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
+        if "ltp" in self._features:
+            rgb_patch = rgba_feat[:, :, :3]
+            gray_patch = rgb2gray(rgb_patch)
+            if np.max(gray_patch) <= 1.0:
+                # NOTE this is a brittle check, e.g. if black image is passed
+                gray_patch = gray_patch * 255.0
+                gray_patch = gray_patch.astype(np.uint8)
+            hist = get_ltp_texture_feature_vector(gray_patch, self._ltp_config)
+
+            features["ltp"] = hist.astype(np.float32)
 
         # Note we only determine curvature if we could determine a valid surface normal
         if any(feat in self.CURVATURE_FEATURES for feat in self._features) and valid_sn:
@@ -554,6 +580,7 @@ class CameraSM(SensorModule):
         noise_params: dict[str, Any] | None = None,
         is_surface_sm: bool = False,
         delta_thresholds: dict[str, Any] | None = None,
+        ltp_config: dict[str, Any] | None = None,
     ) -> None:
         """Initialize Sensor Module.
 
@@ -574,6 +601,10 @@ class CameraSM(SensorModule):
                 check whether the current state's features are significantly different
                 from the previous with tolerances set according to `delta_thresholds`.
                 Defaults to None.
+            ltp_config: Configuration for the Local Ternary Pattern (LTP) texture
+                feature extraction. Required when "ltp" is in `features`. See
+                :func:`tbp.monty.frameworks.utils.sensor_processing.get_ltp_texture_feature_vector`
+                for the expected structure. Defaults to None.
 
         Note:
             When using feature-at-location matching with graphs, surface_normal and
@@ -588,6 +619,7 @@ class CameraSM(SensorModule):
             sensor_module_id=sensor_module_id,
             pc1_is_pc2_threshold=pc1_is_pc2_threshold,
             is_surface_sm=is_surface_sm,
+            ltp_config=ltp_config,
         )
         # TODO: With DefaultMessageNoise not getting RNG on init anymore,
         #       then we can initialize CameraSM with MessageNoise, instead
@@ -697,7 +729,7 @@ class FeatureChangeFilter(PerceptFilter):
         """Reset buffer and is_exploring flag."""
         self._last_percept = None
 
-    def _check_feature_change(self, percept: Message) -> bool:
+    def _check_feature_change(self, percept: Message) -> bool:  # noqa: C901
         """Check feature change between last transmitted observation.
 
         Args:
@@ -754,6 +786,12 @@ class FeatureChangeFilter(PerceptFilter):
                         f"new point because of {feature} angle : {angle_between}"
                     )
                     return True
+
+            elif feature == "ltp":
+                pass
+                # Never use LTP for FeatureChange SM, so as to ensure that its
+                # inclusion (or absense) does not modify the number of points
+                # observed
 
             else:
                 delta_change = np.abs(last_feat - current_feat)
