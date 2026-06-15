@@ -23,8 +23,7 @@ from tests import HYDRA_ROOT
 
 
 class BaseConfigTest(unittest.TestCase):
-    def setUp(self):
-        """Code that gets executed before every test."""
+    def setUp(self) -> None:
         self.output_dir = tempfile.mkdtemp()
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
@@ -36,21 +35,15 @@ class BaseConfigTest(unittest.TestCase):
                 ],
             )
 
-    def tearDown(self):
-        """Code that gets executed after every test."""
+    def tearDown(self) -> None:
         shutil.rmtree(self.output_dir)
 
-    def test_can_set_up(self):
-        """Canary for setup_experiment.
-
-        This could be part of the setUp method, but it's easier to debug if
-        something breaks the setup_experiment method if there's a separate test for it.
-        """
+    def test_can_set_up(self) -> None:
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
         with exp:
             pass
 
-    def test_can_run_episode(self):
+    def test_can_run_episode(self) -> None:
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
@@ -58,22 +51,21 @@ class BaseConfigTest(unittest.TestCase):
             exp.env_interface = exp.train_env_interface
             exp.run_episode()
 
-    def test_can_run_train_epoch(self):
+    def test_can_run_train_epoch(self) -> None:
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
             exp.run_epoch()
 
-    def test_can_run_eval_epoch(self):
+    def test_can_run_eval_epoch(self) -> None:
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode(exp.experiment_mode)
             exp.run_epoch()
 
-    def test_observation_unpacking(self):
-        """Make sure this test uses very small n_actions_per_epoch for speed."""
+    def test_observation_unpacking(self) -> None:
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
         with exp:
             monty_module_sids = {s.sensor_module_id for s in exp.model.sensor_modules}
@@ -114,20 +106,19 @@ class BaseConfigTest(unittest.TestCase):
                     "sensor_module must receive depth",
                 )
 
-    def test_can_save_and_load(self):
-        # Make sure deepcopy works (config is serializable)
-        config_1 = OmegaConf.to_object(self.base_cfg)
+    def test_can_save_and_load(self) -> None:
+        config_1: Mapping = OmegaConf.to_object(self.base_cfg)  # type: ignore[assignment,type-arg]
 
         exp = hydra.utils.instantiate(config_1["experiment"])
         with exp:
-            # change something about exp.state that will be saved via save_state_dir
+            # Change something about exp.state that will be saved via save_state_dir.
             new_attr = False
             exp.model.learning_modules[0].test_attr_2 = new_attr
 
             exp.save_state_dir()
             prev_model = exp.model
 
-        config_2: Mapping = OmegaConf.to_object(  # ignore: type[assignment]
+        config_2: Mapping = OmegaConf.to_object(  # type: ignore[assignment,type-arg]
             self.base_cfg
         )
         config_2["experiment"]["config"]["model_name_or_path"] = exp.output_dir
@@ -157,6 +148,9 @@ class BaseConfigTest(unittest.TestCase):
 
     def test_logging_debug_level(self) -> None:
         """Check that logs go to a file, we can load them, and they have basic info."""
+        # TODO: This seems to test the behaviour of the Python `logging` library, which
+        #   we should just assume works as advertised. Change this test to introspect
+        #   the experiment to see if the loggers got configured correctly instead.
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
         with exp:
             # Add some stuff to the logs, verify it shows up
@@ -175,7 +169,10 @@ class BaseConfigTest(unittest.TestCase):
 
     def test_logging_info_level(self) -> None:
         """Check that if we set logging level to info, debug logs do not show up."""
-        base_config: Mapping = OmegaConf.to_object(self.base_cfg)
+        # TODO: This seems to test the behaviour of the Python `logging` library, which
+        #   we should just assume works as advertised. Change this test to introspect
+        #   the experiment to see if the loggers got configured correctly instead.
+        base_config: Mapping = OmegaConf.to_object(self.base_cfg)  # type: ignore[assignment,type-arg]
         log_cfg = base_config["experiment"]["config"]["logging"]
         log_cfg["python_log_level"] = logging.INFO
 

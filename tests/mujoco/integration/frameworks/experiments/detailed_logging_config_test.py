@@ -19,6 +19,9 @@ from tests import HYDRA_ROOT
 
 
 class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
+    # TODO: This test seems to primarily test our DetailedJSONHandler, and we should
+    #   do that directly instead of testing to see if the Python `logging` library
+    #   did what it is supposed to do.
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
 
@@ -36,11 +39,6 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
         shutil.rmtree(self.output_dir)
 
     def test_can_set_up(self):
-        """Canary for setup_experiment.
-
-        This could be part of the setUp method, but it's easier to debug if
-        something breaks the setup_experiment method if there's a separate test for it.
-        """
         exp = hydra.utils.instantiate(self.cfg.experiment)
         with exp:
             pass
