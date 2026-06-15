@@ -7,6 +7,7 @@ env_init_args:
       agent_id: agent_id_0
       sensor_configs:
         sensor_id_0:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
           resolution:
             width: 320
             height: 240
