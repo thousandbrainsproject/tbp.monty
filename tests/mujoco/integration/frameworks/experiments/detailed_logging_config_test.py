@@ -22,7 +22,7 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
     # TODO: This test seems to primarily test our DetailedJSONHandler, and we should
     #   do that directly instead of testing to see if the Python `logging` library
     #   did what it is supposed to do.
-    def setUp(self):
+    def setUp(self) -> None:
         self.output_dir = tempfile.mkdtemp()
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
@@ -35,10 +35,10 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
                 ],
             )
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         shutil.rmtree(self.output_dir)
 
-    def test_can_set_up(self):
+    def test_can_set_up(self) -> None:
         exp = hydra.utils.instantiate(self.cfg.experiment)
         with exp:
             pass
