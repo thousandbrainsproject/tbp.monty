@@ -9,10 +9,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, Sequence
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.motor_system import (
+    ExperimentMotorPolicySelector,
+    ExperimentMotorSystem,
+)
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
     JumpToGoal,
@@ -24,24 +28,25 @@ from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 from tbp.monty.memento import Memento
 
 if TYPE_CHECKING:
-    from tbp.monty.frameworks.models.motor_system import MotorSystem
     from tbp.monty.frameworks.models.salience.motor_policy import LookAtGoal
 
 
 __all__ = [
+    "DistantPolicySelector",
     "MotorPolicySelector",
+    "RuntimeMotorPolicySelector",
     "SinglePolicySelector",
     "highest_confidence_goal",
 ]
 
 
-def highest_confidence_goal(goals: list[Goal]) -> Goal:
+def highest_confidence_goal(goals: Sequence[Goal]) -> Goal:
     """Return the goal with the highest confidence.
 
     If there are multiple goals with the same confidence, returns the first one.
 
     Args:
-        goals: A list of goals. Must be non-empty.
+        goals: A sequence of goals. Must be non-empty.
 
     Returns:
         The goal with the highest confidence.
@@ -50,8 +55,8 @@ def highest_confidence_goal(goals: list[Goal]) -> Goal:
     return sorted(goals, key=lambda x: x.confidence, reverse=True)[0]
 
 
-class MotorPolicySelector(Protocol):
-    def pre_episode(self, motor_system: MotorSystem) -> None: ...
+class RuntimeMotorPolicySelector(Protocol):
+    """Monty runtime interface to a Motor Policy Selector."""
 
     def __call__(
         self,
@@ -59,7 +64,7 @@ class MotorPolicySelector(Protocol):
         observations: Observations,
         state: MotorSystemState,
         percept: Message,
-        goals: list[Goal],
+        goals: Sequence[Goal],
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
 
@@ -68,12 +73,18 @@ class MotorPolicySelector(Protocol):
             observations: The observations from the environment.
             state: The current state of the motor system.
             percept: The percept from (as of this writing) the first sensor module.
-            goals: The list of goals to consider.
+            goals: The goals to consider.
 
         Returns:
             A MotorPolicyResult that contains the actions to take.
         """
         ...
+
+
+class MotorPolicySelector(
+    RuntimeMotorPolicySelector, ExperimentMotorPolicySelector, Protocol
+):
+    pass
 
 
 class SinglePolicySelector(MotorPolicySelector):
@@ -82,8 +93,8 @@ class SinglePolicySelector(MotorPolicySelector):
         # TODO: Get rid of this once we have another path for telemetry.
         self._selected_goals: list[Goal | None] = []
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:
-        self._policy.pre_episode(motor_system)
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:
+        self._policy.reset(motor_system)
         self._selected_goals = []
 
     def state_dict(self) -> Memento:
@@ -98,14 +109,11 @@ class SinglePolicySelector(MotorPolicySelector):
         observations: Observations,
         state: MotorSystemState,
         percept: Message,
-        goals: list[Goal],
+        goals: Sequence[Goal],
     ) -> MotorPolicyResult:
         goal = highest_confidence_goal(goals) if goals else None
         self._selected_goals.append(goal)
-        result = self._policy(ctx, observations, state, percept, goal)
-        if result is None:
-            return MotorPolicyResult([])
-        return result
+        return self._policy(ctx, observations, state, percept, goal)
 
 
 class DistantPolicySelector(MotorPolicySelector):
@@ -127,10 +135,10 @@ class DistantPolicySelector(MotorPolicySelector):
         self._selected_policies: list[MotorPolicy] = []
         self._selected_goals: list[Goal | None] = []
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:
-        self._jump_to_goal.pre_episode(motor_system)
-        self._look_at_goal.pre_episode(motor_system)
-        self._default.pre_episode(motor_system)
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:
+        self._jump_to_goal.reset(motor_system)
+        self._look_at_goal.reset(motor_system)
+        self._default.reset(motor_system)
 
         self._is_jumping = False
         self._selected_policies = []
@@ -149,7 +157,7 @@ class DistantPolicySelector(MotorPolicySelector):
         observations: Observations,
         state: MotorSystemState,
         percept: Message,
-        goals: list[Goal],
+        goals: Sequence[Goal],
     ) -> MotorPolicyResult:
         gsg_goals = [g for g in goals if g.sender_type == "GSG"]
         # Handle possibly undoing a jump or jumping to a new LM GSG goal.

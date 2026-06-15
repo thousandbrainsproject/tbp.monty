@@ -19,5 +19,4 @@ class ExperimentSensorModule(Protocol):
 
     def reset(self) -> None:
         """Reset the internal state of this Sensor Module."""
-        pass
         ...
