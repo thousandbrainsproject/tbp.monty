@@ -80,7 +80,7 @@ class ProfileExperimentMixin:
         self.profile_dir = Path(self.output_dir) / "profile"
         self.profile_dir.mkdir(exist_ok=True, parents=True)
 
-    def setup_experiment(self, config) -> None:
+    def setup_experiment(self, config: dict[str, Any]) -> None:
         filename = "profile-setup_experiment.csv"
         pr = cProfile.Profile()
         pr.enable()
