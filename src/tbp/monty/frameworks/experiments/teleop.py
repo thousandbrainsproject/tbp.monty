@@ -48,6 +48,7 @@ class Teleop(Protocol):
         """Close the teleoperation."""
         ...
 
+
 class TeleopNoOp(Teleop):
     """Teleoperation no-op implementation."""
 
