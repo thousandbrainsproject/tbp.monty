@@ -585,7 +585,11 @@ class GraphLM(LearningModule):
         self.detected_pose = [None for _ in range(7)]
         self.detected_rotation_r = None
 
-    def fixme_reset_ground_truth(self, primary_target=None) -> None:
+    def fixme_reset_ground_truth(
+        self,
+        # TODO: Create a specific type for `primary_target`.
+        primary_target: dict[str, Any] | None = None,
+    ) -> None:
         """Set target object var and reset others from last episode.
 
         Args:
@@ -641,13 +645,13 @@ class GraphLM(LearningModule):
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(percepts)
 
-    def update_ltm_from_stm(self):
+    def update_ltm_from_stm(self) -> None:
         """If training, update memory from buffer."""
         if self.mode is ExperimentMode.TRAIN and len(self.buffer) > 0:
             logger.info(f"\n---Updating memory of {self.learning_module_id}---")
             self._update_memory()
 
-    def fixme_update_ground_truth(self):
+    def fixme_update_ground_truth(self) -> None:
         """If training, update ground truth."""
         if self.mode is ExperimentMode.TRAIN and len(self.buffer) > 0:
             self._update_target_graph_mapping(self.detected_object, self.primary_target)
@@ -762,7 +766,7 @@ class GraphLM(LearningModule):
             graph_id = None
         self.detected_object = graph_id
 
-    def get_possible_matches(self):
+    def get_possible_matches(self) -> list[str]:
         """Get list of current possible objects.
 
         TODO: Maybe make this private -> check terminal condition
@@ -772,7 +776,7 @@ class GraphLM(LearningModule):
         """
         return list(self.possible_matches.keys())
 
-    def get_possible_paths(self):
+    def get_possible_paths(self) -> dict[str, Any]:
         """Return possible paths for each object.
 
         This is used for logging/plotting
@@ -781,6 +785,7 @@ class GraphLM(LearningModule):
         Returns:
             Possible paths for each object.
         """
+        # TODO: Create a specific type for the return value.
         return self.possible_paths.copy()
 
     def get_possible_locations(self):
@@ -799,7 +804,7 @@ class GraphLM(LearningModule):
                 possible_locations[obj] = np.array([])
         return possible_locations
 
-    def get_possible_poses(self, as_euler=True):
+    def get_possible_poses(self, as_euler: bool = True) -> dict[str, Any]:
         """Return possible poses for each object (for logging).
 
         Possible poses are narrowed down
@@ -825,6 +830,7 @@ class GraphLM(LearningModule):
                 all_poses[obj] = euler_poses
         else:
             all_poses = poses
+        # TODO: Use a more specific type for the return value.
         return all_poses
 
     def get_object_scale(self, _object_id):
@@ -835,12 +841,14 @@ class GraphLM(LearningModule):
         """
         return 1
 
-    def get_all_known_object_ids(self):
+    def get_all_known_object_ids(self) -> list[str]:
         """Get the IDs of all object models stored in memory.
 
         Returns:
             IDs of all object models stored in memory.
         """
+        # TODO: Create a more specific return type. Maybe object ids should be
+        #  a new type like SensorID?
         return self.graph_memory.get_memory_ids()
 
     def get_graph(self, model_id, input_channel=None):
