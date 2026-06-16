@@ -32,6 +32,7 @@ from tbp.monty.experiment.environment import (
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
+from tbp.monty.frameworks.experiments.teleop import Teleop, TeleopNoOp
 from tbp.monty.frameworks.loggers.exp_logger import (
     BaseMontyLogger,
     LoggingCallbackHandler,
@@ -55,6 +56,8 @@ class MontyExperiment:
     Monty model, the outermost loops for training and evaluating (including run epoch
     and episode).
     """
+
+    _teleop: Teleop
 
     def __init__(self, config: DictConfig) -> None:
         """Initialize the experiment based on the provided configuration.
@@ -93,6 +96,8 @@ class MontyExperiment:
         self.eval_episodes = config.get("episode", 0)
 
         self._rng_seed_history: list[int] = []
+
+        self._teleop = config["teleop"] if "teleop" in config else TeleopNoOp()
 
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
@@ -471,6 +476,14 @@ class MontyExperiment:
             self.pre_step(step, observations)
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
+                actions = self._teleop(
+                    ctx,
+                    self.model,
+                    self.supervised_lm_ids if self.supervised_lm_ids else [],
+                    step,
+                    observations,
+                    actions,
+                )
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used
@@ -670,7 +683,9 @@ class MontyExperiment:
         for k in state_dict_keys:
             setattr(self, k, exp_state_dict[k])
 
-    def close(self):
+    def close(self) -> None:
+        self._teleop.close()
+
         env = getattr(self, "env", None)
         if env is not None:
             env.close()
