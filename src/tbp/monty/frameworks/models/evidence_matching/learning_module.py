@@ -478,8 +478,7 @@ class EvidenceGraphLM(GraphLM):
         output therefore has the same format to keep the messaging protocol
         consistent and make it easy to stack multiple LMs on top of each other.
 
-        If the evidence for mlh is < object_evidence_threshold,
-        interesting_features == False
+        If the LM has not reached a "match" terminal state, use_state == False.
         """
         mlh = self.get_current_mlh()
         pose_features = self._object_pose_to_features(mlh["rotation"].inv())
@@ -488,11 +487,9 @@ class EvidenceGraphLM(GraphLM):
         #       1) The last input it received was on_object (+getting SM input
         #           check will make sure that we are also currently on object)
         #           NOTE: May want to relax this check but still need a motor input
-        #       2) Its most likely hypothesis has an evidence >
-        #           object_evidence_threshold
+        #       2) It has reached a "match" terminal state
         use_state = bool(
-            self.buffer.get_currently_on_object()
-            and mlh["evidence"] > self.object_evidence_threshold
+            self.buffer.get_currently_on_object() and self.terminal_state == "match"
         )
         # TODO H: is this a good way to scale evidence to [0, 1]?
         confidence = (
