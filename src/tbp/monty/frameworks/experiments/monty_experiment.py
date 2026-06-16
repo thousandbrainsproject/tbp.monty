@@ -591,7 +591,7 @@ class MontyExperiment:
             self.eval_epochs += 1
             self.eval_env_interface.post_epoch()
 
-    def run(self):
+    def run(self) -> None:
         """Run the experiment."""
         if self.do_train:
             self.train()
@@ -609,7 +609,7 @@ class MontyExperiment:
             self.run_epoch()
         self.logger_handler.post_train(self.logger_args)
 
-    def evaluate(self):
+    def evaluate(self) -> None:
         """Run n_eval_epochs."""
         logger.info(f"running {self.n_eval_epochs} eval epochs")
         self.experiment_mode = ExperimentMode.EVAL
