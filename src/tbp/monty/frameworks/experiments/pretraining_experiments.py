@@ -193,8 +193,8 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
         self.reset_episode_rng()
 
-        # TODO: Fix invalid pre_episode signature call
-        self.model.pre_episode(self.env_interface.primary_target)
+        self.model.reset()
+        self.model.fixme_set_ground_truth(self.env_interface.primary_target)
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps  # no eval mode here

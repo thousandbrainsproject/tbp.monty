@@ -504,7 +504,7 @@ class MontyExperiment:
 
         self.reset_episode_rng()
 
-        self.model.pre_episode()
+        self.model.reset()
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps
@@ -530,7 +530,7 @@ class MontyExperiment:
         get 'confused'/'FP'.
         """
         self.logger_handler.post_episode(self.logger_args)
-        self.model.post_episode()
+        self.model.update_ltm()
 
         if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_episodes += 1

@@ -61,24 +61,30 @@ class MontyForGraphMatching(MontyBase):
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
-    def pre_episode(self, primary_target, semantic_id_to_label=None) -> None:
-        """Reset values and call sub-pre_episode functions."""
+    def reset(self):
         self._is_done = False
         self.reset_episode_steps()
         self.switch_to_matching_step()
-        self.reset()
-        self.primary_target = primary_target
-        self.semantic_id_to_label = semantic_id_to_label
-
         for lm in self.learning_modules:
             lm.reset_stm()
-            lm.fixme_reset_ground_truth(primary_target)
 
         for sm in self.sensor_modules:
             sm.reset()
 
         self.motor_system.reset()
         self._goals = []
+        pass
+
+    def fixme_set_ground_truth(
+        self,
+        primary_target: dict[str, Any] | None = None,
+        semantic_id_to_label: dict[SemanticID, str] | None = None,
+    ) -> None:
+        self.primary_target = primary_target
+        self.semantic_id_to_label = semantic_id_to_label
+
+        for lm in self.learning_modules:
+            lm.fixme_reset_ground_truth(primary_target)
 
         logger.debug(
             f"Models in memory: {self.learning_modules[0].get_all_known_object_ids()}"
@@ -179,10 +185,6 @@ class MontyForGraphMatching(MontyBase):
         if num_lms_done >= self.min_lms_match:
             logger.info("\n\nMONTY DETECTED MATCH\n\n")
             return True
-
-    def reset(self):
-        """Reset monty status."""
-        pass
 
     # ------------------ Getters & Setters ---------------------
 
