@@ -7,15 +7,6 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import pytest
-
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 import shutil
 import tempfile
 import unittest
@@ -28,6 +19,7 @@ from tbp.monty.frameworks.models.object_model import GridObjectModel
 from tbp.monty.frameworks.utils.logging_utils import (
     load_models_from_dir,
 )
+from tests import HYDRA_ROOT
 
 
 class HierarchyTest(unittest.TestCase):
@@ -39,21 +31,21 @@ class HierarchyTest(unittest.TestCase):
             self.two_lms_heterarchy_cfg = hydra.compose(
                 config_name="experiment",
                 overrides=[
-                    "experiment=test/hierarchy/two_lms_heterarchy",
+                    "experiment=test/hierarchy/two_lms_heterarchy_mujoco",
                     f"experiment.config.logging.output_dir={self.output_dir}",
                 ],
             )
             self.two_lms_constrained_cfg = hydra.compose(
                 config_name="experiment",
                 overrides=[
-                    "experiment=test/hierarchy/two_lms_constrained",
+                    "experiment=test/hierarchy/two_lms_constrained_mujoco",
                     f"experiment.config.logging.output_dir={self.output_dir}",
                 ],
             )
             self.two_lms_semisupervised_cfg = hydra.compose(
                 config_name="experiment",
                 overrides=[
-                    "experiment=test/hierarchy/two_lms_semisupervised",
+                    "experiment=test/hierarchy/two_lms_semisupervised_mujoco",
                     f"experiment.config.logging.output_dir={self.output_dir}",
                     f"experiment.config.model_name_or_path={self.model_path}",
                 ],
@@ -61,7 +53,7 @@ class HierarchyTest(unittest.TestCase):
             self.two_lms_eval_cfg = hydra.compose(
                 config_name="experiment",
                 overrides=[
-                    "experiment=test/hierarchy/two_lms_eval",
+                    "experiment=test/hierarchy/two_lms_eval_mujoco",
                     f"experiment.config.logging.output_dir={self.output_dir}",
                     f"experiment.config.model_name_or_path={self.model_path}",
                 ],
