@@ -86,7 +86,7 @@ class NoopAgentTest(unittest.TestCase):
             # be sensitive to rendering differences, but we want to get a rough idea
             # that we got back observational data.
             assert depth.shape == (64, 64)
-            assert rgba.shape == (64, 64, 3)
+            assert rgba.shape == (64, 64, 4)
             # assert that the min depth is the near surface of the cube
             assert np.allclose(depth.min(), 4.0)
             # assert that the max depth is beyond the back of the cube
@@ -132,5 +132,5 @@ class NoopAgentTest(unittest.TestCase):
             patch_rgba = obs[SensorID("patch")]["rgba"]
             view_finder_rgba = obs[SensorID("view_finder")]["rgba"]
 
-            assert patch_rgba.shape == (64, 64, 3)
-            assert view_finder_rgba.shape == (256, 256, 3)
+            assert patch_rgba.shape == (64, 64, 4)
+            assert view_finder_rgba.shape == (256, 256, 4)

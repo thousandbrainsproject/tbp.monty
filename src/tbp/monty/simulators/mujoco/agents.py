@@ -179,7 +179,14 @@ class Embodiment(Agent):
         for sensor_id, sensor_cfg in self._sensor_configs.items():
             renderer = self.sim.renderer_for_res(sensor_cfg.resolution)
             renderer.update_scene(self.sim.data, camera=f"{self.id}.{sensor_id}")
-            rgba_data = renderer.render()
+            # MuJoCo only renders RGB image data. Monty currently expects RGBA, so
+            # we need to add an alpha channel. We're setting it to a fully opaque
+            # value, since a camera should always return opaque pixel values for
+            # every location.
+            rgb_data = renderer.render()
+            rgba_data = np.dstack(
+                [rgb_data, np.full(rgb_data.shape[:2], 255, dtype=rgb_data.dtype)]
+            )
 
             renderer.enable_depth_rendering()
             depth_data = renderer.render()

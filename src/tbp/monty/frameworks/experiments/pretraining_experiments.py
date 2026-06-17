@@ -112,6 +112,14 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                 )
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
+                actions = self._step_hook(
+                    ctx,
+                    self.model,
+                    self.supervised_lm_ids if self.supervised_lm_ids else [],
+                    num_steps,
+                    observations,
+                    actions,
+                )
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used

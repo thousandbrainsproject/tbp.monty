@@ -478,8 +478,7 @@ class EvidenceGraphLM(GraphLM):
         output therefore has the same format to keep the messaging protocol
         consistent and make it easy to stack multiple LMs on top of each other.
 
-        If the evidence for mlh is < object_evidence_threshold,
-        interesting_features == False
+        If the LM has not reached a "match" terminal state, use_state == False.
         """
         mlh = self.get_current_mlh()
         pose_features = self._object_pose_to_features(mlh["rotation"].inv())
@@ -488,11 +487,9 @@ class EvidenceGraphLM(GraphLM):
         #       1) The last input it received was on_object (+getting SM input
         #           check will make sure that we are also currently on object)
         #           NOTE: May want to relax this check but still need a motor input
-        #       2) Its most likely hypothesis has an evidence >
-        #           object_evidence_threshold
+        #       2) It has reached a "match" terminal state
         use_state = bool(
-            self.buffer.get_currently_on_object()
-            and mlh["evidence"] > self.object_evidence_threshold
+            self.buffer.get_currently_on_object() and self.terminal_state == "match"
         )
         # TODO H: is this a good way to scale evidence to [0, 1]?
         confidence = (
@@ -676,7 +673,7 @@ class EvidenceGraphLM(GraphLM):
         Returns:
             The two most likely object IDs.
         """
-        graph_ids, graph_evidences = self.get_evidence_for_each_graph()
+        graph_ids, graph_evidences = self.evidence_for_each_graph()
 
         # If all hypothesis spaces are empty return None for both mlh ids. The gsg will
         # not generate a goal.
@@ -763,12 +760,18 @@ class EvidenceGraphLM(GraphLM):
             return possible_object_hypotheses_ids
         return np.empty((0,), dtype=np.int64)
 
-    def get_evidence_for_each_graph(
+    def evidence_for_each_graph(
         self,
     ) -> tuple[list[str], npt.NDArray[np.float64]]:
-        """Return maximum evidence count for a pose on each graph."""
+        """Return maximum evidence count for a pose on each graph.
+
+        Returns:
+            The ids of the graphs with a non-empty hypothesis space and the
+            maximum hypotheses evidence on each of them. When no graph has any
+            hypotheses yet, returns `(["patch_off_object"], [0])`.
+        """
         graph_ids = self.get_all_known_object_ids()
-        if graph_ids[0] not in self._hypotheses:
+        if not graph_ids or graph_ids[0] not in self._hypotheses:
             return ["patch_off_object"], np.array([0])
 
         available_graph_ids = []
@@ -1141,7 +1144,7 @@ class EvidenceGraphLM(GraphLM):
             logger.info("no objects in memory yet.")
             return []
 
-        graph_ids, graph_evidences = self.get_evidence_for_each_graph()
+        graph_ids, graph_evidences = self.evidence_for_each_graph()
 
         if len(graph_ids) == 0:
             logger.info("All hypothesis spaces are empty. No possible matches.")
