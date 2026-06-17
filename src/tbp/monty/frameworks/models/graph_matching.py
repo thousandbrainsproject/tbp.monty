@@ -730,12 +730,16 @@ class GraphLM(LearningModule):
             object_id = possible_matches[0]
             pose = self.get_unique_pose_if_available(object_id)
             if pose is None:  # No pose determined yet
+                if self.terminal_state == "match":
+                    self.set_individual_ts(None)
                 logger.info(f"Pose for {self.learning_module_id} not narrowed down yet")
             else:
                 self.set_individual_ts("match")
                 logger.info(f"{self.learning_module_id} recognized object {object_id}")
         # > 1 possible match
         else:
+            if self.terminal_state == "match":
+                self.set_individual_ts(None)
             logger.info(f"{self.learning_module_id} did not recognize an object yet.")
         return self.terminal_state
 
