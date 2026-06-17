@@ -10,41 +10,57 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import Final
+
+from pydantic import BaseModel, Field
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 
 
-@dataclass
-class TelemetryEvent:
+class TelemetryEvent(BaseModel):
     """Base class for all telemetry snapshot events.
 
-    Subclasses declare a schema_id to identify their event type and add dataclass fields
-    for their payload. All instances carry universal context baggage (emitter,
-    timestamp, episode, step, mode).
+    Subclasses override SCHEMA_ID to identify their event type and add fields for their
+    payload. All instances carry universal context baggage (emitter, timestamp, episode,
+    step, mode).
     """
 
-    schema_id: ClassVar[str] = ""
-    """Event type identifier, e.g. `env_interface.step`.
+    SCHEMA_ID: Final[str]
+    """Event type identifier, e.g. ``post_episode``.
     Used by TelemetryBroker for routing and as the log message in text sinks."""
 
-    schema_version: ClassVar[int] = 1
+    SCHEMA_VERSION: Final[int] = 1
     """Incremented on backwards-incompatible field changes."""
 
+    timestamp: float = Field(default_factory=time.time, kw_only=True)
+    """Unix time in seconds when the event was captured."""
+
+    emitter: str
+    """Name of the emitting module, e.g. ``self.__class__.__name__``."""
+
+    mode: ExperimentMode
+    """Current experiment mode."""
+
+    episode: int
+    """Current episode number."""
+
+    step: int
+    """Number of overall steps, including those where no LM update was performed."""
+
+
+class _BlankTelemetryEvent(TelemetryEvent):
+    """TelemetryEvent with all fields defaulted.
+
+    Used as a base for internal sentinel events that carry no meaningful payload.
+    """
+
     emitter: str = ""
-    """Name of the emitting module, e.g. `self.__class__.__name__`."""
-
-    timestamp: float = field(default_factory=time.monotonic)
-    episode: int = 0
-    step: int = 0
     mode: ExperimentMode = ExperimentMode.EVAL
+    episode: int = -1
+    step: int = -1
 
 
-class TelemetryStopEvent(TelemetryEvent):
+class TelemetryStopEvent(_BlankTelemetryEvent):
     """Sentinel object to shut down telemetry consumer threads."""
 
-    pass
-
-
-TELEMETRY_STOP = TelemetryStopEvent()
+    SCHEMA_ID: Final[str] = "telemetry_stop"

@@ -36,6 +36,11 @@ from tbp.monty.frameworks.loggers.exp_logger import (
     BaseMontyLogger,
     LoggingCallbackHandler,
 )
+from tbp.monty.frameworks.loggers.telemetry.post_episode import (
+    PostEpisodeTelemetry,
+    PostEpisodeTelemetryConsumer,
+)
+from tbp.monty.frameworks.loggers.telemetry.producers import TelemetryEmitter
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.dataclass_utils import (
@@ -437,6 +442,13 @@ class MontyExperiment:
             self.monty_logger, self.model, output_dir=self.output_dir
         )
 
+        # TODO telemetry: separate config for log level
+        self.telemetry = TelemetryEmitter("experiment", level=logging.INFO)
+        self.post_episode_telemetry = PostEpisodeTelemetryConsumer(
+            level=logging.INFO, handlers=monty_handlers, output_dir=self.output_dir
+        )
+        self.post_episode_telemetry.subscribe()
+
     def get_epoch_state(self):
         if self.experiment_mode is ExperimentMode.TRAIN:
             epoch = self.train_epochs
@@ -530,6 +542,17 @@ class MontyExperiment:
         get 'confused'/'FP'.
         """
         self.logger_handler.post_episode(self.logger_args)
+
+        self.telemetry.snapshot(
+            level=logging.INFO,  # TODO telemetry: adjust log level
+            event=PostEpisodeTelemetry.from_logger_args(
+                logger_args=self.logger_args,
+                model=self.model,
+                emitter=self.__class__.__name__,
+            ),
+        )
+        self.post_episode_telemetry.pump()  # consumes above snapshot
+
         self.model.post_episode()
 
         if self.experiment_mode is ExperimentMode.TRAIN:
@@ -678,6 +701,9 @@ class MontyExperiment:
 
         # Close monty logging
         self.logger_handler.close(self.logger_args)
+
+        self.post_episode_telemetry.unsubscribe(pump=True)
+        # TODO telemetry: close self.post_episode_telemetry?
 
         # Close python logging
         for handler in logger.handlers:

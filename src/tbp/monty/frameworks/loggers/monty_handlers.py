@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 class MontyHandler(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def report_episode(self, **kwargs):
+    def report_episode(self, *args, **kwargs):
         pass
 
     @abc.abstractmethod

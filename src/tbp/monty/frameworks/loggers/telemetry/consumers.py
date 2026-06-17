@@ -14,38 +14,46 @@ import multiprocessing as mp
 import queue
 import threading
 from queue import Queue
-from typing import ClassVar, final
+from typing import Final, final
+
+from pydantic import BaseModel
 
 from tbp.monty.frameworks.loggers.telemetry.events import (
-    TELEMETRY_STOP,
     TelemetryEvent,
     TelemetryStopEvent,
 )
-from tbp.monty.frameworks.loggers.telemetry.producers import TelemetryBroker
+from tbp.monty.frameworks.loggers.telemetry.producers import (
+    TelemetryBroker,
+    TelemetryEmitter,
+)
 
 
-class TelemetryConsumer(abc.ABC):
+class TelemetryConsumer(BaseModel, abc.ABC):
     """Base class for telemetry consumers driven by an external `pump()` call.
 
-    Maintains a `queue.Queue` subscribed to the broker for the declared `schema_ids`.
-    The caller drives consumption by calling pump() periodically, typically from the
+    Maintains a `queue.Queue` subscribed to the broker for the declared schema IDs.
+    The caller drives consumption by calling `pump()` periodically, typically from the
     main thread interleaved with other work or a GUI loop.
 
-    Subclasses declare `schema_ids` and implement `_consume()`. Override `_post_pump()`
-    for logic to run after each drain, e.g. `plt.pause()`.
+    Subclasses declare ``SCHEMA_IDS`` and implement `_consume()`.
+    Override `_post_pump()` to run custom logic after consumption, e.g. ``plt.pause()``.
 
-    Usage::
+    Example::
+
         consumer = MyConsumer(broker)
         consumer.subscribe()
         while not done:
             consumer.pump()
-        consumer.pump()  # final drain
-        consumer.unsubscribe()
+        consumer.unsubscribe(pump=True)
     """
 
-    schema_ids: ClassVar[list[str]]  # subclass declares which schemas it wants
+    SCHEMA_IDS: Final[list[str]]
+    """Event schema IDs subscribed to by the consumer."""
 
-    def __init__(self, broker: TelemetryBroker, **kwargs):
+    class Config:
+        extra = "allow"  # allows adding instance variables to Pydantic class
+
+    def __init__(self, **kwargs):
         """Base constructor for abstract `TelemetryConsumer`.
 
         Args:
@@ -53,31 +61,47 @@ class TelemetryConsumer(abc.ABC):
             **kwargs: Forwarded to superclass.
         """
         super().__init__(**kwargs)
-        self._broker = broker
         self.event_queue: Queue[TelemetryEvent] = queue.Queue()
 
-    def subscribe(self):
-        """Registers `event_queue` with the broker for `schema_ids`.
+    @property
+    def broker(self) -> TelemetryBroker:
+        return TelemetryEmitter.broker
 
-        Clears any stale events from a previous run before re-registering.
+    def subscribe(self):
+        """Subscribes the broker to the consumer's schema IDs.
+
+        Clears any stale events from a previous run before subscribing.
         """
         with self.event_queue.mutex:
             self.event_queue.queue.clear()
-        self._broker.subscribe(schema_ids=self.schema_ids, event_queue=self.event_queue)
+        self.broker.subscribe(schema_ids=self.SCHEMA_IDS, event_queue=self.event_queue)
 
-    def unsubscribe(self):
-        """Deregisters `event_queue` from the broker for `schema_ids`."""
-        self._broker.unsubscribe(self.schema_ids, self.event_queue)
+    def unsubscribe(self, pump=False):
+        """Unsubscribes the broker from the consumer's schema IDs.
 
-    def pump(self, continuous=False):
+        Args:
+            pump: If ``True``, consumes remaining events.
+        """
+        self.broker.unsubscribe(self.SCHEMA_IDS, self.event_queue)
+        if pump:
+            self.pump()
+
+    def pump(self, continuous=False, wait=False):
         """Consumes pending events from the queue, then calls `_post_pump()`.
 
-        In non-continuous mode (default), drains all queued events and returns.
-        In continuous mode, blocks on each get() until a `TelemetryStopEvent` is
+        In non-continuous mode (default), consumes all queued events and returns.
+        In continuous mode, blocks on each `get()` until a `TelemetryStopEvent` is
         received; used internally by `ThreadedTelemetryConsumer._pump_loop()`.
 
-        `_post_pump()` is called once after the queue drains. Not called if a
-        TelemetryStopEvent causes an early return.
+        `_post_pump()` is called once after the queue is consumed. Not called if a
+        `TelemetryStopEvent` causes an early return.
+
+        Args:
+            continuous: If ``True``, keeps waiting for new events once the queue is
+                        empty, instead of returning.
+            wait: If ``continuous=False`` and queue is empty, waits for the next event,
+                  consumes it, then returns. Waits indefinitely in the absence of any
+                  incoming event. No effect if ``continuous=True``.
         """
         while True:
             if continuous:
@@ -86,7 +110,11 @@ class TelemetryConsumer(abc.ABC):
                 try:
                     event = self.event_queue.get_nowait()
                 except queue.Empty:
-                    break
+                    if wait:
+                        event = self.event_queue.get()
+                        wait = False
+                    else:
+                        break
             if isinstance(event, TelemetryStopEvent):
                 return
             self._consume(event)
@@ -94,14 +122,18 @@ class TelemetryConsumer(abc.ABC):
 
     @abc.abstractmethod
     def _consume(self, event: TelemetryEvent):
-        """Processes a single telemetry event."""
+        """Processes a single telemetry event.
+
+        Args:
+            event: The telemetry event to process.
+        """
         ...
 
     def _post_pump(self):
-        """Called once after `pump()` drains the queue in non-continuous mode.
+        """Called once after `pump()` consumes the queue in non-continuous mode.
 
+        Override to add custom post-consumption logic.
         Not called when `pump()` exits early due to a `TelemetryStopEvent`.
-        Override to add post-drain behavior,
 
         Example::
 
@@ -114,7 +146,7 @@ class TelemetryConsumer(abc.ABC):
 class ThreadedTelemetryConsumer(TelemetryConsumer, abc.ABC):
     """A `TelemetryConsumer` that drives `pump()` on a dedicated background thread.
 
-    Starts a daemon thread that calls `pump(continuous=True)`, blocking on each event
+    Starts a daemon thread that calls ``pump(continuous=True)``, blocking on each event
     until a `TelemetryStopEvent` is received. The calling thread is never blocked by
     event processing.
 
@@ -124,7 +156,7 @@ class ThreadedTelemetryConsumer(TelemetryConsumer, abc.ABC):
     For consumers that must run on the main thread (e.g. matplotlib GUIs), use
     `TelemetryConsumer` directly instead and call `pump()` from the main thread.
 
-    Usage::
+    Example::
 
         consumer = MyThreadedConsumer(broker)
         consumer.start()
@@ -132,14 +164,9 @@ class ThreadedTelemetryConsumer(TelemetryConsumer, abc.ABC):
         consumer.stop()
     """
 
-    def __init__(self, broker: TelemetryBroker, **kwargs):
-        """Initializes the consumer.
-
-        Args:
-            broker: The TelemetryBroker to subscribe to.
-            **kwargs: Forwarded to TelemetryConsumer.
-        """
-        super().__init__(broker=broker, **kwargs)
+    def __init__(self, **kwargs):
+        """Initializes the consumer."""
+        super().__init__(**kwargs)
         self._thread = threading.Thread(target=self._pump_loop, daemon=True)
 
     def __del__(self):
@@ -158,16 +185,16 @@ class ThreadedTelemetryConsumer(TelemetryConsumer, abc.ABC):
     def stop(self):
         """Signals the background thread to stop and join it.
 
-        Sends a TelemetryStopEvent to unblock the thread if it is waiting on `get()`,
+        Sends a TelemetryStopEvent to unblock the thread if it is waiting on ``get()``,
         then joins it. Unsubscribes from the broker unconditionally.
         """
         if self._thread.is_alive():
-            self.event_queue.put(TELEMETRY_STOP)
+            self.event_queue.put(TelemetryStopEvent())
             self._thread.join()
         self.unsubscribe()
 
     def _pump_loop(self):
-        """Thread entry point. Runs pump(continuous=True) until stopped."""
+        """Thread entry point. Runs ``pump(continuous=True)`` until stopped."""
         self.pump(continuous=True)
 
 
@@ -176,7 +203,7 @@ class MultiprocessTelemetryConsumer(ThreadedTelemetryConsumer, abc.ABC):
 
     Extends `ThreadedTelemetryConsumer`, reusing its broker queue, bridge thread,
     subscribe/unsubscribe, and stop sentinel machinery. The inherited thread acts as the
-    bridge between the broker queue and the child process: it drains the broker's
+    bridge between the broker queue and the child process: it consumes the broker's
     `queue.Queue` and forwards events into a `multiprocessing.Queue` that the child
     process reads from.
 
@@ -184,16 +211,12 @@ class MultiprocessTelemetryConsumer(ThreadedTelemetryConsumer, abc.ABC):
     reserved for the forwarding logic and must not be overridden.
     """
 
-    def __init__(self, broker: TelemetryBroker, **kwargs):
-        """Initializes the consumer, creating the `mp.Queue` and child process.
+    def __init__(self, **kwargs):
+        """Initializes the consumer, creating the ``mp.Queue`` and child process.
 
         The process is not started until `start()` is called.
-
-        Args:
-            broker: The `TelemetryBroker` to subscribe to.
-            **kwargs: Forwarded to superclass.
         """
-        super().__init__(broker=broker, **kwargs)
+        super().__init__(**kwargs)
         self._mp_queue: mp.Queue = mp.Queue()
         self._process = mp.Process(
             target=self._process_main, args=(self._mp_queue,), daemon=True
@@ -211,12 +234,12 @@ class MultiprocessTelemetryConsumer(ThreadedTelemetryConsumer, abc.ABC):
     def stop(self):
         """Stops the bridge thread, then the child process.
 
-        Joins the bridge thread first via `super()` to ensure all pending events have
-        been forwarded to _mp_queue before the sentinel is sent to the child process.
+        Joins the bridge thread first via ``super()`` to ensure all pending events have
+        been forwarded to the queue before the sentinel is sent to the child process.
         """
-        super().stop()  # drains broker queue, joins bridge thread, unsubscribes
+        super().stop()  # consumes broker queue, joins bridge thread, unsubscribes
         if self._process.is_alive():
-            self._mp_queue.put(TELEMETRY_STOP)
+            self._mp_queue.put(TelemetryStopEvent())
             self._process.join()
 
     @final
@@ -231,8 +254,8 @@ class MultiprocessTelemetryConsumer(ThreadedTelemetryConsumer, abc.ABC):
     def _process_main(self, mp_queue: mp.Queue):
         """Entry point for the child process.
 
-        Drains `mp_queue` in a blocking loop, calling `_process_consume()` for each
-        event until a TelemetryStopEvent is received.
+        Consumes the queue in a blocking loop, calling `_process_consume()` for each
+        event until `TelemetryStopEvent` is received.
         """
         while True:
             event = mp_queue.get()

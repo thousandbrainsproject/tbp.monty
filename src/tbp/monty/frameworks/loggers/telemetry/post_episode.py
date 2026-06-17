@@ -1,5 +1,4 @@
-# Copyright 2025-2026 Thousand Brains Project
-# Copyright 2022-2024 Numenta Inc.
+# Copyright 2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -8,61 +7,212 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import copy
+from __future__ import annotations
+
+from pathlib import Path  # noqa: TC003
+from typing import Final, Sequence
 
 import numpy as np
-import pandas as pd
 import wandb
+from pydantic import Field
 from sklearn.preprocessing import LabelEncoder
+from typing_extensions import Self
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
+from tbp.monty.frameworks.loggers.monty_handlers import MontyHandler
+from tbp.monty.frameworks.loggers.telemetry.consumers import TelemetryConsumer
+from tbp.monty.frameworks.loggers.telemetry.events import TelemetryEvent
+from tbp.monty.frameworks.loggers.telemetry.producers import (
+    TelemetryEmitter,
+)
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.logging_utils import (
     get_stats_per_lm,
     target_data_to_dict,
-    total_size,
 )
 
-"""
-Loggers define a pool of data in the attribute self.data. The job of loggers is to
-create and manage this pool of data, including flushing it periodically. The job of
-handlers is to grab subsets of the data pool, format it, and send it to a location
-(wandb, or a certain file). The data pool can be updated at any of the callback points
-in the experiment, for example, `post_episode`. The loggers receive a standard set of
-arguments used for building the data pool, most notably a reference to the model.
-During reporting, all handlers are called upon to send data to a destination.
-Handlers also receive a standard set of arguments, most importantly the `self.data`
-pool.
 
-The Basic logger is associated with the BASIC monty_log_level specified in
-config_args.logging. The Detailed logger is associated with the DETAILED logging
-level. The Detailed logger's data pool contains a superset of the data in the
-BASIC logger's `self.data` attribute.
+class PostEpisodeTelemetry(TelemetryEvent):
+    """Event produced by `MontyExperiment.post_episode()`."""
 
-The term logger is used unconventionally here. Normally, the thing being logged is a
-string of text and the destination is a file or the terminal screen. Here, the logged
-content is structured data. Perhaps the term DataReporter is more apt.
+    SCHEMA_ID: Final[str] = "post_episode"
 
-NOTE: previously, we updated the data pool every episode, and logged at most once per
-episode. Reporting and flushing frequency were based on the size of self.data. To make
-things easier to think about for handlers, we moved reporting and flushing both to take
-place at the end of an episode. Why all the callbacks then, like post_step, post_train,
-etc.? We are building a plane while flying it. Best not to throw the landing gear out
-the window just because it isn't being used right now.
-"""
+    episode_steps: int
+    """Number of steps in which at least 1 LM received infos during exploration."""
+
+    matching_steps: int
+    """Number of steps in which at least 1 LM was updated. It is not the same as each
+    individual LM's number of matching steps."""
+
+    lm_stats: dict
+    """Output of `get_stats_per_lm()`."""
+
+    actions: list
+    """Output of `MotorSystem.action_sequence`."""
+
+    targets: dict
+    """Output of `target_data_to_dict()`."""
+
+    timing: dict
+    """Output of `MontyExperiment.logger_args`."""
+
+    extra: dict = Field(default_factory=dict)
+    """Miscellaneous data to pass along to consumers."""
+
+    @classmethod
+    def from_logger_args(cls, logger_args: dict, model: MontyBase, emitter="") -> Self:
+        """Constructs a `PostEpisodeTelemetry` from a `MontyExperiment`.
+
+        Equivalent to the first half of `BasicGraphMatchingLogger.update_episode_data`.
+
+        Args:
+            logger_args: The dict from `MontyExperiment.logger_args`.
+            model: The live `MontyBase` instance.
+            emitter: Name of the emitting module.
+
+        Returns:
+            Populated `PostEpisodeTelemetry` instance.
+        """
+        performance_dict = get_stats_per_lm(
+            model, logger_args["target"], logger_args["episode_seed"]
+        )
+        target_dict = target_data_to_dict(logger_args["target"])
+
+        mode = model.experiment_mode
+        episode = logger_args[f"{mode}_episodes"]
+        actions = model.motor_system.action_sequence
+        logger_time = {k: v for k, v in logger_args.items() if k != "target"}
+
+        # TODO telemetry: keep here or move to consumer?
+        performance_dict["target"] = target_dict
+
+        return PostEpisodeTelemetry(
+            emitter=emitter,
+            mode=mode,
+            episode=episode,
+            step=model.total_steps,
+            episode_steps=model.episode_steps,
+            matching_steps=model.matching_steps,
+            lm_stats=performance_dict,
+            actions=actions,
+            targets=target_dict,
+            timing=logger_time,
+        )
 
 
-class BasicGraphMatchingLogger(BaseMontyLogger):
-    """Basic logger that logs or saves information when logging is called."""
+class ExperimentStatsTelemetry(TelemetryEvent):
+    """Event produced by `PostEpisodeTelemetryConsumer`.
+
+    Contains aggregated overall episode statistics of the experiment.
+    """
+
+    SCHEMA_ID: Final[str] = "experiment_stats"
+
+    stats: dict
+    """Stats dictionary to pass along to consumers."""
+
+    @classmethod
+    def from_parent(cls, stats: dict, parent: TelemetryEvent, emitter="") -> Self:
+        """Constructs an `ExperimentStatsTelemetry` from a parent event.
+
+        Copies `TelemetryEvent` fields from the parent into the new derived event.
+
+        Args:
+            stats: The aggregated stats dict to embed in the event, typically
+                   `PostEpisodeTelemetryConsumer.data`.
+            parent: The triggering event whose context fields are to be copied.
+            emitter: Name of the emitting module. If empty, inherits from the parent.
+
+        Returns:
+            A new `ExperimentStatsTelemetry` instance.
+        """
+        return cls(
+            stats=stats,
+            emitter=(emitter if emitter else parent.emitter),
+            mode=parent.mode,
+            episode=parent.episode,
+            step=parent.step,
+        )
+
+
+class PostEpisodeTelemetryConsumer(TelemetryConsumer):
+    """Aggregates `PostEpisodeTelemetry` events and forwards the results to handlers.
+
+    Replaces the aggregation and reporting logic of `BasicGraphMatchingLogger`
+    (``update_overall_stats``, ``get_formatted_overall_stats``, ``log_episode``).
+    Handlers receive the same `self.data` structure as before for compatibility.
+
+    Also forwards the data to downstream consumers via `ExperimentStatsTelemetry`.
+    """
+
+    SCHEMA_IDS: Final[list[str]] = [PostEpisodeTelemetry.SCHEMA_ID]
 
     def __init__(
         self,
-        handlers,
+        level: int,
+        handlers: Sequence[MontyHandler],
+        output_dir: Path,
+        **kwargs,
     ):
-        """Initialize logger."""
-        self.handlers = handlers
-        self.data = dict(
+        """Initializes the post-episode consumer.
+
+        Args:
+            level: Logging level (``logging.DEBUG``, ``logging.INFO``, etc.) for
+                   outgoing `ExperimentStatsTelemetry` event snapshots.
+            handlers: `MontyHandler` instances that receive episode reports via
+                      ``handler.report_episode()``. Replaces the handler list previously
+                      owned by `BasicGraphMatchingLogger`.
+            output_dir: Output path forwarded to handlers.
+            **kwargs: Forwarded to parent class.
+        """
+        super().__init__(**kwargs)
+        self.log_level = level
+        self.handlers = handlers  # TODO telemetry: move handlers to separate consumer?
+        self.output_dir = output_dir
+        self.data = self._blank_data()
+        self.overall_train_stats = self._blank_overall_stats()
+        self.overall_eval_stats = self._blank_overall_stats()
+        self.lms: list[str] = []
+        # Order of performance_options matters since we check them in sequence for each
+        # lm. The lower in the list, the stronger it is to determine overall
+        # performance. Performance lower down in the list will always trump higher-up
+        # performance values. For example, if we have N LMs and one of them has
+        # performance "correct", the overall episode performance is correct. It doesn't
+        # matter if all the other LMs have a time_out performance.
+        # The three strong terminal condition cases (no_match, confused, correct) need
+        # to be listed last. The weaker time out conditions first so they don't
+        # overwrite the performance of an LM that caused the episode to end.
+        # TODO: what if 2 LMs reach a strong terminal state at the same step? For
+        # example if one LM reaches the correct state and the other confused the
+        # performance will be logged as correct. However, in this case we would
+        # probably want to keep moving or log a conflicting performance.
+        # TODO: If we have a time out and look at the mlh, we should take the majority
+        # vote and not let correct_mlh win
+        self.performance_options = [
+            "patch_off_object",
+            "no_label",
+            "pose_time_out",
+            "time_out",
+            "consistent_child_obj",  # also counted if LM didn't converge
+            "confused_mlh",
+            "correct_mlh",
+            "no_match",
+            "confused",
+            "correct",
+        ]
+        self.performance_encoder = LabelEncoder()
+        self.performance_encoder.fit(self.performance_options)
+        self.use_parallel_wandb_logging = False
+        self.telemetry = TelemetryEmitter("episode_stats", level=level)
+
+    @staticmethod
+    def _blank_data() -> dict:
+        """Returns an empty `self.data` structure compatible with `MontyHandler`.
+
+        Preserves the ``BASIC`` / ``DETAILED`` shape previously maintained by
+        `BasicGraphMatchingLogger` for handler compatibility.
+        """
+        return dict(
             BASIC=dict(
                 train_stats={},
                 train_overall_stats={},
@@ -77,7 +227,15 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             ),
             DETAILED={},
         )
-        self.overall_train_stats = dict(
+
+    @staticmethod
+    def _blank_overall_stats() -> dict:
+        """Returns zeroed accumulators for overall train or eval stats.
+
+        Used to initialize ``overall_train_stats`` and ``overall_eval_stats``. Each call
+        to `_update_overall_stats()` appends or increments those variables.
+        """
+        return dict(
             num_episodes=0,
             num_correct=0,
             num_correct_mlh=0,
@@ -126,122 +284,108 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             goal_states_attempted=0,
             goal_state_success_rate=0,
         )
-        self.overall_eval_stats = copy.deepcopy(self.overall_train_stats)
-        self.lms = []
-        # Order of performance_options matters since we check them in sequence for each
-        # lm. The lower in the list, the stronger it is to determine overall
-        # performance. Performance lower down in the list will always trump higher-up
-        # performance values. For example, if we have N LMs and one of them has
-        # performance "correct", the overall episode performance is correct. It doesn't
-        # matter if all the other LMs have a time_out performance.
-        # The three strong terminal condition cases (no_match, confused, correct) need
-        # to be listed last. The weaker time out conditions first so they don't
-        # overwrite the performance of an LM that caused the episode to end.
-        # TODO: what if 2 LMs reach a strong terminal state at the same step? For
-        # example if one LM reaches the correct state and the other confused the
-        # performance will be logged as correct. However, in this case we would
-        # probably want to keep moving or log a conflicting performance.
-        # TODO: If we have a time out and look at the mlh, we should take the majority
-        # vote and not let correct_mlh win
-        self.performance_options = [
-            "patch_off_object",
-            "no_label",
-            "pose_time_out",
-            "time_out",
-            "consistent_child_obj",  # also counted if LM didn't converge
-            "confused_mlh",
-            "correct_mlh",
-            "no_match",
-            "confused",
-            "correct",
-        ]
-        self.performance_encoder = LabelEncoder()
-        self.performance_encoder.fit(self.performance_options)
-        self.use_parallel_wandb_logging = False
 
-        pd.set_option("display.max_rows", False)  # noqa: FBT003
+    # TODO telemetry: handlers currently closed by BasicGraphMatchingLogger
+    # def close(self):
+    #     for handler in self.handlers:
+    #         handler.close()
+    #         handler.close()
 
-    def flush(self):
-        self.data = dict(
-            BASIC=dict(
-                train_stats={},
-                train_overall_stats={},
-                train_targets={},
-                train_actions={},
-                train_timing={},
-                eval_stats={},
-                eval_overall_stats={},
-                eval_actions={},
-                eval_targets={},
-                eval_timing={},
-            ),
-            DETAILED={},
+    def _consume(self, event: PostEpisodeTelemetry):
+        """Processes a single `PostEpisodeTelemetry` event.
+
+        Runs the full post-episode pipeline: updates accumulated episode data, emits an
+        `ExperimentStatsTelemetry` snapshot, then forwards to handlers.
+
+        Args:
+            event: The event containing post-episode telemetry.
+        """
+        self._update_episode_data(event)
+        self._emit_stats(event)
+        self._log_episode(event)
+
+    def _update_episode_data(self, event: PostEpisodeTelemetry):
+        """Populates `self.data` with stats from the current episode.
+
+        Mirrors the second half of `BasicGraphMatchingLogger.update_episode_data()`.
+
+        Args:
+            event: The event containing post-episode telemetry.
+        """
+        mode = event.mode
+        episode = event.episode
+
+        if not self.lms:  # first time function is called
+            for lm in event.lm_stats:
+                if lm.startswith("LM_"):
+                    self.lms.append(lm)
+
+        self.data["BASIC"][f"{mode}_stats"][episode] = event.lm_stats
+
+        self._update_overall_stats(event)
+        overall_stats = self._get_formatted_overall_stats(event)
+
+        # # TODO telemetry: integrate with log level
+        self.data["BASIC"][f"{mode}_overall_stats"][episode] = overall_stats
+        self.data["BASIC"][f"{mode}_actions"][episode] = event.actions
+        self.data["BASIC"][f"{mode}_targets"][episode] = event.targets
+        self.data["BASIC"][f"{mode}_timing"][episode] = event.timing
+
+    def _emit_stats(self, event: PostEpisodeTelemetry):
+        """Emits an `ExperimentStatsTelemetry` snapshot after each episode.
+
+        Wraps the current `self.data` accumulator in an `ExperimentStatsTelemetry`
+        event and snapshots it via `self.telemetry`, emitting it to downstream
+        consumers subscribed to ``"experiment_stats"``.
+
+        Args:
+            event: The triggering `PostEpisodeTelemetry` event, used as the parent for
+                   context field inheritance.
+        """
+        self.telemetry.snapshot(
+            level=self.log_level,
+            event=ExperimentStatsTelemetry.from_parent(parent=event, stats=self.data),
         )
 
-    def log_episode(self, logger_args, output_dir, model):  # noqa: ARG002
-        # mode = model.experiment_mode
-        # episode = logger_args[f"{mode}_episodes"]
+    def _log_episode(self, event: PostEpisodeTelemetry):
+        """Forwards the accumulated episode data to all handlers.
 
-        # TODO telemetry: temporarily commented out to test PostEpisodeTelemetryConsumer
-        # for handler in self.handlers:
-        #     handler.report_episode(self.data, output_dir, episode, mode)
+        Mirrors `BasicGraphMatchingLogger.log_episode()`. Calls
+        ``handler.report_episode()`` on each registered handler, then flushes the data
+        unless parallel wandb logging is active.
+
+        Args:
+            event: The post-episode event supplying ``mode`` and ``episode``.
+        """
+        mode = event.mode
+        episode = event.episode
+
+        for handler in self.handlers:
+            handler.report_episode(self.data, self.output_dir, episode, mode)
 
         if not self.use_parallel_wandb_logging:
             # when logging in parallel to wandb we need to wait with flushing
             # until the parallel run script has retrieved the episode stats.
-            self.flush()
+            self._flush()
 
-    def maybe_log(self, logger_args, output_dir, model):
-        """Left here in case we go back to size based logging.
+    def _flush(self):
+        """Resets `self.data` to a blank structure."""
+        self.data = self._blank_data()
 
-        Remove if not used after code has stabilized.
+    def _update_overall_stats(self, event: PostEpisodeTelemetry):
+        """Accumulates per-episode stats into the running overall stats dict.
+
+        Mirrors `BasicGraphMatchingLogger.update_overall_stats()`. Iterates over all
+        LMs, updating per-LM and per-episode performance counters, rotation errors,
+        step counts, symmetry evidence, and goal state stats. Determines the overall
+        episode performance by scanning ``performance_options`` in priority order.
+
+        Args:
+            event: The event containing post-episode telemetry.
         """
-        # If we get above 10Mb, report, flush, continue
-        if total_size(self.data) > 10_000_000:
-            self.log(logger_args, output_dir, model)
+        mode = event.mode
+        episode = event.episode
 
-    def post_episode(self, logger_args, output_dir, model):
-        self.update_episode_data(logger_args, model)
-        self.log_episode(logger_args, output_dir, model)
-
-    def update_episode_data(self, logger_args, model: MontyBase):
-        """Run get_stats_per_lm and add to overall stats.
-
-        Store stats ~
-            1 (episode)
-                lm_0 (which lm)
-                    stats
-        """
-        performance_dict = get_stats_per_lm(
-            model, logger_args["target"], logger_args["episode_seed"]
-        )
-        target_dict = target_data_to_dict(logger_args["target"])
-        if len(self.lms) == 0:  # first time function is called
-            for lm in performance_dict:
-                if lm.startswith("LM_"):
-                    self.lms.append(lm)
-
-        mode = model.experiment_mode
-        episode = logger_args[f"{mode}_episodes"]
-        actions = model.motor_system.action_sequence
-        logger_time = {k: v for k, v in logger_args.items() if k != "target"}
-        self.data["BASIC"][f"{mode}_stats"][episode] = performance_dict
-
-        self.update_overall_stats(
-            mode, episode, model.episode_steps, model.matching_steps
-        )
-        overall_stats = self.get_formatted_overall_stats(mode, episode)
-
-        self.data["BASIC"][f"{mode}_overall_stats"][episode] = overall_stats
-        self.data["BASIC"][f"{mode}_actions"][episode] = actions
-        self.data["BASIC"][f"{mode}_targets"][episode] = target_dict
-        self.data["BASIC"][f"{mode}_timing"][episode] = logger_time
-        self.data["BASIC"][f"{mode}_stats"][episode]["target"] = target_dict
-
-    def update_overall_stats(
-        self, mode: ExperimentMode, episode, episode_steps, monty_matching_steps
-    ) -> None:
-        """Update overall run stats for mode."""
         if mode is ExperimentMode.TRAIN:
             stats = self.overall_train_stats
         else:
@@ -253,7 +397,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             episode_stats = self.data["BASIC"][f"{mode}_stats"][episode][lm]
             performance = episode_stats["primary_performance"]
 
-            if performance is not None:  # in pre training performance is None
+            if performance is not None:  # in pre training, performance is None
                 stats[f"num_{performance}_per_lm"] += 1
                 lm_performances.append(performance)
 
@@ -266,9 +410,10 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             stats["episode_symmetry_evidence"].append(
                 episode_stats["symmetry_evidence"]
             )
-            stats["monty_steps"].append(episode_steps)
-            stats["monty_matching_steps"].append(monty_matching_steps)
+            stats["monty_steps"].append(event.episode_steps)
+            stats["monty_matching_steps"].append(event.matching_steps)
             # older LMs don't have prediction error stats
+
             if "episode_avg_prediction_error" in episode_stats:
                 stats["episode_avg_prediction_error"].append(
                     episode_stats["episode_avg_prediction_error"]
@@ -303,7 +448,22 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
 
         stats["num_episodes"] += 1
 
-    def get_formatted_overall_stats(self, mode, episode):
+    def _get_formatted_overall_stats(self, event: PostEpisodeTelemetry) -> dict:
+        """Formats the running overall stats into a flat dict for handlers and wandb.
+
+        Mirrors `BasicGraphMatchingLogger.get_formatted_overall_stats()`. Computes
+        percentage-based metrics, averages, and wandb histograms (when multiple LMs
+        are present) from the accumulated state,
+
+        Args:
+            event: The post-episode event supplying ``mode`` and ``episode``.
+
+        Returns:
+            A dict of stats suitable to pass directly to wandb or a ``MontyHandler``.
+        """
+        mode = event.mode
+        episode = event.episode
+
         if mode is ExperimentMode.TRAIN:
             stats = self.overall_train_stats
         else:
@@ -517,147 +677,3 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 )
 
         return overall_stats
-
-
-class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
-    """Log detailed stats as .json file by saving data for each LM and SM."""
-
-    def __init__(self, handlers):
-        """Initialize stats dicts."""
-        super().__init__(handlers)
-
-        self.train_episodes_to_total = {}
-        self.eval_episodes_to_total = {}
-
-    def log_episode(self, logger_args, output_dir, model):
-        mode = model.experiment_mode
-        episode = logger_args[f"{mode}_episodes"]
-        kwargs = dict(
-            train_episodes_to_total=self.train_episodes_to_total,
-            eval_episodes_to_total=self.eval_episodes_to_total,
-        )
-
-        for handler in self.handlers:
-            handler.report_episode(self.data, output_dir, episode, mode, **kwargs)
-
-        self.flush()
-
-    def post_episode(self, logger_args, output_dir, model):
-        self.update_episode_data(logger_args, model)
-        self.log_episode(logger_args, output_dir, model)
-
-    def update_episode_data(self, logger_args, model):
-        """Add episode data to overall buffer_data dict.
-
-        Store stats ~
-            1 (episode)
-                lm_0 (which lm)
-                    stats
-        """
-        # update train / eval stats
-        super().update_episode_data(logger_args, model)
-
-        episodes = logger_args["train_episodes"] + logger_args["eval_episodes"]
-        self.train_episodes_to_total[logger_args["train_episodes"]] = episodes
-        self.eval_episodes_to_total[logger_args["eval_episodes"]] = episodes
-
-        buffer_data = {}
-        for i, lm in enumerate(model.learning_modules):
-            lm_dict = {}
-            lm_dict.update(logger_args)
-            lm_dict.update({"locations": lm.buffer.locations})
-            lm_dict.update(lm.buffer.features)
-            lm_dict.update({"displacements": lm.buffer.displacements})
-            lm_dict.update(lm.buffer.stats)
-            lm_dict.update(mode=model.experiment_mode.value)
-            lm_dict.update({"stepwise_targets_list": lm.stepwise_targets_list})
-            buffer_data[f"LM_{i}"] = lm_dict  # NOTE: probably same for all LMs
-
-        for i, sm in enumerate(model.sensor_modules):
-            if len(sm.state_dict()["raw_observations"]) > 0:
-                buffer_data[f"SM_{i}"] = sm.state_dict()
-
-        # TODO ensure will work with multiple, independent sensor agents
-        buffer_data["motor_system"] = {}
-        buffer_data["motor_system"]["action_sequence"] = (
-            model.motor_system.action_sequence
-        )
-
-        # Some motor systems store additional data specific to their policy, e.g. when
-        # principal curvature has informed movements
-        buffer_data["motor_system"]["action_details"] = dict(
-            model.motor_system._telemetry_surface_action_details.__dict__
-        )
-        buffer_data["motor_system"]["policy_selector"] = {
-            "selected_goals": model.motor_system._policy_selector._selected_goals,
-        }
-
-        self.data["DETAILED"][episodes] = buffer_data
-
-
-class SelectiveEvidenceLogger(BasicGraphMatchingLogger):
-    """Log evidences as .json file by saving data for each LM and SM.
-
-    This is slimmed down to only log data needed for object similarity analysis.
-    Data logged:
-        - evidences for each object and pose at the end of an episode
-        - first frame of the view finder
-    """
-
-    def __init__(self, handlers):
-        """Initialize stats dicts."""
-        super().__init__(handlers)
-
-        self.train_episodes_to_total = {}
-        self.eval_episodes_to_total = {}
-
-    def log_episode(self, logger_args, output_dir, model):
-        mode = model.experiment_mode
-        episode = logger_args[f"{mode}_episodes"]
-        kwargs = dict(
-            train_episodes_to_total=self.train_episodes_to_total,
-            eval_episodes_to_total=self.eval_episodes_to_total,
-        )
-
-        for handler in self.handlers:
-            handler.report_episode(self.data, output_dir, episode, mode, **kwargs)
-
-        self.flush()
-
-    def post_episode(self, logger_args, output_dir, model):
-        self.update_episode_data(logger_args, model)
-        self.log_episode(logger_args, output_dir, model)
-
-    def update_episode_data(self, logger_args, model):
-        """Add episode data to overall buffer_data dict."""
-        # update train / eval stats
-        super().update_episode_data(logger_args, model)
-
-        episodes = logger_args["train_episodes"] + logger_args["eval_episodes"]
-        self.train_episodes_to_total[logger_args["train_episodes"]] = episodes
-        self.eval_episodes_to_total[logger_args["eval_episodes"]] = episodes
-
-        buffer_data = {}
-        for i, lm in enumerate(model.learning_modules):
-            lm_dict = {}
-            lm_dict.update(
-                {
-                    # Save evidences and hypotheses only for last step to save storage
-                    "evidences_ls": lm.buffer.stats["evidences"][-1],
-                    "possible_locations_ls": lm.buffer.stats["possible_locations"][-1],
-                    # possible rotations don't change over time so no indexing here
-                    "possible_rotations_ls": lm.buffer.stats["possible_rotations"],
-                    # Save possible matches, mlh and symmetry evidence for all steps
-                    "possible_matches": lm.buffer.stats["possible_matches"],
-                    "current_mlh": lm.buffer.stats["current_mlh"],
-                    "symmetry_evidence": lm.buffer.stats["symmetry_evidence"],
-                }
-            )
-            buffer_data[f"LM_{i}"] = lm_dict
-
-        for i, sm in enumerate(model.sensor_modules):
-            if len(sm.state_dict()["raw_observations"]) > 0:
-                # Only store first observation
-                buffer_data[f"SM_{i}"] = sm.state_dict()["raw_observations"][0]
-
-        self.data["DETAILED"][episodes] = buffer_data

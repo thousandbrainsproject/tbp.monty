@@ -234,7 +234,7 @@ class OneObjectPerEpisodeInterface(Interface):
         )
         self.current_object = 0
         self.n_objects = len(self.object_names)
-        self.primary_target = None
+        self.primary_target: dict | None = None
         self.consistent_child_objects = None
         self.parent_to_child_mapping = parent_to_child_mapping or {}
         self._positioning_procedures = positioning_procedures

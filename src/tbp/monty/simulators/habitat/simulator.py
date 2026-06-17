@@ -128,6 +128,7 @@ class HabitatSim(HabitatActuator, SimulatedObjectEnvironment):
         backend_config.enable_physics = True
         backend_config.scene_id = scene_id or DEFAULT_SCENE
         backend_config.random_seed = seed
+        backend_config.gpu_device_id = -1  # prevents EGL device error
 
         self.np_rng = np.random.default_rng(seed)
 

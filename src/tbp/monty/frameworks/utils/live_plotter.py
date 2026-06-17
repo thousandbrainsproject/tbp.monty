@@ -8,6 +8,8 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -38,6 +40,7 @@ class LivePlotter:
         pass
 
     def initialize_online_plotting(self):
+        os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH", None)  # prevents crash on WSL
         self.fig, self.ax = plt.subplots(1, 3, figsize=(9, 6))
         self.fig.subplots_adjust(top=1.1)
         # self.colorbar = self.fig.colorbar(None, fraction=0.046, pad=0.04)
