@@ -61,7 +61,7 @@ class MontyForGraphMatching(MontyBase):
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
-    def reset(self):
+    def reset(self) -> None:
         self._is_done = False
         self.reset_episode_steps()
         self.switch_to_matching_step()
@@ -73,7 +73,6 @@ class MontyForGraphMatching(MontyBase):
 
         self.motor_system.reset()
         self._goals = []
-        pass
 
     def fixme_set_ground_truth(
         self,
