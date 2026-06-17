@@ -36,16 +36,26 @@ class StepHook(Protocol):
     ) -> list[Action]:
         """Execute the step hook.
 
+        The step hook is used to customize the step behavior on behalf of the
+        experiment. The hook occurs after the Monty model output actions intended for
+        the environment, but before the environment is stepped.
+
+        Having a hook at this point in the execution loop allows for visualization of
+        observations, resultant actions, as well as any internal state of the Monty
+        model available to the experiment. Additionally, the hook can be used to
+        augment, override, modify, delete, or otherwise customize the actions intended
+        for the environment.
+
         Args:
             ctx: The runtime context.
             monty: The Monty model.
             supervised_lm_ids: The list of supervised learning module IDs.
             step: The current step.
-            observations: The observations.
-            actions: The actions to take.
+            observations: The observations provided to the Monty model.
+            actions: The actions output by the Monty model intended for the environment.
 
         Returns:
-            The actions to take.
+            The actions to take by the environment.
         """
         ...
 
