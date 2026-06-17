@@ -17,8 +17,8 @@ from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.abstract_monty_classes import Monty, Observations
 
 
-class Teleop(Protocol):
-    """Teleoperation protocol for visualization and control."""
+class StepHook(Protocol):
+    """Step hook protocol for customizing the step behavior."""
 
     def __call__(
         self: Self,
@@ -29,7 +29,7 @@ class Teleop(Protocol):
         observations: Observations,
         actions: list[Action],
     ) -> list[Action]:
-        """Teleoperate the Monty model.
+        """Execute the step hook.
 
         Args:
             ctx: The runtime context.
@@ -45,12 +45,12 @@ class Teleop(Protocol):
         ...
 
     def close(self) -> None:
-        """Close the teleoperation."""
+        """Close the step hook."""
         ...
 
 
-class TeleopNoOp(Teleop):
-    """Teleoperation no-op implementation."""
+class NoOpStepHook(StepHook):
+    """Step hook no-op implementation."""
 
     def __call__(
         self: Self,

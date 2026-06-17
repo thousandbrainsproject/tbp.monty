@@ -30,9 +30,9 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageInterface,
 )
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
-from tbp.monty.frameworks.experiments.teleop import Teleop, TeleopNoOp
 from tbp.monty.frameworks.loggers.exp_logger import (
     BaseMontyLogger,
     LoggingCallbackHandler,
@@ -57,7 +57,7 @@ class MontyExperiment:
     and episode).
     """
 
-    _teleop: Teleop
+    _step_hook: StepHook
 
     def __init__(self, config: DictConfig) -> None:
         """Initialize the experiment based on the provided configuration.
@@ -97,7 +97,9 @@ class MontyExperiment:
 
         self._rng_seed_history: list[int] = []
 
-        self._teleop = config["teleop"] if "teleop" in config else TeleopNoOp()
+        self._step_hook = (
+            config["step_hook"] if "step_hook" in config else NoOpStepHook()
+        )
 
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
@@ -476,7 +478,7 @@ class MontyExperiment:
             self.pre_step(step, observations)
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
-                actions = self._teleop(
+                actions = self._step_hook(
                     ctx,
                     self.model,
                     self.supervised_lm_ids if self.supervised_lm_ids else [],
@@ -684,7 +686,7 @@ class MontyExperiment:
             setattr(self, k, exp_state_dict[k])
 
     def close(self) -> None:
-        self._teleop.close()
+        self._step_hook.close()
 
         env = getattr(self, "env", None)
         if env is not None:

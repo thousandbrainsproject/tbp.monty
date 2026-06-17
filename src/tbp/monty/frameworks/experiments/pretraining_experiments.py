@@ -112,7 +112,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                 )
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
-                actions = self._teleop(
+                actions = self._step_hook(
                     ctx,
                     self.model,
                     self.supervised_lm_ids if self.supervised_lm_ids else [],
