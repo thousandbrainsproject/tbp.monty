@@ -167,7 +167,7 @@ class MontyBase(Monty):
         ctx: RuntimeContext,
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
-    ):
+    ) -> None:
         sensor_module_outputs = []
         for sensor_module in self.sensor_modules:
             raw_obs = self.get_observations(
