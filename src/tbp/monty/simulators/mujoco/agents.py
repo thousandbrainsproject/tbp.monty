@@ -66,8 +66,8 @@ def zoom_fovy(base_fovh: float, resolution: Resolution2D, zoom: float) -> float:
     """
     resolution_ratio = resolution.height / resolution.width
     base_fovh_radians = np.deg2rad(base_fovh)
-    zoom_fovy_radians = 2 * np.arctan(
-        resolution_ratio * np.tan(base_fovh_radians / 2.0) / zoom
+    zoom_fovy_radians = 2 * np.arctan2(
+        resolution_ratio * np.tan(base_fovh_radians / 2.0), zoom
     )
     return np.rad2deg(zoom_fovy_radians)
 
