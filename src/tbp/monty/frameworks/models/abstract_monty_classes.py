@@ -18,9 +18,11 @@ import numpy.typing as npt
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.learning_module import ExperimentLearningModule
+from tbp.monty.experiment.monty import ExperimentMonty
 from tbp.monty.experiment.sensor_module import ExperimentSensorModule
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
@@ -69,7 +71,66 @@ class Observations(Dict[AgentID, AgentObservations]):
     pass
 
 
-class Monty(Snapshotable, metaclass=abc.ABCMeta):
+class RuntimeMonty(Protocol):
+    """Runtime interface to Monty."""
+
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ) -> list[Action]:
+        """Take a matching, exploratory, or custom user-defined step.
+
+        Step taken depends on the value of self.step_type.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
+
+        Returns:
+            The actions to take.
+        """
+        ...
+
+    def motor_only_step(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ) -> list[Action]:
+        """Take a step of the sensors and motor system only.
+
+        This skips stepping the learning modules.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
+
+        Returns:
+            The actions to take.
+        """
+        ...
+
+    def aggregate_sensory_inputs(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+    ) -> None:
+        """Receive data from environment, organize on a per sensor module basis.
+
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
+        """
+        ...
+
+
+class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
     def _matching_step(
         self,
         ctx: RuntimeContext,
@@ -122,18 +183,6 @@ class Monty(Snapshotable, metaclass=abc.ABCMeta):
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
-        """Take a matching, exploratory, or custom user-defined step.
-
-        Step taken depends on the value of self.step_type.
-
-        Args:
-            ctx: The runtime context.
-            observations: The observations from the environment.
-            proprioceptive_state: The proprioceptive state from the environment.
-
-        Returns:
-            The actions to take.
-        """
         pass
 
     @abc.abstractmethod
@@ -143,18 +192,6 @@ class Monty(Snapshotable, metaclass=abc.ABCMeta):
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
-        """Take a step of the sensors and motor system only.
-
-        This skips stepping the learning modules.
-
-        Args:
-            ctx: The runtime context.
-            observations: The observations from the environment.
-            proprioceptive_state: The proprioceptive state from the environment.
-
-        Returns:
-            The actions to take.
-        """
         pass
 
     @abc.abstractmethod
@@ -163,14 +200,7 @@ class Monty(Snapshotable, metaclass=abc.ABCMeta):
         ctx: RuntimeContext,
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
-    ):
-        """Receive data from environment, organize on a per sensor module basis.
-
-        Args:
-            ctx: The runtime context.
-            observations: The observations from the environment.
-            proprioceptive_state: The proprioceptive state from the environment.
-        """
+    ) -> None:
         pass
 
     @abc.abstractmethod
@@ -243,30 +273,27 @@ class Monty(Snapshotable, metaclass=abc.ABCMeta):
     ###
 
     @abc.abstractmethod
-    def pre_episode(self) -> None:
-        """Recursively call pre_episode on child classes."""
+    def reset(self) -> None:
         pass
 
     @abc.abstractmethod
-    def post_episode(self):
-        """Recursively call post_episode on child classes."""
+    def fixme_set_ground_truth(
+        self,
+        primary_target: dict[str, Any] | None = None,
+        semantic_id_to_label: dict[SemanticID, str] | None = None,
+    ) -> None:
+        pass
+
+    @abc.abstractmethod
+    def update_ltm(self) -> None:
         pass
 
     @abc.abstractmethod
     def set_experiment_mode(self, mode: ExperimentMode) -> None:
-        """Set the experiment mode.
-
-        Update state variables based on which method (train or evaluate) is being
-        called at the experiment level.
-
-        Args:
-            mode: The experiment mode.
-        """
         pass
 
     @abc.abstractmethod
-    def is_done(self):
-        """Return bool to tell the experiment if we are done with this episode."""
+    def is_done(self) -> bool:
         pass
 
 

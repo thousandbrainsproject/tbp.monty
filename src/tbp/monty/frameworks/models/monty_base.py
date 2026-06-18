@@ -10,10 +10,11 @@
 from __future__ import annotations
 
 import logging
-from typing import ClassVar, Sequence
+from typing import Any, ClassVar, Sequence
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import (
@@ -166,7 +167,7 @@ class MontyBase(Monty):
         ctx: RuntimeContext,
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
-    ):
+    ) -> None:
         sensor_module_outputs = []
         for sensor_module in self.sensor_modules:
             raw_obs = self.get_observations(
@@ -377,9 +378,8 @@ class MontyBase(Monty):
         self.step_type = "matching_step"
         for lm in self.learning_modules:
             lm.set_experiment_mode(mode)
-        # for sm in self.sensor_modules: sm.set_experiment_mode() unused & removed
 
-    def pre_episode(self):
+    def reset(self) -> None:
         # TODO: move most (all?) of this logic to Experiment
         self._is_done = False
         self.reset_episode_steps()
@@ -393,7 +393,14 @@ class MontyBase(Monty):
         self.motor_system.reset()
         self._goals = []
 
-    def post_episode(self):
+    def fixme_set_ground_truth(
+        self,
+        primary_target: dict[str, Any] | None = None,
+        semantic_id_to_label: dict[SemanticID, str] | None = None,
+    ) -> None:
+        pass
+
+    def update_ltm(self) -> None:
         # At the end of an episode we ask each learning module
         # to update their long-term memory from their short-term buffer.
         for lm in self.learning_modules:

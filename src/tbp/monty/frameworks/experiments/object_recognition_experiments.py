@@ -65,19 +65,19 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
 
         self.reset_episode_rng()
 
+        self.model.reset()
         # TODO, eventually it would be better to pass
         # self.env_interface.semantic_id_to_label via an "Observation" object when this
         # is eventually implemented, such that we can ensure this information is never
         # inappropriately accessed and used
         if hasattr(self.env_interface, "semantic_id_to_label"):
-            # TODO: Fix invalid pre_episode signature call
-            self.model.pre_episode(
+            self.model.fixme_set_ground_truth(
                 self.env_interface.primary_target,
                 self.env_interface.semantic_id_to_label,
             )
         else:
-            # TODO: Fix invalid pre_episode signature call
-            self.model.pre_episode(self.env_interface.primary_target)
+            self.model.fixme_set_ground_truth(self.env_interface.primary_target)
+
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps
@@ -136,6 +136,14 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                     )
                 else:
                     actions = self.model.step(ctx, observations, proprioceptive_state)
+                    actions = self._step_hook(
+                        ctx,
+                        self.model,
+                        self.supervised_lm_ids if self.supervised_lm_ids else [],
+                        step,
+                        observations,
+                        actions,
+                    )
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used
