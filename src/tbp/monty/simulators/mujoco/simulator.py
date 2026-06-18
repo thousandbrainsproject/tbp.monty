@@ -47,7 +47,7 @@ from tbp.monty.simulators.mujoco.objects import (
 
 # Scaling factor to make MuJoCo primitives roughly the same size
 # as their Habitat counterparts. This was determined by trial and error.
-HABITAT_SCALING_FACTOR = (0.05, 0.05, 0.05)
+HABITAT_SCALING_FACTOR = (0.1, 0.1, 0.1)
 
 if TYPE_CHECKING:
     from functools import partial

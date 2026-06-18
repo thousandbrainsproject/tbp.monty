@@ -35,7 +35,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
-from tbp.monty.frameworks.sensors import SensorConfig, SensorID
+from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
 
@@ -45,9 +45,31 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# The default field of view value for zoom 1.0
-# Note: this value is the half-FOV rather than the full FOV
-DEFAULT_CAMERA_FOVY: float = 45.0
+# The default horizontal field of view value for zoom 1.0
+# This value needs to stay in sync with the value in the `DepthTo3DLocations` transform.
+# TODO: Make this configurable
+DEFAULT_CAMERA_FOVH: float = 90.0
+
+
+def zoom_fovy(base_fovh: float, resolution: Resolution2D, zoom: float) -> float:
+    """Calculate the vertical field of view for a given zoom level and resolution.
+
+    This helper function takes the base horizontal field of view along with the
+    resolution and requested zoom level and returns the correct vertical field of
+    view angle for that zoom level.
+
+    MuJoCo only allows us to set the vertical field of view for a camera, and
+    DepthTo2DLocations uses horizontal field of view.
+
+    Returns:
+        zoomed vertical field of view angle in degrees.
+    """
+    resolution_ratio = resolution.height / resolution.width
+    base_fovh_radians = np.deg2rad(base_fovh)
+    zoom_fovy_radians = 2 * np.arctan(
+        resolution_ratio * np.tan(base_fovh_radians / 2.0) / zoom
+    )
+    return np.rad2deg(zoom_fovy_radians)
 
 
 class Axis(IntEnum):
@@ -132,7 +154,11 @@ class Embodiment(Agent):
                 pos=sensor_cfg.position,
                 quat=sensor_cfg.rotation,
                 # Camera resolution isn't used in MuJoCo, so we're not setting it.
-                fovy=DEFAULT_CAMERA_FOVY / sensor_cfg.zoom,
+                fovy=zoom_fovy(
+                    base_fovh=DEFAULT_CAMERA_FOVH,
+                    resolution=sensor_cfg.resolution,
+                    zoom=sensor_cfg.zoom,
+                ),
             )
 
     @property
