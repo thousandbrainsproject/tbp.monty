@@ -70,12 +70,12 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         # As a workaround, we allow `reset` to run normally once (to complete
         # required initialization), and skip full resets on subsequent calls.
         # TODO: Remove initialization logic from `reset`
-        self.init_reset = False
-        self.init_ground_truth = False
+        self._super_reset_called = False
+        self._super_set_ground_truth_called = False
 
     def reset(self) -> None:
-        if not self.init_reset:
-            self.init_reset = True
+        if not self._super_reset_called:
+            self._super_reset_called = True
             return super().reset()
 
         # reset terminal state
@@ -92,8 +92,8 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         primary_target: dict[str, Any] | None = None,
         semantic_id_to_label: dict[SemanticID, str] | None = None,
     ) -> None:
-        if not self.init_ground_truth:
-            self.init_ground_truth = True
+        if not self._super_set_ground_truth_called:
+            self._super_set_ground_truth_called = True
             return super().fixme_set_ground_truth(primary_target, semantic_id_to_label)
 
         # keep target up-to-date for logging
