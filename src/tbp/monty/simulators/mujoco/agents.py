@@ -59,7 +59,7 @@ def zoom_fovy(base_fovh: float, resolution: Resolution2D, zoom: float) -> float:
     view angle for that zoom level.
 
     MuJoCo only allows us to set the vertical field of view for a camera, and
-    DepthTo2DLocations uses horizontal field of view.
+    DepthTo3DLocations uses horizontal field of view.
 
     Returns:
         zoomed vertical field of view angle in degrees.
