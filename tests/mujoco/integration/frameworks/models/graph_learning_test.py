@@ -26,6 +26,7 @@ from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.models.abstract_monty_classes import Monty
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
 from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.utils.logging_utils import (
@@ -943,7 +944,7 @@ class GraphLearningTest(BaseGraphTest):
             objects = [self.fake_obs_learn, self.fake_obs_house_3d]
             trained_modules = self.get_5lm_gm_with_fake_objects(objects)
             exp.experiment_mode = ExperimentMode.EVAL
-            monty = exp.model
+            monty: Monty = exp.model
             monty.set_experiment_mode(exp.experiment_mode)
             monty.learning_modules = [tm.learning_module for tm in trained_modules]
 
@@ -956,10 +957,11 @@ class GraphLearningTest(BaseGraphTest):
             for episode_num in range(tm.num_episodes):
                 exp.pre_episode()
                 # Normally the experiment `pre_episode` method would call the model
-                # `pre_episode` method, but it expects to feed data from an environment
+                # `reset` method, but it expects to feed data from an environment
                 # interface to the model. We aren't using that, so we call it again
                 # with the correct target value.
-                monty.pre_episode(self.placeholder_target)
+                monty.reset()
+                monty.fixme_set_ground_truth(self.placeholder_target)
                 for step in range(tm.num_observations(episode_num)):
                     # Manually run through the internal Monty steps since we aren't
                     # using the data from the environment interface and are instead
