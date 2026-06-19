@@ -84,7 +84,17 @@ experiment:
         sensor_module_1:
           _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
           sensor_module_id: view_finder
-          save_raw_obs: true
+          save_raw_obs: false
+          salience_strategy:
+            _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2.from_config
+            config:
+              _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.Vocus2SalienceConfig
+              center_sigma: 1.0
+              surround_sigma: 6.5
+              n_scales: 2
+              max_octaves: 5
+              use_depth: true
+              use_orientation: false
       sm_to_agent_dict:
         patch: agent_id_0
         view_finder: agent_id_0
@@ -117,8 +127,8 @@ experiment:
             resolutions:
             - - 64
               - 64
-            - - 64
-              - 64
+            - - 256
+              - 256
             positions:
             - - 0.0
               - 0.0
@@ -155,8 +165,8 @@ experiment:
         resolutions:
         - - 64
           - 64
-        - - 64
-          - 64
+        - - 256
+          - 256
         world_coord: true
         zooms:
         - 10.0
@@ -209,7 +219,7 @@ experiment:
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: 3
-    model_name_or_path: ${constants.pretrained_dir}/supervised_pre_training_base/pretrained/
+    model_name_or_path: ${constants.pretrained_dir}/supervised_pre_training_10distinctobj_vocus2/pretrained/
     n_eval_epochs: 10
     min_lms_match: 1
     seed: 42
@@ -235,7 +245,7 @@ constants:
   - hsv
   - principal_curvatures_log
   min_eval_steps: 20
-  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
+  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
   compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v3}
   rotations_all_count: 14
   rotations_all:
