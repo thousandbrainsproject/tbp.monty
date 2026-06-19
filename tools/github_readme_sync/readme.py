@@ -74,22 +74,6 @@ class ReadMe:
     def __init__(self, version: str):
         self.version = version
 
-    def normalize_title_to_readme_slug(self, title: str) -> str:
-        """Normalize a ReadMe title into the slug format ReadMe generates.
-
-        ReadMe slugs are generally derived from titles by:
-        - lowercasing
-        - replacing whitespace with hyphens
-        - stripping punctuation/symbols/non-alphanumeric characters
-        - collapsing repeated hyphens
-        """
-        slug = title.lower()
-        slug = re.sub(r"\s+", "-", slug)
-        slug = re.sub(r"[^a-z0-9-]", "", slug)
-        slug = re.sub(r"-+", "-", slug)
-        # Strip leading/trailing hyphens that may have resulted from punctuation removal
-        return slug.strip("-")
-
     def get_categories(self) -> list[Any]:
         categories = get(f"{PREFIX}/categories", {"x-readme-version": self.version})
         if not categories:
@@ -196,12 +180,8 @@ class ReadMe:
             )
 
     def create_category_if_not_exists(self, slug: str, title: str) -> tuple[str, bool]:
-        readme_slug = self.normalize_title_to_readme_slug(title)
-
-        # Use the slug ReadMe would generate from the title, rather than the
-        # hierarchy.md slug. This prevents case/style mismatches like CMP vs cmp.
         category = get(
-            f"{PREFIX}/categories/{readme_slug}", {"x-readme-version": self.version}
+            f"{PREFIX}/categories/{slug}", {"x-readme-version": self.version}
         )
         if category is None:
             response = post(
@@ -319,18 +299,11 @@ class ReadMe:
         if "description" in doc:
             create_doc_request["excerpt"] = doc["description"]
 
-        """Find a ReadMe doc by the slug ReadMe would generate from its title.
-
-        This avoids mismatches where hierarchy.md has a different casing or
-        slug style than ReadMe's generated slug.
-        """
-        readme_slug = self.normalize_title_to_readme_slug(doc["title"])
-
-        doc_id = self.get_doc_id(readme_slug)
+        doc_id = self.get_doc_id(doc["slug"])
         created = doc_id is None
         if doc_id:
             if not put(
-                f"{PREFIX}/docs/{readme_slug}",
+                f"{PREFIX}/docs/{doc['slug']}",
                 create_doc_request,
                 {"x-readme-version": self.version},
             ):
