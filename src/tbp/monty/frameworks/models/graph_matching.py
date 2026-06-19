@@ -257,8 +257,18 @@ class MontyForGraphMatching(MontyBase):
                 lm_step_method(ctx, sensory_inputs)
                 if self.step_type == "matching_step":
                     logger.debug(f"Stepping learning module {i}")
+
+                # A step is a feature step only if at least one SM channel delivered
+                # features. LM output messages default contains_features=True, so the
+                # gate is computed from SM percepts only (otherwise an SM location-only
+                # step paired with an LM output would count as a feature step).
+                feature_step = any(
+                    obs.contains_features
+                    for obs in sensory_inputs
+                    if obs.sender_type == "SM"
+                )
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
-                    lm_processed=True
+                    lm_processed=feature_step
                 )
             else:
                 if self.step_type == "matching_step":
@@ -613,6 +623,12 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Update the possible matches given an observation."""
+        if not any(p.contains_features for p in percepts if p.sender_type == "SM"):
+            # Location-only step. Update the agent location without appending,
+            # computing displacements, matching, or stepping the GSG.
+            self.buffer.update_agent_location(percepts)
+            return
+
         first_movement_detected = self._agent_moved_since_reset()
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
@@ -623,15 +639,17 @@ class GraphLM(LearningModule):
         else:
             logger.debug("we have not moved yet.")
 
+        feature_percepts = [p for p in percepts if p.contains_features]
+
         self._compute_possible_matches(
-            ctx, percepts, first_movement_detected=first_movement_detected
+            ctx, feature_percepts, first_movement_detected=first_movement_detected
         )
 
         if len(self.get_possible_matches()) == 0:
             self.set_individual_ts(terminal_state="no_match")
 
         if self.gsg is not None:
-            self.gsg.step(ctx, percepts)
+            self.gsg.step(ctx, feature_percepts)
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
@@ -642,6 +660,11 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
+        if not any(p.contains_features for p in percepts if p.sender_type == "SM"):
+            # Location-only step. Update the agent location without appending.
+            self.buffer.update_agent_location(percepts)
+            return
+
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(percepts)
