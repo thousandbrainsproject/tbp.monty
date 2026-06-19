@@ -40,6 +40,9 @@ class Message:
         use_state: boolean indicating whether the message should be used or not.
         sender_id: string identifying the sender of the message.
         sender_type: string identifying the type of sender. Can be "SM" or "LM".
+        contains_features: boolean indicating whether the message carries features
+            or is a location-only message that only syncs the receiver's sense of
+            the agent location.
     """
 
     def __init__(
@@ -51,6 +54,7 @@ class Message:
         use_state,
         sender_id,
         sender_type,
+        contains_features=True,
     ):
         """Initialize a message."""
         self.location = location
@@ -61,6 +65,7 @@ class Message:
         self.use_state = use_state
         self.sender_id = sender_id
         self.sender_type = sender_type
+        self.contains_features = contains_features
         self._set_allowable_sender_types()
         if self.use_state:
             self._check_all_attributes()
@@ -202,6 +207,9 @@ class Message:
         )
         assert isinstance(self.use_state, bool), (
             f"use_state must be a boolean but is {type(self.use_state)}"
+        )
+        assert isinstance(self.contains_features, bool), (
+            f"contains_features must be a boolean but is {type(self.contains_features)}"
         )
         assert isinstance(self.sender_id, str), (
             f"sender_id must be string but is {type(self.sender_id)}"
