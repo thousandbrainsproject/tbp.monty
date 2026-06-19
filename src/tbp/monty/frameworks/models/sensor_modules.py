@@ -404,11 +404,12 @@ class Probe(SensorModule):
         """
         super().__init__()
 
-        self.is_exploring = False
         self.sensor_module_id = sensor_module_id
         self.state: SensorState | None = None
         self.save_raw_obs = save_raw_obs
 
+        # TODO: Goes away once experiment/telemetry code is extracted
+        self.is_exploring = False
         self._snapshot_telemetry = SnapshotTelemetry()
 
     def state_dict(self) -> Memento:
@@ -611,6 +612,8 @@ class CameraSM(SensorModule):
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
+        # TODO: Goes away once experiment code is extracted
+        self.is_exploring = False
 
     def reset(self) -> None:
         self._snapshot_telemetry.reset()
