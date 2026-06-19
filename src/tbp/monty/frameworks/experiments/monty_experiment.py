@@ -504,7 +504,7 @@ class MontyExperiment:
 
         self.post_episode(step)
 
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         """Call pre_episode on elements in experiment and set mode."""
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(
@@ -531,7 +531,7 @@ class MontyExperiment:
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-    def post_episode(self, steps):
+    def post_episode(self, steps) -> None:
         """Call post_episode on elements in experiment and increment counters.
 
         General order of post episode should be:
@@ -580,7 +580,7 @@ class MontyExperiment:
 
         self.post_epoch()
 
-    def pre_epoch(self):
+    def pre_epoch(self) -> None:
         """Set environment interface and call sub pre_epoch functions."""
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(f"running train epoch {self.train_epochs}")
@@ -593,7 +593,7 @@ class MontyExperiment:
         self.env_interface.pre_epoch()
         self.logger_handler.pre_epoch(self.logger_args)
 
-    def post_epoch(self):
+    def post_epoch(self) -> None:
         """Call sub post_epoch functions and save state dict."""
         # NOTE: maybe an option not to save everything every epoch?
         self.save_state_dir(output_dir=self.output_dir / f"{self.train_epochs}")

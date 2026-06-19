@@ -195,6 +195,10 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         g = self.spec.visual.global_
         g.offheight = render_resolution.height
         g.offwidth = render_resolution.width
+        # Set the near Z clipping plane a little closer to the camera so we don't
+        # clip objects when an agent is very close to an object, e.g. with the
+        # SurfaceAgent.
+        self.spec.visual.map.znear = 0.001
 
     def _configure_lights(self) -> None:
         """Configure the lights as needed.
