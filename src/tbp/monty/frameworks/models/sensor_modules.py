@@ -768,37 +768,43 @@ class FeatureChangeFilter(PerceptFilter):
         return False
 
     def __call__(self, percept: Message) -> Message:
-        """Sets `percept.use_state` to False if features haven't changed significantly.
+        """Labels every on-object percept as containing features or location-only.
+
+        On-object percepts are always delivered (`use_state=True`), so the LM can keep
+        its agent location synced. `contains_features` distinguishes a real feature
+        change (stored and matched by the LM) from a location-only step (which only
+        syncs the agent location). Only off-object steps are dropped
+        (`use_state=False`).
 
         Args:
             percept: Percept to check for feature change.
 
         Returns:
-            Percept with `percept.use_state` set to False if features haven't
-            changed significantly.
+            Percept with `contains_features` set to whether the features changed
+            significantly and `use_state` set to whether we are on the object.
         """
         if not percept.use_state:
             # If we already know the features are uninteresting (e.g. invalid surface
-            # normal due to <3/4 of the object in view, or motor only-step), then
-            # don't bother with the below
-            return percept
-
-        if not self._last_percept:  # first step
+            # normal due to <3/4 of the object in view, or motor only-step), deliver the
+            # percept as location-only so the LM keeps its agent location synced (the
+            # location is valid even when features are not).
+            percept.contains_features = False
+        elif not self._last_percept:  # first step
             self._last_percept = percept  # type: ignore[assignment]
             self._last_sent_n_steps_ago = 0
-            return percept
-
-        significant_feature_change = self._check_feature_change(percept)
-
-        # Save bool which will tell us whether to pass the information to LMs
-        percept.use_state = significant_feature_change
-
-        if significant_feature_change:
-            # As per original implementation : only update the "last feature" when a
-            # significant change has taken place
-            self._last_percept = percept
-            self._last_sent_n_steps_ago = 0
+            percept.contains_features = True
         else:
-            self._last_sent_n_steps_ago += 1
+            significant_feature_change = self._check_feature_change(percept)
+            percept.contains_features = significant_feature_change
+            if significant_feature_change:
+                # As per original implementation : only update the "last feature" when a
+                # significant change has taken place
+                self._last_percept = percept
+                self._last_sent_n_steps_ago = 0
+            else:
+                self._last_sent_n_steps_ago += 1
 
+        # On-object percepts are always delivered (so the LM can sync its agent
+        # location); only off-object steps are dropped.
+        percept.use_state = percept.get_on_object()
         return percept
