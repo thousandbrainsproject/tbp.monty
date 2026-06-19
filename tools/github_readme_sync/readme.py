@@ -75,14 +75,14 @@ class ReadMe:
         self.version = version
 
     def normalize_title_to_readme_slug(self, title: str) -> str:
-        """Normalize a ReadMe title into the slug format ReadMe generates.
+        # Normalize a ReadMe title into the slug format ReadMe generates.
 
-        ReadMe slugs are generally derived from titles by:
-        - lowercasing
-        - replacing whitespace with hyphens
-        - stripping punctuation/symbols/non-alphanumeric characters
-        - collapsing repeated hyphens
-        """
+        # ReadMe slugs are generally derived from titles by:
+        # - lowercasing
+        # - replacing whitespace with hyphens
+        # - stripping punctuation/symbols/non-alphanumeric characters
+        # - collapsing repeated hyphens
+        
         slug = title.lower()
         slug = re.sub(r"\s+", "-", slug)
         slug = re.sub(r"[^a-z0-9-]", "", slug)
@@ -197,7 +197,7 @@ class ReadMe:
 
     def create_category_if_not_exists(self, slug: str, title: str) -> tuple[str, bool]:
         readme_slug = self.normalize_title_to_readme_slug(title)
-
+        
         # Use the slug ReadMe would generate from the title, rather than the
         # hierarchy.md slug. This prevents case/style mismatches like CMP vs cmp.
         category = get(

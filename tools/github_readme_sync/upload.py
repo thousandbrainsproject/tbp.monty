@@ -33,7 +33,7 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
             f"\n{BLUE}{category['title'].upper()}{GRAY}{created * ' [created]'}{RESET}"
         )
 
-        set_do_not_delete(to_be_deleted, category["slug"])
+        set_do_not_delete(to_be_deleted, category["title"])
 
         # Recursively process the hierarchy of children
         process_children(
@@ -76,7 +76,7 @@ def process_children(
             file_path=f"{file_path}/{path_prefix}{parent['slug']}",
         )
         print_child(path_prefix.count("/"), doc, created)
-        set_do_not_delete(to_be_deleted, child["slug"])
+        set_do_not_delete(to_be_deleted, child["title"])
 
         # If this child has children, call the function recursively
         if child.get("children"):
@@ -91,9 +91,9 @@ def process_children(
             )
 
 
-def set_do_not_delete(to_be_deleted: list, slug: str):
+def set_do_not_delete(to_be_deleted: list, title: str):
     for doc in to_be_deleted:
-        if doc["slug"] == slug:
+        if doc["title"] == title:
             # remove the item from the list
             to_be_deleted.remove(doc)
 
