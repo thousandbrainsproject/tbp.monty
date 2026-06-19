@@ -201,7 +201,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
         self.reset_episode_rng()
 
-        self.model.reset()
+        self._recreation_restore()
         self.model.fixme_set_ground_truth(self.env_interface.primary_target)
         self.env_interface.pre_episode(self.rng)
 

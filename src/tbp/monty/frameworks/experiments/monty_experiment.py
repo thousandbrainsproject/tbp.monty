@@ -43,6 +43,7 @@ from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
+from tbp.monty.memento import Memento
 
 __all__ = ["MontyExperiment"]
 
@@ -66,6 +67,10 @@ class MontyExperiment:
             config: config specifying variables of the experiment.
         """
         self.config = config
+
+        # Feature flag for "recreation" episode/epoch strategy.
+        self.recreation_mode: bool = True
+        self._recreation_state: list[Memento] = []
 
         self.rng = np.random.RandomState(config["seed"])
 
@@ -458,6 +463,36 @@ class MontyExperiment:
     # Methods for running the experiment
     ####
 
+    def _recreation_lazy_init(self) -> None:
+        assert(self.recreation_mode)
+        if len(self._recreation_state) != len(self.model.learning_modules):
+            self._recreation_state = [{} for _ in self.model.learning_modules]
+
+    def _recreation_capture(self) -> None:
+        if self.recreation_mode:
+            self._recreation_lazy_init()
+            self.model.update_ltm()
+            for (id, lm) in enumerate(self.model.learning_modules):
+                memo: Memento = lm.graph_memory.state_dict()
+                self._recreation_state[id] = memo
+        else:
+            self.model.update_ltm()
+
+    def _recreation_restore(self) -> None:
+        if self.recreation_mode:
+            self._recreation_lazy_init()
+            self.model = self.init_model(self.config["monty_config"])
+            for (id, lm) in enumerate(self.model.learning_modules):
+                # lm.reset()
+                memo: Memento = self._recreation_state[id]
+                if memo:
+                    lm.graph_memory.load_state_dict(memo)
+            # for sm in self.sensor_modules:
+            #     sm.reset()
+            # self.motor_system.reset()
+        else:
+            self.model.reset()
+
     def pre_step(self, _step, _observation):
         """Hook for anything you want to do before a step."""
         self.logger_handler.pre_step(self.logger_args)
@@ -519,7 +554,8 @@ class MontyExperiment:
 
         self.reset_episode_rng()
 
-        self.model.reset()
+        self._recreation_restore()
+
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps
@@ -545,7 +581,8 @@ class MontyExperiment:
         get 'confused'/'FP'.
         """
         self.logger_handler.post_episode(self.logger_args)
-        self.model.update_ltm()
+
+        self._recreation_capture()
 
         if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_episodes += 1
