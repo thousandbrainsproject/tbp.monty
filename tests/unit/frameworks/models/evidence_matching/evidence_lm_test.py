@@ -61,11 +61,11 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm.detected_object = "new_object0"
         graph_lm.detected_rotation_r = None
         graph_lm.buffer.stats["detected_location_rel_body"] = (
-            graph_lm.buffer.get_current_location(input_channel="first")
+            graph_lm.buffer.get_current_location()
         )
 
         self.assertEqual(
-            len(graph_lm.buffer.get_all_locations_on_object(input_channel="first")),
+            len(graph_lm.buffer.get_all_locations_on_object()),
             len(fake_obs),
             f"Should have stored exactly {fake_obs} locations in the buffer.",
         )
@@ -112,11 +112,11 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm.detected_object = obj_two_target["object"]
         graph_lm.detected_rotation_r = None
         graph_lm.buffer.stats["detected_location_rel_body"] = (
-            graph_lm.buffer.get_current_location(input_channel="first")
+            graph_lm.buffer.get_current_location()
         )
 
         self.assertEqual(
-            len(graph_lm.buffer.get_all_locations_on_object(input_channel="first")),
+            len(graph_lm.buffer.get_all_locations_on_object()),
             len(fake_obs_two),
             f"Should have stored exactly {fake_obs_two} locations in the buffer.",
         )
