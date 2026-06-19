@@ -6,14 +6,17 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 
 import hydra
 import pandas as pd
+from pandas import DataFrame
 
 from tbp.monty.frameworks.models.object_model import GridObjectModel
 from tbp.monty.frameworks.utils.logging_utils import (
@@ -23,7 +26,7 @@ from tests import HYDRA_ROOT
 
 
 class HierarchyTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.output_dir = Path(tempfile.mkdtemp())
         self.model_path = self.output_dir / "pretrained"
 
@@ -59,10 +62,10 @@ class HierarchyTest(unittest.TestCase):
                 ],
             )
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         shutil.rmtree(self.output_dir)
 
-    def check_hierarchical_lm_train_results(self, train_stats):
+    def check_hierarchical_lm_train_results(self, train_stats: DataFrame) -> None:
         for episode in range(4):
             self.assertEqual(
                 train_stats["primary_performance"][episode * 2],
@@ -88,7 +91,7 @@ class HierarchyTest(unittest.TestCase):
                 "or have it as its most likely hypothesis.",
             )
 
-    def check_hierarchical_lm_eval_results(self, eval_stats):
+    def check_hierarchical_lm_eval_results(self, eval_stats: DataFrame) -> None:
         for episode in range(3):
             self.assertEqual(
                 eval_stats["primary_performance"][episode * 2],
@@ -99,7 +102,8 @@ class HierarchyTest(unittest.TestCase):
             # input channel). Will not test this here since maybe in the future this
             # will be better and it is not a feature of the system.
 
-    def check_hierarchical_models(self, models):
+    def check_hierarchical_models(self, models: dict[str, Any]) -> None:
+        # TODO: models needs a better type
         for model in ["new_object0", "new_object1"]:
             # Check that graph was extended when recognizing object.
             self.assertLess(
@@ -134,7 +138,7 @@ class HierarchyTest(unittest.TestCase):
             f"after extending the graph but only store {channel_keys}",
         )
 
-    def test_two_lm_heterarchy_experiment(self):
+    def test_two_lm_heterarchy_experiment(self) -> None:
         """Test two LMs stacked on top of each other.
 
         LM0 receives input from SM0
@@ -185,7 +189,7 @@ class HierarchyTest(unittest.TestCase):
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_hierarchical_lm_eval_results(eval_stats)
 
-    def test_semisupervised_stacked_lms_experiment(self):
+    def test_semisupervised_stacked_lms_experiment(self) -> None:
         """Test two LMs stacked on top of each other with semisupervised learning.
 
         First, both LMs learn with supervision. Then, we remove the supervision for LM_0
