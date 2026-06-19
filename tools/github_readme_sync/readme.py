@@ -571,4 +571,4 @@ class ReadMe:
 class DocumentNotFound(RuntimeError):
     """Raised when a document is not found."""
 
-    pass 
+    pass
