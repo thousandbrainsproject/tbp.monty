@@ -1141,7 +1141,7 @@ class GraphMemory(LMMemory):
                     input_channel_features,
                     input_channel_locations,
                 ) = self._extract_entries_with_content(
-                    features[input_channel], locations[input_channel]
+                    features[input_channel], locations
                 )
                 # Update graph
                 if (
