@@ -464,7 +464,7 @@ class MontyExperiment:
     ####
 
     def _recreation_lazy_init(self) -> None:
-        assert(self.recreation_mode)
+        assert self.recreation_mode
         if len(self._recreation_state) != len(self.model.learning_modules):
             self._recreation_state = [{} for _ in self.model.learning_modules]
 
@@ -472,9 +472,9 @@ class MontyExperiment:
         if self.recreation_mode:
             self._recreation_lazy_init()
             self.model.update_ltm()
-            for (id, lm) in enumerate(self.model.learning_modules):
+            for idx, lm in enumerate(self.model.learning_modules):
                 memo: Memento = lm.graph_memory.state_dict()
-                self._recreation_state[id] = memo
+                self._recreation_state[idx] = memo
         else:
             self.model.update_ltm()
 
@@ -483,9 +483,9 @@ class MontyExperiment:
             self._recreation_lazy_init()
             self.model = self.init_model(self.config["monty_config"])
             self.model.set_experiment_mode(self.experiment_mode)
-            for (id, lm) in enumerate(self.model.learning_modules):
+            for idx, lm in enumerate(self.model.learning_modules):
                 # lm.reset()
-                memo: Memento = self._recreation_state[id]
+                memo: Memento = self._recreation_state[idx]
                 if memo:
                     lm.graph_memory.load_state_dict(memo)
             # for sm in self.sensor_modules:
