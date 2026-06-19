@@ -572,7 +572,7 @@ def get_graph_lm_episode_stats(lm):
     ):  # TODO: update this?
         num_steps = lm.buffer.get_num_matching_steps()
 
-        location = np.array(lm.buffer.get_current_location(input_channel="first"))
+        location = np.array(lm.buffer.get_current_location())
         possible_matches = lm.get_possible_matches()
         primary_performance = lm.terminal_state
         stepwise_performance = lm.terminal_state

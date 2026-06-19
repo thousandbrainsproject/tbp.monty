@@ -746,7 +746,7 @@ class GraphLM(LearningModule):
                 self.buffer.get_num_observations_on_object() > 0
             ):  # lm has gotten input during episode
                 self.buffer.stats["detected_location_rel_body"] = (
-                    self.buffer.get_current_location(input_channel="first")
+                    self.buffer.get_current_location()
                 )
         # 1 possible match
         elif (

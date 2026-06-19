@@ -135,9 +135,7 @@ class DisplacementGraphLM(GraphLM):
                 lm_episode_stats = {
                     "detected_path": detected_path,
                     "detected_location_on_model": current_model_loc,
-                    "detected_location_rel_body": self.buffer.get_current_location(
-                        input_channel=first_channel
-                    ),
+                    "detected_location_rel_body": self.buffer.get_current_location(),
                     "detected_rotation": r_euler,
                     "detected_rotation_quat": r.as_quat(),
                     "detected_scale": scale,

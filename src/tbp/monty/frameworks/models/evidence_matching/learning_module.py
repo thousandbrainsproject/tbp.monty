@@ -506,7 +506,7 @@ class EvidenceGraphLM(GraphLM):
         # resolution of where on a compositional object we are (in this lm). Would
         # also require update in terminal condition re. path_similarity_th.
         # object_loc_rel_body = (
-        #     self.buffer.get_current_location(input_channel="first") - mlh["location"]
+        #     self.buffer.get_current_location() - mlh["location"]
         # )
         return Message(
             # Same as input location from patch (rel body)
@@ -517,7 +517,7 @@ class EvidenceGraphLM(GraphLM):
             # selection for this.
             # location rel. body -> same as sensor input to higher LM (assuming they are
             # colocated) so it is not used.
-            location=self.buffer.get_current_location(input_channel="first"),
+            location=self.buffer.get_current_location(),
             morphological_features={
                 "pose_vectors": pose_features,
                 "pose_fully_defined": not self._enough_symmetry_evidence_accumulated(),
@@ -622,9 +622,7 @@ class EvidenceGraphLM(GraphLM):
                 lm_episode_stats = {
                     "detected_path": mlh["location"],
                     "detected_location_on_model": mlh["location"],
-                    "detected_location_rel_body": self.buffer.get_current_location(
-                        input_channel="first"
-                    ),
+                    "detected_location_rel_body": self.buffer.get_current_location(),
                     "detected_rotation": r_euler,
                     "detected_rotation_quat": r_inv.as_quat(),
                     "detected_scale": 1,  # TODO: scale doesn't work yet
