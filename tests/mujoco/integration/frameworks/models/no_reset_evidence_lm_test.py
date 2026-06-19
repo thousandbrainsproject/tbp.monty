@@ -11,7 +11,6 @@ from __future__ import annotations
 import copy
 import shutil
 import tempfile
-from typing import Any
 
 import hydra
 import numpy as np
@@ -49,8 +48,8 @@ class NoResetEvidenceLMTest(BaseGraphTest):
 
     def assert_dicts_equal(
         self,
-        d1: dict[Any, npt.NDArray[np.float64]],
-        d2: dict[Any, npt.NDArray[np.float64]],
+        d1: dict[str, npt.NDArray[np.float64]],
+        d2: dict[str, npt.NDArray[np.float64]],
         msg: str,
     ) -> None:
         """Asserts that two dictionaries containing NumPy arrays are equal.
