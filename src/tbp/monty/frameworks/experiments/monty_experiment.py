@@ -482,6 +482,7 @@ class MontyExperiment:
         if self.recreation_mode:
             self._recreation_lazy_init()
             self.model = self.init_model(self.config["monty_config"])
+            self.model.set_experiment_mode(self.experiment_mode)
             for (id, lm) in enumerate(self.model.learning_modules):
                 # lm.reset()
                 memo: Memento = self._recreation_state[id]
@@ -491,6 +492,7 @@ class MontyExperiment:
             #     sm.reset()
             # self.motor_system.reset()
         else:
+            self.model.set_experiment_mode(self.experiment_mode)
             self.model.reset()
 
     def pre_step(self, _step, _observation):
@@ -656,7 +658,6 @@ class MontyExperiment:
         logger.info(f"running {self.n_train_epochs} train epochs")
         self.experiment_mode = ExperimentMode.TRAIN
         self.logger_handler.pre_train(self.logger_args)
-        self.model.set_experiment_mode(self.experiment_mode)
         for _ in range(self.n_train_epochs):
             self.run_epoch()
         self.logger_handler.post_train(self.logger_args)
@@ -668,7 +669,6 @@ class MontyExperiment:
         # TODO: check that number of eval epochs is at least as many as length
         # of environment interface number of rotations
         self.logger_handler.pre_eval(self.logger_args)
-        self.model.set_experiment_mode(self.experiment_mode)
         for _ in range(self.n_eval_epochs):
             self.run_epoch()
         self.logger_handler.post_eval(self.logger_args)
