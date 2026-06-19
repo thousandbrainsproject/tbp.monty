@@ -18,6 +18,7 @@ from collections import deque
 from itertools import chain
 from pathlib import Path
 from sys import getsizeof
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -75,7 +76,10 @@ def load_stats(
     return train_stats, eval_stats, detailed_stats, lm_models
 
 
-def load_models_from_dir(exp_path, pretrained_dict=None):
+def load_models_from_dir(
+    exp_path: Path | str, pretrained_dict: Path | str | None = None
+) -> dict[str, Any]:
+    # TODO: return value needs a better type
     lm_models = {}
 
     if pretrained_dict is not None:

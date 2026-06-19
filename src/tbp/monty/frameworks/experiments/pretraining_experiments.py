@@ -69,7 +69,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                 # original sensor positions were.
                 sensor_cfgs = agents_config[0].keywords["sensor_configs"]
                 self.sensor_pos = np.array(
-                    sensor["position"] for sensor in sensor_cfgs.values()
+                    [sensor["position"] for sensor in sensor_cfgs.values()]
                 )
         else:
             self.sensor_pos = np.array([0, 0, 0])
