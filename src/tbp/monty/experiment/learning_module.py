@@ -10,6 +10,7 @@
 from typing import Protocol
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.memento import Memento
 
 __all__ = [
     "ExperimentLearningModule",
@@ -50,5 +51,17 @@ class ExperimentLearningModule(Protocol):
 
         Args:
             mode: The experiment mode.
+        """
+        ...
+
+    def snapshot_memory(self) -> Memento:
+        """Return a Memento represeting the long-term memory of this Learning Module."""
+        ...
+
+    def restore_memory(self, memento: Memento) -> None:
+        """Restore the long-term memory of this Learning Module from a snapshot.
+
+        Args:
+            memento: The snapshot of long-term memory.
         """
         ...

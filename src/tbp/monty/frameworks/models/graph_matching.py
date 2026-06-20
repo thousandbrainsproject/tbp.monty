@@ -928,15 +928,21 @@ class GraphLM(LearningModule):
             dict(lm_processed_steps=lm_processed), update_time=False
         )
 
+    def snapshot_memory(self) -> Memento:
+        return self.graph_memory.state_dict()
+
+    def restore_memory(self, memento: Memento) -> None:
+        self.graph_memory.load_state_dict(memento)
+
     def state_dict(self) -> Memento:
         return dict(
-            graph_memory=self.graph_memory.state_dict(),
+            graph_memory=self.snapshot_memory(),
             target_to_graph_id=self.target_to_graph_id,
             graph_id_to_target=self.graph_id_to_target,
         )
 
     def load_state_dict(self, memento: Memento) -> None:
-        self.graph_memory.load_state_dict(memento["graph_memory"])
+        self.restore_memory(memento["graph_memory"])
         self.target_to_graph_id = memento["target_to_graph_id"]
         self.graph_id_to_target = memento["graph_id_to_target"]
 

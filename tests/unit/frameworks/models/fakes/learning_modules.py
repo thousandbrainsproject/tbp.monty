@@ -44,6 +44,12 @@ class FakeLearningModule(LearningModule):
     def send_out_vote(self) -> Any:
         pass
 
+    def snapshot_memory(self) -> Memento:
+        return {}
+
+    def restore_memory(self, memento: Memento) -> None:
+        pass
+
     def state_dict(self) -> Memento:
         return dict(test_attr_1=self.test_attr_1, test_attr_2=self.test_attr_2)
 

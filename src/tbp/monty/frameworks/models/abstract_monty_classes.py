@@ -380,6 +380,14 @@ class LearningModule(
     def set_experiment_mode(self, mode: ExperimentMode) -> None:
         pass
 
+    @abc.abstractmethod
+    def snapshot_memory(self) -> Memento:
+        pass
+
+    @abc.abstractmethod
+    def restore_memory(self, memento: Memento) -> None:
+        pass
+
     ###
     # Methods that define the algorithm
     ###

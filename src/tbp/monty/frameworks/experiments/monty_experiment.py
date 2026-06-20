@@ -468,12 +468,12 @@ class MontyExperiment:
         if len(self._recreation_state) != len(self.model.learning_modules):
             self._recreation_state = [{} for _ in self.model.learning_modules]
 
-    def _recreation_capture(self) -> None:
+    def _recreation_snapshot(self) -> None:
         if self.recreation_mode:
             self._recreation_lazy_init()
             self.model.update_ltm()
             for idx, lm in enumerate(self.model.learning_modules):
-                memo: Memento = lm.graph_memory.state_dict()
+                memo: Memento = lm.snapshot_memory()
                 self._recreation_state[idx] = memo
         else:
             self.model.update_ltm()
@@ -487,7 +487,7 @@ class MontyExperiment:
                 # lm.reset()
                 memo: Memento = self._recreation_state[idx]
                 if memo:
-                    lm.graph_memory.load_state_dict(memo)
+                    lm.restore_memory(memo)
             # for sm in self.sensor_modules:
             #     sm.reset()
             # self.motor_system.reset()
@@ -584,7 +584,7 @@ class MontyExperiment:
         """
         self.logger_handler.post_episode(self.logger_args)
 
-        self._recreation_capture()
+        self._recreation_snapshot()
 
         if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_episodes += 1
