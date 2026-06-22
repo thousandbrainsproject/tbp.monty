@@ -36,13 +36,13 @@ from tbp.monty.frameworks.loggers.exp_logger import (
     BaseMontyLogger,
     LoggingCallbackHandler,
 )
-from tbp.monty.frameworks.loggers.telemetry.post_episode import (
+from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
+from tbp.monty.frameworks.models.monty_base import MontyBase
+from tbp.monty.frameworks.telemetry.post_episode import (
     PostEpisodeTelemetry,
     PostEpisodeTelemetryConsumer,
 )
-from tbp.monty.frameworks.loggers.telemetry.producers import TelemetryEmitter
-from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
-from tbp.monty.frameworks.models.monty_base import MontyBase
+from tbp.monty.frameworks.telemetry.producers import TelemetryEmitter
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )

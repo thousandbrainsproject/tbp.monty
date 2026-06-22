@@ -18,11 +18,11 @@ from typing import Final, final
 
 from pydantic import BaseModel
 
-from tbp.monty.frameworks.loggers.telemetry.events import (
+from tbp.monty.frameworks.telemetry.events import (
     TelemetryEvent,
     TelemetryStopEvent,
 )
-from tbp.monty.frameworks.loggers.telemetry.producers import (
+from tbp.monty.frameworks.telemetry.producers import (
     TelemetryBroker,
     TelemetryEmitter,
 )

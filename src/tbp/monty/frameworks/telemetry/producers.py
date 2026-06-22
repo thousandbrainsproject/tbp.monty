@@ -14,7 +14,7 @@ import queue
 from queue import Queue
 from typing import Final
 
-from tbp.monty.frameworks.loggers.telemetry.events import TelemetryEvent
+from tbp.monty.frameworks.telemetry.events import TelemetryEvent
 
 
 class TelemetryBroker(logging.Handler):

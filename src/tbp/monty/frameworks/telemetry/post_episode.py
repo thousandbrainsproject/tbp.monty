@@ -20,12 +20,12 @@ from typing_extensions import Self
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.monty_handlers import MontyHandler
-from tbp.monty.frameworks.loggers.telemetry.consumers import TelemetryConsumer
-from tbp.monty.frameworks.loggers.telemetry.events import TelemetryEvent
-from tbp.monty.frameworks.loggers.telemetry.producers import (
+from tbp.monty.frameworks.models.monty_base import MontyBase
+from tbp.monty.frameworks.telemetry.consumers import TelemetryConsumer
+from tbp.monty.frameworks.telemetry.events import TelemetryEvent
+from tbp.monty.frameworks.telemetry.producers import (
     TelemetryEmitter,
 )
-from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.logging_utils import (
     get_stats_per_lm,
     target_data_to_dict,
