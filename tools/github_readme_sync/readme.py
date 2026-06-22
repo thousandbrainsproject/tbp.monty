@@ -74,22 +74,6 @@ class ReadMe:
     def __init__(self, version: str):
         self.version = version
 
-    def normalize_title_to_readme_slug(self, title: str) -> str:
-        # Normalize a ReadMe title into the slug format ReadMe generates.
-
-        # ReadMe slugs are generally derived from titles by:
-        # - lowercasing
-        # - replacing whitespace with hyphens
-        # - stripping punctuation/symbols/non-alphanumeric characters
-        # - collapsing repeated hyphens
-        
-        slug = title.lower()
-        slug = re.sub(r"\s+", "-", slug)
-        slug = re.sub(r"[^a-z0-9-]", "", slug)
-        slug = re.sub(r"-+", "-", slug)
-        # Strip leading/trailing hyphens that may have resulted from punctuation removal
-        return slug.strip("-")
-
     def get_categories(self) -> list[Any]:
         categories = get(f"{PREFIX}/categories", {"x-readme-version": self.version})
         if not categories:
@@ -195,9 +179,7 @@ class ReadMe:
                 f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
             )
 
-    def create_category_if_not_exists(self, slug: str, title: str) -> tuple[str, bool]:
-        readme_slug = self.normalize_title_to_readme_slug(title)
-        
+    def create_category_if_not_exists(self, slug: str, title: str, readme_slug: str) -> tuple[str, bool]:        
         # Use the slug ReadMe would generate from the title, rather than the
         # hierarchy.md slug. This prevents case/style mismatches like CMP vs cmp.
         category = get(
@@ -301,7 +283,7 @@ class ReadMe:
         return REGEX_CSV_TABLE.sub(replace_match, body)
 
     def create_or_update_doc(
-        self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str
+        self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str, readme_slug: str
     ) -> tuple[str, bool]:
         markdown = self.process_markdown(doc["body"], file_path, doc["slug"])
 
@@ -324,8 +306,6 @@ class ReadMe:
         This avoids mismatches where hierarchy.md has a different casing or
         slug style than ReadMe's generated slug.
         """
-        readme_slug = self.normalize_title_to_readme_slug(doc["title"])
-
         doc_id = self.get_doc_id(readme_slug)
         created = doc_id is None
         if doc_id:
