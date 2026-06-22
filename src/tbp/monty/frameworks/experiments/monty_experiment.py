@@ -483,6 +483,7 @@ class MontyExperiment:
             self._recreation_lazy_init()
             self.model = self.init_model(self.config["monty_config"])
             self.model.set_experiment_mode(self.experiment_mode)
+            self.logger_handler.model = self.model
             for idx, lm in enumerate(self.model.learning_modules):
                 # lm.reset()
                 memo: Memento = self._recreation_state[idx]
