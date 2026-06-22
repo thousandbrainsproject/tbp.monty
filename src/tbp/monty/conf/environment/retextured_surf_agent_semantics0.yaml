@@ -20,7 +20,7 @@ env_init_args:
       position:
       - 0.0
       - 1.5
-      - 0.2
+      - 0.1
       resolutions:
       - - 64
         - 64
@@ -32,7 +32,7 @@ env_init_args:
         - 0.0
       - - 0.0
         - 0.0
-        - 0.0
+        - 0.03
       rotations:
       - - 1.0
         - 0.0
@@ -48,5 +48,6 @@ env_init_args:
       zooms:
       - 10.0
       - 1.0
+      action_space_type: surface_agent
     agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
 env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
