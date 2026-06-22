@@ -25,4 +25,4 @@ experiment:
     seed: 42
     supervised_lm_ids: all
     logging:
-      run_name: supervised_pre_training_11retextured_obj_ltp
+      run_name: surf_pre_training_11retextured_obj_ltp
