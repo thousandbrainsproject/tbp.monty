@@ -219,3 +219,4 @@
 \bFrintrop\b
 \b[Oo]pponency\b
 \bExcalidraw\b
+\blazyconfigs\b
