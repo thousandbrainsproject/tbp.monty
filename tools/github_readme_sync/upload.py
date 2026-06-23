@@ -33,9 +33,10 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
             f"\n{BLUE}{category['title'].upper()}{GRAY}{created * ' [created]'}{RESET}"
         )
 
-        # Use the normalized tile to slug to match ReadMe's slug generation 
+        # Use the normalized title to slug to match ReadMe's slug generation
         # for categories, since we can't create a category with a specific slug
-        set_do_not_delete(to_be_deleted, rdme.normalize_title_to_readme_slug(category["title"]))
+        readme_slug = rdme.normalize_title_to_readme_slug(category["title"])
+        set_do_not_delete(to_be_deleted, readme_slug)
 
         # Recursively process the hierarchy of children
         process_children(
