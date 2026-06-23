@@ -292,6 +292,14 @@ You can find the [tutorials](https://github.com/thousandbrainsproject/tbp.plot/b
 
 ## Live Visualization with `tbp.teleop`
 
+<table>
+  <tr>
+    <td align="center">
+      <img src="../figures/teleop.gif" width="100%">
+    </td>
+  </tr>
+</table>
+
 For controlling the Monty agent while stepping through the experiment in real-time, we provide a separate companion repository called **`tbp.teleop`**.
 
 [`tbp.teleop`](https://github.com/thousandbrainsproject/tbp.teleop) hooks into a running Monty experiment via the existing `StepHook` interface and visualizes the simulator, Monty's graphs and hypotheses, and per-channel details live as the experiment runs. It also offers an optional interactive (teleoperation) mode that lets you override the agent's action at every step.
