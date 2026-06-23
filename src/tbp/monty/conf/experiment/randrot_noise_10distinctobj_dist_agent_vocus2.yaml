@@ -27,4 +27,4 @@ experiment:
     supervised_lm_ids: []
     python_log_level: DEBUG
     logging:
-      run_name: randrot_noise_10distinctobj_dist_on_distm
+      run_name: randrot_noise_10distinctobj_dist_agent_vocus2
