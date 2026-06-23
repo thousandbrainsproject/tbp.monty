@@ -14,9 +14,6 @@ import logging
 import torch
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.experiment.environment import (
-    SaccadeOnImageInterface,
-)
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.monty_experiment import (
@@ -34,10 +31,6 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
     Adds additional logging of the target object and pose for each episode and
     specific terminal states for object recognition. It also adds code for
     handling a matching and an exploration phase during each episode when training.
-
-    Note that this experiment assumes a particular model configuration in order
-    for the show_observations method to work: a zoomed-out "view_finder"
-    RGBA sensor and an up-close "patch" depth sensor.
     """
 
     def run_episode(self):
@@ -86,9 +79,6 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
 
         self.logger_handler.pre_episode(self.logger_args)
 
-        if self.show_sensor_output:
-            self.live_plotter.initialize_online_plotting()
-
     def run_episode_steps(self) -> int:
         """Runs one episode of the experiment.
 
@@ -104,16 +94,6 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         actions: list[Action] = []
         while True:
             observations, proprioceptive_state = self.env_interface.step(actions)
-
-            if self.show_sensor_output:
-                is_saccade_on_image_data_loader = isinstance(
-                    self.env_interface, SaccadeOnImageInterface
-                )
-                self.live_plotter.show_observations(
-                    *self.live_plotter.hardcoded_assumptions(observations, self.model),
-                    step,
-                    is_saccade_on_image_data_loader,
-                )
 
             if self.model.check_reached_max_matching_steps(self.max_steps):
                 logger.info(

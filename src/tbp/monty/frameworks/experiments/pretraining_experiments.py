@@ -15,9 +15,6 @@ import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.experiment.environment import (
-    SaccadeOnImageInterface,
-)
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.monty_experiment import (
@@ -101,15 +98,6 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             observations, proprioceptive_state = self.env_interface.step(actions)
 
             num_steps += 1
-            if self.show_sensor_output:
-                is_saccade_on_image_env_interface = isinstance(
-                    self.env_interface, SaccadeOnImageInterface
-                )
-                self.live_plotter.show_observations(
-                    *self.live_plotter.hardcoded_assumptions(observations, self.model),
-                    num_steps,
-                    is_saccade_on_image_env_interface,
-                )
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
                 actions = self._step_hook(
@@ -216,9 +204,6 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             self.first_epoch_object_location[current_object] = (
                 self.env_interface.primary_target["position"]
             )
-
-        if self.show_sensor_output:
-            self.live_plotter.initialize_online_plotting()
 
     def post_epoch(self):
         """Post epoch without saving state_dict."""

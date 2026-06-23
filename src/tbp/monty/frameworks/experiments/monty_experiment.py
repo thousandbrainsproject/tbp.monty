@@ -42,7 +42,6 @@ from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )
-from tbp.monty.frameworks.utils.live_plotter import LivePlotter
 
 __all__ = ["MontyExperiment"]
 
@@ -82,15 +81,11 @@ class MontyExperiment:
         else:
             self.model_path = None
         self.min_lms_match = config["min_lms_match"]
-        self.show_sensor_output = config["show_sensor_output"]
         self.supervised_lm_ids = config["supervised_lm_ids"]
         if self.supervised_lm_ids == "all":
             self.supervised_lm_ids = list(
                 self.config["monty_config"]["learning_modules"].keys()
             )
-
-        if self.show_sensor_output:
-            self.live_plotter = LivePlotter()
 
         self.train_episodes = config.get("episode", 0)
         self.eval_episodes = config.get("episode", 0)
@@ -527,9 +522,6 @@ class MontyExperiment:
             self.max_steps = self.max_eval_steps
 
         self.logger_handler.pre_episode(self.logger_args)
-
-        if self.show_sensor_output:
-            self.live_plotter.initialize_online_plotting()
 
     def post_episode(self, steps):
         """Call post_episode on elements in experiment and increment counters.
