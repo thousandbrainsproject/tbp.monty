@@ -4,7 +4,7 @@ defaults:
   - /monty: evidencegraph_exp1000_emin_t3_tot2500
   - /monty/motor_system_config: distant_5
   - /monty/learning_module: evidence_1lm_nn10_dod003
-  - /monty/sensor_module: camera_dist_noise_raw1_vocus2
+  - /monty/sensor_module: camera_dist_noise_vocus2
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_dist_agent_semantics0_256
   - /env_interface: eval_distinctobj_random
@@ -27,4 +27,4 @@ experiment:
     supervised_lm_ids: []
     python_log_level: DEBUG
     logging:
-      run_name: randrot_noise_10distinctobj_dist_agent_vocus2
+      run_name: randrot_noise_10distinctobj_vocus_on_vocusm
