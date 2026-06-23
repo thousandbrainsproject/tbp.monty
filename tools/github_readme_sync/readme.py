@@ -195,7 +195,7 @@ class ReadMe:
                 f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
             )
 
-    def create_category_if_not_exists(self, slug: str, title: str) -> tuple[str, bool]:
+    def create_category_if_not_exists(self, title: str) -> tuple[str, bool]:
         # Unfortunately ReadMe's API does not allow us to create a category with a
         # specific slug, so we have to check if the category exists by converting
         # the title to readme's style of slug to check if it exists.

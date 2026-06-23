@@ -27,13 +27,15 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
 
     for category in new_hierarchy:
         cat_id, created = rdme.create_category_if_not_exists(
-            category["slug"], category["title"]
+            category["title"]
         )
         logger.info(
             f"\n{BLUE}{category['title'].upper()}{GRAY}{created * ' [created]'}{RESET}"
         )
 
-        set_do_not_delete(to_be_deleted, category["slug"])
+        # Use the normalized tile to slug to match ReadMe's slug generation 
+        # for categories, since we can't create a category with a specific slug
+        set_do_not_delete(to_be_deleted, rdme.normalize_title_to_readme_slug(category["title"]))
 
         # Recursively process the hierarchy of children
         process_children(
