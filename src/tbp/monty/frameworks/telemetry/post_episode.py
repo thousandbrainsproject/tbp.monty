@@ -18,14 +18,14 @@ from pydantic import Field
 from sklearn.preprocessing import LabelEncoder
 from typing_extensions import Self
 
+from tbp.monty.frameworks import telemetry
+from tbp.monty.frameworks.experiments import monty_experiment
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.monty_handlers import MontyHandler
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.telemetry.consumers import TelemetryConsumer
-from tbp.monty.frameworks.telemetry.events import TelemetryEvent
-from tbp.monty.frameworks.telemetry.producers import (
-    TelemetryEmitter,
-)
+from tbp.monty.frameworks.telemetry.producers import TelemetryEmitter
+from tbp.monty.frameworks.telemetry.schemas import TelemetryEvent, TelemetrySchema
 from tbp.monty.frameworks.utils.logging_utils import (
     get_stats_per_lm,
     target_data_to_dict,
@@ -35,10 +35,7 @@ from tbp.monty.frameworks.utils.logging_utils import (
 class PostEpisodeTelemetry(TelemetryEvent):
     """Event produced by `MontyExperiment.post_episode()`."""
 
-    SCHEMA_ID: Final[str] = "post_episode"
-
-    episode_steps: int
-    """Number of steps in which at least 1 LM received infos during exploration."""
+    KIND: Final[str] = "post_episode"
 
     matching_steps: int
     """Number of steps in which at least 1 LM was updated. It is not the same as each
@@ -90,8 +87,7 @@ class PostEpisodeTelemetry(TelemetryEvent):
             emitter=emitter,
             mode=mode,
             episode=episode,
-            step=model.total_steps,
-            episode_steps=model.episode_steps,
+            step=model.episode_steps,
             matching_steps=model.matching_steps,
             lm_stats=performance_dict,
             actions=actions,
@@ -106,7 +102,7 @@ class ExperimentStatsTelemetry(TelemetryEvent):
     Contains aggregated overall episode statistics of the experiment.
     """
 
-    SCHEMA_ID: Final[str] = "experiment_stats"
+    KIND: Final[str] = "experiment_stats"
 
     stats: dict
     """Stats dictionary to pass along to consumers."""
@@ -119,7 +115,7 @@ class ExperimentStatsTelemetry(TelemetryEvent):
 
         Args:
             stats: The aggregated stats dict to embed in the event, typically
-                   `PostEpisodeTelemetryConsumer.data`.
+                `PostEpisodeTelemetryConsumer.data`.
             parent: The triggering event whose context fields are to be copied.
             emitter: Name of the emitting module. If empty, inherits from the parent.
 
@@ -136,7 +132,7 @@ class ExperimentStatsTelemetry(TelemetryEvent):
 
 
 class PostEpisodeTelemetryConsumer(TelemetryConsumer):
-    """Aggregates `PostEpisodeTelemetry` events and forwards the results to handlers.
+    """Aggregates `PostEpisodeTelemetry` schemas and forwards the results to handlers.
 
     Replaces the aggregation and reporting logic of `BasicGraphMatchingLogger`
     (``update_overall_stats``, ``get_formatted_overall_stats``, ``log_episode``).
@@ -145,28 +141,32 @@ class PostEpisodeTelemetryConsumer(TelemetryConsumer):
     Also forwards the data to downstream consumers via `ExperimentStatsTelemetry`.
     """
 
-    SCHEMA_IDS: Final[list[str]] = [PostEpisodeTelemetry.SCHEMA_ID]
+    @property
+    def logger_names(self):
+        """Names of loggers to subscribe to."""
+        return [f"telemetry.{monty_experiment.__name__}"]
 
     def __init__(
         self,
-        level: int,
         handlers: Sequence[MontyHandler],
         output_dir: Path,
+        event_level=telemetry.INFO,  # TODO telemetry: Hydra at module level instead?
         **kwargs,
     ):
         """Initializes the post-episode consumer.
 
         Args:
-            level: Logging level (``logging.DEBUG``, ``logging.INFO``, etc.) for
-                   outgoing `ExperimentStatsTelemetry` event snapshots.
             handlers: `MontyHandler` instances that receive episode reports via
-                      ``handler.report_episode()``. Replaces the handler list previously
-                      owned by `BasicGraphMatchingLogger`.
+                ``handler.report_episode()``. Replaces the handler list previously owned
+                by `BasicGraphMatchingLogger`.
             output_dir: Output path forwarded to handlers.
-            **kwargs: Forwarded to parent class.
+            event_level: Minimum log level for events. Those below this level are
+                silently dropped before reaching the handlers. If that logger already
+                exists, and `level` is greater than ``telemetry.NOTSET`` (0), the new
+                level overrides the old.
+            **kwargs: Forwarded to superclass.
         """
         super().__init__(**kwargs)
-        self.log_level = level
         self.handlers = handlers  # TODO telemetry: move handlers to separate consumer?
         self.output_dir = output_dir
         self.data = self._blank_data()
@@ -203,7 +203,7 @@ class PostEpisodeTelemetryConsumer(TelemetryConsumer):
         self.performance_encoder = LabelEncoder()
         self.performance_encoder.fit(self.performance_options)
         self.use_parallel_wandb_logging = False
-        self.telemetry = TelemetryEmitter("episode_stats", level=level)
+        self.telemetry = TelemetryEmitter(__name__, event_level=event_level)
 
     @staticmethod
     def _blank_data() -> dict:
@@ -289,20 +289,20 @@ class PostEpisodeTelemetryConsumer(TelemetryConsumer):
     # def close(self):
     #     for handler in self.handlers:
     #         handler.close()
-    #         handler.close()
 
-    def _consume(self, event: PostEpisodeTelemetry):
+    def _consume(self, schema: TelemetrySchema):
         """Processes a single `PostEpisodeTelemetry` event.
 
         Runs the full post-episode pipeline: updates accumulated episode data, emits an
-        `ExperimentStatsTelemetry` snapshot, then forwards to handlers.
+        `ExperimentStatsTelemetry` event, then forwards to handlers.
 
         Args:
-            event: The event containing post-episode telemetry.
+            schema: The event schema containing post-episode telemetry.
         """
-        self._update_episode_data(event)
-        self._emit_stats(event)
-        self._log_episode(event)
+        if isinstance(schema, PostEpisodeTelemetry):
+            self._update_episode_data(schema)
+            self._emit_stats(schema)
+            self._log_episode(schema)
 
     def _update_episode_data(self, event: PostEpisodeTelemetry):
         """Populates `self.data` with stats from the current episode.
@@ -325,26 +325,21 @@ class PostEpisodeTelemetryConsumer(TelemetryConsumer):
         self._update_overall_stats(event)
         overall_stats = self._get_formatted_overall_stats(event)
 
-        # # TODO telemetry: integrate with log level
+        # # TODO telemetry: Hydra config for BASIC / DETAILED
         self.data["BASIC"][f"{mode}_overall_stats"][episode] = overall_stats
         self.data["BASIC"][f"{mode}_actions"][episode] = event.actions
         self.data["BASIC"][f"{mode}_targets"][episode] = event.targets
         self.data["BASIC"][f"{mode}_timing"][episode] = event.timing
 
     def _emit_stats(self, event: PostEpisodeTelemetry):
-        """Emits an `ExperimentStatsTelemetry` snapshot after each episode.
-
-        Wraps the current `self.data` accumulator in an `ExperimentStatsTelemetry`
-        event and snapshots it via `self.telemetry`, emitting it to downstream
-        consumers subscribed to ``"experiment_stats"``.
+        """Emits the results as an `ExperimentStatsTelemetry` event after each episode.
 
         Args:
             event: The triggering `PostEpisodeTelemetry` event, used as the parent for
-                   context field inheritance.
+                populating context fields.
         """
-        self.telemetry.snapshot(
-            level=self.log_level,
-            event=ExperimentStatsTelemetry.from_parent(parent=event, stats=self.data),
+        self.telemetry.emit(
+            ExperimentStatsTelemetry.from_parent(parent=event, stats=self.data)
         )
 
     def _log_episode(self, event: PostEpisodeTelemetry):
@@ -376,9 +371,9 @@ class PostEpisodeTelemetryConsumer(TelemetryConsumer):
         """Accumulates per-episode stats into the running overall stats dict.
 
         Mirrors `BasicGraphMatchingLogger.update_overall_stats()`. Iterates over all
-        LMs, updating per-LM and per-episode performance counters, rotation errors,
-        step counts, symmetry evidence, and goal state stats. Determines the overall
-        episode performance by scanning ``performance_options`` in priority order.
+        LMs, updating per-LM and per-episode performance counters, rotation errors, step
+        counts, symmetry evidence, and goal state stats. Determines the overall episode
+        performance by scanning ``performance_options`` in priority order.
 
         Args:
             event: The event containing post-episode telemetry.
@@ -410,7 +405,7 @@ class PostEpisodeTelemetryConsumer(TelemetryConsumer):
             stats["episode_symmetry_evidence"].append(
                 episode_stats["symmetry_evidence"]
             )
-            stats["monty_steps"].append(event.episode_steps)
+            stats["monty_steps"].append(event.step)
             stats["monty_matching_steps"].append(event.matching_steps)
             # older LMs don't have prediction error stats
 
@@ -452,8 +447,8 @@ class PostEpisodeTelemetryConsumer(TelemetryConsumer):
         """Formats the running overall stats into a flat dict for handlers and wandb.
 
         Mirrors `BasicGraphMatchingLogger.get_formatted_overall_stats()`. Computes
-        percentage-based metrics, averages, and wandb histograms (when multiple LMs
-        are present) from the accumulated state,
+        percentage-based metrics, averages, and wandb histograms (when multiple LMs are
+        present) from the accumulated state,
 
         Args:
             event: The post-episode event supplying ``mode`` and ``episode``.

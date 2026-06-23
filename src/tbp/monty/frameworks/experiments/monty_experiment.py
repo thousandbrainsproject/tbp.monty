@@ -29,6 +29,7 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageFromStreamInterface,
     SaccadeOnImageInterface,
 )
+from tbp.monty.frameworks import telemetry
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
@@ -129,6 +130,7 @@ class MontyExperiment:
         )
         self.load_environment_interfaces(config)
         self.init_monty_data_loggers(self.config["logging"])
+        self.init_telemetry()
         self.init_counters()
 
     def init_model(self, monty_config, model_path=None):
@@ -442,12 +444,17 @@ class MontyExperiment:
             self.monty_logger, self.model, output_dir=self.output_dir
         )
 
-        # TODO telemetry: separate config for log level
-        self.telemetry = TelemetryEmitter("experiment", level=logging.INFO)
-        self.post_episode_telemetry = PostEpisodeTelemetryConsumer(
-            level=logging.INFO, handlers=monty_handlers, output_dir=self.output_dir
+    def init_telemetry(self):
+        """Initialize Monty telemetry."""
+        # TODO telemetry: Hydra config for levels
+        self.telemetry = TelemetryEmitter(
+            __name__, event_level=telemetry.INFO, snapshot_level=telemetry.TRACE
         )
-        self.post_episode_telemetry.subscribe()
+        self.post_episode_telemetry = PostEpisodeTelemetryConsumer(
+            handlers=self.monty_logger.handlers,
+            output_dir=self.output_dir,
+            event_level=telemetry.INFO,
+        )
 
     def get_epoch_state(self):
         if self.experiment_mode is ExperimentMode.TRAIN:
@@ -543,15 +550,13 @@ class MontyExperiment:
         """
         self.logger_handler.post_episode(self.logger_args)
 
-        self.telemetry.snapshot(
-            level=logging.INFO,  # TODO telemetry: adjust log level
-            event=PostEpisodeTelemetry.from_logger_args(
+        self.telemetry.emit(
+            PostEpisodeTelemetry.from_logger_args(
                 logger_args=self.logger_args,
                 model=self.model,
                 emitter=self.__class__.__name__,
-            ),
+            )
         )
-        self.post_episode_telemetry.pump()  # consumes above snapshot
 
         self.model.post_episode()
 
@@ -702,7 +707,7 @@ class MontyExperiment:
         # Close monty logging
         self.logger_handler.close(self.logger_args)
 
-        self.post_episode_telemetry.unsubscribe(pump=True)
+        self.post_episode_telemetry.unsubscribe(consume=True)
         # TODO telemetry: close self.post_episode_telemetry?
 
         # Close python logging

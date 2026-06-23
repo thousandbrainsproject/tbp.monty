@@ -12,28 +12,29 @@ from __future__ import annotations
 import time
 from typing import Final
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.models.monty_base import MontyBase
 
 
-class TelemetryEvent(BaseModel):
-    """Base class for all telemetry snapshot events.
+class TelemetrySchema(BaseModel):
+    """Base class for all telemetry schemas.
 
-    Subclasses override SCHEMA_ID to identify their event type and add fields for their
+    Subclasses override ``KIND`` to identify their schema type and add fields for their
     payload. All instances carry universal context baggage (emitter, timestamp, episode,
     step, mode).
     """
 
-    SCHEMA_ID: Final[str]
-    """Event type identifier, e.g. ``post_episode``.
-    Used by TelemetryBroker for routing and as the log message in text sinks."""
+    KIND: Final[str]
+    """Schema kind, e.g. ``post_episode``.
+    Used by `logging` for routing and as the log message in text sinks."""
 
-    SCHEMA_VERSION: Final[int] = 1
+    VERSION: Final[int] = 1
     """Incremented on backwards-incompatible field changes."""
 
     timestamp: float = Field(default_factory=time.time, kw_only=True)
-    """Unix time in seconds when the event was captured."""
+    """Unix time in seconds when the schema was constructed."""
 
     emitter: str
     """Name of the emitting module, e.g. ``self.__class__.__name__``."""
@@ -45,22 +46,49 @@ class TelemetryEvent(BaseModel):
     """Current episode number."""
 
     step: int
-    """Number of overall steps, including those where no LM update was performed."""
+    """Current episode step number."""
+
+    model_config = ConfigDict(extra="allow")
+    """Allows adding instance variables to Pydantic class"""
+
+    def populate_from_model(self, model: MontyBase):
+        """Populates applicable `TelemetrySchema` values from a `MontyBase` instance."""
+        self.mode = model.experiment_mode
+        # TODO telemetry: self.episode = logger_args[f"{mode}_episodes"]?
+        self.step = model.episode_steps
 
 
-class _BlankTelemetryEvent(TelemetryEvent):
-    """TelemetryEvent with all fields defaulted.
+class TelemetryEvent(TelemetrySchema):
+    """Base class for all telemetry events.
 
-    Used as a base for internal sentinel events that carry no meaningful payload.
+    Event carry instantaneous data changes, or commands like `TelemetryStopEvent`.
     """
 
-    emitter: str = ""
+    pass
+
+
+class TelemetrySnapshot(TelemetrySchema):
+    """Base class for all telemetry snapshots.
+
+    The difference from events is that snapshots are always of level ``telemetry.TRACE``
+    and contain binary or blob data.
+    """
+
+    pass
+
+
+class BlankTelemetryEvent(TelemetryEvent):
+    """TelemetryEvent with all fields defaulted, except ``emitter``.
+
+    Used as a base for internal sentinel schemas that carry no meaningful payload.
+    """
+
     mode: ExperimentMode = ExperimentMode.EVAL
     episode: int = -1
     step: int = -1
 
 
-class TelemetryStopEvent(_BlankTelemetryEvent):
+class TelemetryStopEvent(BlankTelemetryEvent):
     """Sentinel object to shut down telemetry consumer threads."""
 
-    SCHEMA_ID: Final[str] = "telemetry_stop"
+    KIND: Final[str] = "telemetry_stop"
