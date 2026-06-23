@@ -184,7 +184,6 @@ experiment:
         _target_: wandb.util.generate_id
       wandb_group: debugging
       run_name: surf_agent_1lm_10similarobj
-    show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000

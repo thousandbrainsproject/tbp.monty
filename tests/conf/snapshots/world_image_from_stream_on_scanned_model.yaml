@@ -109,7 +109,6 @@ experiment:
         _target_: wandb.util.generate_id
       wandb_group: evidence_eval_runs
       run_name: world_image_from_stream_on_scanned_model
-    show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000

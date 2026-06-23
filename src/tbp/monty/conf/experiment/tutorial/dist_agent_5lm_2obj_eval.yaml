@@ -24,7 +24,6 @@ experiment:
     min_lms_match: 3
     python_log_level: DEBUG
     seed: 42
-    show_sensor_output: false
     supervised_lm_ids: []
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}

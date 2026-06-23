@@ -15,7 +15,6 @@ experiment:
   # TODO: Remove "mujoco" when this replaces the Habitat version
   _target_: tests.mujoco.integration.frameworks.experiments.profile_experiment_mixin_test.ProfiledExperiment
   config:
-    show_sensor_output: false
     max_train_steps: 50
     max_eval_steps: 50
     max_total_steps: 400

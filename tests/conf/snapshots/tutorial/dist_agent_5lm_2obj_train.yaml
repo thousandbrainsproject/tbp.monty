@@ -335,7 +335,6 @@ experiment:
     model_name_or_path: ''
     min_lms_match: 1
     seed: 42
-    show_sensor_output: false
     supervised_lm_ids: all
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 episodes: all

@@ -199,7 +199,6 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: gm_eval_runs
-    show_sensor_output: true
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 5000

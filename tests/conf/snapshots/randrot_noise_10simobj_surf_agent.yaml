@@ -202,7 +202,6 @@ experiment:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
       run_name: randrot_noise_10simobj_surf_agent
-    show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000

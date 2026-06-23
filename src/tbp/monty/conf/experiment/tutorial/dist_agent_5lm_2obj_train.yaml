@@ -23,7 +23,6 @@ experiment:
     model_name_or_path: ''
     min_lms_match: 1
     seed: 42
-    show_sensor_output: false
     supervised_lm_ids: all
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}

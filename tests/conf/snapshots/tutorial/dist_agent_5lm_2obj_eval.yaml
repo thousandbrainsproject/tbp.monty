@@ -420,7 +420,6 @@ experiment:
     min_lms_match: 3
     python_log_level: DEBUG
     seed: 42
-    show_sensor_output: false
     supervised_lm_ids: []
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 episodes: all
