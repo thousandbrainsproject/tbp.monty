@@ -195,11 +195,15 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         g = self.spec.visual.global_
         g.offheight = render_resolution.height
         g.offwidth = render_resolution.width
-        # Set the extent to 1.0, as the znear and zfar values are multiplied
-        # by the extent to get the values for near and far clipping, and this
-        # results in near clipping of objects that are close to the camera,
-        # e.g. when using SurfaceAgent.
-        self.spec.stat.extent = 1.0
+        # Habitat used a znear and zfar of 0.01 and 1000.0 respectively. MuJoCo
+        # lets use set these values directly, but it multiplies them by an `extent`
+        # value, which defaults to 2.0. Trying to set this to 1.0 and then setting
+        # the Z clipping values to match Habitat, we see a reduction in depth accuracy.
+        # By leaving the `extent` alone and setting values that will result in matching
+        # the Habitat values, we get better depth values, and avoid near clipping
+        # issues we were getting with the default znear of `0.01`.
+        self.spec.visual.map.znear = 0.005
+        self.spec.visual.map.zfar = 500.0
 
     def _configure_lights(self) -> None:
         """Configure the lights as needed.

@@ -88,7 +88,7 @@ class NoopAgentTest(unittest.TestCase):
             assert depth.shape == (64, 64)
             assert rgba.shape == (64, 64, 4)
             # assert that the min depth is the near surface of the cube
-            assert np.allclose(depth.min(), 4.0, atol=1e-5)
+            assert np.allclose(depth.min(), 4.0)
             # assert that the max depth is beyond the back of the cube
             assert depth.max() >= 5.0
             # TODO: these might be too sensitive to variations, such
