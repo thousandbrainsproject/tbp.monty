@@ -81,8 +81,6 @@ experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
   # config specifies the configuration of the experiment itself.
   config:
-    # `show_sensor_output: true` will display a live plot of the sensor output.
-    show_sensor_output: false
     # The maximum number of steps to train for.
     max_train_steps: 1
     # The maximum number of steps to evaluate for.

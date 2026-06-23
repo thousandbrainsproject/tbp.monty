@@ -290,4 +290,21 @@ python run_parallel.py \
 
 You can find the [tutorials](https://github.com/thousandbrainsproject/tbp.plot/blob/main/README.md#tutorials) and [gallery](https://github.com/thousandbrainsproject/tbp.plot/blob/main/README.md#gallery) of available tools in the `tbp.plot` repository.
 
+## Live Visualization with `tbp.teleop`
+
+For controlling the Monty agent while stepping through the experiment in real-time, we provide a separate companion repository called **`tbp.teleop`**.
+
+[`tbp.teleop`](https://github.com/thousandbrainsproject/tbp.teleop) hooks into a running Monty experiment via the existing `StepHook` interface and visualizes the simulator, Monty's graphs and hypotheses, and per-channel details live as the experiment runs. It also offers an optional interactive (teleoperation) mode that lets you override the agent's action at every step.
+
+### How to Use `tbp.teleop`
+
+`tbp.teleop` expects `tbp.monty` to be installed alongside it (at `../tbp.monty`). Once the `tbp.teleop` environment is set up, you attach one of its step hooks to an experiment as an inline Hydra override and run it from the `tbp.teleop` repository:
+
+```zsh
+python run.py -cd src/tbp/teleop/conf experiment=example +hooks=monitor      # watch only
+python run.py -cd src/tbp/teleop/conf experiment=example +hooks=interactive  # watch + control
+```
+
+See the [`tbp.teleop`](https://github.com/thousandbrainsproject/tbp.teleop) repository for full installation and usage instructions.
+
 
