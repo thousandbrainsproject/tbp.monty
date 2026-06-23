@@ -26,8 +26,6 @@ from tools.github_readme_sync.constants import (
     REGEX_CSV_TABLE,
 )
 from tools.github_readme_sync.file import find_markdown_files, read_file_content
-from tools.github_readme_sync.md import process_markdown
-
 
 logger = logging.getLogger(__name__)
 
@@ -39,21 +37,6 @@ INDENTATION_UNIT = "  "  # Single indentation level
 # URLs that are checked
 README_URL = "https://docs.thousandbrains.org"
 
-def normalize_title_to_readme_slug(title: str) -> str:
-    # Normalize a ReadMe title into the slug format ReadMe generates.
-
-    # ReadMe slugs are generally derived from titles by:
-    # - lowercasing
-    # - replacing whitespace with hyphens
-    # - stripping punctuation/symbols/non-alphanumeric characters
-    # - collapsing repeated hyphens
-    
-    slug = title.lower()
-    slug = re.sub(r"\s+", "-", slug)
-    slug = re.sub(r"[^a-z0-9-]", "", slug)
-    slug = re.sub(r"-+", "-", slug)
-    # Strip leading/trailing hyphens that may have resulted from punctuation removal
-    return slug.strip("-")
 
 def create_hierarchy_file(output_dir, hierarchy):
     output_dir = Path(output_dir)
@@ -109,10 +92,10 @@ def check_hierarchy_file(folder: str):
     for line in lines:
         if line.startswith(CATEGORY_PREFIX):
             slug, title = map(str.strip, line[len(CATEGORY_PREFIX) :].split(":"))
-            readme_slug = normalize_title_to_readme_slug(title)
-            current_category = {"title": title, "slug": slug, "readme_slug": readme_slug, "children": []}
+            current_category = {"title": title, "slug": slug, "children": []}
             hierarchy.append(current_category)
             parent_stack = [current_category]
+
         elif DOCUMENT_PREFIX in line:
             indent_level = (len(line) - len(line.lstrip(INDENTATION_UNIT))) // len(
                 INDENTATION_UNIT
@@ -136,12 +119,6 @@ def check_hierarchy_file(folder: str):
             errors = sanity_check(slug_path.with_suffix(".md"))
             if errors:
                 link_check_errors.extend(errors)
-
-            # New
-            doc = load_doc(slug_path.with_suffix(".md"))
-            readme_slug = normalize_title_to_readme_slug(doc["title"])
-            # Add the ReadMe Slug to the doc for later use in upload and deletion
-            new_doc["readme_slug"] = readme_slug
 
     if link_check_errors:
         for error in link_check_errors:
@@ -406,31 +383,3 @@ def report_errors(errors, total_links_checked):
             f"{GREEN}No external link errors found. "
             f"Total links checked: {total_links_checked}{RESET}"
         )
-
-def load_doc(file_path: str):
-    if not file_path.exists():
-        raise ValueError(f"File {file_path} does not exist")
-
-    with file_path.open(encoding="utf-8") as file:
-        body = file.read()
-        return process_markdown(body, "fake slug to update later")
-
-def extract_file_path(line: str) -> str:
-    match = re.search(r"\[[^\]]+\]\(([^)]+)\)", line)
-    return match.group(1)
-
-def normalize_title_to_readme_slug(title: str) -> str:
-        # Normalize a ReadMe title into the slug format ReadMe generates.
-
-        # ReadMe slugs are generally derived from titles by:
-        # - lowercasing
-        # - replacing whitespace with hyphens
-        # - stripping punctuation/symbols/non-alphanumeric characters
-        # - collapsing repeated hyphens
-        
-        slug = title.lower()
-        slug = re.sub(r"\s+", "-", slug)
-        slug = re.sub(r"[^a-z0-9-]", "", slug)
-        slug = re.sub(r"-+", "-", slug)
-        # Strip leading/trailing hyphens that may have resulted from punctuation removal
-        return slug.strip("-")

@@ -23,19 +23,17 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
     logger.info(f"Uploading export folder: {file_path}")
     logger.info(f"URL: https://docs.thousandbrains.org/v{rdme.version}/docs")
     rdme.create_version_if_not_exists()
-
-    # we only get type and slug from ReadMe
     to_be_deleted = get_all_categories_docs(rdme)
 
     for category in new_hierarchy:
         cat_id, created = rdme.create_category_if_not_exists(
-            category["slug"], category["title"], category["readme_slug"]
+            category["slug"], category["title"]
         )
         logger.info(
             f"\n{BLUE}{category['title'].upper()}{GRAY}{created * ' [created]'}{RESET}"
         )
 
-        set_do_not_delete(to_be_deleted, category["readme_slug"])
+        set_do_not_delete(to_be_deleted, category["slug"])
 
         # Recursively process the hierarchy of children
         process_children(
@@ -53,7 +51,6 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
         # Delete all docs and categories in reverse order
         for doc in reversed(to_be_deleted):
             if doc["type"] == "doc":
-                # this is the slug we got directly from ReadMe, which is the one we need to delete
                 rdme.delete_doc(doc["slug"])
             elif doc["type"] == "category":
                 rdme.delete_category(doc["slug"])
@@ -77,10 +74,9 @@ def process_children(
             doc=doc,
             parent_id=parent_doc_id,
             file_path=f"{file_path}/{path_prefix}{parent['slug']}",
-            readme_slug=child["readme_slug"],
         )
         print_child(path_prefix.count("/"), doc, created)
-        set_do_not_delete(to_be_deleted, child["readme_slug"])
+        set_do_not_delete(to_be_deleted, child["slug"])
 
         # If this child has children, call the function recursively
         if child.get("children"):
@@ -95,14 +91,13 @@ def process_children(
             )
 
 
-def set_do_not_delete(to_be_deleted: list, readme_slug: str):
+def set_do_not_delete(to_be_deleted: list, slug: str):
     for doc in to_be_deleted:
-        # doc[slug] is the slug we get from ReadMe
-        if doc["slug"] == readme_slug:
+        if doc["slug"] == slug:
             # remove the item from the list
             to_be_deleted.remove(doc)
 
-# This gets us the slugs directly from ReadMe, in ReadMe's format
+
 def get_all_categories_docs(rdme: ReadMe):
     categories = rdme.get_categories()
     all_categories_and_docs = []

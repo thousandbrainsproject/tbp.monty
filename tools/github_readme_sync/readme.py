@@ -74,6 +74,22 @@ class ReadMe:
     def __init__(self, version: str):
         self.version = version
 
+    def normalize_title_to_readme_slug(self, title: str) -> str:
+        # Normalize a ReadMe title into the slug format ReadMe generates.
+
+        # ReadMe slugs are generally derived from titles by:
+        # - lowercasing
+        # - replacing whitespace with hyphens
+        # - stripping punctuation/symbols/non-alphanumeric characters
+        # - collapsing repeated hyphens
+        
+        slug = title.lower()
+        slug = re.sub(r"\s+", "-", slug)
+        slug = re.sub(r"[^a-z0-9-]", "", slug)
+        slug = re.sub(r"-+", "-", slug)
+        # Strip leading/trailing hyphens that may have resulted from punctuation removal
+        return slug.strip("-")
+
     def get_categories(self) -> list[Any]:
         categories = get(f"{PREFIX}/categories", {"x-readme-version": self.version})
         if not categories:
@@ -179,9 +195,13 @@ class ReadMe:
                 f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
             )
 
-    def create_category_if_not_exists(self, slug: str, title: str, readme_slug: str) -> tuple[str, bool]:        
-        # Use the slug ReadMe would generate from the title, rather than the
-        # hierarchy.md slug. This prevents case/style mismatches like CMP vs cmp.
+    def create_category_if_not_exists(self, slug: str, title: str) -> tuple[str, bool]:
+        # Unfortunately ReadMe's API does not allow us to create a category with a specific slug, 
+        # so we have to check if the category exists by converting the title to readme's
+        # style of slug to check if it exists.
+        # http://docs.readme.com/main/reference/createcategory
+        readme_slug = self.normalize_title_to_readme_slug(title)
+
         category = get(
             f"{PREFIX}/categories/{readme_slug}", {"x-readme-version": self.version}
         )
@@ -283,7 +303,7 @@ class ReadMe:
         return REGEX_CSV_TABLE.sub(replace_match, body)
 
     def create_or_update_doc(
-        self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str, readme_slug: str
+        self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str
     ) -> tuple[str, bool]:
         markdown = self.process_markdown(doc["body"], file_path, doc["slug"])
 
@@ -295,22 +315,18 @@ class ReadMe:
             "hidden": doc.get("hidden", False),
             "order": order,
             "parentDoc": parent_id,
+            "slug": doc["slug"],
         }
 
         # Include description field as excerpt if it exists in the document
         if "description" in doc:
             create_doc_request["excerpt"] = doc["description"]
 
-        """Find a ReadMe doc by the slug ReadMe would generate from its title.
-
-        This avoids mismatches where hierarchy.md has a different casing or
-        slug style than ReadMe's generated slug.
-        """
-        doc_id = self.get_doc_id(readme_slug)
+        doc_id = self.get_doc_id(doc["slug"])
         created = doc_id is None
         if doc_id:
             if not put(
-                f"{PREFIX}/docs/{readme_slug}",
+                f"{PREFIX}/docs/{doc['slug']}",
                 create_doc_request,
                 {"x-readme-version": self.version},
             ):
