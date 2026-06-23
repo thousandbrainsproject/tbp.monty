@@ -17,6 +17,7 @@ from typing import Any, MutableMapping
 
 import hydra
 import numpy as np
+import numpy.typing as npt
 import quaternion as qt
 from omegaconf import DictConfig
 
@@ -51,7 +52,6 @@ from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     MotorSystemState,
-    ProprioceptiveState,
 )
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import EulerAnglesXYZ, VectorXYZ
@@ -349,6 +349,7 @@ class AdvancedPolicyTest(unittest.TestCase):
                         last_action, type(stored_action), should_have_moved_back
                     )
                     if isinstance(stored_action, (LookDown, LookUp)):
+                        assert isinstance(last_action, (LookDown, LookUp))
                         self.assertEqual(
                             last_action.rotation_degrees,
                             -stored_action.rotation_degrees,
@@ -360,18 +361,21 @@ class AdvancedPolicyTest(unittest.TestCase):
                             should_have_moved_back,
                         )
                     elif isinstance(stored_action, (TurnLeft, TurnRight)):
+                        assert isinstance(last_action, (TurnLeft, TurnRight))
                         self.assertEqual(
                             last_action.rotation_degrees,
                             -stored_action.rotation_degrees,
                             should_have_moved_back,
                         )
                     elif isinstance(stored_action, MoveForward):
+                        assert isinstance(last_action, MoveForward)
                         self.assertEqual(
                             last_action.distance,
                             -stored_action.distance,
                             should_have_moved_back,
                         )
                     elif isinstance(stored_action, MoveTangentially):
+                        assert isinstance(last_action, MoveTangentially)
                         self.assertEqual(
                             last_action.distance,
                             -stored_action.distance,
@@ -383,6 +387,7 @@ class AdvancedPolicyTest(unittest.TestCase):
                             should_have_moved_back,
                         )
                     elif isinstance(stored_action, OrientHorizontal):
+                        assert isinstance(last_action, OrientHorizontal)
                         self.assertEqual(
                             last_action.rotation_degrees,
                             -stored_action.rotation_degrees,
@@ -399,6 +404,7 @@ class AdvancedPolicyTest(unittest.TestCase):
                             should_have_moved_back,
                         )
                     elif isinstance(stored_action, OrientVertical):
+                        assert isinstance(last_action, OrientVertical)
                         self.assertEqual(
                             last_action.rotation_degrees,
                             -stored_action.rotation_degrees,
@@ -653,7 +659,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         ctx = RuntimeContext(rng)
 
         # Initialize motor-system state
-        proprioceptive_state = MotorSystemState(
+        motor_system_state = MotorSystemState(
             {
                 AgentID("agent_id_0"): AgentState(
                     position=(0, 0, 0),  # unused
@@ -671,7 +677,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         # Note that the movement is a unit vector because it is a direction, the amount
         # (i.e. size) of the translation is represented separately.
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_pc[0]
+            ctx, motor_system_state, self.fake_percept_pc[0]
         )
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
@@ -685,7 +691,7 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         # Step 2
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_pc[1]
+            ctx, motor_system_state, self.fake_percept_pc[1]
         )
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
@@ -700,7 +706,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         # Step 3: Our bias should change from following minimal to maximal
         # PC
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_pc[2]
+            ctx, motor_system_state, self.fake_percept_pc[2]
         )
         assert np.all(np.isclose(direction, [0, 1, 0])), (
             "Not following correct PC direction"
@@ -714,7 +720,7 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         # Step 4
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_pc[3]
+            ctx, motor_system_state, self.fake_percept_pc[3]
         )
         assert np.all(np.isclose(direction, [0, 1, 0])), (
             "Not following correct PC direction"
@@ -728,7 +734,7 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         # Step 5: Pass observation *without* a well-defined PC direction
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_pc[4]
+            ctx, motor_system_state, self.fake_percept_pc[4]
         )
         assert np.isclose(
             np.dot(self.fake_percept_pc[4].get_surface_normal(), direction), 0
@@ -750,10 +756,10 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         # Update relevant motor-system variables
         policy.ignoring_pc_counter = self.policy_cfg_fragment.min_general_steps
-        proprioceptive_state[AgentID("agent_id_0")].rotation = qt.quaternion(0, 0, 1, 0)
+        motor_system_state[AgentID("agent_id_0")].rotation = qt.quaternion(0, 0, 1, 0)
 
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_pc[5]
+            ctx, motor_system_state, self.fake_percept_pc[5]
         )
         assert np.all(np.isclose(direction, [1.0, 0.0, 0])), (
             "Not following correct PC direction"
@@ -782,7 +788,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         ctx = RuntimeContext(rng)
 
         # Initialize motor system state
-        proprioceptive_state = ProprioceptiveState(
+        motor_system_state = MotorSystemState(
             {
                 AgentID("agent_id_0"): AgentState(
                     position=(0, 0, 0),  # unused
@@ -800,7 +806,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         policy.tangent_locs.append(self.fake_percept_advanced_pc[0].location)
         policy.tangent_norms.append([0, 0, 1])
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_advanced_pc[0]
+            ctx, motor_system_state, self.fake_percept_advanced_pc[0]
         )
         assert np.isclose(
             np.dot(self.fake_percept_advanced_pc[0].get_surface_normal(), direction), 0
@@ -819,7 +825,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         policy.tangent_locs.append(self.fake_percept_pc[0].location)
         policy.tangent_norms.append([0, 0, 1])
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_advanced_pc[0]
+            ctx, motor_system_state, self.fake_percept_advanced_pc[0]
         )
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
@@ -836,7 +842,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         policy.tangent_locs.append(self.fake_percept_advanced_pc[1].location)
         policy.tangent_norms.append([0, 0, 1])
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_advanced_pc[1]
+            ctx, motor_system_state, self.fake_percept_advanced_pc[1]
         )
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
@@ -852,7 +858,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         policy.tangent_locs.append(self.fake_percept_advanced_pc[2].location)
         policy.tangent_norms.append([0, 0, 1])
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_advanced_pc[2]
+            ctx, motor_system_state, self.fake_percept_advanced_pc[2]
         )
         assert np.isclose(np.linalg.norm(direction), 1), (
             "Direction should be a unit vector"
@@ -878,7 +884,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         # designed to avoid)
         policy.tangent_norms.append([0, 0, 1])
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_advanced_pc[0]
+            ctx, motor_system_state, self.fake_percept_advanced_pc[0]
         )
         # Note the following movement is a random direction deterministically set by the
         # random seed
@@ -903,7 +909,12 @@ class AdvancedPolicyTest(unittest.TestCase):
         policy: SurfacePolicyCurvatureInformed,
         object_orientation: EulerAnglesXYZ,
         target_location_on_object: VectorXYZ,
-    ):
+    ) -> tuple[
+        npt.NDArray[np.float64],
+        npt.NDArray[np.float64],
+        VectorXYZ,
+        npt.NDArray[np.float64],
+    ]:
         """Test GSGs ability to propose a motor-system goal.
 
         Test the GSGs ability to propose a motor-system goal, and then for
