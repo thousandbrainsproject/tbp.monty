@@ -82,7 +82,7 @@ class ReadMe:
         # - replacing whitespace with hyphens
         # - stripping punctuation/symbols/non-alphanumeric characters
         # - collapsing repeated hyphens
-        
+
         slug = title.lower()
         slug = re.sub(r"\s+", "-", slug)
         slug = re.sub(r"[^a-z0-9-]", "", slug)
@@ -196,9 +196,9 @@ class ReadMe:
             )
 
     def create_category_if_not_exists(self, slug: str, title: str) -> tuple[str, bool]:
-        # Unfortunately ReadMe's API does not allow us to create a category with a specific slug, 
-        # so we have to check if the category exists by converting the title to readme's
-        # style of slug to check if it exists.
+        # Unfortunately ReadMe's API does not allow us to create a category with a
+        # specific slug, so we have to check if the category exists by converting
+        # the title to readme's style of slug to check if it exists.
         # http://docs.readme.com/main/reference/createcategory
         readme_slug = self.normalize_title_to_readme_slug(title)
 
