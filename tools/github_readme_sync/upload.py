@@ -26,9 +26,7 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
     to_be_deleted = get_all_categories_docs(rdme)
 
     for category in new_hierarchy:
-        cat_id, created = rdme.create_category_if_not_exists(
-            category["title"]
-        )
+        cat_id, created = rdme.create_category_if_not_exists(category["title"])
         logger.info(
             f"\n{BLUE}{category['title'].upper()}{GRAY}{created * ' [created]'}{RESET}"
         )
