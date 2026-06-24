@@ -528,6 +528,9 @@ class MontyForGraphMatching(MontyBase):
 class GraphLM(LearningModule):
     """General Learning Module that contains a graph memory."""
 
+    possible_paths: dict[str, Any]
+    detected_rotation_r: Rotation | None
+
     def __init__(self, initialize_base_modules=True) -> None:
         """Initialize general Learning Module based on graphs.
 
@@ -574,8 +577,8 @@ class GraphLM(LearningModule):
         TODO integrate this into `reset_stm` and/or `fixme_reset_ground_truth`?
         """
         (
+            self.possible_matches,
             self.possible_paths,
-            self.possible_poses,
         ) = self.graph_memory.get_initial_hypotheses()
 
     def reset_stm(self) -> None:
