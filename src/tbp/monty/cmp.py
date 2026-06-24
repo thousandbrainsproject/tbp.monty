@@ -46,7 +46,7 @@ class Message:
     def __init__(
         self,
         # TODO: Consider changing to VectorXYZ
-        location: npt.NDArray[np.float64],
+        location: npt.NDArray[np.float64] | None,
         morphological_features: dict[str, Any],
         non_morphological_features: dict[str, Any],
         confidence: float,
@@ -236,7 +236,7 @@ class Goal(Message):
 
     def __init__(
         self,
-        location: np.ndarray | None,
+        location: npt.NDArray[np.float64] | None,
         morphological_features: dict[str, Any] | None,
         non_morphological_features: dict[str, Any] | None,
         confidence: float,

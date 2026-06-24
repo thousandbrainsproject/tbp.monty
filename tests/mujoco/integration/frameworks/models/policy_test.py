@@ -150,7 +150,8 @@ class AdvancedPolicyTest(unittest.TestCase):
         # ==== Setup fake observations for testing principal-curvature policies ====
         fake_sender_id = "patch"
         # TODO: Create a more specific type? We're using MutableMapping because it's
-        #  covariant on the value type, whereas Dict is not.
+        #  covariant on the value type, whereas Dict is not. This matters later when
+        #  we pass this dictionary to Message as the kwargs.
         #  See https://mypy.readthedocs.io/en/stable/common_issues.html#variance
         default_percept_args: MutableMapping[str, Any] = dict(
             location=np.array([0, 0, 0]),
@@ -215,7 +216,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         ]
 
     def initialize_lm_with_gsg(self) -> tuple[EvidenceGraphLM, dict[str, int | float]]:
-        """Setups up an LM with a goal generator for testing.
+        """Sets up an LM with a goal generator for testing.
 
         Returns:
             graph_lm: Created evidence graph LM instance
@@ -952,7 +953,8 @@ class AdvancedPolicyTest(unittest.TestCase):
         }
 
         # TODO: Create a more specific type? We're using MutableMapping because it's
-        #  covariant on the value type, whereas Dict is not.
+        #  covariant on the value type, whereas Dict is not. This matters later when
+        #  we pass this dictionary to Message as the kwargs.
         #  See https://mypy.readthedocs.io/en/stable/common_issues.html#variance
         fake_percept_config: MutableMapping[str, Any] = dict(
             location=np.array([0, 1.5, 0.1]),
