@@ -1000,6 +1000,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         # to visualize its orientation
         agent_direction = resulting_rot.apply(np.array([0, 0, -1]))
 
+        assert motor_goal.location is not None
         return (
             motor_goal.location,
             motor_goal.morphological_features["pose_vectors"][0],
