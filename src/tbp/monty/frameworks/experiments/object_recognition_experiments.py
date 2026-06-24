@@ -65,7 +65,8 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
 
         self.reset_episode_rng()
 
-        self.model.reset()
+        self._recreation_restore()
+
         # TODO, eventually it would be better to pass
         # self.env_interface.semantic_id_to_label via an "Observation" object when this
         # is eventually implemented, such that we can ensure this information is never
