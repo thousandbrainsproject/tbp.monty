@@ -108,11 +108,3 @@ Is the work completed, or is it in progress? [Edit future-work-status.md](https:
 > **evergreen** refers to tasks that benefit from continual work and input. For example, updates to our documentation or designing new testbeds or demos for Monty. Most evergreen tasks are not listed in the future work table as they aren't large, self-contained chunks of work (see our [ways to contribute](../../contributing/why-contribute.md) page for more ways to contribute). However, some are significant projects of their own so we want to recognize people who are working on those and provide guidance in the task descriptions.
 > 
 > **completed** marks tasks that are done. We keep those in our docs for future reference and to acknowledge those that have contributed to it.
-
-# Tags
-
-Tags is a comma separated list of keywords, useful for filtering the future work items. [Edit future-work-tags.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-tags.md).
-
-> [!NOTE] Tags are currently not used.
-
-!snippet[../../snippets/future-work-tags.md]
