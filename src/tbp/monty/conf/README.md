@@ -47,6 +47,7 @@ To generate models for the objects with logos experiments, run the following pre
 
 - `python run_parallel.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo`
 - `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_comp_models`
+- `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_monolithic_models`
 
 
 For more details, see [Running Benchmarks](https://docs.thousandbrains.org/docs/running-benchmarks) and [Benchmark Experiments](https://docs.thousandbrains.org/docs/benchmark-experiments) in the documentation.
