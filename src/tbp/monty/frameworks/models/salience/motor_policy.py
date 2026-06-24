@@ -15,7 +15,8 @@ import numpy as np
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.actions.actions import LookUp, TurnLeft
+from tbp.monty.experiment.motor_system import ExperimentMotorSystem
+from tbp.monty.frameworks.actions.actions import Action, LookUp, TurnLeft
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
@@ -23,7 +24,6 @@ from tbp.monty.frameworks.models.motor_policies import (
     MotorPolicyResult,
     NoGoalProvided,
 )
-from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     MotorSystemState,
@@ -58,7 +58,7 @@ class LookAtGoal(MotorPolicy):
         self,
         agent_id: AgentID,
         sensor_id: SensorID,
-    ):
+    ) -> None:
         """Initialize the look at policy.
 
         Args:
@@ -68,7 +68,7 @@ class LookAtGoal(MotorPolicy):
         self._agent_id = agent_id
         self._sensor_id = sensor_id
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:
         pass
 
     def load_state_dict(self, memento: Memento) -> None:
@@ -168,7 +168,7 @@ class LookAtGoal(MotorPolicy):
         sensor_pitch = target_pitch_rel_agent - sensor_pitch_rel_agent
 
         # Create actions to return to the the motor system.
-        actions = [
+        actions: list[Action] = [
             TurnLeft(agent_id=self._agent_id, rotation_degrees=np.degrees(agent_yaw)),
             LookUp(agent_id=self._agent_id, rotation_degrees=np.degrees(sensor_pitch)),
         ]

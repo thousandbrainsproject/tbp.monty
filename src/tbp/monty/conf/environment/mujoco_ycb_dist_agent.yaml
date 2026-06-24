@@ -38,6 +38,6 @@ env_init_args:
       position:
         - 0.0
         - 1.5
-        - 0.5
+        - 0.2
   raise_actuate_missing: False
 env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}

@@ -149,13 +149,29 @@ class GraphObjectModel(ObjectModel):
 
     @property
     def edge_index(self):
-        if (self._graph is not None) and ("edge_index" in self._graph.keys):
-            return self._graph.edge_index
+        if self._graph is not None:
+            # Newer versions of torch_geometric change `keys` from a
+            # property to a function.
+            # TODO: remove check and use keys function once upgraded to Python 3.10
+            if callable(self._graph.keys):
+                keys = self._graph.keys()
+            else:
+                keys = self._graph.keys
+            if "edge_index" in keys:
+                return self._graph.edge_index
 
     @property
     def edge_attr(self):
-        if (self._graph is not None) and ("edge_attr" in self._graph.keys):
-            return self._graph.edge_attr
+        if self._graph is not None:
+            # Newer versions of torch_geometric change `keys` from a
+            # property to a function.
+            # TODO: remove check and use keys function once upgraded to Python 3.10
+            if callable(self._graph.keys):
+                keys = self._graph.keys()
+            else:
+                keys = self._graph.keys
+            if "edge_attr" in keys:
+                return self._graph.edge_attr
 
     @property
     def num_nodes(self):

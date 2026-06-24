@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
 import torch
@@ -44,15 +45,18 @@ class FeatureGraphLM(GraphLM):
 
     def __init__(
         self,
-        max_match_distance,
-        tolerances,
-        path_similarity_threshold=0.1,
-        pose_similarity_threshold=0.35,
-        required_symmetry_evidence=5,
-        graph_delta_thresholds=None,
-        initial_possible_poses="informed",
-        umbilical_num_poses=8,
-    ):
+        max_match_distance: float,
+        # TODO: Create a specific type for `tolerances`.
+        tolerances: dict[str, dict[str, Any]],
+        path_similarity_threshold: float = 0.1,
+        pose_similarity_threshold: float = 0.35,
+        required_symmetry_evidence: int = 5,
+        # TODO: Create a specific type for `graph_delta_thresholds`.
+        #  Is this the same type as `tolerances`?
+        graph_delta_thresholds: dict[str, dict[str, Any]] | None = None,
+        initial_possible_poses: str = "informed",
+        umbilical_num_poses: int = 8,
+    ) -> None:
         """Initialize Learning Module.
 
         Args:

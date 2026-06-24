@@ -16,6 +16,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.frameworks.models.motor_policies import (
     SurfacePolicyCurvatureInformed,
 )
+from tbp.monty.frameworks.models.motor_policy_selectors import SinglePolicySelector
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tests import HYDRA_ROOT
 
@@ -637,9 +638,10 @@ class PolicyTest(unittest.TestCase):
         policy: SurfacePolicyCurvatureInformed = hydra.utils.instantiate(
             self.policy_cfg_fragment
         )
-        motor_system = MotorSystem(policy)
+        policy_selector = SinglePolicySelector(policy)
+        motor_system = MotorSystem(policy_selector)
         policy.max_pc_bias_steps = 2
-        policy.pre_episode(motor_system)
+        policy.reset(motor_system)
 
         rng = np.random.RandomState(123)
         ctx = RuntimeContext(rng)
@@ -761,13 +763,14 @@ class PolicyTest(unittest.TestCase):
         policy: SurfacePolicyCurvatureInformed = hydra.utils.instantiate(
             self.policy_cfg_fragment
         )
-        motor_system = MotorSystem(policy)
+        policy_selector = SinglePolicySelector(policy)
+        motor_system = MotorSystem(policy_selector)
 
         # Overwrite min_general_steps default value so that we more quickly transition
         # into taking PC steps when testing this
         initial_min_general_steps = 1
         policy.min_general_steps = initial_min_general_steps
-        policy.pre_episode(motor_system)
+        policy.reset(motor_system)
 
         rng = np.random.RandomState(123)
         ctx = RuntimeContext(rng)
@@ -990,9 +993,12 @@ class PolicyTest(unittest.TestCase):
         """
         lm, gsg_args = self.initialize_lm_with_gsg()
 
-        policy = hydra.utils.instantiate(self.policy_cfg_fragment)
-        motor_system = MotorSystem(policy)
-        policy.pre_episode(motor_system)
+        policy: SurfacePolicyCurvatureInformed = hydra.utils.instantiate(
+            self.policy_cfg_fragment
+        )
+        policy_selector = SinglePolicySelector(policy)
+        motor_system = MotorSystem(policy_selector)
+        policy.reset(motor_system)
 
         # The target displacement of the agent from the object; used to determine
         # the validity of the final agent location

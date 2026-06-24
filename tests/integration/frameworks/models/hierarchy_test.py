@@ -256,8 +256,7 @@ class HierarchyTest(unittest.TestCase):
                 )
                 self.assertEqual(updated_graph, lm_0_memory_before_learning[object_id])
             # check that LM_1 models now contain learning_module_0 input channel.
-            # TODO: also get it to recognize cubeSolid
-            for object_id in ["capsule3DSolid"]:
+            for object_id in ["capsule3DSolid", "cubeSolid"]:
                 updated_graph = exp.model.learning_modules[1].graph_memory.get_graph(
                     graph_id=object_id
                 )

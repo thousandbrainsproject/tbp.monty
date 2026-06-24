@@ -8,9 +8,12 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
 from tbp.monty.cmp import Message
+from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
 )
@@ -49,30 +52,31 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Track whether `pre_episode` has been called at least once.
+        # Track whether `reset` has been called at least once.
         # There are two separate issues this helps avoid:
         #
         # 1. Some internal variables in SMs and LMs (e.g., `stepwise_targets_list`,
         #    `terminal_state`, `is_exploring`) are not initialized
-        #    in `__init__`, but only inside `pre_episode`. Ideally, these should be
-        #    initialized once in `__init__` and reset in `pre_episode`, but fixing
+        #    in `__init__`, but only inside `reset`. Ideally, these should be
+        #    initialized once in `__init__` and reset in `reset`, but fixing
         #    this would require changes across multiple classes.
         #
         # 2. The order of operations: Graphs are loaded into LMs *after* the Monty
-        #    object is constructed but *before* `pre_episode` is called. Some
+        #    object is constructed but *before* `reset` is called. Some
         #    functions (e.g., in `EvidenceGraphLM`) depend on the graph being loaded to
-        #    compute initial possible matches inside `pre_episode`, and this cannot
+        #    compute initial possible matches inside `reset`, and this cannot
         #    be safely moved into `__init__`.
         #
-        # As a workaround, we allow `pre_episode` to run normally once (to complete
+        # As a workaround, we allow `reset` to run normally once (to complete
         # required initialization), and skip full resets on subsequent calls.
-        # TODO: Remove initialization logic from `pre_episode`
-        self.init_pre_episode = False
+        # TODO: Remove initialization logic from `reset`
+        self._super_reset_called = False
+        self._super_set_ground_truth_called = False
 
-    def pre_episode(self, primary_target, semantic_id_to_label=None) -> None:
-        if not self.init_pre_episode:
-            self.init_pre_episode = True
-            return super().pre_episode(primary_target, semantic_id_to_label)
+    def reset(self) -> None:
+        if not self._super_reset_called:
+            self._super_reset_called = True
+            return super().reset()
 
         # reset terminal state
         self._is_done = False
@@ -80,15 +84,24 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         self.switch_to_matching_step()
         self._reset_terminal_states()
 
+        # reset LMs and SMs buffers to save memory
+        self._reset_modules_buffers()
+
+    def fixme_set_ground_truth(
+        self,
+        primary_target: dict[str, Any] | None = None,
+        semantic_id_to_label: dict[SemanticID, str] | None = None,
+    ) -> None:
+        if not self._super_set_ground_truth_called:
+            self._super_set_ground_truth_called = True
+            return super().fixme_set_ground_truth(primary_target, semantic_id_to_label)
+
         # keep target up-to-date for logging
         self.primary_target = primary_target
         self.semantic_id_to_label = semantic_id_to_label
         for lm in self.learning_modules:
             lm.primary_target = primary_target["object"]
             lm.primary_target_rotation_quat = primary_target["quat_rotation"]
-
-        # reset LMs and SMs buffers to save memory
-        self._reset_modules_buffers()
 
     def _reset_terminal_states(self):
         for lm in self.learning_modules:

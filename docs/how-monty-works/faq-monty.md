@@ -3,7 +3,7 @@ title: FAQ - Monty
 description: Frequently asked questions about the Thousand Brains Theory, Monty, thousand-brains systems, and the underlying algorithms.
 ---
 
-Below are responses to some of the frequently asked questions we have encountered. However, this is not an exhaustive list, so if you have a question, please reach out to us and the rest of the community at our [Discourse page](https://thousandbrains.discourse.group/). We will also update this page with new questions as they come up.
+Below are responses to some of the frequently asked questions we have encountered. However, this is not an exhaustive list, so if you have a question, please reach out to us and the rest of the community at our [Discourse page](https://forum.thousandbrains.org/). We will also update this page with new questions as they come up.
 
 # General
 
@@ -106,9 +106,9 @@ It might be helpful to think of the difference between prokaryotic organisms tha
 
 Deep learning is a powerful technology - we use large-language models ourselves, and systems such as AlphaFold are an amazing opportunity for biological research. However, we believe that there are many core assumptions in deep learning that are inconsistent with the operating principles of the brain. It is often tempting when implementing a component in an intelligent system to reach for a deep learning solution. However, we have made most conceptual progress when we have set aside the black box of deep learning and worked from basic principles of known neuroscience and the problems that brains must solve. 
 
-Moreover, deep learning faces fundamental challenges around sample efficiency, robustness, and continual learning - all of which are problematic properties for building robust intelligence that can operate in the real world. You can read more about our thoughts on deep learning in the Background section of our paper, [Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://arxiv.org/abs/2507.04494).
+Moreover, deep learning faces fundamental challenges around sample efficiency, robustness, and continual learning - all of which are problematic properties for building robust intelligence that can operate in the real world. You can read more about our thoughts on deep learning in the Background section of our paper, [Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://doi.org/10.1162/NECO.a.1508).
 
-There may come a time where we leverage deep learning components, particularly for more "sub-cortical" processing such as low-level feature extraction, and model-free motor policies (see below), however we will avoid this until they prove themselves to be absolutely essential. This is reflected in our [request that code contributions are in Numpy, rather than PyTorch](https://thousandbrainsproject.readme.io/docs/style-guide#numpy-preferred-over-pytorch).
+There may come a time where we leverage deep learning components, particularly for more "sub-cortical" processing such as low-level feature extraction, and model-free motor policies (see below), however we will avoid this until they prove themselves to be absolutely essential. This is reflected in our [request that code contributions are in Numpy, rather than PyTorch](https://docs.thousandbrains.org/docs/style-guide#numpy-preferred-over-pytorch).
 
 ## What is the Relationship of the Thousand Brains Theory to Reinforcement Learning?
 

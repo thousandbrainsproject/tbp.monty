@@ -7,7 +7,7 @@ A tool that
 
 ## Setup
 
-First, ensure you've setup Monty. See [Getting Started - 2. Set up Your Environment](https://thousandbrainsproject.readme.io/docs/getting-started#2-set-up-your-environment).
+First, ensure you've setup Monty. See [Getting Started - 2. Set up Your Environment](https://docs.thousandbrains.org/docs/getting-started#2-set-up-your-environment).
 
 Next, from the root Monty directory, install this tool's dependencies:
 

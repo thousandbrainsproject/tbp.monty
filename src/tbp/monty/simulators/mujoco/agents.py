@@ -35,7 +35,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
-from tbp.monty.frameworks.sensors import SensorConfig, SensorID
+from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
 
@@ -45,9 +45,31 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# The default field of view value for zoom 1.0
-# Note: this value is the half-FOV rather than the full FOV
-DEFAULT_CAMERA_FOVY: float = 45.0
+# The default horizontal field of view value for zoom 1.0
+# This value needs to stay in sync with the value in the `DepthTo3DLocations` transform.
+# TODO: Make this configurable
+DEFAULT_CAMERA_FOVH: float = 90.0
+
+
+def zoom_fovy(base_fovh: float, resolution: Resolution2D, zoom: float) -> float:
+    """Calculate the vertical field of view for a given zoom level and resolution.
+
+    This helper function takes the base horizontal field of view along with the
+    resolution and requested zoom level and returns the correct vertical field of
+    view angle for that zoom level.
+
+    MuJoCo only allows us to set the vertical field of view for a camera, and
+    DepthTo3DLocations uses horizontal field of view.
+
+    Returns:
+        zoomed vertical field of view angle in degrees.
+    """
+    resolution_ratio = resolution.height / resolution.width
+    base_fovh_radians = np.deg2rad(base_fovh)
+    zoom_fovy_radians = 2 * np.arctan2(
+        resolution_ratio * np.tan(base_fovh_radians / 2.0), zoom
+    )
+    return np.rad2deg(zoom_fovy_radians)
 
 
 class Axis(IntEnum):
@@ -129,10 +151,14 @@ class Embodiment(Agent):
         for sensor_id, sensor_cfg in self._sensor_configs.items():
             sensor_body.add_camera(
                 name=f"{self.id}.{sensor_id}",
-                pos=sensor_cfg["position"],
-                quat=sensor_cfg["rotation"],
+                pos=sensor_cfg.position,
+                quat=sensor_cfg.rotation,
                 # Camera resolution isn't used in MuJoCo, so we're not setting it.
-                fovy=DEFAULT_CAMERA_FOVY / sensor_cfg["zoom"],
+                fovy=zoom_fovy(
+                    base_fovh=DEFAULT_CAMERA_FOVH,
+                    resolution=sensor_cfg.resolution,
+                    zoom=sensor_cfg.zoom,
+                ),
             )
 
     @property
@@ -177,9 +203,16 @@ class Embodiment(Agent):
     def observations(self) -> AgentObservations:
         obs = AgentObservations()
         for sensor_id, sensor_cfg in self._sensor_configs.items():
-            renderer = self.sim.renderer_for_res(sensor_cfg["resolution"])
+            renderer = self.sim.renderer_for_res(sensor_cfg.resolution)
             renderer.update_scene(self.sim.data, camera=f"{self.id}.{sensor_id}")
-            rgba_data = renderer.render()
+            # MuJoCo only renders RGB image data. Monty currently expects RGBA, so
+            # we need to add an alpha channel. We're setting it to a fully opaque
+            # value, since a camera should always return opaque pixel values for
+            # every location.
+            rgb_data = renderer.render()
+            rgba_data = np.dstack(
+                [rgb_data, np.full(rgb_data.shape[:2], 255, dtype=rgb_data.dtype)]
+            )
 
             renderer.enable_depth_rendering()
             depth_data = renderer.render()
@@ -212,9 +245,7 @@ class Embodiment(Agent):
             # configured position of the sensor (rel. agent) to compute positions.
             # This constraint can be removed by computing the sensor's position
             # relative agent from their world coordinates.
-            sensor_pos_rel_agent = sensor_body_rot_rel_agent.apply(
-                sensor_cfg["position"]
-            )
+            sensor_pos_rel_agent = sensor_body_rot_rel_agent.apply(sensor_cfg.position)
             sensor_states[sensor_id] = SensorState(
                 position=cast("VectorXYZ", tuple(sensor_pos_rel_agent)),
                 rotation=sensor_body_rot_quat,

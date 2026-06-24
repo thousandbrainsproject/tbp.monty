@@ -10,7 +10,7 @@ contributor: vkakerbeck
 status: paused
 ---
 
-We have added the Omniglot dataset as an environment to test Monty on (to see [this tutorial](https://thousandbrainsproject.readme.io/docs/using-monty-in-a-custom-application#example-1-omniglot) to see how to run those experiments)
+We have added the Omniglot dataset as an environment to test Monty on (to see [this tutorial](https://docs.thousandbrains.org/docs/using-monty-in-a-custom-application#example-1-omniglot) to see how to run those experiments)
 
 However, Monty's generalization ability on this dataset is not great, as the letters can vary widely in morphology if modeled as monolithic models. We expect this to be better when modeling the letters as compositional objects made up of individual strokes (modeled in the lower level) arranged relative to each other (modeled at higher level). See [this research meeting](https://youtu.be/-qPfBrTVoks?si=CEzb1uuZMXvgIJnJ&t=3782) for a discussion of the general issue and how hierarchy can solve it (starting at 1:03:00).
 

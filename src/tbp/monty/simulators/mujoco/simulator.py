@@ -36,13 +36,18 @@ from tbp.monty.frameworks.environments.environment import (
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
-from tbp.monty.frameworks.sensors import Resolution2D
+from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.mujoco.agents import Agent
 from tbp.monty.simulators.mujoco.objects import (
     ObjectMetadata,
     load_object_metadata,
 )
+
+# Scaling factor to make MuJoCo primitives roughly the same size
+# as their Habitat counterparts. This was determined by trial and error.
+HABITAT_SCALING_FACTOR = (0.1, 0.1, 0.1)
 
 if TYPE_CHECKING:
     from functools import partial
@@ -58,6 +63,22 @@ PRIMITIVE_OBJECTS = {
     "sphere": mjtGeom.mjGEOM_SPHERE,
 }
 
+# Define primitives with the same names as Habitat uses so we don't
+# have to define new environment interface configurations during the
+# transition period.
+# TODO: remove once Habitat is gone and the test configs are updated to use
+#   MuJoCo names for these objects.
+HABITAT_PRIMITIVE_OBJECTS = {
+    "capsule3DSolid": mjtGeom.mjGEOM_CAPSULE,
+    "cubeSolid": mjtGeom.mjGEOM_BOX,
+    "cylinderSolid": mjtGeom.mjGEOM_CYLINDER,
+    # We're substituting a sphere for a cone because MuJoCo lacks a
+    # cone primitive object as an option.
+    "coneSolid": mjtGeom.mjGEOM_SPHERE,
+}
+
+# Default rendering resolution in the event that there are no sensor
+# configurations, e.g. in tests.
 DEFAULT_RESOLUTION = Resolution2D(width=64, height=64)
 
 
@@ -172,8 +193,8 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         if self._agents:
             render_resolution = self._max_sensor_resolution()
         g = self.spec.visual.global_
-        g.offheight = render_resolution["height"]
-        g.offwidth = render_resolution["width"]
+        g.offheight = render_resolution.height
+        g.offwidth = render_resolution.width
 
     def _configure_lights(self) -> None:
         """Configure the lights as needed.
@@ -211,10 +232,10 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         Returns:
             a renderer of the specified resolution
         """
-        resolution_key = (resolution["height"], resolution["width"])
+        resolution_key = (resolution.height, resolution.width)
         if resolution_key not in self._renderers:
             self._renderers[resolution_key] = Renderer(
-                height=resolution["height"], width=resolution["width"], model=self.model
+                height=resolution.height, width=resolution.width, model=self.model
             )
         return self._renderers[resolution_key]
 
@@ -239,14 +260,14 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         max_width = max_height = 0
         # Introspect the agent partials to determine what the original sensor
         # configs were, so we can determine the maximum resolution needed.
-        sensor_configs = [
+        agent_sensor_cfgs: list[dict[SensorID, SensorConfig]] = [
             p.keywords["sensor_configs"]
             for p in cast("list[partial[Agent]]", self._agent_partials)
         ]
-        for sensor_cfg in sensor_configs:
-            for sensor in sensor_cfg.values():
-                max_height = max(max_height, sensor["resolution"]["height"])
-                max_width = max(max_width, sensor["resolution"]["width"])
+        for sensor_cfgs in agent_sensor_cfgs:
+            for sensor_cfg in sensor_cfgs.values():
+                max_height = max(max_height, sensor_cfg.resolution.height)
+                max_width = max(max_width, sensor_cfg.resolution.width)
         return Resolution2D(height=max_height, width=max_width)
 
     def remove_all_objects(self) -> None:
@@ -274,6 +295,15 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         obj_name = f"{name}_{self._object_count}"
 
         if name in PRIMITIVE_OBJECTS:
+            self._add_primitive_object(obj_name, name, position, rotation, scale)
+        elif name in HABITAT_PRIMITIVE_OBJECTS:
+            # Habitat primitive objects are much smaller than the default MuJoCo ones
+            # so we need to adjust the default scale.
+            scale = (
+                scale[0] * HABITAT_SCALING_FACTOR[0],
+                scale[1] * HABITAT_SCALING_FACTOR[1],
+                scale[2] * HABITAT_SCALING_FACTOR[2],
+            )
             self._add_primitive_object(obj_name, name, position, rotation, scale)
         else:
             self._add_custom_object(obj_name, name, position, rotation, scale)
@@ -408,15 +438,31 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             rotation: Initial orientation of the object.
             scale: Initial scale of the object.
         """
+        # In Habitat, the capsule is initially oriented with the round portions at the
+        # top and bottom along the vertical Y axis. MuJoCo places the capsule with the
+        # round ends pointing towards and away from the agent along the Z axis.
+        # To mimic Habitat's behaviour, we need to rotate the primitive object to
+        # include that orientation change.
+        habitat_correction_rot = Rotation.from_euler("x", -90, degrees=True)
+        rotation_rot = Rotation.from_quat(rotation)
+        rotation_rot = rotation_rot * habitat_correction_rot
+        rotation_quat = rotation_rot.as_quat()
+
         world_body: MjsBody = self.spec.worldbody
-        geom_type = PRIMITIVE_OBJECTS[object_type]
+
+        # TODO: remove try and except clauses when Habitat is removed
+        try:
+            geom_type = PRIMITIVE_OBJECTS[object_type]
+        except KeyError:
+            geom_type = HABITAT_PRIMITIVE_OBJECTS[object_type]
+
         # TODO: should we encapsulate primitive objects into bodies?
         world_body.add_geom(
             name=obj_name,
             type=geom_type,
             size=scale,
             pos=position,
-            quat=rotation,
+            quat=rotation_quat,
         )
 
     @property

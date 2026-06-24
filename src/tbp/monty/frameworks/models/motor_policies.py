@@ -18,13 +18,17 @@ import math
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Literal, Protocol, cast
 
 import numpy as np
 import quaternion as qt
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.motor_system import (
+    ExperimentMotorPolicy,
+    ExperimentMotorSystem,
+)
 from tbp.monty.frameworks.actions.action_samplers import ActionSampler
 from tbp.monty.frameworks.actions.actions import (
     Action,
@@ -55,7 +59,6 @@ from tbp.monty.memento import Memento, Snapshotable
 if TYPE_CHECKING:
     from os import PathLike
 
-    from tbp.monty.frameworks.models.motor_system import MotorSystem
 
 __all__ = [
     "BasePolicy",
@@ -63,6 +66,7 @@ __all__ = [
     "MotorPolicy",
     "NaiveScanPolicy",
     "NoGoalProvided",
+    "RuntimeMotorPolicy",
     "SurfacePolicy",
     "SurfacePolicyCurvatureInformed",
 ]
@@ -105,27 +109,9 @@ class MotorPolicyResult:
     status: PolicyStatus = PolicyStatus.READY
 
 
-class MotorPolicy(Snapshotable, abc.ABC):
-    """The abstract scaffold for motor policies."""
+class RuntimeMotorPolicy(Protocol):
+    """Monty runtime interface to a Motor Policy."""
 
-    @abc.abstractmethod
-    def pre_episode(self, motor_system: MotorSystem) -> None:
-        """Pre episode hook.
-
-        Args:
-            motor_system: The motor system.
-        """
-        pass
-
-    @abc.abstractmethod
-    def state_dict(self) -> Memento:
-        pass
-
-    @abc.abstractmethod
-    def load_state_dict(self, memento: Memento) -> None:
-        pass
-
-    @abc.abstractmethod
     def __call__(
         self,
         ctx: RuntimeContext,
@@ -148,6 +134,33 @@ class MotorPolicy(Snapshotable, abc.ABC):
         Returns:
             The motor policy result.
         """
+        ...
+
+
+class MotorPolicy(RuntimeMotorPolicy, ExperimentMotorPolicy, Snapshotable, abc.ABC):
+    """The abstract scaffold for motor policies."""
+
+    @abc.abstractmethod
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    @abc.abstractmethod
+    def state_dict(self) -> Memento:
+        pass
+
+    @abc.abstractmethod
+    def load_state_dict(self, memento: Memento) -> None:
+        pass
+
+    @abc.abstractmethod
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        state: MotorSystemState,
+        percept: Message,
+        goal: Goal | None,
+    ) -> MotorPolicyResult:
         pass
 
 
@@ -156,7 +169,7 @@ class BasePolicy(MotorPolicy):
         self,
         action_sampler: ActionSampler,
         agent_id: AgentID,
-    ):
+    ) -> None:
         """Initialize a base policy.
 
         Args:
@@ -193,7 +206,7 @@ class BasePolicy(MotorPolicy):
         """
         return MotorPolicyResult([self.action_sampler.sample(self.agent_id, ctx.rng)])
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:
         pass
 
     def state_dict(self) -> Memento:
@@ -215,7 +228,7 @@ class InformedPolicyRandomWalk(MotorPolicy):
         self,
         agent_id: AgentID,
         action_sampler: ActionSampler,
-    ):
+    ) -> None:
         """Initialize a base policy.
 
         Args:
@@ -263,7 +276,7 @@ class InformedPolicyRandomWalk(MotorPolicy):
 
         return MotorPolicyResult([])
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:  # noqa: ARG002
         self._undo_action = None
 
     def state_dict(self) -> Memento:
@@ -387,7 +400,7 @@ class PredefinedPolicy(MotorPolicy):
         self.episode_step += 1
         return MotorPolicyResult(actions)
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:  # noqa: ARG002
         self.episode_step = 0
 
     def state_dict(self) -> Memento:
@@ -436,9 +449,9 @@ class JumpToGoal(MotorPolicy):
             "undo_jump_actions": self._undo_actions,
         }
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:  # noqa: ARG002
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:  # noqa: ARG002
         self._undo_action = None
-        self._reset()
+        self._reset_jump_state()
 
     def __call__(
         self,
@@ -524,14 +537,14 @@ class JumpToGoal(MotorPolicy):
         if self._should_undo(observations):
             logger.debug("Returning to previous position")
             result = MotorPolicyResult(self._undo_actions)
-            self._reset()
+            self._reset_jump_state()
             return result
 
         logger.debug(
             "Object visible, maintaining new pose for hypothesis-testing action"
         )
 
-        self._reset()
+        self._reset_jump_state()
         return None
 
     def _derive_set_agent_pose_from_goal(self, goal: Goal) -> SetAgentPose:
@@ -559,7 +572,7 @@ class JumpToGoal(MotorPolicy):
             rotation_quat=target_quat,
         )
 
-    def _reset(self) -> None:
+    def _reset_jump_state(self) -> None:
         self._is_jumping = False
         self._pre_jump_state = None
         self._undo_actions = []
@@ -684,10 +697,10 @@ class InformedPolicy(BasePolicy):
         self._pre_jump_state: AgentState | None = None
         self._undo_jump_actions: list[Action] = []
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:
         self._undo_action = None
         self._reset_jump_state()
-        return super().pre_episode(motor_system)
+        return super().reset(motor_system)
 
     def __call__(
         self,
@@ -939,7 +952,7 @@ class NaiveScanPolicy(InformedPolicy):
         self,
         fixed_amount,
         **kwargs,
-    ):
+    ) -> None:
         """Initialize policy."""
         # Mostly use version of InformedPolicy to get the good view in the beginning
         # TODO: maybe separate this out.
@@ -997,8 +1010,8 @@ class NaiveScanPolicy(InformedPolicy):
         self.step_on_action += 1
         return MotorPolicyResult([self._naive_scan_actions[self.current_action_id]])
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:
-        super().pre_episode(motor_system)
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:
+        super().reset(motor_system)
         self.steps_per_action = 1
         self.current_action_id = 0
         self.step_on_action = 0
@@ -1062,7 +1075,7 @@ class SurfacePolicy(InformedPolicy):
         self.last_surface_policy_action: Action | None = None
         self._telemetry = SurfacePolicyTelemetry()
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:
         self.tangential_angle = 0
         self.touch_search_amount = 0  # Track how many rotations the agent has made
         # along the horizontal plane searching for an object; when this reaches 360,
@@ -1075,7 +1088,7 @@ class SurfacePolicy(InformedPolicy):
         #       procedure for surface agents instead.
         motor_system.motor_only_step = True
 
-        return super().pre_episode(motor_system)
+        return super().reset(motor_system)
 
     def _touch_object(
         self,
@@ -1660,7 +1673,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         min_general_steps,
         min_heading_steps,
         **kwargs,
-    ):
+    ) -> None:
         """Initialize policy.
 
         Args:
@@ -1695,8 +1708,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.tangent_locs = []
         self.tangent_norms = []
 
-    def pre_episode(self, motor_system: MotorSystem) -> None:
-        super().pre_episode(motor_system)
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:
+        super().reset(motor_system)
 
         # == Variables for representing heading ==
         # We represent it both in angular and vector form as under different settings,

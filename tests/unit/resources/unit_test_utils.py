@@ -7,11 +7,14 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import copy
 from unittest import TestCase
 
 import numpy as np
+from pandas import DataFrame
+from torch_geometric.data import Data
 
 from tbp.monty.cmp import Message
 from tbp.monty.conf.make_environment import (
@@ -22,7 +25,7 @@ from tbp.monty.geometry import Rotation
 
 
 class BaseGraphTest(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         print("setting up")
         fake_sender_id = "patch"
 
@@ -181,7 +184,7 @@ class BaseGraphTest(TestCase):
                 np_array = np.append(np_array, r)
         return np_array
 
-    def check_train_results(self, train_stats, num_lms=1):
+    def check_train_results(self, train_stats: DataFrame, num_lms: int = 1) -> None:
         for lm_id in range(num_lms):
             self.assertEqual(
                 train_stats["result"][0 * num_lms + lm_id],
@@ -274,7 +277,7 @@ class BaseGraphTest(TestCase):
                 "Rotation of cubeSolid not detected correctly.",
             )
 
-    def check_graphs_equal(self, g1, g2):
+    def check_graphs_equal(self, g1: Data, g2: Data) -> None:
         """Used for checking saving and loading.
 
         `g1` and `g2` are torch_geometric.data.data.Data objects. Check if all
@@ -308,7 +311,7 @@ class BaseGraphTest(TestCase):
         num_norm_same = (g1.norm == g2.norm).sum()
         self.assertEqual(num_norm_same, g1.norm.size(0) * g1.norm.size(1))
 
-    def check_eval_results(self, eval_stats, num_lms=1):
+    def check_eval_results(self, eval_stats: DataFrame, num_lms: int = 1) -> None:
         for lm_id in range(num_lms):
             self.assertEqual(
                 eval_stats["result"][0 * num_lms + lm_id],
@@ -344,7 +347,9 @@ class BaseGraphTest(TestCase):
                     f"capsule3DSolid was not detected by lm {lm_id}.",
                 )
 
-    def check_multilm_train_results(self, train_stats, num_lms, min_done):
+    def check_multilm_train_results(
+        self, train_stats: DataFrame, num_lms: int, min_done: int
+    ) -> None:
         for episode in range(4):
             no_match_count = 0
             for lm_id in range(num_lms):
@@ -373,7 +378,13 @@ class BaseGraphTest(TestCase):
                 f"Not enough correct LMs for train episode {episode}",
             )
 
-    def check_multilm_eval_results(self, eval_stats, num_lms, min_done, num_episodes=3):
+    def check_multilm_eval_results(
+        self,
+        eval_stats: DataFrame,
+        num_lms: int,
+        min_done: int,
+        num_episodes: int = 3,
+    ) -> None:
         for episode in range(num_episodes):
             correct_count = 0
             for lm_id in range(num_lms):

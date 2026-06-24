@@ -2,7 +2,7 @@
 title: Ways to Contribute
 ---
 
-Welcome, and thank you for your interest in contributing to Monty!
+Welcome, and thank you for your interest in contributing to Monty! (If you need more reasons for why getting involved in this project might be a great way to dedicate your time, see our [why contribute?](./why-contribute.md) page)
 
 We appreciate all of your contributions. Below, you will find a list of ways to get involved and help create AI based on principles of the neocortex.
 
@@ -15,6 +15,12 @@ There are many ways in which you can contribute to the code. For some suggestion
 
 Monty integrates code changes using GitHub Pull Requests. For details on how Monty uses Pull Requests, please consult the [Contributing Pull Requests](ways-to-contribute-to-code.md) guide.
 
+# Test Our Approach/Build a Demo
+
+The vision of this project is to implement a generally intelligent system that can solve a wide variety of sensorimotor tasks (at a minimum, any task the neocortex can solve that humans can perform with ease). To evaluate this, we are continually seeking ways to assess the system's capabilities. If you have an idea for how to test an important capability or an existing benchmark to compare our algorithm against, please consider contributing these. You can have a look at our [Project Showcase](../community/project-showcase.md) page for some inspiration from previous Monty demos.
+
+We also have a tutorial on [using Monty in a custom application](../how-to-use-monty/tutorials/using-monty-in-a-custom-application.md) to help you get started.
+
 # Document
 
 This project has many aspects and we try to document them all here in sufficient detail. However, you are the ultimate judge of whether this documentation is sufficient and what kind of information is missing. We try to update the documentation based on questions asked on our communication channels but we are always happy to get more help with this. 
@@ -23,17 +29,13 @@ Also, if you are contributing to our code, it helps everyone else to include a c
 
 Please see our [guide on contributing documentation](documentation.md).
 
-# Tutor
-
-As a Monty user or contributor, you can help others become familiar with different aspects of Monty. We are always looking for new approaches to ease the introduction to Monty and its concepts. See the [Contributing Tutorials](contributing-tutorials.md) guide on how you could add easy-to-follow tutorials for other users. You can also become active on our forum and help answer questions from others.
-
 # Discuss
 
-You can find the researchers, developers, and users of Monty on the [Thousand Brains Forum](https://thousandbrains.discourse.group/). Please join us there for active discussion on all things Monty and Thousand Brains.
+You can find the researchers, developers, and users of Monty on the [Thousand Brains Forum](https://forum.thousandbrains.org/). Please join us there for active discussion on all things Monty and Thousand Brains.
 
-# Test Our Approach
+# Tutor
 
-The vision of this project is to implement a generally intelligent system that can solve a wide variety of sensorimotor tasks (at a minimum, any task the neocortex can solve/humans can perform with ease). To evaluate this, we are continually looking for test beds in which we can assess the system's capabilities. If you have an idea of how to test an important capability or you have an existing benchmark on which you want to compare our algorithm, please consider contributing these. 
+As a Monty user or contributor, you can help others become familiar with different aspects of Monty. We are always looking for new approaches to ease the introduction to Monty and its concepts. See the [Contributing Tutorials](contributing-tutorials.md) guide on how you could add easy-to-follow tutorials for other users. You can also become active on our [forum](https://forum.thousandbrains.org/) and help answer questions from others.
 
 # Report an Issue
 
@@ -56,7 +58,7 @@ We look forward to your ideas. For smaller changes, consider creating a [new Fea
 We love seeing how you use Monty. If you created something interesting with it, whether a project, research paper, application, or blog post, share it with us.
 
 - **Showcase Your Projects**: Submit your projects to be featured on our [Showcase Page](../community/project-showcase.md). This is a great way to highlight your work and inspire others.
-- **Write a Blog Post**: Share your experience and insights by writing a blog post. Please share your post with the community on our [Discourse server](https://thousandbrains.discourse.group/).
+- **Write a Blog Post**: Share your experience and insights by writing a blog post. Please share your post with the community on our [Discourse server](https://forum.thousandbrains.org/).
 - **Publish a Paper**: If you use our Monty implementation or ideas from the Thousand Brains Theory in your next publication, we would like to feature you on our [TBP-based papers](../community/tbp-based-papers.md) list and increase the visibility of your research.
 - **Present at Community Events**: We host regular webinars and community meetups. If you are interested in presenting your project or research, please get in touch with us at [info@thousandbrains.org](mailto:info@thousandbrains.org).
 - **Social Media**: Share your creations on social media using the hashtag `#1000brainsproject`. Follow us on [X](https://x.com/1000brainsproj), [Bluesky](https://bsky.app/profile/thousandbrains.org) or [LinkedIn](https://www.linkedin.com/company/thousand-brains-project/), and subscribe to our [YouTube Channel](https://www.youtube.com/@thousandbrainsproject), or our [email list](https://thousandbrains.org/#newsletter).
@@ -67,7 +69,7 @@ Thank you for being a member of our community. By using Monty, you are already p
 
 ## Share Interesting Content
 
-Help the community discover relevant research by sharing interesting content related to neuroscience, reinforcement learning, SLAM, sparsity in neural networks, world models, sensorimotor AI, and computational neuroscience (grid cells, neocortex theories, hippocampus-thalamus-entorhinal cortex connections). Tag us on [Twitter/X](https://x.com/1000brainsproj) or [Bluesky](https://bsky.app/profile/thousandbrains.org), or post on our [forum](https://thousandbrains.discourse.group/) to bring relevant findings to our attention.
+Help the community discover relevant research by sharing interesting content related to neuroscience, reinforcement learning, SLAM, sparsity in neural networks, world models, sensorimotor AI, and computational neuroscience (grid cells, neocortex theories, hippocampus-thalamus-entorhinal cortex connections). Tag us on [Twitter/X](https://x.com/1000brainsproj) or [Bluesky](https://bsky.app/profile/thousandbrains.org), or post on our [forum](https://forum.thousandbrains.org/) to bring relevant findings to our attention.
 
 If you want to discuss further opportunities, such as mentioning us in a blog post or newspaper article or recording an interview with us, don't hesitate to contact [info@thousandbrains.org](mailto:info@thousandbrains.org).
 

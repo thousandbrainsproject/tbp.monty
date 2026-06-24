@@ -135,6 +135,6 @@ We are continually adding more videos to this playlist as we continue to explore
 [7] Clay, V., Leadholm, N., and Hawkins, J. (2024). **The thousand brains project: A new paradigm for sensorimotor intelligence.** URL: [https://arxiv.org/abs/2412.18354](https://arxiv.org/abs/2412.18354).  
 [8] Hawkins, J. C., Ahmad, S., Clay, V., & Leadholm, N. (2025). **Architecture and Operation of Intelligent System.** *U.S. Patent Application No. 18/751,199*.  
 [9] **Monty code:** [https://github.com/thousandbrainsproject/tbp.monty](https://github.com/thousandbrainsproject/tbp.monty)  
-[10] **TBP documentation**: [https://thousandbrainsproject.readme.io/docs/welcome-to-the-thousand-brains-project-documentation](https://thousandbrainsproject.readme.io/docs/welcome-to-the-thousand-brains-project-documentation) 
+[10] **TBP documentation**: [https://docs.thousandbrains.org/docs/welcome-to-the-thousand-brains-project-documentation](https://docs.thousandbrains.org/docs/welcome-to-the-thousand-brains-project-documentation) 
 [11] Hawkins, J., Leadholm, N. and Clay, V. (2025) **Hierarchy or Heterarchy? A Theory of Long-Range Connections for the Sensorimotor Brain** URL: [https://arxiv.org/pdf/2507.05888](https://arxiv.org/pdf/2507.05888)
 [12] Leadholm, N., Clay, V., Knudstrup, S., Lee, H., and Hawkins, J. (2025) **Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference** URL: [https://arxiv.org/abs/2507.04494](https://arxiv.org/abs/2507.04494)

@@ -6,11 +6,14 @@ estimated-scope: unknown
 improved-metric: numsteps, goal-policy
 output-type: PR, monty-feature
 skills: python, monty, refactoring
-contributor: tristanls-tbp
-status: scoping
+contributor: tristanls-tbp, scottcanoe
+status: completed
 ---
 
-We would like to implement a state-switching mechanism where the motor system can switch the policy that it is executing, depending on the goal it receives.
+For a high-level overview of the implemented solution, see this video:
+[Motor System Refactor to Allow Switching Policies](https://www.youtube.com/watch?v=axxcF3wyInI)
+
+We needed state-switching mechanism where the motor system can switch the policy that it is executing, depending on the goal it receives.
 
 For example, we might want to do a semi-random walk when the motor system is not receiving goals. We may want to switch to a saccade policy (rotating the sensor without moving it's position) when the sensor module sends a goal based on detected salient features.
 

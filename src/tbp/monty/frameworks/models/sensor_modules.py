@@ -425,7 +425,7 @@ class Probe(SensorModule):
     observations and does not emit a Cortical Message.
     """
 
-    def __init__(self, sensor_module_id: str, save_raw_obs: bool):
+    def __init__(self, sensor_module_id: str, save_raw_obs: bool) -> None:
         """Initialize the probe.
 
         Args:
@@ -445,8 +445,7 @@ class Probe(SensorModule):
     def state_dict(self) -> Memento:
         return self._snapshot_telemetry.state_dict()
 
-    def update_state(self, agent: AgentState):
-        """Update information about the sensors location and rotation."""
+    def update_state(self, agent: AgentState) -> None:
         sensor = agent.sensors[SensorID(self.sensor_module_id)]
         self.state = SensorState(
             position=agent.position
@@ -459,7 +458,7 @@ class Probe(SensorModule):
         ctx: RuntimeContext,  # noqa: ARG002
         observation: SensorObservation,
         motor_only_step: bool = False,  # noqa: ARG002
-    ) -> Message | None:
+    ) -> None:
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
                 observation, self.state.rotation, self.state.position
@@ -467,8 +466,7 @@ class Probe(SensorModule):
 
         return None
 
-    def pre_episode(self) -> None:
-        """Reset buffer and is_exploring flag."""
+    def reset(self) -> None:
         self._snapshot_telemetry.reset()
         self.is_exploring = False
 
@@ -651,14 +649,13 @@ class CameraSM(SensorModule):
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
 
-    def pre_episode(self) -> None:
+    def reset(self) -> None:
         self._snapshot_telemetry.reset()
         self._percept_filter.reset()
         self.is_exploring = False
         self.processed_obs = []
 
-    def update_state(self, agent: AgentState):
-        """Update information about the sensors location and rotation."""
+    def update_state(self, agent: AgentState) -> None:
         sensor = agent.sensors[SensorID(self.sensor_module_id)]
         self.state = SensorState(
             position=agent.position
@@ -676,7 +673,7 @@ class CameraSM(SensorModule):
         ctx: RuntimeContext,
         observation: SensorObservation,
         motor_only_step: bool = False,
-    ) -> Message | None:
+    ) -> Message:
         """Turn raw observations into dict of features at location.
 
         Args:

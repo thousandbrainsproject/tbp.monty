@@ -4,13 +4,13 @@ This folder contains Monty configurations.
 
 ## Experiments
 
-The `experiment` folder contains Monty experiment configurations. Most of these experiments are benchmarks and you can learn more about them at [Running Benchmarks](https://thousandbrainsproject.readme.io/docs/running-benchmarks). The experiments in the `experiment/tutorial` folder are used in [Tutorials](https://thousandbrainsproject.readme.io/docs/tutorials).
+The `experiment` folder contains Monty experiment configurations. Most of these experiments are benchmarks and you can learn more about them at [Running Benchmarks](https://docs.thousandbrains.org/docs/running-benchmarks). The experiments in the `experiment/tutorial` folder are used in [Tutorials](https://docs.thousandbrains.org/docs/tutorials).
 
 ### Pretraining models
 
 The pretraining configurations are used for running supervised pretraining experiments to generate the models used for follow-on benchmark evaluation experiments. These only need to be rerun if a functional change to the way a learning module learns is introduced. We keep track of version numbers for these, e.g., `ycb_pretrained_v12`.
 
-Note that instead of running pretraining, you can also download our pretrained models as outlined in our [getting started guide](https://thousandbrainsproject.readme.io/docs/getting-started#42-download-pretrained-models).
+Note that instead of running pretraining, you can also download our pretrained models as outlined in our [getting started guide](https://docs.thousandbrains.org/docs/getting-started#42-download-pretrained-models).
 
 > [!CAUTION]
 >
@@ -61,7 +61,7 @@ To generate models for the objects with logos experiments, run the following pre
 - `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl3_comp_models`
 
 
-For more details, see [Running Benchmarks](https://thousandbrainsproject.readme.io/docs/running-benchmarks) and [Benchmark Experiments](https://thousandbrainsproject.readme.io/docs/benchmark-experiments) in the documentation.
+For more details, see [Running Benchmarks](https://docs.thousandbrains.org/docs/running-benchmarks) and [Benchmark Experiments](https://docs.thousandbrains.org/docs/benchmark-experiments) in the documentation.
 
 ## Tests
 

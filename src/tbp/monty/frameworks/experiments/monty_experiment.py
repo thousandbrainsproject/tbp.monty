@@ -30,6 +30,7 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageInterface,
 )
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.loggers.exp_logger import (
@@ -55,6 +56,8 @@ class MontyExperiment:
     Monty model, the outermost loops for training and evaluating (including run epoch
     and episode).
     """
+
+    _step_hook: StepHook
 
     def __init__(self, config: DictConfig) -> None:
         """Initialize the experiment based on the provided configuration.
@@ -93,6 +96,10 @@ class MontyExperiment:
         self.eval_episodes = config.get("episode", 0)
 
         self._rng_seed_history: list[int] = []
+
+        self._step_hook = (
+            config["step_hook"] if "step_hook" in config else NoOpStepHook()
+        )
 
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
@@ -471,6 +478,14 @@ class MontyExperiment:
             self.pre_step(step, observations)
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
+                actions = self._step_hook(
+                    ctx,
+                    self.model,
+                    self.supervised_lm_ids if self.supervised_lm_ids else [],
+                    step,
+                    observations,
+                    actions,
+                )
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used
@@ -504,7 +519,7 @@ class MontyExperiment:
 
         self.reset_episode_rng()
 
-        self.model.pre_episode()
+        self.model.reset()
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps
@@ -530,7 +545,7 @@ class MontyExperiment:
         get 'confused'/'FP'.
         """
         self.logger_handler.post_episode(self.logger_args)
-        self.model.post_episode()
+        self.model.update_ltm()
 
         if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_episodes += 1
@@ -591,7 +606,7 @@ class MontyExperiment:
             self.eval_epochs += 1
             self.eval_env_interface.post_epoch()
 
-    def run(self):
+    def run(self) -> None:
         """Run the experiment."""
         if self.do_train:
             self.train()
@@ -609,7 +624,7 @@ class MontyExperiment:
             self.run_epoch()
         self.logger_handler.post_train(self.logger_args)
 
-    def evaluate(self):
+    def evaluate(self) -> None:
         """Run n_eval_epochs."""
         logger.info(f"running {self.n_eval_epochs} eval epochs")
         self.experiment_mode = ExperimentMode.EVAL
@@ -670,7 +685,9 @@ class MontyExperiment:
         for k in state_dict_keys:
             setattr(self, k, exp_state_dict[k])
 
-    def close(self):
+    def close(self) -> None:
+        self._step_hook.close()
+
         env = getattr(self, "env", None)
         if env is not None:
             env.close()

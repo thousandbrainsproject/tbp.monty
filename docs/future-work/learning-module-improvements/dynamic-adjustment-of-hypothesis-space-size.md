@@ -26,7 +26,7 @@ Monty relies heavily on the initial observation to sample its hypotheses.
 As a result, the entire hypothesis space is anchored to the morphological features present in that first observation.
 This makes it difficult for Monty to handle changes in object identity within a compositional model, or to accommodate pose changes that happen during interactions and behaviors.
 Sensor noise in the first observation can also affect all the generated hypotheses from this single step.
-More context for this future work item is provided [here](https://thousandbrainsproject.readme.io/docs/less-dependency-on-first-observation)
+More context for this future work item is provided [here](https://docs.thousandbrains.org/docs/less-dependency-on-first-observation)
 
 - **Inefficiency from maintaining unlikely hypotheses.**
 Since all hypotheses remain stored throughout the episode, even unlikely hypotheses require some computation and memory.
