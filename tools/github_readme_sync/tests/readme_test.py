@@ -317,6 +317,7 @@ This is a test document.""",
                 "hidden": False,
                 "order": 1,
                 "parentDoc": "parent-doc-id",
+                "slug": "new-doc"
             },
             {"x-readme-version": self.version},
         )
