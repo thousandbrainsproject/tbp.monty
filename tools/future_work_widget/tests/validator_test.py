@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import re
 import shutil
 import tempfile
 import unittest
@@ -65,6 +66,60 @@ class TestLoadAllowedValues(unittest.TestCase):
 
 
 class TestFutureWorkRecord(unittest.TestCase):
+    @staticmethod
+    def _repo_root() -> Path:
+        return Path(__file__).resolve().parents[3]
+
+    @staticmethod
+    def _parse_frontmatter_example(markdown: str) -> dict[str, str]:
+        match = re.search(
+            r"```example\n---\n(?P<frontmatter>.*?)\n---\n```",
+            markdown,
+            re.DOTALL,
+        )
+        if match is None:
+            raise AssertionError("Expected a fenced example frontmatter block")
+
+        example = {}
+        for line in match.group("frontmatter").splitlines():
+            key, value = line.split(":", 1)
+            example[key.strip()] = value.strip()
+
+        return example
+
+    def test_documentation_example_matches_allowed_metadata_values(self):
+        repo_root = self._repo_root()
+        docs_page = (
+            repo_root / "docs/contributing/documentation/future-work-widget-metadata.md"
+        )
+        example = self._parse_frontmatter_example(docs_page.read_text(encoding="utf-8"))
+        example.update(
+            {
+                "path": "future-work/future-work-widget.md",
+                "path1": "future-work",
+                "path2": "future-work-widget",
+            }
+        )
+
+        allowed_values = load_allowed_values(repo_root / "docs/snippets")
+
+        validated = FutureWorkRecord.model_validate(
+            example, context={"allowed_values": allowed_values}
+        )
+
+        self.assertEqual(
+            validated.skills,
+            [
+                "github-actions",
+                "python",
+                "github-readme-sync-tool",
+                "s3",
+                "javascript",
+                "html",
+                "css",
+            ],
+        )
+
     def test_validation_success(self):
         record = {
             "path": "future-work/test-item.md",
