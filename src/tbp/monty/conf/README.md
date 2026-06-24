@@ -35,17 +35,8 @@ The compositional benchmark uses objects with logo stickers as a single baseline
 
 To generate models for the objects with logos experiments, run the following pretraining in order. Some pretraining depends on the previous models.
 
-##### Phase 1
-
-- `python run_parallel.py experiment=supervised_pre_training_flat_objects_wo_logos`
-
-##### Phase 2
-
-- `python run_parallel.py experiment=supervised_pre_training_logos_after_flat_objects`
-
-##### Phase 3
-
-- `python run_parallel.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo`
+- `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_3d_children`
+- `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_2d_children`
 - `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_comp_models`
 - `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_monolithic_models`
 

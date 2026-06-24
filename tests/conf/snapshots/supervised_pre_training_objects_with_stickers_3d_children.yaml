@@ -209,6 +209,9 @@ experiment:
       object_names:
       - 001_cube
       - 006_disk
+      - 011_cylinder
+      - 016_sphere
+      - 023_mug
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
         rotations: ${constants.rotations_all}
@@ -234,7 +237,7 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: debugging
-      run_name: supervised_pre_training_flat_objects_wo_logos
+      run_name: supervised_pre_training_objects_with_stickers_3d_children
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
