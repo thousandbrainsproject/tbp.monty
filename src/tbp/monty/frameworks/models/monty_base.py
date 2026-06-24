@@ -139,6 +139,7 @@ class MontyBase(Monty):
                 "sensor_module id; no more, no less!"
             )
 
+        self._is_done: bool = False
         self._actions: list[Action] = []
         self._goals: list[Goal] = []
 

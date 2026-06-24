@@ -555,8 +555,11 @@ class GraphLM(LearningModule):
         self.target_to_graph_id = {}
         self.graph_id_to_target = {}
         self.primary_target = None
+        self.possible_matches = {}
+        self.possible_paths = {}
         self.detected_object = None
         self.detected_pose = [None for _ in range(7)]
+        self.detected_rotation_r = None
         # Will always be set during experiment setup, just setting here for unit tests
         self.has_detailed_logger = False
         self.symmetry_evidence = 0
