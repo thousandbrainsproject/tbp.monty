@@ -274,9 +274,7 @@ This is a test document.""",
     def test_create_category_if_not_exists(self, mock_post, mock_get):
         mock_get.return_value = None
         mock_post.return_value = json.dumps({"_id": "new-category-id"})
-        category_id, created = self.readme.create_category_if_not_exists(
-            "new-category", "New Category"
-        )
+        category_id, created = self.readme.create_category_if_not_exists("New Category")
         self.assertTrue(created)
         self.assertEqual(category_id, "new-category-id")
         mock_get.assert_called_once_with(
