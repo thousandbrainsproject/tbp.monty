@@ -121,7 +121,7 @@ These experiments are currently run without multiprocessing (using `run.py`).
 
 ## Logos on Objects
 
-The following experiments evaluate Monty's ability to learn and infer compositional objects, where these consist of simple 3D objects (a disk, a cube, a cylinder, a sphere, and a mug) with 2D logos on their surface. The logos are either the [TBP](https://thousandbrains.org/) logo or the [Numenta](https://www.numenta.com/) logo. In the dataset, the logos can be in a standard orientation on the object, or oriented vertically. Finally, there is an instance of the mug with the TBP logo bent half-way along the logo at 45 degrees.
+The baseline compositional benchmark evaluates Monty's ability to learn and infer compositional objects, where these consist of simple 3D objects (a disk, a cube, a cylinder, a sphere, and a mug) with 2D logo stickers on their surface. The stickers are either the [TBP](https://thousandbrains.org/) logo or the [Numenta](https://www.numenta.com/) logo. In the dataset, the stickers can be in a standard orientation on the object, or oriented vertically.
 
 ![](../figures/overview/comp_logo_dataset_examples.png)
 
@@ -174,11 +174,7 @@ Note: To obtain these results, pretraining was run without parallelization acros
 > python run.py experiment=supervised_pre_training_flat_objects_wo_logos
 > python run.py experiment=supervised_pre_training_logos_after_flat_objects
 > python run.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_monolithic_models
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl2_comp_models
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl3_comp_models
+> python run.py experiment=supervised_pre_training_objects_with_stickers_comp_models
 > ```
 
 > [!NOTE]

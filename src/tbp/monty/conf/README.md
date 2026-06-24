@@ -29,16 +29,11 @@ To generate models for the YCB experiments, run the following pretraining:
 
 All of the above can be run at the same time, in parallel.
 
-#### Objects with logos Experiments
+#### Objects with Logos Experiments
 
-There are 4 levels of difficulty for testing compositional models:
+The compositional benchmark uses objects with logo stickers as a single baseline condition. It includes flat objects, curved objects, and rotated logo stickers.
 
-1. Logos on flat surfaces
-2. Logos on curved surfaces
-3. Logos at different rotations
-4. Logos with bends
-
-To generate models for the objects with logos experiments, run the following pretraining. Note that some of the pretraining depends on the previous ones.
+To generate models for the objects with logos experiments, run the following pretraining in order. Some pretraining depends on the previous models.
 
 ##### Phase 1
 
@@ -51,14 +46,7 @@ To generate models for the objects with logos experiments, run the following pre
 ##### Phase 3
 
 - `python run_parallel.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo`
-- `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl1_monolithic_models`
-- `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models`
-- `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling`
-
-##### Phase 4
-
-- `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl2_comp_models`
-- `python run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl3_comp_models`
+- `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_comp_models`
 
 
 For more details, see [Running Benchmarks](https://docs.thousandbrains.org/docs/running-benchmarks) and [Benchmark Experiments](https://docs.thousandbrains.org/docs/benchmark-experiments) in the documentation.

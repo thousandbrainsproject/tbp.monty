@@ -213,6 +213,25 @@ experiment:
       - 004_cube_numenta_horz
       - 007_disk_tbp_horz
       - 009_disk_numenta_horz
+      - 011_cylinder
+      - 016_sphere
+      - 023_mug
+      - 012_cylinder_tbp_horz
+      - 014_cylinder_numenta_horz
+      - 017_sphere_tbp_horz
+      - 019_sphere_numenta_horz
+      - 024_mug_tbp_horz
+      - 026_mug_numenta_horz
+      - 003_cube_tbp_vert
+      - 005_cube_numenta_vert
+      - 008_disk_tbp_vert
+      - 010_disk_numenta_vert
+      - 013_cylinder_tbp_vert
+      - 015_cylinder_numenta_vert
+      - 018_sphere_tbp_vert
+      - 020_sphere_numenta_vert
+      - 025_mug_tbp_vert
+      - 027_mug_numenta_vert
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
         rotations: ${constants.rotations_all}
@@ -238,14 +257,14 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: debugging
-      run_name: supervised_pre_training_objects_with_logos_lvl1_comp_models
+      run_name: supervised_pre_training_objects_with_stickers_comp_models
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3
-    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_logos_after_flat_objects/pretrained/
+    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_curved_objects_after_flat_and_logo/pretrained/
     min_lms_match: 2
     seed: 42
     supervised_lm_ids:
