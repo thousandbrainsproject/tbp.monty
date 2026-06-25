@@ -510,14 +510,11 @@ class EvidenceGraphLM(GraphLM):
         # )
         return Message(
             # Same as input location from patch (rel body)
-            # NOTE: Just for common format at the moment, movement information will be
-            # taken from the sensor. For higher level LMs, we may want to transmit the
-            # motor efference copy here.
+            # NOTE: The receiving LM extracts the location information directly from
+            # the SM, so we set the location to `None` here.
             # TODO: get motor efference copy here. Need to refactor motor command
             # selection for this.
-            # location rel. body -> same as sensor input to higher LM (assuming they are
-            # colocated) so it is not used.
-            location=self.buffer.get_current_location(),
+            location=None,
             morphological_features={
                 "pose_vectors": pose_features,
                 "pose_fully_defined": not self._enough_symmetry_evidence_accumulated(),

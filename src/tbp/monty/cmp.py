@@ -74,9 +74,10 @@ class Message:
 
     def __repr__(self):
         """Return a string representation of the object."""
+        location = np.round(self.location, 3) if self.location is not None else None
         repr_string = (
             f"Message from {self.sender_id}:\n"
-            f"   Location: {np.round(self.location, 3)}.\n"
+            f"   Location: {location}.\n"
             f"   Morphological Features: \n"
         )
         if self.morphological_features is not None:
@@ -201,9 +202,10 @@ class Message:
             "pose_fully_defined must be a boolean but type is "
         )
         f"{type(self.morphological_features['pose_fully_defined'])}"
-        assert self.location.shape == (3,), (
-            f"Location must be a 3D vector but shape is {self.location.shape}"
-        )
+        if self.location is not None:
+            assert self.location.shape == (3,), (
+                f"Location must be a 3D vector but shape is {self.location.shape}"
+            )
         assert self.confidence >= 0 and self.confidence <= 1, (
             f"Confidence must be in [0,1] but is {self.confidence}"
         )
