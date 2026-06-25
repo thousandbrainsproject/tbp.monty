@@ -57,6 +57,7 @@ class MontyExperiment:
     and episode).
     """
 
+    _recreation_mode: bool
     _step_hook: StepHook
 
     def __init__(self, config: DictConfig) -> None:
@@ -66,6 +67,9 @@ class MontyExperiment:
             config: config specifying variables of the experiment.
         """
         self.config = config
+
+        # Feature flag for "recreation" episode/epoch strategy.
+        self._recreation_mode = False
 
         self.rng = np.random.RandomState(config["seed"])
 
@@ -458,6 +462,21 @@ class MontyExperiment:
     # Methods for running the experiment
     ####
 
+    def _recreation_snapshot(self) -> None:
+        if self._recreation_mode:
+            self.model.update_ltm()
+            # TODO: create a snapshot of the episodic state
+        else:
+            self.model.update_ltm()
+
+    def _recreation_restore(self) -> None:
+        if self._recreation_mode:
+            # TODO: restore episodic state from the snapshot
+            self.model.set_experiment_mode(self.experiment_mode)
+            self.model.reset()
+        else:
+            self.model.reset()
+
     def pre_step(self, _step, _observation) -> None:
         """Hook for anything you want to do before a step."""
         self.logger_handler.pre_step(self.logger_args)
@@ -519,7 +538,8 @@ class MontyExperiment:
 
         self.reset_episode_rng()
 
-        self.model.reset()
+        self._recreation_restore()
+
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps
@@ -545,7 +565,8 @@ class MontyExperiment:
         get 'confused'/'FP'.
         """
         self.logger_handler.post_episode(self.logger_args)
-        self.model.update_ltm()
+
+        self._recreation_snapshot()
 
         if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_episodes += 1
