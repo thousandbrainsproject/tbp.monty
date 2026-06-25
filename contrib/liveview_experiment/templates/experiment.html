@@ -352,11 +352,12 @@
             <div class="section-title">
                 <span>Episode: {{ publisher.run_name }}</span>
                 <span style="font-size: 11px; color: #6b7280; font-weight: normal;">
-                    Step {{ publisher.sensor_image_step }} • {{ publisher.chart_point_count }} evidence points
+                    Step {{ publisher.sensor_image_step }}{% if publisher.chart_point_count > 0 %} • {{ publisher.chart_point_count }} evidence points{% endif %}
                 </span>
             </div>
             
-            <!-- Current Max Evidence inline -->
+            <!-- Current Max Evidence inline (only for evidence publishers) -->
+            {% if publisher.chart_point_count > 0 %}
             <div class="info-row">
                 <span class="info-label">Max Evidence:</span>
                 {% if publisher.current_max_evidence_object %}
@@ -365,6 +366,7 @@
                 <span class="info-value">N/A</span>
                 {% endif %}
             </div>
+            {% endif %}
 
             <!-- Sensor Images Side by Side -->
             {% if publisher.has_sensor_images %}
@@ -388,7 +390,8 @@
             </div>
             {% endif %}
 
-            <!-- Evidence Chart -->
+            <!-- Evidence Chart (only for evidence publishers) -->
+            {% if publisher.chart_point_count > 0 %}
             <div phx-hook="EvidenceChart" id="evidence-chart-wrapper-{{ publisher.run_name }}" style="margin-top: 12px;">
                 <div id="evidence-chart-container-{{ publisher.run_name }}" 
                      phx-update="ignore"
@@ -409,6 +412,8 @@
                     {% endfor %}
                 </div>
             </div>
+            {% endif %}
+            <!-- end chart_point_count check -->
         </div>
             {% endif %}
             {% endfor %}

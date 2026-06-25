@@ -198,6 +198,8 @@ Every upstream experiment can be run with LiveView via mode 2 (no per-experiment
 
 > **Legend:** 📷 = shows camera/sensor images in dashboard | 📊 = evidence chart (all experiments show this)
 
+> **Multi-sensor views:** Experiments with multiple sensor modules (e.g., `dist_agent` with 5+ patches + view_finder) show each sensor as a separate publisher section in the dashboard, with its own Camera and Depth image pair. The 5-LM dist_agent experiment shows 7 publisher sections (main evidence chart + 6 sensor views).
+
 **LiveView-specific configs** (in `contrib/liveview_experiment/conf/experiment/`):
 ```bash
 ./contrib/liveview_experiment/scripts/run.sh randrot_10distinctobj_surf_agent_with_liveview
@@ -206,19 +208,19 @@ Every upstream experiment can be run with LiveView via mode 2 (no per-experiment
 
 **77-object benchmarks:**
 ```bash
-# 📷 Surface agent — camera views shown (auto-enabled via save_raw_obs override)
+# 📷 Surface agent — 1 camera + depth view
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_77obj_surf_agent  # 99.57%, ~97s/ep
 ./contrib/liveview_experiment/scripts/run.sh base_77obj_surf_agent            # 100.00%, ~24s/ep
 # Distant agent: fixed camera observes from distance
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_77obj_dist_agent   # 96.97%, ~57s/ep
 ./contrib/liveview_experiment/scripts/run.sh base_77obj_dist_agent            # 98.27%, ~24s/ep
-# 5-LM distant agent: 5 learning modules voting
+# 📷 5-LM distant agent: 5 learning modules voting, 6 camera views (5 patches + view_finder)
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_77obj_5lms_dist_agent  # 92.21%, ~96s/ep
 ```
 
 **10-object benchmarks:**
 ```bash
-# 📷 All surface agent experiments — camera views shown (auto-enabled via override)
+# 📷 All surface agent experiments — 1 camera + depth view
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_10distinctobj_surf_agent
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_10simobj_surf_agent
 ./contrib/liveview_experiment/scripts/run.sh randomrot_rawnoise_10distinctobj_surf_agent
