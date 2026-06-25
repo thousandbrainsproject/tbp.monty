@@ -6,6 +6,7 @@ env_init_args:
       _partial_: true
       agent_id: agent_id_0
       sensor_configs:
+        _target_: tbp.monty.frameworks.sensors.SensorConfig
         patch:
           position:
             - 0.0
