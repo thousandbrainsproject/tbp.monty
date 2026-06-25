@@ -7,7 +7,7 @@ improved-metric: infrastructure, platform, simulator
 output-type: PR
 skills: python, refactoring
 contributor: AgentRev
-status: in-progress
+status: completed
 ---
 
 For more details, see [this issue](https://github.com/thousandbrainsproject/tbp.monty/issues/506).

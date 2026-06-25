@@ -16,17 +16,20 @@ description: How to get the code running.
 > - [Windows native](https://github.com/thousandbrainsproject/tbp.monty/issues/52)
 > - [Raspberry Pi](https://github.com/thousandbrainsproject/tbp.monty/issues/85)
 >
-> If you run into problems, please let us know by [opening a GitHub issue](https://github.com/thousandbrainsproject/tbp.monty/issues/new/choose) or [posting in the Monty Code section of our forum](https://thousandbrains.discourse.group/c/monty-code/6).
+> If you run into problems, please let us know by [opening a GitHub issue](https://github.com/thousandbrainsproject/tbp.monty/issues/new/choose) or [posting in the Monty Code section of our forum](https://forum.thousandbrains.org/c/monty-code/6).
 
 > [!WARNING]
 > While the repository contains a `uv.lock` file, this is currently experimental and not supported. In the future this will change, but for now, avoid trying to use `uv` with this project.
 
-# 1. Get the Code
+# 1. Get [the Code](https://github.com/thousandbrainsproject/tbp.monty)
+
+## 1.1 Fork the Repository
 
 It is best practice (and required if you ever want to contribute code) first to **make a fork of our repository** and then make any changes on your local fork. To do this you can simply [visit our repository](https://github.com/thousandbrainsproject/tbp.monty) and click on the fork button as shown in the picture below. For more detailed instructions see the [GitHub documentation on Forks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo).
 
 ![](../figures/how-to-use-monty/fork.png)
 
+## 1.2 Clone the Repository
 
 Next, you need to **clone the repository onto your device**. To do that, open the terminal, navigate to the folder where you want the code to be downloaded and run `git clone repository_path.git`. You can find the `repository_path.git` on GitHub by clicking on the `<>Code` button as shown below. For more details see the [GitHub documentation on cloning](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo#cloning-your-forked-repository).
 
@@ -36,7 +39,7 @@ Next, you need to **clone the repository onto your device**. To do that, open th
 > [!NOTE]
 > If you want the same setup as we use at the Thousand Brains Project by default, clone the repository at `${HOME}/tbp/`. If you don't have a `tbp` folder in your home directory yet you can run `cd ~; mkdir tbp; cd tbp` to create it. It's not required to clone the code in this folder but it is the path we assume in our tutorials.
 
-## 1.2 Make Sure Your Local Copy is Up-to-Date
+## 1.3 Make Sure Your Local Copy is Up-to-Date
 
 If you just forked and cloned this repository, you may skip this step, but any other time you get back to this code, you will want to synchronize it to work with the latest changes.
 
@@ -49,11 +52,19 @@ You can also update your code using the terminal by calling `git fetch upstream;
 
 # 2. Set up Your Environment
 
+## 2.1 Install Conda
 Monty requires Conda to install its dependencies. For instructions on how to install Conda (Miniconda or Anaconda) on your machine see <https://conda.io/projects/conda/en/latest/user-guide/install/index.html>.
 
-To setup Monty, **use the conda commands below**. Make sure to `cd` into the `tbp.monty` directory before running these commands.
+> [!NOTE]
+> It is recommended to install Conda outside the `tbp.monty` repository (for example at `~/miniconda3`).
 
-Note that the commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture, and whether you are using the zsh shell or another shell.
+## 2.2 Setup Monty
+To setup Monty, **use the conda commands below**.
+
+**Make sure to `cd` into the `tbp.monty` directory before running these commands.**
+> [!NOTE]
+> The commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture,
+> and whether you are using the zsh shell or another shell.
 
 > [!NOTE]
 > On Apple Silicon we rely on Rosetta to run Intel binaries on ARM64 and include the `softwareupdate --install-rosetta` command in the commands below.
@@ -108,11 +119,11 @@ Note that by the time you read that, there may be more or less unit tests in the
 
 # 4. Run an Experiment
 
-In your usual interaction with this code base, you will most likely run experiments, not just unit tests. You can find experiment configs in the `conf/experiment` folder.
+In your usual interaction with this code base, you will most likely run experiments, not just unit tests. You can find experiment configs in the `src/tbp/monty/conf/experiment` folder.
 
 ## 4.1 Download the YCB Dataset
 
-A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, run 
+A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, run
 
 ```
 python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
@@ -122,8 +133,8 @@ python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/
 
 | Models | Archive Format | Download Link |
 | --- | --- | --- |
-| pretrained_ycb_v11 | tgz |  [pretrained_ycb_v11.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v11.tgz) |
-| pretrained_ycb_v11 | zip |  [pretrained_ycb_v11.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v11.zip) |
+| pretrained_ycb_v12 | tgz |  [pretrained_ycb_v12.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.tgz) |
+| pretrained_ycb_v12 | zip |  [pretrained_ycb_v12.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.zip) |
 
 Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 
@@ -132,16 +143,16 @@ mkdir -p ~/tbp/results/monty/pretrained_models/
 
 cd ~/tbp/results/monty/pretrained_models/
 
-curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v11.tgz | tar -xzf -
+curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.tgz | tar -xzf -
 ```
 ```plaintext zip
 mkdir -p ~/tbp/results/monty/pretrained_models/
 
 cd ~/tbp/results/monty/pretrained_models/
 
-curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v11.zip
+curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.zip
 
-unzip pretrained_ycb_v11.zip
+unzip pretrained_ycb_v12.zip
 ```
 
 
@@ -149,7 +160,7 @@ The folder should then have the following structure:
 
 ```
 ~/tbp/results/monty/pretrained_models/
-|-- pretrained_ycb_v11/
+|-- pretrained_ycb_v12/
 |   |-- supervised_pre_training_5lms
 |   |-- supervised_pre_training_5lms_all_objects
 |   |-- ...
@@ -159,8 +170,8 @@ The folder should then have the following structure:
 > To unpack an archive you should be able to double click on it.
 >
 > To unpack via the command line, copy the archive into the `~/tbp/results/monty/pretrained_models/` folder and inside that folder run:
-> - for a `tgz` archive, `tar -xzf pretrained_ycb_v11.tgz`.
-> - for a `zip` archive, `unzip pretrained_ycb_v11.zip`.
+> - for a `tgz` archive, `tar -xzf pretrained_ycb_v12.tgz`.
+> - for a `zip` archive, `unzip pretrained_ycb_v12.zip`.
 
 ## [Optional] Set Environment Variables
 
@@ -172,7 +183,7 @@ If you did not save the pre-trained models in the `~/tbp/results/monty/pretraine
 export MONTY_MODELS=/path/to/your/pretrained/models/dir
 ```
 
-This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v11` folders.
+This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v12` folders.
 
 
 ### MONTY_DATA
@@ -209,7 +220,7 @@ Now you can finally run an experiment! To do this, simply use this command:
 python run.py experiment=my_experiment
 ```
 
-Replace `my_experiment` with the name of one of the experiment configs in `conf/experiment`. For example, a good one to start with could be `randrot_noise_10distinctobj_surf_agent`.
+Replace `my_experiment` with the name of one of the experiment configs in `src/tbp/monty/conf/experiment`. For example, a good one to start with could be `randrot_noise_10distinctobj_surf_agent`.
 
 If you want to run an experiment with parallel processing to make use of multiple CPUs, simply use the `run_parallel.py` script instead of the `run.py` script like this:
 
@@ -224,4 +235,4 @@ If you would like to contribute to the project, you can have a look at the many 
 
 You can also have a look at the [capabilities of Monty](../overview/vision-of-the-thousand-brains-project/capabilities-of-the-system.md) and our [project roadmap](../future-work/project-roadmap.md) to get an idea of what Monty is currently capable of and what features our team is actively working on.
 
-If you run into any issues or questions, please head over to our [Discourse forum](https://thousandbrains.discourse.group/) or [open an Issue](../contributing/contributing.md#report-an-issue). We are always happy to help!
+If you run into any issues or questions, please head over to our [Discourse forum](https://forum.thousandbrains.org/) or [open an Issue](../contributing/contributing.md#report-an-issue). We are always happy to help!

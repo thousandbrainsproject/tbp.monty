@@ -25,8 +25,8 @@ import torch.multiprocessing as mp
 import wandb
 from omegaconf import DictConfig, OmegaConf
 
-from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentInterfacePerObject,
+from tbp.monty.experiment.environment import (
+    OneObjectPerEpisodeInterface,
 )
 from tbp.monty.frameworks.environments.object_init_samplers import (
     Predefined,
@@ -107,7 +107,9 @@ def post_parallel_log_cleanup(filenames: Iterable[Path], outfile: Path, cat_fn):
         f.unlink(missing_ok=True)
 
 
-def post_parallel_profile_cleanup(parallel_dirs: Iterable[Path], base_dir: Path, mode):
+def post_parallel_profile_cleanup(
+    parallel_dirs: Iterable[Path], base_dir: Path, mode: ExperimentMode
+):
     profile_dirs = [pdir / "profile" for pdir in parallel_dirs]
 
     episode_csvs = []
@@ -329,8 +331,8 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
 
     Note:
         If we view the same object from multiple poses in separate experiments, we
-        need to replicate what post_episode does in supervised pre training. To avoid
-        this, we just run training episodes parallel across OBJECTS, but poses are
+        need to replicate what post_episode does in supervised pre-training. To avoid
+        this, we just run training episodes in parallel across objects, but poses are
         still in sequence. By contrast, eval episodes are parallel across objects
         AND poses.
 
@@ -389,10 +391,10 @@ def single_evaluate(experiment):
             # `self.use_parallel_wandb_logging` set to True
             # This way, the logger does not flush its buffer in the
             # `exp.run()` call above.
-            return get_episode_stats(exp, "eval", exp.config.episode)
+            return get_episode_stats(exp, ExperimentMode.EVAL, exp.config.episode)
 
 
-def get_episode_stats(exp, mode, episode: int = 0):
+def get_episode_stats(exp, mode: ExperimentMode, episode: int = 0):
     eval_stats = exp.monty_logger.get_formatted_overall_stats(mode, episode)
     exp.monty_logger.flush()
     # Remove overall stats field since they are only averaged over 1 episode
@@ -535,6 +537,33 @@ def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
         parallel_dirs = [pdir / "pretrained" for pdir in parallel_dirs]
         pretraining = True
 
+    # Loop over types of loggers, figure out how to clean up each one
+    logging_config = experiments[0]["config"]["logging"]
+    save_per_episode = logging_config.get("detailed_save_per_episode")
+
+    for handler in logging_config["monty_handlers"]:
+        if issubclass(handler, DetailedJSONHandler):
+            if save_per_episode:
+                filenames = collect_detailed_episodes_names(parallel_dirs)
+                outdir = base_dir / "detailed_run_stats"
+                maybe_rename_existing_dir(outdir)
+                post_parallel_log_cleanup(filenames, outdir, cat_fn=mv_files)
+            else:
+                filename = "detailed_run_stats.json"
+                filenames = [pdir / filename for pdir in parallel_dirs]
+                outfile = base_dir / filename
+                maybe_rename_existing_file(outfile)
+                post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
+            continue
+
+        if issubclass(handler, BasicCSVStatsHandler):
+            filename = "train_stats.csv"
+            filenames = [pdir / filename for pdir in parallel_dirs]
+            outfile = base_dir / filename
+            maybe_rename_existing_file(outfile)
+            post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_csv)
+            continue
+
     if experiments[0]["config"]["logging"]["python_log_to_file"]:
         filename = "log.txt"
         filenames = [pdir / filename for pdir in parallel_dirs]
@@ -542,7 +571,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
         post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
 
     if isinstance(exp, ProfileExperimentMixin):
-        post_parallel_profile_cleanup(parallel_dirs, base_dir, "train")
+        post_parallel_profile_cleanup(parallel_dirs, base_dir, ExperimentMode.TRAIN)
 
     with exp:
         exp.model.load_state_dict_from_parallel(parallel_dirs, save=True)
@@ -576,8 +605,8 @@ def run_episodes_parallel(
         num_parallel: Maximum number of parallel processes to run. If there
             are fewer configs to run than `num_parallel`, then the actual number of
             processes will be equal to the number of configs.
-        experiment_name: name of experiment
-        train: Whether the episodes are training or evaluating episodes.
+        experiment_name: Name of the experiment.
+        train: Whether the episodes are training or evaluation episodes.
     """
     # Use fewer processes if there are fewer configs than `num_parallel`.
     num_parallel = min(len(experiments), num_parallel)
@@ -598,7 +627,13 @@ def run_episodes_parallel(
         )
     print(f"Wandb setup took {time.time() - start_time} seconds")
     start_time = time.time()
-    with mp.Pool(num_parallel, maxtasksperchild=1) as p:
+
+    # Create a multiprocessing Context so that we can set the start method to "spawn".
+    # The default on MacOS is "spawn", but on Linux systems it uses "fork" by default.
+    # The "fork" method causes issues with the MuJoCo simulator's GL context, causing
+    # the system to hang when trying to render an image.
+    ctx = mp.get_context("spawn")
+    with ctx.Pool(num_parallel, maxtasksperchild=1) as p:
         if train:
             # NOTE: since we don't use wandb logging for training right now
             # it is also not covered here. Might want to add that in the future.
@@ -665,7 +700,7 @@ def run_episodes_parallel(
         f.write(f"total_time: {total_time}")
 
 
-@hydra.main(config_path="../../../conf", config_name="experiment", version_base=None)
+@hydra.main(config_path="../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
     if cfg.quiet_habitat_logs:
         os.environ["MAGNUM_LOG"] = "quiet"
@@ -677,7 +712,7 @@ def main(cfg: DictConfig):
     if cfg.experiment.config.do_train:
         assert issubclass(
             cfg.experiment.config.train_env_interface_class,
-            EnvironmentInterfacePerObject,
+            OneObjectPerEpisodeInterface,
         ), "parallel experiments only work (for now) with per object env interfaces"
 
         train_configs = generate_parallel_train_configs(
@@ -699,7 +734,7 @@ def main(cfg: DictConfig):
     if cfg.experiment.config.do_eval:
         assert issubclass(
             cfg.experiment.config.eval_env_interface_class,
-            EnvironmentInterfacePerObject,
+            OneObjectPerEpisodeInterface,
         ), "parallel experiments only work (for now) with per object env interfaces"
 
         eval_configs = generate_parallel_eval_configs(

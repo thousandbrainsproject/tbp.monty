@@ -21,22 +21,26 @@ dependencies = [
     'importlib_resources', # imported via conda (conda-forge::importlib_resources)
     'matplotlib>=3.7.3', # imported via conda (conda-forge::matplotlib)
     'numpy', # imported via conda (conda-forge::numpy)
+    'opencv-python==4.13.0.92',
     'omegaconf>=2.3.0',
     'pandas', # imported via conda (conda-forge::pandas)
     'pillow', # imported via conda (conda-forge::pillow)
     'pydantic>=2.10.6',
-    'numpy-quaternion==2023.0.3', # imported via conda (conda-forge::quaternion)
+    'numpy-quaternion==2023.0.3;python_version=="3.8"', # imported via conda (conda-forge::quaternion)
+    'numpy-quaternion==2024.0.13;python_version=="3.10"',
     'scikit-image', # imported via conda (conda-forge::scikit-image)
-    'scikit-learn==1.3.2', # imported via conda (conda-forge::scikit-learn)
+    'scikit-learn==1.3.2;python_version=="3.8"', # imported via conda (conda-forge::scikit-learn)
+    'scikit-learn;python_version>="3.9"', # for uv environment
     'scipy>=1.10.1', # imported via conda (conda-forge::scipy)
     'sympy', # imported via conda (conda-forge::sympy)
-    'torch==1.13.1', # imported via conda (pytorch::pytorch)
+    'torch==1.13.1;python_version=="3.8"', # imported via conda (pytorch::pytorch)
+    'torch;python_version>="3.9"',
     'torch-geometric==2.1.0.post1;python_version=="3.8"', # imported via conda (pyg::pyg)
     'torch-sparse==0.6.15;python_version=="3.8"', # imported via conda (pytorch::pytorch-sparse)
     'torch-scatter==2.0.9;python_version=="3.8"', # imported via conda (pytorch::pytorch-scatter)
-    'torch-geometric>=2.1.0.post1;python_version=="3.9"', # for uv environment
-    'torch-sparse>=0.6.15;python_version=="3.9"', # for uv environment
-    'torch-scatter>=2.0.9;python_version=="3.9"', # for uv environment
+    'torch-geometric>=2.1.0.post1;python_version>="3.9"', # for uv environment
+    'torch-sparse>=0.6.15;python_version>="3.9"', # for uv environment
+    'torch-scatter>=2.0.9;python_version>="3.9"', # for uv environment
     'tqdm', # imported via conda (conda-forge::tqdm)
     'typing-extensions',
     'wandb', # imported via conda (conda-forge::wandb)
@@ -74,8 +78,10 @@ dev = [
 
     # Python static type checker
     'mypy==1.11.2',
+    'types-PyYAML',
 
     # Testing, code style, etc...
+    'hypothesis==6.113.0',
     'parameterized==0.9.0',  # Supports Python 3.8
     'pytest==7.1.1',
     'pytest-xdist==2.5.0',
@@ -112,7 +118,7 @@ print_version_tool = [
 
 [project.urls]
 Homepage = 'https://thousandbrainsproject.org'
-Documentation = 'https://thousandbrainsproject.readme.io/docs'
+Documentation = 'https://docs.thousandbrains.org/docs'
 Repository = 'https://github.com/thousandbrainsproject.tbp.monty'
 Issues = 'https://github.com/thousandbrainsproject/tbp.monty/issues'
 
@@ -135,10 +141,15 @@ ipython = 'IPython'
 
 [tool.pytest.ini_options]
 minversion = '6.0'
-addopts = '-ra -n auto'
+addopts = '-ra -n auto --doctest-modules --doctest-continue-on-failure'
 testpaths = [
+    'src', # discover doctests
     'tests/conf',
     'tests/unit',
+]
+norecursedirs = [
+    'src/tbp/monty/frameworks/utils',  # ignore where 'seaborn' module is required
+    'src/tbp/monty/simulators/mujoco', # ignore where 'mujoco' module is required
 ]
 filterwarnings = [
     'ignore:.*:DeprecationWarning'
@@ -146,16 +157,16 @@ filterwarnings = [
 junit_family = 'xunit1'
 
 [tool.autoimport.common_statements]
-"np" = 'import numpy as np'
-"nn" = 'import torch.nn as nn'
-"pd" = 'import panda as pd'
-"qt" = 'import quaternion as qt'
-"mn" = 'import magnum as mn'
+"np" = "import numpy as np"
+"npt" = "import numpy.typing as npt"
+"nn" = "import torch.nn as nn"
+"pd" = "import panda as pd"
+"qt" = "import quaternion as qt"
+"mn" = "import magnum as mn"
 
 [tool.coverage.run]
 branch = true
 parallel = true
-dynamic_context = 'test_function'
 source = [
     'src'
 ]
@@ -207,8 +218,12 @@ select = [
 #       changes, you may want to open an issue to discuss the change first.
 ignore = [
     ###
-    # TBP-specific ignores
+    # TBP-specific, deliberately ignored rules
     "N818", # N818: error-suffix-on-exception-name
+    "COM812", # COM812: Trailing comma missing
+    "RET501", # RET501: Do not explicitly `return None` in function if it is the only possible return value
+    "PLR1711", # PLR1711: Useless `return` statement at end of function
+    # End of deliberately ignored rules
     # Original inherited flake8 ignores
     "D1", # D1XX: Missing Docstrings
     "ERA001", # ERA001: Found commented out code
@@ -217,8 +232,6 @@ ignore = [
     "N812", # N812: lowercase imported as non lowercase. Allow "import torch.nn.functional as F"
     "T201", # T201: print found
     "T203", # T203: pprint found
-    # TODO: ruff=0.11.4 upgrade introduced the errors ignored below, resolve these
-    "LOG015", # LOG015: root-logger-call,
     ###
     # TODO: ruff=0.7.1 migration introduced errors ignored below, resolve these
     "ANN001", # ANN001: Missing type annotation for function argument
@@ -229,7 +242,6 @@ ignore = [
     "ANN204", # ANN204: Missing return type annotation for special method
     "ANN206", # ANN206: Missing return type annotation for classmethod
     "ANN401", # ANN401: Dynamically typed expressions (typing.Any) are disallowed in {name}
-    "COM812", # COM812: Trailing comma missing
     "DTZ005", # DTZ005: `datetime.datetime.now()` called without a `tz` argument
     "EM101", # EM101: Exception must not use a string literal, assign to variable first
     "EM102", # EM102: Exception must not use an f-string literal, assign to variable first
@@ -254,12 +266,9 @@ ignore = [
     "PT027", # PT027: Use `pytest.raises` instead of unittest-style `assertRaises`
     "RET503", # RET503: Missing explicit `return` at the end of function able to return non-`None` value
     "RUF005", # RUF005: Consider {expression} instead of concatenation
-    "RUF015", # RUF015: Prefer next({iterable}) over single element slice
     "S101", # S101: Use of `assert` detected
-    "SIM102", # SIM102: Use a single `if` statement instead of nested `if` statements
     "SIM108", # SIM108: Use ternary operator {contents} instead of if-else-block
     "SIM117", # SIM117: Use a single `with` statement with multiple contexts instead of nested `with` statements
-    "SIM118", # SIM118: Use `key in dict` instead of `key in dict.keys()`
     "SLF001", # SLF001: Private member accessed: {access}
     "TC001", # TC001: Move application import {} into a type-checking block
     "TC002", # TC002: Move third-party import {} into a type-checking block
@@ -301,9 +310,9 @@ version = { attr = "tbp.monty.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
-namespaces = true
 
 [tool.setuptools.package-data]
+'tbp.monty.conf' = ['**/*.yaml']
 # habitat-sim resources
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
 

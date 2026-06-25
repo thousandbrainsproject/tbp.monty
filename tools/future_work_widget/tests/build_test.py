@@ -140,14 +140,6 @@ class TestBuild(unittest.TestCase):
         """Test validation and transformation of fields including arrays and URLs."""
         transformation_cases = [
             {
-                "name": "tags_transformation",
-                "snippet_file": "future-work-tags.md",
-                "snippet_content": "`accuracy` `pose` `learning` `multiobj`",
-                "field_name": "tags",
-                "input_value": "accuracy,learning",
-                "expected_result": ["accuracy", "learning"],
-            },
-            {
                 "name": "output_type_transformation",
                 "snippet_file": "future-work-output-type.md",
                 "snippet_content": "`documentation` `website` `tutorial`",
@@ -224,15 +216,15 @@ class TestBuild(unittest.TestCase):
     def test_json_output_validation_errors(self):
         """Test JSON output mode with validation errors."""
         snippets_dir = self._create_snippets(
-            {"future-work-tags.md": "`accuracy` `pose` `learning`"}
+            {"future-work-skills.md": "`python` `github-actions` `javascript`"}
         )
 
         input_data = [
             self._create_future_work_item(
                 path="docs/future-work/test-item.md",
                 path2="test-item",
-                title="Test item with invalid tags",
-                tags="invalid-tag,accuracy",
+                title="Test item with invalid skills",
+                skills="invalid-skill,python",
             )
         ]
 
@@ -249,10 +241,10 @@ class TestBuild(unittest.TestCase):
         self.assertEqual(len(result.errors), 1)
 
         error = result.errors[0]
-        self.assertIn("Invalid tags value 'invalid-tag'", error.message)
+        self.assertIn("Invalid skills value 'invalid-skill'", error.message)
         self.assertEqual(error.file, "docs/future-work/test-item.md")
         self.assertEqual(error.line, 1)
-        self.assertEqual(error.field, "tags")
+        self.assertEqual(error.field, "skills")
         self.assertEqual(error.level, "error")
         self.assertEqual(error.annotation_level, "failure")
         self.assertIn("test-item.md", error.title)
@@ -260,14 +252,14 @@ class TestBuild(unittest.TestCase):
     def test_json_output_too_many_items_error(self):
         """Test JSON output mode with too many comma-separated items."""
         max_items = 10
-        too_many_tags = ",".join([f"tag{i}" for i in range(max_items + 1)])
+        too_many_skills = ",".join([f"skill{i}" for i in range(max_items + 1)])
 
         input_data = [
             self._create_future_work_item(
                 path="docs/future-work/test-limits.md",
                 path2="test-limits",
-                title="Test item with too many tags",
-                tags=too_many_tags,
+                title="Test item with too many skills",
+                skills=too_many_skills,
             )
         ]
 
@@ -289,7 +281,7 @@ class TestBuild(unittest.TestCase):
         self.assertIn(str(max_items), error.message)
         self.assertEqual(error.file, "docs/future-work/test-limits.md")
         self.assertEqual(error.line, 1)
-        self.assertEqual(error.field, "tags")
+        self.assertEqual(error.field, "skills")
         self.assertEqual(error.level, "error")
         self.assertEqual(error.annotation_level, "failure")
         self.assertIn("test-limits.md", error.title)
@@ -324,15 +316,15 @@ class TestBuild(unittest.TestCase):
                 ],
             },
             {
-                "name": "tags_validation",
-                "snippet_file": "future-work-tags.md",
-                "snippet_content": "`accuracy` `pose` `learning` `multiobj`",
-                "field_name": "tags",
-                "valid_value": "accuracy,learning",
-                "invalid_value": "accuracy,invalid-tag,learning",
+                "name": "skills_validation",
+                "snippet_file": "future-work-skills.md",
+                "snippet_content": "`python` `github-actions` `javascript`",
+                "field_name": "skills",
+                "valid_value": "python,javascript",
+                "invalid_value": "python,invalid-skill,javascript",
                 "expected_error_fragments": [
-                    "Invalid tags value 'invalid-tag'",
-                    "accuracy, learning, multiobj, pose",
+                    "Invalid skills value 'invalid-skill'",
+                    "github-actions, javascript, python",
                 ],
             },
             {
@@ -391,7 +383,3 @@ class TestBuild(unittest.TestCase):
                 error_message = result.errors[0].message
                 for fragment in case["expected_error_fragments"]:
                     self.assertIn(fragment, error_message)
-
-
-if __name__ == "__main__":
-    unittest.main()

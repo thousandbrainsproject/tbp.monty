@@ -7,7 +7,7 @@ improved-metric: accuracy, deformations, noise, generalization
 output-type: prototype, analysis, monty-feature, PR
 skills: python, research, monty
 contributor: hlee9212
-status: scoping
+status: paused
 ---
 
 > [!NOTE]

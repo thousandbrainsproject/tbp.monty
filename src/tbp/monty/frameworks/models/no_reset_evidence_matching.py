@@ -8,21 +8,24 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
+from tbp.monty.cmp import Message
+from tbp.monty.frameworks.environments.environment import SemanticID
+from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
+    BurstSamplingHypothesesUpdater,
+)
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
-from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (  # noqa: E501
-    ResamplingHypothesesUpdater,
-)
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
 )
-from tbp.monty.frameworks.models.states import State
 
 __all__ = ["MontyForNoResetEvidenceGraphMatching", "NoResetEvidenceGraphLM"]
 
@@ -49,37 +52,49 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Track whether `pre_episode` has been called at least once.
+        # Track whether `reset` has been called at least once.
         # There are two separate issues this helps avoid:
         #
         # 1. Some internal variables in SMs and LMs (e.g., `stepwise_targets_list`,
         #    `terminal_state`, `is_exploring`) are not initialized
-        #    in `__init__`, but only inside `pre_episode`. Ideally, these should be
-        #    initialized once in `__init__` and reset in `pre_episode`, but fixing
+        #    in `__init__`, but only inside `reset`. Ideally, these should be
+        #    initialized once in `__init__` and reset in `reset`, but fixing
         #    this would require changes across multiple classes.
         #
         # 2. The order of operations: Graphs are loaded into LMs *after* the Monty
-        #    object is constructed but *before* `pre_episode` is called. Some
+        #    object is constructed but *before* `reset` is called. Some
         #    functions (e.g., in `EvidenceGraphLM`) depend on the graph being loaded to
-        #    compute initial possible matches inside `pre_episode`, and this cannot
+        #    compute initial possible matches inside `reset`, and this cannot
         #    be safely moved into `__init__`.
         #
-        # As a workaround, we allow `pre_episode` to run normally once (to complete
+        # As a workaround, we allow `reset` to run normally once (to complete
         # required initialization), and skip full resets on subsequent calls.
-        # TODO: Remove initialization logic from `pre_episode`
-        self.init_pre_episode = False
+        # TODO: Remove initialization logic from `reset`
+        self._super_reset_called = False
+        self._super_set_ground_truth_called = False
 
-    def pre_episode(
-        self, rng: np.random.RandomState, primary_target, semantic_id_to_label=None
-    ) -> None:
-        if not self.init_pre_episode:
-            self.init_pre_episode = True
-            return super().pre_episode(rng, primary_target, semantic_id_to_label)
+    def reset(self) -> None:
+        if not self._super_reset_called:
+            self._super_reset_called = True
+            return super().reset()
 
         # reset terminal state
         self._is_done = False
         self.reset_episode_steps()
         self.switch_to_matching_step()
+        self._reset_terminal_states()
+
+        # reset LMs and SMs buffers to save memory
+        self._reset_modules_buffers()
+
+    def fixme_set_ground_truth(
+        self,
+        primary_target: dict[str, Any] | None = None,
+        semantic_id_to_label: dict[SemanticID, str] | None = None,
+    ) -> None:
+        if not self._super_set_ground_truth_called:
+            self._super_set_ground_truth_called = True
+            return super().fixme_set_ground_truth(primary_target, semantic_id_to_label)
 
         # keep target up-to-date for logging
         self.primary_target = primary_target
@@ -88,8 +103,9 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
             lm.primary_target = primary_target["object"]
             lm.primary_target_rotation_quat = primary_target["quat_rotation"]
 
-        # reset LMs and SMs buffers to save memory
-        self._reset_modules_buffers()
+    def _reset_terminal_states(self):
+        for lm in self.learning_modules:
+            lm.set_individual_ts(None)
 
     def _reset_modules_buffers(self):
         """Resets buffers for LMs and SMs."""
@@ -102,11 +118,11 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
 
 class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
     def __init__(self, *args, **kwargs):
-        # Use ResamplingHypothesesUpdater by default.
+        # Use BurstSamplingHypothesesUpdater by default.
         if not hasattr(kwargs, "hypotheses_updater_class"):
-            kwargs["hypotheses_updater_class"] = ResamplingHypothesesUpdater
+            kwargs["hypotheses_updater_class"] = BurstSamplingHypothesesUpdater
         super().__init__(*args, **kwargs)
-        self.last_location = {}
+        self.last_location = None
 
         # it does not make sense for the wait factor to exponentially
         # grow when objects are swapped without any supervisory signal.
@@ -115,35 +131,34 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
 
     def reset(self) -> None:
         super().reset()
-        self.evidence = {}
-        self.last_location = {}
+        self.last_location = None
 
-    def _add_displacements(self, obs: list[State]) -> list[State]:
-        """Add displacements to the current observation.
+    def _add_displacements(self, percepts: list[Message]) -> list[Message]:
+        """Add displacements to the current percept.
 
-        For each input channel, this function computes the displacement vector by
-        subtracting the current location from the last observed location. It then
-        updates `self.last_location` for use in the next step. If any observation
-        has a recorded previous location, we assume movement has occurred.
-
+        Computes the displacement vector by subtracting the current location from the
+        last observed location. Updates `self.last_location` for use in the next step.
         In this unsupervised inference setting, the displacement is set to zero
         at the beginning of the first episode when the last location is not set.
 
         Args:
-            obs: A list of observations to which displacements will be
+            percepts: A list of percepts to which displacements will be
                 added.
 
         Returns:
-            The list of observations, each updated with a displacement vector.
+            The list of percepts, each updated with a displacement vector.
         """
-        for o in obs:
-            if o.sender_id in self.last_location.keys():
-                displacement = o.location - self.last_location[o.sender_id]
-            else:
-                displacement = np.zeros(3)
-            o.set_displacement(displacement)
-            self.last_location[o.sender_id] = o.location
-        return obs
+        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
+        current_location = np.mean([p.location for p in sm_percepts], axis=0)
+        if self.last_location is not None:
+            displacement = current_location - self.last_location
+        else:
+            displacement = np.zeros(3)
+
+        for p in percepts:
+            p.set_displacement(displacement)
+        self.last_location = current_location.copy()
+        return percepts
 
     def _agent_moved_since_reset(self):
         """Overwrites the logic of whether the agent has moved since the last reset.
@@ -154,4 +169,4 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         Returns:
             Whether the agent has moved since the last reset.
         """
-        return len(self.last_location) > 0
+        return self.last_location is not None

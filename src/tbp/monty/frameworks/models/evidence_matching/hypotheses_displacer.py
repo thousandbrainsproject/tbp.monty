@@ -14,15 +14,18 @@ from dataclasses import dataclass
 from typing import Protocol
 
 import numpy as np
+import numpy.typing as npt
 
-from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
-    DefaultFeatureEvidenceCalculator,
-    FeatureEvidenceCalculator,
+from tbp.monty.frameworks.models.evidence_matching.channels import (
+    all_usable_input_channels,
+)
+from tbp.monty.frameworks.models.evidence_matching.feature_evidence.scorer import (
+    FeatureEvidenceScorer,
 )
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
 )
-from tbp.monty.frameworks.models.evidence_matching.hypotheses import ChannelHypotheses
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_custom_distances,
     get_relevant_curvature,
@@ -34,6 +37,10 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 
 logger = logging.getLogger(__name__)
 
+MIN_EVIDENCE = -1
+MAX_EVIDENCE = 2
+EVIDENCE_RANGE = MAX_EVIDENCE - MIN_EVIDENCE
+
 
 @dataclass
 class HypothesisDisplacerTelemetry:
@@ -43,31 +50,27 @@ class HypothesisDisplacerTelemetry:
 class HypothesesDisplacer(Protocol):
     def displace_hypotheses_and_compute_evidence(
         self,
-        channel_displacement: np.ndarray,
-        channel_features: dict,
+        displacement: npt.NDArray[np.float64],
+        features: dict[str, dict],
         evidence_update_threshold: float,
         graph_id: str,
-        possible_hypotheses: ChannelHypotheses,
-        total_hypotheses_count: int,
-    ) -> ChannelHypotheses:
+        possible_hypotheses: Hypotheses,
+    ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
         """Updates evidence by comparing features after applying sensed displacement.
 
-        This function applies the sensor displacement to the existing hypothesis and
-        uses the result as search locations for comparing the sensed features. This
-        comparison is used to update the evidence scores of the existing hypotheses. The
-        hypotheses locations are updated to the new locations (i.e., after displacement)
+        Applies the sensor displacement to the existing hypotheses and uses the
+        result as search locations for comparing features from all available input
+        channels. Per-channel evidence is summed and applied as a weighted update.
 
         Args:
-            channel_displacement: Channel-specific sensor displacement.
-            channel_features: Channel-specific input features.
+            displacement: Displacement vector.
+            features: All-channel input features, keyed by channel name.
             evidence_update_threshold: Evidence update threshold.
-            graph_id: The ID of the current graph
-            possible_hypotheses: Channel-specific possible
-                hypotheses.
-            total_hypotheses_count: Total number of hypotheses in the graph.
+            graph_id: The ID of the current graph.
+            possible_hypotheses: hypotheses to be modified.
 
         Returns:
-            Displaced hypotheses with computed evidence.
+            Displaced hypotheses with computed evidence and telemetry.
         """
         ...
 
@@ -78,12 +81,7 @@ class DefaultHypothesesDisplacer:
         feature_weights: dict,
         graph_memory: EvidenceGraphMemory,
         max_match_distance: float,
-        tolerances: dict,
-        use_features_for_matching: dict[str, bool],
-        feature_evidence_calculator: type[
-            FeatureEvidenceCalculator
-        ] = DefaultFeatureEvidenceCalculator,
-        feature_evidence_increment: int = 1,
+        feature_evidence_scorer: FeatureEvidenceScorer,
         max_nneighbors: int = 3,
         past_weight: float = 1,
         present_weight: float = 1,
@@ -98,16 +96,8 @@ class DefaultHypothesesDisplacer:
             graph_memory: The graph memory to read graphs from.
             max_match_distance: Maximum distance of a tested and stored location
                 to be matched.
-            tolerances: How much can each observed feature deviate from the
-                stored features to still be considered a match.
-            use_features_for_matching: Dictionary mapping input channels to
-                booleans indicating whether to use features for matching.
-            feature_evidence_calculator: Class to calculate feature evidence for all
-                nodes. Defaults to the default calculator.
-            feature_evidence_increment: Feature evidence (between 0 and 1) is
-                multiplied by this value before being added to the overall evidence of
-                a hypothesis. This factor is only multiplied with the feature evidence
-                (not the pose evidence as opposed to the present_weight). Defaults to 1.
+            feature_evidence_scorer: Scorer that calculates evidence for all nodes in
+                an object model's graph for a given channel.
             max_nneighbors: Maximum number of nearest neighbors to consider in the
                 radius of a hypothesis for calculating the evidence. Defaults to 3.
             past_weight: How much should the evidence accumulated so far be
@@ -123,80 +113,88 @@ class DefaultHypothesesDisplacer:
                 though and could help when moving from one object to another and to
                 generally make setting thresholds etc. more intuitive.
         """
-        self.feature_evidence_calculator = feature_evidence_calculator
-        self.feature_evidence_increment = feature_evidence_increment
         self.feature_weights = feature_weights
         self.graph_memory = graph_memory
         self.max_match_distance = max_match_distance
         self.max_nneighbors = max_nneighbors
         self.past_weight = past_weight
         self.present_weight = present_weight
-        self.tolerances = tolerances
-        self.use_features_for_matching = use_features_for_matching
+        self._feature_evidence_scorer = feature_evidence_scorer
 
     def displace_hypotheses_and_compute_evidence(
         self,
-        channel_displacement: np.ndarray,
-        channel_features: dict,
+        displacement: npt.NDArray[np.float64],
+        features: dict[str, dict],
         evidence_update_threshold: float,
         graph_id: str,
-        possible_hypotheses: ChannelHypotheses,
-        total_hypotheses_count: int,
-    ) -> tuple[ChannelHypotheses, HypothesisDisplacerTelemetry]:
-        # Have to do this for all hypotheses so we don't loose the path information
-        rotated_displacements = possible_hypotheses.poses.dot(channel_displacement)
+        possible_hypotheses: Hypotheses,
+    ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
+        # Have to do this for all hypotheses so we don't lose the path information
+        rotated_displacements = possible_hypotheses.poses.dot(displacement)
         search_locations = possible_hypotheses.locations + rotated_displacements
 
         # Get indices of hypotheses with evidence > threshold
-        hyp_ids_to_test = np.where(
+        hyp_idxs_to_test = np.where(
             possible_hypotheses.evidence >= evidence_update_threshold
         )[0]
-        num_hypotheses_to_test = hyp_ids_to_test.shape[0]
+        num_hypotheses_to_test = hyp_idxs_to_test.shape[0]
         if num_hypotheses_to_test > 0:
             logger.info(
                 f"Testing {num_hypotheses_to_test} out of "
-                f"{total_hypotheses_count} hypotheses for {graph_id} "
+                f"{possible_hypotheses.count} hypotheses for {graph_id} "
                 f"(evidence > {evidence_update_threshold})"
             )
 
-            # Get evidence update for all hypotheses with evidence > current
-            # _evidence_update_threshold
-            new_evidence = self._calculate_evidence_for_new_locations(
-                graph_id=graph_id,
-                input_channel=possible_hypotheses.input_channel,
-                search_locations=search_locations[hyp_ids_to_test],
-                channel_possible_poses=possible_hypotheses.poses[hyp_ids_to_test],
-                channel_features=channel_features,
+            # Loop over channels, sum evidence
+            input_channels = all_usable_input_channels(
+                features, self.graph_memory.get_input_channels_in_graph(graph_id)
             )
-            min_update = np.clip(np.min(new_evidence), 0, np.inf)
+            total_evidence_to_add = np.zeros_like(possible_hypotheses.evidence)
+            for channel in input_channels:
+                new_evidence = self._calculate_evidence_for_new_locations(
+                    graph_id=graph_id,
+                    input_channel=channel,
+                    search_locations=search_locations[hyp_idxs_to_test],
+                    channel_possible_poses=possible_hypotheses.poses[hyp_idxs_to_test],
+                    channel_features=features[channel],
+                )
+                min_update = np.clip(np.min(new_evidence), 0, np.inf)
 
-            # Alternatives (no update to other Hs or adding avg) left in
-            # here in case we want to revert back to those.
-            # avg_update = np.mean(new_evidence)
-            # evidence_to_add = np.zeros_like(channel_hypotheses_evidence)
-            evidence_to_add = np.ones_like(possible_hypotheses.evidence) * min_update
-            evidence_to_add[hyp_ids_to_test] = new_evidence
+                channel_evidence = (
+                    np.ones_like(possible_hypotheses.evidence) * min_update
+                )
+                channel_evidence[hyp_idxs_to_test] = new_evidence
+                total_evidence_to_add += channel_evidence
 
+            # Prediction error from summed evidence
             mlh_index = np.argmax(possible_hypotheses.evidence)
-            evidence_for_mlh = evidence_to_add[mlh_index]
-            # Mapping evidence values from range [-1, 2] to [0, 3], then dividing by 3
-            # to get a value in range [0, 1].
-            mlh_prediction_error = (-evidence_for_mlh + 2) / 3
+            evidence_for_mlh = total_evidence_to_add[mlh_index]
+
+            # Each channel contributes evidence in range [MIN_EVIDENCE, MAX_EVIDENCE].
+            # With C channels the summed range is [MIN_EVIDENCE * C, MAX_EVIDENCE * C].
+            # We map to [1, 0] (inverted, since high evidence = low prediction error)
+            # by negating, shifting by (MAX_EVIDENCE * C), and dividing by
+            # (EVIDENCE_RANGE * C).
+            # For C=1 and evidence in the range [-1, 2], this maps
+            # [-1, 2] -> [1, 0] (e.g. evidence -1 -> error 1, evidence 2 -> error 0).
+            num_channels = len(input_channels)
+            mlh_prediction_error = (MAX_EVIDENCE * num_channels - evidence_for_mlh) / (
+                EVIDENCE_RANGE * num_channels
+            )
 
             # If past and present weight add up to 1, equivalent to
-            # np.average and evidence will be bound to [-1, 2]. Otherwise it
-            # keeps growing.
+            # np.average and evidence will be bound to [-C, 2C] where C is the
+            # number of channels. Otherwise it keeps growing.
             evidence = (
                 possible_hypotheses.evidence * self.past_weight
-                + evidence_to_add * self.present_weight
+                + total_evidence_to_add * self.present_weight
             )
         else:
             evidence = possible_hypotheses.evidence
             # If we haven't moved yet, there is no prediction, and thus no error
             mlh_prediction_error = None
 
-        return ChannelHypotheses(
-            input_channel=possible_hypotheses.input_channel,
+        return Hypotheses(
             evidence=evidence,
             locations=search_locations,
             poses=possible_hypotheses.poses,
@@ -284,40 +282,27 @@ class DefaultHypothesesDisplacer:
         # matter.
         node_distance_weights[mask] = 1
 
-        # If no feature weights are provided besides the ones for surface_normal
-        # and curvature_directions we don't need to calculate feature evidence.
-        if self.use_features_for_matching[input_channel]:
-            # add evidence if features match
-            node_feature_evidence = self.feature_evidence_calculator.calculate(
-                channel_feature_array=self.graph_memory.get_feature_array(graph_id)[
-                    input_channel
-                ],
-                channel_feature_order=self.graph_memory.get_feature_order(graph_id)[
-                    input_channel
-                ],
-                channel_feature_weights=self.feature_weights[input_channel],
-                channel_query_features=channel_features,
-                channel_tolerances=self.tolerances[input_channel],
-                input_channel=input_channel,
-            )
-            hypothesis_radius_feature_evidence = node_feature_evidence[nearest_node_ids]
-            # Set feature evidence of nearest neighbors that are too far away to 0
-            hypothesis_radius_feature_evidence[mask] = 0
-            # Take the maximum feature evidence out of the nearest neighbors in the
-            # search radius and weighted by its distance to the search location.
-            # Evidence will be in [0, 1] and is only 1 if all features match
-            # perfectly and the node is at the search location.
-            radius_evidence = (
-                radius_evidence
-                + hypothesis_radius_feature_evidence * self.feature_evidence_increment
-            )
+        node_feature_evidence = self._feature_evidence_scorer(
+            graph_id=graph_id,
+            input_channel=input_channel,
+            query_features=channel_features,
+        )
+        hypothesis_radius_feature_evidence = node_feature_evidence[nearest_node_ids]
+        # Set feature evidence of nearest neighbors that are too far away to 0
+        hypothesis_radius_feature_evidence[mask] = 0
+        # Take the maximum feature evidence out of the nearest neighbors in the
+        # search radius and weighted by its distance to the search location.
+        # Evidence will be in [0, 1] and is only 1 if all features match
+        # perfectly and the node is at the search location.
+        radius_evidence = radius_evidence + hypothesis_radius_feature_evidence
+
         # We take the maximum to be better able to deal with parts of the model where
         # features change quickly and we may have noisy location information. This way
         # we check if we can find a good match of pose features within the search
         # radius. It doesn't matter if there are also points stored nearby in the model
         # that are not a good match.
         # Removing the comment weights the evidence by the nodes distance from the
-        # search location. However, epirically this did not seem to help.
+        # search location. However, empirically this did not seem to help.
         # shape=(H,)
         return np.max(
             radius_evidence,  # * node_distance_weights,
@@ -340,7 +325,7 @@ class DefaultHypothesesDisplacer:
             query_features: Observed features.
             node_features: Features at nodes that are being tested.
             input_channel: Input channel for which we want to calculate the
-                pose evidence. This are all input channels that are received at the
+                pose evidence. These are all input channels that are received at the
                 current time step and are also stored in the graph.
             node_distance_weights: Weights for each nodes error (determined by
                 distance to the search location). Currently not used, except for shape.

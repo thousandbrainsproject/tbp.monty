@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -9,14 +9,12 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import Any, Dict, cast
 
 import numpy as np
 import numpy.typing as npt
-from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.models.buffer import BufferEncoder
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
@@ -24,36 +22,28 @@ from tbp.monty.frameworks.utils.logging_utils import (
     compute_pose_error,
     compute_pose_errors,
 )
+from tbp.monty.geometry import Rotation
 
 
 @dataclass
-class HypothesesUpdaterChannelTelemetry:
-    """Telemetry from HypothesesUpdater for a single input channel."""
+class HypothesesUpdaterGraphTelemetry:
+    """Telemetry from HypothesesUpdater for a single graph."""
 
     hypotheses_updater: dict[str, Any]
     """Any telemetry from the hypotheses updater."""
+
     evidence: npt.NDArray[np.float64]
     """The hypotheses evidence scores."""
-    rotations: npt.NDArray[np.float64]
-    """Rotations of the hypotheses.
 
-    Note that the buffer encoder will encode those as euler "xyz" rotations in degrees.
-    """
+    rotations: npt.NDArray[np.float64]
+    """Rotations of the hypotheses."""
+
     locations: npt.NDArray[np.float64]
     """Locations of the hypotheses."""
 
     pose_errors: npt.NDArray[np.float64]
     """Rotation errors relative to the target pose."""
 
-
-BufferEncoder.register(
-    HypothesesUpdaterChannelTelemetry,
-    lambda telemetry: asdict(telemetry),
-)
-
-
-HypothesesUpdaterGraphTelemetry = Dict[str, HypothesesUpdaterChannelTelemetry]
-"""HypothesesUpdaterChannelTelemetry indexed by input channel."""
 
 HypothesesUpdaterTelemetry = Dict[str, HypothesesUpdaterGraphTelemetry]
 """HypothesesUpdaterGraphTelemetry indexed by graph ID."""
@@ -93,7 +83,7 @@ class TheoreticalLimitLMLoggingMixin:
 
         This includes metrics like the max evidence score per object, the theoretical
         limit of Monty (i.e., pose error of Monty's best potential hypothesis on the
-        target object) , and the pose error of the MLH hypothesis on the target object.
+        target object), and the pose error of the MLH hypothesis on the target object.
 
         Args:
             stats: The existing statistics dictionary to augment.
@@ -103,7 +93,11 @@ class TheoreticalLimitLMLoggingMixin:
         """
         assert isinstance(self, EvidenceGraphLM)
 
-        stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items()}
+        stats["max_evidence"] = {
+            graph_id: max(hyp.evidence)
+            for graph_id, hyp in self._hypotheses.items()
+            if len(hyp.evidence)
+        }
         stats["target_object_theoretical_limit"] = (
             self._theoretical_limit_target_object_pose_error()
         )
@@ -114,51 +108,53 @@ class TheoreticalLimitLMLoggingMixin:
         return stats
 
     def _hypotheses_updater_telemetry(self) -> HypothesesUpdaterTelemetry:
-        """Returns HypothesesUpdaterTelemetry for all objects and input channels."""
+        """Returns HypothesesUpdaterTelemetry for all objects."""
         assert isinstance(self, EvidenceGraphLM)
 
         stats: HypothesesUpdaterTelemetry = {}
         for graph_id, graph_telemetry in self.hypotheses_updater_telemetry.items():
-            stats[graph_id] = {
-                input_channel: self._channel_telemetry(
-                    graph_id, input_channel, channel_telemetry
-                )
-                for input_channel, channel_telemetry in graph_telemetry.items()
-            }
+            stats[graph_id] = self._graph_telemetry(graph_id, graph_telemetry)
         return stats
 
-    def _channel_telemetry(
-        self, graph_id: str, input_channel: str, channel_telemetry: dict[str, Any]
-    ) -> HypothesesUpdaterChannelTelemetry:
-        """Assemble channel telemetry for specific graph ID and input channel.
+    def _graph_telemetry(
+        self, graph_id: str, graph_telemetry: dict[str, Any]
+    ) -> HypothesesUpdaterGraphTelemetry:
+        """Assemble telemetry for a specific graph ID.
 
         Args:
             graph_id: The graph ID.
-            input_channel: The input channel.
-            channel_telemetry: Telemetry for the specific input channel.
+            graph_telemetry: Telemetry from the hypotheses updater for this graph.
 
         Returns:
-            HypothesesUpdaterChannelTelemetry for the given graph ID and input channel.
+            HypothesesUpdaterGraphTelemetry for the given graph ID.
         """
         assert isinstance(self, EvidenceGraphLM)
 
-        mapper = self.channel_hypothesis_mapping[graph_id]
-        channel_rotations = mapper.extract(self.possible_poses[graph_id], input_channel)
-        channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
-        channel_evidence = mapper.extract(self.evidence[graph_id], input_channel)
-        channel_locations = mapper.extract(
-            self.possible_locations[graph_id], input_channel
-        )
+        graph_hyps = self._hypotheses[graph_id]
+        evidence = graph_hyps.evidence
+        locations = graph_hyps.locations
+        poses = graph_hyps.poses
 
-        return HypothesesUpdaterChannelTelemetry(
-            hypotheses_updater=channel_telemetry.copy(),
-            evidence=channel_evidence,
-            rotations=channel_rotations_inv,
-            locations=channel_locations,
+        if len(evidence) == 0:
+            return HypothesesUpdaterGraphTelemetry(
+                hypotheses_updater=graph_telemetry.copy(),
+                evidence=np.empty(shape=(0,), dtype=np.float64),
+                rotations=np.empty(shape=(0, 3), dtype=np.float64),
+                locations=np.empty(shape=(0, 3), dtype=np.float64),
+                pose_errors=np.empty(shape=(0,), dtype=np.float64),
+            )
+
+        rotations_inv = Rotation.from_matrix(poses).inv()
+
+        return HypothesesUpdaterGraphTelemetry(
+            hypotheses_updater=graph_telemetry.copy(),
+            evidence=evidence,
+            rotations=rotations_inv.as_euler("xyz", degrees=True),
+            locations=locations,
             pose_errors=cast(
                 "npt.NDArray[np.float64]",
                 compute_pose_errors(
-                    channel_rotations_inv,
+                    rotations_inv,
                     Rotation.from_quat(self.primary_target_rotation_quat),
                 ),
             ),
@@ -173,20 +169,22 @@ class TheoreticalLimitLMLoggingMixin:
         likely hypothesis (MLH).
 
         Note that having a low pose error for the theoretical limit may not be
-        sufficient for deciding on the quality of the hypothesis. Despite good
-        hypotheses being generally correlated with good theoretical limit, it is
-        possible for rotation error to be small (i.e., low geodesic distance to
-        ground-truth rotation), while the hypothesis is on a different location
-        of the object.
+        sufficient to decide on the quality of the hypothesis. Although good
+        hypotheses generally correlate with a good theoretical limit, the rotation
+        error can be small (i.e., low geodesic distance to the ground-truth
+        rotation) while the hypothesis is at a different location of the object.
 
         Returns:
             The minimum achievable rotation error (in radians).
         """
         assert isinstance(self, EvidenceGraphLM)
 
-        hyp_rotations = Rotation.from_matrix(
-            self.possible_poses[self.primary_target]
-        ).inv()
+        object_possible_poses = self._hypotheses[self.primary_target].poses
+        if not len(object_possible_poses):
+            return -1
+
+        hyp_rotations = Rotation.from_matrix(object_possible_poses).inv()
+
         target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
         return compute_pose_error(hyp_rotations, target_rotation)
 

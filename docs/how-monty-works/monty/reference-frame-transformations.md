@@ -23,7 +23,7 @@ The [inverse of this pose](https://github.com/thousandbrainsproject/tbp.monty/bl
 This is the rotation of the currently sensed feature relative to the object model in the LM (feature_rel_world * object_rel_model, see code [here](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/frameworks/models/evidence_matching/hypotheses_displacer.py#L141-L142)). The learning module uses its pose hypothesis to transform the feature relative to the world into its object's reference frame so that it can recognize the object in any orientation and location in the world, independent of where it was learned.
 
 > [!NOTE]
-> For a description of these transforms in mathematical notation, see our pre-print [Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://arxiv.org/abs/2507.04494).
+> For a description of these transforms in mathematical notation, see our publication [Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://doi.org/10.1162/NECO.a.1508).
 
 
 > [!NOTE]
@@ -32,7 +32,7 @@ This is the rotation of the currently sensed feature relative to the object mode
 ## Keeping Input to the LM Constant as the Sensor Moves
 The transform in the sensor module combines the sensor pose in the world with the sensed pose of the features relative to the sensor. This way, if the sensor moves while fixating on a point on the object, that feature pose will not change (see animation below). We are sending the same location and orientation of the feature in the world to the LM, no matter from which angle the sensor is "looking" at it.
 
-This is one of the key definitions of the [CMP](../observations-transforms-sensor-modules.md#cmp-and-the-state-class): The pose sent out from all SMs is in a common reference frame. In Monty, we use the [DepthTo3DLocations](../../../src/tbp/monty/frameworks/environment_utils/transforms.py) transform for this calculation and report locations and orientations in an (arbitrary) world reference frame.
+This is one of the key definitions of the [CMP](../monty/messages-in-monty.md): The pose sent out from all SMs is in a common reference frame. In Monty, we use the [DepthTo3DLocations](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/frameworks/environment_utils/transforms.py) transform for this calculation and report locations and orientations in an (arbitrary) world reference frame.
 
 ![](../../figures/how-monty-works/sensor_moves.gif)
 

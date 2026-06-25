@@ -7,7 +7,7 @@ We use the term **heterarchy** instead of hierarchy to express the notion that *
 
 First of all, there can be **skip connections**. A low-level LM or even an SM can directly connect to another LM which represents far more complex, high-level models and which might additionally get input from other LMs that has been processed by several other LMs before. Therefore, it is difficult to clearly identify what layer an LM is in based on the number of previous processing steps performed on its input. Instead LMs could be grouped into collections based on who votes with each other, which is defined by whether there is overlap in the objects they model.
 
-Second, we have several other channels of communication in Monty that do not implement a hierarchical forward pass of information (see figure below). An LM can receive **top-down input** from higher-level LMs (LMs that model objects which are composed of object parts modeled in the receiving LM) as biasing context. Another top-down input to the LM is the goal state, used for modeling hierarchical action policies. Finally, the LM receives **lateral inputs from votes** and **recurrently updates its internal representations**.
+Second, we have several other channels of communication in Monty that do not implement a hierarchical forward pass of information (see figure below). An LM can receive **top-down input** from higher-level LMs (LMs that model objects which are composed of object parts modeled in the receiving LM) as biasing context. Another top-down input to the LM is the goal, used for modeling hierarchical action policies. Finally, the LM receives **lateral inputs from votes** and **recurrently updates its internal representations**.
 
 ![](../figures/how-monty-works/overview_diagram.png)
 

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -683,7 +683,3 @@ class TurnRightTest(unittest.TestCase):
                 "rotation_degrees": 90,
             },
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

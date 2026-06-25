@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -11,17 +11,20 @@
 from __future__ import annotations
 
 from json import JSONDecoder, JSONEncoder
-from typing import Any, Generator, Tuple
+from typing import TYPE_CHECKING, Any, Generator
 
 from numpy.random import RandomState
+from pydantic.alias_generators import to_snake
 from typing_extensions import (
     Protocol,  # Enables default __init__ in Protocol classes
     runtime_checkable,  # For JSONEncoder instance checks
 )
 
-from tbp.monty.frameworks.agents import AgentID
+if TYPE_CHECKING:
+    from tbp.monty.frameworks.agents import AgentID
+    from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
-__all__ = [  # noqa: RUF022
+__all__ = [
     # Actions
     "Action",
     "LookDown",
@@ -66,13 +69,7 @@ __all__ = [  # noqa: RUF022
     "TurnRight",
     "TurnRightActionSampler",
     "TurnRightActuator",
-    # Spatial representations
-    "QuaternionWXYZ",
-    "VectorXYZ",
 ]
-
-VectorXYZ = Tuple[float, float, float]
-QuaternionWXYZ = Tuple[float, float, float, float]
 
 
 @runtime_checkable
@@ -85,27 +82,16 @@ class Action(Protocol):
     agent_id: AgentID
     """The ID of the agent that will take this action."""
 
-    @staticmethod
-    def _camel_case_to_snake_case(name: str) -> str:
-        """Expecting a class name in CamelCase returns it in snake_case.
-
-        Returns:
-            The class name in snake_case.
-        """
-        return "".join(
-            ["_" + char.lower() if char.isupper() else char for char in name]
-        ).lstrip("_")
-
     @classmethod
     def action_name(cls) -> str:
-        """Generate action name based on class.
+        """Generate the action name based on the class.
 
         Used in static configuration, e.g., `FakeAction.action_name()`.
 
         Returns:
             The action name in snake_case.
         """
-        return Action._camel_case_to_snake_case(cls.__name__)
+        return to_snake(cls.__name__)
 
     def __init__(self, agent_id: AgentID) -> None:
         """Initialize the action with the agent ID.
@@ -130,6 +116,10 @@ class Action(Protocol):
             if key == "name":
                 continue
             yield key, value
+
+    def __repr__(self) -> str:
+        attrs = ", ".join([f"{k}={v}" for k, v in self.__dict__.items()])
+        return f"{self.__class__.__name__}({attrs})"
 
 
 class LookDownActionSampler(Protocol):
@@ -268,7 +258,7 @@ class OrientHorizontalActuator(Protocol):
 class OrientHorizontal(Action):
     """Move the agent in the horizontal plane.
 
-    Moves the agent in the horizontal plane compensating for the horizontal
+    Moves the agent in the horizontal plane, compensating for the horizontal
     motion with a rotation in the horizontal plane.
     """
 
@@ -307,7 +297,7 @@ class OrientVerticalActuator(Protocol):
 class OrientVertical(Action):
     """Move the agent in the vertical plane.
 
-    Moves the agent in the vertical plane compensating for the vertical motion
+    Moves the agent in the vertical plane, compensating for the vertical motion
     with a rotation in the vertical plane.
     """
 
@@ -347,7 +337,7 @@ class SetAgentPitch(Action):
     """Set the agent pitch rotation in degrees.
 
     Note that unless otherwise changed, the sensors maintain identity orientation
-    with regard to the agent. So, this will also adjust the pitch of agent's sensors
+    with regard to the agent. So this will also adjust the pitch of the agent's sensors
     with regard to the environment.
     """
 
@@ -389,7 +379,10 @@ class SetAgentPose(Action):
         return sampler.sample_set_agent_pose(agent_id, rng)
 
     def __init__(
-        self, agent_id: AgentID, location: VectorXYZ, rotation_quat: QuaternionWXYZ
+        self,
+        agent_id: AgentID,
+        location: VectorXYZ,
+        rotation_quat: QuaternionWXYZ,
     ) -> None:
         super().__init__(agent_id=agent_id)
         self.location = location
@@ -413,7 +406,7 @@ class SetSensorPitch(Action):
     """Set the sensor pitch rotation.
 
     Note that this does not update the pitch of the agent. Imagine the body associated
-    with the eye remaining in place, while the eye moves.
+    with the eye remaining in place while the eye moves.
     """
 
     @staticmethod
@@ -454,7 +447,10 @@ class SetSensorPose(Action):
         return sampler.sample_set_sensor_pose(agent_id, rng)
 
     def __init__(
-        self, agent_id: AgentID, location: VectorXYZ, rotation_quat: QuaternionWXYZ
+        self,
+        agent_id: AgentID,
+        location: VectorXYZ,
+        rotation_quat: QuaternionWXYZ,
     ) -> None:
         super().__init__(agent_id=agent_id)
         self.location = location
@@ -570,7 +566,7 @@ class ActionJSONEncoder(JSONEncoder):
     """Encodes an Action into a JSON object.
 
     Action name is encoded as the `"action"` parameter. All other Action
-    parameters are encoded as key-value pairs in the JSON object
+    parameters are encoded as key-value pairs in the JSON object.
     """
 
     def default(self, obj: Any) -> Any:
@@ -580,7 +576,7 @@ class ActionJSONEncoder(JSONEncoder):
 
 
 class ActionJSONDecoder(JSONDecoder):
-    """Decodes JSON object into Actions.
+    """Decodes a JSON object into Actions.
 
     Requires that the JSON object contains an "action" key with the name of the action.
     Additionally, the JSON object must contain all action parameters used by the action.

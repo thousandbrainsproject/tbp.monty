@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -19,7 +19,7 @@ Based on https://github.com/huggingface/transformers/blob/1438c487df5ce38a7b2ae3
 
 
 class LoggingCallbackHandler:
-    """Calls a list of loggers on an event (eg post_train).
+    """Calls a list of loggers on an event (e.g., post_train).
 
     Each logger receives:
     logger_args: dict with time stamps (steps, epochs, etc.) and
@@ -27,7 +27,7 @@ class LoggingCallbackHandler:
     output_dir: Full path of the directory to store log files
 
     Note:
-        This logger handler is intended primarily for logging
+        This logger handler is intended primarily for logging.
     """
 
     def __init__(self, loggers, model, output_dir):
@@ -172,6 +172,6 @@ class TestLogger(BaseMontyLogger):
             json.dump(self.log, f)
 
     def __deepcopy__(self, memo):
-        # Do not create new copy of loggers. They are create by the tests outside
+        # Do not create a new copy of the loggers; they are created by the tests outside
         # the experiment
         return self

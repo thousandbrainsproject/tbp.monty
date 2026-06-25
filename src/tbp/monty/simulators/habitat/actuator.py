@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -55,19 +55,19 @@ class HabitatActuator(HabitatActuatorRequirements):
 
     Note:
         Habitat does not expose an API for passing parameters to actions.
-        So each actuate method works around this limitation by artisanally setting
-        specific action parameters directly in Habitat sim.
+        Each actuate method works around this limitation by artisanally setting
+        specific action parameters directly in habitat-sim.
     """
 
     def action_name(self, action: Action) -> str:
-        """Returns Monty's Habitat action naming convention.
+        """Return Monty's Habitat action naming convention.
 
         The action name is prefixed by the agent ID.
         """
         return f"{action.agent_id}.{action.name}"
 
     def to_habitat(self, action: Action) -> tuple[Agent, ActuationSpec, str]:
-        """Transition from the Monty to the Habitat sim domain.
+        """Transition from the Monty to the habitat-sim domain.
 
         Args:
             action: Monty action to execute by the agent specified in the action.

@@ -111,7 +111,7 @@ You can also get the [Pretrained Models](../getting-started.md#42-download-pretr
 
 ```shell
 mkdir -p ~/tbp/results/monty/pretrained_models/ && cd "$_"
-curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v11.tgz | tar -xzf -
+curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.tgz | tar -xzf -
 ```
 
 Optionally, you can get the [Monty-Meets-World datasets](../../overview/benchmark-experiments.md#monty-meets-world) for [real-world testing](../../community/project-showcase.md#monty-for-object-detection-with-the-ipad-camera):
@@ -142,7 +142,7 @@ If you did not save the pre-trained models in the `~/tbp/results/monty/pretraine
 export MONTY_MODELS=/path/to/your/pretrained/models/dir
 ```
 
-This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v11` folders.
+This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v12` folders.
 
 ### MONTY_DATA
 
@@ -224,4 +224,4 @@ If you would like to contribute to the project, you can have a look at the many 
 
 You can also have a look at the [capabilities of Monty](../../overview/vision-of-the-thousand-brains-project/capabilities-of-the-system.md) and our [project roadmap](../../future-work/project-roadmap.md) to get an idea of what Monty is currently capable of and what features our team is actively working on.
 
-If you run into any issues or questions, please head over to our [Discourse forum](https://thousandbrains.discourse.group/) or [open an Issue](../../contributing/contributing.md#report-an-issue). We are always happy to help!
+If you run into any issues or questions, please head over to our [Discourse forum](https://forum.thousandbrains.org/) or [open an Issue](../../contributing/contributing.md#report-an-issue). We are always happy to help!

@@ -34,11 +34,6 @@ class TestLoadAllowedValues(unittest.TestCase):
         snippets_dir = self.temp_path / "snippets"
         snippets_dir.mkdir()
 
-        expected_tags = ["accuracy", "pose", "learning", "multiobj"]
-        tags_file = snippets_dir / "future-work-tags.md"
-        with tags_file.open("w", encoding="utf-8") as f:
-            f.write(" ".join(f"`{tag}`" for tag in expected_tags))
-
         expected_skills = ["python", "github-actions", "JS", "HTML"]
         skills_file = snippets_dir / "future-work-skills.md"
         with skills_file.open("w", encoding="utf-8") as f:
@@ -46,9 +41,7 @@ class TestLoadAllowedValues(unittest.TestCase):
 
         allowed_values = load_allowed_values(snippets_dir)
 
-        self.assertIn("tags", allowed_values)
         self.assertIn("skills", allowed_values)
-        self.assertEqual(sorted(allowed_values["tags"]), sorted(expected_tags))
         self.assertEqual(sorted(allowed_values["skills"]), sorted(expected_skills))
 
     def test_missing_validation_files_graceful(self):
@@ -71,7 +64,6 @@ class TestFutureWorkRecord(unittest.TestCase):
             "path1": "future-work",
             "path2": "test-item",
             "title": "Test item",
-            "tags": "accuracy,learning",
             "skills": "python,javascript",
             "contributor": "alice,bob",
             "output-type": "documentation,website",
@@ -81,7 +73,6 @@ class TestFutureWorkRecord(unittest.TestCase):
         validated = FutureWorkRecord.model_validate(record)
         self.assertEqual(validated.path1, "future-work")
         self.assertEqual(validated.path2, "test-item")
-        self.assertEqual(validated.tags, ["accuracy", "learning"])
         self.assertEqual(validated.skills, ["python", "javascript"])
         self.assertEqual(validated.contributor, ["alice", "bob"])
         self.assertEqual(validated.output_type, ["documentation", "website"])
@@ -104,14 +95,14 @@ class TestFutureWorkRecord(unittest.TestCase):
 
     def test_comma_separated_field_limits(self):
         max_items = MAX_COMMA_SEPARATED_ITEMS
-        too_many_tags = ",".join([f"tag{i}" for i in range(max_items + 1)])
+        too_many_skills = ",".join([f"skill{i}" for i in range(max_items + 1)])
 
         record = {
             "path": "future-work/test-item.md",
             "path1": "future-work",
             "path2": "test-item",
             "title": "Test item",
-            "tags": too_many_tags,
+            "skills": too_many_skills,
         }
 
         with self.assertRaises(ValidationError) as cm:
@@ -162,15 +153,15 @@ class TestFutureWorkRecord(unittest.TestCase):
             "path1": "future-work",
             "path2": "test-item",
             "title": "Test item",
-            "tags": "accuracy",
+            "skills": "python",
         }
 
-        allowed_values = {"tags": ["accuracy", "pose"]}
+        allowed_values = {"skills": ["python", "github-actions"]}
 
         validated = FutureWorkRecord.model_validate(
             record, context={"allowed_values": allowed_values}
         )
-        self.assertEqual(validated.tags, ["accuracy"])
+        self.assertEqual(validated.skills, ["python"])
 
     def test_validation_with_invalid_allowed_values(self):
         record = {
@@ -178,10 +169,10 @@ class TestFutureWorkRecord(unittest.TestCase):
             "path1": "future-work",
             "path2": "test-item",
             "title": "Test item",
-            "tags": "invalid_tag",
+            "skills": "invalid_skill",
         }
 
-        allowed_values = {"tags": ["accuracy", "pose"]}
+        allowed_values = {"skills": ["python", "github-actions"]}
 
         with self.assertRaises(ValidationError) as cm:
             FutureWorkRecord.model_validate(
@@ -189,7 +180,7 @@ class TestFutureWorkRecord(unittest.TestCase):
             )
 
         errors = cm.exception.errors()
-        self.assertTrue(any("Invalid tags value" in e["msg"] for e in errors))
+        self.assertTrue(any("Invalid skills value" in e["msg"] for e in errors))
 
     def test_validation_with_invalid_output_type(self):
         record = {
@@ -280,7 +271,3 @@ class TestFutureWorkRecord(unittest.TestCase):
 
         errors = cm.exception.errors()
         self.assertTrue(any("Invalid contributor username" in e["msg"] for e in errors))
-
-
-if __name__ == "__main__":
-    unittest.main()

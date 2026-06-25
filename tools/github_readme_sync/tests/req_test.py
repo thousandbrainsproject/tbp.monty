@@ -199,7 +199,3 @@ class TestReq(unittest.TestCase):
             headers={"Authorization": "Basic test_api_key"},
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

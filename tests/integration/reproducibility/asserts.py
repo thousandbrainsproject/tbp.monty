@@ -71,7 +71,7 @@ def assert_trained_models_equal(serial_model: dict, parallel_model: dict) -> Non
     if set(parallel_model["lm_dict"].keys()) != set(serial_model["lm_dict"].keys()):
         raise AssertionError("LM IDs do not match")
 
-    for lm_id in parallel_model["lm_dict"].keys():
+    for lm_id in parallel_model["lm_dict"]:
         p = parallel_model["lm_dict"][lm_id]
         s = serial_model["lm_dict"][lm_id]
         if set(p.keys()) != set(s.keys()):
@@ -82,13 +82,13 @@ def assert_trained_models_equal(serial_model: dict, parallel_model: dict) -> Non
         if set(p_graph_memory.keys()) != set(s_graph_memory.keys()):
             raise AssertionError(f"LM {lm_id} graph memory keys do not match")
 
-        for graph_id in p_graph_memory.keys():
+        for graph_id in p_graph_memory:
             p_graph = p_graph_memory[graph_id]
             s_graph = s_graph_memory[graph_id]
             if set(p_graph.keys()) != set(s_graph.keys()):
                 raise AssertionError(f"LM {lm_id} graph {graph_id} keys do not match")
 
-            for channel_id in p_graph.keys():
+            for channel_id in p_graph:
                 p_graph_data: GraphObjectModel = cast(
                     "GraphObjectModel", p_graph[channel_id]
                 )

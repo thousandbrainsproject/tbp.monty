@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -16,6 +16,7 @@ import torch
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_angle,
     get_right_hand_angle,
+    normalize,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class NumpyGraph:
 
 
 def torch_graph_to_numpy(torch_graph):
-    """Turn torch geometric data structure into dict with numpy arrays.
+    """Turn a torch geometric data structure into a dict with numpy arrays.
 
     Args:
         torch_graph: Torch geometric data structure.
@@ -42,7 +43,16 @@ def torch_graph_to_numpy(torch_graph):
         NumpyGraph.
     """
     numpy_graph = {}
-    for key in list(torch_graph.keys):
+
+    # Newer versions of torch_geometric change `keys` from a
+    # property to a function.
+    # TODO: remove check and use keys function once upgraded to Python 3.10
+    if callable(torch_graph.keys):
+        keys = torch_graph.keys()
+    else:
+        keys = torch_graph.keys
+
+    for key in keys:
         if isinstance(torch_graph[key], torch.Tensor):
             numpy_graph[key] = np.array(torch_graph[key])
         else:
@@ -77,7 +87,7 @@ def already_in_list(
         < graph_delta_thresholds["distance"]
     )
 
-    assert "on_object" not in graph_delta_thresholds.keys(), (
+    assert "on_object" not in graph_delta_thresholds, (
         "Don't pass feature-change SM delta_thresholds for graph_delta_thresholds"
     )
 
@@ -96,8 +106,8 @@ def already_in_list(
         # TODO: What to do when a feature is received that is not in
         # graph_delta_thresholds? Currently it will not be considered when looking at
         # redundancy of the point.
-        for feature in graph_delta_thresholds.keys():
-            if feature in features.keys():
+        for feature in graph_delta_thresholds:
+            if feature in features:
                 if feature == "hsv":
                     # Only consider hue, not saturation and lightness at this point
                     match_hue = features[feature][feature_idx][0]
@@ -192,11 +202,11 @@ def remove_close_points(point_cloud, features, graph_delta_thresholds, old_graph
     new_points = list(point_cloud[:old_graph_index])
 
     if graph_delta_thresholds is None:
-        # Asign mutable default value
+        # Assign mutable default value
         graph_delta_thresholds = dict(
             distance=0.001,
         )
-    if "pose_vectors" not in graph_delta_thresholds.keys():
+    if "pose_vectors" not in graph_delta_thresholds:
         # By default, we will still consider a nearby point as new if the difference
         # in surface normals suggests it is on the other side of an object
         # NOTE: currently not looking at curvature directions/second pose vector
@@ -263,7 +273,7 @@ def expand_index_dims(indices_3d, last_dim_size):
     """Expand 3d indices to 4d indices by adding a 4th dimension with size.
 
     Args:
-        indices_3d: 3d indices that should be comverted to 4d
+        indices_3d: 3d indices that should be converted to 4d
         last_dim_size: desired size of the 4th dimension (will be filled with
             arange indices from 0 to last_dim_size-1)
 
@@ -314,7 +324,8 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
     some computation time.
 
     Returns:
-        ?
+        Tuple containing the representative pose vector mean and a bool
+        indicating whether we used curvature directions to update it.
     """
     # Check the angle between all surface normals relative to the first curvature
     # directions. Then look at how many are positive vs. negative and use the ones
@@ -335,10 +346,8 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
     ):
         surface_normals_to_use = np.logical_not(surface_normals_to_use)
     # Take the mean of all surface normals pointing in the same half sphere spanned by
-    # the cds.
-    norm_mean = np.mean(surface_normals[surface_normals_to_use], axis=0)
-    # Make sure the mean vector still has unit length.
-    normed_norm_mean = norm_mean / np.linalg.norm(norm_mean)
+    # the cds and make sure the mean vector still has unit length.
+    norm_mean = normalize(np.mean(surface_normals[surface_normals_to_use], axis=0))
 
     if sum(pose_fully_defined) < len(pose_fully_defined) // 2:
         # print(
@@ -346,23 +355,21 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
         # )
         # Just take 1st one. Shouldn't matter since cd should not be used anyways if
         # not pose_fully_defined. Only has a small effect on sampled possible poses.
-        pv_means = np.hstack([normed_norm_mean, cds1[0], cds2[0]])
+        pv_means = np.hstack([norm_mean, cds1[0], cds2[0]])
         use_cds_to_update = False
     else:
         # Find cds pointing in opposing directions and invert them. This is needed
         # because the curvature directions are ambiguous and both directions are
         # equivalent. If we average over opposing directions, we will get noise.
-        cd1_dirs = get_right_hand_angle(cds1, cds2[0], normed_norm_mean) < 0
+        cd1_dirs = get_right_hand_angle(cds1, cds2[0], norm_mean) < 0
         cds1[cd1_dirs] = -cds1[cd1_dirs]
-        cd1_mean = np.mean(cds1, axis=0)
-        normed_cd1_mean = cd1_mean / np.linalg.norm(cd1_mean)
+        cd1_mean = normalize(np.mean(cds1, axis=0))
         # Get the second cd by calculating a vector orthogonal to cd1 and surface normal
-        cd2_mean = np.cross(normed_norm_mean, normed_cd1_mean)
-        normed_cd2_mean = cd2_mean / np.linalg.norm(cd2_mean)
-        if get_right_hand_angle(normed_cd1_mean, cd2_mean, normed_norm_mean) < 0:
-            normed_cd2_mean = -normed_cd2_mean
+        cd2_mean = normalize(np.cross(norm_mean, cd1_mean))
+        if get_right_hand_angle(cd1_mean, cd2_mean, norm_mean) < 0:
+            cd2_mean = -cd2_mean
         use_cds_to_update = True
-        pv_means = np.hstack([normed_norm_mean, normed_cd1_mean, normed_cd2_mean])
+        pv_means = np.hstack([norm_mean, cd1_mean, cd2_mean])
 
     assert not np.any(np.isnan(pv_means)), "NaN in pose vector mean"
     return pv_means, use_cds_to_update

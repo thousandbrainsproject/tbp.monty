@@ -19,3 +19,6 @@ class ExperimentMode(Enum):
     """Evaluation mode."""
     TRAIN = "train"
     """Training mode."""
+
+    def __str__(self) -> str:
+        return self.value

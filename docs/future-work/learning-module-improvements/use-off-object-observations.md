@@ -7,8 +7,11 @@ improved-metric: numsteps
 output-type: analysis, PR
 skills: python, research, monty, refactoring
 contributor: hlee9212
-status: scoping
+status: paused
 ---
+
+> [!NOTE]
+> See [this research meeting](https://youtu.be/ncAEi1OmtAE?si=1SScjWhlDfCTCbil) and [this working group video](https://youtu.be/nScF_Zt1XKo?si=A191FJSy05TEQMZb) where we discussed the topic further.
 
 There are a few instances where Monty can move off of an object, sensing nothing/empty space (or at least no morphological features). For example, this can occur due to a saccade moving off the object and pointing at a void (such as the sky), or a touch-based agent leaving the surface of an object.
 
@@ -18,7 +21,7 @@ Currently we have methods to move the sensor back onto the object, however we do
 *Example of a sensor moving off of an object and observing nothing.*
 
 To address this, we need to update how these observations are processed such that:
-1. These observations are formulated as an appropriate "null"-type observation - there is no surface to observe, and so there should be no morphological features. However, there would still be a location (e.g. where the finger tip is hovering, or an eye looking into the far distance), and there can be non-morphological features like color. In the `State` class, this would likely involve setting the morphological features to a `None` type value.
+1. These observations are formulated as an appropriate "null"-type observation - there is no surface to observe, and so there should be no morphological features. However, there would still be a location (e.g. where the finger tip is hovering, or an eye looking into the far distance), and there can be non-morphological features like color. In the `Message` class, this would likely involve setting the morphological features to a `None` type value.
 2. These observations are still passed to the learning module.
 3. If a hypothesis predicts an observation, then the learning module's evidence update appropriately results in negative evidence, as no object model should ever store a "null" feature that would match this observation.
 

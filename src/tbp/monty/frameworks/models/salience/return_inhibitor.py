@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -8,15 +8,13 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 
 
 class DecayKernel:
     """Decay kernel represents a previously visited location.
 
-    Returns the product of an time- and space- dependent exponentials.
+    Returns the product of time- and space-dependent exponentials.
     """
 
     def __init__(
@@ -114,11 +112,11 @@ class DecayField:
 
     def __init__(
         self,
-        kernel_factory_class: type[DecayKernelFactory] = DecayKernelFactory,
-        kernel_factory_args: dict[str, Any] | None = None,
+        kernel_factory: DecayKernelFactory | None = None,
     ):
-        kernel_factory_args = dict(kernel_factory_args) if kernel_factory_args else {}
-        self._kernel_factory = kernel_factory_class(**kernel_factory_args)
+        self._kernel_factory = (
+            DecayKernelFactory() if kernel_factory is None else kernel_factory
+        )
         self._kernels: list[DecayKernel] = []
 
     def reset(self) -> None:
@@ -145,11 +143,9 @@ class DecayField:
 class ReturnInhibitor:
     def __init__(
         self,
-        decay_field_class: type[DecayField] = DecayField,
-        decay_field_args: dict[str, Any] | None = None,
+        decay_field: DecayField | None = None,
     ):
-        decay_field_args = dict(decay_field_args) if decay_field_args else {}
-        self._decay_field = decay_field_class(**decay_field_args)
+        self._decay_field = DecayField() if decay_field is None else decay_field
 
     def reset(self) -> None:
         self._decay_field.reset()

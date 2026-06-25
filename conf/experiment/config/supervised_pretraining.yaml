@@ -1,5 +1,0 @@
-defaults:
-  - defaults
-
-do_eval: false
-supervised_lm_ids: all

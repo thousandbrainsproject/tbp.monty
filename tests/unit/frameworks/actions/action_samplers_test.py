@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -20,8 +20,9 @@ from tbp.monty.frameworks.actions.action_samplers import (
     ConstantSampler,
     UniformlyDistributedSampler,
 )
-from tbp.monty.frameworks.actions.actions import Action, QuaternionWXYZ, VectorXYZ
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 AGENT_ID_1 = AgentID("agent1")
 AGENT_ID_2 = AgentID("agent2")
@@ -484,7 +485,3 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 <= action.rotation_degrees
                 <= self.max_rotation_degrees
             )
-
-
-if __name__ == "__main__":
-    unittest.main()

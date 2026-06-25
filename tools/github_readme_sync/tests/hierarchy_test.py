@@ -247,7 +247,3 @@ class TestHierarchyFile(unittest.TestCase):
             self.assertEqual(check_links(temp_path), [])
         finally:
             Path(temp_path).unlink()
-
-
-if __name__ == "__main__":
-    unittest.main()

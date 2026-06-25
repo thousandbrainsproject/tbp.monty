@@ -7,25 +7,29 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import copy
 from unittest import TestCase
 
 import numpy as np
-from scipy.spatial.transform import Rotation
+from pandas import DataFrame
+from torch_geometric.data import Data
 
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+from tbp.monty.cmp import Message
+from tbp.monty.conf.make_environment import (
     make_sensor_positions_on_grid,
 )
-from tbp.monty.frameworks.models.states import State
+from tbp.monty.context import RuntimeContext
+from tbp.monty.geometry import Rotation
 
 
 class BaseGraphTest(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         print("setting up")
         fake_sender_id = "patch"
 
-        default_obs_args = dict(
+        default_percept_args = dict(
             location=np.array([0.0, 0.0, 0.0]),
             morphological_features={
                 "pose_vectors": np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]]),
@@ -41,17 +45,17 @@ class BaseGraphTest(TestCase):
             sender_id=fake_sender_id,
             sender_type="SM",
         )
-        fo_1 = copy.deepcopy(default_obs_args)
-        fo_1["location"] = np.array([1.0, 0.0, 0.0])
-        fo_2 = copy.deepcopy(default_obs_args)
-        fo_2["location"] = np.array([1.0, 1.0, 0.0])
-        fo_3 = copy.deepcopy(default_obs_args)
-        fo_3["location"] = np.array([1.0, 1.0, 1.0])
+        fp_1 = copy.deepcopy(default_percept_args)
+        fp_1["location"] = np.array([1.0, 0.0, 0.0])
+        fp_2 = copy.deepcopy(default_percept_args)
+        fp_2["location"] = np.array([1.0, 1.0, 0.0])
+        fp_3 = copy.deepcopy(default_percept_args)
+        fp_3["location"] = np.array([1.0, 1.0, 1.0])
         self.fake_obs_learn = [
-            State(**default_obs_args),
-            State(**fo_1),
-            State(**fo_2),
-            State(**fo_3),
+            Message(**default_percept_args),
+            Message(**fp_1),
+            Message(**fp_2),
+            Message(**fp_3),
         ]
 
         self.lm_offsets = make_sensor_positions_on_grid(
@@ -62,16 +66,16 @@ class BaseGraphTest(TestCase):
         # Create a symmetric synthetic object, where the location of the last
         # feature differs from the base-synthetic object, resulting in
         # ambiguous rotations
-        fo_sym = copy.deepcopy(default_obs_args)
-        fo_sym_1 = copy.deepcopy(fo_1)
-        fo_sym_2 = copy.deepcopy(fo_2)
-        fo_sym_3 = copy.deepcopy(fo_3)
-        fo_sym_3["location"] = np.array([0.0, 1.0, 0.0])
+        fp_sym = copy.deepcopy(default_percept_args)
+        fp_sym_1 = copy.deepcopy(fp_1)
+        fp_sym_2 = copy.deepcopy(fp_2)
+        fp_sym_3 = copy.deepcopy(fp_3)
+        fp_sym_3["location"] = np.array([0.0, 1.0, 0.0])
         self.fake_obs_symmetric = [
-            State(**fo_sym),
-            State(**fo_sym_1),
-            State(**fo_sym_2),
-            State(**fo_sym_3),
+            Message(**fp_sym),
+            Message(**fp_sym_1),
+            Message(**fp_sym_2),
+            Message(**fp_sym_3),
         ]
 
         # === Synthetic objects for hypothesis-testing policy ===
@@ -80,31 +84,31 @@ class BaseGraphTest(TestCase):
         # triangle point above); this helps simulate distinguishing e.g. a mug from
         # a can
         # The square
-        fo_square = copy.deepcopy(default_obs_args)
-        fo_square_1 = copy.deepcopy(fo_1)
-        fo_square_2 = copy.deepcopy(fo_2)
-        fo_square_3 = copy.deepcopy(fo_3)
-        fo_square_3["location"] = np.array([0.0, 1.0, 0.0])
+        fp_square = copy.deepcopy(default_percept_args)
+        fp_square_1 = copy.deepcopy(fp_1)
+        fp_square_2 = copy.deepcopy(fp_2)
+        fp_square_3 = copy.deepcopy(fp_3)
+        fp_square_3["location"] = np.array([0.0, 1.0, 0.0])
         self.fake_obs_square = [
-            State(**fo_square),
-            State(**fo_square_1),
-            State(**fo_square_2),
-            State(**fo_square_3),
+            Message(**fp_square),
+            Message(**fp_square_1),
+            Message(**fp_square_2),
+            Message(**fp_square_3),
         ]
 
         # The house; note it has an additional, 5th feature
-        fo_house = copy.deepcopy(fo_square)
-        fo_house_1 = copy.deepcopy(fo_square_1)
-        fo_house_2 = copy.deepcopy(fo_square_2)
-        fo_house_3 = copy.deepcopy(fo_square_3)
-        fo_house_4 = copy.deepcopy(default_obs_args)
-        fo_house_4["location"] = np.array([0.5, 1.5, 0.0])
+        fp_house = copy.deepcopy(fp_square)
+        fp_house_1 = copy.deepcopy(fp_square_1)
+        fp_house_2 = copy.deepcopy(fp_square_2)
+        fp_house_3 = copy.deepcopy(fp_square_3)
+        fp_house_4 = copy.deepcopy(default_percept_args)
+        fp_house_4["location"] = np.array([0.5, 1.5, 0.0])
         self.fake_obs_house = [
-            State(**fo_house),
-            State(**fo_house_1),
-            State(**fo_house_2),
-            State(**fo_house_3),
-            State(**fo_house_4),
+            Message(**fp_house),
+            Message(**fp_house_1),
+            Message(**fp_house_2),
+            Message(**fp_house_3),
+            Message(**fp_house_4),
         ]
 
         # The house, but translated and rotated in the world
@@ -137,29 +141,31 @@ class BaseGraphTest(TestCase):
 
         config_list = []
         for ii in range(5):
-            config_list.append(copy.deepcopy(fo_house))
+            config_list.append(copy.deepcopy(fp_house))
             config_list[ii]["location"] = house_points[ii]
             config_list[ii]["morphological_features"]["pose_vectors"] = (
                 rotated_ref_frames[ii]
             )
 
-        self.fake_obs_house_trans = [State(**obs_dic) for obs_dic in config_list]
+        self.fake_percept_house_trans = [Message(**obs_dic) for obs_dic in config_list]
 
-        fo_house_5 = copy.deepcopy(fo_house)
-        fo_house_5["location"] = np.array([0.5, 1.5, 1.0])
+        fp_house_5 = copy.deepcopy(fp_house)
+        fp_house_5["location"] = np.array([0.5, 1.5, 1.0])
         self.fake_obs_house_3d = [
-            State(**fo_house),
-            State(**fo_house_1),
-            State(**fo_house_2),
-            State(**fo_house_3),
+            Message(**fp_house),
+            Message(**fp_house_1),
+            Message(**fp_house_2),
+            Message(**fp_house_3),
             # replacing fo_house_4 with fo_house_5 to make its pose unambiguous
-            State(**fo_house_5),
+            Message(**fp_house_5),
         ]
 
         self.placeholder_target = {
             "object": "placeholder",
             "quat_rotation": [1, 0, 0, 0],
         }
+
+        self.ctx = RuntimeContext(rng=np.random.RandomState())
 
     def string_to_array(self, array_string, get_positive_rotations=False) -> np.ndarray:
         """Convert string representation of an array into a numpy array.
@@ -178,7 +184,7 @@ class BaseGraphTest(TestCase):
                 np_array = np.append(np_array, r)
         return np_array
 
-    def check_train_results(self, train_stats, num_lms=1):
+    def check_train_results(self, train_stats: DataFrame, num_lms: int = 1) -> None:
         for lm_id in range(num_lms):
             self.assertEqual(
                 train_stats["result"][0 * num_lms + lm_id],
@@ -271,7 +277,7 @@ class BaseGraphTest(TestCase):
                 "Rotation of cubeSolid not detected correctly.",
             )
 
-    def check_graphs_equal(self, g1, g2):
+    def check_graphs_equal(self, g1: Data, g2: Data) -> None:
         """Used for checking saving and loading.
 
         `g1` and `g2` are torch_geometric.data.data.Data objects. Check if all
@@ -305,7 +311,7 @@ class BaseGraphTest(TestCase):
         num_norm_same = (g1.norm == g2.norm).sum()
         self.assertEqual(num_norm_same, g1.norm.size(0) * g1.norm.size(1))
 
-    def check_eval_results(self, eval_stats, num_lms=1):
+    def check_eval_results(self, eval_stats: DataFrame, num_lms: int = 1) -> None:
         for lm_id in range(num_lms):
             self.assertEqual(
                 eval_stats["result"][0 * num_lms + lm_id],
@@ -341,7 +347,9 @@ class BaseGraphTest(TestCase):
                     f"capsule3DSolid was not detected by lm {lm_id}.",
                 )
 
-    def check_multilm_train_results(self, train_stats, num_lms, min_done):
+    def check_multilm_train_results(
+        self, train_stats: DataFrame, num_lms: int, min_done: int
+    ) -> None:
         for episode in range(4):
             no_match_count = 0
             for lm_id in range(num_lms):
@@ -370,7 +378,13 @@ class BaseGraphTest(TestCase):
                 f"Not enough correct LMs for train episode {episode}",
             )
 
-    def check_multilm_eval_results(self, eval_stats, num_lms, min_done, num_episodes=3):
+    def check_multilm_eval_results(
+        self,
+        eval_stats: DataFrame,
+        num_lms: int,
+        min_done: int,
+        num_episodes: int = 3,
+    ) -> None:
         for episode in range(num_episodes):
             correct_count = 0
             for lm_id in range(num_lms):
@@ -435,7 +449,7 @@ class BaseGraphTest(TestCase):
         key = "possible_poses"
         self.check_possible_paths_or_poses(stats_1, stats_2, key)
 
-        remaining_keys = [key for key in stats_1.keys() if key not in ignore_keys]
+        remaining_keys = [key for key in stats_1 if key not in ignore_keys]
         for key in remaining_keys:
             val_old = stats_1[key]
             val_new = stats_2[key]
@@ -450,13 +464,13 @@ class BaseGraphTest(TestCase):
         for key in ["SM_0", "SM_1"]:
             sm_data_old = log_1["0"][key]
             sm_data_new = log_2["0"][key]
-            for key2 in sm_data_old.keys():
+            for key2 in sm_data_old:
                 data_old = sm_data_old[key2]
                 data_new = sm_data_new[key2]
                 for i in range(len(data_old)):
                     step_old = data_old[i]
                     step_new = data_new[i]
-                    for key3 in step_old.keys():
+                    for key3 in step_old:
                         if key3 in [
                             "morphological_features",
                             "non_morphological_features",
@@ -464,7 +478,7 @@ class BaseGraphTest(TestCase):
                         ]:
                             feat_old = step_old[key3]
                             feat_new = step_new[key3]
-                            for feature in feat_old.keys():
+                            for feature in feat_old:
                                 self.assertEqual(feat_old[feature], feat_new[feature])
                         elif key3 == "allowable_sender_types":
                             for f_idx in range(len(step_old[key3])):

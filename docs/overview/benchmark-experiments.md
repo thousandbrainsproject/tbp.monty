@@ -7,6 +7,8 @@ These benchmark experiments are not common benchmarks from the AI field. There a
 
 You can find Monty experiment configs for all the following experiments in the [benchmarks](https://github.com/thousandbrainsproject/tbp.monty/tree/main/benchmarks) folder. Note that the experiment parameters are not overly optimized for accuracy. **The parameters used here aim to strike a good balance between speed and accuracy** to allow our researchers to iterate quickly and evaluate algorithm changes regularly. If a particular use case requires higher accuracy or faster learning or inference, this can be achieved by adjusting learning module parameters.
 
+The runtimes reported in the tables below reflect the **total experiment runtime**, which includes overhead such as environment setup (e.g., Habitat initialization), logging, and telemetry. The isolated Monty runtime (i.e., the time spent on learning or inference) is typically less than the reported values. In Wandb logs, this corresponds to the column labeled `RUNTIME`.
+
 If you want to evaluate Monty on external benchmarks, please have a look at our [application criteria](./application-criteria.md) and [challenging preconceptions](./vision-of-the-thousand-brains-project/challenging-preconceptions.md) pages first. Particularly, note that Monty is a sensorimotor system made to efficiently learn and infer by interacting with an environment. It is not designed for large, static datasets.
 
 # Object and Pose Recognition on the YCB Dataset
@@ -35,7 +37,7 @@ Configs with `multi` in the name have additional distractor objects, in addition
 ![](../figures/overview/multi_obj_environments.png)
 
 
-Configs with `_dist_agent` in the name use the distant agent for inference (by default they still use the models learned with the surface agent). This means that the sensor is fixed in one location and can only tilt up, down, left, and right following a random walk. When using the model-based hypothesis-testing policy, the agent can also "jump" to new locations in space. Configs with `surf_agent` in the name use the surface agent for inference which can freely move around the entire object. Both the surface and the distant agent can execute model-based actions using the hypothesis testing policy. For more details, see our documentation on [policies](../how-monty-works/policy.md).
+Configs with `_dist_agent` in the name use the distant agent for inference (by default they still use the models learned with the surface agent). This means that the sensor is fixed in one location and can only tilt up, down, left, and right following a random walk. When using the model-based hypothesis-testing policy, the agent can also "jump" to new locations in space. Configs with `surf_agent` in the name use the surface agent for inference which can freely move around the entire object. Both the surface and the distant agent can execute model-based actions using the hypothesis testing policy. For more details, see our documentation on [policies](../how-monty-works/motor-system/policy.md).
 
 Configs with `base` in their name test each object in the 14 orientations in which they were learned. No noise is added to the sensor.
 
@@ -99,7 +101,7 @@ An object is classified as detected correctly if the detected object ID is in th
 
 !table[../../benchmarks/ycb_unsupervised.csv]
 
-To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning, by definition, cannot be parallelized across epochs. Therefore these experiments were run without multiprocessing (using `run.py`) on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
+To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning, by definition, cannot be parallelized across epochs. Therefore these experiments were run without multiprocessing (using `run.py`).
 
 ## Unsupervised Inference
 
@@ -112,12 +114,6 @@ More specifically, these experiments are run purely in evaluation mode (i.e., pr
 ### Results
 
 !table[../../benchmarks/ycb_unsupervised_inference.csv]
-
-> [!WARNING]
-> 
-> These benchmark experiments track the progress on [RFC 9: Hypotheses resampling](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0009_hypotheses_resampling.md).
-> 
-> We do not expect these experiments to have good performance until the RFC is implemented and [issue #214](https://github.com/thousandbrainsproject/tbp.monty/issues/214) is resolved.
 
 These experiments are currently run without multiprocessing (using `run.py`).
 
@@ -151,8 +147,8 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > | Dataset | Archive Format | Download Link |
 > | --- | --- | --- |
-> | compositional_objects | tgz | [compositional_objects.tgz]((https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.tgz)) |
-> | compositional_objects | zip | [compositional_objects.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.zip) |
+> | compositional_objects_1.1 | tgz | [compositional_objects_1.1.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.tgz) |
+> | compositional_objects_1.1 | zip | [compositional_objects_1.1.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.zip) |
 > 
 > Unpack the archive in the `~/tbp/data/` folder. For example:
 >
@@ -161,16 +157,16 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > cd ~/tbp/data/
 >
-> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.tgz | tar -xzf -
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.tgz | tar -xzf -
 > ```
 > ```plaintext zip
 > mkdir -p ~/tbp/data/
 > 
 > cd ~/tbp/data/
 > 
-> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.zip
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.zip
 > 
-> unzip compositional_objects.zip
+> unzip compositional_objects_1.1.zip
 > ```
 >
 > To generate the pretrained models, run the following experiments in order:
@@ -180,10 +176,36 @@ Note: To obtain these results, pretraining was run without parallelization acros
 > python run.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_monolithic_models
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling
+> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl2_comp_models
 > python run.py experiment=supervised_pre_training_objects_with_logos_lvl3_comp_models
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl4_comp_models
+> ```
+
+> [!NOTE]
+> Alternatively, you can download the pretrained models directly instead of running the pretraining experiments above:
+>
+> | Models | Archive Format | Download Link |
+> | --- | --- | --- |
+> | pretrained_compositional_objects_v3 | tgz | [pretrained_compositional_objects_v3.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v3.tgz) |
+> | pretrained_compositional_objects_v3 | zip | [pretrained_compositional_objects_v3.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v3.zip) |
+>
+> Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
+>
+> ```plaintext tgz
+> mkdir -p ~/tbp/results/monty/pretrained_models/
+>
+> cd ~/tbp/results/monty/pretrained_models/
+>
+> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v3.tgz | tar -xzf -
+> ```
+> ```plaintext zip
+> mkdir -p ~/tbp/results/monty/pretrained_models/
+>
+> cd ~/tbp/results/monty/pretrained_models/
+>
+> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v3.zip
+>
+> unzip pretrained_compositional_objects_v3.zip
 > ```
 
 
@@ -223,7 +245,7 @@ curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.
 unzip worldimages.zip
 ```
 
-Finally, note that the world_image experimental runs **do not support running with multi-processing, so you cannot use the run_parallel.py script** when running these. This is because an appropriate object_init_sampler has yet to be defined for this experimental setup. All experiments are run with 16 CPUs for benchmarking purposes.
+Finally, note that the world_image experimental runs **do not support running with multi-processing, so you cannot use the run_parallel.py script** when running these. This is because an appropriate object_init_sampler has yet to be defined for this experimental setup. Note that this restriction does not apply to `randrot_noise_sim_on_scan_monty_world`, which can still be parallelized with `run_parallel.py`. All experiments are run with 16 CPUs for benchmarking purposes.
 
 See the [monty_lab project folder](https://github.com/thousandbrainsproject/monty_lab/tree/main/monty_meets_world) for the code.
 
@@ -260,7 +282,7 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 !table[../../benchmarks/montymeetsworld.csv]
 
-**Note that rotation errors are meaningless since no ground truth rotation is provided**
+**Rotation errors are excluded because they are meaningless, since no ground truth rotation is provided**
 
 ### Explanation of Some of the Results
 

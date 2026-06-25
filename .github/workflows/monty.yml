@@ -16,7 +16,7 @@ on:
       - checks_requested
 
 env:
-  UV_PYTHON: 3.9.22 # version of Python to use in `uv` environment
+  UV_PYTHON: 3.10.17 # version of Python to use in `uv` environment
 
 jobs:
   build_sphinx_monty:
@@ -148,7 +148,7 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
-          deptry src tests conf
+          deptry src tests
 
   check_license_monty:
     name: check-license-monty
@@ -208,13 +208,13 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           mkdir -p test_results/ruff
-          ruff check src tests conf run.py run_parallel.py
-          ruff format --check src tests conf run.py run_parallel.py
+          ruff check src tests run.py run_parallel.py
+          ruff format --check src tests run.py run_parallel.py
       - name: Changed files for a pull request
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && github.event_name == 'pull_request' }}
         working-directory: tbp.monty
         run: |
-          git diff --name-only origin/${{ github.base_ref }} > changed_files.txt
+          git diff --name-only origin/${{ github.base_ref }}... > changed_files.txt
       - name: Changed files for a push
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && github.event_name == 'push' }}
         working-directory: tbp.monty
@@ -231,8 +231,13 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
-          cat changed_files.txt | grep -E '^src/|^tests/|^conf/|^run.py$|^run_parallel.py$' | grep '\.py$' > changed_files_filtered.txt || exit 0
-          cat changed_files_filtered.txt | xargs ruff check --select CPY001 --config lint.flake8-copyright.notice-rgx='"Copyright\\s+.*2026"' -v
+          cat changed_files.txt | grep -E '^src/|^tests/|^run.py$|^run_parallel.py$' | grep '\.py$' > changed_files_filtered.txt || exit 0
+          if ! cat changed_files_filtered.txt | xargs ruff check --select CPY001 --config lint.flake8-copyright.notice-rgx='"Copyright\\s+.*2026"' -v
+          then
+            echo "One or more modified files did not update the copyright date range to include the current year."
+            echo "See https://docs.thousandbrains.org/docs/code-style-guide#source-code-copyright-and-license-header for details."
+            exit 1
+          fi
 
   check_types_monty:
     name: check-types-monty
@@ -271,7 +276,7 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           mkdir -p test_results/mypy
-          mypy src tests conf
+          mypy src tests
 
   install_monty:
     name: install-monty
@@ -414,7 +419,9 @@ jobs:
           source activate tbp.monty
           set -e
           mkdir -p test_results/pytest
-          xvfb-run pytest --cov --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
+          xvfb-run pytest --cov --cov-context=test --cov-report html --cov-report term \
+            --junitxml=test_results/pytest/results.xml --verbose --doctest-modules \
+            --doctest-continue-on-failure
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v4
@@ -478,8 +485,8 @@ jobs:
           unzip -qq ~/tbp/data/omniglot/python/strokes_background.zip -d ~/tbp/data/omniglot/python
           mkdir -p ~/tbp/data/worldimages
           curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar -xzf - -C ~/tbp/data
-          mkdir -p ~/tbp/results/monty/pretrained_models/pretrained_ycb_v11
-          curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v11.tgz | tar -xzf - -C ~/tbp/results/monty/pretrained_models
+          mkdir -p ~/tbp/results/monty/pretrained_models/pretrained_ycb_v12
+          curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.tgz | tar -xzf - -C ~/tbp/results/monty/pretrained_models
       - name: Test tutorials
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
@@ -509,28 +516,38 @@ jobs:
         with:
           lfs: true
           path: tbp.monty
+      - name: Install dependencies
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          sudo apt update -y
+          sudo apt install -y --no-install-recommends libegl1-mesa-dev
       - name: Install uv
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: '**/uv.lock'
+          cache-dependency-glob: "**/uv.lock"
       - name: Create uv environment
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         continue-on-error: true
         run: |
           uv venv --seed
-          # Need to install torch separately because torch-scatter doesn't declare it properly
-          uv pip install torch==1.13.1
           uv sync --locked --extra dev --extra simulator_mujoco
       - name: Run tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         continue-on-error: true
         run: |
+          export MUJOCO_GL=egl
+          export EGL_PLATFORM=headless
           mkdir -p test_results/pytest
-          uv run pytest --cov --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
+          uv run --frozen pytest src tests \
+            --cov --cov-context=test --cov-report html --cov-report term \
+            --junitxml=test_results/pytest/results.xml --verbose \
+            --doctest-modules --doctest-continue-on-failure \
+            --ignore=src/tbp/monty/simulators/habitat \
+            --ignore=src/tbp/monty/simulators/tacto
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v4

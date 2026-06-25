@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -8,6 +8,8 @@
 # https://opensource.org/licenses/MIT.
 
 import pytest
+
+from tests import HYDRA_ROOT
 
 pytest.importorskip(
     "habitat_sim",
@@ -20,12 +22,26 @@ import hydra
 from omegaconf import OmegaConf
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
-EXPERIMENT_DIR = Path(__file__).parent.parent.parent / "conf" / "experiment"
-EXPERIMENTS = [x.stem for x in EXPERIMENT_DIR.glob("*.yaml")]
+EXPERIMENT_DIR = (
+    Path(__file__).parents[2] / "src" / "tbp" / "monty" / "conf" / "experiment"
+)
+EXPERIMENTS = [
+    x.stem
+    for x in EXPERIMENT_DIR.glob("*.yaml")
+    # Exclude MuJoCo experiments
+    # TODO: Revert once we convert to MuJoCo
+    if not x.stem.endswith("mujoco")
+]
 EXPERIMENT_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots"
 
 TUTORIALS_DIR = EXPERIMENT_DIR / "tutorial"
-TUTORIALS = [x.stem for x in TUTORIALS_DIR.glob("*.yaml")]
+TUTORIALS = [
+    x.stem
+    for x in TUTORIALS_DIR.glob("*.yaml")
+    # Exclude MuJoCo tutorials
+    # TODO: Revert once we convert to MuJoCo
+    if not x.stem.endswith("mujoco")
+]
 TUTORIAL_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots" / "tutorial"
 
 
@@ -51,7 +67,7 @@ class ExperimentTest(ParametrizedTestCase):
     )
     def test_experiment(self, experiment: str):
         snapshot_path = EXPERIMENT_SNAPSHOTS_DIR / f"{experiment}.yaml"
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment", overrides=[f"experiment={experiment}"]
             )
@@ -78,7 +94,7 @@ class TutorialTest(ParametrizedTestCase):
     )
     def test_tutorial(self, tutorial: str):
         snapshot_path = TUTORIAL_SNAPSHOTS_DIR / f"{tutorial}.yaml"
-        with hydra.initialize(version_base=None, config_path="../../conf"):
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment", overrides=[f"experiment=tutorial/{tutorial}"]
             )

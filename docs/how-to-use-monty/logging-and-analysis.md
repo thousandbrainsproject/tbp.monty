@@ -27,7 +27,7 @@ The first time you run experiments that log to wandb you will need to set your W
 
 ## Analyzing Data From `monty_handlers`
 
-The [`plot_utils.py`](../../src/tbp/monty/frameworks/utils/plot_utils.py) contains utils for plotting the logged data. The [`logging_utils.py`](../../src/tbp/monty/frameworks/utils/logging_utils.py) file contains some useful utils for loading logs and printing some summary statistics on them.
+The [`plot_utils.py`](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/frameworks/utils/plot_utils.py) contains utils for plotting the logged data. The [`logging_utils.py`](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/frameworks/utils/logging_utils.py) file contains some useful utils for loading logs and printing some summary statistics on them.
 
 > [!NOTE]
 > Install `analysis` optional dependencies to use `plot_utils.py`
@@ -51,7 +51,7 @@ import os
 from tbp.monty.frameworks.utils.logging_utils import load_stats
 
 pretrain_path = os.path.expanduser("~/tbp/results/monty/pretrained_models/")
-pretrained_dict = pretrain_path + "pretrained_ycb_v11/surf_agent_1lm_10distinctobj/pretrained/"
+pretrained_dict = pretrain_path + "pretrained_ycb_v12/surf_agent_1lm_10distinctobj/pretrained/"
 
 log_path = os.path.expanduser("~/tbp/results/monty/projects/evidence_eval_runs/logs/")
 exp_name = "randrot_10distinctobj_surf_agent"

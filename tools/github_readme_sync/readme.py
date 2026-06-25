@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -34,6 +34,8 @@ from tools.github_readme_sync.constants import (
     REGEX_CSV_TABLE,
 )
 from tools.github_readme_sync.req import delete, get, post, put
+
+logger = logging.getLogger(__name__)
 
 PREFIX = "https://dash.readme.com/api/v1"
 GITHUB_RAW = "https://raw.githubusercontent.com"
@@ -71,6 +73,22 @@ OrderedDumper.add_representer(OrderedDict, _dict_representer)
 class ReadMe:
     def __init__(self, version: str):
         self.version = version
+
+    def normalize_title_to_readme_slug(self, title: str) -> str:
+        # Normalize a ReadMe title into the slug format ReadMe generates.
+
+        # ReadMe slugs are generally derived from titles by:
+        # - lowercasing
+        # - replacing whitespace with hyphens
+        # - stripping punctuation/symbols/non-alphanumeric characters
+        # - collapsing repeated hyphens
+
+        slug = title.lower()
+        slug = re.sub(r"\s+", "-", slug)
+        slug = re.sub(r"[^a-z0-9-]", "", slug)
+        slug = re.sub(r"-+", "-", slug)
+        # Strip leading/trailing hyphens that may have resulted from punctuation removal
+        return slug.strip("-")
 
     def get_categories(self) -> list[Any]:
         categories = get(f"{PREFIX}/categories", {"x-readme-version": self.version})
@@ -128,7 +146,7 @@ class ReadMe:
     def make_version_stable(self):
         if self.version_has_suffix():
             return
-        logging.info(f"{GREEN}Setting version {self.version} to stable{RESET}")
+        logger.info(f"{GREEN}Setting version {self.version} to stable{RESET}")
         if not put(
             f"{PREFIX}/version/{self.version}", {"is_stable": True, "is_hidden": False}
         ):
@@ -140,7 +158,7 @@ class ReadMe:
     def create_version_if_not_exists(self) -> bool:
         if get(f"{PREFIX}/version/{self.version}") is None:
             stable_version = self.get_stable_version()
-            logging.info(
+            logger.info(
                 f"{GRAY}Creating version: {self.version} "
                 f"forked from {stable_version}{RESET}"
             )
@@ -158,17 +176,17 @@ class ReadMe:
         return False
 
     def delete_categories(self):
-        logging.info(f"{GRAY}Deleting categories for version {self.version}{RESET}")
+        logger.info(f"{GRAY}Deleting categories for version {self.version}{RESET}")
         categories = self.get_categories()
         for category in categories:
             self.delete_category(category["slug"])
 
     def delete_category(self, slug: str):
-        logging.info(f"{GRAY}Deleting category {slug}{RESET}")
+        logger.info(f"{GRAY}Deleting category {slug}{RESET}")
         delete(f"{PREFIX}/categories/{slug}", {"x-readme-version": self.version})
 
     def delete_doc(self, slug: str):
-        logging.info(f"{GRAY}Deleting doc {slug}{RESET}")
+        logger.info(f"{GRAY}Deleting doc {slug}{RESET}")
         delete(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
 
     def validate_csv_align_param(self, align_value: str) -> None:
@@ -177,9 +195,15 @@ class ReadMe:
                 f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
             )
 
-    def create_category_if_not_exists(self, slug: str, title: str) -> tuple[str, bool]:
+    def create_category_if_not_exists(self, title: str) -> tuple[str, bool]:
+        # Unfortunately ReadMe's API does not allow us to create a category with a
+        # specific slug, so we have to check if the category exists by converting
+        # the title to readme's style of slug to check if it exists.
+        # http://docs.readme.com/main/reference/createcategory
+        readme_slug = self.normalize_title_to_readme_slug(title)
+
         category = get(
-            f"{PREFIX}/categories/{slug}", {"x-readme-version": self.version}
+            f"{PREFIX}/categories/{readme_slug}", {"x-readme-version": self.version}
         )
         if category is None:
             response = post(
@@ -227,6 +251,7 @@ class ReadMe:
 
                     # Process headers and build alignment lookup
                     alignments = {}
+                    hidden_columns = set()
                     for i, unparsed_header in enumerate(headers):
                         title_attr = ""
                         align_style = ""
@@ -244,13 +269,18 @@ class ReadMe:
                                 alignments[i] = (
                                     f" style='text-align:{html.escape(align_value)}'"
                                 )
-                        unsafe_html += f"<th{title_attr}>{header}</th>"
+                            elif part == "hidden":
+                                hidden_columns.add(i)
+                        if i not in hidden_columns:
+                            unsafe_html += f"<th{title_attr}>{header}</th>"
                     unsafe_html += "</tr>\n</thead>\n<tbody>\n"
 
                     # Add rows using stored alignments
                     for row in rows:
                         unsafe_html += "<tr>"
                         for i, cell in enumerate(row):
+                            if i in hidden_columns:
+                                continue
                             align_style = alignments.get(i, "")
                             unsafe_html += f"<td{align_style}>{cell}</td>"
                         unsafe_html += "</tr>\n"
@@ -285,6 +315,7 @@ class ReadMe:
             "hidden": doc.get("hidden", False),
             "order": order,
             "parentDoc": parent_id,
+            "slug": doc["slug"],
         }
 
         # Include description field as excerpt if it exists in the document
@@ -446,7 +477,7 @@ class ReadMe:
                             safe_value = nh3.clean(values[0])
                             allowed_styles.append(f"{safe_key}: {safe_value}")
                         else:
-                            logging.warning(f"Ignoring disallowed CSS property '{key}'")
+                            logger.warning(f"Ignoring disallowed CSS property '{key}'")
                     if allowed_styles:
                         style = f"{style} " + "; ".join(allowed_styles)
                 except (ValueError, ImportError):
@@ -471,7 +502,7 @@ class ReadMe:
 
     def delete_version(self):
         delete(f"{PREFIX}/version/v{self.version}")
-        logging.info(f"{GREEN}Successfully deleted version {self.version}{RESET}")
+        logger.info(f"{GREEN}Successfully deleted version {self.version}{RESET}")
 
     def _should_ignore_video(self, identifier: str, ignore_list: list[str]) -> bool:
         return identifier in ignore_list
