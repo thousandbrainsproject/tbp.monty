@@ -149,7 +149,7 @@
   - [test-learning-at-different-speeds-depending-on-level-in-hierarchy](future-work/cmp-hierarchy-improvements/test-learning-at-different-speeds-depending-on-level-in-hierarchy.md)
   - [send-similarity-encoding-object-id-to-next-level-test](future-work/cmp-hierarchy-improvements/send-similarity-encoding-object-id-to-next-level-test.md)
   - [global-interval-timer](future-work/cmp-hierarchy-improvements/global-interval-timer.md)
-  - [include-state-in-CMP](future-work/cmp-hierarchy-improvements/include-state-in-CMP.md)
+  - [include-state-in-cmp](future-work/cmp-hierarchy-improvements/include-state-in-cmp.md)
 - [environment-improvements](future-work/environment-improvements.md)
   - [object-behavior-test-bed](future-work/environment-improvements/object-behavior-test-bed.md)
   - [make-dataset-to-test-compositional-objects](future-work/environment-improvements/make-dataset-to-test-compositional-objects.md)

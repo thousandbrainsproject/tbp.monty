@@ -9,9 +9,10 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
+import numpy.typing as npt
 
 from tbp.monty.frameworks.models.buffer import BufferEncoder
 
@@ -47,14 +48,15 @@ class Message:
 
     def __init__(
         self,
-        location,
-        morphological_features,
-        non_morphological_features,
-        confidence,
-        use_state,
-        sender_id,
-        sender_type,
-        contains_features=True,
+        # TODO: Consider changing to VectorXYZ
+        location: npt.NDArray[np.float64] | None,
+        morphological_features: dict[str, Any],
+        non_morphological_features: dict[str, Any],
+        confidence: float,
+        use_state: bool,
+        sender_id: str,
+        sender_type: Literal["SM", "LM"],
+        contains_features: bool = True,
     ):
         """Initialize a message."""
         self.location = location
@@ -242,7 +244,7 @@ class Goal(Message):
 
     def __init__(
         self,
-        location: np.ndarray | None,
+        location: npt.NDArray[np.float64] | None,
         morphological_features: dict[str, Any] | None,
         non_morphological_features: dict[str, Any] | None,
         confidence: float,
