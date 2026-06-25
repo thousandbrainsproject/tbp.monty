@@ -12,7 +12,6 @@ from __future__ import annotations
 import shutil
 import tempfile
 from pathlib import Path
-from pprint import pprint
 
 import hydra
 import pandas as pd
@@ -25,7 +24,6 @@ from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 class EvidenceLMTest(BaseGraphTest):
     def setUp(self) -> None:
-        """Code that gets executed before every test."""
         super().setUp()
 
         self.output_dir = tempfile.mkdtemp()
@@ -62,7 +60,6 @@ class EvidenceLMTest(BaseGraphTest):
             self.noisy_sensor_cfg = hydra_config("noisy_sensor")
 
     def tearDown(self) -> None:
-        """Code that gets executed after every test."""
         shutil.rmtree(self.output_dir)
 
     def test_can_run_evidence_experiment(self) -> None:
@@ -101,7 +98,6 @@ class EvidenceLMTest(BaseGraphTest):
         )
 
     def test_pre_episode_raises_error_when_no_object_is_present(self) -> None:
-        """Test that pre_episode raises an error when no object is present."""
         exp = hydra.utils.instantiate(self.fixed_actions_evidence_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
@@ -451,7 +447,6 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_5lms_pre_episode_raises_error_when_no_object_is_present(self) -> None:
         """Test that pre_episode raises an error when no object is present."""
-        pprint("...parsing experiment...")
         exp = hydra.utils.instantiate(self.five_lm_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
