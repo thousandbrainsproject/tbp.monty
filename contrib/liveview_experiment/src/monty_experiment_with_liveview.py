@@ -495,8 +495,9 @@ class MontyExperimentWithLiveView(MontyExperiment):
     def _broadcast_sensor_images(self, step: int, observation: Any) -> None:
         """Broadcast sensor images for live visualization.
 
-        Captures camera image and depth image from sensor observations,
-        encodes them as base64 PNG, and broadcasts via ZMQ.
+        Iterates all sensor modules and broadcasts each as a separate publisher
+        (using sensor_module_id as run_name suffix) so the dashboard shows
+        multiple camera views side by side.
 
         Images are throttled to avoid overwhelming the network/browser.
 
@@ -517,26 +518,30 @@ class MontyExperimentWithLiveView(MontyExperiment):
         self._last_image_broadcast_time = current_time
 
         try:
-            images = self._extract_sensor_images(observation, step)
-            if images:
-                self.broadcaster.publish_data("sensor_images", images)
+            sensor_images_list = self._extract_sensor_images(observation, step)
+            if not sensor_images_list:
+                return
+            for payload in sensor_images_list:
+                self.broadcaster.publish_data("sensor_images", payload)
         except (KeyError, AttributeError, TypeError, ValueError) as e:
             # Don't let image extraction failures crash the experiment
             logger.debug("Failed to extract sensor images: %s", e)
 
     def _extract_sensor_images(
         self, observation: Any, step: int
-    ) -> dict[str, Any] | None:
-        """Extract sensor images from observation and encode as base64.
+    ) -> list[dict[str, Any]] | None:
+        """Extract sensor images from ALL sensor modules and encode as base64.
 
-        Follows the same pattern as LivePlotter.hardcoded_assumptions().
+        Each sensor module that produces rgba/depth data gets its own payload
+        with the sensor_module_id as the publisher (run_name suffix), enabling
+        the dashboard to show multiple camera views side by side.
 
         Args:
             observation: The observation from the environment.
             step: Current step number within the episode.
 
         Returns:
-            Dictionary with base64-encoded images, or None if extraction fails.
+            List of payload dicts (one per sensor module with images), or None.
         """
         if not hasattr(self, "model") or not self.model:
             return None
@@ -547,13 +552,40 @@ class MontyExperimentWithLiveView(MontyExperiment):
                 return None
 
             agent_observation = observation.get(agent_id, {})
-            camera_b64 = self._extract_camera_image_b64(agent_observation)
-            depth_b64 = self._extract_depth_image_b64(agent_observation)
-
-            if not (camera_b64 or depth_b64):
+            if not isinstance(agent_observation, dict):
                 return None
 
-            return self._build_sensor_image_payload(camera_b64, depth_b64, step)
+            sensor_modules = getattr(self.model, "sensor_modules", [])
+            payloads: list[dict[str, Any]] = []
+
+            for sm in sensor_modules:
+                sm_id = getattr(sm, "sensor_module_id", None)
+                if sm_id is None:
+                    continue
+
+                sm_obs = agent_observation.get(sm_id)
+                if not isinstance(sm_obs, dict):
+                    continue
+
+                camera_b64 = None
+                depth_b64 = None
+
+                rgba = sm_obs.get("rgba")
+                if rgba is not None:
+                    camera_b64 = self._numpy_to_base64_png(rgba)
+
+                depth = sm_obs.get("depth")
+                if depth is not None:
+                    depth_b64 = self._depth_to_base64_png(depth)
+
+                if camera_b64 or depth_b64:
+                    payloads.append(
+                        self._build_sensor_image_payload(
+                            camera_b64, depth_b64, step, sm_id
+                        )
+                    )
+
+            return payloads if payloads else None
         except (KeyError, AttributeError, TypeError, IndexError) as e:
             logger.debug("Error extracting sensor images: %s", e)
             return None
@@ -615,15 +647,23 @@ class MontyExperimentWithLiveView(MontyExperiment):
         return self._depth_to_base64_png(depth)
 
     def _build_sensor_image_payload(
-        self, camera_b64: str | None, depth_b64: str | None, step: int
+        self, camera_b64: str | None, depth_b64: str | None, step: int,
+        sensor_id: str | None = None,
     ) -> dict[str, Any]:
-        """Build payload dictionary for sensor images."""
+        """Build payload dictionary for sensor images.
+
+        When sensor_id is provided, uses it as run_name suffix so the
+        dashboard renders each sensor module as a separate publisher.
+        """
+        run_name = (
+            f"{self.run_name}:{sensor_id}" if sensor_id else self.run_name
+        )
         return {
             "camera_image": camera_b64,
             "depth_image": depth_b64,
             "step": step,
             "timestamp": time.time(),
-            "run_name": self.run_name,
+            "run_name": run_name,
         }
 
     def _numpy_to_base64_png(self, img_array: np.ndarray) -> str | None:
