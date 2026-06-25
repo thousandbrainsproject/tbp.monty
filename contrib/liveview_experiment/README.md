@@ -196,6 +196,8 @@ This is a demonstration/prototype implementation. The patterns shown here (two-p
 
 Every upstream experiment can be run with LiveView via mode 2 (no per-experiment YAML needed). Dashboard at http://127.0.0.1:8000.
 
+> **Legend:** 📷 = shows camera/sensor images in dashboard | 📊 = evidence chart (all experiments show this)
+
 **LiveView-specific configs** (in `contrib/liveview_experiment/conf/experiment/`):
 ```bash
 ./contrib/liveview_experiment/scripts/run.sh randrot_10distinctobj_surf_agent_with_liveview
@@ -204,27 +206,33 @@ Every upstream experiment can be run with LiveView via mode 2 (no per-experiment
 
 **77-object benchmarks:**
 ```bash
-./contrib/liveview_experiment/scripts/run.sh base_77obj_dist_agent        # 98.27%, ~24s/ep
-./contrib/liveview_experiment/scripts/run.sh base_77obj_surf_agent        # 100.00%, ~24s/ep
-./contrib/liveview_experiment/scripts/run.sh randrot_noise_77obj_dist_agent  # 96.97%, ~57s/ep
+# 📷 Surface agent: camera follows object surface, viewfinder captures raw images
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_77obj_surf_agent  # 99.57%, ~97s/ep
+./contrib/liveview_experiment/scripts/run.sh base_77obj_surf_agent            # 100.00%, ~24s/ep
+# Distant agent: fixed camera observes from distance
+./contrib/liveview_experiment/scripts/run.sh randrot_noise_77obj_dist_agent   # 96.97%, ~57s/ep
+./contrib/liveview_experiment/scripts/run.sh base_77obj_dist_agent            # 98.27%, ~24s/ep
+# 5-LM distant agent: 5 learning modules voting
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_77obj_5lms_dist_agent  # 92.21%, ~96s/ep
 ```
 
 **10-object benchmarks:**
 ```bash
-./contrib/liveview_experiment/scripts/run.sh base_config_10distinctobj_dist_agent
+# 📷 Surface agent experiments — camera views available
 ./contrib/liveview_experiment/scripts/run.sh base_config_10distinctobj_surf_agent
 ./contrib/liveview_experiment/scripts/run.sh base_10simobj_surf_agent
-./contrib/liveview_experiment/scripts/run.sh base_10multi_distinctobj_dist_agent
+./contrib/liveview_experiment/scripts/run.sh randrot_noise_10distinctobj_surf_agent
+./contrib/liveview_experiment/scripts/run.sh randrot_noise_10simobj_surf_agent
+./contrib/liveview_experiment/scripts/run.sh randrot_10distinctobj_surf_agent
+./contrib/liveview_experiment/scripts/run.sh randomrot_rawnoise_10distinctobj_surf_agent
+# Distant agent experiments
+./contrib/liveview_experiment/scripts/run.sh base_config_10distinctobj_dist_agent
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_10distinctobj_dist_agent
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_10distinctobj_dist_on_distm
-./contrib/liveview_experiment/scripts/run.sh randrot_noise_10distinctobj_surf_agent
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_10distinctobj_5lms_dist_agent
-./contrib/liveview_experiment/scripts/run.sh randrot_10distinctobj_surf_agent
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_10simobj_dist_agent
-./contrib/liveview_experiment/scripts/run.sh randrot_noise_10simobj_surf_agent
-./contrib/liveview_experiment/scripts/run.sh randomrot_rawnoise_10distinctobj_surf_agent
+# Multi-object with distractors
+./contrib/liveview_experiment/scripts/run.sh base_10multi_distinctobj_dist_agent
 ```
 
 **Training-only:**
@@ -268,7 +276,7 @@ Every upstream experiment can be run with LiveView via mode 2 (no per-experiment
 ./contrib/liveview_experiment/scripts/run.sh unsupervised_inference_distinctobj_surf_agent
 ```
 
-**World image / scanned model:**
+**📷 World image / scanned model — camera views shown:**
 ```bash
 ./contrib/liveview_experiment/scripts/run.sh world_image_on_scanned_model
 ./contrib/liveview_experiment/scripts/run.sh world_image_from_stream_on_scanned_model
