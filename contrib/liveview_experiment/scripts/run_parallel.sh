@@ -99,7 +99,7 @@ CONFIG_PATH="${LIVEVIEW_DIR}/conf/experiment/${EXPERIMENT_NAME}.yaml"
 IS_LIVEVIEW_CONFIG=false
 if [ ! -f "$CONFIG_PATH" ]; then
     # Fall back to main experiment directory
-    CONFIG_PATH="${TBP_MONTY_ROOT}/conf/experiment/${EXPERIMENT_NAME}.yaml"
+    CONFIG_PATH="${TBP_MONTY_ROOT}/src/tbp/monty/conf/experiment/${EXPERIMENT_NAME}.yaml"
     if [ ! -f "$CONFIG_PATH" ]; then
         echo "Error: Experiment config not found:" >&2
         echo "  ${LIVEVIEW_DIR}/conf/experiment/${EXPERIMENT_NAME}.yaml" >&2
@@ -110,9 +110,9 @@ if [ ! -f "$CONFIG_PATH" ]; then
             echo "  In contrib:" >&2
             ls -1 "${LIVEVIEW_DIR}/conf/experiment"/*.yaml 2>/dev/null | sed 's|.*/|    |' | sed 's|\.yaml$||' || true
         fi
-        if [ -d "${TBP_MONTY_ROOT}/conf/experiment" ]; then
+        if [ -d "${TBP_MONTY_ROOT}/src/tbp/monty/conf/experiment" ]; then
             echo "  In main:" >&2
-            ls -1 "${TBP_MONTY_ROOT}/conf/experiment"/*.yaml 2>/dev/null | sed 's|.*/|    |' | sed 's|\.yaml$||' || true
+            ls -1 "${TBP_MONTY_ROOT}/src/tbp/monty/conf/experiment"/*.yaml 2>/dev/null | sed 's|.*/|    |' | sed 's|\.yaml$||' || true
         fi
         exit 1
     fi
@@ -130,20 +130,52 @@ if [ -n "$EPISODES_INPUT" ]; then
 fi
 echo "" >&2
 
-# Check for pyzmq (required for ZMQ communication)
+# Auto-install pyzmq if missing (needed for ZMQ communication)
 if ! python -c "import zmq" 2>/dev/null; then
-    echo "Error: pyzmq not found. Please run setup.sh first." >&2
-    exit 1
+    echo "Installing pyzmq..." >&2
+    pip install --quiet "pyzmq>=25.0.0" >&2 || {
+        echo "Error: Failed to install pyzmq" >&2
+        exit 1
+    }
+    echo "✓ pyzmq installed" >&2
 fi
 
 # Start LiveView server early as a separate process (if Python 3.11+ available)
 LIVEVIEW_SERVER_PID=""
+TAIL_PID=""
 LIVEVIEW_HOST="${LIVEVIEW_HOST:-127.0.0.1}"
 LIVEVIEW_PORT="${LIVEVIEW_PORT:-8000}"
 ZMQ_PORT="${ZMQ_PORT:-5555}"
 
-# Check for Python 3.14+ for LiveView server (prefer latest, fallback to 3.11+)
-if [ -d "${LIVEVIEW_DIR}/.liveview_venv" ]; then
+# Auto-create LiveView venv if missing (needs Python 3.11+ on host)
+LIVEVIEW_VENV="${LIVEVIEW_DIR}/.liveview_venv"
+if [ ! -d "$LIVEVIEW_VENV" ]; then
+    # Find a Python 3.11+ on the host (prefer newest)
+    LIVEVIEW_PYTHON_CMD=""
+    for cmd in python3.14 python3.13 python3.12 python3.11 python3; do
+        if command -v "$cmd" >/dev/null 2>&1; then
+            ver=$($cmd --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
+            maj=$(echo "$ver" | cut -d. -f1)
+            min=$(echo "$ver" | cut -d. -f2)
+            if [ "$maj" -ge 3 ] && [ "$min" -ge 11 ]; then
+                LIVEVIEW_PYTHON_CMD="$cmd"
+                echo "Creating LiveView venv with Python $ver..." >&2
+                break
+            fi
+        fi
+    done
+    if [ -n "$LIVEVIEW_PYTHON_CMD" ]; then
+        "$LIVEVIEW_PYTHON_CMD" -m venv "$LIVEVIEW_VENV" >&2 || true
+        if [ -d "$LIVEVIEW_VENV" ]; then
+            "$LIVEVIEW_VENV/bin/pip" install --upgrade --quiet pip >&2 || true
+            "$LIVEVIEW_VENV/bin/pip" install --quiet -e "${LIVEVIEW_DIR}[liveview]" >&2 || true
+            echo "✓ LiveView venv ready" >&2
+        fi
+    fi
+fi
+
+# Start LiveView server if venv exists
+if [ -d "$LIVEVIEW_VENV" ]; then
     LIVEVIEW_PYTHON="${LIVEVIEW_DIR}/.liveview_venv/bin/python"
     if [ -f "$LIVEVIEW_PYTHON" ]; then
         echo "Starting LiveView server..." >&2
@@ -205,7 +237,7 @@ cleanup() {
 trap cleanup INT TERM EXIT
 
 # Build common Hydra searchpath to include both main and contrib directories
-SEARCHPATH_OVERRIDE="hydra.searchpath=[${TBP_MONTY_ROOT}/conf,${LIVEVIEW_DIR}/conf]"
+SEARCHPATH_OVERRIDE="hydra.searchpath=[${TBP_MONTY_ROOT}/src/tbp/monty/conf,${LIVEVIEW_DIR}/conf]"
 
 # Build optional overrides
 EPISODES_OVERRIDE=()
@@ -233,6 +265,8 @@ if [ "$IS_LIVEVIEW_CONFIG" = "true" ]; then
 else
     # Base config - add LiveView support via command line options
     # Also disable wandb and excessive logging
+    # Allow custom run name suffix via LIVEVIEW_RUN_NAME_SUFFIX env var
+    RUN_NAME_SUFFIX="${LIVEVIEW_RUN_NAME_SUFFIX:-_with_liveview}"
     python run_parallel.py \
         "experiment=${EXPERIMENT_NAME}" \
         "$SEARCHPATH_OVERRIDE" \
@@ -244,6 +278,7 @@ else
         "+experiment.config.zmq_port=${ZMQ_PORT}" \
         "+experiment.config.enable_liveview=true" \
         "+experiment.config.sensor_image_throttle_ms=100" \
+        "experiment.config.logging.run_name=${EXPERIMENT_NAME}${RUN_NAME_SUFFIX}" \
         "experiment.config.logging.wandb_handlers=[]" \
         "experiment.config.logging.monty_handlers=[]" || {
         EXPERIMENT_EXIT_CODE=$?
