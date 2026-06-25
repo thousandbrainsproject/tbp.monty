@@ -11,6 +11,52 @@ Our documentation is held in Markdown files in the Monty repo under the [`/docs`
 
 > 📘 Edits to the documentation need to be submitted in the form of PRs to the Monty repository.
 
+## Understanding `hierarchy.md`
+
+The `hierarchy.md` file defines both the navigation hierarchy and the expected location of every documentation file.
+
+Each entry has the following format:
+
+```text
+# category-slug: Category Title
+- [document-slug](category-slug/document-slug.md) <!-- check-links-ignore -->
+  - [subdocument-slug](category-slug/document-slug/subdocument-slug.md) <!-- check-links-ignore -->
+```
+
+> [!NOTE]
+> The `<!-- check-links-ignore -->` comments in the examples are only used to prevent the documentation link checker from validating these example paths. They are not part of the `hierarchy.md` syntax and should not be added to real entries.
+
+There are two important parts:
+
+* **Text inside `[]`** is the document's **slug** (the URL-safe name, all lowercase, without the `.md` extension). The indentation of the `[]` entries defines the parent/child hierarchy shown in the documentation.
+* **Text inside `()`** is the **exact relative file path** to the Markdown file, including the `.md` extension.
+
+The file path inside `()` must match the hierarchy exactly:
+
+1. Start with the **category slug** (the text before the `:` in the category heading).
+2. For each level of nesting, add the slug from the corresponding `[]` entry as another directory.
+3. End with the Markdown filename (`.md`).
+
+For example:
+
+```text
+# how-to-use-monty: How to Use Monty
+- [tutorials](how-to-use-monty/tutorials.md) <!-- check-links-ignore --> 
+  - [running-your-first-experiment](how-to-use-monty/tutorials/running-your-first-experiment.md) <!-- check-links-ignore -->
+```
+This corresponds to the following files in the repo:
+
+```text
+docs/
+└── how-to-use-monty/ 
+    ├── tutorials.md
+    └── tutorials/
+        └── running-your-first-experiment.md
+```
+
+If the indentation, slugs, or file paths do not match the directory structure, the documentation sync tool will report a hierarchy mismatch during validation.
+
+
 # Linting
 
 We use [Vale](https://vale.sh/) to lint our documentation. The linting process checks for spelling errors and ensures that headings follow the [APA title case style](https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case).
