@@ -353,27 +353,26 @@ class MontyExperimentWithLiveView(MontyExperiment):
     def pre_episode(self) -> None:
         """Update state before each episode.
 
-        Override to pass primary_target to model.pre_episode() which requires it.
+        Delegates to parent pre_episode then calls fixme_set_ground_truth
+        (needed by MontyForGraphMatching to init stepwise_targets_list on LMs)
+        and adds LiveView state broadcast.
         """
-        # Call model.pre_episode with primary_target (required by model)
+        super().pre_episode()
+
+        # Call fixme_set_ground_truth (normally done by MontyObjectRecognitionExperiment)
+        # Required to initialize LM internal state (stepwise_targets_list, etc.)
         if hasattr(self, "env_interface") and hasattr(
             self.env_interface, "primary_target"
         ):
-            self.model.pre_episode(self.env_interface.primary_target)
-        else:
-            # Fallback if primary_target not available
-            self.model.pre_episode()
-
-        # Call env_interface.pre_episode()
-        self.env_interface.pre_episode()
-
-        # Set max_steps based on mode
-        self.max_steps = self.max_train_steps
-        if self.experiment_mode != ExperimentMode.TRAIN:
-            self.max_steps = self.max_eval_steps
-
-        # Call logger handler
-        self.logger_handler.pre_episode(self.logger_args)
+            if hasattr(self.env_interface, "semantic_id_to_label"):
+                self.model.fixme_set_ground_truth(
+                    self.env_interface.primary_target,
+                    self.env_interface.semantic_id_to_label,
+                )
+            else:
+                self.model.fixme_set_ground_truth(
+                    self.env_interface.primary_target
+                )
 
         # Update LiveView state
         self._update_state_from_experiment()
@@ -475,7 +474,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
         Returns:
             Dictionary mapping object names to their max evidence scores.
         """
-        if not hasattr(lm, "get_evidence_for_each_graph"):
+        if not hasattr(lm, "evidence_for_each_graph"):
             return {}
 
         # Check if LM has any known objects (during training it may be empty)
@@ -485,7 +484,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
                 return {}
 
         try:
-            graph_ids, evidences = lm.get_evidence_for_each_graph()
+            graph_ids, evidences = lm.evidence_for_each_graph()
             # Filter out placeholder values or empty results
             if not graph_ids or graph_ids[0] == "patch_off_object":
                 return {}
