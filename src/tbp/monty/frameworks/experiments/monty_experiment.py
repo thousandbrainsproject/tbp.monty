@@ -57,7 +57,7 @@ class MontyExperiment:
     and episode).
     """
 
-    recreation_mode: bool
+    _recreation_mode: bool
     _step_hook: StepHook
 
     def __init__(self, config: DictConfig) -> None:
@@ -69,7 +69,7 @@ class MontyExperiment:
         self.config = config
 
         # Feature flag for "recreation" episode/epoch strategy.
-        self.recreation_mode = False
+        self._recreation_mode = False
 
         self.rng = np.random.RandomState(config["seed"])
 
@@ -463,14 +463,14 @@ class MontyExperiment:
     ####
 
     def _recreation_snapshot(self) -> None:
-        if self.recreation_mode:
+        if self._recreation_mode:
             self.model.update_ltm()
             # TODO: create a snapshot of the episodic state
         else:
             self.model.update_ltm()
 
     def _recreation_restore(self) -> None:
-        if self.recreation_mode:
+        if self._recreation_mode:
             # TODO: restore episodic state from the snapshot
             self.model.set_experiment_mode(self.experiment_mode)
             self.model.reset()
