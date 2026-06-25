@@ -142,16 +142,23 @@ def extract_slug(line: str):
 
 def sanity_check_slugs(path):
     if str(path) != str(path).lower():
-                return [f"File {path} does not exist based on slugs capitalization - check what's in the [] in hierarchy.md to make sure everything is lowercase"]
+        return [
+            f"File {path} does not exist based on slugs capitalization - check what's in the [] in hierarchy.md to make sure everything is lowercase"
+        ]
 
     if not path.exists():
-        return [f"File {path} does not exist based on slugs - check what's in the [] in hierarchy.md"]
-    
+        return [
+            f"File {path} does not exist based on slugs - check what's in the [] in hierarchy.md"
+        ]
+
     return check_links(path)
+
 
 def sanity_check_file_path(path):
     if not path.exists():
-        return [f"File {path} does not exist based on file path - check what's in the () in hierarchy.md"]
+        return [
+            f"File {path} does not exist based on file path - check what's in the () in hierarchy.md"
+        ]
 
     return check_links(path)
 
@@ -402,6 +409,7 @@ def report_errors(errors, total_links_checked):
             f"{GREEN}No external link errors found. "
             f"Total links checked: {total_links_checked}{RESET}"
         )
+
 
 def extract_file_path(line: str) -> Path:
     match = re.search(r"\]\((.*?)\)", line)
