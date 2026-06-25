@@ -241,6 +241,7 @@ else
         "+experiment.config.zmq_port=${ZMQ_PORT}" \
         "+experiment.config.enable_liveview=true" \
         "+experiment.config.sensor_image_throttle_ms=100" \
+        "experiment.config.monty_config.sensor_modules.sensor_module_0.save_raw_obs=true" \
         "experiment.config.logging.run_name=${EXPERIMENT_NAME}${RUN_NAME_SUFFIX}" \
         "experiment.config.logging.wandb_handlers=[]" \
         "experiment.config.logging.monty_handlers=[]" || {

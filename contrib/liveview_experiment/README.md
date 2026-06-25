@@ -206,7 +206,7 @@ Every upstream experiment can be run with LiveView via mode 2 (no per-experiment
 
 **77-object benchmarks:**
 ```bash
-# 📷 Surface agent: camera follows object surface, viewfinder captures raw images
+# 📷 Surface agent — camera views shown (auto-enabled via save_raw_obs override)
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_77obj_surf_agent  # 99.57%, ~97s/ep
 ./contrib/liveview_experiment/scripts/run.sh base_77obj_surf_agent            # 100.00%, ~24s/ep
 # Distant agent: fixed camera observes from distance
@@ -218,13 +218,13 @@ Every upstream experiment can be run with LiveView via mode 2 (no per-experiment
 
 **10-object benchmarks:**
 ```bash
-# 📷 Surface agent experiments — camera views available
-./contrib/liveview_experiment/scripts/run.sh base_config_10distinctobj_surf_agent
-./contrib/liveview_experiment/scripts/run.sh base_10simobj_surf_agent
+# 📷 All surface agent experiments — camera views shown (auto-enabled via override)
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_10distinctobj_surf_agent
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_10simobj_surf_agent
-./contrib/liveview_experiment/scripts/run.sh randrot_10distinctobj_surf_agent
 ./contrib/liveview_experiment/scripts/run.sh randomrot_rawnoise_10distinctobj_surf_agent
+./contrib/liveview_experiment/scripts/run.sh base_config_10distinctobj_surf_agent
+./contrib/liveview_experiment/scripts/run.sh base_10simobj_surf_agent
+./contrib/liveview_experiment/scripts/run.sh randrot_10distinctobj_surf_agent
 # Distant agent experiments
 ./contrib/liveview_experiment/scripts/run.sh base_config_10distinctobj_dist_agent
 ./contrib/liveview_experiment/scripts/run.sh randrot_noise_10distinctobj_dist_agent
@@ -267,11 +267,12 @@ Every upstream experiment can be run with LiveView via mode 2 (no per-experiment
 ./contrib/liveview_experiment/scripts/run.sh infer_comp_lvl3_with_comp_models
 ```
 
-**Unsupervised:**
+**📷 Unsupervised — camera views shown:**
 ```bash
 ./contrib/liveview_experiment/scripts/run.sh surf_agent_unsupervised_10distinctobj
 ./contrib/liveview_experiment/scripts/run.sh surf_agent_unsupervised_10distinctobj_noise
 ./contrib/liveview_experiment/scripts/run.sh surf_agent_unsupervised_10simobj
+# No camera (save_raw_obs: false)
 ./contrib/liveview_experiment/scripts/run.sh unsupervised_inference_distinctobj_dist_agent
 ./contrib/liveview_experiment/scripts/run.sh unsupervised_inference_distinctobj_surf_agent
 ```

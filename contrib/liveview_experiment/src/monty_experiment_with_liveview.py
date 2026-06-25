@@ -547,7 +547,6 @@ class MontyExperimentWithLiveView(MontyExperiment):
                 return None
 
             agent_observation = observation.get(agent_id, {})
-
             camera_b64 = self._extract_camera_image_b64(agent_observation)
             depth_b64 = self._extract_depth_image_b64(agent_observation)
 
@@ -561,19 +560,35 @@ class MontyExperimentWithLiveView(MontyExperiment):
 
     def _get_agent_id(self) -> str | None:
         """Safely get the agent id from the model."""
+        # Try sm_to_agent_dict first (primary source)
+        sm_to_agent = getattr(self.model, "sm_to_agent_dict", None)
+        if sm_to_agent:
+            # Return the first agent ID (usually only one)
+            return str(next(iter(sm_to_agent.values()), "agent_id_0"))
+
+        # Fallback: motor_system._policy.agent_id
         motor_system = getattr(self.model, "motor_system", None)
-        if motor_system is None or not hasattr(motor_system, "_policy"):
-            return None
-        agent_id = getattr(motor_system._policy, "agent_id", None)
-        return str(agent_id) if agent_id is not None else None
+        if motor_system is not None and hasattr(motor_system, "_policy"):
+            agent_id = getattr(motor_system._policy, "agent_id", None)
+            if agent_id is not None:
+                return str(agent_id)
+
+        return None
 
     def _extract_camera_image_b64(self, agent_observation: Any) -> str | None:
         """Extract base64-encoded camera image from agent observation."""
-        view_finder = agent_observation.get("view_finder")
-        if not isinstance(view_finder, dict):
+        # Look for rgba on the first CameraSM sensor (usually "patch"),
+        # not on the Probe view_finder which doesn't capture camera images.
+        first_module = getattr(self.model, "sensor_modules", [None])[0] if hasattr(self.model, "sensor_modules") else None
+        patch_id = getattr(first_module, "sensor_module_id", None) if first_module else None
+        if patch_id is None:
+            patch_id = "patch"
+
+        sensor_obs = agent_observation.get(patch_id)
+        if not isinstance(sensor_obs, dict):
             return None
 
-        rgba = view_finder.get("rgba")
+        rgba = sensor_obs.get("rgba")
         if rgba is None:
             return None
 
