@@ -20,7 +20,7 @@ experiment:
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: 3
-    model_name_or_path: ${constants.retextured_pretrained_dir}/vocus_pre_training_11retextured_obj_ltp/pretrained/
+    model_name_or_path: ${constants.retextured_pretrained_dir}/vocus_pre_training_11retextured_obj/pretrained/
     n_eval_epochs: 10
     min_lms_match: 1
     seed: 42
