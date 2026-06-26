@@ -6,13 +6,14 @@ env_init_args:
       _partial_: true
       agent_id: agent_id_0
       sensor_configs:
-        _target_: tbp.monty.frameworks.sensors.SensorConfig
         patch:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
           resolution:
             width: 64
             height: 64
           zoom: 10.0
         view_finder:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
           resolution:
             width: 64
             height: 64
