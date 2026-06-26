@@ -17,18 +17,15 @@ The `hierarchy.md` file defines both the navigation hierarchy and the expected l
 
 Each entry has the following format:
 
-```text
+```markdown
 # category-slug: Category Title
-- [document-slug](category-slug/document-slug.md) <!-- check-links-ignore -->
-  - [subdocument-slug](category-slug/document-slug/subdocument-slug.md) <!-- check-links-ignore -->
+- [document-slug](category-slug/document-slug.md)
+  - [subdocument-slug](category-slug/document-slug/subdocument-slug.md)
 ```
-
-> [!NOTE]
-> The `<!-- check-links-ignore -->` comments in the examples are only used to prevent the documentation link checker from validating these example paths. They are not part of the `hierarchy.md` syntax and should not be added to real entries.
 
 There are two important parts:
 
-* **Text inside `[]`** is the document's **slug** (the URL-safe name, all lowercase, without the `.md` extension). The indentation of the `[]` entries defines the parent/child hierarchy shown in the documentation.
+* **Text inside `[]`** is the document's **slug** (the URL-safe name, **all lowercase**, without the `.md` extension). The indentation of the `[]` entries defines the parent/child hierarchy shown in the documentation.
 * **Text inside `()`** is the **exact relative file path** to the Markdown file, including the `.md` extension.
 
 The file path inside `()` must match the hierarchy exactly:
@@ -39,11 +36,15 @@ The file path inside `()` must match the hierarchy exactly:
 
 For example:
 
-```text
+```markdown Markdown
 # how-to-use-monty: How to Use Monty
 - [tutorials](how-to-use-monty/tutorials.md) <!-- check-links-ignore --> 
   - [running-your-first-experiment](how-to-use-monty/tutorials/running-your-first-experiment.md) <!-- check-links-ignore -->
 ```
+
+> [!NOTE]
+> The `<!-- check-links-ignore -->` comments in the example above is only used to prevent the documentation link checker from validating these example paths. They are not part of the `hierarchy.md` syntax and should not be added to real entries.
+
 This corresponds to the following files in the repo:
 
 ```text
@@ -122,6 +123,8 @@ This is the simplest flow.  To modify a document simply edit the Markdown file i
 
 To create a new document, create the new file in the category directory, then add a corresponding line in the `/docs/hierarchy.md` file.
 
+See [Understanding `hierarchy.md`](#understanding-hierarchymd) for in-depth instructions on the proper syntax. 
+
 ```markdown Markdown
 # my-category: My Category
 - [my-new-doc](/my-category/new-placeholder-example-doc.md)
@@ -153,7 +156,7 @@ Continue with the [Pull Requests](pull-requests.md) process.
 Documents that are nested under other documents require that you create a folder with the same name as the parent document but without the `.md` extension.  Then, you place any sub-documents in that folder.  For example, if you were creating a document called `new-placeholder-example-doc.md` beneath the document `Category One/some-existing-doc.md` file you would create a folder called `category-one/some-existing-doc` and place the new document in that folder.
 
 
-And then update the `hierarchy.md` file
+And then update the `hierarchy.md` file. See [Understanding `hierarchy.md`](#understanding-hierarchymd) for in-depth instructions on the proper syntax. 
 
 ```markdown markdown
 # category-one: Category One
