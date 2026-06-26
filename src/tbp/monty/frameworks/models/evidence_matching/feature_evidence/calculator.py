@@ -37,12 +37,15 @@ class DefaultFeatureEvidenceCalculator:
     HISTOGRAM_FEATURES = frozenset({"ltp"})
     CIRCULAR_RANGE = 1
 
-    # When the patch that produced an LTP histogram is either dark (low mean pixel
-    # intensity) or nearly uniform (low pixel-intensity variance), the texture
-    # signal is dominated by sensor noise. In that regime the LTP evidence is
-    # unreliable, so its feature weight is forced to 0 (rather than the configured
-    # value) for that observation. Intensities are in the 0-255 grayscale range.
+    # When the patch that produced an LTP histogram is dark (low mean pixel
+    # intensity), abnormally bright (high mean pixel intensity, e.g. blown-out or
+    # specular highlights), or nearly uniform (low pixel-intensity variance), the
+    # texture signal is dominated by sensor noise or saturation. In that regime the
+    # LTP evidence is unreliable, so its feature weight is forced to 0 (rather than
+    # the configured value) for that observation. Intensities are in the 0-255
+    # grayscale range.
     LTP_DARK_MEAN_INTENSITY_THRESHOLD = 60.0
+    LTP_BRIGHT_MEAN_INTENSITY_THRESHOLD = 230.0
     LTP_LOW_INTENSITY_VARIANCE_THRESHOLD = 400.0
 
     @classmethod
@@ -208,9 +211,9 @@ class DefaultFeatureEvidenceCalculator:
         """Whether the LTP texture signal should be discounted for this observation.
 
         The patch that produced the LTP histogram is considered to carry too
-        little meaningful texture signal when either its mean pixel intensity or
-        its pixel-intensity variance falls below its threshold (i.e. the patch is
-        too dark or too uniform).
+        little meaningful texture signal when its mean pixel intensity is too low
+        (dark) or too high (abnormally bright, e.g. saturated/specular), or when
+        its pixel-intensity variance falls below its threshold (too uniform).
 
         Args:
             channel_query_features: Observed feature values for the channel,
@@ -228,5 +231,6 @@ class DefaultFeatureEvidenceCalculator:
 
         return (
             mean_intensity < cls.LTP_DARK_MEAN_INTENSITY_THRESHOLD
+            or mean_intensity > cls.LTP_BRIGHT_MEAN_INTENSITY_THRESHOLD
             or intensity_variance < cls.LTP_LOW_INTENSITY_VARIANCE_THRESHOLD
         )

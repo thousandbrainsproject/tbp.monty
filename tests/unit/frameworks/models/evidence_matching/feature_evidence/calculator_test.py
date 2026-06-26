@@ -408,6 +408,37 @@ class DefaultFeatureEvidenceCalculatorTest(unittest.TestCase):
         )
         np.testing.assert_allclose(evidence, [curvature_ev], atol=1e-9)
 
+    def test_abnormally_bright_patch_zeroes_ltp_weight(self) -> None:
+        # A patch whose mean intensity is above the bright threshold is saturated
+        # (e.g. specular highlight) and carries no reliable texture, so the LTP
+        # weight is zeroed and the combined evidence reduces to the other features.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored_hist = [0.40, 0.20, 0.20, 0.20]
+        curvature_stored = 2.0
+        curvature_query = 2.5
+        curvature_tol = 1.0
+
+        stored = np.array([[curvature_stored, *stored_hist]], dtype=np.float64)
+        # Mean above the bright threshold (and high variance) -> unreliable.
+        stats = [250.0, 500.0]
+        evidence = self._calculate(
+            stored=stored,
+            query={
+                "curvature": curvature_query,
+                "ltp": query_hist,
+                LTP_PIXEL_STATS_KEY: stats,
+            },
+            tolerances={"curvature": curvature_tol, "ltp": 0.5},
+            weights={"curvature": 1.0, "ltp": 20.0},
+            feature_order=["curvature", "ltp"],
+        )
+
+        # With LTP zeroed, only curvature contributes.
+        curvature_ev = max(
+            0.0, 1.0 - abs(curvature_stored - curvature_query) / curvature_tol
+        )
+        np.testing.assert_allclose(evidence, [curvature_ev], atol=1e-9)
+
     def test_ltp_only_unreliable_patch_gives_zero_evidence(self) -> None:
         # If LTP is the only matched feature and it is unreliable, its weight is
         # zeroed and the calculator returns zero evidence rather than dividing by a
