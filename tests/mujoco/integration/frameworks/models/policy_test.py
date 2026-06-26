@@ -1,0 +1,1129 @@
+# Copyright 2025-2026 Thousand Brains Project
+# Copyright 2022-2024 Numenta Inc.
+#
+# Copyright may exist in Contributors' modifications
+# and/or contributions to the work.
+#
+# Use of this source code is governed by the MIT
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
+import copy
+import shutil
+import tempfile
+import unittest
+from typing import Any, MutableMapping
+
+import hydra
+import numpy as np
+import numpy.typing as npt
+import quaternion as qt
+from omegaconf import DictConfig
+
+from tbp.monty.cmp import Goal, Message
+from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.actions.actions import (
+    Action,
+    LookDown,
+    LookUp,
+    MoveForward,
+    MoveTangentially,
+    OrientHorizontal,
+    OrientVertical,
+    TurnLeft,
+    TurnRight,
+)
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
+from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM,
+)
+from tbp.monty.frameworks.models.goal_generation import (
+    EvidenceGoalGenerator,
+)
+from tbp.monty.frameworks.models.motor_policies import (
+    SurfacePolicyCurvatureInformed,
+)
+from tbp.monty.frameworks.models.motor_policy_selectors import SinglePolicySelector
+from tbp.monty.frameworks.models.motor_system import MotorSystem
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    MotorSystemState,
+)
+from tbp.monty.geometry import Rotation
+from tbp.monty.math import EulerAnglesXYZ, VectorXYZ
+from tests import HYDRA_ROOT
+
+
+class BasicPolicyTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.output_dir = tempfile.mkdtemp()
+
+        def hydra_config(test_name: str) -> DictConfig:
+            return hydra.compose(
+                config_name="experiment",
+                overrides=[
+                    f"experiment=test/policy/{test_name}",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
+            self.base_dist_cfg = hydra_config("base_dist_mujoco")
+            self.base_surf_cfg = hydra_config("base_surf_mujoco")
+            self.spiral_cfg = hydra_config("spiral_mujoco")
+            self.curve_informed_cfg = hydra_config("curve_informed_mujoco")
+            self.surf_hypo_driven_cfg = hydra_config("surf_hypo_driven_mujoco")
+            self.dist_hypo_driven_cfg = hydra_config("dist_hypo_driven_mujoco")
+            self.dist_hypo_driven_multi_lm_cfg = hydra_config(
+                "dist_hypo_driven_multi_lm_mujoco"
+            )
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.output_dir)
+
+    def test_can_run_informed_policy(self) -> None:
+        exp = hydra.utils.instantiate(self.base_dist_cfg.experiment)
+        with exp:
+            exp.run()
+
+    def test_can_run_spiral_policy(self) -> None:
+        exp = hydra.utils.instantiate(self.spiral_cfg.experiment)
+        with exp:
+            # TODO: test that no two locations are the same
+            exp.run()
+
+    def test_can_run_dist_agent_hypo_driven_policy(self) -> None:
+        exp = hydra.utils.instantiate(self.dist_hypo_driven_cfg.experiment)
+        with exp:
+            exp.run()
+
+    def test_can_run_surface_policy(self) -> None:
+        exp = hydra.utils.instantiate(self.base_surf_cfg.experiment)
+        with exp:
+            exp.run()
+
+    def test_can_run_curv_informed_policy(self) -> None:
+        exp = hydra.utils.instantiate(self.curve_informed_cfg.experiment)
+        with exp:
+            exp.run()
+
+    def test_can_run_surf_agent_hypo_driven_policy(self) -> None:
+        exp = hydra.utils.instantiate(self.surf_hypo_driven_cfg.experiment)
+        with exp:
+            exp.run()
+
+    def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self) -> None:
+        exp = hydra.utils.instantiate(self.dist_hypo_driven_multi_lm_cfg.experiment)
+        with exp:
+            exp.run()
+
+
+class AdvancedPolicyTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.output_dir = tempfile.mkdtemp()
+
+        def hydra_config(test_name: str) -> DictConfig:
+            return hydra.compose(
+                config_name="experiment",
+                overrides=[
+                    f"experiment=test/policy/{test_name}",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
+            self.surf_poor_initial_view_cfg = hydra_config(
+                "surf_poor_initial_view_mujoco"
+            )
+            self.dist_fixed_action_cfg = hydra_config("dist_fixed_action_mujoco")
+            self.surf_fixed_action_cfg = hydra_config("surf_fixed_action_mujoco")
+            self.rotated_cube_view_cfg = hydra_config("rotated_cube_view_mujoco")
+
+            self.policy_cfg_fragment = hydra.compose(
+                config_name="monty/motor_system_config/policy/test_surface_curvature_informed"
+            ).monty.motor_system_config.policy
+
+        # ==== Setup fake observations for testing principal-curvature policies ====
+        fake_sender_id = "patch"
+        # TODO: Create a more specific type? We're using MutableMapping because it's
+        #  covariant on the value type, whereas Dict is not. This matters later when
+        #  we pass this dictionary to Message as the kwargs.
+        #  See https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+        default_percept_args: MutableMapping[str, Any] = dict(
+            location=np.array([0, 0, 0]),
+            morphological_features={
+                "pose_vectors": np.array([[0, 0, -1], [1, 0, 0], [0, 1, 0]]),
+                "pose_fully_defined": True,
+                "on_object": 1,
+            },
+            non_morphological_features={
+                "principal_curvatures": [-5, 10],
+                "hsv": [0, 1, 1],
+            },
+            confidence=1.0,
+            use_state=True,
+            sender_id=fake_sender_id,
+            sender_type="SM",
+        )
+        fp_1 = copy.deepcopy(default_percept_args)
+        fp_1["location"] = np.array([0.01, 0, 0])
+        fp_2 = copy.deepcopy(default_percept_args)
+        fp_2["location"] = np.array([0.02, 0, 0])
+        fp_3 = copy.deepcopy(default_percept_args)
+        fp_3["location"] = np.array([0.02, 0.01, 0])
+
+        # No well-defined PC directions
+        fp_4 = copy.deepcopy(default_percept_args)
+        fp_4["location"] = np.array([0.02, 0.02, 0])
+        fp_4["morphological_features"]["pose_fully_defined"] = False
+
+        fp_5 = copy.deepcopy(default_percept_args)
+        fp_5["location"] = np.array([0.03, 0.03, 0])
+
+        self.fake_percept_pc = [
+            Message(**default_percept_args),
+            Message(**fp_1),
+            Message(**fp_2),
+            Message(**fp_3),
+            Message(**fp_4),
+            Message(**fp_5),
+        ]
+
+        # PC direction "flipped", pointing back to a location we've already been at
+        fp_1_backtrack_pc = copy.deepcopy(fp_1)
+        fp_1_backtrack_pc["morphological_features"]["pose_vectors"] = np.array(
+            [[0, 0, -1], [-1, 0, 0], [0, 1, 0]]
+        )
+
+        # PC direction is defined in z direction; here, as the sensor/agent is not
+        # rotated, this means it is pointing towards/away from the sensor, rather than
+        # orthogonal to it; in experiments, PC vectors pointing towards +z in the
+        # reference frame of the sensor/agent can happen if the surface agent has failed
+        # to orient such that it is looking down at the surface normal
+        fp_2_corrupt_z = copy.deepcopy(fp_2)
+        fp_2_corrupt_z["morphological_features"]["pose_vectors"] = np.array(
+            [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
+        )
+
+        self.fake_percept_advanced_pc = [
+            Message(**default_percept_args),
+            Message(**fp_1_backtrack_pc),
+            Message(**fp_2_corrupt_z),
+        ]
+
+    def initialize_lm_with_gsg(self) -> tuple[EvidenceGraphLM, dict[str, int | float]]:
+        """Sets up an LM with a goal generator for testing.
+
+        Returns:
+            graph_lm: Created evidence graph LM instance
+            gsg_args: Goal generator arguments for reference
+        """
+        gsg_args = dict(
+            elapsed_steps_factor=10,
+            min_post_goal_success_steps=5,
+            x_percent_scale_factor=0.75,
+            desired_object_distance=0.025,
+        )
+
+        graph_lm = EvidenceGraphLM(
+            max_match_distance=0.005,
+            tolerances={
+                "patch": {
+                    "hsv": [0.1, 1, 1],
+                    "principal_curvatures_log": [1, 1],
+                }
+            },
+            feature_weights={
+                "patch": {
+                    "hsv": np.array([1, 0, 0]),
+                }
+            },
+            gsg=EvidenceGoalGenerator(**gsg_args),
+        )
+        return graph_lm, gsg_args
+
+    def test_touch_object_basic_surf_agent(self) -> None:
+        """Test ability to move a surface agent to touch an object.
+
+        Given a substandard view of an object, the "experimenter" (via agent actions)
+        can move a surface agent to touch the object before beginning the experiment.
+
+        In this basic version, the object is a bit too far away, and so the agent
+        moves forward
+        """
+        agent_id = self.surf_poor_initial_view_cfg.experiment.config.monty_config[
+            "motor_system_config"
+        ].policy_selector.policy.agent_id
+        target_closest_point = (
+            self.surf_poor_initial_view_cfg.experiment.config.monty_config[
+                "motor_system_config"
+            ].policy_selector.policy.desired_object_distance
+        )
+        exp: MontyExperiment = hydra.utils.instantiate(
+            self.surf_poor_initial_view_cfg.experiment
+        )
+        with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
+            exp.model.set_experiment_mode(exp.experiment_mode)
+            exp.pre_epoch()
+            exp.pre_episode()
+
+            # Get a first step to allow the surface agent to touch the object
+            ctx = RuntimeContext(rng=exp.rng)
+            observation_pre_touch, proprioceptive_state = exp.env_interface.step([])
+            actions: list[Action] = exp.model.step(
+                ctx, observation_pre_touch, proprioceptive_state
+            )
+
+            # Check initial view post touch-attempt
+            observation_post_touch, _ = exp.env_interface.step(actions)
+
+            # TODO M remove the following train-wreck during refactor
+            view = observation_post_touch[agent_id]["view_finder"]
+
+            points_on_target_obj = (
+                view["semantic_3d"][:, 3].reshape(view["depth"].shape) == 1
+            )
+            closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
+
+            assert closest_point_on_target_obj < 1.0, (
+                f"Should be within a meter of the object, "
+                f"closest point at {closest_point_on_target_obj}"
+            )
+
+            # Utility policy should not have moved too close to the object
+            assert closest_point_on_target_obj > target_closest_point, (
+                f"Initial position is too close, {closest_point_on_target_obj} "
+                f"vs target of {target_closest_point}"
+            )
+
+    def test_distant_policy_moves_back_to_object(self) -> None:
+        """Test ability of distant agent to move back to an object.
+
+        Test that the standard-distant agent policy (performing saccades) correctly
+        moves back to the object after falling off.
+
+        Uses an action policy with high-stickiness and large saccade sizes, so
+        that we are guaranteed to move off of the cube.
+        """
+        exp: MontyExperiment = hydra.utils.instantiate(
+            self.dist_fixed_action_cfg.experiment
+        )
+        with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
+            exp.model.set_experiment_mode(exp.experiment_mode)
+            exp.pre_epoch()
+
+            # Only do a single episode
+            exp.pre_episode()
+
+            # Manually step through part of run_episode function
+            step = 0
+            ctx = RuntimeContext(rng=exp.rng)
+            actions: list[Action] = []
+            while True:
+                observations, proprioceptive_state = exp.env_interface.step(actions)
+                actions = exp.model.step(ctx, observations, proprioceptive_state)
+
+                last_action = None
+                action_sequence = exp.model.motor_system.action_sequence
+                if action_sequence:
+                    actions = action_sequence[-1][0]
+                    if actions:
+                        last_action = actions[0]
+
+                if step == 3:
+                    stored_action = last_action
+                    assert not exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), "Should be off object"
+
+                if step == 4:
+                    should_have_moved_back = (
+                        "Should have moved back by reversing last movement"
+                    )
+                    self.assertIsInstance(
+                        last_action, type(stored_action), should_have_moved_back
+                    )
+                    if isinstance(stored_action, (LookDown, LookUp)):
+                        assert isinstance(last_action, (LookDown, LookUp))
+                        self.assertEqual(
+                            last_action.rotation_degrees,
+                            -stored_action.rotation_degrees,
+                            should_have_moved_back,
+                        )
+                        self.assertEqual(
+                            last_action.constraint_degrees,
+                            stored_action.constraint_degrees,
+                            should_have_moved_back,
+                        )
+                    elif isinstance(stored_action, (TurnLeft, TurnRight)):
+                        assert isinstance(last_action, (TurnLeft, TurnRight))
+                        self.assertEqual(
+                            last_action.rotation_degrees,
+                            -stored_action.rotation_degrees,
+                            should_have_moved_back,
+                        )
+                    elif isinstance(stored_action, MoveForward):
+                        assert isinstance(last_action, MoveForward)
+                        self.assertEqual(
+                            last_action.distance,
+                            -stored_action.distance,
+                            should_have_moved_back,
+                        )
+                    elif isinstance(stored_action, MoveTangentially):
+                        assert isinstance(last_action, MoveTangentially)
+                        self.assertEqual(
+                            last_action.distance,
+                            -stored_action.distance,
+                            should_have_moved_back,
+                        )
+                        self.assertEqual(
+                            last_action.direction,
+                            stored_action.direction,
+                            should_have_moved_back,
+                        )
+                    elif isinstance(stored_action, OrientHorizontal):
+                        assert isinstance(last_action, OrientHorizontal)
+                        self.assertEqual(
+                            last_action.rotation_degrees,
+                            -stored_action.rotation_degrees,
+                            should_have_moved_back,
+                        )
+                        self.assertEqual(
+                            last_action.left_distance,
+                            -stored_action.left_distance,
+                            should_have_moved_back,
+                        )
+                        self.assertEqual(
+                            last_action.forward_distance,
+                            -stored_action.forward_distance,
+                            should_have_moved_back,
+                        )
+                    elif isinstance(stored_action, OrientVertical):
+                        assert isinstance(last_action, OrientVertical)
+                        self.assertEqual(
+                            last_action.rotation_degrees,
+                            -stored_action.rotation_degrees,
+                            should_have_moved_back,
+                        )
+                        self.assertEqual(
+                            last_action.down_distance,
+                            -stored_action.down_distance,
+                            should_have_moved_back,
+                        )
+                        self.assertEqual(
+                            last_action.forward_distance,
+                            -stored_action.forward_distance,
+                            should_have_moved_back,
+                        )
+                    assert exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), "Should be back on object"
+                    break  # Don't go into exploratory mode
+
+                step += 1
+
+    def test_surface_policy_moves_back_to_object(self) -> None:
+        """Test ability of surface agent to move back to an object.
+
+        Test that the standard surface-agent policy correctly moves back to the
+        object after falling off.
+
+        Uses an action policy with high-stickiness, so that we are guaranteed to move
+        off of the cube.
+        """
+        exp: MontyExperiment = hydra.utils.instantiate(
+            self.surf_fixed_action_cfg.experiment
+        )
+        with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
+            exp.model.set_experiment_mode(exp.experiment_mode)
+            exp.pre_epoch()
+
+            # Only do a single episode
+            exp.pre_episode()
+
+            # Take several steps in a fixed direction until we fall off the object, then
+            # ensure we get back on to it
+            step = 0
+            ctx = RuntimeContext(rng=exp.rng)
+            actions: list[Action] = []
+            while True:
+                observations, proprioceptive_state = exp.env_interface.step(actions)
+                actions = exp.model.step(ctx, observations, proprioceptive_state)
+
+                #  Step | Action           | Motor-only? | Processed? | Source
+                # ------|------------------|-------------|------------|-------------
+                # start too close to object (MoveForward negative distance)
+                #  1    | MoveForward      | True        | False      | touch_object
+                # correct distance to object
+                #  2    | OrientHorizontal | True        | False      | get_next_action
+                #  3    | OrientVertical   | False       | True       | get_next_action
+                #  4    | MoveTangentially | True        | False      | get_next_action
+                #  5    | MoveForward      | True        | False      | get_next_action
+                #  6    | OrientHorizontal | True        | False      | get_next_action
+                #  7    | OrientVertical   | False       | True       | get_next_action
+                #  8    | MoveTangentially | True        | False      | get_next_action
+                #  9    | MoveForward      | True        | False      | get_next_action
+                #  10   | OrientHorizontal | True        | False      | get_next_action
+                #  11   | OrientVertical   | False       | True       | get_next_action
+                #  12   | MoveTangentially | True        | False      | get_next_action
+                # falls off object
+                #  13   | OrientHorizontal | True        | False      | touch_object
+                #  14   | OrientHorizontal | True        | False      | touch_object
+                #  15   | OrientHorizontal | True        | False      | touch_object
+                #  16   | OrientHorizontal | True        | False      | touch_object
+                #  17   | OrientHorizontal | True        | False      | touch_object
+                #  18   | OrientHorizontal | True        | False      | touch_object
+                #  19   | OrientHorizontal | True        | False      | touch_object
+                #  20   | OrientHorizontal | True        | False      | touch_object
+                #  21   | OrientHorizontal | True        | False      | touch_object
+                #  22   | OrientHorizontal | True        | False      | touch_object
+                #  23   | OrientHorizontal | True        | False      | touch_object
+                #  24   | OrientHorizontal | True        | False      | touch_object
+                #  25   | OrientVertical   | True        | False      | touch_object
+                #  26   | MoveForward      | True        | False      | touch_object
+                # back on object
+                #  27   | MoveForward      | True        | False      | get_next_action
+                #  28   | OrientHorizontal | True        | False      | get_next_action
+                #  29   | OrientVertical   | False       | True       | get_next_action
+                #  30   | MoveTangentially | True        | False      | get_next_action
+                # falls off object
+                #  31   | OrientHorizontal | True        | False      | touch_object
+                #  32   | OrientHorizontal | True        | False      | touch_object
+                #  33   | OrientHorizontal | True        | False      | touch_object
+                #  34   | OrientHorizontal | True        | False      | touch_object
+                #  35   | OrientHorizontal | True        | False      | touch_object
+                #  36   | OrientHorizontal | True        | False      | touch_object
+                #  37   | OrientHorizontal | True        | False      | touch_object
+                #  38   | OrientHorizontal | True        | False      | touch_object
+                #  39   | OrientHorizontal | True        | False      | touch_object
+                #  40   | OrientHorizontal | True        | False      | touch_object
+                #  41   | OrientHorizontal | True        | False      | touch_object
+                #  42   | OrientHorizontal | True        | False      | touch_object
+                #  43   | OrientVertical   | True        | False      | touch_object
+                #  44   | MoveForward      | True        | False      | touch_object
+                # back on object
+                #  45   | MoveForward      | True        | False      | get_next_action
+                #  46   | OrientHorizontal | True        | False      | get_next_action
+                #  47   | OrientVertical   | False       | True       | get_next_action
+                #  48   | MoveTangentially | True        | False      | get_next_action
+                # falls off object
+                #  49   | OrientHorizontal | True        | False      | touch_object
+                #  50   | OrientHorizontal | True        | False      | touch_object
+                #  51   | OrientHorizontal | True        | False      | touch_object
+                #  52   | OrientHorizontal | True        | False      | touch_object
+                #  53   | OrientHorizontal | True        | False      | touch_object
+                #  54   | OrientHorizontal | True        | False      | touch_object
+                #  56   | OrientHorizontal | True        | False      | touch_object
+                #  57   | OrientHorizontal | True        | False      | touch_object
+                #  58   | OrientHorizontal | True        | False      | touch_object
+                #  59   | OrientHorizontal | True        | False      | touch_object
+                #  60   | OrientHorizontal | True        | False      | touch_object
+                #  61   | OrientVertical   | True        | False      | touch_object
+                #  62   | MoveForward      | True        | False      | touch_object
+                # back on object
+                #  63   | MoveForward      | True        | False      | get_next_action
+                #  64   | OrientHorizontal | True        | False      | get_next_action
+                #  65   | OrientVertical   | False       | True       | get_next_action
+                #  66   | MoveTangentially | True        | False      | get_next_action
+                # falls off object
+                #  67   | OrientHorizontal | True        | False      | touch_object
+
+                # Motor-only touch_object steps
+                if (
+                    13 <= step <= 26
+                    or 31 <= step <= 44
+                    or 49 <= step <= 62
+                    or step == 67
+                ):
+                    assert not exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), (
+                        f"Should be off object, motor-only step: {step}"
+                    )
+                if step == 67:
+                    break  # Finish test
+
+                # First two on-object steps are always MoveForward & OrientHorizontal
+                # motor-only steps
+                if step in [27, 28, 45, 46, 63, 64]:
+                    assert not exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), (
+                        f"Should be on object, motor-only step: {step}"
+                    )
+
+                # Third on-object steps are always OrientVertical that send data to LM
+                if step in [29, 47, 65]:
+                    assert exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), (
+                        f"Should be on object, sending data to LM: {step}"
+                    )
+
+                # Fourth on-object steps are always MoveTangentially motor-only steps
+                if step in [30, 48, 66]:
+                    assert not exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), (
+                        f"Should be on object, motor-only step: {step}"
+                    )
+
+                step += 1
+
+    def test_surface_policy_orientation(self) -> None:
+        """Test ability of surface agent to orient to a surface normal.
+
+        Test that the surface-agent correctly orients to be pointing down at an
+        observed surface normal.
+
+        Begins the episode by facing a cube whose surface is pointing away from
+        the agent at an odd angle.
+        """
+        exp: MontyExperiment = hydra.utils.instantiate(
+            self.rotated_cube_view_cfg.experiment
+        )
+        with exp:
+            exp.experiment_mode = ExperimentMode.TRAIN
+            exp.model.set_experiment_mode(exp.experiment_mode)
+            exp.pre_epoch()
+            exp.pre_episode()
+
+            step = 0
+            ctx = RuntimeContext(rng=exp.rng)
+            actions: list[Action] = []
+            while True:
+                observations, proprioceptive_state = exp.env_interface.step(actions)
+                actions = exp.model.step(ctx, observations, proprioceptive_state)
+                exp.post_step(step, observations)
+
+                if step == 3:  # Surface agent should have re-oriented
+                    break
+
+                step += 1
+
+            # Most recently observed surface normal sent to the learning module
+            current_pose = exp.model.learning_modules[0].buffer.get_current_pose(
+                input_channel="first"
+            )
+
+            # Rotate vector representing agent's pointing direction by the agent's
+            # current orientation
+            agent_rot = Rotation.from_quat(
+                qt.as_float_array(proprioceptive_state[AgentID("agent_id_0")].rotation)
+            )
+            agent_direction = agent_rot.apply(
+                [
+                    [
+                        0,
+                        0,
+                        -1,
+                    ]  # The initial direction vector corresponding to the agent's
+                    # orientation
+                ]
+            )
+
+            assert np.all(
+                np.isclose(
+                    current_pose[1], agent_direction * (-1), rtol=1.0e-3, atol=1.0e-2
+                )
+            ), "Agent should be (approximately) looking down on the surface normal"
+
+    def test_core_following_principal_curvature(self) -> None:
+        """Test ability of surface agent to follow principal curvature.
+
+        Test that the surface-agent follows the principal curvature direction when
+        the PC information is present.
+
+        This basic unit test checks that we follow the minimal and then maximal
+        principal curvature for a number of steps, including several other basic
+        settings that can arise.
+
+        Note these movements are not actually performed, i.e. they represent
+        hypothetical outputs from the motor-system.
+        """
+        policy: SurfacePolicyCurvatureInformed = hydra.utils.instantiate(
+            self.policy_cfg_fragment
+        )
+        policy_selector = SinglePolicySelector(policy)
+        motor_system = MotorSystem(policy_selector)
+        policy.max_pc_bias_steps = 2
+        policy.reset(motor_system)
+
+        rng = np.random.RandomState(123)
+        ctx = RuntimeContext(rng)
+
+        # Initialize motor-system state
+        motor_system_state = MotorSystemState(
+            {
+                AgentID("agent_id_0"): AgentState(
+                    position=(0, 0, 0),  # unused
+                    rotation=qt.quaternion(1, 0, 0, 0),
+                    sensors={},  # unused
+                )
+            }
+        )
+
+        # Step 1
+        # fake_obs_pc contains observations including the surface normal and principal
+        # curvature directions in the global/environment reference frame; the movement
+        # (specifically tangential translation) that the agent should take is
+        # also in environmental coordinates, so we compare these
+        # Note that the movement is a unit vector because it is a direction, the amount
+        # (i.e. size) of the translation is represented separately.
+        direction = policy.tangential_direction(
+            ctx, motor_system_state, self.fake_percept_pc[0]
+        )
+        assert np.all(np.isclose(direction, [1, 0, 0])), (
+            "Not following correct PC direction"
+        )
+        assert policy.following_pc_counter == 1, (
+            "Should have followed PC and incremented counter"
+        )
+        assert policy.continuous_pc_steps == 1, (
+            "Should have incremented continuous counter"
+        )
+
+        # Step 2
+        direction = policy.tangential_direction(
+            ctx, motor_system_state, self.fake_percept_pc[1]
+        )
+        assert np.all(np.isclose(direction, [1, 0, 0])), (
+            "Not following correct PC direction"
+        )
+        assert policy.following_pc_counter == 2, (
+            "Should have followed PC and incremented counter"
+        )
+        assert policy.continuous_pc_steps == 2, (
+            "Should have incremented continuous counter"
+        )
+
+        # Step 3: Our bias should change from following minimal to maximal
+        # PC
+        direction = policy.tangential_direction(
+            ctx, motor_system_state, self.fake_percept_pc[2]
+        )
+        assert np.all(np.isclose(direction, [0, 1, 0])), (
+            "Not following correct PC direction"
+        )
+        assert policy.following_pc_counter == 1, (
+            "Should have reset following PC counter due to bias change, and incremented"
+        )
+        assert policy.continuous_pc_steps == 1, (
+            "Should have reset continous counter due to bias change, and incremented"
+        )
+
+        # Step 4
+        direction = policy.tangential_direction(
+            ctx, motor_system_state, self.fake_percept_pc[3]
+        )
+        assert np.all(np.isclose(direction, [0, 1, 0])), (
+            "Not following correct PC direction"
+        )
+        assert policy.following_pc_counter == 2, (
+            "Should have followed PC and incremented counter"
+        )
+        assert policy.continuous_pc_steps == 2, (
+            "Should have incremented continuous counter"
+        )
+
+        # Step 5: Pass observation *without* a well-defined PC direction
+        direction = policy.tangential_direction(
+            ctx, motor_system_state, self.fake_percept_pc[4]
+        )
+        assert np.isclose(
+            np.dot(self.fake_percept_pc[4].get_surface_normal(), direction), 0
+        ), "Direction should be orthogonal to tangent (surface) plane"
+        assert policy.ignoring_pc_counter == 1, (
+            "Should have reset ignoring_pc_counter, and then incremented"
+        )
+        assert policy.continuous_pc_steps == 0, "Should have reset continuous counter"
+        assert policy.following_pc_counter == 2, (
+            "Should have not changed following_pc_counter"
+        )
+        assert policy.using_pc_guide is False, "Should not be using PC guide"
+        assert policy.prev_angle is None, "Should have reset prev_angle"
+
+        # Step 6 : Follow principal curvature, but the agent is rotated, so the policy
+        # needs to ensure PC is still handled correctly (PC and the returned movement
+        # vector are both in environment coordinates, so in effect the result should be
+        # the same); note the agent is still orthogonal to the PC directions.
+
+        # Update relevant motor-system variables
+        policy.ignoring_pc_counter = self.policy_cfg_fragment.min_general_steps
+        motor_system_state[AgentID("agent_id_0")].rotation = qt.quaternion(0, 0, 1, 0)
+
+        direction = policy.tangential_direction(
+            ctx, motor_system_state, self.fake_percept_pc[5]
+        )
+        assert np.all(np.isclose(direction, [1.0, 0.0, 0])), (
+            "Not following correct PC direction"
+        )
+
+    def test_advanced_following_principal_curvature(self) -> None:
+        """Test more edge-case elements of the following-PC policy.
+
+        This unit test checks more edge-case elements of the following-PC policy,
+        such as checks to avoid doubling back on ourself, and how to handle when the
+        proposed PC points in the z direction (i.e. towards or away from the agent).
+        """
+        policy: SurfacePolicyCurvatureInformed = hydra.utils.instantiate(
+            self.policy_cfg_fragment
+        )
+        policy_selector = SinglePolicySelector(policy)
+        motor_system = MotorSystem(policy_selector)
+
+        # Overwrite min_general_steps default value so that we more quickly transition
+        # into taking PC steps when testing this
+        initial_min_general_steps = 1
+        policy.min_general_steps = initial_min_general_steps
+        policy.reset(motor_system)
+
+        rng = np.random.RandomState(123)
+        ctx = RuntimeContext(rng)
+
+        # Initialize motor system state
+        motor_system_state = MotorSystemState(
+            {
+                AgentID("agent_id_0"): AgentState(
+                    position=(0, 0, 0),  # unused
+                    rotation=qt.quaternion(1, 0, 0, 0),
+                    sensors={},  # unused
+                )
+            }
+        )
+
+        # Step 1 : PC-guided information, but we haven't taken the minimum number of
+        # non-PC steps, so take random step
+        policy.ignoring_pc_counter = 0  # Set to 0 so we skip PC
+        # TODO M clean up how we set this when doing the refactor; currently this is
+        # done in graph_matching.py normally
+        policy.tangent_locs.append(self.fake_percept_advanced_pc[0].location)
+        policy.tangent_norms.append([0, 0, 1])
+        direction = policy.tangential_direction(
+            ctx, motor_system_state, self.fake_percept_advanced_pc[0]
+        )
+        assert np.isclose(
+            np.dot(self.fake_percept_advanced_pc[0].get_surface_normal(), direction), 0
+        ), "Direction should be orthogonal to tangent (surface) plane"
+        assert policy.following_pc_counter == 0, (
+            "Should not have followed PC and incremented counter"
+        )
+        assert policy.continuous_pc_steps == 0, (
+            "Should not have incremented continuous counter"
+        )
+
+        # Step 2 : Given the same observation, but now have taken sufficient non-PC
+        # steps, so should follow PC direction
+        # TODO M clean up how we set this when doing the refactor; currently this is
+        # done in graph_matching.py normally
+        policy.tangent_locs.append(self.fake_percept_pc[0].location)
+        policy.tangent_norms.append([0, 0, 1])
+        direction = policy.tangential_direction(
+            ctx, motor_system_state, self.fake_percept_advanced_pc[0]
+        )
+        assert np.all(np.isclose(direction, [1, 0, 0])), (
+            "Not following correct PC direction"
+        )
+        assert policy.following_pc_counter == 1, (
+            "Should have followed PC and incremented counter"
+        )
+        assert policy.continuous_pc_steps == 1, (
+            "Should have incremented continuous counter"
+        )
+
+        # Step 3 : Following PC direction would cause us to double back on ourself;
+        # PC has been arbitrarily flipped vs. previous step, so can just flip it back
+        policy.tangent_locs.append(self.fake_percept_advanced_pc[1].location)
+        policy.tangent_norms.append([0, 0, 1])
+        direction = policy.tangential_direction(
+            ctx, motor_system_state, self.fake_percept_advanced_pc[1]
+        )
+        assert np.all(np.isclose(direction, [1, 0, 0])), (
+            "Not following correct PC direction"
+        )
+        assert policy.following_pc_counter == 2, (
+            "Should have followed PC and incremented counter"
+        )
+        assert policy.continuous_pc_steps == 2, (
+            "Should have incremented continuous counter"
+        )
+
+        # Step 4 : PC is defined in z-direction, so policy should take a random step
+        policy.tangent_locs.append(self.fake_percept_advanced_pc[2].location)
+        policy.tangent_norms.append([0, 0, 1])
+        direction = policy.tangential_direction(
+            ctx, motor_system_state, self.fake_percept_advanced_pc[2]
+        )
+        assert np.isclose(np.linalg.norm(direction), 1), (
+            "Direction should be a unit vector"
+        )
+        assert np.isclose(direction[2], 0), (
+            "Direction should be in the x-y plane (relative to the agent)"
+        )
+        assert policy.ignoring_pc_counter == initial_min_general_steps, (
+            "Shouldn't increment ignoring_pc_counter"
+        )
+        assert policy.following_pc_counter == 2, (
+            "Should have not changed following_pc_counter"
+        )
+        assert policy.pc_is_z_defined is True, "Should have detected z-defined PC"
+
+        # Step 5 : Following PC direction would cause us to double back on ourself; PC
+        # has not been arbitrarily flipped, so policy selects a new heading
+        policy.tangent_locs.append(
+            self.fake_percept_advanced_pc[0].location
+        )  # Synthetically
+        # "teleport" the agent back to the first observation and location, such that
+        # following PC would cause it to visit the observation 1 again (which it is
+        # designed to avoid)
+        policy.tangent_norms.append([0, 0, 1])
+        direction = policy.tangential_direction(
+            ctx, motor_system_state, self.fake_percept_advanced_pc[0]
+        )
+        # Note the following movement is a random direction deterministically set by the
+        # random seed
+        assert np.isclose(
+            np.dot(self.fake_percept_advanced_pc[0].get_surface_normal(), direction), 0
+        ), "Direction should be orthogonal to tangent (surface) plane"
+        assert policy.ignoring_pc_counter == 0, (
+            "Should have reset ignoring_pc_counter, and not incremented"
+        )
+        assert policy.continuous_pc_steps == 0, "Should have reset continuous counter"
+        assert policy.following_pc_counter == 2, (
+            "Should have not changed following_pc_counter"
+        )
+        assert policy.using_pc_guide is False, "Should not be using PC guide"
+        assert policy.prev_angle is None, "Should have reset prev_angle"
+        assert policy.pc_is_z_defined is False, "Should have reset z-defined flag"
+
+    def core_evaluate_compute_goal_for_target_loc(
+        self,
+        ctx: RuntimeContext,
+        lm: LearningModule,
+        policy: SurfacePolicyCurvatureInformed,
+        object_orientation: EulerAnglesXYZ,
+        target_location_on_object: VectorXYZ,
+    ) -> tuple[
+        npt.NDArray[np.float64],
+        npt.NDArray[np.float64],
+        VectorXYZ,
+        npt.NDArray[np.float64],
+    ]:
+        """Test GSGs ability to propose a motor-system goal.
+
+        Test the GSGs ability to propose a motor-system goal, and then for
+        the motor-system to propose a particular target agent location and
+        orientation for that goal-state (this is a full roundtrip).
+
+        Args:
+            ctx: The runtime context
+            lm: The LM with the GSG that we will test
+            policy: The policy to test
+            object_orientation: The orientation of the object in Euler angle degrees
+            target_location_on_object: The location in object-centric coordinates
+                which the agent should move to
+
+        Returns:
+            motor_goal_location: Motor goal location
+            motor_goal_pose: Motor goal 0th pose vector
+            target_loc_hab: Habitat target location
+            agent_direction_hab: Habitat agent direction
+        """
+        # --- Determine the motor-goal ---
+
+        target_info = {
+            "target_loc": np.array(target_location_on_object),
+            "target_surface_normal": np.array([0.0, 1.0, 0.0]),
+            "hypothesis_to_test": {
+                "graph_id": "dummy_object",
+                "location": np.array([0.1, 0.1, 0.1]),
+                "rotation": Rotation.from_euler(
+                    "xyz", object_orientation, degrees=True
+                ).inv(),  # Rotation to transform the feature
+                "scale": 1,
+                "evidence": 100,
+            },
+        }
+
+        # TODO: Create a more specific type? We're using MutableMapping because it's
+        #  covariant on the value type, whereas Dict is not. This matters later when
+        #  we pass this dictionary to Message as the kwargs.
+        #  See https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+        fake_percept_config: MutableMapping[str, Any] = dict(
+            location=np.array([0, 1.5, 0.1]),
+            morphological_features={
+                "pose_vectors": np.array([[0, 0, -1], [1, 0, 0], [0, 1, 0]]),
+                "pose_fully_defined": True,
+                "on_object": 1,
+            },
+            non_morphological_features={
+                "principal_curvatures": [-5, 10],
+                "hsv": [0, 1, 1],
+            },
+            confidence=1.0,
+            use_state=True,
+            sender_id="patch",
+            sender_type="SM",
+        )
+
+        lm.reset_stm()
+        lm.fixme_reset_ground_truth(
+            primary_target=dict(
+                object="dummy_object",
+                quat_rotation=[1.0, 0.0, 0.0, 0.0],  # Filler value
+            ),
+        )
+
+        lm.matching_step(ctx, [Message(**fake_percept_config)])
+
+        # GSG handles computing the motor goal
+        motor_goal: Goal = lm.gsg._compute_goal_for_target_loc(
+            observations=[Message(**fake_percept_config)],
+            target_info=target_info,
+        )
+
+        # Determine coordinates from goal.
+        set_agent_pose = policy._derive_set_agent_pose_from_goal(motor_goal)
+        target_loc = set_agent_pose.location
+        target_quat = set_agent_pose.rotation_quat
+
+        resulting_rot = Rotation.from_quat(qt.as_float_array(target_quat))
+
+        # As the agent faces "forward" along the negative z-axis, we use this vector
+        # to visualize its orientation
+        agent_direction = resulting_rot.apply(np.array([0, 0, -1]))
+
+        assert motor_goal.location is not None
+        return (
+            motor_goal.location,
+            motor_goal.morphological_features["pose_vectors"][0],
+            target_loc,
+            agent_direction,
+        )
+
+    def test_multi_param_compute_goal_for_target_loc(self) -> None:
+        """Perform core_evaluate_compute_goal_for_target_loc.
+
+        Should work across a variety of parameter settings.
+        """
+        lm, gsg_args = self.initialize_lm_with_gsg()
+
+        policy: SurfacePolicyCurvatureInformed = hydra.utils.instantiate(
+            self.policy_cfg_fragment
+        )
+        policy_selector = SinglePolicySelector(policy)
+        motor_system = MotorSystem(policy_selector)
+        policy.reset(motor_system)
+
+        # The target displacement of the agent from the object; used to determine
+        # the validity of the final agent location
+        surface_displacement = gsg_args["desired_object_distance"] * 1.5
+
+        ctx = RuntimeContext(rng=np.random.RandomState())
+
+        # === First, easy example ===
+        (
+            motor_goal_location,
+            motor_goal_direction,
+            target_loc_hab,
+            agent_direction_hab,
+        ) = self.core_evaluate_compute_goal_for_target_loc(
+            ctx,
+            lm,
+            policy,
+            object_orientation=(0, 0, 0),
+            target_location_on_object=(0.2, 0.2, 0.2),
+        )
+
+        assert np.all(
+            np.isclose(motor_goal_location, [0.1, 1.6 + surface_displacement, 0.2])
+        ), "Goal location is not as expected"
+
+        # Pointing down
+        assert np.all(np.isclose(motor_goal_direction, [0, -1.0, 0])), (
+            "Goal pose is not as expected"
+        )
+
+        assert np.all(
+            np.isclose(target_loc_hab, [0.1, 1.6 + surface_displacement, 0.2])
+        ), "Habitat target location is not as expected"
+
+        # Pointing down
+        assert np.all(np.isclose(agent_direction_hab, [0, -1.0, 0])), (
+            "Habitat pose is not as expected"
+        )
+
+        # === Second, harder example ===
+
+        (
+            motor_goal_location_2,
+            motor_goal_direction_2,
+            target_loc_hab_2,
+            agent_direction_hab_2,
+        ) = self.core_evaluate_compute_goal_for_target_loc(
+            ctx,
+            lm,
+            policy,
+            object_orientation=(180, 0, 0),  # Flip the object around the x-axis, such
+            # that e.g. a vector pointing up will now point down
+            target_location_on_object=(0.1, 0.2, 0.1),
+        )
+
+        # Surface displacement is negative, because object is flipped in x-axis
+        assert np.all(
+            np.isclose(motor_goal_location_2, [0, 1.4 - surface_displacement, 0.1])
+        ), "Goal location is not as expected"
+
+        # Pointing up, because object is flipped in y-axis
+        assert np.all(np.isclose(motor_goal_direction_2, [0, 1.0, 0])), (
+            "Goal pose is not as expected"
+        )
+
+        # Surface displacement is negative, because object is flipped in x-axis
+        assert np.all(
+            np.isclose(target_loc_hab_2, [0, 1.4 - surface_displacement, 0.1])
+        ), "Habitat target location is not as expected"
+
+        # Pointing up, because object is flipped in y-axis
+        assert np.all(np.isclose(agent_direction_hab_2, [0, 1.0, 0])), (
+            "Habitat pose is not as expected"
+        )
+
+        # === Third, hardest example ===
+
+        (
+            motor_goal_location_3,
+            motor_goal_direction_3,
+            target_loc_hab_3,
+            agent_direction_hab_3,
+        ) = self.core_evaluate_compute_goal_for_target_loc(
+            ctx,
+            lm,
+            policy,
+            object_orientation=(160, 45, 70),
+            target_location_on_object=(0.3, 0.2, 0.15),
+        )
+
+        # Below results manually verified
+        assert np.all(
+            np.isclose(motor_goal_location_3, [0.18586463, 1.58288073, -0.04139085])
+        ), "Goal location is not as expected"
+
+        assert np.all(
+            np.isclose(motor_goal_direction_3, [-0.965738, 0.09413407, -0.24184476])
+        ), "Goal pose is not as expected"
+
+        assert np.all(
+            np.isclose(target_loc_hab_3, [0.18586463, 1.58288073, -0.04139085])
+        ), "Habitat target location is not as expected"
+
+        assert np.all(
+            np.isclose(agent_direction_hab_3, [-0.965738, 0.09413407, -0.24184476])
+        ), "Habitat pose is not as expected"
