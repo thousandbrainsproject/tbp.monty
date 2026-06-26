@@ -43,7 +43,6 @@ class FeatureAtLocationBuffer:
     def __init__(self):
         """Initialize buffer dicts for locations, features, displacements and stats."""
         self.locations = np.empty((0, 3))
-        self.agent_location = None
         self.features = {}
         self.on_object = []
         self.input_percepts = []
@@ -112,32 +111,19 @@ class FeatureAtLocationBuffer:
         sm_percepts = [p for p in percepts if p.sender_type == "SM"]
         return np.mean([p.location for p in sm_percepts], axis=0)
 
-    def update_agent_location(self, percepts: Sequence[Message]) -> None:
-        """Update the agent location without appending to the buffer.
-
-        Called on location-only steps so the LM stays synced with the agent's
-        position even when no feature is observed.
-
-        Args:
-            percepts: Sequence of Message objects from the current step.
-        """
-        self.agent_location = self._sm_location_mean(percepts).copy()
-
     def append(self, percepts: Sequence[Message]) -> None:
         """Add a list of percepts to the buffer. Must be features at locations.
 
-        Derives the agent location from its own percepts, so it does not depend on
-        a prior `update_agent_location` call. Per-channel feature rows are stored
-        only for percepts that carry features; a location-only channel contributes
-        to the location but stores no feature row (its per-channel arrays pad with
-        NaNs and are later dropped by `_extract_entries_with_content`).
+        Per-channel feature rows are stored only for percepts that carry features;
+        a location-only channel contributes to the location but stores no feature
+        row (its per-channel arrays pad with NaNs and are later dropped by
+        `_extract_entries_with_content`).
 
         TODO S: Store messages instead of list of percepts?
         A provisional version of this is implemented below, as the GSG uses
         messages for computations.
         """
         loc = self._sm_location_mean(percepts)
-        self.agent_location = loc.copy()
         self.locations = np.vstack([self.locations, loc])
 
         any_obs_on_obj = False
@@ -523,13 +509,12 @@ class FeatureAtLocationBuffer:
             percepts: Sequence of Message objects from the current step.
         """
         sm_percepts = [p for p in percepts if p.sender_type == "SM"]
-        current_location = self._sm_location_mean(percepts)
-
         first_percept = sm_percepts[0]
         if getattr(first_percept, "displacement", None):
             for name in sm_percepts[0].displacement:
                 self._add_displacement(name, sm_percepts[0].displacement[name])
 
+        current_location = self._sm_location_mean(percepts)
         self.last_location = current_location.copy()
 
     def _add_displacement(
