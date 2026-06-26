@@ -659,9 +659,12 @@ class CameraSM(SensorModule):
             percept = self._message_noise(percept, rng=ctx.rng)
 
         if motor_only_step:
+            # Motor-only steps do not reach the LMs and can skip the feature
+            # change filter.
             percept.use_state = False
-
-        percept = self._percept_filter(percept)
+        else:
+            percept = self._percept_filter(percept)
+            percept.use_state = True
 
         if not self.is_exploring:
             self.processed_obs.append(percept.__dict__)
@@ -676,11 +679,16 @@ class PerceptFilter(Protocol):
 
 class PassthroughPerceptFilter(PerceptFilter):
     def __call__(self, percept: Message) -> Message:
-        """Passthrough percept filter. Never sets `percept.use_state` to False.
+        """Passthrough percept filter.
+
+        Labels the percept as location-only when the observation processor flagged
+        it as not carrying valid features (off object or invalid signals), so it is
+        still delivered to the LM without features for matching.
 
         Returns:
-            Percept unchanged.
+            Percept with `contains_features` set to whether it carries valid features.
         """
+        percept.contains_features = percept.use_state
         return percept
 
     def reset(self) -> None:
@@ -768,26 +776,26 @@ class FeatureChangeFilter(PerceptFilter):
         return False
 
     def __call__(self, percept: Message) -> Message:
-        """Labels every on-object percept as containing features or location-only.
+        """Labels each percept as containing features or location-only.
 
-        On-object percepts are always delivered (`use_state=True`), so the LM can keep
-        its agent location synced. `contains_features` distinguishes a real feature
-        change (stored and matched by the LM) from a location-only step (which only
-        syncs the agent location). Only off-object steps are dropped
-        (`use_state=False`).
+        Sets `contains_features` to distinguish a real feature change (stored and
+        matched by the LM) from a location-only step (which only syncs the agent
+        location in the LM). A percept is location-only when its features are
+        uninteresting (e.g. off object, or an invalid surface normal due to <3/4
+        of the object in view) but its location is still valid. Delivery is decided
+        by the caller via `use_state`; this filter does not drop percepts.
 
         Args:
             percept: Percept to check for feature change.
 
         Returns:
             Percept with `contains_features` set to whether the features changed
-            significantly and `use_state` set to whether we are on the object.
+            significantly.
         """
         if not percept.use_state:
-            # If we already know the features are uninteresting (e.g. invalid surface
-            # normal due to <3/4 of the object in view, or motor only-step), deliver the
-            # percept as location-only so the LM keeps its agent location synced (the
-            # location is valid even when features are not).
+            # The features are uninteresting (e.g. off object, or invalid surface
+            # normal due to <3/4 of the object in view), so deliver the percept as
+            # location-only; the location is valid even when the features are not.
             percept.contains_features = False
         elif not self._last_percept:  # first step
             self._last_percept = percept  # type: ignore[assignment]
@@ -797,14 +805,10 @@ class FeatureChangeFilter(PerceptFilter):
             significant_feature_change = self._check_feature_change(percept)
             percept.contains_features = significant_feature_change
             if significant_feature_change:
-                # As per original implementation : only update the "last feature" when a
-                # significant change has taken place
+                # Only update the "last feature" when a significant change has occurred.
                 self._last_percept = percept
                 self._last_sent_n_steps_ago = 0
             else:
                 self._last_sent_n_steps_ago += 1
 
-        # On-object percepts are always delivered (so the LM can sync its agent
-        # location); only off-object steps are dropped.
-        percept.use_state = percept.get_on_object()
         return percept
