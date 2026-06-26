@@ -133,8 +133,8 @@ python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/
 
 | Models | Archive Format | Download Link |
 | --- | --- | --- |
-| pretrained_ycb_v12 | tgz |  [pretrained_ycb_v12.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.tgz) |
-| pretrained_ycb_v12 | zip |  [pretrained_ycb_v12.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.zip) |
+| pretrained_ycb_13 | tgz |  [pretrained_ycb_v13.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v13.tgz) |
+| pretrained_ycb_v13 | zip |  [pretrained_ycb_v13.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v13.zip) |
 
 Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 
