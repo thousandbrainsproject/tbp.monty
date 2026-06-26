@@ -38,8 +38,8 @@ For example:
 
 ```markdown Markdown
 # how-to-use-monty: How to Use Monty
-- [tutorials](how-to-use-monty/tutorials.md) <!-- check-links-ignore --> 
-  - [running-your-first-experiment](how-to-use-monty/tutorials/running-your-first-experiment.md) <!-- check-links-ignore -->
+- [tutorials](how-to-use-monty/tutorials.md <!-- check-links-ignore -->)
+  - [running-your-first-experiment](how-to-use-monty/tutorials/running-your-first-experiment.md <!-- check-links-ignore -->)
 ```
 
 > [!NOTE]
