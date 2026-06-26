@@ -775,15 +775,11 @@ class MontyExperimentWithLiveView(MontyExperiment):
             self._experiment_status = "completed"
             if self.broadcaster:
                 self.broadcaster.publish_state({"status": self._experiment_status})
-                # Small delay to ensure final status message is sent
-                # before context cleanup
-                time.sleep(0.05)
         except ExperimentAbortedError:
             logger.info("Experiment aborted by user via LiveView UI")
             self._experiment_status = "aborted"
             if self.broadcaster:
                 self.broadcaster.publish_state({"status": self._experiment_status})
-                time.sleep(0.05)
             # Don't re-raise abort - it's a controlled stop
         except Exception as e:
             logger.exception("Experiment failed")
@@ -792,17 +788,19 @@ class MontyExperimentWithLiveView(MontyExperiment):
                 self.broadcaster.publish_state(
                     {"status": self._experiment_status, "error_message": str(e)}
                 )
-                # Small delay to ensure error status message is sent
-                # before context cleanup
-                time.sleep(0.05)
             raise
         finally:
             self._update_state_from_experiment()
+            # Give ZMQ time to flush the final status message before cleanup
+            if self.broadcaster:
+                time.sleep(0.5)
 
     def close(self) -> None:
         """Close the experiment, ZMQ broadcaster, and command subscriber."""
         if self.command_subscriber:
             self.command_subscriber.close()
+        # Let ZMQ flush any pending messages before tearing down context
         if self.broadcaster:
+            time.sleep(0.3)
             self.broadcaster.close()
         super().close()
