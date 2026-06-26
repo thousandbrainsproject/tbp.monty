@@ -147,7 +147,7 @@ class CameraSMLtpTest(unittest.TestCase):
             ],
             ltp_config=LTP_CONFIG,
         )
-        sm.pre_episode()
+        sm.reset()
         ctx = Mock()
         ctx.rng = np.random.RandomState(0)
 
@@ -170,7 +170,7 @@ class CameraSMLtpTest(unittest.TestCase):
             features=["on_object", "ltp"],
             ltp_config=LTP_CONFIG,
         )
-        sm.pre_episode()
+        sm.reset()
         ctx = Mock()
         ctx.rng = np.random.RandomState(0)
         percept = sm.step(ctx, obs)
@@ -193,7 +193,7 @@ class CameraSMLtpTest(unittest.TestCase):
             features=["on_object", "ltp"],
             ltp_config=UNIFORM_LTP_CONFIG,
         )
-        sm.pre_episode()
+        sm.reset()
         ctx = Mock()
         ctx.rng = np.random.RandomState(0)
         percept = sm.step(ctx, obs)
@@ -222,7 +222,7 @@ class CameraSMLtpTest(unittest.TestCase):
             features=["on_object", "ltp"],
             ltp_config=UNIFORM_LTP_CONFIG,
         )
-        sm.pre_episode()
+        sm.reset()
         ctx = Mock()
         ctx.rng = np.random.RandomState(0)
         percept = sm.step(ctx, _make_on_object_observation())
