@@ -9,7 +9,7 @@ defaults:
   - /environment: retextured_dist_agent_semantics0_256
   - /env_interface: eval_retexturedobj_predefined
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch
-  - /env_interface/transform: missing_depthto3d_sensor2_semantic0
+  - /env_interface/transform: missing_depthto3d_sensor2_semantic0_256
   - /logging: basic_warning_monty_runs
 
 experiment:

@@ -192,8 +192,6 @@ class DistantPolicySelector(MotorPolicySelector):
 
         # Handle looking at an SM's goal.
         sm_goals = [g for g in goals if g.sender_type == "SM"]
-        # # Temporarily no goals from SMs.
-        # sm_goals: list[Goal] = []
 
         if sm_goals:
             goal = highest_confidence_goal(sm_goals)
