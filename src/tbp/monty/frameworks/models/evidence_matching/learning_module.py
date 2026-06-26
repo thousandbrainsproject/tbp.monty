@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from typing import Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -830,6 +831,44 @@ class EvidenceGraphLM(GraphLM):
             self.previous_mlh = self.current_mlh
             self.current_mlh = self._calculate_most_likely_hypothesis()
 
+    def _location_only_step(self, percepts: Sequence[Message]) -> None:
+        """Displace all hypotheses by the incremental movement; no evidence update.
+
+        Keeps the hypothesis space synced with the sensor's position on steps that
+        carry a new location but no features. Evidence is not changed.
+
+        Args:
+            percepts: Sequence of Message objects from the current step.
+        """
+        if self.buffer.last_location is None:
+            # No reference location yet (no feature step has run; no hypotheses exist).
+            return
+
+        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
+        current_location = np.mean([p.location for p in sm_percepts], axis=0)
+        displacement = current_location - self.buffer.last_location
+        self._displace_all_hypotheses(displacement)
+        self.buffer.last_location = current_location.copy()
+
+    def _displace_all_hypotheses(self, displacement: npt.NDArray[np.float64]) -> None:
+        """Displace every initialized graph's hypotheses and update the MLH location.
+
+        Evidence is not changed, so the MLH identity is invariant under displacement;
+        only its stored location is advanced to track the displaced hypotheses.
+
+        Args:
+            displacement: Incremental movement to apply to all hypothesis locations.
+        """
+        for graph_id, hypotheses in self._hypotheses.items():
+            self._hypotheses[graph_id] = self.hypotheses_updater.displace_hypotheses(
+                hypotheses, displacement, graph_id
+            )
+        mlh = self.current_mlh
+        if mlh["graph_id"] in self._hypotheses:
+            mlh["location"] = (
+                mlh["location"] + mlh["rotation"].as_matrix() @ displacement
+            )
+
     def _update_evidence(
         self,
         features: dict,
@@ -863,11 +902,13 @@ class EvidenceGraphLM(GraphLM):
             evidence_all_channels=self._hypotheses[graph_id].evidence,
         )
 
+        displaced = self.hypotheses_updater.displace_hypotheses(
+            self._hypotheses[graph_id], displacement, graph_id
+        )
         hypotheses_update, hypotheses_update_telemetry = (
-            self.hypotheses_updater.update_hypotheses(
-                hypotheses=self._hypotheses[graph_id],
+            self.hypotheses_updater.update_evidence(
+                hypotheses=displaced,
                 features=features,
-                displacement=displacement,
                 graph_id=graph_id,
                 evidence_update_threshold=update_threshold,
             )
