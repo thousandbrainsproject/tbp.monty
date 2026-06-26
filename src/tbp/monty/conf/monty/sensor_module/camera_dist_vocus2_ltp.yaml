@@ -15,23 +15,23 @@ sensor_module_0:
     texture_extraction:
       multi_scale:
         - local_ternary_pattern:
-            P: 8
-            R: 1.0
+            n_neighbors: 8
+            radius: 1.0
             method: ror
             threshold: 5
         - local_ternary_pattern:
-            P: 8
-            R: 5.0
+            n_neighbors: 8
+            radius: 5.0
             method: ror
             threshold: 5
         - local_ternary_pattern:
-            P: 8
-            R: 10.0
+            n_neighbors: 8
+            radius: 10.0
             method: ror
             threshold: 5
         - local_ternary_pattern:
-            P: 8
-            R: 20.0
+            n_neighbors: 8
+            radius: 20.0
             method: ror
             threshold: 5
   delta_thresholds:
