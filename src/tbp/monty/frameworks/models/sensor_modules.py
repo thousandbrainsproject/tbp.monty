@@ -29,6 +29,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.sensor_processing import (
+    LTP_PIXEL_STATS_KEY,
     get_ltp_texture_feature_vector,
     log_sign,
     principal_curvatures,
@@ -349,6 +350,19 @@ class ObservationProcessor:
             )
 
             features["ltp"] = hist.astype(np.float32)
+
+            # Report the intensity statistics of the pixels that fed the texture
+            # histogram. Under poor lighting the patch is dark and nearly uniform,
+            # so the LTP code is driven by sensor noise rather than real surface
+            # texture. Downstream matching uses these statistics to decide whether
+            # the LTP evidence should be trusted (see DefaultFeatureEvidenceCalculator).
+            on_object_pixels = gray_patch[on_object_mask]
+            if on_object_pixels.size == 0:
+                on_object_pixels = gray_patch.reshape(-1)
+            features[LTP_PIXEL_STATS_KEY] = np.array(
+                [np.mean(on_object_pixels), np.var(on_object_pixels)],
+                dtype=np.float32,
+            )
 
         # Note we only determine curvature if we could determine a valid surface normal
         if any(feat in self.CURVATURE_FEATURES for feat in self._features) and valid_sn:

@@ -34,6 +34,12 @@ FLAT_THRESHOLD = 0.001
 #   "uniform": rotation-variant uniform patterns; orientation is preserved.
 LTPEncoding = Literal["ror", "uniform"]
 
+# Key under which the sensor module reports the grayscale intensity statistics
+# ([mean, variance]) of the patch used to compute the LTP histogram. This is
+# metadata about the observation (not a feature to be matched): the matching step
+# uses it to decide whether the LTP texture signal is reliable enough to trust.
+LTP_PIXEL_STATS_KEY = "ltp_pixel_stats"
+
 def get_ltp_texture_feature_vector(
     image_array: np.ndarray,
     config,

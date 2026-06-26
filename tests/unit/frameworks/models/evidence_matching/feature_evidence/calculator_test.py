@@ -21,6 +21,7 @@ from hypothesis.extra.numpy import arrays
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
     DefaultFeatureEvidenceCalculator,
 )
+from tbp.monty.frameworks.utils.sensor_processing import LTP_PIXEL_STATS_KEY
 
 
 class DefaultFeatureEvidenceCalculatorTest(unittest.TestCase):
@@ -304,6 +305,123 @@ class DefaultFeatureEvidenceCalculatorTest(unittest.TestCase):
             curvature_ev * curvature_weight + ltp_ev * ltp_weight
         ) / (curvature_weight + ltp_weight)
         np.testing.assert_allclose(evidence, [expected], atol=1e-6)
+
+
+    def test_dark_low_variance_patch_zeroes_ltp_weight(self) -> None:
+        # When the LTP patch is dark and uniform, the LTP feature should receive
+        # zero weight, so the combined evidence reduces to the other features only.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored_hist = [0.40, 0.20, 0.20, 0.20]
+        curvature_stored = 2.0
+        curvature_query = 2.5
+        curvature_tol = 1.0
+
+        stored = np.array([[curvature_stored, *stored_hist]], dtype=np.float64)
+        dark_stats = [10.0, 5.0]  # below both thresholds -> unreliable
+        evidence = self._calculate(
+            stored=stored,
+            query={
+                "curvature": curvature_query,
+                "ltp": query_hist,
+                LTP_PIXEL_STATS_KEY: dark_stats,
+            },
+            tolerances={"curvature": curvature_tol, "ltp": 0.5},
+            weights={"curvature": 1.0, "ltp": 20.0},
+            feature_order=["curvature", "ltp"],
+        )
+
+        # With LTP zeroed, only curvature contributes.
+        curvature_ev = max(
+            0.0, 1.0 - abs(curvature_stored - curvature_query) / curvature_tol
+        )
+        np.testing.assert_allclose(evidence, [curvature_ev], atol=1e-9)
+
+    def test_bright_patch_keeps_configured_ltp_weight(self) -> None:
+        # A patch with high mean intensity is reliable, so the configured LTP
+        # weight is used as normal.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored_hist = [0.40, 0.20, 0.20, 0.20]
+        curvature_stored = 2.0
+        curvature_query = 2.5
+        curvature_tol = 1.0
+        ltp_tol = 0.5
+        ltp_weight = 20.0
+        curvature_weight = 1.0
+
+        stored = np.array([[curvature_stored, *stored_hist]], dtype=np.float64)
+        # Both mean and variance above their thresholds -> reliable. With OR
+        # semantics either being below threshold would discount LTP.
+        bright_stats = [180.0, 500.0]
+        evidence = self._calculate(
+            stored=stored,
+            query={
+                "curvature": curvature_query,
+                "ltp": query_hist,
+                LTP_PIXEL_STATS_KEY: bright_stats,
+            },
+            tolerances={"curvature": curvature_tol, "ltp": ltp_tol},
+            weights={"curvature": curvature_weight, "ltp": ltp_weight},
+            feature_order=["curvature", "ltp"],
+        )
+
+        curvature_ev = max(
+            0.0, 1.0 - abs(curvature_stored - curvature_query) / curvature_tol
+        )
+        dist = cv2.compareHist(
+            np.array(stored_hist, dtype=np.float32),
+            np.array(query_hist, dtype=np.float32),
+            cv2.HISTCMP_BHATTACHARYYA,
+        )
+        ltp_ev = max(0.0, 1.0 - dist / ltp_tol)
+        expected = (curvature_ev * curvature_weight + ltp_ev * ltp_weight) / (
+            curvature_weight + ltp_weight
+        )
+        np.testing.assert_allclose(evidence, [expected], atol=1e-6)
+
+    def test_dark_high_variance_patch_zeroes_ltp_weight(self) -> None:
+        # With OR semantics, a low mean intensity alone makes the LTP signal
+        # unreliable, even if the patch has high variance, so the LTP weight is
+        # zeroed and the combined evidence reduces to the other features only.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored_hist = [0.40, 0.20, 0.20, 0.20]
+        curvature_stored = 2.0
+        curvature_query = 2.5
+        curvature_tol = 1.0
+
+        stored = np.array([[curvature_stored, *stored_hist]], dtype=np.float64)
+        stats = [10.0, 500.0]  # dark mean (below threshold) -> unreliable
+        evidence = self._calculate(
+            stored=stored,
+            query={
+                "curvature": curvature_query,
+                "ltp": query_hist,
+                LTP_PIXEL_STATS_KEY: stats,
+            },
+            tolerances={"curvature": curvature_tol, "ltp": 0.5},
+            weights={"curvature": 1.0, "ltp": 20.0},
+            feature_order=["curvature", "ltp"],
+        )
+
+        # With LTP zeroed, only curvature contributes.
+        curvature_ev = max(
+            0.0, 1.0 - abs(curvature_stored - curvature_query) / curvature_tol
+        )
+        np.testing.assert_allclose(evidence, [curvature_ev], atol=1e-9)
+
+    def test_ltp_only_unreliable_patch_gives_zero_evidence(self) -> None:
+        # If LTP is the only matched feature and it is unreliable, its weight is
+        # zeroed and the calculator returns zero evidence rather than dividing by a
+        # zero total weight.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored = np.array([[0.25, 0.25, 0.25, 0.25]], dtype=np.float64)
+        evidence = self._calculate(
+            stored=stored,
+            query={"ltp": query_hist, LTP_PIXEL_STATS_KEY: [5.0, 5.0]},
+            tolerances={"ltp": 0.5},
+            weights={"ltp": 20.0},
+            feature_order=["ltp"],
+        )
+        np.testing.assert_array_equal(evidence, [0.0])
 
 
 if __name__ == "__main__":
