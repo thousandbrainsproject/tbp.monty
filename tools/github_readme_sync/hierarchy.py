@@ -116,9 +116,14 @@ def check_hierarchy_file(folder: str):
             parent_stack.append(new_doc)
 
             slug_path = folder.joinpath(*[el["slug"] for el in parent_stack])
-            errors = sanity_check(slug_path.with_suffix(".md"))
+            errors = sanity_check_slugs(slug_path.with_suffix(".md"))
             if errors:
                 link_check_errors.extend(errors)
+
+            file_path = folder.joinpath(extract_file_path(line))
+            file_path_errors = sanity_check_file_path(file_path)
+            if file_path_errors:
+                link_check_errors.extend(file_path_errors)
 
     if link_check_errors:
         for error in link_check_errors:
@@ -135,9 +140,29 @@ def extract_slug(line: str):
     return match.group(1)
 
 
-def sanity_check(path):
+def sanity_check_slugs(path):
+    if str(path) != str(path).lower():
+        return [
+            f"File {path} does not exist based on slugs capitalization - "
+            "check what's in the [] in hierarchy.md "
+            "to make sure everything is lowercase"
+        ]
+
     if not path.exists():
-        return [f"File {path} does not exist"]
+        return [
+            f"File {path} does not exist based on slugs - "
+            "check what's in the [] in hierarchy.md"
+        ]
+
+    return check_links(path)
+
+
+def sanity_check_file_path(path):
+    if not path.exists():
+        return [
+            f"File {path} does not exist based on file path - "
+            "check what's in the () in hierarchy.md"
+        ]
 
     return check_links(path)
 
@@ -147,6 +172,11 @@ def check_links(path):
     with path.open() as f:
         content = f.read()
     file_name = path.name
+
+    # Ignore example lines marked with <!-- check-links-ignore -->
+    content = "\n".join(
+        line for line in content.splitlines() if "check-links-ignore" not in line
+    )
 
     regex_md_links = r"\[([^\]]*)\]\(([^)]+\.md(?:#[^)]*)?)\)"
     md_link_matches = re.findall(regex_md_links, content)
@@ -383,3 +413,11 @@ def report_errors(errors, total_links_checked):
             f"{GREEN}No external link errors found. "
             f"Total links checked: {total_links_checked}{RESET}"
         )
+
+
+def extract_file_path(line: str) -> Path:
+    match = re.search(r"\]\((.*?)\)", line)
+    if not match:
+        logger.error(f"Could not extract file path from line: {line}")
+        sys.exit(1)
+    return Path(match.group(1))
