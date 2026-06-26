@@ -121,9 +121,9 @@ def check_hierarchy_file(folder: str):
                 link_check_errors.extend(errors)
 
             file_path = folder.joinpath(extract_file_path(line))
-            errors2 = sanity_check_file_path(file_path)
-            if errors2:
-                link_check_errors.extend(errors2)
+            file_path_errors = sanity_check_file_path(file_path)
+            if file_path_errors:
+                link_check_errors.extend(file_path_errors)
 
     if link_check_errors:
         for error in link_check_errors:
