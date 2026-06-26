@@ -630,9 +630,8 @@ class GraphLM(LearningModule):
     ) -> None:
         """Update the possible matches given an observation."""
         if not any(p.contains_features for p in percepts if p.sender_type == "SM"):
-            # Location-only step. Update the agent location without appending,
-            # computing displacements, matching, or stepping the GSG.
-            self.buffer.update_agent_location(percepts)
+            # Handle without appending to buffer, matching, or stepping the GSG.
+            self._location_only_step(percepts)
             return
 
         first_movement_detected = self._agent_moved_since_reset()
@@ -667,13 +666,25 @@ class GraphLM(LearningModule):
     ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
         if not any(p.contains_features for p in percepts if p.sender_type == "SM"):
-            # Location-only step. Update the agent location without appending.
-            self.buffer.update_agent_location(percepts)
+            # Handle without appending to buffer, matching, or stepping the GSG.
+            self._location_only_step(percepts)
             return
 
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(percepts)
+
+    def _location_only_step(self, percepts: Sequence[Message]) -> None:
+        """Handle a step that carries a new location but no features.
+
+        Base behavior is a no-op: non-evidence LMs don't advance `last_location` on
+        location-only steps, so it stays at their last feature step and displacement
+        stays "movement since last feature". Subclasses with a displaceable hypothesis
+        space (EvidenceGraphLM) override this to displace hypotheses.
+
+        Args:
+            percepts: Sequence of Message objects from the current step.
+        """
 
     def update_ltm_from_stm(self) -> None:
         """If training, update memory from buffer."""
