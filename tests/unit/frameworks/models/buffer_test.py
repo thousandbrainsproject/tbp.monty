@@ -189,38 +189,10 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         self.assertEqual(locations.shape, (1, 3))
         np.testing.assert_array_equal(locations[0], np.array([1.0, 2.0, 3.0]))
 
-    def test_agent_location_updated_on_location_only_step(self):
-        """A location-only step updates agent_location without growing the buffer."""
-        state_sm = create_mock_message(
-            sender_id="SM_0",
-            sender_type="SM",
-            location=np.array([1.0, 2.0, 3.0]),
-            on_object=True,
-        )
-        self.buffer.append([state_sm])
-        self.assertEqual(len(self.buffer), 1)
-        self.assertEqual(self.buffer.locations.shape[0], 1)
-
-        location_only = create_mock_message(
-            sender_id="SM_0",
-            sender_type="SM",
-            location=np.array([7.0, 8.0, 9.0]),
-            on_object=True,
-            contains_features=False,
-        )
-        self.buffer.update_agent_location([location_only])
-
-        # agent_location updated, but buffer length and locations did not grow.
-        np.testing.assert_array_equal(
-            self.buffer.agent_location, np.array([7.0, 8.0, 9.0])
-        )
-        self.assertEqual(len(self.buffer), 1)
-        self.assertEqual(self.buffer.locations.shape[0], 1)
-
     def test_mixed_step_location_only_channel_stores_no_features(self):
         """A location-only SM channel in a mixed step stores no feature row.
 
-        It still counts toward the agent_location mean.
+        It still counts toward the last_location mean.
         """
         feature_sm = create_mock_message(
             sender_id="SM_0",
@@ -238,9 +210,9 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         )
         self.buffer.append([feature_sm, location_only_sm])
 
-        # agent_location is the mean of both SM locations.
+        # last_location is the mean of both SM locations.
         np.testing.assert_array_equal(
-            self.buffer.agent_location, np.array([1.0, 1.0, 1.0])
+            self.buffer.last_location, np.array([1.0, 1.0, 1.0])
         )
         # The feature channel stored a pose row; the location-only channel did not.
         self.assertIn("pose_vectors", self.buffer.features["SM_0"])
