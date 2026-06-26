@@ -24,8 +24,8 @@ env_init_args:
       resolutions:
       - - 64
         - 64
-      - - 64
-        - 64
+      - - 256
+        - 256
       positions:
       - - 0.0
         - 0.0
