@@ -10,7 +10,7 @@ defaults:
   - /env_interface: eval_retexturedobj_predefined
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_256
-  - /logging: basic_warning_monty_runs
+  - /logging: basic_warning_wandb_monty_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
