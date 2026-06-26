@@ -46,7 +46,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         last_step = self.run_episode_steps()
         self.post_episode(last_step)
 
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         """Pre-episode hook.
 
         Passes the primary target object and the mapping from semantic IDs to labels

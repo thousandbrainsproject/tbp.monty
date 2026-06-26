@@ -141,6 +141,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     model: MjModel
     data: MjData
 
+    id_to_semantic_id: dict[ObjectID, SemanticID]
     _data_path: Path | None
     _raise_actuate_missing: bool
     _agent_partials: Sequence[MuJoCoAgentFactory]
@@ -168,14 +169,15 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.spec = MjSpec()
         self.model = self.spec.compile()
         self.data = MjData(self.model)
+        self.id_to_semantic_id = {}
+
         self._data_path = Path(data_path) if data_path else None
+        self._loaded_custom_types: set[str] = set()
         self._raise_actuate_missing = raise_actuate_missing
         self._renderers = {}
-
         self._agent_partials = [] if agents is None else agents
         self._agents = {}
         self._create_agents()
-        self._loaded_custom_types: set[str] = set()
 
         # Track how many objects we add to the environment.
         # Note: We can't use the `model.ngeoms` for this since that will include parts
@@ -295,6 +297,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.spec = MjSpec()
         self._create_agents()
         self._recompile()
+        self.id_to_semantic_id = {}
         self._object_count = 0
         self._loaded_custom_types = set()
 
@@ -308,11 +311,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:
-        if semantic_id is not None:
-            logger.warning(
-                "MuJoCo does not support adding objects with custom semantic IDs."
-            )
-
         obj_name = f"{name}_{self._object_count}"
 
         if name in PRIMITIVE_OBJECTS:
@@ -328,16 +326,18 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             self._add_primitive_object(obj_name, name, position, rotation, scale)
         else:
             self._add_custom_object(obj_name, name, position, rotation, scale)
-        self._object_count += 1
 
         self._recompile()
 
-        # Using the object count for the semantic_id will give a distinct
-        # value for each added object, and _might_ map to MuJoCo's internal
-        # object IDs if we need to use those.
+        self._object_count += 1
+        if semantic_id is None:
+            semantic_id = SemanticID(self._object_count)
+        object_id = ObjectID(self.model.geom(obj_name).id)
+        self.id_to_semantic_id[object_id] = semantic_id
+
         return ObjectInfo(
-            object_id=ObjectID(self._object_count),
-            semantic_id=SemanticID(self._object_count),
+            object_id=object_id,
+            semantic_id=semantic_id,
         )
 
     def _add_custom_object(
