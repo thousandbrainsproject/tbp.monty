@@ -446,7 +446,6 @@ class EvidenceLMTest(BaseGraphTest):
             )
 
     def test_5lms_pre_episode_raises_error_when_no_object_is_present(self) -> None:
-        """Test that pre_episode raises an error when no object is present."""
         exp = hydra.utils.instantiate(self.five_lm_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
@@ -461,7 +460,6 @@ class EvidenceLMTest(BaseGraphTest):
             )
 
     def test_5lm_basic_logging(self) -> None:
-        """Test that 5LM setup works with BASIC logging and stores correct data."""
         exp = hydra.utils.instantiate(self.five_lm_basic_logging_cfg.experiment)
         with exp:
             exp.run()
@@ -515,7 +513,6 @@ class EvidenceLMTest(BaseGraphTest):
         self.check_eval_results(eval_stats, num_lms=5)
 
     def test_can_run_with_bounded_evidence_5lms(self) -> None:
-        """Standard evaluation setup with 5lm and bounded evidence."""
         exp = hydra.utils.instantiate(self.five_lm_bounded.experiment)
         with exp:
             exp.run()
