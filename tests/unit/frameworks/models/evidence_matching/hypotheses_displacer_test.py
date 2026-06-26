@@ -80,17 +80,18 @@ class DefaultHypothesesDisplacerTest(TestCase):
             "_calculate_evidence_for_new_locations",
             side_effect=lambda **kw: evidence_by_channel[kw["input_channel"]],
         ):
-            result, _telemetry = (
-                self.displacer.displace_hypotheses_and_compute_evidence(
-                    displacement=np.zeros(3),
-                    features={
-                        "channel_a": {"pose_fully_defined": True},
-                        "channel_b": {"pose_fully_defined": True},
-                    },
-                    evidence_update_threshold=-np.inf,
-                    graph_id="test_object",
-                    possible_hypotheses=hypotheses,
-                )
+            displaced = self.displacer.displace_hypotheses(
+                displacement=np.zeros(3),
+                hypotheses=hypotheses,
+            )
+            result, _telemetry = self.displacer.compute_evidence(
+                features={
+                    "channel_a": {"pose_fully_defined": True},
+                    "channel_b": {"pose_fully_defined": True},
+                },
+                evidence_update_threshold=-np.inf,
+                graph_id="test_object",
+                hypotheses=displaced,
             )
 
         # Expected: past_weight * old_evidence + present_weight * summed_new
@@ -117,15 +118,18 @@ class DefaultHypothesesDisplacerTest(TestCase):
             "_calculate_evidence_for_new_locations",
             side_effect=lambda **kw: evidence_by_channel[kw["input_channel"]],
         ):
-            _, telemetry = self.displacer.displace_hypotheses_and_compute_evidence(
+            displaced = self.displacer.displace_hypotheses(
                 displacement=np.zeros(3),
+                hypotheses=hypotheses,
+            )
+            _, telemetry = self.displacer.compute_evidence(
                 features={
                     "channel_a": {"pose_fully_defined": True},
                     "channel_b": {"pose_fully_defined": True},
                 },
                 evidence_update_threshold=-np.inf,
                 graph_id="test_object",
-                possible_hypotheses=hypotheses,
+                hypotheses=displaced,
             )
 
         # MLH is index 0 (evidence 5.0), summed evidence at MLH = 1.5 + 0.5 = 2.0
