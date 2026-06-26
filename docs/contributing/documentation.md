@@ -17,10 +17,10 @@ The `hierarchy.md` file defines both the navigation hierarchy and the expected l
 
 Each entry has the following format:
 
-```markdown
+```markdown Markdown
 # category-slug: Category Title
-- [document-slug](category-slug/document-slug.md)
-  - [subdocument-slug](category-slug/document-slug/subdocument-slug.md)
+- [document-slug](category-slug/document-slug.md) <!-- check-links-ignore --> 
+  - [subdocument-slug](category-slug/document-slug/subdocument-slug.md) <!-- check-links-ignore --> 
 ```
 
 There are two important parts:
