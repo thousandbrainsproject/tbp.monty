@@ -12,10 +12,13 @@ import unittest
 
 import numpy as np
 import numpy.typing as npt
+from hypothesis import given
+from hypothesis import strategies as st
 
 from tbp.monty.cmp import Message
 from tbp.monty.frameworks.models.sensor_modules import (
     FeatureChangeFilter,
+    PassthroughPerceptFilter,
 )
 
 
@@ -51,70 +54,43 @@ def create_percept(
 
 
 class FeatureChangeFilterTest(unittest.TestCase):
-    def setUp(self):
-        self.filter = FeatureChangeFilter(delta_thresholds={"distance": 0.5})
+    @given(valid=st.booleans())
+    def test_first_step_contains_features_iff_valid(self, valid: bool):
+        feature_filter = FeatureChangeFilter(delta_thresholds={"distance": 0.5})
+        result = feature_filter(
+            create_percept(
+                location=np.array([0.0, 0.0, 0.0]), on_object=valid, use_state=valid
+            )
+        )
+        self.assertEqual(result.contains_features, valid)
 
-    def test_first_on_object_step_is_feature_step(self):
-        percept = create_percept(
-            location=np.array([0.0, 0.0, 0.0]), on_object=True, use_state=True
+    @given(valid=st.booleans(), feature_changed=st.booleans())
+    def test_later_step_contains_features_iff_valid_and_changed(
+        self, valid: bool, feature_changed: bool
+    ):
+        feature_filter = FeatureChangeFilter(delta_thresholds={"distance": 0.5})
+        feature_filter(
+            create_percept(
+                location=np.array([0.0, 0.0, 0.0]), on_object=True, use_state=True
+            )
         )
-        result = self.filter(percept)
-        self.assertTrue(result.use_state)
-        self.assertTrue(result.contains_features)
+        location = np.array([10.0, 0.0, 0.0]) if feature_changed else np.zeros(3)
+        result = feature_filter(
+            create_percept(location=location, on_object=True, use_state=valid)
+        )
+        self.assertEqual(result.contains_features, valid and feature_changed)
 
-    def test_first_off_object_step_is_dropped(self):
-        percept = create_percept(
-            location=np.array([0.0, 0.0, 0.0]), on_object=False, use_state=False
-        )
-        result = self.filter(percept)
-        self.assertFalse(result.use_state)
 
-    def test_no_feature_change_on_object_is_location_only(self):
-        first = create_percept(
-            location=np.array([0.0, 0.0, 0.0]), on_object=True, use_state=True
+class PassthroughPerceptFilterTest(unittest.TestCase):
+    @given(valid=st.booleans())
+    def test_contains_features_iff_valid(self, valid: bool):
+        percept_filter = PassthroughPerceptFilter()
+        result = percept_filter(
+            create_percept(
+                location=np.array([0.0, 0.0, 0.0]), on_object=valid, use_state=valid
+            )
         )
-        self.filter(first)
-        same = create_percept(
-            location=np.array([0.0, 0.0, 0.0]), on_object=True, use_state=True
-        )
-        result = self.filter(same)
-        self.assertTrue(result.use_state)
-        self.assertFalse(result.contains_features)
-
-    def test_significant_feature_change_on_object_is_feature_step(self):
-        first = create_percept(
-            location=np.array([0.0, 0.0, 0.0]), on_object=True, use_state=True
-        )
-        self.filter(first)
-        moved = create_percept(
-            location=np.array([10.0, 0.0, 0.0]), on_object=True, use_state=True
-        )
-        result = self.filter(moved)
-        self.assertTrue(result.use_state)
-        self.assertTrue(result.contains_features)
-
-    def test_off_object_step_is_dropped(self):
-        first = create_percept(
-            location=np.array([0.0, 0.0, 0.0]), on_object=True, use_state=True
-        )
-        self.filter(first)
-        off = create_percept(
-            location=np.array([0.0, 0.0, 0.0]), on_object=False, use_state=False
-        )
-        result = self.filter(off)
-        self.assertFalse(result.use_state)
-        self.assertFalse(result.contains_features)
-
-    def test_on_object_invalid_is_location_only(self):
-        # On object but the observation processor flagged invalid (use_state=False).
-        # It should be delivered as location-only so the agent location still updates.
-
-        percept = create_percept(
-            location=np.array([0.0, 0.0, 0.0]), on_object=True, use_state=False
-        )
-        result = self.filter(percept)
-        self.assertTrue(result.use_state)
-        self.assertFalse(result.contains_features)
+        self.assertEqual(result.contains_features, valid)
 
 
 if __name__ == "__main__":
