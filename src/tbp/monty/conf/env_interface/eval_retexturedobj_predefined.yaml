@@ -16,6 +16,5 @@ eval_env_interface_args:
   - bowl
   - banana
   object_init_sampler:
-    _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-    rotations: ${constants.rotations_all}
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
 eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
