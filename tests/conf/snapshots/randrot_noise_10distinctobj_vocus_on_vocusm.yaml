@@ -1,79 +1,79 @@
 experiment:
   config:
-    do_eval: false
-    do_train: true
+    do_eval: true
+    do_train: false
     monty_config:
-      monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
+      monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
       monty_args:
         num_exploratory_steps: 1000
-        min_eval_steps: 3
-        min_train_steps: 100
+        min_eval_steps: ${constants.min_eval_steps}
+        min_train_steps: 3
         max_total_steps: 2500
       motor_system_config:
+        _target_: tbp.monty.frameworks.models.motor_system.MotorSystem
         policy_selector:
-          policy:
+          _target_: tbp.monty.frameworks.models.motor_policy_selectors.DistantPolicySelector
+          jump_to_goal:
+            _target_: ${monty.class:tbp.monty.frameworks.models.motor_policies.JumpToGoal}
+            agent_id: agent_id_0
+            sensor_id: view_finder
+          look_at_goal:
+            _target_: ${monty.class:tbp.monty.frameworks.models.salience.motor_policy.LookAtGoal}
+            agent_id: agent_id_0
+            sensor_id: view_finder
+          default:
+            _target_: ${monty.class:tbp.monty.frameworks.models.motor_policies.InformedPolicyRandomWalk}
+            agent_id: agent_id_0
             action_sampler:
               _target_: tbp.monty.frameworks.actions.action_samplers.ConstantSampler
               actions:
-              - ${monty.class:tbp.monty.frameworks.actions.actions.MoveForward}
-              - ${monty.class:tbp.monty.frameworks.actions.actions.MoveTangentially}
-              - ${monty.class:tbp.monty.frameworks.actions.actions.OrientHorizontal}
-              - ${monty.class:tbp.monty.frameworks.actions.actions.OrientVertical}
-            _target_: tbp.monty.frameworks.models.motor_policies.SurfacePolicy
-            use_goal_driven_actions: false
-            agent_id: agent_id_0
-            desired_object_distance: 0.025
-            alpha: 0.1
-          _target_: tbp.monty.frameworks.models.motor_policy_selectors.SinglePolicySelector
-        _target_: tbp.monty.frameworks.models.motor_system.MotorSystem
+              - ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.LookDown}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}
+              rotation_degrees: 5.0
       learning_modules:
         learning_module_0:
+          hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
+          hypotheses_updater_args:
+            max_nneighbors: 10
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
-          tolerances:
-            patch:
-              hsv: ${np.array:[0.1, 0.2, 0.2]}
-              principal_curvatures_log: ${np.ones:2}
           feature_weights:
             patch:
               hsv: ${np.array:[2, 0.5, 0.5]}
               pose_vectors: ${np.ones:3}
               principal_curvatures_log: ${np.ones:2}
-          max_match_distance: 0.01
-          x_percent_threshold: 50
-          graph_delta_thresholds:
+          tolerances:
             patch:
-              distance: 0.01
-              pose_vectors: ${np.list_eval:[np.pi / 8, np.pi * 2, np.pi * 2]}
-              principal_curvatures_log:
-              - 1.0
-              - 1.0
-              hsv:
-              - 0.1
-              - 1
-              - 1
-          object_evidence_threshold: 100
-          required_symmetry_evidence: 20
-          hypotheses_updater_args:
-            max_nneighbors: 5
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+              principal_curvatures_log: ${np.ones:2}
+          max_match_distance: 0.01
+          x_percent_threshold: 20
+          evidence_threshold_config: all
+          max_graph_size: 0.3
+          num_model_voxels_per_dim: 100
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+            goal_tolerances:
+              location: 0.015
+            elapsed_steps_factor: 10
+            min_post_goal_success_steps: 5
+            x_percent_scale_factor: 0.75
+            desired_object_distance: 0.03
       sensor_modules:
         sensor_module_0:
           _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+          sensor_module_id: patch
           features:
           - pose_vectors
           - pose_fully_defined
           - on_object
-          - object_coverage
-          - min_depth
-          - mean_depth
           - hsv
-          - principal_curvatures
           - principal_curvatures_log
-          sensor_module_id: patch
-          save_raw_obs: false
           delta_thresholds:
             on_object: 0
             distance: 0.01
-          is_surface_sm: true
+          save_raw_obs: false
           noise_params:
             features:
               pose_vectors: 2
@@ -82,9 +82,19 @@ experiment:
               pose_fully_defined: 0.01
             location: 0.002
         sensor_module_1:
-          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
           sensor_module_id: view_finder
-          save_raw_obs: true
+          save_raw_obs: false
+          salience_strategy:
+            _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2.from_config
+            config:
+              _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.Vocus2SalienceConfig
+              center_sigma: 1.0
+              surround_sigma: 6.5
+              n_scales: 2
+              max_octaves: 5
+              use_depth: true
+              use_orientation: false
       sm_to_agent_dict:
         patch: agent_id_0
         view_finder: agent_id_0
@@ -113,19 +123,19 @@ experiment:
             position:
             - 0.0
             - 1.5
-            - 0.1
+            - 0.2
             resolutions:
             - - 64
               - 64
-            - - 64
-              - 64
+            - - 256
+              - 256
             positions:
             - - 0.0
               - 0.0
               - 0.0
             - - 0.0
               - 0.0
-              - 0.03
+              - 0.0
             rotations:
             - - 1.0
               - 0.0
@@ -141,7 +151,6 @@ experiment:
             zooms:
             - 10.0
             - 1.0
-            action_space_type: surface_agent
           agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
       env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
       transform:
@@ -156,18 +165,15 @@ experiment:
         resolutions:
         - - 64
           - 64
-        - - 64
-          - 64
+        - - 256
+          - 256
         world_coord: true
         zooms:
         - 10.0
         - 1.0
         get_all_points: true
         use_semantic_sensor: false
-        depth_clip_sensors:
-        - 0
-        clip_value: 0.05
-    train_env_interface_args:
+    eval_env_interface_args:
       parent_to_child_mapping: null
       object_names:
       - mug
@@ -182,28 +188,39 @@ experiment:
       - banana
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
-    train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
+      positioning_procedures:
+      - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+        agent_id: agent_id_0
+        sensor_id: view_finder
+      - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
+        agent_id: agent_id_0
+        sensor_id: patch
+        allow_translation: false
+        max_orientation_attempts: 3
+    eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
     logging:
       monty_log_level: BASIC
       monty_handlers:
       - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
-      wandb_handlers: []
-      python_log_level: INFO
+      wandb_handlers:
+      - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbTableStatsHandler}
+      - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbChartStatsHandler}
+      python_log_level: WARNING
       python_log_to_file: true
       python_log_to_stderr: true
-      output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs/}
-      run_name: surf_agent_unsupervised_10distinctobj_noise
+      output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs}
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
-      wandb_group: debugging
+      wandb_group: benchmark_experiments
+      run_name: randrot_noise_10distinctobj_vocus_on_vocusm
     show_sensor_output: false
-    max_train_steps: 4000
+    max_train_steps: 1000
     max_eval_steps: 500
-    max_total_steps: 4000
-    n_train_epochs: 10
-    n_eval_epochs: ${constants.rotations_all_count}
-    model_name_or_path: ''
+    max_total_steps: 6000
+    n_train_epochs: 3
+    model_name_or_path: ${constants.pretrained_dir}/supervised_pre_training_10distinctobj_vocus2/pretrained/
+    n_eval_epochs: 10
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
@@ -230,7 +247,6 @@ constants:
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
   compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v3}
-  retextured_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
   rotations_all_count: 14
   rotations_all:
   - - 0

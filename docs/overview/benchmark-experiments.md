@@ -15,7 +15,7 @@ If you want to evaluate Monty on external benchmarks, please have a look at our 
 
 ## What Do We Test?
 
-We split up the experiments into a short benchmark test suite and a long one. The short suite tests performance on a subset of 10 out of the 77 [YCB](https://www.ycbbenchmarks.com/) objects which allows us to assess performance under different conditions more quickly. Unless otherwise indicated, the 10 objects are chosen to be distinct in morphology and models are learned using the surface agent, which follows the object surface much like a finger. 
+We split up the experiments into a short benchmark test suite and a long one. The short suite tests performance on a subset of 10 out of the 77 [YCB](https://www.ycbbenchmarks.com/) objects which allows us to assess performance under different conditions more quickly. The 10 objects are chosen to be distinct in morphology, and models are learned using the surface agent, which follows the object surface much like a finger, with two exceptions. In `randrot_noise_10distinctobj_dist_on_distm`, the distant agent used models learned with a naive spiral scan. For `randrot_noise_10distinctobj_vocus_on_vocsm`, Monty was configured to use the [Vocus2 salience strategy](../how-monty-works/sensor-module/salience-sm.md#saliencestrategy) for both learning and inference.
 
 When building the graph we add a new point if it differs in location by more than 1cm from other points already learned, or its features are different from physically nearby learned points (a difference of 0.1 for hue and 1 for log curvature). Experiments using these models have `10distobj` in their name.
 
