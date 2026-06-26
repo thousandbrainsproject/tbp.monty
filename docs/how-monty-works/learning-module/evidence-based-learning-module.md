@@ -74,7 +74,9 @@ To incorporate some knowledge about surface into this search we do not use a cir
 
 We modulate the influence of the surface normal (or the flatness of the search sphere) by the sensed curvature. If we sense a curvature close to 0 we are on a flat surface and want to have a flat search radius. If we sense a curvature with high magnitude we want to use an almost circular search radius.
 
-To implement these notions we use a **custom distance measure** that takes the surface normal and curvature magnitude into account. This distance is then used for thresholding and leads to considering more points along the surface and fewer outside the surface (see above figure, bottom row).
+To implement these notions we use a **custom distance measure** that takes the surface normal and curvature magnitude into account. This distance is then used for thresholding and leads to considering more points along the surface and fewer outside the surface (see above figure, bottom row). 
+
+Note that the distance between hypothesized location and stored point in the model is only used for thresholding whether a point is in the radius or not, and not for weighting the absolute evidence increment. This is to reduce the influence of how the model is sampled during learning and where points are stored in the model.
 
 # Features and Morphology
 

@@ -165,9 +165,7 @@ class LivePlotter:
         if hasattr(first_learning_module, "get_current_mlh"):
             mlh = first_learning_module.get_current_mlh()
             if mlh and mlh["graph_id"] != "no_observations_yet":
-                graph_ids, evidences = (
-                    first_learning_module.get_evidence_for_each_graph()
-                )
+                graph_ids, evidences = first_learning_module.evidence_for_each_graph()
                 self.add_text(
                     mlh,
                     pos=view_finder_rgba.shape[0],

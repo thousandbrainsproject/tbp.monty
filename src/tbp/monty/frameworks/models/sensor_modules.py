@@ -644,6 +644,7 @@ class CameraSM(SensorModule):
         self._snapshot_telemetry = SnapshotTelemetry()
         # Tests check sm.features, not sure if this should be exposed
         self.features = features
+        self.is_exploring = False
         self.processed_obs: list[dict[str, Any]] = []
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
