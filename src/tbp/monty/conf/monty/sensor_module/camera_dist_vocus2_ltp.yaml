@@ -44,4 +44,4 @@ sensor_module_1:
       n_scales: 2
       max_octaves: 5
       use_depth: true
-      use_orientation: false
+      use_orientation: true
