@@ -439,6 +439,23 @@ class DefaultFeatureEvidenceCalculatorTest(unittest.TestCase):
         )
         np.testing.assert_allclose(evidence, [curvature_ev], atol=1e-9)
 
+    def test_all_zero_stored_histogram_gives_finite_zero_evidence(self) -> None:
+        # A stored node whose histogram is all zeros (e.g. a training observation
+        # that was entirely off object) must not crash or produce NaN. cv2's
+        # Bhattacharyya distance treats it as maximally different (distance 1),
+        # which clips to zero evidence.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float64)
+        evidence = self._calculate(
+            stored=stored,
+            query={"ltp": query_hist},
+            tolerances={"ltp": 0.5},
+            weights={"ltp": 1.0},
+            feature_order=["ltp"],
+        )
+        assert np.all(np.isfinite(evidence))
+        np.testing.assert_allclose(evidence, [0.0], atol=1e-9)
+
     def test_ltp_only_unreliable_patch_gives_zero_evidence(self) -> None:
         # If LTP is the only matched feature and it is unreliable, its weight is
         # zeroed and the calculator returns zero evidence rather than dividing by a

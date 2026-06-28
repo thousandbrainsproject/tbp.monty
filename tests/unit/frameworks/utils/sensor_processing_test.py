@@ -868,6 +868,54 @@ class LocalTernaryPatternAndHistTest(unittest.TestCase):
         with pytest.raises(ValueError, match="mask"):
             local_ternary_pattern_and_hist(patch, mask=bad_mask)
 
+    @staticmethod
+    def _oriented_texture_patch(seed: int = 40) -> np.ndarray:
+        # Strongly oriented (vertical-stripe) texture so that orientation is
+        # texturally meaningful and a 90-degree rotation visibly changes the
+        # local micro-patterns.
+        rng = np.random.default_rng(seed)
+        xx, _ = np.meshgrid(np.arange(40), np.arange(40))
+        return (
+            rng.uniform(0.0, 255.0, size=(40, 40)) * 0.4
+            + 127.0
+            + 120.0 * np.sin(xx / 2.5)
+        ).clip(0.0, 255.0)
+
+    def test_ror_histogram_is_invariant_to_90_degree_rotation(self):
+        # This is the core property of the rotation-invariant (ROR) encoding: a
+        # 90-degree image rotation maps the circular neighbor sampling onto a
+        # cyclic shift of the bit pattern, which ROR collapses to the same bin.
+        # With n_neighbors=8 the 45-degree sampling step makes a 90-degree
+        # rotation an exact two-step cyclic shift, so the histograms match
+        # exactly (a square patch maps its border ring onto itself under
+        # np.rot90, so even boundary pixels are preserved).
+        patch = self._oriented_texture_patch()
+        rotated = np.rot90(patch)
+        for radius in (1.0, 5.0):
+            with self.subTest(radius=radius):
+                ror = local_ternary_pattern_and_hist(
+                    patch, n_neighbors=8, radius=radius, method="ror"
+                )
+                ror_rotated = local_ternary_pattern_and_hist(
+                    rotated, n_neighbors=8, radius=radius, method="ror"
+                )
+                npt.assert_allclose(ror, ror_rotated, atol=1e-6)
+
+    def test_uniform_histogram_is_orientation_sensitive(self):
+        # Contrast with ROR: the uniform encoding preserves the run-start
+        # position, so rotating an oriented texture by 90 degrees changes the
+        # histogram. This guards against the encodings silently collapsing into
+        # the same (rotation-invariant) behavior.
+        patch = self._oriented_texture_patch()
+        rotated = np.rot90(patch)
+        uniform = local_ternary_pattern_and_hist(
+            patch, n_neighbors=8, method="uniform"
+        )
+        uniform_rotated = local_ternary_pattern_and_hist(
+            rotated, n_neighbors=8, method="uniform"
+        )
+        assert not np.allclose(uniform, uniform_rotated, atol=1e-3)
+
 
 def _ltp_config(n_neighbors=8, radius=1.0, threshold=5.0, method=None):
     """Build a single-method LTP texture-extraction config.
