@@ -471,6 +471,9 @@ class MontyExperiment:
     def _recreation_monty_factory(self) -> Monty:
         """Create a Monty model from dehydrated config.
 
+        Note: This method is mostly adapted from `init_model()`.
+        The duplication of logic should eventually be removed.
+
         Returns:
             A new Monty model.
         """
@@ -494,11 +497,12 @@ class MontyExperiment:
         # Create monty model
         # FIXME: Kept for backward compatibility
         monty_args = config.pop("monty_args", {})
-        # if monty_args:
-        #     monty_args = instantiate(monty_args)
+        num_exploratory_steps = monty_args["num_exploratory_steps"]
+        assert self.max_total_steps >= (num_exploratory_steps + self.max_train_steps), (
+            "max_total_steps is set < num_exploratory_steps + max_train_steps."
+        )
+
         monty_class = config.pop("monty_class")
-        # monty_class = instantiate(config.pop("monty_class"))
-        # config = instantiate(config)
         model = monty_class(
             sensor_modules=list(sensor_modules.values()),
             learning_modules=list(learning_modules.values()),
@@ -513,15 +517,6 @@ class MontyExperiment:
             **monty_args,
         )
         model.min_lms_match = self.min_lms_match  # FIXME: injected Experiment config?
-
-        # FIXME: Explore this constraint and consider better means of enforcement
-        if monty_args["num_exploratory_steps"] > self.max_total_steps:
-            new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
-            print(
-                "max_total_steps is set < num_exploratory_steps + max_train_steps."
-                f" Resetting it to {new_max_steps}"
-            )
-            self.max_total_steps = new_max_steps
 
         return model
 
