@@ -6,7 +6,7 @@ estimated-scope: unknown
 improved-metric: speed, pose, accuracy, noise
 output-type: experiments, analysis, PR
 skills: python, research, monty
-contributor:
+contributor: 
 status: open
 ---
 

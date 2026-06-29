@@ -6,7 +6,7 @@ estimated-scope: large
 improved-metric: numsteps, pose, scale
 output-type: experiments, analysis, PR, publication
 skills: python, research, monty
-contributor:
+contributor: 
 status: open
 ---
 
@@ -14,7 +14,7 @@ When developing Monty, we explored several different learning module approaches.
 
 ![](../../figures/future-work/lm_comparison.png)
 
-The idea behind the future work item here is to try and recover some of the desirable properties of the edge-based matching approach by developing a hybrid algorithm. The main reason we moved away from edge-based models and matching is that it was not sampling invariant. That means, one had to sample the same movements during inference as were taken during learning (although they could be in a new order). This was an unreasonable assumption.
+The idea behind the future work item here is to try and recover some of the desirable properties of the edge-based matching approach by developing a hybrid algorithm. The main reason we moved away from edge-based models and matching is that it was not sampling invariant. That means, one had to sample the same movements during inference as were taken during learning (although they could be in a new order). This was an unreasonable assumption. 
 
 With the node-based matching approach, we can sample new locations and displacements on an object and still recognize it robustly. Recent additions to Monty, such as the [saliency-based](../../how-monty-works/sensor-module/salience-sm.md) policy, can now be leveraged to sample very similar locations and displacements during learning and inference (e.g. always moving between eyes, mouth, and nose of a face instead of along random trajectories). We could therefor try a hybrid approach, where our existing models additionally store edges for the most frequently taken displacements on an object. If during inference one of the movements can be matched to a stored edge in the graph, pose and scale can be resolved extremely quickly. If there is no match to an edge, inference will still work as usual, using the stored nodes.
 
