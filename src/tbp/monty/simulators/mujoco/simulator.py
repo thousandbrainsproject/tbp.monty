@@ -49,6 +49,7 @@ if TYPE_CHECKING:
     from types import TracebackType
 
 __all__ = [
+    "DEFAULT_RESOLUTION",
     "ActuateMethodMissing",
     "DataPathNotConfigured",
     "MissingObjectModel",

@@ -14,7 +14,7 @@ from typing import Any
 
 import numpy as np
 import quaternion as qt
-from mujoco._enums import mjtGeom
+from mujoco import mjtGeom
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.environment import SemanticID
@@ -23,8 +23,9 @@ from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR
 from tbp.monty.simulators.mujoco.agents import NoopAgent
 from tbp.monty.simulators.mujoco.simulator import DEFAULT_RESOLUTION, MuJoCoSimulator
 
-TEST_SENSOR_ID = SensorID("patch")
-TEST_AGENT_ID = AgentID("agent_id_0")
+VIEW_FINDER_SENSOR_ID = SensorID("view_finder")
+PATCH_SENSOR_ID = SensorID("patch")
+AGENT_ID = AgentID("agent_id_0")
 
 
 def default_agent_args() -> dict[str, Any]:
@@ -37,9 +38,9 @@ def default_agent_args() -> dict[str, Any]:
         dict[str, Any]: A dictionary of default agent arguments.
     """
     return {
-        "agent_id": TEST_AGENT_ID,
+        "agent_id": AGENT_ID,
         "sensor_configs": {
-            TEST_SENSOR_ID: SensorConfig(
+            PATCH_SENSOR_ID: SensorConfig(
                 position=ZERO_VECTOR,
                 rotation=IDENTITY_QUATERNION,
                 resolution=DEFAULT_RESOLUTION,
@@ -63,7 +64,7 @@ class NoopAgentTest(unittest.TestCase):
         sim = MuJoCoSimulator(
             agents=[partial(NoopAgent, **agent_args)],
         )
-        agent_state = sim.states[TEST_AGENT_ID]
+        agent_state = sim.states[AGENT_ID]
 
         assert np.allclose(agent_state.position, agent_pos)
         assert np.allclose(qt.as_float_array(agent_state.rotation), agent_quat)
@@ -80,9 +81,9 @@ class NoopAgentTest(unittest.TestCase):
         with sim:
             sim.add_object("box", position=(0.0, 0.0, -5.0))
 
-            obs = sim.observations[TEST_AGENT_ID]
-            depth = obs[TEST_SENSOR_ID]["depth"]
-            rgba = obs[TEST_SENSOR_ID]["rgba"]
+            obs = sim.observations[AGENT_ID]
+            depth = obs[PATCH_SENSOR_ID]["depth"]
+            rgba = obs[PATCH_SENSOR_ID]["rgba"]
 
             # We don't want to assert on the specifics of the data, since they may
             # be sensitive to rendering differences, but we want to get a rough idea
@@ -107,7 +108,7 @@ class NoopAgentTest(unittest.TestCase):
         agent_args = default_agent_args()
         agent_args.update(
             sensor_configs={
-                TEST_SENSOR_ID: SensorConfig(
+                PATCH_SENSOR_ID: SensorConfig(
                     position=ZERO_VECTOR,
                     rotation=IDENTITY_QUATERNION,
                     resolution=DEFAULT_RESOLUTION,
@@ -123,8 +124,8 @@ class NoopAgentTest(unittest.TestCase):
         with sim:
             sim.add_object("box", position=(-2.5, 0.0, -5.0))
             sim.add_object("sphere", position=(2.5, 0.0, -5.0))
-            obs = sim.observations[TEST_AGENT_ID]
-            semantic = obs[TEST_SENSOR_ID]["semantic"]
+            obs = sim.observations[AGENT_ID]
+            semantic = obs[PATCH_SENSOR_ID]["semantic"]
             unique_ids = set(np.unique(semantic))
 
             assert semantic.shape == (64, 64)
@@ -139,7 +140,7 @@ class NoopAgentTest(unittest.TestCase):
         agent_args = default_agent_args()
         agent_args.update(
             sensor_configs={
-                TEST_SENSOR_ID: SensorConfig(
+                PATCH_SENSOR_ID: SensorConfig(
                     position=ZERO_VECTOR,
                     rotation=IDENTITY_QUATERNION,
                     resolution=DEFAULT_RESOLUTION,
@@ -157,8 +158,8 @@ class NoopAgentTest(unittest.TestCase):
         with sim:
             sim.add_object("box", position=(-2.5, 0.0, -5.0), semantic_id=box_id)
             sim.add_object("sphere", position=(2.5, 0.0, -5.0), semantic_id=sphere_id)
-            obs = sim.observations[TEST_AGENT_ID]
-            semantic = obs[TEST_SENSOR_ID]["semantic"]
+            obs = sim.observations[AGENT_ID]
+            semantic = obs[PATCH_SENSOR_ID]["semantic"]
             unique_ids = set(np.unique(semantic))
 
             assert semantic.shape == (64, 64)
@@ -177,13 +178,13 @@ class NoopAgentTest(unittest.TestCase):
         agent_args = default_agent_args()
         agent_args.update(
             sensor_configs={
-                "patch": SensorConfig(
+                PATCH_SENSOR_ID: SensorConfig(
                     position=ZERO_VECTOR,
                     rotation=IDENTITY_QUATERNION,
                     resolution=DEFAULT_RESOLUTION,
                     zoom=1.0,
                 ),
-                "view_finder": SensorConfig(
+                VIEW_FINDER_SENSOR_ID: SensorConfig(
                     position=ZERO_VECTOR,
                     rotation=IDENTITY_QUATERNION,
                     resolution=Resolution2D(height=256, width=256),
@@ -196,9 +197,9 @@ class NoopAgentTest(unittest.TestCase):
         )
 
         with sim:
-            obs = sim.observations[TEST_AGENT_ID]
-            patch_rgba = obs[TEST_SENSOR_ID]["rgba"]
-            view_finder_rgba = obs[TEST_SENSOR_ID]["rgba"]
+            obs = sim.observations[AGENT_ID]
+            patch_rgba = obs[PATCH_SENSOR_ID]["rgba"]
+            view_finder_rgba = obs[VIEW_FINDER_SENSOR_ID]["rgba"]
 
             assert patch_rgba.shape == (64, 64, 4)
             assert view_finder_rgba.shape == (256, 256, 4)
