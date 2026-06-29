@@ -5,7 +5,9 @@ title: Common Issues (And how to Fix Them)
 
 Below we highlight a few issues that often crop up and can present problems when they are not otherwise apparent:
 
-When debugging, it can also help to watch Monty run step-by-step. See [Live Visualization with `tbp.teleop`](logging-and-analysis.md#live-visualization-with-tbp-teleop) for a tool that visualizes the simulator, Monty's graphs and hypotheses, and lets you interactively control the agent's actions.
+## Visualization
+
+When debugging, it can help to watch Monty run step-by-step. See [Live Visualization with `tbp.teleop`](logging-and-analysis.md#live-visualization-with-tbpteleop) for a tool that visualizes the simulator, Monty's graphs and hypotheses, and lets you interactively control the agent's actions.
 
 ## Quaternions
 

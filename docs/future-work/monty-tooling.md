@@ -6,6 +6,6 @@ Tasks in the Monty tooling section relate to tools that can make Monty easier to
 
 For instance, some tools our researchers and/or engineers use are:
 - [tbp.plot](https://github.com/thousandbrainsproject/tbp.plot) for interactive visualizations of what is going on inside of Monty's brain.
-- [tbp.teleop](https://github.com/thousandbrainsproject/tbp.teleop) to interactively control Monty's actions during an experiment and watch it learn and infer live (see [Live Visualization with `tbp.teleop`](../how-to-use-monty/logging-and-analysis.md#live-visualization-with-tbp-teleop)).
+- [tbp.teleop](https://github.com/thousandbrainsproject/tbp.teleop) to interactively control Monty's actions during an experiment and watch it learn and infer live (see [Live Visualization with `tbp.teleop`](../how-to-use-monty/logging-and-analysis.md#live-visualization-with-tbpteleop)).
 - [lazyconfigs](https://github.com/thousandbrainsproject/lazyconfigs) to quickly create new Monty experiment configs using a TUI.
 - [tbp.floppy](https://github.com/thousandbrainsproject/tbp.floppy) to count the number of FLOPs Monty performs during learning and inference.
