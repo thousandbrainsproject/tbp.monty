@@ -132,7 +132,7 @@ are correct by following the instructions in [Checking Links](#checking-links).
 - [some-existing-doc](/my-category/placeholder-example-doc.md)
 ```
 
-After adding a corresponding line in the `/docs/hierarchy.md` file for your new document, create your Markdown document `/docs/my-category/new-placeholder-example-doc.md` and add the appropriate Frontmatter (see the example below). The Title does not *need* to match the slug and document name exactly, but should be similar,
+After adding a corresponding line in the `/docs/hierarchy.md` file for your new document, create your Markdown document `/docs/my-category/new-placeholder-example-doc.md` and add the appropriate Frontmatter (see the example below). *The Title does not need to match the slug and document name exactly*, but should be similar,
 for clarity of understanding. 
 
 ```markdown
