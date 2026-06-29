@@ -22,10 +22,10 @@ from tests.integration.reproducibility.run import parallel_run, serial_run
 
 
 class SupervisedTrainingTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.output_dir = Path(tempfile.mkdtemp())
 
-    def test_training_results_are_equal(self):
+    def test_training_results_are_equal(self) -> None:
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config(
                 "reproducibility_supervised_training_mujoco", self.output_dir
