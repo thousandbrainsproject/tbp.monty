@@ -521,11 +521,6 @@ class MontyExperiment:
                 f" Resetting it to {new_max_steps}"
             )
             self.max_total_steps = new_max_steps
-        # TODO: Replace the config constraint above with the following and fix failures!
-        # num_exploratory_steps = monty_args["num_exploratory_steps"]
-        # assert self.max_total_steps >= (num_exploratory_steps + self.max_train_steps), (
-        #     "max_total_steps is set < num_exploratory_steps + max_train_steps."
-        # )
 
         return model
 
