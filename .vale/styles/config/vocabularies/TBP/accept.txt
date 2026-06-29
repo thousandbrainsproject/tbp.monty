@@ -182,6 +182,7 @@
 \bSync'ing\b
 \bSzegedy\b
 \bTakaki\b
+\b[Tt]eleoperat(e|ed|es|ing|ion)?\b
 \bTGZ|tgz\b
 \bThrun\b
 \btimeseries\b

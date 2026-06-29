@@ -57,6 +57,7 @@ class MontyExperiment:
     and episode).
     """
 
+    _recreation_mode: bool
     _step_hook: StepHook
 
     def __init__(self, config: DictConfig) -> None:
@@ -66,6 +67,9 @@ class MontyExperiment:
             config: config specifying variables of the experiment.
         """
         self.config = config
+
+        # Feature flag for "recreation" episode/epoch strategy.
+        self._recreation_mode = False
 
         self.rng = np.random.RandomState(config["seed"])
 
@@ -458,11 +462,26 @@ class MontyExperiment:
     # Methods for running the experiment
     ####
 
-    def pre_step(self, _step, _observation):
+    def _recreation_snapshot(self) -> None:
+        if self._recreation_mode:
+            self.model.update_ltm()
+            # TODO: create a snapshot of the episodic state
+        else:
+            self.model.update_ltm()
+
+    def _recreation_restore(self) -> None:
+        if self._recreation_mode:
+            # TODO: restore episodic state from the snapshot
+            self.model.set_experiment_mode(self.experiment_mode)
+            self.model.reset()
+        else:
+            self.model.reset()
+
+    def pre_step(self, _step, _observation) -> None:
         """Hook for anything you want to do before a step."""
         self.logger_handler.pre_step(self.logger_args)
 
-    def post_step(self, _step, _observation):
+    def post_step(self, _step, _observation) -> None:
         """Hook for anything you want to do after a step."""
         self.logger_handler.post_step(self.logger_args)
 
@@ -504,7 +523,7 @@ class MontyExperiment:
 
         self.post_episode(step)
 
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         """Call pre_episode on elements in experiment and set mode."""
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(
@@ -519,7 +538,8 @@ class MontyExperiment:
 
         self.reset_episode_rng()
 
-        self.model.reset()
+        self._recreation_restore()
+
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps
@@ -531,7 +551,7 @@ class MontyExperiment:
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-    def post_episode(self, steps):
+    def post_episode(self, steps) -> None:
         """Call post_episode on elements in experiment and increment counters.
 
         General order of post episode should be:
@@ -545,7 +565,8 @@ class MontyExperiment:
         get 'confused'/'FP'.
         """
         self.logger_handler.post_episode(self.logger_args)
-        self.model.update_ltm()
+
+        self._recreation_snapshot()
 
         if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_episodes += 1
@@ -580,7 +601,7 @@ class MontyExperiment:
 
         self.post_epoch()
 
-    def pre_epoch(self):
+    def pre_epoch(self) -> None:
         """Set environment interface and call sub pre_epoch functions."""
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(f"running train epoch {self.train_epochs}")
@@ -593,7 +614,7 @@ class MontyExperiment:
         self.env_interface.pre_epoch()
         self.logger_handler.pre_epoch(self.logger_args)
 
-    def post_epoch(self):
+    def post_epoch(self) -> None:
         """Call sub post_epoch functions and save state dict."""
         # NOTE: maybe an option not to save everything every epoch?
         self.save_state_dir(output_dir=self.output_dir / f"{self.train_epochs}")

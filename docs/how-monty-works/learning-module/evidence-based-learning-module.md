@@ -76,6 +76,8 @@ We modulate the influence of the surface normal (or the flatness of the search s
 
 To implement these notions we use a **custom distance measure** that takes the surface normal and curvature magnitude into account. This distance is then used for thresholding and leads to considering more points along the surface and fewer outside the surface (see above figure, bottom row).
 
+Note that the distance between hypothesized location and stored point in the model is only used for thresholding whether a point is in the radius or not, and not for weighting the absolute evidence increment. This is to reduce the influence of how the model is sampled during learning and where points are stored in the model.
+
 # Features and Morphology
 
 As mentioned before, features can only add evidence, not subtract it. **Morphology (location and pose feature match) can add and subtract evidence.** This is because we want to be able to recognize objects even when features are different. For example, if we have a model of a red coffee mug and are presented with a blue one we would still want to recognize a coffee mug.

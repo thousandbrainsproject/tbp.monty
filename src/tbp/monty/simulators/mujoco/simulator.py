@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Sequence, cast
+from typing import TYPE_CHECKING, Any, Protocol, Sequence
 
 from mujoco import (
     MjData,
@@ -45,14 +45,14 @@ from tbp.monty.simulators.mujoco.objects import (
     load_object_metadata,
 )
 
+if TYPE_CHECKING:
+    from types import TracebackType
+
+logger = logging.getLogger(__name__)
+
 # Scaling factor to make MuJoCo primitives roughly the same size
 # as their Habitat counterparts. This was determined by trial and error.
 HABITAT_SCALING_FACTOR = (0.1, 0.1, 0.1)
-
-if TYPE_CHECKING:
-    from functools import partial
-
-logger = logging.getLogger(__name__)
 
 # Map of names to MuJoCo primitive object types
 PRIMITIVE_OBJECTS = {
@@ -82,7 +82,19 @@ HABITAT_PRIMITIVE_OBJECTS = {
 DEFAULT_RESOLUTION = Resolution2D(width=64, height=64)
 
 
-MuJoCoAgentFactory = Callable[["MuJoCoSimulator"], Agent]
+class MuJoCoAgentFactory(Protocol):
+    """Protocol for the partially applied Agent constructors from Hydra.
+
+    This describes the parts of the callable Agent constructor and
+    the `partial` type that we want to use.
+    """
+
+    def __call__(self, sim: MuJoCoSimulator) -> Agent: ...
+
+    @property
+    def keywords(self) -> dict[str, Any]:
+        # The return type matches the type of the `partial.keywords` property.
+        ...
 
 
 class UnknownObjectType(RuntimeError):
@@ -158,6 +170,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.data = MjData(self.model)
         self._data_path = Path(data_path) if data_path else None
         self._raise_actuate_missing = raise_actuate_missing
+        self._renderers = {}
 
         self._agent_partials = [] if agents is None else agents
         self._agents = {}
@@ -169,7 +182,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # of the agents, especially when we start to add more structure to them.
         self._object_count = 0
 
-        self._renderers = {}
         self._recompile()
 
     def _recompile(self) -> None:
@@ -195,6 +207,15 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         g = self.spec.visual.global_
         g.offheight = render_resolution.height
         g.offwidth = render_resolution.width
+        # Habitat used a znear and zfar of 0.01 and 1000.0 respectively. MuJoCo
+        # lets us set these values directly, but it multiplies them by an `extent`
+        # value, which defaults to 2.0. Trying to set this to 1.0 and then setting
+        # the Z clipping values to match Habitat, we see a reduction in depth accuracy.
+        # By leaving the `extent` alone and setting values that will result in matching
+        # the Habitat values, we get better depth values, and avoid near clipping
+        # issues we were getting with the default znear of `0.01`.
+        self.spec.visual.map.znear = 0.005
+        self.spec.visual.map.zfar = 500.0
 
     def _configure_lights(self) -> None:
         """Configure the lights as needed.
@@ -218,8 +239,9 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.spec.visual.headlight.specular = (0.0, 0.0, 0.0)
         # Add a directional light on the "front" side of the object.
         self.spec.worldbody.add_light(
-            pos=(0, 0, 0.2),
+            pos=(0, 0.0, 0.2),
             diffuse=(0.6, 0.6, 0.6),
+            specular=(0.1, 0.1, 0.1),
             type=mjtLightType.mjLIGHT_DIRECTIONAL,
         )
 
@@ -261,8 +283,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # Introspect the agent partials to determine what the original sensor
         # configs were, so we can determine the maximum resolution needed.
         agent_sensor_cfgs: list[dict[SensorID, SensorConfig]] = [
-            p.keywords["sensor_configs"]
-            for p in cast("list[partial[Agent]]", self._agent_partials)
+            p.keywords["sensor_configs"] for p in self._agent_partials
         ]
         for sensor_cfgs in agent_sensor_cfgs:
             for sensor_cfg in sensor_cfgs.values():
@@ -456,6 +477,18 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         except KeyError:
             geom_type = HABITAT_PRIMITIVE_OBJECTS[object_type]
 
+        if geom_type == mjtGeom.mjGEOM_CAPSULE:
+            # Apply a scaling factor to the second scale parameter to match
+            # Habitat's capsule dimensions. For the "capsule" geom, MuJoCo
+            # only uses the first and second parts of scale to define the
+            # radius of the end spheres and the half-length of the cylinder
+            # portion in the middle.
+            scale = (
+                scale[0],
+                scale[1] * 0.75,
+                scale[2],
+            )
+
         # TODO: should we encapsulate primitive objects into bodies?
         world_body.add_geom(
             name=obj_name,
@@ -519,5 +552,10 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool | None:
         self.close()

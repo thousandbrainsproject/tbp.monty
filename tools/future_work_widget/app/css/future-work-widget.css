@@ -34,14 +34,70 @@ body {
 }
 
 .badge-status {
-  padding: 2px 4px;
-  border-radius: 4px;
   margin-bottom: 2px;
-  font-size: 0.7rem;
-  display: inline-block;
-  background-color: #ffffff;
-  color: #666;
-  border: 1px solid #999;
+}
+
+.badge.badge-status-open {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.badge.badge-status-open:hover {
+  background-color: #b8daff;
+}
+
+.badge.badge-status-scoping {
+  background-color: #9bd4f5;
+  color: #004a70;
+}
+
+.badge.badge-status-scoping:hover {
+  background-color: #7ec8f0;
+}
+
+.badge.badge-status-scoped {
+  background-color: #00a0df;
+  color: #ffffff;
+}
+
+.badge.badge-status-scoped:hover {
+  background-color: #0088c0;
+}
+
+.badge.badge-status-in-progress {
+  background-color: #2f2b5c;
+  color: #ffffff;
+}
+
+.badge.badge-status-in-progress:hover {
+  background-color: #1f1b3c;
+}
+
+.badge.badge-status-paused {
+  background-color: #e8d5f5;
+  color: #5a3d7a;
+}
+
+.badge.badge-status-paused:hover {
+  background-color: #d9c0ed;
+}
+
+.badge.badge-status-completed {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge.badge-status-completed:hover {
+  background-color: #c3e6cb;
+}
+
+.badge.badge-status-evergreen {
+  background-color: #004085;
+  color: #ffffff;
+}
+
+.badge.badge-status-evergreen:hover {
+  background-color: #003566;
 }
 
 .badge-size-small {
@@ -199,8 +255,9 @@ body {
 
 .tabulator-cell.wrap-text .badge,
 .tabulator-cell.wrap-text .badge-skills {
-  display: inline-block;
-  margin: 2px;
+  display: block;
+  margin: 2px 0;
+  width: fit-content;
 }
 
 .tabulator-cell {
