@@ -31,7 +31,10 @@ from tbp.monty.frameworks.environments.environment import SimulatedObjectEnviron
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
-from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.frameworks.models.motor_system_state import (
+    MotorSystemState,
+    ProprioceptiveState,
+)
 from tbp.monty.frameworks.models.salience.motor_policy import LookAtGoal
 from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
 from tbp.monty.simulators.mujoco import MuJoCoSimulator
@@ -73,6 +76,7 @@ class LookAtGoalTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        cls.patch_res = Resolution2D(64, 64)
         cls.view_finder_res = Resolution2D(64, 64)
         agent_partials = [
             partial(
@@ -81,7 +85,7 @@ class LookAtGoalTest(unittest.TestCase):
                 position=(0.0, 1.5, 0.2),
                 sensor_configs={
                     SensorID("patch"): SensorConfig(
-                        resolution=Resolution2D(width=64, height=64),
+                        resolution=cls.patch_res,
                         zoom=10.0,
                     ),
                     VIEW_FINDER_SENSOR_ID: SensorConfig(
@@ -99,7 +103,7 @@ class LookAtGoalTest(unittest.TestCase):
                 AGENT_ID,
                 sensor_ids=[SensorID("patch"), VIEW_FINDER_SENSOR_ID],
                 resolutions=[
-                    (64, 64),
+                    (cls.patch_res.height, cls.patch_res.width),
                     (cls.view_finder_res.height, cls.view_finder_res.width),
                 ],
                 zooms=[10.0, 1.0],
@@ -164,7 +168,7 @@ class LookAtGoalTest(unittest.TestCase):
         policy_result = self.motor_policy(
             ctx=MagicMock(),
             observations=self.observations,
-            state=self.proprioceptive_state,
+            state=MotorSystemState(self.proprioceptive_state),
             percept=MagicMock(),
             goal=goal,
         )
