@@ -180,8 +180,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self._create_agents()
 
         # Track how many objects we add to the environment.
-        # Note: We can't use the `model.ngeoms` for this since that will include parts
-        # of the agents, especially when we start to add more structure to them.
+        # This is used to give added objects unique names.
         self._object_count = 0
 
         self._recompile()
@@ -328,10 +327,15 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             self._add_custom_object(obj_name, name, position, rotation, scale)
 
         self._recompile()
-
         self._object_count += 1
+
+        added_obj = self.model.geom(obj_name)
+        # MuJoCo gives us a NumPy array of 1 element for some reason, so we use the
+        # first element for the type.
+        added_obj_type = added_obj.type[0]
+
         if semantic_id is None:
-            semantic_id = SemanticID(self._object_count)
+            semantic_id = SemanticID(added_obj_type)
         object_id = ObjectID(self.model.geom(obj_name).id)
         self.id_to_semantic_id[object_id] = semantic_id
 
