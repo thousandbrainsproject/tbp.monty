@@ -560,6 +560,7 @@ class GraphLM(LearningModule):
         self.primary_target = None
         self.possible_matches = {}
         self.possible_paths = {}
+        self.terminal_state = None
         self.detected_object = None
         self.detected_pose = [None for _ in range(7)]
         self.detected_rotation_r = None
@@ -574,7 +575,7 @@ class GraphLM(LearningModule):
     def reset(self):
         """Reset initial hypotheses.
 
-        TODO integrate this into `reset_stm` and/or `fixme_reset_ground_truth`?
+        TODO maybe rename to `reset_from_updated_ltm`?
         """
         (
             self.possible_matches,
@@ -953,6 +954,9 @@ class GraphLM(LearningModule):
         self.graph_memory.load_state_dict(memento["graph_memory"])
         self.target_to_graph_id = memento["target_to_graph_id"]
         self.graph_id_to_target = memento["graph_id_to_target"]
+        # After loading the long-term memory, give the LM a chance to
+        # update any internal state based on the contents of memory.
+        self.reset()
 
     # ======================= Private ==========================
 
