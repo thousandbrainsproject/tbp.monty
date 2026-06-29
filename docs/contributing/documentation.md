@@ -7,7 +7,7 @@ title: Documentation
 
 # Overview
 
-Our documentation is held in Markdown files in the Monty repo under the [`/docs` folder](https://github.com/thousandbrainsproject/tbp.monty/tree/main/docs/). This documentation is synchronized to readme.com for viewing whenever a change is made. The order of sections, documents, and subdocuments is maintained by a hierarchy file called `/docs/hierarchy.md`. This is a fairly straightforward Markdown document that is used to tell readme how to order the categories, documents and sub-documents.
+Our documentation is held in Markdown files in the Monty repo under the [`/docs` folder](https://github.com/thousandbrainsproject/tbp.monty/tree/main/docs/). This documentation is synchronized to readme.com for viewing whenever a change is made. The order of sections, documents, and subdocuments is maintained by a hierarchy file called `/docs/hierarchy.md`. This is a fairly straightforward Markdown document that is used to tell readme how to order the categories, documents and sub-documents. See [Understanding `hierarchy.md`](#understanding-hierarchymd) for in-depth instructions on the proper syntax. 
 
 > 📘 Edits to the documentation need to be submitted in the form of PRs to the Monty repository.
 
@@ -76,13 +76,64 @@ This is the simplest flow.  To modify a document simply edit the Markdown file i
 
 To create a new document, create the new file in the category directory, then add a corresponding line in the `/docs/hierarchy.md` file.
 
+## Understanding `hierarchy.md`
+
+The `hierarchy.md` file defines both the navigation hierarchy and the expected location of every documentation file.
+
+Each entry has the following format:
+
+```markdown Markdown
+# category-slug: Category Title
+- [document-slug](category-slug/document-slug.md) <!-- check-links-ignore --> 
+  - [subdocument-slug](category-slug/document-slug/subdocument-slug.md) <!-- check-links-ignore --> 
+```
+
+There are two important parts:
+
+* **Text inside `[]`** is the document's **slug** (the URL-safe name, **all lowercase**, without the `.md` extension). The indentation of the `[]` entries defines the parent/child hierarchy shown in the documentation. This slug also defines the URL address for the doc, so **ensure it's a unique slug in the entire `hierarchy.md` file.** For example, a slug of `[document-slug]` would be rendered at the following URL: https://docs.thousandbrains.org/docs/document-slug
+* **Text inside `()`** is the **exact relative file path** to the Markdown file, including the `.md` extension.
+
+The file path inside `()` must exactly match the hierarchy of where the file exists under 'docs':
+
+1. Start with the **category slug** (the text before the `:` in the category heading).
+2. For each level of nesting, add the slug from the corresponding `[]` entry as another directory.
+3. End with the Markdown filename (`.md`).
+
+For example:
+
+```markdown Markdown
+# how-to-use-monty: How to Use Monty
+- [tutorials](how-to-use-monty/tutorials.md <!-- check-links-ignore -->)
+  - [running-your-first-experiment](how-to-use-monty/tutorials/running-your-first-experiment.md <!-- check-links-ignore -->)
+```
+
+> [!NOTE]
+> The `<!-- check-links-ignore -->` comments in the example above is only used to prevent the documentation link checker from validating these example paths. They are not part of the `hierarchy.md` syntax and should not be added to real entries.
+
+This corresponds to the following files in the repo:
+
+```text
+docs/
+└── how-to-use-monty/ 
+    ├── tutorials.md
+    └── tutorials/
+        └── running-your-first-experiment.md
+```
+
+If the indentation, slugs, or file paths do not match the directory structure, the documentation sync tool will report a hierarchy mismatch during validation.
+Validation will automatically be run via GitHub Actions during a pull request, but you can proactively check if your indentation, slugs and file paths
+are correct by following the instructions in [Checking Links](#checking-links). 
+
+## An Example New Document
+
 ```markdown Markdown
 # my-category: My Category
 - [my-new-doc](/my-category/new-placeholder-example-doc.md)
 - [some-existing-doc](/my-category/placeholder-example-doc.md)
 ```
 
-Then, create your Markdown document `/docs/my-category/new-placeholder-example-doc.md` and add the appropriate Frontmatter.
+After adding a corresponding line in the `/docs/hierarchy.md` file for your new document, create your Markdown document `/docs/my-category/new-placeholder-example-doc.md` and add the appropriate Frontmatter (see the example below). *The Title does not need to match the slug and document name exactly*, but should be similar,
+for clarity of understanding. 
 
 ```markdown
 ---
@@ -106,8 +157,7 @@ Continue with the [Pull Requests](pull-requests.md) process.
 
 Documents that are nested under other documents require that you create a folder with the same name as the parent document but without the `.md` extension.  Then, you place any sub-documents in that folder.  For example, if you were creating a document called `new-placeholder-example-doc.md` beneath the document `Category One/some-existing-doc.md` file you would create a folder called `category-one/some-existing-doc` and place the new document in that folder.
 
-
-And then update the `hierarchy.md` file
+And then update the `hierarchy.md` file. See [Understanding `hierarchy.md`](#understanding-hierarchymd) for in-depth instructions on the proper syntax. 
 
 ```markdown markdown
 # category-one: Category One
@@ -160,7 +210,8 @@ To create a new category, simply create a new folder inside the `/docs` folder a
 
 In our documentation sync tool there is a flag to check internal links, image references and hierarchy file references.  This is a good way to ensure that all links are working correctly before submitting a PR.
 
-To check the links, [activate the conda environment](../how-to-use-monty/getting-started.md#miniconda), and then run the following command:
+To check the links, [activate the conda environment](../how-to-use-monty/getting-started.md#miniconda), and then run the following command
+from the `tbp.monty` directory:
 
 ```
 python -m tools.github_readme_sync.cli check docs
