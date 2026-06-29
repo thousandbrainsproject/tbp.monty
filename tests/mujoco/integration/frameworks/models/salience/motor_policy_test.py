@@ -69,6 +69,7 @@ class LookAtGoalTest(unittest.TestCase):
     env: ClassVar[SimulatedObjectEnvironment]
     env_interface: ClassVar[Interface]
     motor_policy: ClassVar[MotorPolicy]
+    patch_res: ClassVar[Resolution2D]
     view_finder_res: ClassVar[Resolution2D]
 
     observations: Observations
