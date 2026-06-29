@@ -210,7 +210,8 @@ To create a new category, simply create a new folder inside the `/docs` folder a
 
 In our documentation sync tool there is a flag to check internal links, image references and hierarchy file references.  This is a good way to ensure that all links are working correctly before submitting a PR.
 
-To check the links, [activate the conda environment](../how-to-use-monty/getting-started.md#miniconda), and then run the following command:
+To check the links, [activate the conda environment](../how-to-use-monty/getting-started.md#miniconda), and then run the following command
+from the `tbp.monty` directory:
 
 ```
 python -m tools.github_readme_sync.cli check docs
