@@ -14,8 +14,10 @@ from typing import Any
 
 import numpy as np
 import quaternion as qt
+from mujoco._enums import mjtGeom
 
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR
 from tbp.monty.simulators.mujoco.agents import NoopAgent
@@ -79,8 +81,8 @@ class NoopAgentTest(unittest.TestCase):
             sim.add_object("box", position=(0.0, 0.0, -5.0))
 
             obs = sim.observations[TEST_AGENT_ID]
-            depth = obs[SensorID("patch")]["depth"]
-            rgba = obs[SensorID("patch")]["rgba"]
+            depth = obs[TEST_SENSOR_ID]["depth"]
+            rgba = obs[TEST_SENSOR_ID]["rgba"]
 
             # We don't want to assert on the specifics of the data, since they may
             # be sensitive to rendering differences, but we want to get a rough idea
@@ -95,6 +97,72 @@ class NoopAgentTest(unittest.TestCase):
             #   as lighting.
             assert rgba.min() == 0
             assert rgba.max() == 255
+
+    def test_agent_observation_semantic_default_ids(self) -> None:
+        """Test that the semantic sensor default ids match expectations.
+
+        We want the semantic sensor to behave similar to how the Habitat version does
+        so we need to confirm that the values returned map correctly.
+        """
+        agent_args = default_agent_args()
+        agent_args.update(
+            sensor_configs={
+                TEST_SENSOR_ID: SensorConfig(
+                    position=ZERO_VECTOR,
+                    rotation=IDENTITY_QUATERNION,
+                    resolution=DEFAULT_RESOLUTION,
+                    zoom=1.0,
+                    semantic=True,
+                )
+            }
+        )
+        sim = MuJoCoSimulator(
+            agents=[partial(NoopAgent, **agent_args)],
+        )
+
+        with sim:
+            sim.add_object("box", position=(-2.5, 0.0, -5.0))
+            sim.add_object("sphere", position=(2.5, 0.0, -5.0))
+            obs = sim.observations[TEST_AGENT_ID]
+            semantic = obs[TEST_SENSOR_ID]["semantic"]
+            unique_ids = set(np.unique(semantic))
+
+            assert semantic.shape == (64, 64)
+            assert unique_ids == {0, mjtGeom.mjGEOM_BOX, mjtGeom.mjGEOM_SPHERE}
+
+    def test_agent_observation_semantic_custom_ids(self) -> None:
+        """Test that the semantic sensor with custom ids match expectations.
+
+        If we give semantic ids to `add_object` we want to make sure that the
+        returned semantic sensor values use those IDs and not the defaults.
+        """
+        agent_args = default_agent_args()
+        agent_args.update(
+            sensor_configs={
+                TEST_SENSOR_ID: SensorConfig(
+                    position=ZERO_VECTOR,
+                    rotation=IDENTITY_QUATERNION,
+                    resolution=DEFAULT_RESOLUTION,
+                    zoom=1.0,
+                    semantic=True,
+                )
+            }
+        )
+        sim = MuJoCoSimulator(
+            agents=[partial(NoopAgent, **agent_args)],
+        )
+        box_id = SemanticID(100)
+        sphere_id = SemanticID(101)
+
+        with sim:
+            sim.add_object("box", position=(-2.5, 0.0, -5.0), semantic_id=box_id)
+            sim.add_object("sphere", position=(2.5, 0.0, -5.0), semantic_id=sphere_id)
+            obs = sim.observations[TEST_AGENT_ID]
+            semantic = obs[TEST_SENSOR_ID]["semantic"]
+            unique_ids = set(np.unique(semantic))
+
+            assert semantic.shape == (64, 64)
+            assert unique_ids == {0, box_id, sphere_id}
 
     def test_agent_observation_multiple_resolutions(self) -> None:
         """Test two sensors with different resolutions.
@@ -129,8 +197,8 @@ class NoopAgentTest(unittest.TestCase):
 
         with sim:
             obs = sim.observations[TEST_AGENT_ID]
-            patch_rgba = obs[SensorID("patch")]["rgba"]
-            view_finder_rgba = obs[SensorID("view_finder")]["rgba"]
+            patch_rgba = obs[TEST_SENSOR_ID]["rgba"]
+            view_finder_rgba = obs[TEST_SENSOR_ID]["rgba"]
 
             assert patch_rgba.shape == (64, 64, 4)
             assert view_finder_rgba.shape == (256, 256, 4)

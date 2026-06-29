@@ -48,6 +48,15 @@ from tbp.monty.simulators.mujoco.objects import (
 if TYPE_CHECKING:
     from types import TracebackType
 
+__all__ = [
+    "ActuateMethodMissing",
+    "DataPathNotConfigured",
+    "MissingObjectModel",
+    "MissingObjectTexture",
+    "MuJoCoSimulator",
+    "UnknownObjectType",
+]
+
 logger = logging.getLogger(__name__)
 
 # Scaling factor to make MuJoCo primitives roughly the same size
@@ -169,7 +178,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.spec = MjSpec()
         self.model = self.spec.compile()
         self.data = MjData(self.model)
-        self.id_to_semantic_id = {}
+        self.id_to_semantic_id = self._default_id_mapping()
 
         self._data_path = Path(data_path) if data_path else None
         self._loaded_custom_types: set[str] = set()
@@ -296,7 +305,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.spec = MjSpec()
         self._create_agents()
         self._recompile()
-        self.id_to_semantic_id = {}
+        self.id_to_semantic_id = self._default_id_mapping()
         self._object_count = 0
         self._loaded_custom_types = set()
 
@@ -563,3 +572,15 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         exc_tb: TracebackType | None,
     ) -> bool | None:
         self.close()
+
+    @staticmethod
+    def _default_id_mapping() -> dict[ObjectID, SemanticID]:
+        """Create the default ID mapping with an entry for the background.
+
+        This is needed because the Habitat version would return 0 for the
+        background, and MuJoCo sets the background to -1.
+
+        Returns:
+            new mapping dictionary
+        """
+        return {ObjectID(-1): SemanticID(0)}
