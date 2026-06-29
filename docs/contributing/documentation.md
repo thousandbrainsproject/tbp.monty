@@ -121,7 +121,7 @@ docs/
 ```
 
 If the indentation, slugs, or file paths do not match the directory structure, the documentation sync tool will report a hierarchy mismatch during validation.
-Validation will automatically be run via Github actions during a pull request, but you can proactively check if your indentation, slugs and file paths
+Validation will automatically be run via \bGitHub\b actions during a pull request, but you can proactively check if your indentation, slugs and file paths
 are correct by running `python -m tools.github_readme_sync.cli check docs` from the `tbp.monty` directory. 
 
 ## An Example New Document
