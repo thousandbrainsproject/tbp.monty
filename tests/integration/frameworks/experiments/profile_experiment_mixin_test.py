@@ -79,6 +79,7 @@ class ProfileExperimentMixinTest(TestCase):
 
     def test_run_episode_is_profiled(self) -> None:
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp._recreation_config = self.base_cfg.experiment["config"]["monty_config"]
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -96,6 +97,7 @@ class ProfileExperimentMixinTest(TestCase):
 
     def test_run_train_epoch_is_profiled(self) -> None:
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp._recreation_config = self.base_cfg.experiment["config"]["monty_config"]
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -114,6 +116,7 @@ class ProfileExperimentMixinTest(TestCase):
 
     def test_run_eval_epoch_is_profiled(self) -> None:
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp._recreation_config = self.base_cfg.experiment["config"]["monty_config"]
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode(exp.experiment_mode)
