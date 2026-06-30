@@ -12,7 +12,6 @@ from typing import Any, Protocol
 
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.memento import Memento
 
 __all__ = [
     "ExperimentMonty",
@@ -24,14 +23,6 @@ class ExperimentMonty(Protocol):
 
     def reset(self) -> None:
         """Reset the internal state of this Monty model."""
-        ...
-
-    def snapshot_ltm(self) -> Memento:
-        """Return an opaque snapshot of long-term memory."""
-        ...
-
-    def restore_ltm(self, memo: Memento) -> None:
-        """Restore long-term memory from an opaque snapshot."""
         ...
 
     def fixme_set_ground_truth(

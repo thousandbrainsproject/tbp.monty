@@ -398,9 +398,7 @@ class MontyBase(Monty):
         self._goals = []
 
     def snapshot_ltm(self) -> Memento:
-        return {"lms": [
-            copy.deepcopy(lm.state_dict()) for lm in self.learning_modules
-        ]}
+        return {"lms": [copy.deepcopy(lm.state_dict()) for lm in self.learning_modules]}
 
     def restore_ltm(self, memo: Memento) -> None:
         memo_lms: list[Memento] = memo["lms"]
