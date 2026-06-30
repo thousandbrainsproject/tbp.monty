@@ -151,6 +151,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     model: MjModel
     data: MjData
     id_to_semantic_id: dict[ObjectID, SemanticID]
+
     _data_path: Path | None
     _raise_actuate_missing: bool
     _agent_partials: Sequence[MuJoCoAgentFactory]
