@@ -39,7 +39,7 @@ from tbp.monty.frameworks.loggers.exp_logger import (
     LoggingCallbackHandler,
 )
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
-from tbp.monty.frameworks.models.monty_base import Monty, MontyBase
+from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )
@@ -59,6 +59,7 @@ class MontyExperiment:
     and episode).
     """
 
+    model: MontyBase | None
     _recreation_mode: bool
     _recreation_config: DictConfig | None  # dehydrated Monty config
     _recreation_memory: Memento
@@ -71,6 +72,7 @@ class MontyExperiment:
             config: config specifying variables of the experiment.
         """
         self.config = config
+        self.model = None
 
         # Feature flag for "recreation" episode/epoch strategy.
         self._recreation_mode = False
@@ -135,21 +137,32 @@ class MontyExperiment:
         """
         self.init_loggers(self.config["logging"])
         logger.info(self.config)
-        self.model: MontyBase = self.init_model(
-            monty_config=config["monty_config"],
-            model_path=self.model_path,
-        )
+
+        # TODO: require `_recreation_config` and remove `_init_model()`
+        if self._recreation_config:
+            self.model = self._recreation_monty_factory()
+        else:
+            self.model = self._init_model(config["monty_config"])
+
+        if self.model_path:
+            # Load from checkpoint
+            model_path = self.model_path
+            # Can be full file name or just the directory containing
+            # the "model.pt" file saved from a previous run.
+            if "model.pt" not in model_path.parts:
+                model_path = model_path / "model.pt"
+            state_dict = torch.load(model_path, weights_only=False)
+            self.model.load_state_dict(state_dict)
+
         self.load_environment_interfaces(config)
         self.init_monty_data_loggers(self.config["logging"])
         self.init_counters()
 
-    def init_model(self, monty_config, model_path=None):
+    def _init_model(self, monty_config: dict[str, Any]):
         """Initialize the Monty model.
 
         Args:
             monty_config: configuration for the Monty class.
-            model_path: Optional model checkpoint. Can be full file name or just the
-                directory containing the "model.pt" file saved from a previous run.
 
         Returns:
             Monty class instance
@@ -197,13 +210,6 @@ class MontyExperiment:
                 f" Resetting it to {new_max_steps}"
             )
             self.max_total_steps = new_max_steps
-
-        # Load from checkpoint
-        if model_path:
-            if "model.pt" not in model_path.parts:
-                model_path = model_path / "model.pt"
-            state_dict = torch.load(model_path, weights_only=False)
-            model.load_state_dict(state_dict)
 
         return model
 
@@ -468,7 +474,7 @@ class MontyExperiment:
     # Methods for running the experiment
     ####
 
-    def _recreation_monty_factory(self) -> Monty:
+    def _recreation_monty_factory(self):
         """Create a Monty model from dehydrated config.
 
         Note: This method is mostly adapted from `init_model()`.
