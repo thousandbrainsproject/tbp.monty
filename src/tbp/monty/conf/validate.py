@@ -27,6 +27,7 @@ def validate(cfg: DictConfig):
     os.environ["HABITAT_SIM_LOG"] = "quiet"
 
     app = hydra.utils.instantiate(cfg.experiment)
+    app._recreation_config = cfg.experiment["config"]["monty_config"]
     with app:
         # exercise .setup_experiment method
         pass

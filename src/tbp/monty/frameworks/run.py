@@ -61,7 +61,7 @@ def main(cfg: DictConfig):
     cfg.experiment.config.logging.output_dir = str(output_dir_from_run_name(cfg))
 
     experiment = hydra.utils.instantiate(cfg.experiment)
-    experiment._recreation_config = cfg.experiment.config.monty_config
+    experiment._recreation_config = cfg.experiment["config"]["monty_config"]
     # experiment._recreation_mode = True
     start_time = time.time()
     with experiment:

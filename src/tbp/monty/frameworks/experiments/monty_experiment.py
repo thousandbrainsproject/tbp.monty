@@ -139,6 +139,7 @@ class MontyExperiment:
         logger.info(self.config)
 
         # TODO: require `_recreation_config` and remove `_init_model()`
+        # assert self._recreation_config
         if self._recreation_config:
             self.model = self._recreation_monty_factory()
         else:

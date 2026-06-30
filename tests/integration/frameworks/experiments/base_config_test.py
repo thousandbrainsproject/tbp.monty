@@ -55,12 +55,14 @@ class BaseConfigTest(unittest.TestCase):
         something breaks the setup_experiment method if there's a separate test for it.
         """
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp._recreation_config = self.base_cfg.experiment["config"]["monty_config"]
         with exp:
             pass
 
     # @unittest.skip("debugging")
     def test_can_run_episode(self):
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp._recreation_config = self.base_cfg.experiment["config"]["monty_config"]
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -70,6 +72,7 @@ class BaseConfigTest(unittest.TestCase):
     # @unittest.skip("speed")
     def test_can_run_train_epoch(self):
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp._recreation_config = self.base_cfg.experiment["config"]["monty_config"]
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -78,6 +81,7 @@ class BaseConfigTest(unittest.TestCase):
     # @unittest.skip("debugging")
     def test_can_run_eval_epoch(self):
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp._recreation_config = self.base_cfg.experiment["config"]["monty_config"]
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -87,6 +91,7 @@ class BaseConfigTest(unittest.TestCase):
     def test_observation_unpacking(self):
         """Make sure this test uses very small n_actions_per_epoch for speed."""
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp._recreation_config = self.base_cfg.experiment["config"]["monty_config"]
         with exp:
             monty_module_sids = {s.sensor_module_id for s in exp.model.sensor_modules}
 
@@ -132,6 +137,7 @@ class BaseConfigTest(unittest.TestCase):
         config_1 = OmegaConf.to_object(self.base_cfg)
 
         exp = hydra.utils.instantiate(config_1["experiment"])
+        exp._recreation_config = config_1["experiment"]["config"]["monty_config"]
         with exp:
             # change something about exp.state that will be saved via save_state_dir
             new_attr = False
@@ -146,6 +152,7 @@ class BaseConfigTest(unittest.TestCase):
         config_2["experiment"]["config"]["model_name_or_path"] = exp.output_dir
 
         exp_2 = hydra.utils.instantiate(config_2["experiment"])
+        exp._recreation_config = config_2["experiment"]["config"]["monty_config"]
         with exp_2:
             # Test 1: untouched attributes are saved and loaded correctly
             prev_attr_1_value = prev_model.learning_modules[0].test_attr_1
@@ -171,6 +178,7 @@ class BaseConfigTest(unittest.TestCase):
     def test_logging_debug_level(self) -> None:
         """Check that logs go to a file, we can load them, and they have basic info."""
         exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp._recreation_config = self.base_cfg.experiment["config"]["monty_config"]
         with exp:
             # Add some stuff to the logs, verify it shows up
             info_message = "INFO is in the log"
@@ -193,6 +201,7 @@ class BaseConfigTest(unittest.TestCase):
         log_cfg["python_log_level"] = logging.INFO
 
         exp = hydra.utils.instantiate(base_config["experiment"])
+        exp._recreation_config = base_config["experiment"]["config"]["monty_config"]
         with exp:
             # Add some stuff to the logs, verify it shows up
             debug_message = "DEBUG is in the log"
@@ -233,6 +242,7 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
         something breaks the setup_experiment method if there's a separate test for it.
         """
         exp = hydra.utils.instantiate(self.cfg.experiment)
+        exp._recreation_config = self.cfg.experiment["config"]["monty_config"]
         with exp:
             pass
 
@@ -243,6 +253,7 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
         and that running an episode produces detailed logging json file.
         """
         exp = hydra.utils.instantiate(self.cfg.experiment)
+        exp._recreation_config = self.cfg.experiment["config"]["monty_config"]
         with exp:
             exp.model.set_experiment_mode(ExperimentMode.EVAL)
             exp.run_epoch()
