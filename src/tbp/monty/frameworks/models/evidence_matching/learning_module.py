@@ -646,10 +646,19 @@ class EvidenceGraphLM(GraphLM):
     def get_current_mlh(self):
         """Return the current most likely hypothesis of the learning module.
 
+        The MLH location is refreshed from the current hypothesis space so that it
+        reflects any displacement applied since the MLH was last computed (e.g. on
+        location-only steps). The MLH identity is invariant under displacement, so
+        its stored index still points at the same hypothesis.
+
         Returns:
-            dict with keys: graph_id, location, rotation, scale, evidence
+            dict with keys: graph_id, mlh_id, location, rotation, scale, evidence
         """
-        return self.current_mlh
+        mlh = self.current_mlh
+        graph_id = mlh["graph_id"]
+        if graph_id in self._hypotheses and "mlh_id" in mlh:
+            mlh["location"] = self._hypotheses[graph_id].locations[mlh["mlh_id"]]
+        return mlh
 
     def get_mlh_for_object(self, object_id):
         """Get mlh for a specific object ID.
@@ -851,10 +860,9 @@ class EvidenceGraphLM(GraphLM):
         self.buffer.last_location = current_location.copy()
 
     def _displace_all_hypotheses(self, displacement: npt.NDArray[np.float64]) -> None:
-        """Displace every initialized graph's hypotheses and update the MLH location.
+        """Displace every initialized graph's hypotheses.
 
-        Evidence is not changed, so the MLH identity is invariant under displacement;
-        only its stored location is advanced to track the displaced hypotheses.
+        Evidence is not changed, so the MLH identity is invariant under displacement.
 
         Args:
             displacement: Incremental movement to apply to all hypothesis locations.
@@ -862,11 +870,6 @@ class EvidenceGraphLM(GraphLM):
         for graph_id, hypotheses in self._hypotheses.items():
             self._hypotheses[graph_id] = self.hypotheses_updater.displace_hypotheses(
                 hypotheses, displacement, graph_id
-            )
-        mlh = self.current_mlh
-        if mlh["graph_id"] in self._hypotheses:
-            mlh["location"] = (
-                mlh["location"] + mlh["rotation"].as_matrix() @ displacement
             )
 
     def _update_evidence(
@@ -1230,6 +1233,7 @@ class EvidenceGraphLM(GraphLM):
         graph_hyps = self._hypotheses[graph_id]
         return {
             "graph_id": graph_id,
+            "mlh_id": mlh_id,
             "location": graph_hyps.locations[mlh_id],
             "rotation": Rotation.from_matrix(graph_hyps.poses[mlh_id]),
             "scale": self.get_object_scale(graph_id),
@@ -1243,7 +1247,7 @@ class EvidenceGraphLM(GraphLM):
             graph_id: If provided, find mlh pose for this object. If graph_id is None
                 look through all objects and finds most likely one.
 
-        Returns dict with keys: object_id, location, rotation, scale, evidence
+        Returns dict with keys: graph_id, mlh_id, location, rotation, scale, evidence
         """
         mlh = {}
         if graph_id is not None:
