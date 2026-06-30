@@ -10,6 +10,7 @@
 from pathlib import Path
 
 import hydra
+import pytest
 from omegaconf import OmegaConf
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
@@ -67,17 +68,15 @@ class ExperimentTest(ParametrizedTestCase):
             # force resolving the config for any parsing errors
             OmegaConf.to_object(config)
             current_config_yaml = OmegaConf.to_yaml(config)
+
             try:
                 snapshot_config_yaml = snapshot_path.read_text()
             except FileNotFoundError:
-                snapshot_config_yaml = None
-            if snapshot_config_yaml is not None:
-                _assert_config_matches_snapshot(
-                    current_config_yaml, snapshot_config_yaml, experiment
-                )
-            else:
-                with snapshot_path.open("w") as f:
-                    f.write(current_config_yaml)
+                pytest.fail(f"Missing snapshot file for '{experiment}'")
+
+            _assert_config_matches_snapshot(
+                current_config_yaml, snapshot_config_yaml, experiment
+            )
 
 
 class TutorialTest(ParametrizedTestCase):
@@ -94,14 +93,11 @@ class TutorialTest(ParametrizedTestCase):
             # force resolving the config for any parsing errors
             OmegaConf.to_object(config)
             current_config_yaml = OmegaConf.to_yaml(config)
+
             try:
                 snapshot_config_yaml = snapshot_path.read_text()
             except FileNotFoundError:
-                snapshot_config_yaml = None
-            if snapshot_config_yaml is not None:
-                _assert_config_matches_snapshot(
-                    current_config_yaml, snapshot_config_yaml, tutorial
-                )
-            else:
-                with snapshot_path.open("w") as f:
-                    f.write(current_config_yaml)
+                pytest.fail(f"Missing snapshot file for '{tutorial}'")
+            _assert_config_matches_snapshot(
+                current_config_yaml, snapshot_config_yaml, tutorial
+            )
