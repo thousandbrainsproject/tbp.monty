@@ -72,7 +72,11 @@ class ExperimentTest(ParametrizedTestCase):
             try:
                 snapshot_config_yaml = snapshot_path.read_text()
             except FileNotFoundError:
-                pytest.fail(f"Missing snapshot file for '{experiment}'")
+                pytest.fail(
+                    f"Missing snapshot file for '{experiment}'\n"
+                    "For more information on how to create or update snapshots"
+                    ", please see the tests/conf/README.md file."
+                )
 
             _assert_config_matches_snapshot(
                 current_config_yaml, snapshot_config_yaml, experiment
@@ -97,7 +101,11 @@ class TutorialTest(ParametrizedTestCase):
             try:
                 snapshot_config_yaml = snapshot_path.read_text()
             except FileNotFoundError:
-                pytest.fail(f"Missing snapshot file for '{tutorial}'")
+                pytest.fail(
+                    f"Missing snapshot file for '{tutorial}'\n"
+                    "For more information on how to create or update snapshots"
+                    ", please see the tests/conf/README.md file."
+                )
             _assert_config_matches_snapshot(
                 current_config_yaml, snapshot_config_yaml, tutorial
             )
