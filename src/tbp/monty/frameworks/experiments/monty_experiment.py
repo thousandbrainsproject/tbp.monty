@@ -60,8 +60,8 @@ class MontyExperiment:
     """
 
     _recreation_mode: bool
-    _recreation_config: DictConfig  # dehydrated Monty config
-    _recreation_memory: list[Memento]
+    _recreation_config: DictConfig | None  # dehydrated Monty config
+    _recreation_memory: Memento
     _step_hook: StepHook
 
     def __init__(self, config: DictConfig) -> None:
@@ -74,8 +74,8 @@ class MontyExperiment:
 
         # Feature flag for "recreation" episode/epoch strategy.
         self._recreation_mode = False
-        self._recreation_config = {}
-        self._recreation_memory = []
+        self._recreation_config = None
+        self._recreation_memory = {}
 
         self.rng = np.random.RandomState(config["seed"])
 
@@ -477,8 +477,11 @@ class MontyExperiment:
         Returns:
             A new Monty model.
         """
-        assert self._recreation_config, "`_recreation_config` property not set!"
-        config = dict(self._recreation_config)  # allow pop() to remove elements
+        assert self._recreation_config is not None, (
+            "`_recreation_config` property not set!"
+        )
+        # allow pop() to remove elements from config
+        config = dict(self._recreation_config)
         instantiate = hydra.utils.instantiate
 
         learning_modules = instantiate(config.pop("learning_modules"))
@@ -527,9 +530,7 @@ class MontyExperiment:
     def _recreation_snapshot(self) -> None:
         """Capture episodic state of Monty model."""
         if self._recreation_mode:
-            self._recreation_memory = [
-                copy.deepcopy(lm.state_dict()) for lm in self.model.learning_modules
-            ]
+            self._recreation_memory = self.model.snapshot_ltm()
             print(f"_recreation_snapshot: {self._recreation_memory}")  # FIXME: remove!
 
     def _recreation_restore(self) -> None:
@@ -538,9 +539,7 @@ class MontyExperiment:
             self.model = self._recreation_monty_factory()
             print(f"_recreation_restore: {self._recreation_memory}")  # FIXME: remove!
             if self._recreation_memory:
-                for idx, lm in enumerate(self.model.learning_modules):
-                    memo: Memento = self._recreation_memory[idx]
-                    lm.load_state_dict(copy.deepcopy(memo))
+                self.model.restore_ltm(self._recreation_memory)
             self.logger_handler.model = self.model
         else:
             self.model.reset()

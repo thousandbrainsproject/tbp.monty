@@ -277,6 +277,14 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def snapshot_ltm(self) -> Memento:
+        pass
+
+    @abc.abstractmethod
+    def restore_ltm(self, memo: Memento) -> None:
+        pass
+
+    @abc.abstractmethod
     def fixme_set_ground_truth(
         self,
         primary_target: dict[str, Any] | None = None,
