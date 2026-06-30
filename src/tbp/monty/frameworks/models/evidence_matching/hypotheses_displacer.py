@@ -74,7 +74,7 @@ class HypothesesDisplacer(Protocol):
         graph_id: str,
         hypotheses: Hypotheses,
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
-        """Updates evidence by comparing features at the displaced locations.
+        """Updates evidence by comparing features at the current locations.
 
         Uses the hypothesis locations as search locations for comparing features from
         all available input channels. Per-channel evidence is summed and applied as a
@@ -172,7 +172,7 @@ class DefaultHypothesesDisplacer:
         graph_id: str,
         hypotheses: Hypotheses,
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
-        """Updates evidence by comparing features at the displaced locations.
+        """Updates evidence by comparing features at the current locations.
 
         Uses the hypothesis locations as search locations for comparing features from
         all available input channels. Per-channel evidence is summed and applied as a

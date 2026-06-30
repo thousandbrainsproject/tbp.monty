@@ -834,7 +834,7 @@ class EvidenceGraphLM(GraphLM):
     def _location_only_step(self, percepts: Sequence[Message]) -> None:
         """Displace all hypotheses by the incremental movement; no evidence update.
 
-        Keeps the hypothesis space synced with the sensor's position on steps that
+        Keeps the hypothesis space synced with the sensor's movements on steps that
         carry a new location but no features. Evidence is not changed.
 
         Args:
