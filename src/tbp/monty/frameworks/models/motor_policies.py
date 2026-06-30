@@ -1705,12 +1705,10 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.min_general_steps = min_general_steps
         self.min_heading_steps = min_heading_steps
 
-        self.tangent_locs = []
-        self.tangent_norms = []
+        # TODO: make this part of `__init__()` after `reset()` is removed.
+        self._init_SurfacePolicyCurvatureInformed()
 
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:
-        super().reset(motor_system)
-
+    def _init_SurfacePolicyCurvatureInformed(self) -> None:  # noqa: N802
         # == Variables for representing heading ==
         # We represent it both in angular and vector form as under different settings,
         # one or the other will be leveraged
@@ -1754,6 +1752,10 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         # the surface-agent-policy's re-orientation movements
         self.tangent_norms = []  # As for tangent_locs; helpful for distinguishing
         # locations as being on different surfaces
+
+    def reset(self, motor_system: ExperimentMotorSystem) -> None:
+        super().reset(motor_system)
+        self._init_SurfacePolicyCurvatureInformed()
 
     def __call__(
         self,
