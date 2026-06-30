@@ -179,7 +179,9 @@ class HierarchyTest(unittest.TestCase):
         of this longer run if we already have it? Maybe in the future we want to change
         this but this is my current reasoning.
         """
-        exp = hydra.utils.instantiate(self.two_lms_heterarchy_cfg.experiment)
+        cfg = self.two_lms_heterarchy_cfg
+        exp = hydra.utils.instantiate(cfg.experiment)
+        exp._recreation_config = cfg.experiment["config"]["monty_config"]
         with exp:
             exp.run()
 
@@ -210,7 +212,9 @@ class HierarchyTest(unittest.TestCase):
         - Extending a graph with a new input channel
         - logging prediction errors
         """
-        exp = hydra.utils.instantiate(self.two_lms_constrained_cfg.experiment)
+        cfg = self.two_lms_constrained_cfg
+        exp = hydra.utils.instantiate(cfg.experiment)
+        exp._recreation_config = cfg.experiment["config"]["monty_config"]
         with exp:
             exp.run()
             # check that both LMs have learned both objects.
@@ -229,7 +233,9 @@ class HierarchyTest(unittest.TestCase):
                     f"objects: {learned_objects}",
                 )
 
-        exp = hydra.utils.instantiate(self.two_lms_semisupervised_cfg.experiment)
+        cfg = self.two_lms_semisupervised_cfg
+        exp = hydra.utils.instantiate(cfg.experiment)
+        exp._recreation_config = cfg.experiment["config"]["monty_config"]
         with exp:
             # check that models for both objects are loaded into memory correctly.
             for lm_idx, lm in enumerate(exp.model.learning_modules):
@@ -267,7 +273,9 @@ class HierarchyTest(unittest.TestCase):
                     f"graph: {updated_graph} with keys: {updated_graph.keys()}",
                 )
 
-        exp = hydra.utils.instantiate(self.two_lms_eval_cfg.experiment)
+        cfg = self.two_lms_eval_cfg
+        exp = hydra.utils.instantiate(cfg.experiment)
+        exp._recreation_config = cfg.experiment["config"]["monty_config"]
         with exp:
             exp.run()
             eval_stats = pd.read_csv(Path(exp.output_dir) / "eval_stats.csv")
