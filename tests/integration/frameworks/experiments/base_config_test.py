@@ -152,7 +152,7 @@ class BaseConfigTest(unittest.TestCase):
         config_2["experiment"]["config"]["model_name_or_path"] = exp.output_dir
 
         exp_2 = hydra.utils.instantiate(config_2["experiment"])
-        exp._recreation_config = config_2["experiment"]["config"]["monty_config"]
+        exp_2._recreation_config = config_2["experiment"]["config"]["monty_config"]
         with exp_2:
             # Test 1: untouched attributes are saved and loaded correctly
             prev_attr_1_value = prev_model.learning_modules[0].test_attr_1
