@@ -101,9 +101,7 @@ class MontyExperiment:
 
         self._rng_seed_history: list[int] = []
 
-        self._step_hook = (
-            config["step_hook"] if "step_hook" in config else NoOpStepHook()
-        )
+        self._step_hook = config.pop("step_hook", NoOpStepHook())
 
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
