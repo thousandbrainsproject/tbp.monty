@@ -13,6 +13,7 @@ Usage:
 """
 
 import sys
+from argparse import ArgumentParser
 from pathlib import Path
 
 import hydra
@@ -29,6 +30,7 @@ def update_snapshots(
     config_name: str = "experiment",
     override_prefix: str = "",
     snapshots_dir: Path = PROJECT_ROOT / "tests" / "conf" / "snapshots",
+    generate_mujoco: bool = False,
 ):
     """Update snapshots for all configs in a directory.
 
@@ -38,18 +40,21 @@ def update_snapshots(
         override_prefix: Prefix for the override value
             (e.g. "tutorial/" or "evidence_lm/").
         snapshots_dir: The directory to write the snapshots to.
+        generate_mujoco: Whether to we're generating MuJoCo or Habitat snapshots.
     """
     snapshots_dir.mkdir(parents=True, exist_ok=True)
-
-    # Delete existing snapshots to remove renamed or deleted experiments
-    for existing_snapshot in snapshots_dir.glob("*.yaml"):
-        existing_snapshot.unlink()
+    snapshot_names = {s.name for s in snapshots_dir.glob("*.yaml")}
 
     for file_path in config_dir.glob("*.yaml"):
-        # Exclude MuJoCo experiments
-        # TODO: Revert once we convert to MuJoCo
-        if file_path.stem.endswith("mujoco"):
+        snapshot_names.discard(file_path.name)
+
+        # TODO: remove once we remove Habitat
+        is_mujoco = file_path.stem.endswith("mujoco")
+        if is_mujoco != generate_mujoco:
+            # This is either a MuJoCo config and we're not generating MuJoCo configs
+            # or a Habitat config and we are generating MuJoCo configs, so skip it.
             continue
+
         print(f"Updating snapshot: {file_path}")
         with hydra.initialize(version_base=None, config_path="."):
             print(f"experiment={override_prefix}{file_path.stem}")
@@ -63,8 +68,27 @@ def update_snapshots(
             with snapshot_path.open("w") as f:
                 f.write(current_config_yaml)
 
+    # Delete remaining snapshots to remove renamed or deleted experiments
+    for name in snapshot_names:
+        print(f"Removing snapshot: {name}")
+        path = snapshots_dir / name
+        path.unlink()
+
 
 if __name__ == "__main__":
+    arg_parser = ArgumentParser(
+        prog="update_snapshots.py",
+        description="Updates config snapshots used by conf_test.py",
+    )
+    arg_parser.add_argument(
+        "-m",
+        "--mujoco",
+        action="store_true",
+        default=False,
+        help="Generate MuJoCo configs instead of Habitat configs",
+    )
+    args = arg_parser.parse_args()
+
     sys.path.insert(0, str(PROJECT_ROOT))
     setup_env()
     register_resolvers()
@@ -76,9 +100,11 @@ if __name__ == "__main__":
     update_snapshots(
         config_dir=conf_dir / "experiment",
         snapshots_dir=snapshots_root,
+        generate_mujoco=args.mujoco,
     )
     update_snapshots(
         config_dir=conf_dir / "experiment" / "tutorial",
         override_prefix="tutorial/",
         snapshots_dir=snapshots_root / "tutorial",
+        generate_mujoco=args.mujoco,
     )
