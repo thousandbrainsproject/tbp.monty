@@ -150,7 +150,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     spec: MjSpec
     model: MjModel
     data: MjData
-
     id_to_semantic_id: dict[ObjectID, SemanticID]
     _data_path: Path | None
     _raise_actuate_missing: bool
@@ -340,13 +339,13 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self._object_count += 1
 
         added_obj = self.model.geom(obj_name)
-        # MuJoCo gives us a NumPy array of 1 element for some reason, so we use the
-        # first element for the type.
-        added_obj_type = added_obj.type[0]
-
+        # MuJoCo gives us NumPy arrays because `geom()` returns an accessor object
+        # for the arrays in the model associated with the geom. We can assume `type`
+        # always returns a single element array and just take the first element.
+        # See https://mujoco.readthedocs.io/en/latest/python.html#named-access
         if semantic_id is None:
-            semantic_id = SemanticID(added_obj_type)
-        object_id = ObjectID(self.model.geom(obj_name).id)
+            semantic_id = SemanticID(added_obj.type[0])
+        object_id = ObjectID(added_obj.id)
         self.id_to_semantic_id[object_id] = semantic_id
 
         return ObjectInfo(
