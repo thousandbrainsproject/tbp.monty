@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.hydra import hydrate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -64,8 +65,7 @@ class RunParallelTest(unittest.TestCase):
     def test_run_parallel_equals_serial_for_various_n_eval_epochs(self):
         # serial run
         cfg = self.supervised_pre_training_cfg
-        exp = hydra.utils.instantiate(cfg.experiment)
-        exp._recreation_config = cfg.experiment["config"]["monty_config"]
+        exp = hydrate_experiment(cfg.experiment)
         with exp:
             exp.run()
 
@@ -116,8 +116,7 @@ class RunParallelTest(unittest.TestCase):
         # n_eval_epochs == len(eval_rotations)
         ###
         # serial run
-        exp = hydra.utils.instantiate(self.eval_cfg.experiment)
-        exp._recreation_config = self.eval_cfg.experiment["config"]["monty_config"]
+        exp = hydrate_experiment(self.eval_cfg.experiment)
         with exp:
             exp.run()
 
@@ -154,8 +153,7 @@ class RunParallelTest(unittest.TestCase):
         # n_eval_epochs < len(eval_rotations)
         ###
         # serial run
-        exp = hydra.utils.instantiate(self.eval_lt_cfg.experiment)
-        exp._recreation_config = self.eval_lt_cfg.experiment["config"]["monty_config"]
+        exp = hydrate_experiment(self.eval_lt_cfg.experiment)
         with exp:
             exp.run()
 
@@ -179,8 +177,7 @@ class RunParallelTest(unittest.TestCase):
         # n_eval_epochs > len(eval_rotations)
         ###
         # serial run
-        exp = hydra.utils.instantiate(self.eval_gt_cfg.experiment)
-        exp._recreation_config = self.eval_gt_cfg.experiment["config"]["monty_config"]
+        exp = hydrate_experiment(self.eval_gt_cfg.experiment)
         with exp:
             exp.run()
 

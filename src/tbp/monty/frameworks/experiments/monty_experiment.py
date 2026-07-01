@@ -59,7 +59,7 @@ class MontyExperiment:
     and episode).
     """
 
-    model: MontyBase | None
+    model: MontyBase
     _recreation_mode: bool
     _recreation_config: DictConfig | None  # dehydrated Monty config
     _recreation_memory: Memento
@@ -72,7 +72,6 @@ class MontyExperiment:
             config: config specifying variables of the experiment.
         """
         self.config = config
-        self.model = None
 
         # Feature flag for "recreation" episode/epoch strategy.
         self._recreation_mode = False
@@ -139,7 +138,7 @@ class MontyExperiment:
         logger.info(self.config)
 
         # TODO: require `_recreation_config` and remove `_init_model()`
-        # assert self._recreation_config
+        # assert self._recreation_config, "`_recreation_config` property not set!"
         if self._recreation_config:
             self.model = self._recreation_monty_factory()
         else:
@@ -484,9 +483,6 @@ class MontyExperiment:
         Returns:
             A new Monty model.
         """
-        assert self._recreation_config is not None, (
-            "`_recreation_config` property not set!"
-        )
         # allow pop() to remove elements from config
         config = dict(self._recreation_config)
         instantiate = hydra.utils.instantiate

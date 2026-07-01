@@ -9,6 +9,8 @@
 
 import pytest
 
+from tbp.monty.hydra import hydrate_experiment
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -62,9 +64,7 @@ class GetGoodViewTest(unittest.TestCase):
             agent_id = config.experiment.config.train_env_interface_args[
                 "positioning_procedures"
             ][0].agent_id
-            exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(
-                config.experiment
-            )
+            exp = hydrate_experiment(config.experiment)
             with exp:
                 exp.experiment_mode = ExperimentMode.TRAIN
                 exp.model.set_experiment_mode(exp.experiment_mode)
@@ -112,9 +112,7 @@ class GetGoodViewTest(unittest.TestCase):
             agent_id = config.experiment.config.train_env_interface_args[
                 "positioning_procedures"
             ][0].agent_id
-            exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(
-                config.experiment
-            )
+            exp = hydrate_experiment(config.experiment)
             with exp:
                 exp.train()
 
