@@ -25,12 +25,14 @@ min_eval_steps: 20
 # v10 : Using models trained without the semantic sensor
 # v11 : v10 trained on standard TBP benchmark infrastructure as of Nov 2025
 # v12 : v11 with resampling experiment renamed to burst sampling
-pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v12}
+# v13 : Added supervised_pretraining_10distinctobj_vocus2
+pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
 
 # v1 : Trained on version 1.0 of the compositional objects dataset (logos had transparent backgrounds)
 # v2 : Trained on version 1.1 of the compositional objects dataset (logos on white "stickers")
 # v3 : Trained after fixing the monolithic experiments connectivity issues (PR#942)
-compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v3}
+# v4 : Trained after compositional benchmark config refactor (PR#1070)
+compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v4}
 
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.

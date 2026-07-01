@@ -96,7 +96,7 @@ class NoopAgentTest(unittest.TestCase):
             assert rgba.min() == 0
             assert rgba.max() == 255
 
-    def test_agent_observation_multiple_resolutions(self):
+    def test_agent_observation_multiple_resolutions(self) -> None:
         """Test two sensors with different resolutions.
 
         MuJoCo camera objects have a "resolution" attribute that doesn't do anything.
