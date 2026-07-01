@@ -81,11 +81,15 @@ class NoResetEvidenceLMTest(BaseGraphTest):
         unsupervised Inference Experiment. Disabling the reset logic does not support
         training at the moment.
         """
-        train_exp = hydra.utils.instantiate(self.pretraining_cfg.experiment)
+        train_cfg = self.pretraining_cfg
+        train_exp = hydra.utils.instantiate(train_cfg.experiment)
+        train_exp._recreation_config = train_cfg.experiment["config"]["monty_config"]
         with train_exp:
             train_exp.run()
 
-        eval_exp = hydra.utils.instantiate(self.unsupervised_cfg.experiment)
+        eval_cfg = self.unsupervised_cfg
+        eval_exp = hydra.utils.instantiate(eval_cfg.experiment)
+        eval_exp._recreation_config = eval_cfg.experiment["config"]["monty_config"]
         with eval_exp:
             # load the eval experiment with the pretrained models
             pretrained_models = train_exp.model.learning_modules[0].state_dict()
