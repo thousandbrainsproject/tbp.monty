@@ -40,7 +40,7 @@ def update_snapshots(
         override_prefix: Prefix for the override value
             (e.g. "tutorial/" or "evidence_lm/").
         snapshots_dir: The directory to write the snapshots to.
-        generate_mujoco: Whether to we're generating MuJoCo or Habitat snapshots.
+        generate_mujoco: Whether we're generating MuJoCo or Habitat snapshots.
     """
     snapshots_dir.mkdir(parents=True, exist_ok=True)
     snapshot_names = {s.name for s in snapshots_dir.glob("*.yaml")}
