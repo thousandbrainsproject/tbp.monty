@@ -11,10 +11,13 @@ from __future__ import annotations
 import contextlib
 import importlib
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
+import hydra
 import numpy as np
 from omegaconf import OmegaConf
+
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 
 
 def monty_class_resolver(class_name: str) -> type:
@@ -72,3 +75,10 @@ def register_resolvers() -> None:
     for name, resolver in resolvers.items():
         with contextlib.suppress(ValueError):
             OmegaConf.register_new_resolver(name, resolver)
+
+
+def hydrate_experiment(cfg_exp: Mapping[str, Any]) -> MontyExperiment:
+    """Return MontyExperiment initialized by Hydra configuration."""
+    exp: MontyExperiment = hydra.utils.instantiate(cfg_exp)
+    exp._recreation_config = cfg_exp["config"]["monty_config"]
+    return exp

@@ -16,7 +16,7 @@ from pathlib import Path
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
-from tbp.monty.hydra import register_resolvers
+from tbp.monty.hydra import hydrate_experiment, register_resolvers
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +60,7 @@ def main(cfg: DictConfig):
 
     cfg.experiment.config.logging.output_dir = str(output_dir_from_run_name(cfg))
 
-    experiment = hydra.utils.instantiate(cfg.experiment)
-    experiment._recreation_config = cfg.experiment["config"]["monty_config"]
+    experiment = hydrate_experiment(cfg.experiment)
     # experiment._recreation_mode = True
     start_time = time.time()
     with experiment:

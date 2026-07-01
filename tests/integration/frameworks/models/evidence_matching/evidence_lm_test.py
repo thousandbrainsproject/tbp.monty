@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.hydra import hydrate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -74,13 +75,13 @@ class EvidenceLMTest(BaseGraphTest):
         shutil.rmtree(self.output_dir)
 
     def test_can_run_evidence_experiment(self):
-        exp = hydra.utils.instantiate(self.evidence_cfg.experiment)
+        exp = hydrate_experiment(self.evidence_cfg.experiment)
         with exp:
             exp.run()
 
     def test_fixed_actions_evidence(self):
         """Test 3 train and 3 eval epochs with 2 objects and 2 rotations."""
-        exp = hydra.utils.instantiate(self.fixed_actions_evidence_cfg.experiment)
+        exp = hydrate_experiment(self.fixed_actions_evidence_cfg.experiment)
         with exp:
             exp.run()
 
@@ -110,7 +111,7 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_pre_episode_raises_error_when_no_object_is_present(self):
         """Test that pre_episode raises an error when no object is present."""
-        exp = hydra.utils.instantiate(self.fixed_actions_evidence_cfg.experiment)
+        exp = hydrate_experiment(self.fixed_actions_evidence_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -125,7 +126,7 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_moving_off_object(self):
         """Test logging when moving off the object for some steps during an episode."""
-        exp = hydra.utils.instantiate(self.evidence_off_object_cfg.experiment)
+        exp = hydrate_experiment(self.evidence_off_object_cfg.experiment)
         with exp:
             # First episode will be used to learn object (no_match is triggered before
             # min_steps is reached and the sensor moves off the object). In the second
@@ -200,7 +201,7 @@ class EvidenceLMTest(BaseGraphTest):
         )
 
     def test_evidence_time_out(self):
-        exp = hydra.utils.instantiate(self.evidence_times_out_cfg.experiment)
+        exp = hydrate_experiment(self.evidence_times_out_cfg.experiment)
         with exp:
             exp.run()
 
@@ -256,7 +257,7 @@ class EvidenceLMTest(BaseGraphTest):
     def test_evidence_confused_logging(self):
         # When the algorithm evolves, this scenario may not lead to confusion
         # anymore. Setting min_steps would also avoid this, probably.
-        exp = hydra.utils.instantiate(self.fixed_actions_evidence_cfg.experiment)
+        exp = hydrate_experiment(self.fixed_actions_evidence_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -308,7 +309,7 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_uniform_initial_poses(self):
         """Test same scenario as test_fixed_actions_evidence with uniform poses."""
-        exp = hydra.utils.instantiate(self.uniform_initial_poses_cfg.experiment)
+        exp = hydrate_experiment(self.uniform_initial_poses_cfg.experiment)
         with exp:
             exp.run()
 
@@ -322,7 +323,7 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_fixed_initial_poses(self):
         """Test same scenario as test_fixed_actions_evidence with predefined poses."""
-        exp = hydra.utils.instantiate(self.fixed_possible_poses_cfg.experiment)
+        exp = hydrate_experiment(self.fixed_possible_poses_cfg.experiment)
         with exp:
             exp.run()
 
@@ -335,7 +336,7 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_can_run_with_no_features(self):
         """Standard evaluation setup but using only pose features."""
-        exp = hydra.utils.instantiate(self.no_features_cfg.experiment)
+        exp = hydrate_experiment(self.no_features_cfg.experiment)
         with exp:
             exp.run()
 
@@ -348,7 +349,7 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_5lm_evidence_experiment(self):
         """Test 5 evidence LMs voting with two evaluation settings."""
-        exp = hydra.utils.instantiate(self.five_lm_cfg.experiment)
+        exp = hydrate_experiment(self.five_lm_cfg.experiment)
         with exp:
             exp.train()
 
@@ -378,7 +379,7 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_5lm_3done_evidence(self):
         """Test 5 evidence LMs voting works with lower min_lms_match setting."""
-        exp = hydra.utils.instantiate(self.five_lm_three_done_cfg.experiment)
+        exp = hydrate_experiment(self.five_lm_three_done_cfg.experiment)
         with exp:
             exp.train()
 
@@ -403,7 +404,7 @@ class EvidenceLMTest(BaseGraphTest):
           protocols for that. Like does the LM still get to vote? Does it still receive
           votes?
         """
-        exp = hydra.utils.instantiate(self.five_lm_off_object_cfg.experiment)
+        exp = hydrate_experiment(self.five_lm_off_object_cfg.experiment)
         with exp:
             exp.run()
 
@@ -460,7 +461,7 @@ class EvidenceLMTest(BaseGraphTest):
     def test_5lms_pre_episode_raises_error_when_no_object_is_present(self):
         """Test that pre_episode raises an error when no object is present."""
         pprint("...parsing experiment...")
-        exp = hydra.utils.instantiate(self.five_lm_cfg.experiment)
+        exp = hydrate_experiment(self.five_lm_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -475,7 +476,7 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_5lm_basic_logging(self):
         """Test that 5LM setup works with BASIC logging and stores correct data."""
-        exp = hydra.utils.instantiate(self.five_lm_basic_logging_cfg.experiment)
+        exp = hydrate_experiment(self.five_lm_basic_logging_cfg.experiment)
         with exp:
             exp.run()
             for key in [
@@ -500,7 +501,7 @@ class EvidenceLMTest(BaseGraphTest):
 
         Testing with 5LMs since voting also uses multithreading.
         """
-        exp = hydra.utils.instantiate(self.five_lm_no_threading_cfg.experiment)
+        exp = hydrate_experiment(self.five_lm_no_threading_cfg.experiment)
         with exp:
             exp.run()
 
@@ -516,7 +517,7 @@ class EvidenceLMTest(BaseGraphTest):
 
         Testing with 5LMs since voting also uses max_nneighbors.
         """
-        exp = hydra.utils.instantiate(self.five_lm_maxnn1.experiment)
+        exp = hydrate_experiment(self.five_lm_maxnn1.experiment)
         with exp:
             exp.run()
 
@@ -529,7 +530,7 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_can_run_with_bounded_evidence_5lms(self):
         """Standard evaluation setup with 5lm and bounded evidence."""
-        exp = hydra.utils.instantiate(self.five_lm_bounded.experiment)
+        exp = hydrate_experiment(self.five_lm_bounded.experiment)
         with exp:
             exp.run()
 
@@ -548,7 +549,7 @@ class EvidenceLMTest(BaseGraphTest):
         the current test setup we have too few too similar objects to set parameters
         in a good way.
         """
-        exp = hydra.utils.instantiate(self.noise_mixin_cfg.experiment)
+        exp = hydrate_experiment(self.noise_mixin_cfg.experiment)
         with exp:
             exp.run()
 
@@ -581,7 +582,7 @@ class EvidenceLMTest(BaseGraphTest):
 
         TODO: Make this test run faster
         """
-        exp = hydra.utils.instantiate(self.noisy_sensor_cfg.experiment)
+        exp = hydrate_experiment(self.noisy_sensor_cfg.experiment)
         with exp:
             exp.run()
 
