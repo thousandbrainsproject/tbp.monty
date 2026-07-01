@@ -137,8 +137,9 @@ class MontyExperiment:
 
         # TODO: require `_recreation_config` and remove `_init_model()`
         # assert self._recreation_config, "`_recreation_config` property not set!"
+        # self._recreation_monty_factory()
         if self._recreation_config:
-            self.model = self._recreation_monty_factory()
+            self._recreation_monty_factory()
         else:
             self.model = self._init_model(config["monty_config"])
 
@@ -472,14 +473,11 @@ class MontyExperiment:
     # Methods for running the experiment
     ####
 
-    def _recreation_monty_factory(self):
+    def _recreation_monty_factory(self) -> None:
         """Create a Monty model from dehydrated config.
 
         Note: This method is mostly adapted from `init_model()`.
         The duplication of logic should eventually be removed.
-
-        Returns:
-            A new Monty model.
         """
         # allow pop() to remove elements from config
         config = dict(self._recreation_config)
@@ -526,7 +524,7 @@ class MontyExperiment:
             )
             self.max_total_steps = new_max_steps
 
-        return model
+        self.model = model
 
     def _recreation_snapshot(self) -> None:
         """Capture episodic state of Monty model."""
