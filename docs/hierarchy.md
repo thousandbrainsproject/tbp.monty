@@ -133,7 +133,7 @@
   - [speed-detection-to-adjust-timer](future-work/learning-module-improvements/speed-detection-to-adjust-timer.md)
 - [motor-system-improvements](future-work/motor-system-improvements.md)
   - [implement-switching-between-learning-and-inference-focused-policies](future-work/motor-system-improvements/implement-switching-between-learning-and-inference-focused-policies.md)
-  - [bottom-up-exploration-policy-for-surface-agent](future-work/motor-system-improvements/bottom-up-exploration-policy-for-surface-agent.md)
+  - [model-free-distant-agent-exploration-policy](future-work/motor-system-improvements/model-free-distant-agent-exploration-policy.md)
   - [model-based-exploration-policy](future-work/motor-system-improvements/model-based-exploration-policy.md)
   - [implement-efficient-saccades-driven-by-model-free-and-model-based-signals](future-work/motor-system-improvements/implement-efficient-saccades-driven-by-model-free-and-model-based-signals.md)
   - [learn-policy-using-rl](future-work/motor-system-improvements/learn-policy-using-rl.md)
