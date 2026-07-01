@@ -41,6 +41,9 @@ class Message:
         use_state: boolean indicating whether the message should be used or not.
         sender_id: string identifying the sender of the message.
         sender_type: string identifying the type of sender. Can be "SM" or "LM".
+        contains_features: boolean indicating whether the message carries features
+            or is a location-only message that only syncs the receiver's sense of
+            the agent location.
     """
 
     def __init__(
@@ -53,6 +56,7 @@ class Message:
         use_state: bool,
         sender_id: str,
         sender_type: Literal["SM", "LM"],
+        contains_features: bool = True,
     ):
         """Initialize a message."""
         self.location = location
@@ -63,15 +67,17 @@ class Message:
         self.use_state = use_state
         self.sender_id = sender_id
         self.sender_type = sender_type
+        self.contains_features = contains_features
         self._set_allowable_sender_types()
         if self.use_state:
             self._check_all_attributes()
 
     def __repr__(self):
         """Return a string representation of the object."""
+        location = np.round(self.location, 3) if self.location is not None else None
         repr_string = (
             f"Message from {self.sender_id}:\n"
-            f"   Location: {np.round(self.location, 3)}.\n"
+            f"   Location: {location}.\n"
             f"   Morphological Features: \n"
         )
         if self.morphological_features is not None:
@@ -196,14 +202,18 @@ class Message:
             "pose_fully_defined must be a boolean but type is "
         )
         f"{type(self.morphological_features['pose_fully_defined'])}"
-        assert self.location.shape == (3,), (
-            f"Location must be a 3D vector but shape is {self.location.shape}"
-        )
+        if self.location is not None:
+            assert self.location.shape == (3,), (
+                f"Location must be a 3D vector but shape is {self.location.shape}"
+            )
         assert self.confidence >= 0 and self.confidence <= 1, (
             f"Confidence must be in [0,1] but is {self.confidence}"
         )
         assert isinstance(self.use_state, bool), (
             f"use_state must be a boolean but is {type(self.use_state)}"
+        )
+        assert isinstance(self.contains_features, bool), (
+            f"contains_features must be a boolean but is {type(self.contains_features)}"
         )
         assert isinstance(self.sender_id, str), (
             f"sender_id must be string but is {type(self.sender_id)}"

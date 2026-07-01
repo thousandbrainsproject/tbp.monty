@@ -181,7 +181,7 @@ class GraphLearningTest(BaseGraphTest):
                     len(
                         exp.model.learning_modules[
                             0
-                        ].buffer.get_all_locations_on_object(input_channel="first")
+                        ].buffer.get_all_locations_on_object()
                     ),
                     "buffer does not contain the right amount of locations.",
                 )
@@ -458,11 +458,7 @@ class GraphLearningTest(BaseGraphTest):
             # the object that we return to
             exp.run()
             self.assertEqual(
-                len(
-                    exp.model.learning_modules[0].buffer.get_all_locations_on_object(
-                        input_channel="patch"
-                    )
-                ),
+                len(exp.model.learning_modules[0].buffer.get_all_locations_on_object()),
                 len(
                     exp.model.learning_modules[0].buffer.get_all_features_on_object()[
                         "patch"
@@ -583,7 +579,7 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm.detected_object = obj_name
         graph_lm.detected_rotation_r = None
         graph_lm.buffer.stats["detected_location_rel_body"] = (
-            graph_lm.buffer.get_current_location(input_channel="first")
+            graph_lm.buffer.get_current_location()
         )
 
         graph_lm.update_ltm_from_stm()

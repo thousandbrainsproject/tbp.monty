@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from typing import Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -506,18 +507,15 @@ class EvidenceGraphLM(GraphLM):
         # resolution of where on a compositional object we are (in this lm). Would
         # also require update in terminal condition re. path_similarity_th.
         # object_loc_rel_body = (
-        #     self.buffer.get_current_location(input_channel="first") - mlh["location"]
+        #     self.buffer.get_current_location() - mlh["location"]
         # )
         return Message(
             # Same as input location from patch (rel body)
-            # NOTE: Just for common format at the moment, movement information will be
-            # taken from the sensor. For higher level LMs, we may want to transmit the
-            # motor efference copy here.
+            # NOTE: The receiving LM extracts the location information directly from
+            # the SM, so we set the location to `None` here.
             # TODO: get motor efference copy here. Need to refactor motor command
             # selection for this.
-            # location rel. body -> same as sensor input to higher LM (assuming they are
-            # colocated) so it is not used.
-            location=self.buffer.get_current_location(input_channel="first"),
+            location=None,
             morphological_features={
                 "pose_vectors": pose_features,
                 "pose_fully_defined": not self._enough_symmetry_evidence_accumulated(),
@@ -622,9 +620,7 @@ class EvidenceGraphLM(GraphLM):
                 lm_episode_stats = {
                     "detected_path": mlh["location"],
                     "detected_location_on_model": mlh["location"],
-                    "detected_location_rel_body": self.buffer.get_current_location(
-                        input_channel="first"
-                    ),
+                    "detected_location_rel_body": self.buffer.get_current_location(),
                     "detected_rotation": r_euler,
                     "detected_rotation_quat": r_inv.as_quat(),
                     "detected_scale": 1,  # TODO: scale doesn't work yet
@@ -650,10 +646,19 @@ class EvidenceGraphLM(GraphLM):
     def get_current_mlh(self):
         """Return the current most likely hypothesis of the learning module.
 
+        The MLH location is refreshed from the current hypothesis space so that it
+        reflects any displacement applied since the MLH was last computed (e.g. on
+        location-only steps). The MLH identity is invariant under displacement, so
+        its stored index still points at the same hypothesis.
+
         Returns:
-            dict with keys: graph_id, location, rotation, scale, evidence
+            dict with keys: graph_id, mlh_id, location, rotation, scale, evidence
         """
-        return self.current_mlh
+        mlh = self.current_mlh
+        graph_id = mlh["graph_id"]
+        if graph_id in self._hypotheses and "mlh_id" in mlh:
+            mlh["location"] = self._hypotheses[graph_id].locations[mlh["mlh_id"]]
+        return mlh
 
     def get_mlh_for_object(self, object_id):
         """Get mlh for a specific object ID.
@@ -835,6 +840,38 @@ class EvidenceGraphLM(GraphLM):
             self.previous_mlh = self.current_mlh
             self.current_mlh = self._calculate_most_likely_hypothesis()
 
+    def _location_only_step(self, percepts: Sequence[Message]) -> None:
+        """Displace all hypotheses by the incremental movement; no evidence update.
+
+        Keeps the hypothesis space synced with the sensor's movements on steps that
+        carry a new location but no features. Evidence is not changed.
+
+        Args:
+            percepts: Sequence of Message objects from the current step.
+        """
+        if self.buffer.last_location is None:
+            # No reference location yet (no feature step has run; no hypotheses exist).
+            return
+
+        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
+        current_location = np.mean([p.location for p in sm_percepts], axis=0)
+        displacement = current_location - self.buffer.last_location
+        self._displace_all_hypotheses(displacement)
+        self.buffer.last_location = current_location.copy()
+
+    def _displace_all_hypotheses(self, displacement: npt.NDArray[np.float64]) -> None:
+        """Displace every initialized graph's hypotheses.
+
+        Evidence is not changed, so the MLH identity is invariant under displacement.
+
+        Args:
+            displacement: Incremental movement to apply to all hypothesis locations.
+        """
+        for graph_id, hypotheses in self._hypotheses.items():
+            self._hypotheses[graph_id] = self.hypotheses_updater.displace_hypotheses(
+                hypotheses, displacement, graph_id
+            )
+
     def _update_evidence(
         self,
         features: dict,
@@ -868,11 +905,13 @@ class EvidenceGraphLM(GraphLM):
             evidence_all_channels=self._hypotheses[graph_id].evidence,
         )
 
+        displaced = self.hypotheses_updater.displace_hypotheses(
+            self._hypotheses[graph_id], displacement, graph_id
+        )
         hypotheses_update, hypotheses_update_telemetry = (
-            self.hypotheses_updater.update_hypotheses(
-                hypotheses=self._hypotheses[graph_id],
+            self.hypotheses_updater.update_evidence(
+                hypotheses=displaced,
                 features=features,
-                displacement=displacement,
                 graph_id=graph_id,
                 evidence_update_threshold=update_threshold,
             )
@@ -1194,6 +1233,7 @@ class EvidenceGraphLM(GraphLM):
         graph_hyps = self._hypotheses[graph_id]
         return {
             "graph_id": graph_id,
+            "mlh_id": mlh_id,
             "location": graph_hyps.locations[mlh_id],
             "rotation": Rotation.from_matrix(graph_hyps.poses[mlh_id]),
             "scale": self.get_object_scale(graph_id),
@@ -1207,7 +1247,7 @@ class EvidenceGraphLM(GraphLM):
             graph_id: If provided, find mlh pose for this object. If graph_id is None
                 look through all objects and finds most likely one.
 
-        Returns dict with keys: object_id, location, rotation, scale, evidence
+        Returns dict with keys: graph_id, mlh_id, location, rotation, scale, evidence
         """
         mlh = {}
         if graph_id is not None:

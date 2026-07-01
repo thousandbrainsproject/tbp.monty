@@ -257,8 +257,18 @@ class MontyForGraphMatching(MontyBase):
                 lm_step_method(ctx, sensory_inputs)
                 if self.step_type == "matching_step":
                     logger.debug(f"Stepping learning module {i}")
+
+                # A step is a feature step only if at least one SM channel delivered
+                # features. LM output messages default contains_features=True, so the
+                # gate is computed from SM percepts only (otherwise an SM location-only
+                # step paired with an LM output would count as a feature step).
+                feature_step = any(
+                    obs.contains_features
+                    for obs in sensory_inputs
+                    if obs.sender_type == "SM"
+                )
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
-                    lm_processed=True
+                    lm_processed=feature_step
                 )
             else:
                 if self.step_type == "matching_step":
@@ -619,6 +629,11 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Update the possible matches given an observation."""
+        if not any(p.contains_features for p in percepts if p.sender_type == "SM"):
+            # Handle without appending to buffer, matching, or stepping the GSG.
+            self._location_only_step(percepts)
+            return
+
         first_movement_detected = self._agent_moved_since_reset()
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
@@ -629,15 +644,17 @@ class GraphLM(LearningModule):
         else:
             logger.debug("we have not moved yet.")
 
+        feature_percepts = [p for p in percepts if p.contains_features]
+
         self._compute_possible_matches(
-            ctx, percepts, first_movement_detected=first_movement_detected
+            ctx, feature_percepts, first_movement_detected=first_movement_detected
         )
 
         if len(self.get_possible_matches()) == 0:
             self.set_individual_ts(terminal_state="no_match")
 
         if self.gsg is not None:
-            self.gsg.step(ctx, percepts)
+            self.gsg.step(ctx, feature_percepts)
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
@@ -648,9 +665,26 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
+        if not any(p.contains_features for p in percepts if p.sender_type == "SM"):
+            # Handle without appending to buffer, matching, or stepping the GSG.
+            self._location_only_step(percepts)
+            return
+
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(percepts)
+
+    def _location_only_step(self, percepts: Sequence[Message]) -> None:
+        """Handle a step that carries a new location but no features.
+
+        Base behavior is a no-op: non-evidence LMs don't advance `last_location` on
+        location-only steps, so it stays at their last feature step and displacement
+        stays "movement since last feature". Subclasses with a displaceable hypothesis
+        space (EvidenceGraphLM) override this to displace hypotheses.
+
+        Args:
+            percepts: Sequence of Message objects from the current step.
+        """
 
     def update_ltm_from_stm(self) -> None:
         """If training, update memory from buffer."""
@@ -729,7 +763,7 @@ class GraphLM(LearningModule):
                 self.buffer.get_num_observations_on_object() > 0
             ):  # lm has gotten input during episode
                 self.buffer.stats["detected_location_rel_body"] = (
-                    self.buffer.get_current_location(input_channel="first")
+                    self.buffer.get_current_location()
                 )
         # 1 possible match
         elif (
@@ -1147,7 +1181,7 @@ class GraphMemory(LMMemory):
                     input_channel_features,
                     input_channel_locations,
                 ) = self._extract_entries_with_content(
-                    features[input_channel], locations[input_channel]
+                    features[input_channel], locations
                 )
                 # Update graph
                 if (

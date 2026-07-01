@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Sequence
 
 import numpy as np
 
@@ -133,7 +133,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         super().reset()
         self.last_location = None
 
-    def _add_displacements(self, percepts: list[Message]) -> list[Message]:
+    def _add_displacements(self, percepts: Sequence[Message]) -> Sequence[Message]:
         """Add displacements to the current percept.
 
         Computes the displacement vector by subtracting the current location from the
@@ -159,6 +159,26 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
             p.set_displacement(displacement)
         self.last_location = current_location.copy()
         return percepts
+
+    def _location_only_step(self, percepts: Sequence[Message]) -> None:
+        """Displace hypotheses on a location-only step from the LM-level last location.
+
+        Mirrors `EvidenceGraphLM._location_only_step` but reads and advances the
+        LM-level `self.last_location` rather than `self.buffer.last_location`, matching
+        this class's `_add_displacements`. The LM-level reference survives the
+        between-object `buffer.reset()` used in no-reset inference.
+
+        Args:
+            percepts: Sequence of Message objects from the current step.
+        """
+        if self.last_location is None:
+            return
+
+        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
+        current_location = np.mean([p.location for p in sm_percepts], axis=0)
+        displacement = current_location - self.last_location
+        self._displace_all_hypotheses(displacement)
+        self.last_location = current_location.copy()
 
     def _agent_moved_since_reset(self):
         """Overwrites the logic of whether the agent has moved since the last reset.
