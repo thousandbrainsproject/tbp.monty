@@ -32,7 +32,7 @@ from tbp.monty.frameworks.environment_utils.transforms import (
     MissingToMaxDepth,
 )
 from tbp.monty.frameworks.environments.object_init_samplers import Predefined
-from tbp.monty.frameworks.experiments.monty_experiment import ExperimentMode
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.salience.motor_policy import LookAtGoal
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.simulators.habitat.agents import MultiSensorAgent

@@ -5,6 +5,10 @@ title: Common Issues (And how to Fix Them)
 
 Below we highlight a few issues that often crop up and can present problems when they are not otherwise apparent:
 
+## Visualization
+
+When debugging, it can help to watch Monty run step-by-step. See [Live Visualization with `tbp.teleop`](logging-and-analysis.md#live-visualization-with-tbpteleop) for a tool that visualizes the simulator, Monty's graphs and hypotheses, and lets you interactively control the agent's actions.
+
 ## Quaternions
 
 Be aware that in Numpy, and in the saved CSV result files, quaternions follow the wxyz format, where "w" is the real component. Thus the identity rotation would be [1, 0, 0, 0]. In contrast however, `Scipy.Rotation` expects them to be in xyzw format. When operating with quaternions, it is therefore important to be aware of what format you should be using for the particular setting.
