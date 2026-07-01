@@ -105,7 +105,7 @@ The following items focus on concrete steps to get capabilities 1-3 into Monty.
 * Add 'state' to Monty's model representation.
   * [Add state conditioning to models learned in LMs.](../future-work/learning-module-improvements/include-state-in-models.md)
   * [Extend hypothesis representation and updates to incorporate model state.](../future-work/learning-module-improvements/include-state-in-hypotheses.md)
-  * [Extend the CMP output to incorporate model state.](../future-work/cmp-hierarchy-improvements/include-state-in-CMP.md)
+  * [Extend the CMP output to incorporate model state.](../future-work/cmp-hierarchy-improvements/include-state-in-cmp.md)
   * [Update the voting algorithm to take model state into account.](../future-work/voting-improvements/vote-on-state.md)
 * Add time interval representation to Monty
   * [Add a global interval timer and provide its input to LMs.](../future-work/cmp-hierarchy-improvements/global-interval-timer.md)
