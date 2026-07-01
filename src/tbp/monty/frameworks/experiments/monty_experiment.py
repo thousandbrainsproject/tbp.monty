@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import copy
 import datetime
 import logging
 import logging.config
@@ -137,13 +136,8 @@ class MontyExperiment:
         self.init_loggers(self.config["logging"])
         logger.info(self.config)
 
-        # TODO: require `_recreation_config` and remove `_init_model()`
-        # assert self._recreation_config, "`_recreation_config` property not set!"
-        # self._recreation_monty_factory()
-        if self._recreation_config:
-            self._recreation_monty_factory()
-        else:
-            self.model = self._init_model(config["monty_config"])
+        # Create a fresh Monty instance
+        self._recreation_monty_factory()
 
         if self.model_path:
             # Load from checkpoint
@@ -158,61 +152,6 @@ class MontyExperiment:
         self.load_environment_interfaces(config)
         self.init_monty_data_loggers(self.config["logging"])
         self.init_counters()
-
-    def _init_model(self, monty_config: dict[str, Any]):
-        """Initialize the Monty model.
-
-        Args:
-            monty_config: configuration for the Monty class.
-
-        Returns:
-            Monty class instance
-        """
-        # Make monty_config a dict from a DictConfig, so we can edit it.
-        monty_config = dict(copy.deepcopy(monty_config))
-
-        learning_modules = monty_config.pop("learning_modules")
-        for lm_id, lm in learning_modules.items():
-            lm.learning_module_id = lm_id
-
-        sensor_modules = monty_config.pop("sensor_modules")
-        motor_system = monty_config.pop("motor_system_config")
-
-        # Get mapping between sensor modules, learning modules and agents
-        lm_len = len(learning_modules)
-        sm_to_lm_matrix = monty_config.pop("sm_to_lm_matrix", [[]] * lm_len)
-        lm_to_lm_matrix = monty_config.pop("lm_to_lm_matrix", [[]] * lm_len)
-        lm_to_lm_vote_matrix = monty_config.pop("lm_to_lm_vote_matrix", [[]] * lm_len)
-        sm_to_agent_dict = monty_config.pop("sm_to_agent_dict")
-
-        # Create monty model
-        # FIXME: Kept for backward compatibility
-        monty_args = monty_config.pop("monty_args", {})
-        monty_class = monty_config.pop("monty_class")
-        model = monty_class(
-            sensor_modules=list(sensor_modules.values()),
-            learning_modules=list(learning_modules.values()),
-            motor_system=motor_system,
-            sm_to_agent_dict=sm_to_agent_dict,
-            sm_to_lm_matrix=sm_to_lm_matrix,
-            lm_to_lm_matrix=lm_to_lm_matrix,
-            lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
-            # Pass any leftover configuration paramters downstream to monty_class
-            **monty_config,
-            # FIXME: Kept for backward compatibility
-            **monty_args,
-        )
-        model.min_lms_match = self.min_lms_match
-
-        if monty_args["num_exploratory_steps"] > self.max_total_steps:
-            new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
-            print(
-                "max_total_steps is set < num_exploratory_steps + max_train_steps."
-                f" Resetting it to {new_max_steps}"
-            )
-            self.max_total_steps = new_max_steps
-
-        return model
 
     def init_env(self, env_init_func, env_init_args):
         self.env = env_init_func(**env_init_args)
@@ -478,9 +417,11 @@ class MontyExperiment:
     def _recreation_monty_factory(self) -> None:
         """Create a Monty model from dehydrated config.
 
-        Note: This method is mostly adapted from `init_model()`.
-        The duplication of logic should eventually be removed.
+        **WARNING:** `self._recreation_config` must be initialized
+        with the dehydrated config before calling this method.
         """
+        assert self._recreation_config, "`_recreation_config` property not set!"
+
         # allow pop() to remove elements from config
         config = dict(self._recreation_config)
         instantiate = hydra.utils.instantiate
