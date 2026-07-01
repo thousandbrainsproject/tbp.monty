@@ -7,7 +7,7 @@ experiment:
       monty_args:
         num_exploratory_steps: 1000
         min_eval_steps: 3
-        min_train_steps: 3
+        min_train_steps: 100
         max_total_steps: 2500
       motor_system_config:
         policy_selector:
@@ -113,7 +113,9 @@ experiment:
       sm_to_lm_matrix:
       - - 0
       - - 1
-      lm_to_lm_matrix: null
+      lm_to_lm_matrix:
+      - []
+      - - 0
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:
@@ -211,6 +213,25 @@ experiment:
       - 004_cube_numenta_horz
       - 007_disk_tbp_horz
       - 009_disk_numenta_horz
+      - 011_cylinder
+      - 016_sphere
+      - 023_mug
+      - 012_cylinder_tbp_horz
+      - 014_cylinder_numenta_horz
+      - 017_sphere_tbp_horz
+      - 019_sphere_numenta_horz
+      - 024_mug_tbp_horz
+      - 026_mug_numenta_horz
+      - 003_cube_tbp_vert
+      - 005_cube_numenta_vert
+      - 008_disk_tbp_vert
+      - 010_disk_numenta_vert
+      - 013_cylinder_tbp_vert
+      - 015_cylinder_numenta_vert
+      - 018_sphere_tbp_vert
+      - 020_sphere_numenta_vert
+      - 025_mug_tbp_vert
+      - 027_mug_numenta_vert
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
         rotations: ${constants.rotations_all}
@@ -236,17 +257,18 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: debugging
-      run_name: supervised_pre_training_objects_with_logos_lvl1_monolithic_models
+      run_name: supervised_pre_training_objects_with_stickers_comp_models
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3
-    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_logos_after_flat_objects/pretrained/
-    min_lms_match: 1
+    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_objects_with_stickers_2d_children/pretrained/
+    min_lms_match: 2
     seed: 42
-    supervised_lm_ids: all
+    supervised_lm_ids:
+    - learning_module_1
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 episodes: all
 num_parallel: 16
@@ -268,7 +290,7 @@ constants:
   - principal_curvatures_log
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
-  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v3}
+  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v4}
   rotations_all_count: 14
   rotations_all:
   - - 0

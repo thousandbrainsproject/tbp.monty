@@ -420,6 +420,9 @@ class ReadMe:
     def correct_file_locations(self, body: str) -> str:
         def replace_path(match):
             matched_text = match.group(0)
+
+            if "check-links-ignore" in matched_text:
+                return matched_text
             if any(placeholder in matched_text for placeholder in IGNORE_DOCS):
                 return matched_text
 
