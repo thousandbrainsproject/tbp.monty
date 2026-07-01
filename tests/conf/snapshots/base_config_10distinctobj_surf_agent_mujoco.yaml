@@ -34,7 +34,7 @@ experiment:
         learning_module_0:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
-            max_nneighbors: 10
+            max_nneighbors: 5
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
           feature_weights:
             patch:
@@ -61,6 +61,8 @@ experiment:
       sensor_modules:
         sensor_module_0:
           _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+          is_surface_sm: true
+          sensor_module_id: patch
           features:
           - pose_vectors
           - pose_fully_defined
@@ -71,23 +73,23 @@ experiment:
           - hsv
           - principal_curvatures
           - principal_curvatures_log
-          sensor_module_id: patch
-          save_raw_obs: false
           delta_thresholds:
             on_object: 0
+            n_steps: 20
+            hsv:
+            - 0.1
+            - 0.1
+            - 0.1
+            pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+            principal_curvatures_log:
+            - 2
+            - 2
             distance: 0.01
-          is_surface_sm: true
-          noise_params:
-            features:
-              pose_vectors: 2
-              hsv: 0.1
-              principal_curvatures_log: 0.1
-              pose_fully_defined: 0.01
-            location: 0.002
+          save_raw_obs: false
         sensor_module_1:
           _target_: tbp.monty.frameworks.models.sensor_modules.Probe
           sensor_module_id: view_finder
-          save_raw_obs: true
+          save_raw_obs: false
       sm_to_agent_dict:
         patch: agent_id_0
         view_finder: agent_id_0
@@ -97,56 +99,46 @@ experiment:
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:
-        objects:
-        - name: coneSolid
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/ycb}
+        agents:
+        - _target_: tbp.monty.simulators.mujoco.agents.SurfaceAgent
+          _partial_: true
+          agent_id: agent_id_0
+          sensor_configs:
+            patch:
+              position:
+              - 0.0
+              - 0.0
+              - 0.0
+              rotation:
+              - 1.0
+              - 0.0
+              - 0.0
+              - 0.0
+              resolution:
+                width: 64
+                height: 64
+              zoom: 10.0
+            view_finder:
+              position:
+              - 0.0
+              - 0.0
+              - 0.03
+              rotation:
+              - 1.0
+              - 0.0
+              - 0.0
+              - 0.0
+              resolution:
+                width: 64
+                height: 64
+              zoom: 1.0
           position:
           - 0.0
           - 1.5
-          - -0.1
-        scene_id: null
-        seed: 42
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/ycb}
-        agents:
-          agent_args:
-            agent_id: agent_id_0
-            sensor_ids:
-            - patch
-            - view_finder
-            height: 0.0
-            position:
-            - 0.0
-            - 1.5
-            - 0.1
-            resolutions:
-            - - 64
-              - 64
-            - - 64
-              - 64
-            positions:
-            - - 0.0
-              - 0.0
-              - 0.0
-            - - 0.0
-              - 0.0
-              - 0.03
-            rotations:
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            semantics:
-            - false
-            - false
-            zooms:
-            - 10.0
-            - 1.0
-            action_space_type: surface_agent
-          agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
-      env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+          - 0.1
+        raise_actuate_missing: false
+      env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}
       transform:
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
         agent_id: agent_id_0
@@ -176,82 +168,16 @@ experiment:
       - mug
       - bowl
       - potted_meat_can
-      - master_chef_can
-      - i_cups
       - spoon
-      - b_cups
-      - pitcher_base
-      - knife
-      - b_marbles
-      - h_cups
       - strawberry
-      - power_drill
-      - padlock
-      - golf_ball
-      - hammer
-      - softball
-      - orange
-      - c_lego_duplo
-      - c_toy_airplane
-      - b_lego_duplo
-      - banana
-      - nine_hole_peg_test
-      - tomato_soup_can
-      - baseball
-      - g_cups
-      - gelatin_box
-      - lemon
-      - plum
-      - racquetball
-      - plate
-      - pudding_box
-      - e_cups
-      - apple
-      - j_cups
-      - foam_brick
-      - large_marker
-      - peach
-      - phillips_screwdriver
-      - a_toy_airplane
-      - e_lego_duplo
-      - sugar_box
-      - a_colored_wood_blocks
-      - c_cups
-      - pear
-      - f_cups
-      - wood_block
-      - d_lego_duplo
-      - b_toy_airplane
-      - b_colored_wood_blocks
-      - g_lego_duplo
-      - a_lego_duplo
-      - mini_soccer_ball
-      - medium_clamp
-      - a_marbles
-      - extra_large_clamp
-      - d_cups
-      - e_toy_airplane
-      - adjustable_wrench
-      - rubiks_cube
-      - f_lego_duplo
-      - a_cups
-      - skillet_lid
-      - sponge
-      - tennis_ball
-      - spatula
-      - d_toy_airplane
-      - chain
-      - scissors
       - mustard_bottle
-      - bleach_cleanser
-      - tuna_fish_can
-      - cracker_box
-      - fork
-      - large_clamp
       - dice
-      - flat_screwdriver
+      - golf_ball
+      - c_lego_duplo
+      - banana
       object_init_sampler:
-        _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
+        _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+        rotations: ${constants.rotations_all}
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
     logging:
       monty_log_level: BASIC
@@ -268,14 +194,14 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
-      run_name: randrot_noise_77obj_surf_agent
+      run_name: base_config_10distinctobj_surf_agent_mujoco
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 5000
     n_train_epochs: 3
-    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_77obj/pretrained/
-    n_eval_epochs: ${constants.rotations_3_count}
+    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+    n_eval_epochs: ${constants.rotations_all_count}
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
@@ -301,7 +227,7 @@ constants:
   - principal_curvatures_log
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
-  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v4}
+  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v3}
   rotations_all_count: 14
   rotations_all:
   - - 0

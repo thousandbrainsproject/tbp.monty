@@ -33,14 +33,26 @@ def assert_graph_object_models_equal(
     if left._graph is None or right._graph is None:
         raise AssertionError("One of the GraphObjectModel instances has no graph.")
 
-    if set(left._graph.keys) != set(right._graph.keys):
+    # Newer versions of torch_geometric change `keys` from a
+    # property to a function.
+    # TODO: remove check and use keys function once upgraded to Python 3.10
+    if callable(left._graph.keys):
+        left_keys = left._graph.keys()
+    else:
+        left_keys = left._graph.keys
+    if callable(right._graph.keys):
+        right_keys = right._graph.keys()
+    else:
+        right_keys = right._graph.keys
+
+    if set(left_keys) != set(right_keys):
         raise AssertionError(
             "The keys of the two GraphObjectModel instances are not equal.\n"
-            f"Left keys: {set(left._graph.keys)}\n"
-            f"Right keys: {set(right._graph.keys)}\n"
+            f"Left keys: {set(left_keys)}\n"
+            f"Right keys: {set(right_keys)}\n"
         )
 
-    for key in left._graph.keys:
+    for key in left_keys:
         v_left, v_right = left._graph[key], right._graph[key]
 
         if torch.is_tensor(v_left):
