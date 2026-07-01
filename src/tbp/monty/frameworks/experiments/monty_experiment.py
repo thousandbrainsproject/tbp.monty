@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import copy
 import datetime
 import logging
 import logging.config
@@ -17,6 +16,7 @@ import pprint
 from pathlib import Path
 from typing import Any, Literal
 
+import hydra
 import numpy as np
 import torch
 from omegaconf import DictConfig
@@ -43,6 +43,7 @@ from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
+from tbp.monty.memento import Memento
 
 __all__ = ["MontyExperiment"]
 
@@ -57,9 +58,12 @@ class MontyExperiment:
     and episode).
     """
 
+    model: MontyBase
     env_interface: Interface | None
 
     _recreation_mode: bool
+    _recreation_config: DictConfig | None  # dehydrated Monty config
+    _recreation_memory: Memento
     _step_hook: StepHook
 
     def __init__(self, config: DictConfig) -> None:
@@ -72,6 +76,8 @@ class MontyExperiment:
 
         # Feature flag for "recreation" episode/epoch strategy.
         self._recreation_mode = False
+        self._recreation_config = None
+        self._recreation_memory = {}
 
         self.rng = np.random.RandomState(config["seed"])
 
@@ -129,77 +135,23 @@ class MontyExperiment:
         """
         self.init_loggers(self.config["logging"])
         logger.info(self.config)
-        self.model: MontyBase = self.init_model(
-            monty_config=config["monty_config"],
-            model_path=self.model_path,
-        )
-        self.load_environment_interfaces(config)
-        self.init_monty_data_loggers(self.config["logging"])
-        self.init_counters()
 
-    def init_model(self, monty_config, model_path=None):
-        """Initialize the Monty model.
+        # Create a fresh Monty instance
+        self._recreation_monty_factory()
 
-        Args:
-            monty_config: configuration for the Monty class.
-            model_path: Optional model checkpoint. Can be full file name or just the
-                directory containing the "model.pt" file saved from a previous run.
-
-        Returns:
-            Monty class instance
-        """
-        # Make monty_config a dict from a DictConfig, so we can edit it.
-        monty_config = dict(copy.deepcopy(monty_config))
-
-        learning_modules = monty_config.pop("learning_modules")
-        for lm_id, lm in learning_modules.items():
-            lm.learning_module_id = lm_id
-
-        sensor_modules = monty_config.pop("sensor_modules")
-        motor_system = monty_config.pop("motor_system_config")
-
-        # Get mapping between sensor modules, learning modules and agents
-        lm_len = len(learning_modules)
-        sm_to_lm_matrix = monty_config.pop("sm_to_lm_matrix", [[]] * lm_len)
-        lm_to_lm_matrix = monty_config.pop("lm_to_lm_matrix", [[]] * lm_len)
-        lm_to_lm_vote_matrix = monty_config.pop("lm_to_lm_vote_matrix", [[]] * lm_len)
-        sm_to_agent_dict = monty_config.pop("sm_to_agent_dict")
-
-        # Create monty model
-        # FIXME: Kept for backward compatibility
-        monty_args = monty_config.pop("monty_args", {})
-        monty_class = monty_config.pop("monty_class")
-        model = monty_class(
-            sensor_modules=list(sensor_modules.values()),
-            learning_modules=list(learning_modules.values()),
-            motor_system=motor_system,
-            sm_to_agent_dict=sm_to_agent_dict,
-            sm_to_lm_matrix=sm_to_lm_matrix,
-            lm_to_lm_matrix=lm_to_lm_matrix,
-            lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
-            # Pass any leftover configuration paramters downstream to monty_class
-            **monty_config,
-            # FIXME: Kept for backward compatibility
-            **monty_args,
-        )
-        model.min_lms_match = self.min_lms_match
-
-        if monty_args["num_exploratory_steps"] > self.max_total_steps:
-            new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
-            print(
-                "max_total_steps is set < num_exploratory_steps + max_train_steps."
-                f" Resetting it to {new_max_steps}"
-            )
-            self.max_total_steps = new_max_steps
-
-        # Load from checkpoint
-        if model_path:
+        if self.model_path:
+            # Load from checkpoint
+            model_path = self.model_path
+            # Can be full file name or just the directory containing
+            # the "model.pt" file saved from a previous run.
             if "model.pt" not in model_path.parts:
                 model_path = model_path / "model.pt"
             state_dict = torch.load(model_path, weights_only=False)
-            model.load_state_dict(state_dict)
+            self.model.load_state_dict(state_dict)
 
-        return model
+        self.load_environment_interfaces(config)
+        self.init_monty_data_loggers(self.config["logging"])
+        self.init_counters()
 
     def init_env(self, env_init_func, env_init_args):
         self.env = env_init_func(**env_init_args)
@@ -462,20 +414,81 @@ class MontyExperiment:
     # Methods for running the experiment
     ####
 
+    def _recreation_monty_factory(self) -> None:
+        """Create a Monty model from dehydrated config.
+
+        **WARNING:** `self._recreation_config` must be initialized
+        with the dehydrated config before calling this method.
+        """
+        assert self._recreation_config, "`_recreation_config` property not set!"
+
+        # allow pop() to remove elements from config
+        config = dict(self._recreation_config)
+        instantiate = hydra.utils.instantiate
+
+        learning_modules = instantiate(config.pop("learning_modules"))
+        for lm_id, lm in learning_modules.items():
+            lm.learning_module_id = lm_id
+
+        sensor_modules = instantiate(config.pop("sensor_modules"))
+        motor_system = instantiate(config.pop("motor_system_config"))
+
+        # Create mapping between sensor modules, learning modules and agents
+        sm_to_lm_matrix = instantiate(config.pop("sm_to_lm_matrix"))
+        lm_to_lm_matrix = instantiate(config.pop("lm_to_lm_matrix"))
+        lm_to_lm_vote_matrix = instantiate(config.pop("lm_to_lm_vote_matrix"))
+        sm_to_agent_dict = instantiate(config.pop("sm_to_agent_dict"))
+
+        # Create monty model
+        # FIXME: Kept for backward compatibility
+        monty_args = config.pop("monty_args", {})
+
+        monty_class = config.pop("monty_class")
+        model = monty_class(
+            sensor_modules=list(sensor_modules.values()),
+            learning_modules=list(learning_modules.values()),
+            motor_system=motor_system,
+            sm_to_agent_dict=sm_to_agent_dict,
+            sm_to_lm_matrix=sm_to_lm_matrix,
+            lm_to_lm_matrix=lm_to_lm_matrix,
+            lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
+            # Pass any leftover configuration paramters downstream to monty_class
+            **config,
+            # FIXME: Kept for backward compatibility
+            **monty_args,
+        )
+        model.min_lms_match = self.min_lms_match  # FIXME: injected Experiment config?
+
+        if monty_args["num_exploratory_steps"] > self.max_total_steps:
+            new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
+            print(
+                "max_total_steps is set < num_exploratory_steps + max_train_steps."
+                f" Resetting it to {new_max_steps}"
+            )
+            self.max_total_steps = new_max_steps
+
+        self.model = model
+
     def _recreation_snapshot(self) -> None:
+        """Capture episodic state of Monty model."""
         if self._recreation_mode:
-            self.model.update_ltm()
-            # TODO: create a snapshot of the episodic state
-        else:
-            self.model.update_ltm()
+            self._recreation_memory = self.model.snapshot_ltm()
+            print(f"_recreation_snapshot: {self._recreation_memory}")  # FIXME: remove!
 
     def _recreation_restore(self) -> None:
+        """Recreate episodic state of Monty model."""
         if self._recreation_mode:
-            # TODO: restore episodic state from the snapshot
-            self.model.set_experiment_mode(self.experiment_mode)
-            self.model.reset()
+            self.model = self._recreation_monty_factory()
+            print(f"_recreation_restore: {self._recreation_memory}")  # FIXME: remove!
+            if self._recreation_memory:
+                self.model.restore_ltm(self._recreation_memory)
+            self.logger_handler.model = self.model
         else:
             self.model.reset()
+        self.model.set_experiment_mode(self.experiment_mode)
+        assert self.model.experiment_mode == self.experiment_mode, (
+            f"{self.model.experiment_mode} should be {self.experiment_mode}"
+        )
 
     def pre_step(self, _step, _observation) -> None:
         """Hook for anything you want to do before a step."""
@@ -566,6 +579,7 @@ class MontyExperiment:
         """
         self.logger_handler.post_episode(self.logger_args)
 
+        self.model.update_ltm()
         self._recreation_snapshot()
 
         if self.experiment_mode is ExperimentMode.TRAIN:

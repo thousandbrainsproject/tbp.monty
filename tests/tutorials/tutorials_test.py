@@ -10,6 +10,7 @@
 
 import pytest
 
+from tbp.monty.hydra import hydrate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -31,7 +32,7 @@ class TutorialsTest(TestCase):
                 config_name="experiment",
                 overrides=["experiment=tutorial/first_experiment"],
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = hydrate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -44,7 +45,7 @@ class TutorialsTest(TestCase):
             config.experiment.config.logging.output_dir = str(
                 output_dir_from_run_name(config)
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = hydrate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -60,7 +61,7 @@ class TutorialsTest(TestCase):
                     "experiment.config.max_total_steps=3",
                 ],
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = hydrate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -76,7 +77,7 @@ class TutorialsTest(TestCase):
                     "experiment.config.max_total_steps=3",
                 ],
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = hydrate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -89,7 +90,7 @@ class TutorialsTest(TestCase):
             config.experiment.config.logging.output_dir = str(
                 output_dir_from_run_name(config)
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = hydrate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -103,7 +104,7 @@ class TutorialsTest(TestCase):
                     "experiment.config.max_total_steps=3",
                 ],
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = hydrate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -115,7 +116,7 @@ class TutorialsTest(TestCase):
             )
             inference_output_dir = str(output_dir_from_run_name(config))
             config.experiment.config.logging.output_dir = inference_output_dir
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = hydrate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -130,7 +131,7 @@ class TutorialsTest(TestCase):
                     "experiment.config.max_total_steps=3",
                 ],
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = hydrate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -150,6 +151,6 @@ class TutorialsTest(TestCase):
                     "experiment.config.monty_config.monty_args.num_exploratory_steps=3",
                 ],
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = hydrate_experiment(config.experiment)
             with experiment:
                 experiment.run()

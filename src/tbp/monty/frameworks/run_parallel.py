@@ -44,7 +44,7 @@ from tbp.monty.frameworks.utils.logging_utils import (
     maybe_rename_existing_dir,
     maybe_rename_existing_file,
 )
-from tbp.monty.hydra import register_resolvers
+from tbp.monty.hydra import hydrate_experiment, register_resolvers
 
 __all__ = ["main"]
 
@@ -373,7 +373,7 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
 def single_train(experiment):
     output_dir = Path(experiment["config"]["logging"]["output_dir"])
     output_dir.mkdir(exist_ok=True, parents=True)
-    exp = hydra.utils.instantiate(experiment)
+    exp = hydrate_experiment(experiment)
     with exp:
         print("---------training---------")
         exp.run()
@@ -382,7 +382,7 @@ def single_train(experiment):
 def single_evaluate(experiment):
     output_dir = Path(experiment["config"]["logging"]["output_dir"])
     output_dir.mkdir(exist_ok=True, parents=True)
-    exp = hydra.utils.instantiate(experiment)
+    exp = hydrate_experiment(experiment)
     with exp:
         print("---------evaluating---------")
         exp.run()
@@ -510,7 +510,7 @@ def post_parallel_eval(experiments: list[Mapping], base_dir: Path) -> None:
         outfile = base_dir / filename
         post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
 
-    exp = hydra.utils.instantiate(experiments[0])
+    exp = hydrate_experiment(experiments[0])
     if isinstance(exp, ProfileExperimentMixin):
         post_parallel_profile_cleanup(parallel_dirs, base_dir, "evaluate")
 
@@ -532,7 +532,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
         Path(exp["config"]["logging"]["output_dir"]) for exp in experiments
     ]
     pretraining = False
-    exp = hydra.utils.instantiate(experiments[0])
+    exp = hydrate_experiment(experiments[0])
     if isinstance(exp, MontySupervisedObjectPretrainingExperiment):
         parallel_dirs = [pdir / "pretrained" for pdir in parallel_dirs]
         pretraining = True

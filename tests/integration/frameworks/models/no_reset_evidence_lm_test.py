@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.hydra import hydrate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -81,11 +82,11 @@ class NoResetEvidenceLMTest(BaseGraphTest):
         unsupervised Inference Experiment. Disabling the reset logic does not support
         training at the moment.
         """
-        train_exp = hydra.utils.instantiate(self.pretraining_cfg.experiment)
+        train_exp = hydrate_experiment(self.pretraining_cfg.experiment)
         with train_exp:
             train_exp.run()
 
-        eval_exp = hydra.utils.instantiate(self.unsupervised_cfg.experiment)
+        eval_exp = hydrate_experiment(self.unsupervised_cfg.experiment)
         with eval_exp:
             # load the eval experiment with the pretrained models
             pretrained_models = train_exp.model.learning_modules[0].state_dict()
