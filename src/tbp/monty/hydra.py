@@ -79,6 +79,9 @@ def register_resolvers() -> None:
 
 def hydrate_experiment(cfg_exp: Mapping[str, Any]) -> MontyExperiment:
     """Return MontyExperiment initialized by Hydra configuration."""
-    exp: MontyExperiment = hydra.utils.instantiate(cfg_exp)
+    exp = hydra.utils.instantiate(cfg_exp)
+    assert isinstance(exp, MontyExperiment), (
+        f"Hydra did not produce a MontyExperiment from {cfg_exp}"
+    )
     exp._recreation_config = cfg_exp["config"]["monty_config"]
     return exp

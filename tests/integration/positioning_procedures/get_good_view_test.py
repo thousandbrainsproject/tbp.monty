@@ -30,9 +30,6 @@ from tbp.monty.frameworks.environments.positioning_procedures import (
     get_perc_on_obj_semantic,
 )
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.experiments.object_recognition_experiments import (
-    MontyObjectRecognitionExperiment,
-)
 from tests import HYDRA_ROOT
 
 
