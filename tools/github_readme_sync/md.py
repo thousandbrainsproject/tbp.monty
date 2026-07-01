@@ -10,6 +10,8 @@
 
 import yaml
 
+from tools.github_readme_sync.future_work_metadata import FUTURE_WORK_METADATA_KEYS
+
 
 def process_markdown(body: str, slug: str) -> dict:
     doc = {"title": "", "body": "", "hidden": False, "slug": slug}
@@ -22,6 +24,10 @@ def process_markdown(body: str, slug: str) -> dict:
     )
     if "description" in frontmatter:
         doc["description"] = frontmatter.get("description", "")
+
+    for key in FUTURE_WORK_METADATA_KEYS:
+        if key in frontmatter and frontmatter[key] is not None:
+            doc[key] = frontmatter[key]
 
     body = body.split("---\n", maxsplit=2)
     if len(body) > 2:

@@ -16,6 +16,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from tools.github_readme_sync.future_work_metadata import render_future_work_metadata
 from tools.github_readme_sync.readme import GITHUB_RAW, ReadMe
 
 
@@ -355,6 +356,39 @@ This is a test document.""",
             mock_post.call_args[0][1]["excerpt"],
             "A collection of terms",
             "Excerpt field value is incorrect",
+        )
+
+    @patch("tools.github_readme_sync.readme.get")
+    @patch("tools.github_readme_sync.readme.post")
+    @patch.dict(os.environ, {"IMAGE_PATH": "user/repo"})
+    def test_create_or_update_doc_includes_future_work_metadata(
+        self, mock_post, mock_get
+    ):
+        mock_get.return_value = None
+        mock_post.return_value = json.dumps({"_id": "future-work-doc-id"})
+
+        doc = {
+            "title": "Example Doc",
+            "body": "Body content here.",
+            "slug": "example-doc",
+            "estimated-scope": "large",
+        }
+
+        self.readme.create_or_update_doc(
+            order=1,
+            category_id="category-id",
+            doc=doc,
+            parent_id="parent-doc-id",
+            file_path="docs/future-work/learning-module-improvements",
+        )
+
+        actual_body = mock_post.call_args[0][1]["body"]
+        expected_prefix = f"{render_future_work_metadata(doc)}\n\nBody content here."
+        self.assertTrue(
+            actual_body.startswith(expected_prefix),
+            f"Body did not start with the expected metadata block.\n"
+            f"Expected prefix:\n{expected_prefix!r}\n"
+            f"Actual body:\n{actual_body!r}",
         )
 
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo/refs/head/main/docs/figures"})

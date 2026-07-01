@@ -126,3 +126,29 @@ This is the glossary content.
             "A collection of terms and definitions used in the Thousand Brains Project",
             "Description field value is incorrect",
         )
+
+    def test_process_markdown_includes_future_work_metadata_fields(self):
+        body = """---
+title: Deal with Incomplete Models
+description: Example description
+estimated-scope: large
+improved-metric: learning
+output-type: prototype, monty-feature, PR
+skills: python, research, monty
+contributor: vkakerbeck
+status: open
+rfc: required
+---
+
+Body content here.
+"""
+        slug = "deal-with-incomplete-models"
+        result = process_markdown(body, slug)
+
+        self.assertEqual(result["estimated-scope"], "large")
+        self.assertEqual(result["improved-metric"], "learning")
+        self.assertEqual(result["output-type"], "prototype, monty-feature, PR")
+        self.assertEqual(result["skills"], "python, research, monty")
+        self.assertEqual(result["contributor"], "vkakerbeck")
+        self.assertEqual(result["status"], "open")
+        self.assertEqual(result["rfc"], "required")

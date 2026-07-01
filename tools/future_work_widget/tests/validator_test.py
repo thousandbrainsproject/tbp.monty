@@ -66,6 +66,7 @@ class TestFutureWorkRecord(unittest.TestCase):
             "title": "Test item",
             "skills": "python,javascript",
             "contributor": "alice,bob",
+            "status": "in-progress",
             "output-type": "documentation,website",
             "improved-metric": "community-engagement,infrastructure",
         }
@@ -252,10 +253,31 @@ class TestFutureWorkRecord(unittest.TestCase):
             "path2": "test-item",
             "title": "Test item",
             "contributor": "valid-user",
+            "status": "in-progress",
         }
 
         validated = FutureWorkRecord.model_validate(record)
         self.assertEqual(validated.contributor, ["valid-user"])
+
+    def test_contributor_requires_status(self):
+        record = {
+            "path": "future-work/test-item.md",
+            "path1": "future-work",
+            "path2": "test-item",
+            "title": "Test item",
+            "contributor": "valid-user",
+        }
+
+        with self.assertRaises(ValidationError) as cm:
+            FutureWorkRecord.model_validate(record)
+
+        errors = cm.exception.errors()
+        self.assertTrue(
+            any(
+                "contributor is specified, status must also be specified" in e["msg"]
+                for e in errors
+            )
+        )
 
     def test_invalid_github_username(self):
         record = {
