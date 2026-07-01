@@ -19,7 +19,6 @@ from hypothesis import example, given
 from hypothesis import strategies as st
 from unittest_parametrize import ParametrizedTestCase, parametrize
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.utils.edge_detection import (
     EdgeDetector,
     StructureTensor,
@@ -31,6 +30,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     project_onto_tangent_plane,
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
+from tbp.monty.observations import SensorObservation
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
     rotation_matrices,
     unit_vectors,
