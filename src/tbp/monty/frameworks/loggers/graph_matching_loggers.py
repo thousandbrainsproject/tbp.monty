@@ -286,6 +286,8 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
 
         episode_performance = None
         stats["episode_lm_performances"].append(lm_performances)
+        # Default to first performance option if none found in lm_performances
+        episode_performance = self.performance_options[0] if self.performance_options else None
         for p in self.performance_options:
             if p in lm_performances:
                 # order of performance_options matters since we overwrite here!
