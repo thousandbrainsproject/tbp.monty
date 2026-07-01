@@ -7,40 +7,34 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import pytest
-
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 from pathlib import Path
 
 import hydra
+import pytest
 from omegaconf import OmegaConf
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
+from tests import HYDRA_ROOT
+
 EXPERIMENT_DIR = (
-    Path(__file__).parents[2] / "src" / "tbp" / "monty" / "conf" / "experiment"
+    Path(__file__).parents[3] / "src" / "tbp" / "monty" / "conf" / "experiment"
 )
 EXPERIMENTS = [
     x.stem
     for x in EXPERIMENT_DIR.glob("*.yaml")
-    # Exclude MuJoCo experiments
-    # TODO: Revert once we convert to MuJoCo
-    if not x.stem.endswith("mujoco")
+    # Only check MuJoCo experiments
+    # TODO: Merge with original once we convert to MuJoCo
+    if x.stem.endswith("mujoco")
 ]
-EXPERIMENT_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots"
+EXPERIMENT_SNAPSHOTS_DIR = Path(__file__).parents[2] / "conf" / "snapshots"
 
 TUTORIALS_DIR = EXPERIMENT_DIR / "tutorial"
 TUTORIALS = [
     x.stem
     for x in TUTORIALS_DIR.glob("*.yaml")
-    # Exclude MuJoCo tutorials
-    # TODO: Revert once we convert to MuJoCo
-    if not x.stem.endswith("mujoco")
+    # Only check MuJoCo tutorials
+    # TODO: Merge with original once we convert to MuJoCo
+    if x.stem.endswith("mujoco")
 ]
 TUTORIAL_SNAPSHOTS_DIR = EXPERIMENT_SNAPSHOTS_DIR / "tutorial"
 
@@ -112,7 +106,6 @@ class TutorialTest(ParametrizedTestCase):
                     "For more information on how to create or update snapshots"
                     ", please see the tests/conf/README.md file."
                 )
-
             _assert_config_matches_snapshot(
                 current_config_yaml, snapshot_config_yaml, tutorial
             )

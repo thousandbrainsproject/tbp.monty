@@ -60,6 +60,8 @@ class MontyExperiment:
     """
 
     model: MontyBase
+    env_interface: Interface | None
+
     _recreation_mode: bool
     _recreation_config: DictConfig | None  # dehydrated Monty config
     _recreation_memory: Memento
@@ -706,7 +708,7 @@ class MontyExperiment:
         if self.do_eval:
             self.evaluate()
 
-    def train(self):
+    def train(self) -> None:
         """Run n_train_epochs."""
         logger.info(f"running {self.n_train_epochs} train epochs")
         self.experiment_mode = ExperimentMode.TRAIN
