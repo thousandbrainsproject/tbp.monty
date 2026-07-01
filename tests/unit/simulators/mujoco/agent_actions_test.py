@@ -34,6 +34,8 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.sensors import SensorConfig, SensorID
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import (
     DEFAULT_TOLERANCE,
@@ -44,11 +46,9 @@ from tbp.monty.math import (
 )
 from tbp.monty.simulators.mujoco import MuJoCoSimulator
 from tbp.monty.simulators.mujoco.agents import Axis, DistantAgent, SurfaceAgent
-from tbp.monty.simulators.mujoco.simulator import ActuateMethodMissing
-from tests.unit.simulators.mujoco.noop_agent_test import (
-    AGENT_ID,
-    PATCH_SENSOR_ID,
-    default_agent_args,
+from tbp.monty.simulators.mujoco.simulator import (
+    DEFAULT_RESOLUTION,
+    ActuateMethodMissing,
 )
 from tests.unit.simulators.mujoco.strategies import (
     constrained_angle,
@@ -56,6 +56,9 @@ from tests.unit.simulators.mujoco.strategies import (
     unit_quaternion,
     x_rotation_quaterion,
 )
+
+AGENT_ID = AgentID("agent_id_0")
+PATCH_SENSOR_ID = SensorID("sensor_id_0")
 
 P = ParamSpec("P")
 
@@ -176,7 +179,12 @@ class ActionsTest(TestCase):
             agents=[
                 partial(
                     cls.agent_class,
-                    **default_agent_args(),
+                    agent_id=AGENT_ID,
+                    sensor_configs={
+                        PATCH_SENSOR_ID: SensorConfig(
+                            resolution=DEFAULT_RESOLUTION,
+                        ),
+                    },
                 )
             ]
         )
