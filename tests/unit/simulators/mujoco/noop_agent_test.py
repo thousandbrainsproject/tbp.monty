@@ -13,6 +13,8 @@ from functools import partial
 
 import numpy as np
 import quaternion as qt
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from mujoco import mjtGeom
 
 from tbp.monty.frameworks.agents import AgentID
@@ -193,3 +195,67 @@ class NoopAgentTest(unittest.TestCase):
                 4,
             )
             assert view_finder_rgba.shape == (256, 256, 4)
+
+    @given(
+        # Using integers because arbitrary floats make the calculated ratio
+        # too imprecise for a testable property due to the pixelation.
+        zoom=st.integers(min_value=1, max_value=10),
+    )
+    @settings(deadline=None)
+    def test_agent_observation_zoom(self, zoom) -> None:
+        """Test that the sensor config zoom setting works correctly.
+
+        Since we're implementing zoom by modifying the camera's field of view,
+        we need to verify that this works as intended.
+
+        Our approach is to calculate the ratio of the number of pixels covered by
+        the object, and the total number of pixels, and calculate an expected value.
+        """
+        # We need to generate denser images to get the actual ratios close enough
+        # to the expected values to be able to have a testable property.
+        res = Resolution2D(height=2048, width=2048)
+        # The number of pixels covered at zoom 1 by a 1-meter cube 10 meters away
+        # in a 2048x2048 image.
+        zoom_1x_covered_pixels = 51_984
+        total_pixels = res.width * res.height
+
+        sim = MuJoCoSimulator(
+            agents=[
+                partial(
+                    NoopAgent,
+                    agent_id=AGENT_ID,
+                    sensor_configs={
+                        PATCH_SENSOR_ID: SensorConfig(
+                            resolution=res,
+                            zoom=zoom,
+                            semantic=True,
+                        )
+                    },
+                )
+            ],
+        )
+        sim.add_object(
+            "box",
+            position=(0.0, 0.0, -10.0),
+            # Use 1 so that we can just sum up the resulting semantic image values.
+            semantic_id=SemanticID(1),
+        )
+
+        with sim:
+            obs = sim.observations[AGENT_ID]
+            semantic = obs[PATCH_SENSOR_ID]["semantic"]
+
+            covered_pixels = semantic.sum()
+            actual_ratio = covered_pixels / total_pixels
+            # In one case, the object becomes large enough that it takes up the
+            # entire image and the expected ratio ends up larger than 1.0, so we
+            # need to clamp it to 1.0.
+            expected_ratio = min(
+                1.0,
+                (zoom_1x_covered_pixels / total_pixels) * zoom**2,
+            )
+
+            # The tolerance is so low because this is the closest we can get with
+            # the method we're using here. Most of the values are within 1e-3 or
+            # closer, but there are exceptions.
+            np.testing.assert_allclose(actual_ratio, expected_ratio, atol=1e-2)
