@@ -121,6 +121,7 @@
   - [deal-with-incomplete-models](future-work/learning-module-improvements/deal-with-incomplete-models.md)
   - [test-grid-object-models-for-unsupervised-learning](future-work/learning-module-improvements/test-grid-object-models-for-unsupervised-learning.md)
   - [use-constrained-grid-object-mdoels-for-all-benchmark-experiments](future-work/learning-module-improvements/use-constrained-grid-object-mdoels-for-all-benchmark-experiments.md)
+  - [unsupervised-learning-with-burst-sampling](future-work/learning-module-improvements/unsupervised-learning-with-burst-sampling.md)
   - [unsupervised-learning-in-a-hierarchy](future-work/learning-module-improvements/unsupervised-learning-in-a-hierarchy.md)
   - [learning-and-forgetting-speed-parameter](future-work/learning-module-improvements/learning-and-forgetting-speed-parameter.md)
   - [deal-with-moving-objects](future-work/learning-module-improvements/deal-with-moving-objects.md)
