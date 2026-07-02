@@ -9,7 +9,7 @@ defaults:
   - /environment: retextured_surf_agent_semantics0
   - /env_interface: eval_retexturedobj_predefined
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
-  - /logging: basic_warning_monty_runs
+  - /logging: basic_warning_wandb_monty_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
@@ -19,7 +19,7 @@ experiment:
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: 3
-    model_name_or_path: ${constants.retextured_pretrained_dir}/surf_pre_training_11retextured_obj/pretrained/
+    model_name_or_path: ${constants.retextured_pretrained_dir}/surf_pre_training_11retextured_obj_ltp/pretrained/
     n_eval_epochs: 10
     min_lms_match: 1
     seed: 42
