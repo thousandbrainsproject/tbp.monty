@@ -8,31 +8,22 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from unittest import TestCase
 from unittest.mock import Mock, patch
 
 import numpy as np
-import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-from numpy.ma.testutils import assert_array_equal
 
 from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
 )
-from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
-    Hypotheses,
-)
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
-from unittest import TestCase
-
 from tbp.monty.frameworks.models.evidence_matching.evidence_slope_tracker import (
     EvidenceSlopeTracker,
     HypothesesSelection,
+)
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
+    Hypotheses,
 )
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     InvalidEvidenceThresholdConfig,
@@ -119,8 +110,9 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             evidence_update_threshold=0,
         )
 
-        assert_array_equal(result.possible, np.array([True, False]))
-        assert_array_equal(result.evidence, np.array([1, 2]))
+        assert result is not None  # for type narrowing
+        np.testing.assert_array_equal(result.possible, np.array([True, False]))
+        np.testing.assert_array_equal(result.evidence, np.array([1, 2]))
 
     def test_burst_triggers_when_max_slope_at_or_below_threshold(self) -> None:
         """Test that burst triggers when max_slope <= burst_trigger_slope.
@@ -242,7 +234,10 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         pose_fully_defined=st.booleans(),
     )
     def test_sample_count_returns_positive_count_during_burst(
-        self, sampling_multiplier, graph_num_nodes, pose_fully_defined
+        self,
+        sampling_multiplier: float,
+        graph_num_nodes: int,
+        pose_fully_defined: bool,
     ) -> None:
         """Test sample count with various burst sampling parameters.
 
@@ -359,7 +354,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         sampling_burst_duration=st.integers(min_value=1, max_value=10),
     )
     def test_burst_triggers_on_first_step_with_no_trackers(
-        self, sampling_burst_duration
+        self, sampling_burst_duration: int
     ) -> None:
         """Test that burst triggers on first step when no trackers exist.
 
@@ -530,14 +525,14 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         num_euler_angles=st.integers(min_value=1, max_value=10),
     )
     def test_num_hyps_per_node_with_initial_possible_poses(
-        self, pose_fully_defined, num_euler_angles
+        self, pose_fully_defined: bool, num_euler_angles: int
     ) -> None:
         """Test _num_hyps_per_node returns length of initial_possible_poses.
 
         When initial_possible_poses is a list of euler angles, _num_hyps_per_node
         should return the length of that list regardless of pose_fully_defined.
         """
-        euler_angles = [[0, 0, i * 30] for i in range(num_euler_angles)]
+        euler_angles = [[0.0, 0.0, i * 30.0] for i in range(num_euler_angles)]
 
         updater = BurstSamplingHypothesesUpdater(
             feature_weights={},
@@ -555,7 +550,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
     @given(pose_fully_defined=st.booleans())
     def test_sample_new_hypotheses_returns_empty_when_count_zero(
-        self, pose_fully_defined
+        self, pose_fully_defined: bool
     ) -> None:
         tracker = EvidenceSlopeTracker()
 
@@ -576,7 +571,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         num_hyps_per_node=st.integers(min_value=1, max_value=10),
     )
     def test_sample_new_hypotheses_without_feature_matching(
-        self, num_nodes, num_hyps_per_node
+        self, num_nodes: int, num_hyps_per_node: int
     ) -> None:
         """Test sampling new hypotheses when use_features_for_matching is False.
 
@@ -623,10 +618,12 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         self.assertEqual(result.poses.shape[0], sample_count)
 
         # Evidence should be all zeros when not using feature matching
-        assert_array_equal(result.evidence, np.zeros(sample_count))
+        np.testing.assert_array_equal(result.evidence, np.zeros(sample_count))
 
         # All hypotheses should be marked as not possible (newly sampled)
-        assert_array_equal(result.possible, np.zeros(sample_count, dtype=np.bool_))
+        np.testing.assert_array_equal(
+            result.possible, np.zeros(sample_count, dtype=np.bool_)
+        )
 
         # Tracker should have the new hypotheses added
         self.assertEqual(tracker.total_size(), sample_count)
@@ -754,7 +751,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         sampling_multiplier=st.floats(min_value=0.0, max_value=3.0),
     )
     def test_sample_count_proportional_multi_channel(
-        self, num_hyps_per_node, sampling_multiplier
+        self, num_hyps_per_node: int, sampling_multiplier: float
     ) -> None:
         """Test proportional sampling across two channels with different node counts.
 
@@ -810,7 +807,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         num_rotations=st.integers(min_value=1, max_value=10),
     )
     def test_sample_new_hypotheses_with_initial_poses_set(
-        self, num_nodes, num_rotations
+        self, num_nodes: int, num_rotations: int
     ) -> None:
         """Test sampling new hypotheses when initial_possible_poses is set.
 

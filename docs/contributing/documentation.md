@@ -84,8 +84,8 @@ Each entry has the following format:
 
 ```markdown Markdown
 # category-slug: Category Title
-- [document-slug](category-slug/document-slug.md) <!-- check-links-ignore --> 
-  - [subdocument-slug](category-slug/document-slug/subdocument-slug.md) <!-- check-links-ignore --> 
+- [document-slug](category-slug/document-slug.md) 
+  - [subdocument-slug](category-slug/document-slug/subdocument-slug.md) 
 ```
 
 There are two important parts:

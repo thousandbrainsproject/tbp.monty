@@ -143,16 +143,16 @@ mkdir -p ~/tbp/results/monty/pretrained_models/
 
 cd ~/tbp/results/monty/pretrained_models/
 
-curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.tgz | tar -xzf -
+curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v13.tgz | tar -xzf -
 ```
 ```plaintext zip
 mkdir -p ~/tbp/results/monty/pretrained_models/
 
 cd ~/tbp/results/monty/pretrained_models/
 
-curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v12.zip
+curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v13.zip
 
-unzip pretrained_ycb_v12.zip
+unzip pretrained_ycb_v13.zip
 ```
 
 
@@ -160,7 +160,7 @@ The folder should then have the following structure:
 
 ```
 ~/tbp/results/monty/pretrained_models/
-|-- pretrained_ycb_v12/
+|-- pretrained_ycb_v13/
 |   |-- supervised_pre_training_5lms
 |   |-- supervised_pre_training_5lms_all_objects
 |   |-- ...
@@ -170,8 +170,8 @@ The folder should then have the following structure:
 > To unpack an archive you should be able to double click on it.
 >
 > To unpack via the command line, copy the archive into the `~/tbp/results/monty/pretrained_models/` folder and inside that folder run:
-> - for a `tgz` archive, `tar -xzf pretrained_ycb_v12.tgz`.
-> - for a `zip` archive, `unzip pretrained_ycb_v12.zip`.
+> - for a `tgz` archive, `tar -xzf pretrained_ycb_v13.tgz`.
+> - for a `zip` archive, `unzip pretrained_ycb_v13.zip`.
 
 ## [Optional] Set Environment Variables
 
@@ -183,7 +183,7 @@ If you did not save the pre-trained models in the `~/tbp/results/monty/pretraine
 export MONTY_MODELS=/path/to/your/pretrained/models/dir
 ```
 
-This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v12` folders.
+This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v13` folders.
 
 
 ### MONTY_DATA

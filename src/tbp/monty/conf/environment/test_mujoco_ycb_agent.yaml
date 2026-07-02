@@ -8,6 +8,7 @@ env_init_args:
       agent_id: agent_id_0
       sensor_configs:
         sensor_id_0:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
           position:
             - 0.0
             - 1.5

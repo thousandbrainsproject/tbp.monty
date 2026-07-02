@@ -218,9 +218,31 @@ class Embodiment(Agent):
             depth_data = renderer.render()
             renderer.disable_depth_rendering()
 
+            if not sensor_cfg.semantic:
+                obs[sensor_id] = SensorObservation(
+                    depth=depth_data,
+                    rgba=rgba_data,
+                )
+                continue
+
+            renderer.enable_segmentation_rendering()
+            semantic_data = renderer.render()
+            renderer.disable_segmentation_rendering()
+
+            # MuJoCo's segmentation rendering returns (object_id, object_type) for
+            # each pixel, and we only care about object_id.
+            semantic_data = semantic_data[:, :, 0]
+            # We need to map the values to semantic IDs that have been assigned
+            # to the objects before we can return it.
+            semantic_data = np.vectorize(
+                # Get the semantic ID if it has a mapping, otherwise leave it alone.
+                lambda x: self.sim.id_to_semantic_id.get(x, x)
+            )(semantic_data)
+
             obs[sensor_id] = SensorObservation(
                 depth=depth_data,
                 rgba=rgba_data,
+                semantic=semantic_data,
             )
         return obs
 
