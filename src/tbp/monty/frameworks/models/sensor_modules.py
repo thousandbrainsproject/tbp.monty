@@ -340,10 +340,7 @@ class ObservationProcessor:
             gray_patch = rgb2gray(rgb_patch)  # Returned as float in [0, 1]
             gray_patch = gray_patch * 255.0
             gray_patch = gray_patch.astype(np.uint8)
-            # Restrict the texture histogram to on-object pixels. The (typically
-            # uniform) background otherwise contributes a large, object-independent
-            # mode that washes out the discriminative texture signal and makes
-            # different objects' histograms look spuriously similar.
+            # Restrict the texture histogram to on-object pixels.
             on_object_mask = (obs_3d[:, 3] > 0).reshape(gray_patch.shape)
             hist = get_ltp_texture_feature_vector(
                 gray_patch, self._ltp_config, mask=on_object_mask
@@ -811,7 +808,9 @@ class FeatureChangeFilter(PerceptFilter):
                 pass
                 # Never use LTP for FeatureChange SM, so as to ensure that its
                 # inclusion (or absense) does not modify the number of points
-                # observed
+                # observed. Can consider relaxing this, although unlikely to make
+                # a large difference, as base distance threshold results in many
+                # new observations.
 
             else:
                 delta_change = np.abs(last_feat - current_feat)

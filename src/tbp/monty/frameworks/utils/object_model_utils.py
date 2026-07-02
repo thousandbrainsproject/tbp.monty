@@ -142,7 +142,8 @@ def already_in_list(
                     pass
                     # Never use LTP for redundancy checking, so as to ensure it
                     # does not modify the number of points in the graph when
-                    # included.
+                    # included. This way models will be of equal density/sparsity
+                    # with or without LTP.
                     # For distance, we already deal with it in vectorized form.
 
                 else:
