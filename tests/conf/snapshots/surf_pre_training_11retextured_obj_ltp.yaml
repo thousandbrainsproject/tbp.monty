@@ -47,7 +47,6 @@ experiment:
               - 0.1
               - 1
               - 1
-              ltp: 1.0
       sensor_modules:
         sensor_module_0:
           _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
