@@ -3,8 +3,8 @@
 defaults:
   - /monty: evidencegraph_exp1000_emin_t3_tot2500
   - /monty/motor_system_config: surface_curvature_informed_goal1
-  - /monty/learning_module: evidence_1lm_nn5_dod0025
-  - /monty/sensor_module: camera_surf_rgba
+  - /monty/learning_module: evidence_1lm_nn5_dod0025_ltp
+  - /monty/sensor_module: camera_surf_rgba_ltp
   - /monty/connectivity: 1lm_1sm
   - /environment: retextured_surf_agent_semantics0
   - /env_interface: eval_retexturedobj_predefined
@@ -26,4 +26,4 @@ experiment:
     supervised_lm_ids: []
     python_log_level: DEBUG
     logging:
-      run_name: base_config_11retexturedobj_surf_agent
+      run_name: randrot_11retexturedobj_surf_agent_ltp
