@@ -21,7 +21,7 @@ We would like to extract richer features, such as using HTM's spatial-pooler or 
 ### Constraints
 
 Note that regardless of the approach taken, feature extraction should satisfy a set of important constraints. These are generally phrased in the context of recognizing a texture given an RGB input:
-1. Sampling/instance invariance: this is the most basic one; essentially other instances of the same texture pattern should be recognized correctly, as should the texture if it translated slightly with respect to the sensor.
+1. Sampling/instance invariance: this is the most basic one; essentially other instances of the same texture pattern should be recognized correctly, as should the texture if it is translated slightly with respect to the sensor.
 2. Rotation invariance: we cannot assume that a sensor will have a consistent orientation with respect to a texture patch.
 3. Scale invariance (somewhat): while it is not realistic to expect a model-free representation of a texture to be fully scale invariant, any extraction method should be robust to smaller scale changes (e.g. after zooming in 25% closer to an image).
 4. Lighting: assuming the texture extraction is based on light, and not e.g. the fine-grained depth differences detected by a tactile sensor, then robustness to increases or decreases in lighting is important.

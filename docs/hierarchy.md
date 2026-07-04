@@ -101,7 +101,7 @@
   - [surface-sm](future-work/sensor-module-improvements/surface-sm.md)
   - [one-d-sensor-module](future-work/sensor-module-improvements/one-d-sensor-module.md)
   - [universal-sm-for-morphological-feature-extraction](future-work/sensor-module-improvements/universal-sm-for-morphological-feature-extraction.md)
-  - [parallax-for-depth-perception](future-work/sensor-module-improvements/parallax-for-depth-perception.md)
+  - [additional-methods-for-depth-perception](future-work/sensor-module-improvements/additional-methods-for-depth-perception.md)
   - [detect-local-and-global-flow](future-work/sensor-module-improvements/detect-local-and-global-flow.md)
   - [change-detecting-sm](future-work/sensor-module-improvements/change-detecting-sm.md)
 - [learning-module-improvements](future-work/learning-module-improvements.md)

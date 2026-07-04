@@ -1,6 +1,6 @@
 ---
 title: Send Class ID or Similarity Encoding ID in Compositional Experiments
-description: Test the robustness of class-like representations or the EvidenceSDRLMMixin to generalize with compositional objects.
+description: Test the robustness of class-like representations or the EvidenceSDRLMMixin for generalizing with compositional objects.
 rfc: optional
 estimated-scope: medium
 improved-metric: compositional, generalization

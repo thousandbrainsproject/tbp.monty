@@ -40,14 +40,14 @@ Relevance to Monty
 - Based on the degree of convergence and lens adjustment, an improved estimate of depth can be inferred.
 - This could form an interactive sensorimotor loop with ever-increasing accuracy of the depth estimates, complemented with some of the signals discussed further below.
 
-### Mono-ocular, non-sensorimotor depth queues 
+### Mono-ocular, non-sensorimotor depth cues 
 - Detail / fineness of textures
     - Distant objects are associated with less detail.
     - It would be straightforward to have a heuristic estimating depth based on this, but how this information is combined with other sources would need to be carefully considered, as this heuristic is often not right.
 - Lights and shadows, occlusion of objects, and distortion of textures
     - The 3D structure of an environment/object impacts all of these elements.
     - This is likely something that could be derived from a model-based hypothesis of the world's structure, i.e. different internal hypotheses of the world are compared to the incoming information - only some hypotheses would be consistent with the observed shadows, occlusion, etc.
-    - It might also be possible to have an initial estimate/infer depth from these queues in a "model-free" way.
+    - It might also be possible to have an initial estimate/infer depth from these cues in a "model-free" way.
         - This might be analogous to our sub-cortical, model-free motor policy, in that a simple system could provide an initial estimate of depth based on low-level sensory cues.
         - This would be consistent with the fact that in humans, depth from shadows is partly estimated w.r.t. to our head, not gravity, implying we don't necessarily correct for our orientation in the world.
         - You can experience this yourself with the image below
@@ -57,7 +57,7 @@ Relevance to Monty
 
 <img src="../../figures/future-work/shadows_depth_bias.png" alt="Shadows can alter our perception of depth" width="400"/>
 
-### Binocular, non-sensorimotor depth queues
+### Binocular, non-sensorimotor depth cues
 - Definitions
     - Binocular disparity: "the difference in image location of an object seen by the left and right eyes, resulting from the eyes' horizontal separation (parallax)"
     - Stereopsis: "the perception of 3D depth due to binocular vision... the brain uses binocular disparity to extract depth information from the two-dimensional retinal images"

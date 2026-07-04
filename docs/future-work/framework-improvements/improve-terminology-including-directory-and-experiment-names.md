@@ -15,7 +15,7 @@ There are several instances where the terminology in `tbp.monty` could be improv
 Note that the below items provide examples alongside potential proposals. However, the aim of an RFC would be to clarify the best approach to any terminology change.
 
 ### Policies, Goals, and Actions
-One concrete example is how we refer to goals, actions, and policies. Currently we have "Goal Generators" in SMs and LMs, and "Policies" in the Motor System. We also have "Goals" that are passed to the Motor System, but in our research meetings, we now refer to Goal States vs. Target Poses. This latter distinction has helped clarify when something is about changing a state, vs. specifying a spatial target. A potential resolution might be to remove the term "Generator", and use something like:
+One concrete example is how we refer to goals, actions, and policies. Currently we have "Goal Generators" in SMs and LMs, and "Policies" in the Motor System. We also have "Goals" that are passed to the Motor System, but in our research meetings, we now refer to Goal States vs. Target Poses. This latter distinction has helped clarify when something is about changing an object's state, vs. specifying a spatial target. A potential resolution might be to remove the term "Generator", and use something like:
 - Goal-State Policies:
     - Exist in LMs.
     - Produce Goal States, which only go to other LMs, and specify the desired *state* of an object.
@@ -27,10 +27,12 @@ One concrete example is how we refer to goals, actions, and policies. Currently 
     - The outputs of the Motor System in a simulator or other embodiment.
     - Specify low-level motor primitives.
 
+This would allow us to use the term "policies" for all of the above, as we naturally do anyways when discussing model-free and model-based policies.
+
 ### "Models"
 The term model is highly overloaded in Monty - it can refer to Monty as a whole, as well as the models that a Learning Module in Monty learns. In addition, the primary directory where most of the key Monty code exists is `frameworks/models`, which could be interpreted in multiple ways. This is particularly confusing for someone coming across Monty for the first time.
 
-Formalizing the notion that models refer to the representations learned within an LM would be consistent with other terminology we use widely, like "model-based vs model-free" policies, and ["out of model movements"](../learning-module-improvements/use-out-of-model-movements.md). This would also discourage us from referring to "training a Monty model" (in reference to a Monty system), which is language more appropriate for a classical machine learning perspective, but not for the longer-term vision of Monty as a continually learning system.
+Formalizing the notion that models refer to the representations learned within an LM would be consistent with other terminology we use widely, like "model-based vs model-free" policies, and ["out of model movements"](../learning-module-improvements/use-out-of-model-movements.md). This would also discourage us from referring to "training a Monty model" (in reference to a Monty system), which is language more appropriate for classical machine learning, but not for the longer-term vision of Monty as a continually learning system.
 
 After making this change, the directories for Monty could likely be improved, including removing `frameworks/models`. A follow-on task could be to reorganize and break up how the different components of Monty are specified within this directory.
 
@@ -48,7 +50,7 @@ could likely be simplified to
 /user_name/tbp/results/monty/your_experiment
 ```
 
-(the longer directories we currently use relate to a time when multiple, parallel visions of Monty were being worked on at Numenta)
+(the longer directories we currently use relate to a time when highly distinct, parallel visions of Monty were being worked on at Numenta)
 
 Similarly, many of our experiments have inconsistent names. Focusing on our pretraining experiments, only some of these specify "supervised" (even though many are supervised), and some specify the agent used ("only_surf...") while others do not ("supervised_pre_training_base"). This relates to [making our configs easier to use](./make-configs-easier-to-use.md).
 

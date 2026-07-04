@@ -3,7 +3,7 @@ title: Model-Free Distant Agent Exploration Policy
 description: A policy for the distant agent to rapidly visit salient regions, then systematically explore.
 rfc: optional
 estimated-scope: medium
-improved-metric: learning, accuracy, speed
+improved-metric: learning, accuracy, speed, numsteps
 output-type: monty-feature, PR
 skills: python, monty
 contributor: 

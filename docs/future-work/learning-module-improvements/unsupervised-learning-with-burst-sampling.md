@@ -3,7 +3,7 @@ title: Unsupervised Learning with Burst Sampling
 description: Enable and test unsupervised learning when combined with burst sampling.
 rfc: optional
 estimated-scope: medium
-improved-metric: learning, accuracy, speed
+improved-metric: learning, accuracy, numsteps
 output-type: experiments, analysis, PR
 skills: python, research, monty
 contributor: 
@@ -18,4 +18,4 @@ In particular, burst sampling will create new hypotheses if the existing ones ar
 
 Instead, it would be worth using burst sampling itself as an indication for creating a new reference frame. In particular, if burst sampling continues for a prolonged period of time, this suggests that the existing models are insufficient (despite bursting), and so a new model is necessary.
 
-Following the above change, the aim would be to switch our unsupervised learning benchmarks to use burst sampling, and evaluate its performance. It will likely be necessary to optimize how many bursts are necessary to trigger the creation of a new reference frame. As burst sampling enabled significantly better accuracy and inference speed in our baseline benchmarks, we may observe a similar effect when performing inference following unsupervised learning.
+Following the above change, the aim would be to switch our unsupervised learning benchmarks to use burst sampling, and evaluate its performance. It will likely be necessary to optimize how many bursts are necessary to trigger the creation of a new reference frame. As burst sampling enabled significantly better accuracy and shorter episodes in our baseline benchmarks, we may observe a similar effect when performing inference following unsupervised learning.

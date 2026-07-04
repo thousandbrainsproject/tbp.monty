@@ -4,7 +4,7 @@ description: Evaluate and finetune the GridObjectModels to work with all of our 
 rfc: optional
 estimated-scope: medium
 improved-metric: learning, generalization, scale
-output-type: experiments, analysis
+output-type: experiments, analysis, PR
 skills: research, monty
 contributor: 
 status: open
@@ -20,4 +20,4 @@ With the above change, we should be able to maintain reasonable performance on o
 
 This update could work in concert with [an improved exploration policy for the distant agent](../motor-system-improvements/model-free-distant-agent-exploration-policy.md). Early tests with salience-based learning policies suggest that these naturally support sampling in a scale-invariant way. In particular, this policy will perform smaller saccades to explore a smaller object such as a dice, and larger saccades to explore an object like a cereal box; this is in contrast to the naive scan and surface-agent learning policies, which will sample many more points for a larger object.
 
-Finally, this change could enable a significant simplification of the Monty code-base by removing the `FeatureGraphLM` and `DisplacementGraphLM` classes. Even if some elements of the latter are cherry-picked for the purpose of a [hybrid node and edge-matching LM](./hybrid-node-and-edge-matching.md), this would still enable the removal >1k lines of unused code and dozens of associated unit tests.
+Finally, this change could enable a significant simplification of the Monty code-base by removing the `FeatureGraphLM` and `DisplacementGraphLM` classes. Even if some elements of the latter are cherry-picked for the purpose of a [hybrid node and edge-matching LM](./hybrid-node-and-edge-matching.md), this would still enable the removal of >1k lines of complex code and dozens of associated unit tests.
