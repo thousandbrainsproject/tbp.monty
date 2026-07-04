@@ -10,9 +10,9 @@ contributor:
 status: evergreen
 ---
 
-There are several instances where the terminology in `tbp.monty` could be improved for clarity. Exising confusion often relates to the progressive development of the platform, where clearer terminology has emerged in our research meetings over time, but is not yet reflected in the code.
+There are several instances where the terminology in `tbp.monty` could be improved for clarity. Existing confusion often relates to the progressive development of the platform, where clearer terminology has emerged in our research meetings over time, but is not yet reflected in the code.
 
-Note that the below are examples alongside potential proposals. However, the aim of an RFC would be to clarify the best approach to any terminology change.
+Note that the below items provide examples alongside potential proposals. However, the aim of an RFC would be to clarify the best approach to any terminology change.
 
 ### Policies, Goals, and Actions
 One concrete example is how we refer to goals, actions, and policies. Currently we have "Goal Generators" in SMs and LMs, and "Policies" in the Motor System. We also have "Goals" that are passed to the Motor System, but in our research meetings, we now refer to Goal States vs. Target Poses. This latter distinction has helped clarify when something is about changing a state, vs. specifying a spatial target. A potential resolution might be to remove the term "Generator", and use something like:
@@ -22,7 +22,7 @@ One concrete example is how we refer to goals, actions, and policies. Currently 
 - Target-Pose Policies:
     - Can exist in SMs or LMs; as such, the one form of policy that can be either model-free (if within an SM) or model-based (if within an LM).
     - The equivalent of the current Goal Generators (hypothesis testing policy and SM salience policy).
-    - Pass a Target Pose to the Motor System (i.e. specify a location and orientation, but not an object state).
+    - Pass a Target Pose to the Motor System (i.e., specify a location and orientation, but not an object state).
 - Action Policies
     - The outputs of the Motor System in a simulator or other embodiment.
     - Specify low-level motor primitives.

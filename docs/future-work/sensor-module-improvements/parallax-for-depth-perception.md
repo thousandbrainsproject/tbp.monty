@@ -29,7 +29,7 @@ Depth estimation is classically divided into monocular and binocular techniques.
 ### Sensorimotor cues of depth in biology
 - These are processes where the source of depth signal is based on *how* the system is acting in order to modulate its input.
 - Convergence: the movement of the two sensors (eyes) until they receive converging inputs. Binocular in nature.
-- Accommodation: the change in focus of the lens required to achieve focus at a point of fixation. Monocoular in nature.
+- Accommodation: the change in focus of the lens required to achieve focus at a point of fixation. Monocular in nature.
 - Relative motion/parallax
     - Movement revealing the relative positions of features.
     - This is a mixed source, in that it can be sensorimotor if the agent itself is moving. However, motion parallax can also be based on the sole movement of things external to the observer.

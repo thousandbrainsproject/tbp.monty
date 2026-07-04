@@ -124,7 +124,7 @@
   - [unsupervised-learning-with-burst-sampling](future-work/learning-module-improvements/unsupervised-learning-with-burst-sampling.md)
   - [unsupervised-learning-in-a-hierarchy](future-work/learning-module-improvements/unsupervised-learning-in-a-hierarchy.md)
   - [learning-and-forgetting-speed-parameter](future-work/learning-module-improvements/learning-and-forgetting-speed-parameter.md)
-  - [evaluate-alternative-tessellation-methods-for-3d-space](evaluate-alternative-tessellation-methods-for-3d-space.md)
+  - [evaluate-alternative-tessellation-methods-for-3d-space](future-work/learning-module-improvements/evaluate-alternative-tessellation-methods-for-3d-space.md)
   - [deal-with-moving-objects](future-work/learning-module-improvements/deal-with-moving-objects.md)
   - [support-scale-invariance](future-work/learning-module-improvements/support-scale-invariance.md)
   - [improve-handling-of-symmetry](future-work/learning-module-improvements/improve-handling-of-symmetry.md)
