@@ -157,7 +157,7 @@
   - [run-analyze-experiments-with-more-lms-in-heterarchy-testbed](future-work/cmp-hierarchy-improvements/run-analyze-experiments-with-more-lms-in-heterarchy-testbed.md)
   - [evaluate-on-omniglot-dataset](future-work/cmp-hierarchy-improvements/evaluate-on-omniglot-dataset.md)
   - [test-learning-at-different-speeds-depending-on-level-in-hierarchy](future-work/cmp-hierarchy-improvements/test-learning-at-different-speeds-depending-on-level-in-hierarchy.md)
-  - [send-similarity-encoding-object-id-to-next-level-test](future-work/cmp-hierarchy-improvements/send-similarity-encoding-object-id-to-next-level-test.md)
+  - [send-class-id-or-similarity-encoding-id-in-compositional-experiments](future-work/cmp-hierarchy-improvements/send-class-id-or-similarity-encoding-id-in-compositional-experiments.md)
   - [global-interval-timer](future-work/cmp-hierarchy-improvements/global-interval-timer.md)
   - [include-state-in-cmp](future-work/cmp-hierarchy-improvements/include-state-in-cmp.md)
 - [environment-improvements](future-work/environment-improvements.md)
