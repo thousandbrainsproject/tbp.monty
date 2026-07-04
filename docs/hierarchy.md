@@ -173,6 +173,7 @@
   - [add-more-wandb-logging-for-unsupervised-learning](future-work/framework-improvements/add-more-wandb-logging-for-unsupervised-learning.md)
   - [add-gpu-support-for-monty](future-work/framework-improvements/add-gpu-support-for-monty.md)
   - [use-state-class-inside-of-lms](future-work/framework-improvements/use-state-class-inside-of-lms.md)
+  - [generalize-dimenensionality-of-monty-computations](future-work/framework-improvements/generalize-dimenensionality-of-monty-computations.md)
   - [improve-terminology-including-directory-and-experiment-names](future-work/framework-improvements/improve-terminology-including-directory-and-experiment-names.md)
   - [make-configs-easier-to-use](future-work/framework-improvements/make-configs-easier-to-use.md)
   - [find-faster-alternative-to-kdtree-search](future-work/framework-improvements/find-faster-alternative-to-kdtree-search.md)
