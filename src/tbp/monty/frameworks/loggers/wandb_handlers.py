@@ -223,6 +223,9 @@ class DetailedWandbTableStatsHandler(BasicWandbTableStatsHandler):
 class BasicWandbChartStatsHandler(WandbHandler):
     """Log LM episode stats to wandb with one chart per measure."""
 
+    def post_init(self):
+        self.unsupervised_stats_by_mode = {}
+
     @classmethod
     def log_level(cls):
         return "BASIC"
@@ -239,7 +242,133 @@ class BasicWandbChartStatsHandler(WandbHandler):
         basic_logs = data["BASIC"]
         mode_key = f"{mode}_overall_stats"
         stats = basic_logs.get(mode_key, {})
-        wandb.log(stats[episode], step=episode, commit=False)
+
+        wandb_stats = dict(stats[episode])
+        wandb_stats.update(
+            self.get_unsupervised_benchmark_stats(basic_logs, episode, mode)
+        )
+
+        wandb.log(wandb_stats, step=episode, commit=False)
+
+    def get_unsupervised_benchmark_stats(self, basic_logs, episode, mode):
+        """Log benchmark-style unsupervised learning stats to WandB.
+
+        These stats mirror the metrics reported by print_unsupervised_stats:
+        first-epoch correctness, post-first-epoch correctness, graph/object
+        association stats, runtime, and average episode runtime.
+
+        This method only reads existing BASIC logging data and does not change
+        experiment behavior.
+
+        Returns:
+            A dictionary of unsupervised benchmark statistics to log to WandB.
+        """
+        if mode is not ExperimentMode.TRAIN:
+            return {}
+
+        mode_key = f"{mode}_stats"
+        stats = basic_logs.get(mode_key, {})
+        if len(stats) == 0:
+            return {}
+
+        episode_df = lm_stats_to_dataframe(stats, format_for_wandb=True)
+        if episode_df.empty:
+            return {}
+
+        episode_df["episode"] = episode
+
+        stats_table = f"{mode}_unsupervised_benchmark_stats"
+        if stats_table not in self.unsupervised_stats_by_mode:
+            self.unsupervised_stats_by_mode[stats_table] = episode_df
+        else:
+            self.unsupervised_stats_by_mode[stats_table] = pd.concat(
+                [self.unsupervised_stats_by_mode[stats_table], episode_df],
+                ignore_index=True,
+            )
+
+        stats_df = self.unsupervised_stats_by_mode[stats_table]
+
+        required_columns = {
+            "primary_performance",
+            "primary_target_object",
+            "mean_objects_per_graph",
+            "mean_graphs_per_object",
+            "time",
+            "lm_id",
+            "episode",
+        }
+        if not required_columns.issubset(stats_df.columns):
+            return {}
+
+        # The current unsupervised benchmarks use one LM. If multiple LMs are present,
+        # use LM_0 to avoid counting one episode multiple times.
+        lm_stats = stats_df[stats_df["lm_id"] == "LM_0"].copy()
+        if lm_stats.empty:
+            lm_stats = stats_df.drop_duplicates(subset="episode").copy()
+
+        lm_stats = lm_stats.sort_values("episode").drop_duplicates(subset="episode")
+        if lm_stats.empty:
+            return {}
+
+        latest_stats = lm_stats.iloc[-1]
+        unsupervised_stats = {
+            "unsupervised/mean_objects_per_graph": latest_stats[
+                "mean_objects_per_graph"
+            ],
+            "unsupervised/mean_graphs_per_object": latest_stats[
+                "mean_graphs_per_object"
+            ],
+        }
+
+        epoch_len = self.infer_epoch_len(lm_stats)
+        if epoch_len is not None:
+            first_epoch_stats = lm_stats.iloc[:epoch_len]
+            later_epoch_stats = lm_stats.iloc[epoch_len:]
+
+            first_epoch_new = first_epoch_stats[
+                first_epoch_stats["primary_performance"] == "no_match"
+            ]
+            unsupervised_stats["unsupervised/correct_first_epoch_percent"] = (
+                len(first_epoch_new) / len(first_epoch_stats) * 100
+            )
+
+            if len(later_epoch_stats) > 0:
+                later_correct = later_epoch_stats[
+                    later_epoch_stats["primary_performance"].isin(
+                        ["correct", "correct_mlh"]
+                    )
+                ]
+                unsupervised_stats["unsupervised/correct_after_first_epoch_percent"] = (
+                    len(later_correct) / len(later_epoch_stats) * 100
+                )
+
+        run_time_seconds = pd.to_numeric(lm_stats["time"]).sum()
+        unsupervised_stats["unsupervised/run_time_minutes"] = run_time_seconds / 60
+        unsupervised_stats["unsupervised/episode_run_time_seconds"] = (
+            run_time_seconds / len(lm_stats)
+        )
+
+        return unsupervised_stats
+
+    def infer_epoch_len(self, stats):
+        """Infer epoch length from the first repeated target object.
+
+        Unsupervised benchmark tables are computed with print_unsupervised_stats
+        using a known epoch length. The WandB handler does not currently receive
+        epoch_len directly, so infer it from the first repeated target object.
+
+        Returns:
+            The inferred epoch length, or None if it cannot be inferred.
+        """
+        seen_targets = set()
+        for idx, target in enumerate(stats["primary_target_object"]):
+            if pd.isna(target):
+                continue
+            if target in seen_targets:
+                return idx
+            seen_targets.add(target)
+
+        return None
 
     def get_safe_columns_per_lm(self, stats):
         """Format each episode by looping over learning modules and formatting each one.
