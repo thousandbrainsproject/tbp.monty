@@ -237,6 +237,65 @@ class EvidenceLMTest(BaseGraphTest):
             "Should recognize rotation 0, 0, 0.",
         )
 
+    def test_location_only_step_displaces_hypotheses_elm(self):
+        """A location-only step displaces hypotheses without updating evidence.
+
+        A percept carrying a new location but no features (contains_features=False)
+        is routed by matching_step to _location_only_step, which advances every
+        hypothesis location by its pose-rotated displacement while leaving evidence
+        and the MLH identity untouched.
+        """
+        fake_obs_test = copy.deepcopy(self.fake_obs_learn)
+
+        graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
+        graph_lm.mode = ExperimentMode.EVAL
+        graph_lm.reset_stm()
+        graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
+        for observation in fake_obs_test:
+            graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
+            graph_lm.matching_step(self.ctx, [observation])
+
+        mlh_before = copy.deepcopy(graph_lm.get_current_mlh())
+        last_location_before = graph_lm.buffer.last_location.copy()
+        graph_id = mlh_before["graph_id"]
+        mlh_id = mlh_before["mlh_id"]
+        mlh_pose = graph_lm._hypotheses[graph_id].poses[mlh_id].copy()
+
+        displacement = np.array([0.1, 0.2, 0.3])
+        location_only = copy.deepcopy(fake_obs_test[-1])
+        location_only.location = last_location_before + displacement
+        location_only.contains_features = False
+
+        graph_lm.add_lm_processing_to_buffer_stats(lm_processed=False)
+        graph_lm.matching_step(self.ctx, [location_only])
+
+        mlh_after = graph_lm.get_current_mlh()
+        np.testing.assert_allclose(
+            mlh_after["location"],
+            mlh_before["location"] + mlh_pose @ displacement,
+            err_msg="MLH location should shift by its pose-rotated displacement.",
+        )
+        self.assertEqual(
+            mlh_after["graph_id"],
+            mlh_before["graph_id"],
+            "MLH object identity should be invariant under displacement.",
+        )
+        self.assertEqual(
+            mlh_after["mlh_id"],
+            mlh_before["mlh_id"],
+            "MLH index should be invariant under displacement.",
+        )
+        self.assertEqual(
+            mlh_after["evidence"],
+            mlh_before["evidence"],
+            "Evidence should not change on a location-only step.",
+        )
+        np.testing.assert_array_equal(
+            graph_lm.buffer.last_location,
+            last_location_before + displacement,
+            err_msg="last_location should advance to the new sensed location.",
+        )
+
     def test_reverse_sequence_recognition_elm(self):
         """Test that object is recognized irrespective of sampling order."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
