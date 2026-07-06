@@ -252,7 +252,7 @@ class NoopAgentTest(unittest.TestCase):
             # need to clamp it to 1.0.
             expected_ratio = min(
                 1.0,
-                (zoom_1x_covered_pixels / total_pixels) * zoom**2,
+                zoom_1x_covered_pixels * zoom**2 / total_pixels,
             )
 
             # The tolerance is so low because this is the closest we can get with
