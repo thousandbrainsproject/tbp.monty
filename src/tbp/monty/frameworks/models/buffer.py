@@ -24,6 +24,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from scipy.spatial.transform import Rotation as ScipyRotation
 
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
+from tbp.monty.frameworks.models.percept_utils import sm_location_mean, sm_percepts
 from tbp.monty.frameworks.utils.dataclass_utils import is_dataclass_instance
 from tbp.monty.geometry import Rotation
 
@@ -99,18 +100,6 @@ class FeatureAtLocationBuffer:
         """Return the number of observations stored in the buffer."""
         return len(self.on_object)
 
-    def _sm_location_mean(self, percepts: Sequence[Message]) -> npt.NDArray[np.float64]:
-        """Compute the mean location across SM input channels.
-
-        Args:
-            percepts: Sequence of Message objects from the current step.
-
-        Returns:
-            The mean of the SM-channel locations.
-        """
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
-        return np.mean([p.location for p in sm_percepts], axis=0)
-
     def append(self, percepts: Sequence[Message]) -> None:
         """Add a list of percepts to the buffer. Must be features at locations.
 
@@ -123,7 +112,7 @@ class FeatureAtLocationBuffer:
         A provisional version of this is implemented below, as the GSG uses
         messages for computations.
         """
-        loc = self._sm_location_mean(percepts)
+        loc = sm_location_mean(percepts)
         self.locations = np.vstack([self.locations, loc])
 
         any_obs_on_obj = False
@@ -508,13 +497,12 @@ class FeatureAtLocationBuffer:
         Args:
             percepts: Sequence of Message objects from the current step.
         """
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
-        first_percept = sm_percepts[0]
+        first_percept = sm_percepts(percepts)[0]
         if getattr(first_percept, "displacement", None):
-            for name in sm_percepts[0].displacement:
-                self._add_displacement(name, sm_percepts[0].displacement[name])
+            for name in first_percept.displacement:
+                self._add_displacement(name, first_percept.displacement[name])
 
-        current_location = self._sm_location_mean(percepts)
+        current_location = sm_location_mean(percepts)
         self.last_location = current_location.copy()
 
     def _add_displacement(

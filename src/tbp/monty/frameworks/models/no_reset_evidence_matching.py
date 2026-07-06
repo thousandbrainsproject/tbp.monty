@@ -26,6 +26,7 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
 )
+from tbp.monty.frameworks.models.percept_utils import sm_location_mean
 
 __all__ = ["MontyForNoResetEvidenceGraphMatching", "NoResetEvidenceGraphLM"]
 
@@ -148,8 +149,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         Returns:
             The list of percepts, each updated with a displacement vector.
         """
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
-        current_location = np.mean([p.location for p in sm_percepts], axis=0)
+        current_location = sm_location_mean(percepts)
         if self.last_location is not None:
             displacement = current_location - self.last_location
         else:
@@ -174,8 +174,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         if self.last_location is None:
             return
 
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
-        current_location = np.mean([p.location for p in sm_percepts], axis=0)
+        current_location = sm_location_mean(percepts)
         displacement = current_location - self.last_location
         self._displace_all_hypotheses(displacement)
         self.last_location = current_location.copy()

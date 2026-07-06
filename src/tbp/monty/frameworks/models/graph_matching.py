@@ -33,6 +33,10 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
+from tbp.monty.frameworks.models.percept_utils import (
+    is_feature_step,
+    sm_location_mean,
+)
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
 
@@ -258,17 +262,8 @@ class MontyForGraphMatching(MontyBase):
                 if self.step_type == "matching_step":
                     logger.debug(f"Stepping learning module {i}")
 
-                # A step is a feature step only if at least one SM channel delivered
-                # features. LM output messages default contains_features=True, so the
-                # gate is computed from SM percepts only (otherwise an SM location-only
-                # step paired with an LM output would count as a feature step).
-                feature_step = any(
-                    obs.contains_features
-                    for obs in sensory_inputs
-                    if obs.sender_type == "SM"
-                )
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
-                    lm_processed=feature_step
+                    lm_processed=is_feature_step(sensory_inputs)
                 )
             else:
                 if self.step_type == "matching_step":
@@ -629,7 +624,7 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Update the possible matches given an observation."""
-        if not any(p.contains_features for p in percepts if p.sender_type == "SM"):
+        if not is_feature_step(percepts):
             # Handle without appending to buffer, matching, or stepping the GSG.
             self._location_only_step(percepts)
             return
@@ -665,7 +660,7 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
-        if not any(p.contains_features for p in percepts if p.sender_type == "SM"):
+        if not is_feature_step(percepts):
             # Handle without appending to buffer, matching, or stepping the GSG.
             self._location_only_step(percepts)
             return
@@ -1065,9 +1060,8 @@ class GraphLM(LearningModule):
         Returns:
             Percepts with displacements.
         """
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
         if self.buffer.last_location is not None:
-            current_location = np.mean([p.location for p in sm_percepts], axis=0)
+            current_location = sm_location_mean(percepts)
             displacement = current_location - self.buffer.last_location
         else:
             displacement = np.zeros(3)

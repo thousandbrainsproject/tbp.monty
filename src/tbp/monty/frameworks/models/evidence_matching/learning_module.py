@@ -35,6 +35,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
 )
 from tbp.monty.frameworks.models.goal_generation import EvidenceGoalGenerator
 from tbp.monty.frameworks.models.graph_matching import GraphLM
+from tbp.monty.frameworks.models.percept_utils import sm_location_mean
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
     get_scaled_evidences,
@@ -853,8 +854,7 @@ class EvidenceGraphLM(GraphLM):
             # No reference location yet (no feature step has run; no hypotheses exist).
             return
 
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
-        current_location = np.mean([p.location for p in sm_percepts], axis=0)
+        current_location = sm_location_mean(percepts)
         displacement = current_location - self.buffer.last_location
         self._displace_all_hypotheses(displacement)
         self.buffer.last_location = current_location.copy()

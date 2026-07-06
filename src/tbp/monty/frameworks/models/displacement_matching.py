@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.graph_matching import GraphLM, GraphMemory
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
+from tbp.monty.frameworks.models.percept_utils import sm_location_mean, sm_percepts
 from tbp.monty.frameworks.utils.graph_matching_utils import is_in_ranges
 from tbp.monty.frameworks.utils.sensor_processing import point_pair_features
 from tbp.monty.geometry import Rotation
@@ -411,13 +412,12 @@ class DisplacementGraphLM(GraphLM):
         displacement = np.zeros(3)
         ppf = np.zeros(4)
         # TODO S: calculate displacements for each separately (mostly for rotation disp)
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
-        percept_to_use = sm_percepts[0]
+        percept_to_use = sm_percepts(percepts)[0]
 
         if len(self.buffer) > 0:
             # TODO S: Make sure result of get_current_location() and get_current_pose()
             # is on object (should always be atm).
-            current_location = np.mean([p.location for p in sm_percepts], axis=0)
+            current_location = sm_location_mean(percepts)
             displacement = current_location - self.buffer.last_location
 
             pos1 = torch.tensor(self.buffer.last_location)
