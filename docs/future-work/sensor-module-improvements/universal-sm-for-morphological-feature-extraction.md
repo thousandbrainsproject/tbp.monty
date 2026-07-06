@@ -4,7 +4,7 @@ description: Develop a sensor module that automatically extracts CMP-compliant m
 rfc: required
 estimated-scope: large
 improved-metric: features-and-morphology, transfer, deformations, generalization, real-world
-output-type: prototype, monty-feature, PR, paper
+output-type: prototype, monty-feature, PR, publication
 skills: python, research, computer-vision
 contributor: 
 status: open
