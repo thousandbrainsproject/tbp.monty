@@ -57,6 +57,8 @@ class MontyExperiment:
     and episode).
     """
 
+    env_interface: Interface | None
+
     _recreation_mode: bool
     _step_hook: StepHook
 
@@ -101,9 +103,7 @@ class MontyExperiment:
 
         self._rng_seed_history: list[int] = []
 
-        self._step_hook = (
-            config["step_hook"] if "step_hook" in config else NoOpStepHook()
-        )
+        self._step_hook = config.pop("step_hook", NoOpStepHook())
 
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
@@ -635,7 +635,7 @@ class MontyExperiment:
         if self.do_eval:
             self.evaluate()
 
-    def train(self):
+    def train(self) -> None:
         """Run n_train_epochs."""
         logger.info(f"running {self.n_train_epochs} train epochs")
         self.experiment_mode = ExperimentMode.TRAIN
