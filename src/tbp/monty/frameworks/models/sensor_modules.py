@@ -240,18 +240,20 @@ class ObservationProcessor:
             morphological_features["on_object"] = float(on_object)
 
         # Sensor module returns features at a location in the form of a Message class.
-        # use_state is a bool indicating whether the input is "interesting",
-        # which indicates that it merits processing by the learning module; by default
-        # it will always be True so long as the surface normal and principal curvature
-        # directions were valid; certain SMs and policies used separately can also set
-        # it to False under appropriate conditions
-
+        # `use_state` is a bool indicating whether the message should be delivered to a
+        # learning module; SM percepts default to `True` and are only set to `False` on
+        # motor-only steps (handled by `SensorModule.step`). `contains_features` is a
+        # bool indicating whether the input is "interesting", which indicates that it
+        # merits processing by the learning module (as opposed to a location-only
+        # message); it will be `True` so long as we are on the object and the surface
+        # normal and principal curvature directions were valid.
         percept = Message(
             location=np.array([x, y, z]),
             morphological_features=morphological_features,
             non_morphological_features=features,
             confidence=1.0,
-            use_state=on_object and valid_signals,
+            use_state=True,
+            contains_features=on_object and valid_signals,
             sender_id=self._sensor_module_id,
             sender_type="SM",
         )
@@ -647,7 +649,7 @@ class CameraSM(SensorModule):
 
         Returns:
             Percept with features and morphological features. Noise may be
-            added. The `use_state` flag may be set.
+            added. The `use_state` and `contains_features` flags may be set.
         """
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
@@ -656,7 +658,7 @@ class CameraSM(SensorModule):
 
         percept = self._observation_processor.process(observation)
 
-        if percept.use_state:
+        if percept.contains_features:
             percept = self._message_noise(percept, rng=ctx.rng)
 
         if motor_only_step:
@@ -665,7 +667,6 @@ class CameraSM(SensorModule):
             percept.use_state = False
         else:
             percept = self._percept_filter(percept)
-            percept.use_state = True
 
         if not self.is_exploring:
             self.processed_obs.append(percept.__dict__)
@@ -682,14 +683,13 @@ class PassthroughPerceptFilter(PerceptFilter):
     def __call__(self, percept: Message) -> Message:
         """Passthrough percept filter.
 
-        Labels the percept as location-only when the observation processor flagged
-        it as not carrying valid features (off object or invalid signals), so it is
-        still delivered to the LM without features for matching.
+        A no-op: the observation processor already labelled the percept as carrying
+        features or being location-only via `contains_features`, and this filter
+        does not detect feature changes.
 
         Returns:
-            Percept with `contains_features` set to whether it carries valid features.
+            Percept unchanged.
         """
-        percept.contains_features = percept.use_state
         return percept
 
     def reset(self) -> None:
@@ -793,23 +793,24 @@ class FeatureChangeFilter(PerceptFilter):
             Percept with `contains_features` set to whether the features changed
             significantly.
         """
-        if not percept.use_state:
+        if not percept.contains_features:
             # The features are uninteresting (e.g. off object, or invalid surface
             # normal due to <3/4 of the object in view), so deliver the percept as
             # location-only; the location is valid even when the features are not.
-            percept.contains_features = False
-        elif not self._last_percept:  # first step
+            return percept
+
+        if not self._last_percept:  # first step
             self._last_percept = percept  # type: ignore[assignment]
             self._last_sent_n_steps_ago = 0
-            percept.contains_features = True
+            return percept
+
+        significant_feature_change = self._check_feature_change(percept)
+        percept.contains_features = significant_feature_change
+        if significant_feature_change:
+            # Only update the "last feature" when a significant change has occurred.
+            self._last_percept = percept
+            self._last_sent_n_steps_ago = 0
         else:
-            significant_feature_change = self._check_feature_change(percept)
-            percept.contains_features = significant_feature_change
-            if significant_feature_change:
-                # Only update the "last feature" when a significant change has occurred.
-                self._last_percept = percept
-                self._last_sent_n_steps_ago = 0
-            else:
-                self._last_sent_n_steps_ago += 1
+            self._last_sent_n_steps_ago += 1
 
         return percept

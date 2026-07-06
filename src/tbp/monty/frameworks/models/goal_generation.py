@@ -842,6 +842,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             use_state=True,
             sender_id=self.parent_lm.learning_module_id,
             sender_type="GSG",
+            contains_features=True,
             goal_tolerances=None,
             info=info,
         )

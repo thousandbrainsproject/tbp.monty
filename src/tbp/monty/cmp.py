@@ -56,7 +56,7 @@ class Message:
         use_state: bool,
         sender_id: str,
         sender_type: Literal["SM", "LM"],
-        contains_features: bool = True,
+        contains_features: bool,
     ):
         """Initialize a message."""
         self.location = location
@@ -69,7 +69,7 @@ class Message:
         self.sender_type = sender_type
         self.contains_features = contains_features
         self._set_allowable_sender_types()
-        if self.use_state:
+        if self.contains_features:
             self._check_all_attributes()
 
     def __repr__(self):
@@ -253,6 +253,7 @@ class Goal(Message):
         use_state: bool,
         sender_id: str,
         sender_type: str,
+        contains_features: bool,
         goal_tolerances: dict[str, Any] | None,
         info: dict[str, Any] | None = None,
     ):
@@ -272,6 +273,8 @@ class Goal(Message):
             use_state: a boolean indicating whether the goal should be used.
             sender_id: the ID of the sender of the goal (e.g., `"LM_0"`).
             sender_type: the type of sender of the goal (e.g., `"GSG"`).
+            contains_features: a boolean indicating whether the goal carries features
+              or only a target location.
             goal_tolerances: Dictionary of tolerances that GSGs use when determining
                 whether the current state of the LM matches the driving goal
                 or `None`. As such, a GSG can send a goal with more or less
@@ -290,6 +293,7 @@ class Goal(Message):
             use_state,
             sender_id,
             sender_type,
+            contains_features,
         )
 
     def _set_allowable_sender_types(self):
@@ -357,6 +361,7 @@ def encode_goal(goal: Goal) -> dict[str, Any]:
         "non_morphological_features": goal.non_morphological_features,
         "confidence": goal.confidence,
         "use_state": goal.use_state,
+        "contains_features": goal.contains_features,
         "sender_id": goal.sender_id,
         "sender_type": goal.sender_type,
         "goal_tolerances": goal.goal_tolerances,

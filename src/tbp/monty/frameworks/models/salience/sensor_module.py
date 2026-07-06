@@ -119,6 +119,7 @@ class SalienceSM(SensorModule):
                 use_state=True,
                 sender_id=self._sensor_module_id,
                 sender_type="SM",
+                contains_features=False,
                 goal_tolerances=None,
             )
             for i in range(len(on_object.locations))

@@ -462,6 +462,7 @@ class EvidenceGraphLM(GraphLM):
                             non_morphological_features=None,
                             confidence=evidences[graph_id][hyp_id],
                             use_state=True,
+                            contains_features=True,
                             sender_id=self.learning_module_id,
                             sender_type="LM",
                         )
@@ -532,6 +533,7 @@ class EvidenceGraphLM(GraphLM):
             },
             confidence=confidence,
             use_state=use_state,
+            contains_features=True,
             sender_id=self.learning_module_id,
             sender_type="LM",
         )
