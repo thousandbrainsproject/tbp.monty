@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import unittest
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 from unittest.mock import Mock, sentinel
 
 import numpy as np
@@ -44,12 +44,13 @@ def make_message(
     location: np.ndarray | None = None,
     on_object: bool = True,
     use_state: bool = True,
+    contains_features: bool = True,
     pose_vectors: np.ndarray | None = None,
     pose_fully_defined: bool = False,
     principal_curvatures: np.ndarray | None = None,
     non_morphological_features: dict | None = None,
     sender_id: str = "patch",
-    sender_type: str = "SM",
+    sender_type: Literal["SM", "LM"] = "SM",
 ):
     if location is None:
         location = np.array([0.0, 0.0, 0.0])
@@ -75,6 +76,7 @@ def make_message(
         non_morphological_features=non_morphological_features,
         confidence=1.0,
         use_state=use_state,
+        contains_features=contains_features,
         sender_id=sender_id,
         sender_type=sender_type,
     )
@@ -182,7 +184,8 @@ class TwoDSensorModuleInitTest(unittest.TestCase):
             morphological_features={"on_object": 0.0},
             non_morphological_features={},
             confidence=1.0,
-            use_state=False,
+            use_state=True,
+            contains_features=False,
             sender_id="test",
             sender_type="SM",
         )
@@ -194,7 +197,8 @@ class TwoDSensorModuleInitTest(unittest.TestCase):
             motor_only_step=False,
         )
 
-        assert msg.use_state is False
+        assert msg.use_state is True
+        assert msg.contains_features is False
         assert "pose_vectors" not in msg.morphological_features
         np.testing.assert_allclose(msg.displacement["displacement"], np.zeros(3))
         assert two_d_sm._tangent_frame is None

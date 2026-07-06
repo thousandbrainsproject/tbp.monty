@@ -138,6 +138,7 @@ class SalienceSMTest(unittest.TestCase):
                 location=locations[i],
                 confidence=salience[i],
                 use_state=True,
+                contains_features=False,
                 morphological_features=None,
                 non_morphological_features=None,
                 goal_tolerances=None,

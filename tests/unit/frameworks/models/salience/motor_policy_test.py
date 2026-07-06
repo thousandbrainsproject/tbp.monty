@@ -113,6 +113,7 @@ class LookAtGoalTest(unittest.TestCase):
                     use_state=True,
                     sender_id="test",
                     sender_type="SM",
+                    contains_features=False,
                     goal_tolerances=None,
                     info=None,
                 ),
@@ -137,6 +138,7 @@ class LookAtGoalTest(unittest.TestCase):
                 use_state=True,
                 sender_id="test",
                 sender_type="SM",
+                contains_features=False,
                 goal_tolerances=None,
                 info=None,
             ),
@@ -163,6 +165,7 @@ class LookAtGoalTest(unittest.TestCase):
             use_state=True,
             sender_id="test",
             sender_type="SM",
+            contains_features=False,
             goal_tolerances=None,
             info=None,
         )

@@ -42,6 +42,7 @@ class BaseGraphTest(TestCase):
             },
             confidence=1.0,
             use_state=True,
+            contains_features=True,
             sender_id=fake_sender_id,
             sender_type="SM",
         )

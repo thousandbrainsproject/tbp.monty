@@ -163,6 +163,7 @@ class LookAtGoalTest(unittest.TestCase):
             use_state=True,
             sender_id="view_finder",
             sender_type="SM",
+            contains_features=False,
             goal_tolerances=None,
             info=None,
         )
