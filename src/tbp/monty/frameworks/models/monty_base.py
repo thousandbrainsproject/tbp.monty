@@ -402,6 +402,7 @@ class MontyBase(Monty):
 
     def restore_ltm(self, memo: Memento) -> None:
         memo_lms: list[Memento] = memo["lms"]
+        # TODO: this is a weak compatibility check, make it stronger.
         if len(memo_lms) != len(self.learning_modules):
             raise ValueError("Incompatible Memento (different number of LMs)")
         for idx, lm in enumerate(self.learning_modules):

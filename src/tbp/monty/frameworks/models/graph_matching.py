@@ -575,7 +575,7 @@ class GraphLM(LearningModule):
     def reset(self):
         """Reset initial hypotheses.
 
-        TODO maybe rename to `reset_from_updated_ltm`?
+        TODO: maybe rename to `reset_from_updated_ltm`?
         """
         (
             self.possible_matches,

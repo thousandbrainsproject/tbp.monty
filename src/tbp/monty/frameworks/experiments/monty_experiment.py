@@ -429,9 +429,7 @@ class MontyExperiment:
         sm_to_agent_dict = instantiate(config.pop("sm_to_agent_dict"))
 
         # Create monty model
-        # FIXME: Kept for backward compatibility
         monty_args = config.pop("monty_args", {})
-
         monty_class = config.pop("monty_class")
         model = monty_class(
             sensor_modules=list(sensor_modules.values()),
@@ -443,10 +441,9 @@ class MontyExperiment:
             lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
             # Pass any leftover configuration paramters downstream to monty_class
             **config,
-            # FIXME: Kept for backward compatibility
             **monty_args,
         )
-        model.min_lms_match = self.min_lms_match  # FIXME: injected Experiment config?
+        model.min_lms_match = self.min_lms_match
 
         if monty_args["num_exploratory_steps"] > self.max_total_steps:
             new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
@@ -458,12 +455,12 @@ class MontyExperiment:
 
         self.model = model
 
-    def _recreation_snapshot(self) -> None:
+    def _snapshot_monty(self) -> None:
         """Capture episodic state of Monty model."""
         if self._recreation_mode:
             self._monty_ltm = self.model.snapshot_ltm()
 
-    def _recreation_restore(self) -> None:
+    def _restore_monty(self) -> None:
         """Recreate episodic state of Monty model."""
         if self._recreation_mode:
             self.model = self._create_monty()
@@ -535,7 +532,7 @@ class MontyExperiment:
 
         self.reset_episode_rng()
 
-        self._recreation_restore()
+        self._restore_monty()
 
         self.env_interface.pre_episode(self.rng)
 
@@ -564,7 +561,7 @@ class MontyExperiment:
         self.logger_handler.post_episode(self.logger_args)
 
         self.model.update_ltm()
-        self._recreation_snapshot()
+        self._snapshot_monty()
 
         if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_episodes += 1

@@ -61,7 +61,6 @@ def main(cfg: DictConfig):
     cfg.experiment.config.logging.output_dir = str(output_dir_from_run_name(cfg))
 
     experiment = instantiate_experiment(cfg.experiment)
-    # experiment._recreation_mode = True
     start_time = time.time()
     with experiment:
         experiment.run()
