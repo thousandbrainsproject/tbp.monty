@@ -77,11 +77,11 @@ def register_resolvers() -> None:
             OmegaConf.register_new_resolver(name, resolver)
 
 
-def hydrate_experiment(cfg_exp: Mapping[str, Any]) -> MontyExperiment:
-    """Return MontyExperiment initialized by Hydra configuration."""
+def instantiate_experiment(cfg_exp: Mapping[str, Any]) -> MontyExperiment:
+    """Return MontyExperiment initialized from Hydra configuration."""
     exp = hydra.utils.instantiate(cfg_exp)
     assert isinstance(exp, MontyExperiment), (
         f"Hydra did not produce a MontyExperiment from {cfg_exp}"
     )
-    exp._recreation_config = cfg_exp["config"]["monty_config"]
+    exp._monty_cfg = cfg_exp["config"]["monty_config"]
     return exp

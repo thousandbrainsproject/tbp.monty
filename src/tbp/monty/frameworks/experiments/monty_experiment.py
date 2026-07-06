@@ -62,8 +62,8 @@ class MontyExperiment:
     env_interface: Interface | None
 
     _recreation_mode: bool
-    _recreation_config: DictConfig | None  # dehydrated Monty config
-    _recreation_memory: Memento
+    _monty_cfg: DictConfig | None  # dehydrated Monty config
+    _monty_ltm: Memento
     _step_hook: StepHook
 
     def __init__(self, config: DictConfig) -> None:
@@ -76,8 +76,8 @@ class MontyExperiment:
 
         # Feature flag for "recreation" episode/epoch strategy.
         self._recreation_mode = False
-        self._recreation_config = None
-        self._recreation_memory = {}
+        self._monty_cfg = None
+        self._monty_ltm = {}
 
         self.rng = np.random.RandomState(config["seed"])
 
@@ -136,8 +136,7 @@ class MontyExperiment:
         self.init_loggers(self.config["logging"])
         logger.info(self.config)
 
-        # Create a fresh Monty instance
-        self._recreation_monty_factory()
+        self._create_monty()
 
         if self.model_path:
             # Load from checkpoint
@@ -224,10 +223,6 @@ class MontyExperiment:
         self.env_interface = None
         self.eval_epochs = 0
         self.train_epochs = 0
-
-    ####
-    # Logging
-    ####
 
     @property
     def logger_args(self):
@@ -410,20 +405,14 @@ class MontyExperiment:
 
         return self.experiment_mode, epoch, episode
 
-    ####
-    # Methods for running the experiment
-    ####
-
-    def _recreation_monty_factory(self) -> None:
+    def _create_monty(self) -> None:
         """Create a Monty model from dehydrated config.
 
         **WARNING:** `self._recreation_config` must be initialized
         with the dehydrated config before calling this method.
         """
-        assert self._recreation_config, "`_recreation_config` property not set!"
-
-        # allow pop() to remove elements from config
-        config = dict(self._recreation_config)
+        # create a shallow `dict` so we can use `pop()` to remove consumed elements
+        config = dict(self._monty_cfg)
         instantiate = hydra.utils.instantiate
 
         learning_modules = instantiate(config.pop("learning_modules"))
@@ -461,7 +450,7 @@ class MontyExperiment:
 
         if monty_args["num_exploratory_steps"] > self.max_total_steps:
             new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
-            print(
+            logger.warning(
                 "max_total_steps is set < num_exploratory_steps + max_train_steps."
                 f" Resetting it to {new_max_steps}"
             )
@@ -472,23 +461,18 @@ class MontyExperiment:
     def _recreation_snapshot(self) -> None:
         """Capture episodic state of Monty model."""
         if self._recreation_mode:
-            self._recreation_memory = self.model.snapshot_ltm()
-            print(f"_recreation_snapshot: {self._recreation_memory}")  # FIXME: remove!
+            self._monty_ltm = self.model.snapshot_ltm()
 
     def _recreation_restore(self) -> None:
         """Recreate episodic state of Monty model."""
         if self._recreation_mode:
-            self.model = self._recreation_monty_factory()
-            print(f"_recreation_restore: {self._recreation_memory}")  # FIXME: remove!
-            if self._recreation_memory:
-                self.model.restore_ltm(self._recreation_memory)
+            self.model = self._create_monty()
+            if self._monty_ltm:
+                self.model.restore_ltm(self._monty_ltm)
             self.logger_handler.model = self.model
         else:
             self.model.reset()
         self.model.set_experiment_mode(self.experiment_mode)
-        assert self.model.experiment_mode == self.experiment_mode, (
-            f"{self.model.experiment_mode} should be {self.experiment_mode}"
-        )
 
     def pre_step(self, _step, _observation) -> None:
         """Hook for anything you want to do before a step."""

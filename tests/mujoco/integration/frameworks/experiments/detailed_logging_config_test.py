@@ -15,7 +15,7 @@ import unittest
 import hydra
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.hydra import hydrate_experiment
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 
@@ -40,7 +40,7 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
         shutil.rmtree(self.output_dir)
 
     def test_can_set_up(self) -> None:
-        exp = hydrate_experiment(self.cfg.experiment)
+        exp = instantiate_experiment(self.cfg.experiment)
         with exp:
             pass
 
@@ -50,7 +50,7 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
         This ensures the config can be composed, the experiment can be instantiated,
         and that running an episode produces detailed logging json file.
         """
-        exp = hydrate_experiment(self.cfg.experiment)
+        exp = instantiate_experiment(self.cfg.experiment)
         with exp:
             exp.model.set_experiment_mode(ExperimentMode.EVAL)
             exp.run_epoch()

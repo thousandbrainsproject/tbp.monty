@@ -9,7 +9,7 @@
 
 import pytest
 
-from tbp.monty.hydra import hydrate_experiment
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -180,7 +180,7 @@ class HierarchyTest(unittest.TestCase):
         of this longer run if we already have it? Maybe in the future we want to change
         this but this is my current reasoning.
         """
-        exp = hydrate_experiment(self.two_lms_heterarchy_cfg.experiment)
+        exp = instantiate_experiment(self.two_lms_heterarchy_cfg.experiment)
         with exp:
             exp.run()
 
@@ -211,7 +211,7 @@ class HierarchyTest(unittest.TestCase):
         - Extending a graph with a new input channel
         - logging prediction errors
         """
-        exp = hydrate_experiment(self.two_lms_constrained_cfg.experiment)
+        exp = instantiate_experiment(self.two_lms_constrained_cfg.experiment)
         with exp:
             exp.run()
             # check that both LMs have learned both objects.
@@ -230,7 +230,7 @@ class HierarchyTest(unittest.TestCase):
                     f"objects: {learned_objects}",
                 )
 
-        exp = hydrate_experiment(self.two_lms_semisupervised_cfg.experiment)
+        exp = instantiate_experiment(self.two_lms_semisupervised_cfg.experiment)
         with exp:
             # check that models for both objects are loaded into memory correctly.
             for lm_idx, lm in enumerate(exp.model.learning_modules):
@@ -268,7 +268,7 @@ class HierarchyTest(unittest.TestCase):
                     f"graph: {updated_graph} with keys: {updated_graph.keys()}",
                 )
 
-        exp = hydrate_experiment(self.two_lms_eval_cfg.experiment)
+        exp = instantiate_experiment(self.two_lms_eval_cfg.experiment)
         with exp:
             exp.run()
             eval_stats = pd.read_csv(Path(exp.output_dir) / "eval_stats.csv")

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from tbp.monty.hydra import hydrate_experiment
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -79,7 +79,7 @@ class ProfileExperimentMixinTest(TestCase):
                 )
 
     def test_run_episode_is_profiled(self) -> None:
-        exp = hydrate_experiment(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -96,7 +96,7 @@ class ProfileExperimentMixinTest(TestCase):
         self.spot_check_profile_files()
 
     def test_run_train_epoch_is_profiled(self) -> None:
-        exp = hydrate_experiment(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -114,7 +114,7 @@ class ProfileExperimentMixinTest(TestCase):
         self.spot_check_profile_files()
 
     def test_run_eval_epoch_is_profiled(self) -> None:
-        exp = hydrate_experiment(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode(exp.experiment_mode)

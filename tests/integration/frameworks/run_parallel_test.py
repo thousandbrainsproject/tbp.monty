@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from tbp.monty.hydra import hydrate_experiment
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -65,7 +65,7 @@ class RunParallelTest(unittest.TestCase):
     def test_run_parallel_equals_serial_for_various_n_eval_epochs(self):
         # serial run
         cfg = self.supervised_pre_training_cfg
-        exp = hydrate_experiment(cfg.experiment)
+        exp = instantiate_experiment(cfg.experiment)
         with exp:
             exp.run()
 
@@ -116,7 +116,7 @@ class RunParallelTest(unittest.TestCase):
         # n_eval_epochs == len(eval_rotations)
         ###
         # serial run
-        exp = hydrate_experiment(self.eval_cfg.experiment)
+        exp = instantiate_experiment(self.eval_cfg.experiment)
         with exp:
             exp.run()
 
@@ -153,7 +153,7 @@ class RunParallelTest(unittest.TestCase):
         # n_eval_epochs < len(eval_rotations)
         ###
         # serial run
-        exp = hydrate_experiment(self.eval_lt_cfg.experiment)
+        exp = instantiate_experiment(self.eval_lt_cfg.experiment)
         with exp:
             exp.run()
 
@@ -177,7 +177,7 @@ class RunParallelTest(unittest.TestCase):
         # n_eval_epochs > len(eval_rotations)
         ###
         # serial run
-        exp = hydrate_experiment(self.eval_gt_cfg.experiment)
+        exp = instantiate_experiment(self.eval_gt_cfg.experiment)
         with exp:
             exp.run()
 

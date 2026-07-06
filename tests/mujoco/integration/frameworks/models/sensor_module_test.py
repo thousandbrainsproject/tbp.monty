@@ -16,7 +16,7 @@ import hydra
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.hydra import hydrate_experiment
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 
@@ -51,7 +51,7 @@ class SensorModuleTest(unittest.TestCase):
         shutil.rmtree(self.output_dir)
 
     def test_can_set_up(self) -> None:
-        exp = hydrate_experiment(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -65,7 +65,7 @@ class SensorModuleTest(unittest.TestCase):
 
     def test_features_in_sensor(self) -> None:
         """Check that correct features are returned by sensor module."""
-        exp = hydrate_experiment(self.sensor_feature_cfg.experiment)
+        exp = instantiate_experiment(self.sensor_feature_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -98,7 +98,7 @@ class SensorModuleTest(unittest.TestCase):
                     )
 
     def test_feature_change_sm(self):
-        exp = hydrate_experiment(self.feature_change_sensor_cfg.experiment)
+        exp = instantiate_experiment(self.feature_change_sensor_cfg.experiment)
         with exp:
             exp.run()
             # TODO: test that only new features are given to LM

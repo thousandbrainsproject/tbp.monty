@@ -20,7 +20,7 @@ from omegaconf import DictConfig
 from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
-from tbp.monty.hydra import hydrate_experiment
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 
@@ -115,7 +115,7 @@ class GraphBuildingTest(unittest.TestCase):
         Returns:
             The experiment.
         """
-        exp = hydrate_experiment(self.supervised_pre_training_cfg.experiment)
+        exp = instantiate_experiment(self.supervised_pre_training_cfg.experiment)
         with exp:
             exp.run()
         return exp
@@ -128,7 +128,7 @@ class GraphBuildingTest(unittest.TestCase):
         Returns:
             The experiment.
         """
-        exp = hydrate_experiment(self.sptm_feat_cfg.experiment)
+        exp = instantiate_experiment(self.sptm_feat_cfg.experiment)
         with exp:
             exp.run()
         return exp
@@ -175,7 +175,7 @@ class GraphBuildingTest(unittest.TestCase):
 
     def test_can_load_disp_graph(self) -> None:
         self.build_and_save_supervised_graph()
-        exp = hydrate_experiment(self.load_cfg.experiment)
+        exp = instantiate_experiment(self.load_cfg.experiment)
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
@@ -189,7 +189,7 @@ class GraphBuildingTest(unittest.TestCase):
 
     def test_can_load_disp_graph_for_ppf_matching(self) -> None:
         self.build_and_save_supervised_graph()
-        exp = hydrate_experiment(self.load_for_ppf_cfg.experiment)
+        exp = instantiate_experiment(self.load_for_ppf_cfg.experiment)
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
@@ -208,7 +208,7 @@ class GraphBuildingTest(unittest.TestCase):
 
     def test_can_load_disp_graph_for_feature_matching(self) -> None:
         self.build_and_save_supervised_graph()
-        exp = hydrate_experiment(self.load_for_feat_eval_cfg.experiment)
+        exp = instantiate_experiment(self.load_for_feat_eval_cfg.experiment)
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
@@ -227,7 +227,7 @@ class GraphBuildingTest(unittest.TestCase):
 
     def test_can_extend_and_save_feat_graph(self) -> None:
         self.build_and_save_supervised_graph_feat()
-        exp = hydrate_experiment(self.load_for_feat_train_cfg.experiment)
+        exp = instantiate_experiment(self.load_for_feat_train_cfg.experiment)
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(

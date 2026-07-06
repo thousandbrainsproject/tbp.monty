@@ -53,7 +53,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
 )
 from tbp.monty.geometry import Rotation
-from tbp.monty.hydra import hydrate_experiment
+from tbp.monty.hydra import instantiate_experiment
 from tbp.monty.math import EulerAnglesXYZ, VectorXYZ
 from tests import HYDRA_ROOT
 
@@ -86,38 +86,38 @@ class BasicPolicyTest(unittest.TestCase):
         shutil.rmtree(self.output_dir)
 
     def test_can_run_informed_policy(self) -> None:
-        exp = hydrate_experiment(self.base_dist_cfg.experiment)
+        exp = instantiate_experiment(self.base_dist_cfg.experiment)
         with exp:
             exp.run()
 
     def test_can_run_spiral_policy(self) -> None:
-        exp = hydrate_experiment(self.spiral_cfg.experiment)
+        exp = instantiate_experiment(self.spiral_cfg.experiment)
         with exp:
             # TODO: test that no two locations are the same
             exp.run()
 
     def test_can_run_dist_agent_hypo_driven_policy(self) -> None:
-        exp = hydrate_experiment(self.dist_hypo_driven_cfg.experiment)
+        exp = instantiate_experiment(self.dist_hypo_driven_cfg.experiment)
         with exp:
             exp.run()
 
     def test_can_run_surface_policy(self) -> None:
-        exp = hydrate_experiment(self.base_surf_cfg.experiment)
+        exp = instantiate_experiment(self.base_surf_cfg.experiment)
         with exp:
             exp.run()
 
     def test_can_run_curv_informed_policy(self) -> None:
-        exp = hydrate_experiment(self.curve_informed_cfg.experiment)
+        exp = instantiate_experiment(self.curve_informed_cfg.experiment)
         with exp:
             exp.run()
 
     def test_can_run_surf_agent_hypo_driven_policy(self) -> None:
-        exp = hydrate_experiment(self.surf_hypo_driven_cfg.experiment)
+        exp = instantiate_experiment(self.surf_hypo_driven_cfg.experiment)
         with exp:
             exp.run()
 
     def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self) -> None:
-        exp = hydrate_experiment(self.dist_hypo_driven_multi_lm_cfg.experiment)
+        exp = instantiate_experiment(self.dist_hypo_driven_multi_lm_cfg.experiment)
         with exp:
             exp.run()
 
@@ -263,7 +263,7 @@ class AdvancedPolicyTest(unittest.TestCase):
                 "motor_system_config"
             ].policy_selector.policy.desired_object_distance
         )
-        exp = hydrate_experiment(self.surf_poor_initial_view_cfg.experiment)
+        exp = instantiate_experiment(self.surf_poor_initial_view_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -308,7 +308,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness and large saccade sizes, so
         that we are guaranteed to move off of the cube.
         """
-        exp = hydrate_experiment(self.dist_fixed_action_cfg.experiment)
+        exp = instantiate_experiment(self.dist_fixed_action_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -433,7 +433,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness, so that we are guaranteed to move
         off of the cube.
         """
-        exp = hydrate_experiment(self.surf_fixed_action_cfg.experiment)
+        exp = instantiate_experiment(self.surf_fixed_action_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -580,7 +580,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         Begins the episode by facing a cube whose surface is pointing away from
         the agent at an odd angle.
         """
-        exp = hydrate_experiment(self.rotated_cube_view_cfg.experiment)
+        exp = instantiate_experiment(self.rotated_cube_view_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
