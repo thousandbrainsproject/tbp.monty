@@ -47,7 +47,7 @@ def create_percept(
         },
         non_morphological_features={},
         confidence=1.0,
-        use_state=True,
+        pass_message=True,
         contains_features=contains_features,
         sender_id="SM_0",
         sender_type="SM",

@@ -874,13 +874,13 @@ class GraphLearningTest(BaseGraphTest):
     def test_moving_off_object_and_back(self) -> None:
         """Test that the object is still recognized after moving off the object.
 
-        TODO: since the monty class checks use_state in combine_inputs it doesn't make
-        much sense to test this here anymore with an isolated LM.
+        TODO: since the monty class checks pass_message in combine_inputs it doesn't
+        make much sense to test this here anymore with an isolated LM.
         """
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
         fake_obs_test[1].location = [1, 2, 1]
         fake_obs_test[1].morphological_features["on_object"] = 0
-        fake_obs_test[1].use_state = False
+        fake_obs_test[1].pass_message = False
 
         graph_lm = self.get_gm_with_fake_object()
 
@@ -888,7 +888,7 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm.reset_stm()
         graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
         for observation in fake_obs_test:
-            if not observation.use_state:
+            if not observation.pass_message:
                 pass
             else:
                 graph_lm.matching_step(self.ctx, [observation])

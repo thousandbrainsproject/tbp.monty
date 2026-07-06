@@ -461,7 +461,7 @@ class EvidenceGraphLM(GraphLM):
                             # No feature when voting.
                             non_morphological_features=None,
                             confidence=evidences[graph_id][hyp_id],
-                            use_state=True,
+                            pass_message=True,
                             contains_features=True,
                             sender_id=self.learning_module_id,
                             sender_type="LM",
@@ -481,7 +481,7 @@ class EvidenceGraphLM(GraphLM):
         output therefore has the same format to keep the messaging protocol
         consistent and make it easy to stack multiple LMs on top of each other.
 
-        If the LM has not reached a "match" terminal state, use_state == False.
+        If the LM has not reached a "match" terminal state, pass_message == False.
         """
         mlh = self.get_current_mlh()
         pose_features = self._object_pose_to_features(mlh["rotation"].inv())
@@ -491,7 +491,7 @@ class EvidenceGraphLM(GraphLM):
         #           check will make sure that we are also currently on object)
         #           NOTE: May want to relax this check but still need a motor input
         #       2) It has reached a "match" terminal state
-        use_state = bool(
+        pass_message = bool(
             self.buffer.get_currently_on_object() and self.terminal_state == "match"
         )
         # TODO H: is this a good way to scale evidence to [0, 1]?
@@ -532,7 +532,7 @@ class EvidenceGraphLM(GraphLM):
                 # of top-down connections).
             },
             confidence=confidence,
-            use_state=use_state,
+            pass_message=pass_message,
             contains_features=True,
             sender_id=self.learning_module_id,
             sender_type="LM",

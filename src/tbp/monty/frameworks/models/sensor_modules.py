@@ -240,19 +240,19 @@ class ObservationProcessor:
             morphological_features["on_object"] = float(on_object)
 
         # Sensor module returns features at a location in the form of a Message class.
-        # `use_state` is a bool indicating whether the message should be delivered to a
-        # learning module; SM percepts default to `True` and are only set to `False` on
-        # motor-only steps (handled by `SensorModule.step`). `contains_features` is a
-        # bool indicating whether the input is "interesting", which indicates that it
-        # merits processing by the learning module (as opposed to a location-only
-        # message); it will be `True` so long as we are on the object and the surface
-        # normal and principal curvature directions were valid.
+        # `pass_message` is a bool indicating whether the message should be delivered
+        # to a learning module; SM percepts default to `True` and are only set to
+        # `False` on motor-only steps (handled by `SensorModule.step`).
+        # `contains_features` is a bool indicating whether the input is "interesting",
+        # which indicates that it merits processing by the learning module (as opposed
+        # to a location-only message); it will be `True` so long as we are on the object
+        # and the surface normal and principal curvature directions were valid.
         percept = Message(
             location=np.array([x, y, z]),
             morphological_features=morphological_features,
             non_morphological_features=features,
             confidence=1.0,
-            use_state=True,
+            pass_message=True,
             contains_features=on_object and valid_signals,
             sender_id=self._sensor_module_id,
             sender_type="SM",
@@ -649,7 +649,7 @@ class CameraSM(SensorModule):
 
         Returns:
             Percept with features and morphological features. Noise may be
-            added. The `use_state` and `contains_features` flags may be set.
+            added. The `pass_message` and `contains_features` flags may be set.
         """
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
@@ -664,7 +664,7 @@ class CameraSM(SensorModule):
         if motor_only_step:
             # Motor-only steps do not reach the LMs and can skip the feature
             # change filter.
-            percept.use_state = False
+            percept.pass_message = False
         else:
             percept = self._percept_filter(percept)
 
@@ -784,7 +784,7 @@ class FeatureChangeFilter(PerceptFilter):
         location in the LM). A percept is location-only when its features are
         uninteresting (e.g. off object, or an invalid surface normal due to <3/4
         of the object in view) but its location is still valid. Delivery is decided
-        by the caller via `use_state`; this filter does not drop percepts.
+        by the caller via `pass_message`; this filter does not drop percepts.
 
         Args:
             percept: Percept to check for feature change.

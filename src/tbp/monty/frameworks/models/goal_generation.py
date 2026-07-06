@@ -149,7 +149,7 @@ class GraphGoalGenerator(GoalGenerator):
         #             "location_rel_model": None
         #         },
         #         confidence=1.0,  # Should have high confidence
-        #         use_state=False,
+        #         pass_message=False,
         #         sender_id=self.parent_lm.learning_module_id,
         #         sender_type="GSG",
         #         goal_tolerances=None,
@@ -839,7 +839,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             },
             non_morphological_features=None,
             confidence=goal_confidence,
-            use_state=True,
+            pass_message=True,
             sender_id=self.parent_lm.learning_module_id,
             sender_type="GSG",
             contains_features=True,

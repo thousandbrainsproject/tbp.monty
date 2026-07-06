@@ -690,13 +690,13 @@ class EvidenceLMTest(BaseGraphTest):
         Test that the object is still recognized after moving off the object
         and that evidence is not incremented in that step.
 
-        TODO: since the monty class checks use_state in combine_inputs it doesn't make
-        much sense to test this here anymore with an isolated LM.
+        TODO: since the monty class checks pass_message in combine_inputs it doesn't
+        make much sense to test this here anymore with an isolated LM.
         """
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
         fake_obs_test[1].location = [1, 2, 1]
         fake_obs_test[1].morphological_features["on_object"] = 0
-        fake_obs_test[1].use_state = False
+        fake_obs_test[1].pass_message = False
 
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
 
@@ -705,7 +705,7 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
         target_evidence = 1
         for step, observation in enumerate(fake_obs_test):
-            if not observation.use_state:
+            if not observation.pass_message:
                 pass
             else:
                 graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)

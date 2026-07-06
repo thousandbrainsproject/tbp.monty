@@ -182,7 +182,7 @@ class TwoDSensorModule(SensorModule):
 
         Returns:
             Message with features and morphological features. Noise may be added.
-            The `use_state` and `contains_features` flags may be set.
+            The `pass_message` and `contains_features` flags may be set.
         """
         if self.state and self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
@@ -214,7 +214,7 @@ class TwoDSensorModule(SensorModule):
 
         if motor_only_step:
             # Do not deliver motor-only steps to the LM.
-            observed_state.use_state = False
+            observed_state.pass_message = False
 
         observed_state = self._update_2d_position_and_displacement(
             observed_state, curvature_pose_vectors, true_surface_normal

@@ -287,14 +287,14 @@ class MontyBase(Monty):
         combined_inputs = [
             inputs_from_sms[i]
             for i in range(len(inputs_from_sms))
-            if inputs_from_sms[i].use_state
+            if inputs_from_sms[i].pass_message
         ]
         if len(combined_inputs) == 0:
             # If we have no sensory input, we also don't use LM input
             return combined_inputs
 
         for lm_input in inputs_from_lms:
-            if lm_input.use_state:
+            if lm_input.pass_message:
                 combined_inputs.append(lm_input)
         return combined_inputs
 

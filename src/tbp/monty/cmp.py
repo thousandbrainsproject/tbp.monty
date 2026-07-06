@@ -38,7 +38,8 @@ class Message:
             pose_vectors of shape (3,3) and pose_fully_defined (bool).
         non_morphological_features: dictionary of non-morphological features.
         confidence: message confidence. In range [0,1].
-        use_state: boolean indicating whether the message should be used or not.
+        pass_message: boolean indicating whether the message should be delivered to
+            the receiver (as opposed to withheld, e.g. on motor-only steps).
         sender_id: string identifying the sender of the message.
         sender_type: string identifying the type of sender. Can be "SM" or "LM".
         contains_features: boolean indicating whether the message carries features
@@ -53,7 +54,7 @@ class Message:
         morphological_features: dict[str, Any],
         non_morphological_features: dict[str, Any],
         confidence: float,
-        use_state: bool,
+        pass_message: bool,
         sender_id: str,
         sender_type: Literal["SM", "LM"],
         contains_features: bool,
@@ -64,7 +65,7 @@ class Message:
         self.morphological_features = morphological_features
         self.non_morphological_features = non_morphological_features
         self.confidence = confidence
-        self.use_state = use_state
+        self.pass_message = pass_message
         self.sender_id = sender_id
         self.sender_type = sender_type
         self.contains_features = contains_features
@@ -100,7 +101,7 @@ class Message:
                 repr_string += f"       {feature}: {feat_val}\n"
         repr_string += (
             f"   Confidence: {self.confidence}\n"
-            f"   Use State: {self.use_state}\n"
+            f"   Pass Message: {self.pass_message}\n"
             f"   Sender Type: {self.sender_type}\n"
         )
         return repr_string
@@ -209,8 +210,8 @@ class Message:
         assert self.confidence >= 0 and self.confidence <= 1, (
             f"Confidence must be in [0,1] but is {self.confidence}"
         )
-        assert isinstance(self.use_state, bool), (
-            f"use_state must be a boolean but is {type(self.use_state)}"
+        assert isinstance(self.pass_message, bool), (
+            f"pass_message must be a boolean but is {type(self.pass_message)}"
         )
         assert isinstance(self.contains_features, bool), (
             f"contains_features must be a boolean but is {type(self.contains_features)}"
@@ -250,7 +251,7 @@ class Goal(Message):
         morphological_features: dict[str, Any] | None,
         non_morphological_features: dict[str, Any] | None,
         confidence: float,
-        use_state: bool,
+        pass_message: bool,
         sender_id: str,
         sender_type: str,
         contains_features: bool,
@@ -270,7 +271,8 @@ class Goal(Message):
             non_morphological_features: a dictionary containing non-morphological
               features at the target location or `None`.
             confidence: a float between 0 and 1 representing the confidence in the goal.
-            use_state: a boolean indicating whether the goal should be used.
+            pass_message: a boolean indicating whether the goal should be delivered to
+              the receiver.
             sender_id: the ID of the sender of the goal (e.g., `"LM_0"`).
             sender_type: the type of sender of the goal (e.g., `"GSG"`).
             contains_features: a boolean indicating whether the goal carries features
@@ -290,7 +292,7 @@ class Goal(Message):
             morphological_features,
             non_morphological_features,
             confidence,
-            use_state,
+            pass_message,
             sender_id,
             sender_type,
             contains_features,
@@ -332,8 +334,8 @@ class Goal(Message):
         assert self.confidence >= 0 and self.confidence <= 1, (
             f"Confidence must be in [0,1] but is {self.confidence}"
         )
-        assert isinstance(self.use_state, bool), (
-            f"use_state must be a boolean but is {type(self.use_state)}"
+        assert isinstance(self.pass_message, bool), (
+            f"pass_message must be a boolean but is {type(self.pass_message)}"
         )
         assert isinstance(self.sender_id, str), (
             f"sender_id must be string but is {type(self.sender_id)}"
@@ -360,7 +362,7 @@ def encode_goal(goal: Goal) -> dict[str, Any]:
         "morphological_features": goal.morphological_features,
         "non_morphological_features": goal.non_morphological_features,
         "confidence": goal.confidence,
-        "use_state": goal.use_state,
+        "pass_message": goal.pass_message,
         "contains_features": goal.contains_features,
         "sender_id": goal.sender_id,
         "sender_type": goal.sender_type,
