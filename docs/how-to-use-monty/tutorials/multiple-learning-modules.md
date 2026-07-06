@@ -91,7 +91,7 @@ lm_to_lm_vote_matrix:
 
 We have also specified that we want to use a `naive_scan_5` for the motor system. This is a *learning-focused* motor policy that directs the agent to look across the object surface in a spiraling motion. That way, we can ensure efficient coverage of the entire object (of what is visible from the current perspective) during learning.
 
-Finally, we have also set the `/environment` to `habitat_dist_agent_sensors5`. This specifies that we have five `CameraSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see `src/tbp/monty/conf/environment/habitat_dist_agent_sensors5`.
+Finally, we have also set the `/environment` to `habitat_dist_agent_sensors5`. This specifies that we have five `CameraSM` sensor modules (and a view finder) mounted onto a single distant agent. For the exact specifications, see `src/tbp/monty/conf/environment/habitat_dist_agent_sensors5`.
 
 To run this experiment, call the `run.py` script like so:
 ```bash
