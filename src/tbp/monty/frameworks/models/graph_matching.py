@@ -33,6 +33,7 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
+from tbp.monty.frameworks.utils.sensor_processing import LTP_PIXEL_STATS_KEY
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
 
@@ -1065,7 +1066,14 @@ class GraphLM(LearningModule):
                         percept.morphological_features[feature]
                     )
             for feature in percept.non_morphological_features:
-                if feature in self.tolerances[input_channel]:
+                # LTP_PIXEL_STATS_KEY is observation metadata rather than a matched
+                # feature, so it has no tolerance. It is forwarded unconditionally so
+                # the feature evidence calculator can decide whether to trust the LTP
+                # texture signal for this observation.
+                if (
+                    feature in self.tolerances[input_channel]
+                    or feature == LTP_PIXEL_STATS_KEY
+                ):
                     features_to_use[input_channel][feature] = (
                         percept.non_morphological_features[feature]
                     )
@@ -1425,6 +1433,10 @@ class GraphMemory(LMMemory):
                 if feature in [
                     "pose_vectors",
                     "pose_fully_defined",
+                    # Observation metadata, not a matched feature (see
+                    # _select_features_to_use). Excluded so it never enters the
+                    # per-node feature array used for evidence scoring.
+                    LTP_PIXEL_STATS_KEY,
                 ]:
                     continue
                 if i == 0:

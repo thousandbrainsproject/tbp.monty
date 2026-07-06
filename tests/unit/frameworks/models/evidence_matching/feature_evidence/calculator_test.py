@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import unittest
 
+import cv2
 import numpy as np
 import numpy.typing as npt
 from hypothesis import given
@@ -20,6 +21,7 @@ from hypothesis.extra.numpy import arrays
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
     DefaultFeatureEvidenceCalculator,
 )
+from tbp.monty.frameworks.utils.sensor_processing import LTP_PIXEL_STATS_KEY
 
 
 class DefaultFeatureEvidenceCalculatorTest(unittest.TestCase):
@@ -207,6 +209,267 @@ class DefaultFeatureEvidenceCalculatorTest(unittest.TestCase):
             feature_order=["pose_vectors", "curvature", "pose_fully_defined"],
         )
         np.testing.assert_array_equal(baseline, with_skip)
+
+    def test_histogram_identical_to_query_gives_full_evidence(self) -> None:
+        # A node whose stored histogram equals the query histogram has Hellinger
+        # distance 0 and therefore receives evidence 1.
+        query_hist = [0.1, 0.2, 0.3, 0.4]
+        stored = np.array([query_hist], dtype=np.float64)
+        evidence = self._calculate(
+            stored=stored,
+            query={"ltp": query_hist},
+            tolerances={"ltp": 1.0},
+            weights={"ltp": 1.0},
+            feature_order=["ltp"],
+        )
+        np.testing.assert_allclose(evidence, [1.0], atol=1e-9)
+
+    def test_histogram_evidence_matches_hellinger_decay(self) -> None:
+        # Per-node evidence is clip(tol - dist, 0) / tol, where dist is cv2's
+        # Hellinger (Bhattacharyya) distance between the stored and query histograms.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored = np.array(
+            [
+                [0.25, 0.25, 0.25, 0.25],  # identical -> distance 0
+                [0.40, 0.20, 0.20, 0.20],  # mildly different
+                [0.90, 0.05, 0.03, 0.02],  # very different
+            ],
+            dtype=np.float64,
+        )
+        tolerance = 0.5
+        evidence = self._calculate(
+            stored=stored,
+            query={"ltp": query_hist},
+            tolerances={"ltp": tolerance},
+            weights={"ltp": 1.0},
+            feature_order=["ltp"],
+        )
+
+        query_f32 = np.array(query_hist, dtype=np.float32)
+        expected = []
+        for row in stored:
+            dist = cv2.compareHist(
+                row.astype(np.float32), query_f32, cv2.HISTCMP_BHATTACHARYYA
+            )
+            expected.append(max(0.0, 1.0 - dist / tolerance))
+        np.testing.assert_allclose(evidence, expected, atol=1e-6)
+
+    def test_histogram_distance_at_or_above_tolerance_gives_zero(self) -> None:
+        query_hist = [1.0, 0.0, 0.0, 0.0]
+        # Stored mass is entirely in a different bin -> maximal Hellinger distance (1).
+        stored = np.array([[0.0, 0.0, 0.0, 1.0]], dtype=np.float64)
+        evidence = self._calculate(
+            stored=stored,
+            query={"ltp": query_hist},
+            tolerances={"ltp": 0.5},
+            weights={"ltp": 1.0},
+            feature_order=["ltp"],
+        )
+        np.testing.assert_allclose(evidence, [0.0], atol=1e-9)
+
+    def test_histogram_contributes_as_single_feature_in_average(self) -> None:
+        # The histogram weight is spread across its bins so that, combined with a
+        # numeric feature, the result is the weight-combination of the two
+        # per-feature evidences (the histogram is not counted once per bin).
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored_hist = [0.40, 0.20, 0.20, 0.20]
+        curvature_stored = 2.0
+        curvature_query = 2.5
+        curvature_tol = 1.0
+        ltp_tol = 0.5
+        ltp_weight = 3.0
+        curvature_weight = 1.0
+
+        stored = np.array(
+            [[curvature_stored, *stored_hist]],
+            dtype=np.float64,
+        )
+        evidence = self._calculate(
+            stored=stored,
+            query={"curvature": curvature_query, "ltp": query_hist},
+            tolerances={"curvature": curvature_tol, "ltp": ltp_tol},
+            weights={"curvature": curvature_weight, "ltp": ltp_weight},
+            feature_order=["curvature", "ltp"],
+        )
+
+        curvature_ev = max(
+            0.0, 1.0 - abs(curvature_stored - curvature_query) / curvature_tol
+        )
+        dist = cv2.compareHist(
+            np.array(stored_hist, dtype=np.float32),
+            np.array(query_hist, dtype=np.float32),
+            cv2.HISTCMP_BHATTACHARYYA,
+        )
+        ltp_ev = max(0.0, 1.0 - dist / ltp_tol)
+        expected = (
+            curvature_ev * curvature_weight + ltp_ev * ltp_weight
+        ) / (curvature_weight + ltp_weight)
+        np.testing.assert_allclose(evidence, [expected], atol=1e-6)
+
+
+    def test_dark_low_variance_patch_zeroes_ltp_weight(self) -> None:
+        # When the LTP patch is dark and uniform, the LTP feature should receive
+        # zero weight, so the combined evidence reduces to the other features only.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored_hist = [0.40, 0.20, 0.20, 0.20]
+        curvature_stored = 2.0
+        curvature_query = 2.5
+        curvature_tol = 1.0
+
+        stored = np.array([[curvature_stored, *stored_hist]], dtype=np.float64)
+        dark_stats = [10.0, 5.0]  # below both thresholds -> unreliable
+        evidence = self._calculate(
+            stored=stored,
+            query={
+                "curvature": curvature_query,
+                "ltp": query_hist,
+                LTP_PIXEL_STATS_KEY: dark_stats,
+            },
+            tolerances={"curvature": curvature_tol, "ltp": 0.5},
+            weights={"curvature": 1.0, "ltp": 20.0},
+            feature_order=["curvature", "ltp"],
+        )
+
+        # With LTP zeroed, only curvature contributes.
+        curvature_ev = max(
+            0.0, 1.0 - abs(curvature_stored - curvature_query) / curvature_tol
+        )
+        np.testing.assert_allclose(evidence, [curvature_ev], atol=1e-9)
+
+    def test_bright_patch_keeps_configured_ltp_weight(self) -> None:
+        # A patch with high mean intensity is reliable, so the configured LTP
+        # weight is used as normal.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored_hist = [0.40, 0.20, 0.20, 0.20]
+        curvature_stored = 2.0
+        curvature_query = 2.5
+        curvature_tol = 1.0
+        ltp_tol = 0.5
+        ltp_weight = 20.0
+        curvature_weight = 1.0
+
+        stored = np.array([[curvature_stored, *stored_hist]], dtype=np.float64)
+        # Both mean and variance above their thresholds -> reliable. With OR
+        # semantics either being below threshold would discount LTP.
+        bright_stats = [180.0, 500.0]
+        evidence = self._calculate(
+            stored=stored,
+            query={
+                "curvature": curvature_query,
+                "ltp": query_hist,
+                LTP_PIXEL_STATS_KEY: bright_stats,
+            },
+            tolerances={"curvature": curvature_tol, "ltp": ltp_tol},
+            weights={"curvature": curvature_weight, "ltp": ltp_weight},
+            feature_order=["curvature", "ltp"],
+        )
+
+        curvature_ev = max(
+            0.0, 1.0 - abs(curvature_stored - curvature_query) / curvature_tol
+        )
+        dist = cv2.compareHist(
+            np.array(stored_hist, dtype=np.float32),
+            np.array(query_hist, dtype=np.float32),
+            cv2.HISTCMP_BHATTACHARYYA,
+        )
+        ltp_ev = max(0.0, 1.0 - dist / ltp_tol)
+        expected = (curvature_ev * curvature_weight + ltp_ev * ltp_weight) / (
+            curvature_weight + ltp_weight
+        )
+        np.testing.assert_allclose(evidence, [expected], atol=1e-6)
+
+    def test_dark_high_variance_patch_zeroes_ltp_weight(self) -> None:
+        # With OR semantics, a low mean intensity alone makes the LTP signal
+        # unreliable, even if the patch has high variance, so the LTP weight is
+        # zeroed and the combined evidence reduces to the other features only.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored_hist = [0.40, 0.20, 0.20, 0.20]
+        curvature_stored = 2.0
+        curvature_query = 2.5
+        curvature_tol = 1.0
+
+        stored = np.array([[curvature_stored, *stored_hist]], dtype=np.float64)
+        stats = [10.0, 500.0]  # dark mean (below threshold) -> unreliable
+        evidence = self._calculate(
+            stored=stored,
+            query={
+                "curvature": curvature_query,
+                "ltp": query_hist,
+                LTP_PIXEL_STATS_KEY: stats,
+            },
+            tolerances={"curvature": curvature_tol, "ltp": 0.5},
+            weights={"curvature": 1.0, "ltp": 20.0},
+            feature_order=["curvature", "ltp"],
+        )
+
+        # With LTP zeroed, only curvature contributes.
+        curvature_ev = max(
+            0.0, 1.0 - abs(curvature_stored - curvature_query) / curvature_tol
+        )
+        np.testing.assert_allclose(evidence, [curvature_ev], atol=1e-9)
+
+    def test_abnormally_bright_patch_zeroes_ltp_weight(self) -> None:
+        # A patch whose mean intensity is above the bright threshold is saturated
+        # (e.g. specular highlight) and carries no reliable texture, so the LTP
+        # weight is zeroed and the combined evidence reduces to the other features.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored_hist = [0.40, 0.20, 0.20, 0.20]
+        curvature_stored = 2.0
+        curvature_query = 2.5
+        curvature_tol = 1.0
+
+        stored = np.array([[curvature_stored, *stored_hist]], dtype=np.float64)
+        # Mean above the bright threshold (and high variance) -> unreliable.
+        stats = [250.0, 500.0]
+        evidence = self._calculate(
+            stored=stored,
+            query={
+                "curvature": curvature_query,
+                "ltp": query_hist,
+                LTP_PIXEL_STATS_KEY: stats,
+            },
+            tolerances={"curvature": curvature_tol, "ltp": 0.5},
+            weights={"curvature": 1.0, "ltp": 20.0},
+            feature_order=["curvature", "ltp"],
+        )
+
+        # With LTP zeroed, only curvature contributes.
+        curvature_ev = max(
+            0.0, 1.0 - abs(curvature_stored - curvature_query) / curvature_tol
+        )
+        np.testing.assert_allclose(evidence, [curvature_ev], atol=1e-9)
+
+    def test_all_zero_stored_histogram_gives_finite_zero_evidence(self) -> None:
+        # A stored node whose histogram is all zeros (e.g. a training observation
+        # that was entirely off object) must not crash or produce NaN. cv2's
+        # Bhattacharyya distance treats it as maximally different (distance 1),
+        # which clips to zero evidence.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float64)
+        evidence = self._calculate(
+            stored=stored,
+            query={"ltp": query_hist},
+            tolerances={"ltp": 0.5},
+            weights={"ltp": 1.0},
+            feature_order=["ltp"],
+        )
+        assert np.all(np.isfinite(evidence))
+        np.testing.assert_allclose(evidence, [0.0], atol=1e-9)
+
+    def test_ltp_only_unreliable_patch_gives_zero_evidence(self) -> None:
+        # If LTP is the only matched feature and it is unreliable, its weight is
+        # zeroed and the calculator returns zero evidence rather than dividing by a
+        # zero total weight.
+        query_hist = [0.25, 0.25, 0.25, 0.25]
+        stored = np.array([[0.25, 0.25, 0.25, 0.25]], dtype=np.float64)
+        evidence = self._calculate(
+            stored=stored,
+            query={"ltp": query_hist, LTP_PIXEL_STATS_KEY: [5.0, 5.0]},
+            tolerances={"ltp": 0.5},
+            weights={"ltp": 20.0},
+            feature_order=["ltp"],
+        )
+        np.testing.assert_array_equal(evidence, [0.0])
 
 
 if __name__ == "__main__":

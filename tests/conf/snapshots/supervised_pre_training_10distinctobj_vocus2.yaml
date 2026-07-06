@@ -86,7 +86,7 @@ experiment:
               n_scales: 2
               max_octaves: 5
               use_depth: true
-              use_orientation: false
+              use_orientation: true
       sm_to_agent_dict:
         patch: agent_id_0
         view_finder: agent_id_0
@@ -236,6 +236,7 @@ constants:
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
   compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v4}
+  retextured_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
   rotations_all_count: 14
   rotations_all:
   - - 0
