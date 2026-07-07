@@ -59,6 +59,7 @@ class GetGoodViewTest(unittest.TestCase):
         """
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("dist_agent_too_far_away", self.output_dir)
+            agent_cfg = config.experiment.config.environment.env_init_args.agents
             agent_id = config.experiment.config.train_env_interface_args[
                 "positioning_procedures"
             ][0].agent_id
@@ -74,12 +75,17 @@ class GetGoodViewTest(unittest.TestCase):
                 target_perc_on_target_obj = GOOD_VIEW_PERCENTAGE_DEFAULT
                 target_closest_point = GOOD_VIEW_DISTANCE_DEFAULT
 
-                observation, _ = exp.env_interface.step([])
+                observation, state = exp.env_interface.step([])
                 view = observation[agent_id]["view_finder"]
                 semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
                 perc_on_target_obj = get_perc_on_obj_semantic(
                     semantic, semantic_id=SemanticID(1)
                 )
+
+                # Make sure we've actually moved
+                assert not np.allclose(
+                    state[agent_id].position, agent_cfg.agent_args.position
+                ), "Agent did not move."
 
                 assert perc_on_target_obj >= target_perc_on_target_obj, (
                     f"Initial view is not good enough, {perc_on_target_obj} "
@@ -109,6 +115,7 @@ class GetGoodViewTest(unittest.TestCase):
         """
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("multi_object_target_not_visible", self.output_dir)
+            agent_cfg = config.experiment.config.environment.env_init_args.agents
             agent_id = config.experiment.config.train_env_interface_args[
                 "positioning_procedures"
             ][0].agent_id
@@ -116,8 +123,6 @@ class GetGoodViewTest(unittest.TestCase):
                 config.experiment
             )
             with exp:
-                exp.train()
-
                 exp.experiment_mode = ExperimentMode.EVAL
                 exp.model.set_experiment_mode(exp.experiment_mode)
                 exp.pre_epoch()
@@ -126,12 +131,17 @@ class GetGoodViewTest(unittest.TestCase):
                 target_perc_on_target_obj = GOOD_VIEW_PERCENTAGE_DEFAULT
                 target_closest_point = GOOD_VIEW_DISTANCE_DEFAULT
 
-                observation, _ = exp.env_interface.step([])
+                observation, state = exp.env_interface.step([])
                 view = observation[agent_id]["view_finder"]
                 semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
                 perc_on_target_obj = get_perc_on_obj_semantic(
                     semantic, semantic_id=SemanticID(1)
                 )
+
+                # Make sure we've actually moved
+                assert not np.allclose(
+                    state[agent_id].position, agent_cfg.agent_args.position
+                ), "Agent did not move."
 
                 assert perc_on_target_obj >= target_perc_on_target_obj, (
                     f"Initial view is not good enough, {perc_on_target_obj} "
