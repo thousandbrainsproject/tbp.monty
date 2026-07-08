@@ -1098,8 +1098,8 @@ class SurfacePolicy(InformedPolicy):
         self._telemetry = SurfacePolicyTelemetry()
 
     def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
-        # TODO: This is a hack. What we should be doing is using a positioning
-        #       procedure for surface agents instead.
+        # TODO: This is a hack. What we should be doing is
+        #       using more sophisticated actions for surface agents instead.
         motor_system.motor_only_step = True
 
         return super().fixme_provide_motor_system(motor_system)
