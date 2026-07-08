@@ -8,7 +8,7 @@ defaults:
   - /monty/connectivity: 2lm_2sm
   - /environment: habitat_dist_agent_sensors2
   - /env_interface: train_objects_with_stickers_2d_children_predefined
-  - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
+  - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch1
   - /env_interface/transform: missing_depthto3d_sensor3
   - /logging: silent_info_train
 
@@ -22,8 +22,8 @@ experiment:
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
-    n_train_epochs: 3
-    n_eval_epochs: 3
+    n_train_epochs: 7
+    n_eval_epochs: 7
     model_name_or_path: ''
     min_lms_match: 1
     seed: 42
@@ -35,3 +35,31 @@ experiment:
     environment:
       env_init_args:
         data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/compositional_objects}
+        agents:
+          agent_args:
+            resolutions:
+              - [ 64, 64 ]
+              - [ 64, 64 ]
+            zooms:
+              - ${constants.zoom}
+              - 1.0
+      transform:
+        - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
+          agent_id: agent_id_0
+          sigma: ${constants.blur_sigma}
+          sensor_ids: [ patch ]
+        - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+          agent_id: agent_id_0
+          max_depth: 1
+        - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+          agent_id: agent_id_0
+          sensor_ids: [ patch, view_finder ]
+          resolutions:
+            - [ 64, 64 ]
+            - [ 64, 64 ]
+          world_coord: true
+          zooms:
+            - ${constants.zoom}
+            - 1.0
+          get_all_points: true
+          use_semantic_sensor: false
