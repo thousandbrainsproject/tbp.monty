@@ -3,8 +3,8 @@
 defaults:
   - /monty: evidencegraph_exp1000_emin_t3_tot2500
   - /monty/motor_system_config: naive_scan_1
-  - /monty/learning_module: evidence_2lm
-  - /monty/sensor_module: 2sm_camera_dist
+  - /monty/learning_module: evidence_2lm_burst
+  - /monty/sensor_module: 2sm_camera_twdsm_dist
   - /monty/connectivity: 2lm_2sm
   - /environment: habitat_dist_agent_sensors2
   - /env_interface: train_objects_with_stickers_2d_children_predefined
