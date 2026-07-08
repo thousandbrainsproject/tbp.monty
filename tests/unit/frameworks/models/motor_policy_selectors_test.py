@@ -91,7 +91,9 @@ class SinglePolicySelectorTest(unittest.TestCase):
             best_goal,
         )
 
-    def test_provide_motor_system_calls_provide_motor_system_on_policy(self):
+    def test_fixme_provide_motor_system_calls_fixme_provide_motor_system_on_policy(
+        self,
+    ):
         motor_system = Mock()
         self.selector.fixme_provide_motor_system(motor_system)
         self.policy.fixme_provide_motor_system.assert_called_once_with(motor_system)

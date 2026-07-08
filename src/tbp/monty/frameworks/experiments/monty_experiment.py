@@ -421,7 +421,6 @@ class MontyExperiment:
 
         sensor_modules = instantiate(config.pop("sensor_modules"))
         motor_system = instantiate(config.pop("motor_system_config"))
-        motor_system.fixme_init_policies()
 
         # Create mapping between sensor modules, learning modules and agents
         sm_to_lm_matrix = instantiate(config.pop("sm_to_lm_matrix"))
