@@ -15,7 +15,6 @@ defaults:
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
   config:
-    show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
@@ -28,3 +27,7 @@ experiment:
       - learning_module_0
     logging:
       run_name: supervised_pre_training_objects_with_stickers_3d_children
+      output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/3d_sensor}
+    environment:
+      env_init_args:
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/compositional_objects}
