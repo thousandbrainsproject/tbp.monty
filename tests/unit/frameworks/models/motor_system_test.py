@@ -21,7 +21,9 @@ class MotorSystemTest(unittest.TestCase):
 
     def test_init_policies_calls_provide_motor_system_on_policy_selector(self):
         self.motor_system.fixme_init_policies()
-        self.policy_selector.fixme_provide_motor_system.assert_called_once_with(self.motor_system)
+        self.policy_selector.fixme_provide_motor_system.assert_called_once_with(
+            self.motor_system
+        )
 
     def test_reset_calls_reset_on_policy_selector(self):
         self.motor_system.reset()
