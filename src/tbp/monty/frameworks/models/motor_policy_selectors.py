@@ -93,8 +93,11 @@ class SinglePolicySelector(MotorPolicySelector):
         # TODO: Get rid of this once we have another path for telemetry.
         self._selected_goals: list[Goal | None] = []
 
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:
-        self._policy.reset(motor_system)
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        self._policy.fixme_provide_motor_system(motor_system)
+
+    def reset(self) -> None:
+        self._policy.reset()
         self._selected_goals = []
 
     def state_dict(self) -> Memento:
@@ -135,10 +138,15 @@ class DistantPolicySelector(MotorPolicySelector):
         self._selected_policies: list[MotorPolicy] = []
         self._selected_goals: list[Goal | None] = []
 
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:
-        self._jump_to_goal.reset(motor_system)
-        self._look_at_goal.reset(motor_system)
-        self._default.reset(motor_system)
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        self._jump_to_goal.fixme_provide_motor_system(motor_system)
+        self._look_at_goal.fixme_provide_motor_system(motor_system)
+        self._default.fixme_provide_motor_system(motor_system)
+
+    def reset(self) -> None:
+        self._jump_to_goal.reset()
+        self._look_at_goal.reset()
+        self._default.reset()
 
         self._is_jumping = False
         self._selected_policies = []

@@ -641,8 +641,9 @@ class PolicyTest(unittest.TestCase):
         )
         policy_selector = SinglePolicySelector(policy)
         motor_system = MotorSystem(policy_selector)
+        motor_system.fixme_init_policies()
         policy.max_pc_bias_steps = 2
-        policy.reset(motor_system)
+        policy.reset()
 
         rng = np.random.RandomState(123)
         ctx = RuntimeContext(rng)
@@ -766,12 +767,13 @@ class PolicyTest(unittest.TestCase):
         )
         policy_selector = SinglePolicySelector(policy)
         motor_system = MotorSystem(policy_selector)
+        motor_system.fixme_init_policies()
 
         # Overwrite min_general_steps default value so that we more quickly transition
         # into taking PC steps when testing this
         initial_min_general_steps = 1
         policy.min_general_steps = initial_min_general_steps
-        policy.reset(motor_system)
+        policy.reset()
 
         rng = np.random.RandomState(123)
         ctx = RuntimeContext(rng)
@@ -999,7 +1001,8 @@ class PolicyTest(unittest.TestCase):
         )
         policy_selector = SinglePolicySelector(policy)
         motor_system = MotorSystem(policy_selector)
-        policy.reset(motor_system)
+        motor_system.fixme_init_policies()
+        policy.reset()
 
         # The target displacement of the agent from the object; used to determine
         # the validity of the final agent location

@@ -106,14 +106,17 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
 
-    def reset(self) -> None:
-        # TODO: Passing self to policy reset() is a hack. What we should be
+    def fixme_init_policies(self) -> None:
+        # TODO: Passing self to policy selector is a hack. What we should be
         # doing is using a positioning procedure for surface agents instead.
         # We only do this so that SurfacePolicy and its descendants can set
         # motor_only_step to True.
         # Undoing this hack should probably happen when motor_only_step is moved
         # to Monty itself.
-        self._policy_selector.reset(self)
+        self._policy_selector.fixme_provide_motor_system(self)
+
+    def reset(self) -> None:
+        self._policy_selector.reset()
         self._action_sequence = []
         self._telemetry_surface_action_details = SurfacePolicyActionDetailsTelemetry(
             pc_heading=[],

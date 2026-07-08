@@ -91,10 +91,14 @@ class SinglePolicySelectorTest(unittest.TestCase):
             best_goal,
         )
 
-    def test_reset_calls_reset_on_policy(self):
+    def test_provide_motor_system_calls_provide_motor_system_on_policy(self):
         motor_system = Mock()
-        self.selector.reset(motor_system)
-        self.policy.reset.assert_called_once_with(motor_system)
+        self.selector.fixme_provide_motor_system(motor_system)
+        self.policy.fixme_provide_motor_system.assert_called_once_with(motor_system)
+
+    def test_reset_calls_reset_on_policy(self):
+        self.selector.reset()
+        self.policy.reset.assert_called_once_with()
 
     def test_state_dict_includes_policy_state_dict(self):
         state_dict = Mock()

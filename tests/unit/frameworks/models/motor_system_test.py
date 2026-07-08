@@ -19,9 +19,13 @@ class MotorSystemTest(unittest.TestCase):
         self.policy_selector = Mock()
         self.motor_system = MotorSystem(self.policy_selector)
 
+    def test_init_policies_calls_provide_motor_system_on_policy_selector(self):
+        self.motor_system.fixme_init_policies()
+        self.policy_selector.fixme_provide_motor_system.assert_called_once_with(self.motor_system)
+
     def test_reset_calls_reset_on_policy_selector(self):
         self.motor_system.reset()
-        self.policy_selector.reset.assert_called_once_with(self.motor_system)
+        self.policy_selector.reset.assert_called_once_with()
 
     def test_state_dict_returns_state_dict_of_policy(self):
         state_dict = Mock()
