@@ -19,7 +19,7 @@ sensor_module_0:
   save_raw_obs: true
 sensor_module_1:
   _target_: tbp.monty.frameworks.models.two_d_sensor_module.TwoDSensorModule
-  sensor_module_id: patch
+  sensor_module_id: patch_1
   save_raw_obs: false
   edge_detector:
     _target_: tbp.monty.frameworks.utils.edge_detection.EdgeDetector

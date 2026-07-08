@@ -4,7 +4,7 @@ defaults:
   - /monty: evidencegraph_exp1000_emin_t3_tot2500
   - /monty/motor_system_config: naive_scan_1
   - /monty/learning_module: evidence_2lm_burst
-  - /monty/sensor_module: 2sm_camera_twdsm_dist
+  - /monty/sensor_module: 2sm_camera_twodsm_dist
   - /monty/connectivity: 2lm_2sm
   - /environment: habitat_dist_agent_sensors2
   - /env_interface: train_objects_with_stickers_2d_children_predefined
@@ -40,25 +40,29 @@ experiment:
             resolutions:
               - [ 64, 64 ]
               - [ 64, 64 ]
+              - [ 64, 64 ]
             zooms:
+              - 10
               - ${constants.zoom}
               - 1.0
       transform:
         - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
           agent_id: agent_id_0
           sigma: ${constants.blur_sigma}
-          sensor_ids: [ patch ]
+          sensor_ids: [ patch_1 ]
         - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
           agent_id: agent_id_0
           max_depth: 1
         - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
           agent_id: agent_id_0
-          sensor_ids: [ patch, view_finder ]
+          sensor_ids: [ patch_1, view_finder ]
           resolutions:
+            - [ 64, 64 ]
             - [ 64, 64 ]
             - [ 64, 64 ]
           world_coord: true
           zooms:
+            - 10
             - ${constants.zoom}
             - 1.0
           get_all_points: true
