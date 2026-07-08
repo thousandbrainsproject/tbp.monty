@@ -88,17 +88,26 @@ class MotorPolicySelector(
 
 
 class SinglePolicySelector(MotorPolicySelector):
+    _policy: MotorPolicy
+
+    # TODO: Get rid of this once we have another path for telemetry.
+    _selected_goals: list[Goal | None]
+
     def __init__(self, policy: MotorPolicy):
         self._policy = policy
-        # TODO: Get rid of this once we have another path for telemetry.
-        self._selected_goals: list[Goal | None] = []
+
+        # TODO: make this part of `__init__()` after `reset()` is removed.
+        self._init_SinglePolicySelector()
+
+    def _init_SinglePolicySelector(self) -> None:  # noqa: N802
+        self._selected_goals = []
 
     def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
         self._policy.fixme_provide_motor_system(motor_system)
 
     def reset(self) -> None:
+        self._init_SinglePolicySelector()
         self._policy.reset()
-        self._selected_goals = []
 
     def state_dict(self) -> Memento:
         return {
@@ -120,23 +129,35 @@ class SinglePolicySelector(MotorPolicySelector):
 
 
 class DistantPolicySelector(MotorPolicySelector):
+    # policies
+    _jump_to_goal: JumpToGoal
+    _look_at_goal: LookAtGoal
+    _default: MotorPolicy
+
+    # state
+    _is_jumping: bool
+
+    # telemetry
+    _selected_policies: list[MotorPolicy]
+    _selected_goals: list[Goal | None]
+
     def __init__(
         self,
         jump_to_goal: JumpToGoal,
         look_at_goal: LookAtGoal,
         default: MotorPolicy,
     ):
-        # policies
         self._jump_to_goal = jump_to_goal
         self._look_at_goal = look_at_goal
         self._default = default
 
-        # state
-        self._is_jumping = False
+        # TODO: make this part of `__init__()` after `reset()` is removed.
+        self._init_DistantPolicySelector()
 
-        # telemetry
-        self._selected_policies: list[MotorPolicy] = []
-        self._selected_goals: list[Goal | None] = []
+    def _init_DistantPolicySelector(self) -> None:  # noqa: N802
+        self._is_jumping = False
+        self._selected_policies = []
+        self._selected_goals = []
 
     def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
         self._jump_to_goal.fixme_provide_motor_system(motor_system)
@@ -144,13 +165,10 @@ class DistantPolicySelector(MotorPolicySelector):
         self._default.fixme_provide_motor_system(motor_system)
 
     def reset(self) -> None:
+        self._init_DistantPolicySelector()
         self._jump_to_goal.reset()
         self._look_at_goal.reset()
         self._default.reset()
-
-        self._is_jumping = False
-        self._selected_policies = []
-        self._selected_goals = []
 
     def state_dict(self) -> Memento:
         return {
