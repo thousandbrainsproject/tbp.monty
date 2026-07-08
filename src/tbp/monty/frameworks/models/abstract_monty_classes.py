@@ -129,6 +129,14 @@ class RuntimeMonty(Protocol):
         """
         ...
 
+    def snapshot_ltm(self) -> Memento:
+        """Return an opaque snapshot of long-term memory."""
+        ...
+
+    def restore_ltm(self, memo: Memento) -> None:
+        """Restore long-term memory from an opaque snapshot."""
+        ...
+
 
 class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
     def _matching_step(
@@ -274,6 +282,14 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def reset(self) -> None:
+        pass
+
+    @abc.abstractmethod
+    def snapshot_ltm(self) -> Memento:
+        pass
+
+    @abc.abstractmethod
+    def restore_ltm(self, memo: Memento) -> None:
         pass
 
     @abc.abstractmethod

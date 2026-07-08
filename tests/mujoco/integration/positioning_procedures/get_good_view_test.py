@@ -25,6 +25,7 @@ from tbp.monty.frameworks.experiments.object_recognition_experiments import (
     MontyObjectRecognitionExperiment,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 
@@ -57,7 +58,7 @@ class GetGoodViewTest(unittest.TestCase):
             agent_id = config.experiment.config.train_env_interface_args[
                 "positioning_procedures"
             ][0].agent_id
-            exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(
+            exp: MontyObjectRecognitionExperiment = instantiate_experiment(
                 config.experiment
             )
             with exp:
@@ -114,7 +115,7 @@ class GetGoodViewTest(unittest.TestCase):
             agent_id = config.experiment.config.train_env_interface_args[
                 "positioning_procedures"
             ][0].agent_id
-            exp: MontyObjectRecognitionExperiment = hydra.utils.instantiate(
+            exp: MontyObjectRecognitionExperiment = instantiate_experiment(
                 config.experiment
             )
             with exp:
