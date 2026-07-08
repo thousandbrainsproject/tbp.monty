@@ -46,8 +46,6 @@ from tbp.monty.frameworks.models.goal_generation import (
 from tbp.monty.frameworks.models.motor_policies import (
     SurfacePolicyCurvatureInformed,
 )
-from tbp.monty.frameworks.models.motor_policy_selectors import SinglePolicySelector
-from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     MotorSystemState,
@@ -643,10 +641,8 @@ class AdvancedPolicyTest(unittest.TestCase):
         policy: SurfacePolicyCurvatureInformed = hydra.utils.instantiate(
             self.policy_cfg_fragment
         )
-        policy_selector = SinglePolicySelector(policy)
-        motor_system = MotorSystem(policy_selector)
         policy.max_pc_bias_steps = 2
-        policy.reset(motor_system)
+        policy.reset()
 
         rng = np.random.RandomState(123)
         ctx = RuntimeContext(rng)
@@ -768,14 +764,12 @@ class AdvancedPolicyTest(unittest.TestCase):
         policy: SurfacePolicyCurvatureInformed = hydra.utils.instantiate(
             self.policy_cfg_fragment
         )
-        policy_selector = SinglePolicySelector(policy)
-        motor_system = MotorSystem(policy_selector)
 
         # Overwrite min_general_steps default value so that we more quickly transition
         # into taking PC steps when testing this
         initial_min_general_steps = 1
         policy.min_general_steps = initial_min_general_steps
-        policy.reset(motor_system)
+        policy.reset()
 
         rng = np.random.RandomState(123)
         ctx = RuntimeContext(rng)
@@ -1010,9 +1004,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         policy: SurfacePolicyCurvatureInformed = hydra.utils.instantiate(
             self.policy_cfg_fragment
         )
-        policy_selector = SinglePolicySelector(policy)
-        motor_system = MotorSystem(policy_selector)
-        policy.reset(motor_system)
+        policy.reset()
 
         # The target displacement of the agent from the object; used to determine
         # the validity of the final agent location
