@@ -9,7 +9,7 @@ defaults:
   - /environment: habitat_dist_agent_sensors3
   - /env_interface: train_comp_stickered_objects_predefined
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
-  - /env_interface/transform: missing_depthto3d_sensor3
+  - /env_interface/transform: missing_depthto3d_sensor4
   - /logging: silent_info_train
 
 experiment:
