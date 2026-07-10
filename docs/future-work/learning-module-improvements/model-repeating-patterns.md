@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: unknown
 improved-metric: learning, numsteps, features-and-morphology
 output-type: RFC, experiments, analysis, PR, publication
-skills: python, research, monty
+skills: python, research, monty-beginner
 contributor: 
 status: open
 ---

@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: medium
 improved-metric: noise, accuracy, numsteps
 output-type: monty-feature, PR
-skills: python, research, computer-vision
+skills: python, research, computer-vision, monty-beginner
 contributor: tcdubs, ryan9186, roccolep
 status: evergreen
 ---

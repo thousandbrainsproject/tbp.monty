@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: medium
 improved-metric: learning, accuracy
 output-type: monty-feature, PR
-skills: python, monty, spatial-transformations
+skills: python, monty-beginner, spatial-transformations
 contributor: 
 status: open
 ---

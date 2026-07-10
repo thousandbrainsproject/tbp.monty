@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: medium
 improved-metric: speed, learning-experience
 output-type: PR, documentation
-skills: python, monty, refactoring
+skills: python, monty-advanced, refactoring
 contributor: 
 status: open
 ---

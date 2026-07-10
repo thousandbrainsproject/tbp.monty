@@ -1,5 +1,12 @@
 ---
 title: Contributing Learning Modules
+description: Test different algorithms or representations inside of LMs.
+rfc: optional
+estimated-scope: unknown
+improved-metric: speed, pose, accuracy, noise
+output-type: experiments, analysis, PR
+skills: python, research, monty-advanced
+status: evergreen
 ---
 
 There is significant scope for custom learning modules in Monty. In particular, learning modules can take a variety of forms, so long as their input and output channels adhere to the Cortical Messaging Protocol, and that they model objects using reference frames. However, exactly how a "reference frame" is implemented is not specified.
