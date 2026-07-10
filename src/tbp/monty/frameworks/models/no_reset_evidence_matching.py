@@ -122,16 +122,25 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         if not hasattr(kwargs, "hypotheses_updater_class"):
             kwargs["hypotheses_updater_class"] = BurstSamplingHypothesesUpdater
         super().__init__(*args, **kwargs)
-        self.last_location = None
 
         # it does not make sense for the wait factor to exponentially
         # grow when objects are swapped without any supervisory signal.
         if self.gsg is not None:
             self.gsg.wait_growth_multiplier = 1
 
+        # TODO: make this part of `__init__()` after `reset_stm()` is removed.
+        self._init_NoResetEvidenceGraphLM()
+
+    def _init_NoResetEvidenceGraphLM(self) -> None:  # noqa: N802
+        self.last_location = None
+
+    # FIXME: If this is just a superclass call, just inherit it!
     def init_from_ltm(self) -> None:
         super().init_from_ltm()
-        self.last_location = None
+
+    def reset_stm(self) -> None:
+        super().reset_stm()
+        self._init_NoResetEvidenceGraphLM()
 
     def _add_displacements(self, percepts: list[Message]) -> list[Message]:
         """Add displacements to the current percept.

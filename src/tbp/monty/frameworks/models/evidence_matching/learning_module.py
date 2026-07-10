@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -223,6 +224,13 @@ class EvidenceGraphLM(GraphLM):
             for debugging purposes.
     """
 
+    # Dictionary with graph_ids as keys. For each graph we initialize a set of
+    # hypotheses at the first step of an episode. Each Hypotheses bundles the
+    # evidence, possible_locations, possible_poses, and a boolean possible mask
+    # used for symmetry checks.
+    _hypotheses: dict[str, Hypotheses]
+    current_mlh: dict[str, Any]
+
     def __init__(
         self,
         max_match_distance,
@@ -292,21 +300,6 @@ class EvidenceGraphLM(GraphLM):
         # Set feature weights to 1 if not otherwise specified
         self._fill_feature_weights_with_default(default=1)
 
-        # Dictionary with graph_ids as keys. For each graph we initialize a set of
-        # hypotheses at the first step of an episode. Each Hypotheses bundles the
-        # evidence, possible_locations, possible_poses, and a boolean possible mask
-        # used for symmetry checks.
-        self._hypotheses: dict[str, Hypotheses] = {}
-
-        self.current_mlh = {
-            "graph_id": "no_observations_yet",
-            "location": [0, 0, 0],
-            "rotation": Rotation.from_euler("xyz", [0, 0, 0]),
-            "scale": 1,
-            "evidence": 0,
-        }
-        self.previous_mlh = self.current_mlh
-
         if hypotheses_updater_args is None:
             hypotheses_updater_args = {}
         # Every HypothesesUpdater gets at least the following arguments because they are
@@ -328,9 +321,24 @@ class EvidenceGraphLM(GraphLM):
         self.hypotheses_updater = hypotheses_updater_class(**hypotheses_updater_args)
         self.hypotheses_updater_telemetry: HypothesesUpdaterTelemetry = {}
 
-    # =============== Public Interface Functions ===============
+        # TODO: make this part of `__init__()` after `reset_stm()` is removed.
+        self._init_EvidenceGraphLM()
 
-    # ------------------- Main Algorithm -----------------------
+    def _init_EvidenceGraphLM(self) -> None:  # noqa: N802
+        self.symmetry_evidence = 0
+        self._hypotheses = {}
+
+        self.hypotheses_updater.reset()  # FIXME: move reset() logic to __init__()
+
+        self.current_mlh = {
+            "graph_id": "no_observations_yet",
+            "location": [0, 0, 0],
+            "rotation": Rotation.from_euler("xyz", [0, 0, 0]),
+            "scale": 1,
+            "evidence": 0,
+        }
+        self.previous_mlh = self.current_mlh
+
     def init_from_ltm(self):
         """Reset evidence count and other variables."""
         # Now here, as opposed to the displacement and feature-location LMs,
@@ -341,15 +349,10 @@ class EvidenceGraphLM(GraphLM):
             # TODO H: Differentiate between features from different input channels
             # TODO: could do this in the object model class
             self.graph_memory.initialize_feature_arrays()
-        self.symmetry_evidence = 0
-        self._hypotheses = {}
-        self.hypotheses_updater.reset()
 
-        self.current_mlh["graph_id"] = "no_observations_yet"
-        self.current_mlh["location"] = [0, 0, 0]
-        self.current_mlh["rotation"] = Rotation.from_euler("xyz", [0, 0, 0])
-        self.current_mlh["scale"] = 1
-        self.current_mlh["evidence"] = 0
+    def reset_stm(self) -> None:
+        super().reset_stm()
+        self._init_EvidenceGraphLM()
 
     def receive_votes(self, vote_data):
         """Get evidence count votes and use to update own evidence counts.

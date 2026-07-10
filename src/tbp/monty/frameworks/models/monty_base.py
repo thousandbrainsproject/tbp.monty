@@ -408,6 +408,9 @@ class MontyBase(Monty):
         for idx, lm in enumerate(self.learning_modules):
             m: Memento = memo_lms[idx]
             lm.load_state_dict(copy.deepcopy(m))
+            # After loading the long-term memory, give the LM a chance to
+            # update any internal state based on the contents of memory.
+            lm.init_from_ltm()
 
     def fixme_set_ground_truth(
         self,

@@ -99,15 +99,16 @@ class FeatureGraphLM(GraphLM):
         self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
         self.umbilical_num_poses = umbilical_num_poses
         self.possible_poses = {}
+
+        # TODO: make this part of `__init__()` after `reset_stm()` is removed.
+        self._init_FeatureGraphLM()
+
+    def _init_FeatureGraphLM(self) -> None:  # noqa: N802
+        self.symmetry_evidence = 0
         self.last_unique_poses = None
         self.last_num_unique_locations = None
 
-    # =============== Public Interface Functions ===============
-
-    # ------------------- Main Algorithm -----------------------
-
-    def init_from_ltm(self):
-        """Reset initial hypotheses."""
+    def init_from_ltm(self) -> None:
         (
             self.possible_matches,
             self.possible_paths,
@@ -116,9 +117,10 @@ class FeatureGraphLM(GraphLM):
 
         if self.tolerances is not None:
             self.graph_memory.initialize_feature_arrays()
-        self.symmetry_evidence = 0
-        self.last_unique_poses = None
-        self.last_num_unique_locations = None
+
+    def reset_stm(self) -> None:
+        super().reset_stm()
+        self._init_FeatureGraphLM()
 
     def send_out_vote(self):
         """Send out list of objects that are not possible matches.

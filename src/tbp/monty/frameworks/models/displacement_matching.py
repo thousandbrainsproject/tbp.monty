@@ -72,16 +72,16 @@ class DisplacementGraphLM(GraphLM):
         self.tolerance = tolerance
         self.use_relative_len = use_relative_len
 
-    # =============== Public Interface Functions ===============
-    # ------------------- Main Algorithm -----------------------
-    def init_from_ltm(self):
-        """Reset possible matches for paths on objects."""
+    def init_from_ltm(self) -> None:
         (
             self.possible_matches,
             self.possible_paths,
             self.next_possible_paths,
             self.scale_factors,
         ) = self.graph_memory.get_initial_hypotheses()
+
+    def reset_stm(self) -> None:
+        super().reset_stm()
 
     # ------------------ Getters & Setters ---------------------
     def get_unique_pose_if_available(self, object_id):
