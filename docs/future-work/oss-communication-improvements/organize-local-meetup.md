@@ -5,6 +5,7 @@ estimated-scope: small
 improved-metric: community-engagement
 skills: event-planning, networking
 output-type: community-event
+status: evergreen
 ---
 
 Organize a meetup in your area to form a group of interested peers who want to learn with and discuss the Thousand Brains Project and Theory and related AI topics.
