@@ -129,8 +129,8 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         if self.gsg is not None:
             self.gsg.wait_growth_multiplier = 1
 
-    def reset(self) -> None:
-        super().reset()
+    def init_from_ltm(self) -> None:
+        super().init_from_ltm()
         self.last_location = None
 
     def _add_displacements(self, percepts: list[Message]) -> list[Message]:

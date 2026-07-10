@@ -74,7 +74,7 @@ class DisplacementGraphLM(GraphLM):
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
-    def reset(self):
+    def init_from_ltm(self):
         """Reset possible matches for paths on objects."""
         (
             self.possible_matches,

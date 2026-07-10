@@ -542,7 +542,7 @@ class GraphLM(LearningModule):
         """
         super().__init__()
         self.buffer = FeatureAtLocationBuffer()
-        self.buffer.reset()
+        self.buffer.reset()  # FIXME: fold `reset()` logic into `__init__()`
         self.learning_module_id = "LM_0"
 
         if initialize_base_modules:
@@ -560,22 +560,27 @@ class GraphLM(LearningModule):
         self.primary_target = None
         self.possible_matches = {}
         self.possible_paths = {}
+        # Will always be set during experiment setup, just setting here for unit tests
+        self.has_detailed_logger = False
+        self.symmetry_evidence = 0
+
+        # TODO: make this part of `__init__()` after `reset_stm()` is removed.
+        self._init_GraphLM()
+
+    def _init_GraphLM(self) -> None:  # noqa: N802
         self.terminal_state = None
         self.detected_object = None
         self.detected_pose = [None for _ in range(7)]
         self.detected_rotation_r = None
-        # Will always be set during experiment setup, just setting here for unit tests
-        self.has_detailed_logger = False
-        self.symmetry_evidence = 0
 
     # =============== Public Interface Functions ===============
 
     # ------------------- Main Algorithm -----------------------
 
-    def reset(self):
-        """Reset initial hypotheses.
+    def init_from_ltm(self):
+        """Initialize LM state from long-term memory.
 
-        TODO: maybe rename to `reset_from_updated_ltm`?
+        For example, get initial hypotheses.
         """
         (
             self.possible_matches,
@@ -584,14 +589,11 @@ class GraphLM(LearningModule):
 
     def reset_stm(self) -> None:
         """Reset short-term memory buffer."""
-        self.reset()
+        self.init_from_ltm()
         self.buffer.reset()
         if self.gsg is not None:
             self.gsg.reset()
-        self.terminal_state = None
-        self.detected_object = None
-        self.detected_pose = [None for _ in range(7)]
-        self.detected_rotation_r = None
+        self._init_GraphLM()
 
     def fixme_reset_ground_truth(
         self,
@@ -956,7 +958,7 @@ class GraphLM(LearningModule):
         self.graph_id_to_target = memento["graph_id_to_target"]
         # After loading the long-term memory, give the LM a chance to
         # update any internal state based on the contents of memory.
-        self.reset()
+        self.init_from_ltm()  # FIXME: should not call this here...
 
     # ======================= Private ==========================
 

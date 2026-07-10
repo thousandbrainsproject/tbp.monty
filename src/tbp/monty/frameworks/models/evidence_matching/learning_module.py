@@ -331,7 +331,7 @@ class EvidenceGraphLM(GraphLM):
     # =============== Public Interface Functions ===============
 
     # ------------------- Main Algorithm -----------------------
-    def reset(self):
+    def init_from_ltm(self):
         """Reset evidence count and other variables."""
         # Now here, as opposed to the displacement and feature-location LMs,
         # possible_matches is a list of IDs, not a dictionary with the object graphs.

@@ -463,7 +463,7 @@ class MontyExperiment:
     def _restore_monty(self) -> None:
         """Recreate episodic state of Monty model."""
         if self._recreation_mode:
-            self.model = self._create_monty()
+            self._create_monty()
             if self._monty_ltm:
                 self.model.restore_ltm(self._monty_ltm)
             self.logger_handler.model = self.model

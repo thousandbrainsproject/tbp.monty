@@ -106,7 +106,7 @@ class FeatureGraphLM(GraphLM):
 
     # ------------------- Main Algorithm -----------------------
 
-    def reset(self):
+    def init_from_ltm(self):
         """Reset initial hypotheses."""
         (
             self.possible_matches,
