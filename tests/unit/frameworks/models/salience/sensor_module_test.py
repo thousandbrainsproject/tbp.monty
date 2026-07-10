@@ -137,7 +137,7 @@ class SalienceSMTest(unittest.TestCase):
             expected_goal = Goal(
                 location=locations[i],
                 confidence=salience[i],
-                use_state=True,
+                use_state=False,
                 morphological_features=None,
                 non_morphological_features=None,
                 goal_tolerances=None,
