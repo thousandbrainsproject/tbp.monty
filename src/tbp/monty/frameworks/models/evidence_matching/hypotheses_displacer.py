@@ -55,11 +55,11 @@ class HypothesesDisplacer(Protocol):
     ) -> Hypotheses:
         """Displace hypothesis locations using the sensed sensor displacement.
 
-        Each hypothesis location is advanced by its pose-rotated displacement.
+        Each hypothesis location is updated by the pose-rotated displacement.
         Evidence, poses, and possible flags are left unchanged.
 
         Args:
-            displacement: Displacement vector.
+            displacement: Displacement of the sensor (in common RF).
             hypotheses: Hypotheses to displace.
 
         Returns:
@@ -74,7 +74,7 @@ class HypothesesDisplacer(Protocol):
         graph_id: str,
         hypotheses: Hypotheses,
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
-        """Updates evidence by comparing features at the current locations.
+        """Updates evidence by comparing sensed features to features in the model.
 
         Uses the hypothesis locations as search locations for comparing features from
         all available input channels. Per-channel evidence is summed and applied as a
@@ -145,11 +145,11 @@ class DefaultHypothesesDisplacer:
     ) -> Hypotheses:
         """Displace hypothesis locations using the sensed sensor displacement.
 
-        Each hypothesis location is advanced by its pose-rotated displacement.
+        Each hypothesis location is updated by the pose-rotated displacement.
         Evidence, poses, and possible flags are left unchanged.
 
         Args:
-            displacement: Displacement vector.
+            displacement: Displacement of the sensor (in common RF).
             hypotheses: Hypotheses to displace.
 
         Returns:
@@ -172,7 +172,7 @@ class DefaultHypothesesDisplacer:
         graph_id: str,
         hypotheses: Hypotheses,
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
-        """Updates evidence by comparing features at the current locations.
+        """Updates evidence by comparing sensed features to features in the model.
 
         Uses the hypothesis locations as search locations for comparing features from
         all available input channels. Per-channel evidence is summed and applied as a

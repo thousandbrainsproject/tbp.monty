@@ -907,12 +907,12 @@ class EvidenceGraphLM(GraphLM):
             evidence_all_channels=self._hypotheses[graph_id].evidence,
         )
 
-        displaced = self.hypotheses_updater.displace_hypotheses(
+        displaced_hypotheses = self.hypotheses_updater.displace_hypotheses(
             self._hypotheses[graph_id], displacement, graph_id
         )
         hypotheses_update, hypotheses_update_telemetry = (
             self.hypotheses_updater.update_evidence(
-                hypotheses=displaced,
+                hypotheses=displaced_hypotheses,
                 features=features,
                 graph_id=graph_id,
                 evidence_update_threshold=update_threshold,

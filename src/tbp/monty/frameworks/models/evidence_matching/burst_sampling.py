@@ -364,9 +364,8 @@ class BurstSamplingHypothesesUpdater:
             tracker=tracker,
         )
 
-        # The existing hypotheses were already displaced by the LM before sampling.
-        # Sampling selects a subset of them (by evidence slope, independent of
-        # location), so we only need to compute evidence at the displaced locations.
+        # The existing hypotheses were already displaced by the LM before sampling, so
+        # we only need to compute the evidence here.
         if len(hypotheses_selection.ids_to_retain):
             existing_hypotheses, displacer_telemetry = (
                 self._hypotheses_displacer.compute_evidence(

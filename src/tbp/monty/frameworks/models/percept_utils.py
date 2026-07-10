@@ -45,9 +45,7 @@ def is_feature_step(percepts: Sequence[Message]) -> bool:
     """Return whether at least one SM channel delivered features.
 
     Distinguishes a feature step from a location-only step. The gate is computed
-    from SM percepts only; LM output messages default `contains_features=True`, so
-    an SM location-only step paired with an LM output must not count as a feature
-    step.
+    from SM percepts only.
 
     Args:
         percepts: Sequence of Message objects.
