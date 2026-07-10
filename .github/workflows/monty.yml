@@ -480,7 +480,7 @@ jobs:
           source activate tbp.monty
           set -e
           python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
-          git clone https://github.com/brendenlake/omniglot.git ~/tbp/data/omniglot
+          git clone --depth 1 https://github.com/brendenlake/omniglot.git ~/tbp/data/omniglot
           unzip -qq ~/tbp/data/omniglot/python/images_background.zip -d ~/tbp/data/omniglot/python
           unzip -qq ~/tbp/data/omniglot/python/strokes_background.zip -d ~/tbp/data/omniglot/python
           mkdir -p ~/tbp/data/worldimages
@@ -496,6 +496,69 @@ jobs:
           set -e
           mkdir -p test_results/pytest
           xvfb-run pytest tests/tutorials --junitxml=test_results/pytest/results.xml --verbose -n 1
+
+  test_uv_tutorials_monty:
+    name: test-uv-tutorials-monty
+    runs-on:
+      group: tbp.monty
+      labels: tbp-linux-x64-ubuntu2204-8core
+    timeout-minutes: 120
+    needs:
+      - install_monty
+      - should_run_monty
+      - test_monty
+    steps:
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          path: tbp.monty
+      - name: Install dependencies
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          sudo apt update -y
+          sudo apt install -y --no-install-recommends libegl1-mesa-dev
+      - name: Download data for tutorials
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          set -e
+          mkdir -p ~/tbp/data/mujoco/objects/ycb
+          curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/ycb_objects_1.0.tgz | tar -xzf - -C ~/tbp/data/mujoco/objects/ycb
+          git clone --depth 1 https://github.com/brendenlake/omniglot.git ~/tbp/data/omniglot
+          unzip -qq ~/tbp/data/omniglot/python/images_background.zip -d ~/tbp/data/omniglot/python
+          unzip -qq ~/tbp/data/omniglot/python/strokes_background.zip -d ~/tbp/data/omniglot/python
+          mkdir -p ~/tbp/data/worldimages
+          curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar -xzf - -C ~/tbp/data
+          mkdir -p ~/tbp/results/monty/pretrained_models/pretrained_ycb_v13
+          curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v13.tgz | tar -xzf - -C ~/tbp/results/monty/pretrained_models
+      - name: Install uv
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
+      - name: Create uv environment
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        continue-on-error: true
+        run: |
+          uv venv --seed
+          uv sync --locked --extra dev --extra simulator_mujoco
+      - name: Test tutorials
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        continue-on-error: true
+        run: |
+          export MUJOCO_GL=egl
+          export EGL_PLATFORM=headless
+          set -e
+          mkdir -p test_results/pytest
+          uv run --frozen pytest tests/mujoco/tutorials \
+            --cov --cov-context test --cov-report html --cov-report term \
+            --junitxml=test_results/pytest/results.xml \
+            --verbose
 
   test_uv_monty:
     name: test-uv-monty
@@ -547,7 +610,8 @@ jobs:
             --junitxml=test_results/pytest/results.xml --verbose \
             --doctest-modules --doctest-continue-on-failure \
             --ignore=src/tbp/monty/simulators/habitat \
-            --ignore=src/tbp/monty/simulators/tacto
+            --ignore=src/tbp/monty/simulators/tacto \
+            --ignore=tests/mujoco/tutorials
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v4

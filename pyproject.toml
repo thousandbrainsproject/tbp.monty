@@ -75,19 +75,16 @@ build = [
 dev = [
     # Check for undeclared dependencies
     'deptry',
-
     # Python static type checker
     'mypy==1.11.2',
     'types-PyYAML',
-
     # Testing, code style, etc...
     'hypothesis==6.113.0',
-    'parameterized==0.9.0',  # Supports Python 3.8
+    'parameterized==0.9.0', # Supports Python 3.8
     'pytest==7.1.1',
     'pytest-xdist==2.5.0',
     'pytest-cov==3.0.0',
-    'unittest-parametrize',  # Python >= 3.9
-
+    'unittest-parametrize', # Python >= 3.9
     # Python linter and formatter
     'ruff==0.14.2',
 ]
@@ -115,6 +112,10 @@ future_work_widget_tool = [
 print_version_tool = [
     'semver'
 ]
+ycb_downloader_tool = [
+    'trimesh',
+    'vedo'
+]
 
 [project.urls]
 Homepage = 'https://thousandbrainsproject.org'
@@ -123,7 +124,7 @@ Repository = 'https://github.com/thousandbrainsproject.tbp.monty'
 Issues = 'https://github.com/thousandbrainsproject/tbp.monty/issues'
 
 [tool.deptry]
-exclude= ['venv', '\.venv', '\.direnv', '\.git', 'setup\.py']
+exclude = ['venv', '\.venv', '\.direnv', '\.git', 'setup\.py']
 experimental_namespace_package = true # recognize tbp.monty as a namespace package
 ignore = ['DEP002']
 known_first_party = [
@@ -148,7 +149,7 @@ testpaths = [
     'tests/unit',
 ]
 norecursedirs = [
-    'src/tbp/monty/frameworks/utils',  # ignore where 'seaborn' module is required
+    'src/tbp/monty/frameworks/utils', # ignore where 'seaborn' module is required
     'src/tbp/monty/simulators/mujoco', # ignore where 'mujoco' module is required
 ]
 filterwarnings = [
