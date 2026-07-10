@@ -141,7 +141,11 @@ class MotorPolicy(RuntimeMotorPolicy, ExperimentMotorPolicy, Snapshotable, abc.A
     """The abstract scaffold for motor policies."""
 
     @abc.abstractmethod
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    @abc.abstractmethod
+    def reset(self) -> None:
         pass
 
     @abc.abstractmethod
@@ -180,6 +184,12 @@ class BasePolicy(MotorPolicy):
         self.agent_id = agent_id
         self.action_sampler = action_sampler
 
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    def reset(self) -> None:
+        pass
+
     def __call__(
         self,
         ctx: RuntimeContext,
@@ -206,9 +216,6 @@ class BasePolicy(MotorPolicy):
         """
         return MotorPolicyResult([self.action_sampler.sample(self.agent_id, ctx.rng)])
 
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:
-        pass
-
     def state_dict(self) -> Memento:
         return {}
 
@@ -224,6 +231,8 @@ class InformedPolicyRandomWalk(MotorPolicy):
     however, there are likely better random walk policies to use.
     """
 
+    _undo_action: Action | None
+
     def __init__(
         self,
         agent_id: AgentID,
@@ -238,7 +247,18 @@ class InformedPolicyRandomWalk(MotorPolicy):
         super().__init__()
         self.agent_id = agent_id
         self.action_sampler = action_sampler
-        self._undo_action: Action | None = None
+
+        # TODO: make this part of `__init__()` after `reset()` is removed.
+        self._init_InformedPolicyRandomWalk()
+
+    def _init_InformedPolicyRandomWalk(self) -> None:  # noqa: N802
+        self._undo_action = None
+
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    def reset(self) -> None:
+        self._init_InformedPolicyRandomWalk()
 
     def __call__(
         self,
@@ -275,9 +295,6 @@ class InformedPolicyRandomWalk(MotorPolicy):
             return MotorPolicyResult([action])
 
         return MotorPolicyResult([])
-
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:  # noqa: ARG002
-        self._undo_action = None
 
     def state_dict(self) -> Memento:
         return {"undo_action": self._undo_action}
@@ -386,6 +403,11 @@ class PredefinedPolicy(MotorPolicy):
     ) -> None:
         self.agent_id = agent_id
         self.action_list: list[Action] = PredefinedPolicy.read_action_file(file_name)
+
+        # TODO: make this part of `__init__()` after `reset()` is removed.
+        self._init_PredefinedPolicy()
+
+    def _init_PredefinedPolicy(self) -> None:  # noqa: N802
         self.episode_step = 0
 
     def __call__(
@@ -400,8 +422,11 @@ class PredefinedPolicy(MotorPolicy):
         self.episode_step += 1
         return MotorPolicyResult(actions)
 
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:  # noqa: ARG002
-        self.episode_step = 0
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    def reset(self) -> None:
+        self._init_PredefinedPolicy()
 
     def state_dict(self) -> Memento:
         return {"episode_step": self.episode_step}
@@ -417,6 +442,11 @@ class JumpToGoal(MotorPolicy):
     of relying on PositioningProcedure.depth_at_center for undo check.
     """
 
+    _undo_action: Action | None
+    _is_jumping: bool
+    _pre_jump_state: AgentState | None
+    _undo_actions: list[Action]
+
     def __init__(self, agent_id: AgentID, sensor_id: SensorID) -> None:
         """Initialize policy.
 
@@ -427,11 +457,12 @@ class JumpToGoal(MotorPolicy):
         self._agent_id = agent_id
         self._sensor_id = sensor_id
 
-        self._undo_action: Action | None = None
+        # TODO: make this part of `__init__()` after `reset()` is removed.
+        self._init_JumpToGoal()
 
-        self._is_jumping: bool = False
-        self._pre_jump_state: AgentState | None = None
-        self._undo_actions: list[Action] = []
+    def _init_JumpToGoal(self) -> None:  # noqa: N802
+        self._undo_action = None
+        self._reset_jump_state()
 
     def load_state_dict(self, memento: Memento) -> None:
         self._agent_id = memento["agent_id"]
@@ -449,9 +480,11 @@ class JumpToGoal(MotorPolicy):
             "undo_jump_actions": self._undo_actions,
         }
 
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:  # noqa: ARG002
-        self._undo_action = None
-        self._reset_jump_state()
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    def reset(self) -> None:
+        self._init_JumpToGoal()
 
     def __call__(
         self,
@@ -676,6 +709,12 @@ class InformedPolicy(BasePolicy):
 
     """
 
+    _undo_action: Action | None
+    _is_jumping: bool
+    _is_undoing_jump: bool
+    _pre_jump_state: AgentState | None
+    _undo_jump_actions: list[Action]
+
     def __init__(
         self,
         use_goal_driven_actions=False,
@@ -690,17 +729,20 @@ class InformedPolicy(BasePolicy):
         """
         super().__init__(**kwargs)
         self.use_goal_driven_actions = use_goal_driven_actions
-        self._undo_action: Action | None = None
 
-        self._is_jumping: bool = False
-        self._is_undoing_jump: bool = False
-        self._pre_jump_state: AgentState | None = None
-        self._undo_jump_actions: list[Action] = []
+        # TODO: make this part of `__init__()` after `reset()` is removed.
+        self._init_InformedPolicy()
 
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:
+    def _init_InformedPolicy(self) -> None:  # noqa: N802
         self._undo_action = None
         self._reset_jump_state()
-        return super().reset(motor_system)
+
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        return super().fixme_provide_motor_system(motor_system)
+
+    def reset(self) -> None:
+        super().reset()
+        self._init_InformedPolicy()
 
     def __call__(
         self,
@@ -966,6 +1008,11 @@ class NaiveScanPolicy(InformedPolicy):
             TurnRight(agent_id=self.agent_id, rotation_degrees=fixed_amount),
         ]
         self.fixed_amount = fixed_amount
+
+        # TODO: make this part of `__init__()` after `reset()` is removed.
+        self._init_NaiveScanPolicy()
+
+    def _init_NaiveScanPolicy(self) -> None:  # noqa: N802
         self.steps_per_action = 1
         self.current_action_id = 0
         self.step_on_action = 0
@@ -1010,11 +1057,12 @@ class NaiveScanPolicy(InformedPolicy):
         self.step_on_action += 1
         return MotorPolicyResult([self._naive_scan_actions[self.current_action_id]])
 
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:
-        super().reset(motor_system)
-        self.steps_per_action = 1
-        self.current_action_id = 0
-        self.step_on_action = 0
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        return super().fixme_provide_motor_system(motor_system)
+
+    def reset(self) -> None:
+        super().reset()
+        self._init_NaiveScanPolicy()
 
     def check_cycle_action(self):
         """Makes sure we move in a spiral.
@@ -1051,6 +1099,8 @@ class SurfacePolicy(InformedPolicy):
     functions for moving along an object based on its surface normal.
     """
 
+    last_surface_policy_action: Action | None
+
     def __init__(
         self,
         alpha,
@@ -1067,15 +1117,16 @@ class SurfacePolicy(InformedPolicy):
             **kwargs: ?
         """
         super().__init__(**kwargs)
-        self.tangential_angle = 0
         self.alpha = alpha
         self.desired_object_distance = desired_object_distance
 
         self.attempting_to_find_object: bool = False
-        self.last_surface_policy_action: Action | None = None
         self._telemetry = SurfacePolicyTelemetry()
 
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:
+        # TODO: make this part of `__init__()` after `reset()` is removed.
+        self._init_SurfacePolicy()
+
+    def _init_SurfacePolicy(self) -> None:  # noqa: N802
         self.tangential_angle = 0
         self.touch_search_amount = 0  # Track how many rotations the agent has made
         # along the horizontal plane searching for an object; when this reaches 360,
@@ -1084,11 +1135,16 @@ class SurfacePolicy(InformedPolicy):
 
         self.last_surface_policy_action = None
 
-        # TODO: This is a hack. What we should be doing is using a positioning
-        #       procedure for surface agents instead.
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        super().fixme_provide_motor_system(motor_system)
+
+        # TODO: This is a hack. What we should be doing is
+        #       using more sophisticated actions for surface agents instead.
         motor_system.motor_only_step = True
 
-        return super().reset(motor_system)
+    def reset(self) -> None:
+        super().reset()
+        self._init_SurfacePolicy()
 
     def _touch_object(
         self,
@@ -1753,8 +1809,11 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.tangent_norms = []  # As for tangent_locs; helpful for distinguishing
         # locations as being on different surfaces
 
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:
-        super().reset(motor_system)
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        return super().fixme_provide_motor_system(motor_system)
+
+    def reset(self) -> None:
+        super().reset()
         self._init_SurfacePolicyCurvatureInformed()
 
     def __call__(

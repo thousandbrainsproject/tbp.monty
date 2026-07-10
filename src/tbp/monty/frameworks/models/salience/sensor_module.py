@@ -116,7 +116,7 @@ class SalienceSM(SensorModule):
                 morphological_features=None,
                 non_morphological_features=None,
                 confidence=salience[i],
-                use_state=True,
+                use_state=False,  # SalienceSM goals are intended for the motor system
                 sender_id=self._sensor_module_id,
                 sender_type="SM",
                 goal_tolerances=None,

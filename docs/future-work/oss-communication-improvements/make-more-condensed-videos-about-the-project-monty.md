@@ -5,6 +5,7 @@ estimated-scope: medium
 skills: video-production, audio-editing
 output-type: video
 improved-metric: learning-experience
+status: evergreen
 ---
 
 We’d like to produce shorter, more accessible videos that introduce the Thousand Brains Project. Our current YouTube “Quickstart” playlist runs about seven and a half hours and, while comprehensive, is dense and difficult to digest. The goal is to make this material easier to follow without losing essential information.
