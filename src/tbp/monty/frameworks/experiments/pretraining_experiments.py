@@ -214,7 +214,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         # needed to provide the correct offset from the learned model when supervising.
         current_object = self.env_interface.primary_target["object"]
         if current_object not in self.first_epoch_object_location:
-            self.first_epoch_object_location[current_object] = (
+            self.first_epoch_object_location[current_object] = np.asarray(
                 self.env_interface.primary_target["position"]
             )
 

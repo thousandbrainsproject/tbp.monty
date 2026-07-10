@@ -19,6 +19,7 @@ constants:
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
   config:
+    show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
@@ -55,7 +56,7 @@ experiment:
           max_depth: 1
         - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
           agent_id: agent_id_0
-          sensor_ids: [ patch_1, view_finder ]
+          sensor_ids: [ patch_0, patch_1, view_finder ]
           resolutions:
             - [ 64, 64 ]
             - [ 64, 64 ]
