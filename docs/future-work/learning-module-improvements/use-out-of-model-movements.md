@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: medium
 improved-metric: accuracy
 output-type: experiments, analysis, PR
-skills: python, research, monty
+skills: python, research, monty-beginner
 contributor: hlee9212
 status: paused
 ---
