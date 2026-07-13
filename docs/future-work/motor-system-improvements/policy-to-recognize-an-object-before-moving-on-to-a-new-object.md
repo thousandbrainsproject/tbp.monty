@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: large
 improved-metric: multi-object, compositional, goal-policy
 output-type: prototype, monty-feature, PR, RFC, experiments, analysis
-skills: research, python, monty
+skills: research, python, monty-advanced
 contributor: nielsleadholm, scottcanoe
 status: scoping
 ---

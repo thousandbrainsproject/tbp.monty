@@ -5,6 +5,7 @@ estimated-scope: large
 improved-metric: community-engagement
 output-type: documentation
 skills: github-actions, python, github-readme-sync-tool, s3, javascript, html, css, markdown, yaml
+status: open
 ---
 
 The current platform for documentation is readme.com.  It has a number of drawbacks:

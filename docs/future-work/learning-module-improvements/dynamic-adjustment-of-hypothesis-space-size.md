@@ -5,7 +5,7 @@ rfc: https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0013_resa
 estimated-scope: large
 improved-metric: speed, pose, accuracy, noise, multi-object
 output-type: prototype, PR, monty-feature, publication
-skills: python, research, monty
+skills: python, research, monty-beginner
 contributor: ramyamounir
 status: completed
 ---

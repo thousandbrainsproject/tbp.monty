@@ -4,7 +4,7 @@ rfc: required
 estimated-scope: large
 improved-metric: generalization, transfer
 output-type: testbed, experiments, mesh-models
-skills: 3d-modeling, python, monty, research
+skills: 3d-modeling, python, monty-beginner, research
 contributor: 
 status: open
 ---

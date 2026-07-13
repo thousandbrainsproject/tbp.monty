@@ -5,7 +5,7 @@ rfc: https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0009_hypo
 estimated-scope: large
 improved-metric: accuracy, speed, multi-object
 output-type: prototype, experiments, analysis, PR
-skills: python, monty, research
+skills: python, monty-advanced, research
 contributor: ramyamounir
 status: completed
 ---
