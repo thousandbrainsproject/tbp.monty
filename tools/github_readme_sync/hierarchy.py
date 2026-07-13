@@ -172,7 +172,7 @@ def sanity_check_file_path(path, folder):
             "check what's in the () in hierarchy.md "
             "to make sure everything is lowercase"
         ]
-        
+
     if not path.exists():
         return [
             f"File {path} does not exist based on file path - "
