@@ -457,8 +457,7 @@ class MontyExperiment:
 
     def _snapshot_monty(self) -> None:
         """Capture episodic state of Monty model."""
-        if self._recreation_mode:
-            self._monty_ltm = self.model.snapshot_ltm()
+        self._monty_ltm = self.model.snapshot_ltm()
 
     def _restore_monty(self) -> None:
         """Recreate episodic state of Monty model."""

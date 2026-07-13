@@ -949,6 +949,10 @@ class GraphLM(LearningModule):
         self.target_to_graph_id = memento["target_to_graph_id"]
         self.graph_id_to_target = memento["graph_id_to_target"]
 
+        # After loading the long-term memory, give the LM a chance to
+        # update any internal state based on the contents of memory.
+        self.init_from_ltm()
+
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
