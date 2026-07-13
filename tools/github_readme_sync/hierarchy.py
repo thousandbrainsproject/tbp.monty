@@ -121,7 +121,7 @@ def check_hierarchy_file(folder: str):
                 link_check_errors.extend(errors)
 
             file_path = folder.joinpath(extract_file_path(line))
-            file_path_errors = sanity_check_file_path(file_path)
+            file_path_errors = sanity_check_file_path(file_path, folder)
             if file_path_errors:
                 link_check_errors.extend(file_path_errors)
 
@@ -161,7 +161,18 @@ def sanity_check_slugs(path, folder):
     return check_links(path)
 
 
-def sanity_check_file_path(path):
+def sanity_check_file_path(path, folder):
+    # Path casing is checked relative to the docs folder. Absolute prefixes
+    # (e.g. macOS tempfile /var/folders/.../T/) are outside our control and
+    # may contain uppercase segments even when all docs paths are lowercase.
+    relative_path = Path(path).relative_to(folder)
+    if str(relative_path) != str(relative_path).lower():
+        return [
+            f"File {path} does not exist based on capitalization - "
+            "check what's in the () in hierarchy.md "
+            "to make sure everything is lowercase"
+        ]
+        
     if not path.exists():
         return [
             f"File {path} does not exist based on file path - "
