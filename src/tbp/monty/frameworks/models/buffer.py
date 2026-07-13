@@ -103,10 +103,9 @@ class FeatureAtLocationBuffer:
     def append(self, percepts: Sequence[Message]) -> None:
         """Add a list of percepts to the buffer. Must be features at locations.
 
-        Per-channel feature rows are stored only for percepts that carry features;
-        a location-only channel contributes to the location but stores no feature
-        row (its per-channel arrays pad with NaNs and are later dropped by
-        `_extract_entries_with_content`).
+        Per-channel feature rows are stored only for percepts that carry features. If
+        an input channel does not contain features, its feature array is padded with
+        NaNs and are later dropped by `_extract_entries_with_content`.
 
         TODO S: Store messages instead of list of percepts?
         A provisional version of this is implemented below, as the GSG uses
@@ -189,6 +188,17 @@ class FeatureAtLocationBuffer:
     def get_current_pose(self, input_channel):
         """Get currently sensed location and orientation.
 
+        The location is updated on every buffer append step, while the pose comes from
+        the last received feature from `input_channel`. A channel that sends no features
+        on a step has no pose vectors stored for it. So, for this a channel the two may
+        be drawn from different time steps. A warning is logged when this happens.
+
+        Note:
+            This cannot happen for when `input_channel="first"`, i.e., first SM channel,
+            since percepts are currently only appended to the buffer when the SM
+            channels contain features. Its pose vectors are therefore always from the
+            current step.
+
         Args:
             input_channel: Input channel whose pose vectors to use, or "first"
                 for the first sensory input channel.
@@ -198,7 +208,15 @@ class FeatureAtLocationBuffer:
         """
         if input_channel == "first":
             input_channel = self.get_first_sensory_input_channel()
-        channel_pose = self.features[input_channel]["pose_vectors"][-1].reshape((3, 3))
+        pose_vectors = self.features[input_channel]["pose_vectors"]
+        if len(pose_vectors) < len(self.locations):
+            logger.warning(
+                f"Pose vectors of input channel '{input_channel}' were last received "
+                f"at step {len(pose_vectors) - 1}, but the current step is "
+                f"{len(self.locations) - 1}. The returned pose combines a location and "
+                "an pose observed at different time steps."
+            )
+        channel_pose = pose_vectors[-1].reshape((3, 3))
         return np.vstack(
             [
                 self.get_current_location(),
