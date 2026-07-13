@@ -134,10 +134,6 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
     def _init_NoResetEvidenceGraphLM(self) -> None:  # noqa: N802
         self.last_location = None
 
-    # FIXME: If this is just a superclass call, just inherit it!
-    def init_from_ltm(self) -> None:
-        super().init_from_ltm()
-
     def reset_stm(self) -> None:
         super().reset_stm()
         self._init_NoResetEvidenceGraphLM()

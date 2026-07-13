@@ -27,7 +27,7 @@ class FakeLearningModule(LearningModule):
         self.test_attr_1 = True
         self.test_attr_2 = True
 
-    def init_from_ltm(self):
+    def init_from_ltm(self) -> None:
         pass
 
     def matching_step(self, ctx: RuntimeContext, percepts: Sequence[Message]) -> None:

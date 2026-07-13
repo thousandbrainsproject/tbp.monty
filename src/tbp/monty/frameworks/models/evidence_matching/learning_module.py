@@ -339,8 +339,7 @@ class EvidenceGraphLM(GraphLM):
         }
         self.previous_mlh = self.current_mlh
 
-    def init_from_ltm(self):
-        """Reset evidence count and other variables."""
+    def init_from_ltm(self) -> None:
         # Now here, as opposed to the displacement and feature-location LMs,
         # possible_matches is a list of IDs, not a dictionary with the object graphs.
         self.possible_matches = self.graph_memory.get_initial_hypotheses()
