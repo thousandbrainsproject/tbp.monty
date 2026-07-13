@@ -116,7 +116,7 @@ def check_hierarchy_file(folder: str):
             parent_stack.append(new_doc)
 
             slug_path = folder.joinpath(*[el["slug"] for el in parent_stack])
-            errors = sanity_check_slugs(slug_path.with_suffix(".md"))
+            errors = sanity_check_slugs(slug_path.with_suffix(".md"), folder)
             if errors:
                 link_check_errors.extend(errors)
 
@@ -140,8 +140,12 @@ def extract_slug(line: str):
     return match.group(1)
 
 
-def sanity_check_slugs(path):
-    if str(path) != str(path).lower():
+def sanity_check_slugs(path, folder):
+    # Path casing is checked relative to the docs folder. Absolute prefixes
+    # (e.g. macOS tempfile /var/folders/.../T/) are outside our control and
+    # may contain uppercase segments even when all docs paths are lowercase.
+    relative_path = Path(path).relative_to(folder)
+    if str(relative_path) != str(relative_path).lower():
         return [
             f"File {path} does not exist based on slugs capitalization - "
             "check what's in the [] in hierarchy.md "
