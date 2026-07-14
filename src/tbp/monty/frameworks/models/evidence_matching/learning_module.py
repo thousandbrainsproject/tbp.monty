@@ -545,11 +545,6 @@ class EvidenceGraphLM(GraphLM):
         mlh = self.get_current_mlh()
         pose_features = self._object_pose_to_features(mlh["rotation"].inv())
         object_id_features = self._object_id_to_features(mlh["graph_id"])
-        # Pass object ID to next LM if:
-        #       1) The last input it received was on_object (+getting SM input
-        #           check will make sure that we are also currently on object)
-        #           NOTE: May want to relax this check but still need a motor input
-        #       2) It has reached a "match" terminal state
         pass_message = bool(
             self.buffer.get_currently_on_object() and self.terminal_state == "match"
         )
