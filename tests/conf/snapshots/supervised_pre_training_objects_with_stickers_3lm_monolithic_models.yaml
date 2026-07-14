@@ -6,8 +6,8 @@ experiment:
       monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
       monty_args:
         num_exploratory_steps: 1000
-        min_eval_steps: ${constants.min_eval_steps}
-        min_train_steps: 3
+        min_eval_steps: 3
+        min_train_steps: 100
         max_total_steps: 2500
       motor_system_config:
         policy_selector:
@@ -167,11 +167,7 @@ experiment:
       - - 0
       - - 1
       - - 2
-      lm_to_lm_matrix:
-      - []
-      - []
-      - - 0
-        - 1
+      lm_to_lm_matrix: null
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:
@@ -284,36 +280,34 @@ experiment:
     train_env_interface_args:
       parent_to_child_mapping: null
       object_names:
-      - 021_logo_tbp
-      - 022_logo_numenta
+      - 001_cube
+      - 006_disk
+      - 002_cube_tbp_horz
+      - 004_cube_numenta_horz
+      - 007_disk_tbp_horz
+      - 009_disk_numenta_horz
+      - 011_cylinder
+      - 016_sphere
+      - 023_mug
+      - 012_cylinder_tbp_horz
+      - 014_cylinder_numenta_horz
+      - 017_sphere_tbp_horz
+      - 019_sphere_numenta_horz
+      - 024_mug_tbp_horz
+      - 026_mug_numenta_horz
+      - 003_cube_tbp_vert
+      - 005_cube_numenta_vert
+      - 008_disk_tbp_vert
+      - 010_disk_numenta_vert
+      - 013_cylinder_tbp_vert
+      - 015_cylinder_numenta_vert
+      - 018_sphere_tbp_vert
+      - 020_sphere_numenta_vert
+      - 025_mug_tbp_vert
+      - 027_mug_numenta_vert
       object_init_sampler:
-        positions:
-        - - 0.0
-          - 1.5
-          - 0.0
-        - - -0.015
-          - 1.5
-          - 0.0
-        - - -0.03
-          - 1.5
-          - 0.0
-        - - -0.045
-          - 1.5
-          - 0.0
-        - - 0.015
-          - 1.5
-          - 0.0
-        - - 0.03
-          - 1.5
-          - 0.0
-        - - 0.045
-          - 1.5
-          - 0.0
-        rotations:
-        - - 0.0
-          - 0.0
-          - 0.0
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+        rotations: ${constants.rotations_all}
       positioning_procedures:
       - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
         agent_id: agent_id_0
@@ -331,23 +325,22 @@ experiment:
       python_log_level: INFO
       python_log_to_file: true
       python_log_to_stderr: true
-      output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor}
+      output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/monolithic_3lm}
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: debugging
-      run_name: supervised_pre_training_objects_with_stickers_2d_children
+      run_name: supervised_pre_training_objects_with_stickers_3lm_monolithic_models
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
-    n_train_epochs: 7
-    n_eval_epochs: 7
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/3d_sensor/supervised_pre_training_objects_with_stickers_3d_children/pretrained/}
-    min_lms_match: 1
+    n_train_epochs: ${constants.rotations_all_count}
+    n_eval_epochs: 3
+    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor/supervised_pre_training_objects_with_stickers_2d_children/pretrained/}
+    min_lms_match: 4
     seed: 42
-    supervised_lm_ids:
-    - learning_module_0
+    supervised_lm_ids: all
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 episodes: all
 num_parallel: 16
@@ -370,49 +363,10 @@ constants:
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
   compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v4}
-  rotations_all_count: 14
+  rotations_all_count: 1
   rotations_all:
   - - 0
     - 0
-    - 0
-  - - 0
-    - 90
-    - 0
-  - - 0
-    - 180
-    - 0
-  - - 0
-    - 270
-    - 0
-  - - 90
-    - 0
-    - 0
-  - - 90
-    - 180
-    - 0
-  - - 35
-    - 45
-    - 0
-  - - 325
-    - 45
-    - 0
-  - - 35
-    - 315
-    - 0
-  - - 325
-    - 315
-    - 0
-  - - 35
-    - 135
-    - 0
-  - - 325
-    - 135
-    - 0
-  - - 35
-    - 225
-    - 0
-  - - 325
-    - 225
     - 0
   rotations_3_count: 3
   rotations_3:
@@ -425,5 +379,4 @@ constants:
   - - 0
     - 180
     - 0
-  zoom: 30
   blur_sigma: 5

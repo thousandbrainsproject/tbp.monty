@@ -5,7 +5,7 @@ defaults:
   - /monty/motor_system_config: distant_5
   - /monty/learning_module: evidence_3lm_heterarchy
   - /monty/sensor_module: 3sm_2d3d_dist
-  - /monty/connectivity: 3lm_3sm_heterarchy
+  - /monty/connectivity: 3lm_3sm_monolithic
   - /environment: habitat_dist_agent_sensors3
   - /env_interface: eval_objects_with_stickers_predefined
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
@@ -21,10 +21,10 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: ${constants.rotations_all_count}
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/heterarch_3sm_composite/supervised_pre_training_objects_with_stickers_comp_models/pretrained/}
+    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/monolithic_3lm/supervised_pre_training_objects_with_stickers_3lm_monolithic_models/pretrained/}
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG
     logging:
-      run_name: base_infer_objects_with_stickers_comp_models
+      run_name: base_infer_objects_with_stickers_3lm_monolithic_models
