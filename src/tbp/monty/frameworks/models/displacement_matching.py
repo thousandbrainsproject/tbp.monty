@@ -80,9 +80,6 @@ class DisplacementGraphLM(GraphLM):
             self.scale_factors,
         ) = self.graph_memory.get_initial_hypotheses()
 
-    def reset_stm(self) -> None:
-        super().reset_stm()
-
     # ------------------ Getters & Setters ---------------------
     def get_unique_pose_if_available(self, object_id):
         """Compute (location, rotation, scale) of object.

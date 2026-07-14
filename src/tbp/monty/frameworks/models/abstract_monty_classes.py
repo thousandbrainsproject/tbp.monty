@@ -371,7 +371,7 @@ class RuntimeLearningModule(Protocol):
     def init_from_ltm(self) -> None:
         """Initialize LM state from long-term memory.
 
-        For example, get initial hypotheses.
+        For example, getting initial hypotheses.
         """
         ...
 

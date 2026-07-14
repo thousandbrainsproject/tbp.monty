@@ -224,12 +224,13 @@ class EvidenceGraphLM(GraphLM):
             for debugging purposes.
     """
 
+    current_mlh: dict[str, Any]
+
     # Dictionary with graph_ids as keys. For each graph we initialize a set of
     # hypotheses at the first step of an episode. Each Hypotheses bundles the
     # evidence, possible_locations, possible_poses, and a boolean possible mask
     # used for symmetry checks.
     _hypotheses: dict[str, Hypotheses]
-    current_mlh: dict[str, Any]
 
     def __init__(
         self,
