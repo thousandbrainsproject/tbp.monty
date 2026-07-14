@@ -683,10 +683,6 @@ class PassthroughPerceptFilter(PerceptFilter):
     def __call__(self, percept: Message) -> Message:
         """Passthrough percept filter.
 
-        A no-op: the observation processor already labelled the percept as carrying
-        features or being location-only via `contains_features`, and this filter
-        does not detect feature changes.
-
         Returns:
             Percept unchanged.
         """
