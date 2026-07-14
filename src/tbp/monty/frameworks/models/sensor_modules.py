@@ -702,7 +702,7 @@ class FeatureChangeFilter(PerceptFilter):
         """Reset buffer and is_exploring flag."""
         self._last_percept = None
 
-    def _check_feature_change(self, percept: Message) -> bool:
+    def _feature_changes_are_significant(self, percept: Message) -> bool:
         """Check feature change between last transmitted observation.
 
         Args:
@@ -800,7 +800,7 @@ class FeatureChangeFilter(PerceptFilter):
             self._last_sent_n_steps_ago = 0
             return percept
 
-        significant_feature_change = self._check_feature_change(percept)
+        significant_feature_change = self._feature_changes_are_significant(percept)
         percept.contains_features = significant_feature_change
         if significant_feature_change:
             # Only update the "last feature" when a significant change has occurred.
