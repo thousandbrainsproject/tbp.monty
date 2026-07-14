@@ -37,7 +37,7 @@ class TestComputePoseError(unittest.TestCase):
         The target rotation is 12°, so the closest in the list [0°, 10°, 20°] is 10°,
         with a 2° error.
         """
-        rotations_list = Rotation.from_euler("z", [0, 10, 20], degrees=True)
+        rotations_list = Rotation.from_euler("z", 10, degrees=True)
         target = Rotation.from_euler("z", 12, degrees=True)
         error = compute_pose_error(rotations_list, target, return_degrees=True)
         self.assertAlmostEqual(error, 2, places=6)

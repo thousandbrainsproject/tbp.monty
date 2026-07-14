@@ -180,7 +180,7 @@ class HabitatSim(HabitatActuator, SimulatedObjectEnvironment):
                 # json files with the attributes of each object in the dataset.
                 # The json file name is in this format:
                 # "{object_name}.object_config.json".
-                # See https://aihabitat.org/docs/habitat-sim/attributesJSON.html#objectattributes # noqa: E501
+                # See https://aihabitat.org/docs/habitat-sim/attributesJSON.html#objectattributes
                 objects_data_path = {
                     f.parent for f in objects_path.glob("*/**/*.object_config.json")
                 }

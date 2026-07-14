@@ -424,6 +424,16 @@ def surface_normal_total_least_squares(
         try:
             # Find eigenvector of M with the minimum eigenvalue
             eig_val, eig_vec = np.linalg.eig(m_mat)
+            # Newer versions of `np.linalg.eig` always return complex values instead
+            # of converting them to floats when they have a zero imaginary component,
+            # so we need to explicitly convert to a real. We're assuming that the
+            # eigenvectors and eigenvalues have no imaginary components.
+            # TODO: change this comment to a mathematical argument for why
+            #  this is a safe assumption.
+            assert np.isreal(eig_val).all() and np.isreal(eig_vec).all()
+            eig_val = np.real(eig_val)
+            eig_vec = np.real(eig_vec)
+
             n_dir = eig_vec[:, np.argmin(eig_val)]
             valid_sn = True
 
@@ -662,7 +672,13 @@ def principal_curvatures(
         # in a system with insufficient data to be solvable.
         if non_singular_mat(a_mat):
             # Step 2) do least-squares fit to get the parameters of the quadratic form
-            params = np.linalg.solve(a_mat, b)
+
+            # This call to `solve` returns a column vector, and newer versions of
+            # NumPy no longer do implicit conversions from single element arrays to
+            # scalars like we are doing below when setting `guv` and `buv`. Calling
+            # `ravel` gives us a view of the array as a row vector, making the elements
+            # scalar values.
+            params = np.linalg.solve(a_mat, b).ravel()
 
             # Step 3) compute 1st and 2nd fundamental forms guv and buv:
             # TODO: Extract improved surface normal estimate from fitted curve
@@ -682,9 +698,16 @@ def principal_curvatures(
             # TODO: here convex PCs are negative but I think they should be positive
             m = np.linalg.inv(guv).dot(buv)
             eigval, eigvec = np.linalg.eig(m)
-            idx = eigval.argsort()[::-1]
-            eigval_sorted = eigval[idx]
-            eigvec_sorted = eigvec[:, idx]
+            # Newer versions of `np.linalg.eig` always return complex values instead
+            # of converting them to floats when they have a zero imaginary component.
+            # We're assuming that the eigenvectors and eigenvalues have no imaginary
+            # components.
+            # TODO: change this comment to a mathematical argument for why
+            #  this is a safe assumption.
+            assert np.isreal(eigval).all() and np.isreal(eigvec).all()
+            idx = eigval.real.argsort()[::-1]
+            eigval_sorted = eigval.real[idx]
+            eigvec_sorted = eigvec.real[:, idx]
 
             k1 = eigval_sorted[0]
             k2 = eigval_sorted[1]

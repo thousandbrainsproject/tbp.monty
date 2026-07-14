@@ -158,7 +158,7 @@ class SalienceSM(SensorModule):
         min_ = weighted_salience.min()
         max_ = weighted_salience.max()
         scale = max_ - min_
-        if np.isclose(scale, 0):
+        if np.allclose(scale, 0):
             return np.clip(weighted_salience, 0, 1)
 
         return (weighted_salience - min_) / scale
