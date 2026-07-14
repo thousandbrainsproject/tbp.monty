@@ -567,9 +567,6 @@ class EvidenceGraphLM(GraphLM):
         # much simpler but also require some arbitrary object center and give less
         # resolution of where on a compositional object we are (in this lm). Would
         # also require update in terminal condition re. path_similarity_th.
-        # object_loc_rel_body = (
-        #     self.buffer.get_current_location() - mlh["location"]
-        # )
         return Message(
             # Same as input location from patch (rel body)
             # NOTE: The receiving LM extracts the location information directly from
