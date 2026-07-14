@@ -34,7 +34,7 @@ from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.models.percept_utils import (
-    is_feature_step,
+    location_only,
     sm_location_mean,
 )
 from tbp.monty.geometry import Rotation
@@ -263,7 +263,7 @@ class MontyForGraphMatching(MontyBase):
                     logger.debug(f"Stepping learning module {i}")
 
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
-                    lm_processed=is_feature_step(sensory_inputs)
+                    lm_processed=not location_only(sensory_inputs)
                 )
             else:
                 if self.step_type == "matching_step":
@@ -625,7 +625,7 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Update the possible matches given an observation."""
-        if not is_feature_step(percepts):
+        if location_only(percepts):
             # Handle without appending to buffer, matching, or stepping the GSG.
             self._location_only_step(percepts)
             return
@@ -661,7 +661,7 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
-        if not is_feature_step(percepts):
+        if location_only(percepts):
             self._location_only_step(percepts)
             return
 

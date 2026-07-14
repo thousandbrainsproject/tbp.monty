@@ -13,7 +13,7 @@ import unittest
 import numpy as np
 
 from tbp.monty.frameworks.models.percept_utils import (
-    is_feature_step,
+    location_only,
     sm_location_mean,
     sm_percepts,
 )
@@ -55,14 +55,14 @@ class PerceptUtilsTest(unittest.TestCase):
             sm_location_mean([sm_a, sm_b, lm]), np.array([1.0, 2.0, 3.0])
         )
 
-    def test_is_feature_step_ignores_lm_features(self):
+    def test_location_only_ignores_lm_features(self):
         location = np.zeros(3)
         sm_location_only = self.sm("sm_0", location, contains_features=False)
         sm_with_features = self.sm("sm_0", location, contains_features=True)
         lm_with_features = self.lm("lm_0", location, contains_features=True)
 
-        self.assertFalse(is_feature_step([sm_location_only, lm_with_features]))
-        self.assertTrue(is_feature_step([sm_with_features]))
+        self.assertTrue(location_only([sm_location_only, lm_with_features]))
+        self.assertFalse(location_only([sm_with_features]))
 
 
 if __name__ == "__main__":

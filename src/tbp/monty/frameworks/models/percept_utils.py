@@ -41,16 +41,16 @@ def sm_location_mean(percepts: Sequence[Message]) -> npt.NDArray[np.float64]:
     return np.mean([p.location for p in sm_percepts(percepts)], axis=0)
 
 
-def is_feature_step(percepts: Sequence[Message]) -> bool:
-    """Return whether at least one SM channel delivered features.
+def location_only(percepts: Sequence[Message]) -> bool:
+    """Return whether no SM channel delivered features.
 
-    Distinguishes a feature step from a location-only step. The gate is computed
+    Distinguishes a location-only step from a feature step. The gate is computed
     from SM percepts only.
 
     Args:
         percepts: Sequence of Message objects.
 
     Returns:
-        True if any SM percept carries features.
+        True if no SM percept carries features.
     """
-    return any(p.contains_features for p in sm_percepts(percepts))
+    return not any(p.contains_features for p in sm_percepts(percepts))
