@@ -219,12 +219,12 @@ class EvidenceLMTest(BaseGraphTest):
                 "Should match to new_object0.",
             )
             self.assertEqual(
-                graph_lm.get_current_mlh()["graph_id"],
+                graph_lm._get_current_mlh()["graph_id"],
                 "new_object0",
                 "new_object0 should be the mlh at every step.",
             )
             self.assertEqual(
-                graph_lm.get_current_mlh()["evidence"],
+                graph_lm._get_current_mlh()["evidence"],
                 target_evidence,
                 "Since we have exact matches, evidence should be incremented by "
                 "2 at each step (1 for pose match and 1 for feature match).",
@@ -232,7 +232,7 @@ class EvidenceLMTest(BaseGraphTest):
             target_evidence += 2
 
         self.assertListEqual(
-            list(graph_lm.get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
+            list(graph_lm._get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
             [0, 0, 0],
             "Should recognize rotation 0, 0, 0.",
         )
@@ -255,7 +255,7 @@ class EvidenceLMTest(BaseGraphTest):
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
             graph_lm.matching_step(self.ctx, [observation])
 
-        mlh_before = copy.deepcopy(graph_lm.get_current_mlh())
+        mlh_before = copy.deepcopy(graph_lm._get_current_mlh())
         last_location_before = graph_lm.buffer.last_location.copy()
         graph_id = mlh_before["graph_id"]
         mlh_id = mlh_before["mlh_id"]
@@ -269,7 +269,7 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm.add_lm_processing_to_buffer_stats(lm_processed=False)
         graph_lm.matching_step(self.ctx, [location_only])
 
-        mlh_after = graph_lm.get_current_mlh()
+        mlh_after = graph_lm._get_current_mlh()
         np.testing.assert_allclose(
             mlh_after["location"],
             mlh_before["location"] + mlh_pose @ displacement,
@@ -321,12 +321,12 @@ class EvidenceLMTest(BaseGraphTest):
                 "Should match to new_object0.",
             )
             self.assertEqual(
-                graph_lm.get_current_mlh()["graph_id"],
+                graph_lm._get_current_mlh()["graph_id"],
                 "new_object0",
                 "new_object0 should be the mlh at every step.",
             )
             self.assertEqual(
-                graph_lm.get_current_mlh()["evidence"],
+                graph_lm._get_current_mlh()["evidence"],
                 target_evidence,
                 "Since we have exact matches, evidence should be incremented by "
                 "2 at each step (1 for pose match and 1 for feature match).",
@@ -334,7 +334,7 @@ class EvidenceLMTest(BaseGraphTest):
             target_evidence += 2
 
         self.assertListEqual(
-            list(graph_lm.get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
+            list(graph_lm._get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
             [0, 0, 0],
             "Should recognize rotation 0, 0, 0.",
         )
@@ -364,12 +364,12 @@ class EvidenceLMTest(BaseGraphTest):
                 "Should match to new_object0.",
             )
             self.assertEqual(
-                graph_lm.get_current_mlh()["graph_id"],
+                graph_lm._get_current_mlh()["graph_id"],
                 "new_object0",
                 "new_object0 should be the mlh at every step.",
             )
             self.assertEqual(
-                graph_lm.get_current_mlh()["evidence"],
+                graph_lm._get_current_mlh()["evidence"],
                 target_evidence,
                 "Since we have exact matches, evidence should be incremented by "
                 "2 at each step (1 for pose match and 1 for feature match).",
@@ -377,7 +377,7 @@ class EvidenceLMTest(BaseGraphTest):
             target_evidence += 2
 
         self.assertListEqual(
-            list(graph_lm.get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
+            list(graph_lm._get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
             [0, 0, 0],
             "Should recognize rotation 0, 0, 0.",
         )
@@ -411,13 +411,13 @@ class EvidenceLMTest(BaseGraphTest):
                 "Should match to new_object0.",
             )
             self.assertEqual(
-                graph_lm.get_current_mlh()["graph_id"],
+                graph_lm._get_current_mlh()["graph_id"],
                 "new_object0",
                 "new_object0 should be the mlh at every step.",
             )
 
         self.assertListEqual(
-            list(graph_lm.get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
+            list(graph_lm._get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
             [0, 0, 0],
             "Should recognize rotation 0, 0, 0.",
         )
@@ -618,14 +618,14 @@ class EvidenceLMTest(BaseGraphTest):
                 "Should have exactly 1 possible match.",
             )
             self.assertEqual(
-                graph_lm.get_current_mlh()["evidence"],
+                graph_lm._get_current_mlh()["evidence"],
                 target_evidence,
                 "Since none of the features match we should only be getting evidence "
                 "from morphology which is 1 at each step (since m matches perfectly).",
             )
 
         self.assertListEqual(
-            list(graph_lm.get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
+            list(graph_lm._get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
             [0, 0, 0],
             "Should recognize rotation 0, 0, 0.",
         )
@@ -652,28 +652,28 @@ class EvidenceLMTest(BaseGraphTest):
                     "Should have one possible match at first step.",
                 )
                 self.assertEqual(
-                    graph_lm.get_current_mlh()["evidence"],
+                    graph_lm._get_current_mlh()["evidence"],
                     1,
                     "First step should have evidence 1 since features match and poses"
                     " are just being initialized.",
                 )
             elif step == 1:
                 self.assertGreater(
-                    graph_lm.get_current_mlh()["evidence"],
+                    graph_lm._get_current_mlh()["evidence"],
                     1,
                     "Second step should still have evidence >1 since initialized pose"
                     " is still possible.",
                 )
             elif step == 2:
                 self.assertLess(
-                    graph_lm.get_current_mlh()["evidence"],
+                    graph_lm._get_current_mlh()["evidence"],
                     1,
                     "Third step should have evidence <1 since initialized pose"
                     " is not valid anymore -> subtracting 1.",
                 )
             elif step == 3:
                 self.assertLess(
-                    graph_lm.get_current_mlh()["evidence"],
+                    graph_lm._get_current_mlh()["evidence"],
                     0,
                     "Fourth step should have evidence <0 since initialized pose"
                     " is not valid anymore -> subtracting 1.",
@@ -724,19 +724,19 @@ class EvidenceLMTest(BaseGraphTest):
                     "Should match to new_object0.",
                 )
                 self.assertEqual(
-                    graph_lm.get_current_mlh()["graph_id"],
+                    graph_lm._get_current_mlh()["graph_id"],
                     "new_object0",
                     "new_object0 should be the mlh at every step.",
                 )
                 self.assertEqual(
-                    graph_lm.get_current_mlh()["evidence"],
+                    graph_lm._get_current_mlh()["evidence"],
                     target_evidence,
                     "Since we have exact matches, evidence should be incremented by "
                     "2 at each step (1 for pose match and 1 for feature match).",
                 )
 
         self.assertListEqual(
-            list(graph_lm.get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
+            list(graph_lm._get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
             [0, 0, 0],
             "Should recognize rotation 0, 0, 0.",
         )

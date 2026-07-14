@@ -783,7 +783,7 @@ def add_policy_episode_stats(lm, stats):
 
 
 def add_evidence_lm_episode_stats(lm, stats, consistent_child_objects):
-    last_mlh = lm.get_current_mlh()
+    last_mlh = lm._get_current_mlh()
 
     stats["most_likely_object"] = last_mlh["graph_id"]
     stats["most_likely_location"] = last_mlh["location"]
@@ -834,7 +834,7 @@ def calculate_performance(stats, performance_type, lm, target_object):
     """
     if stats[performance_type] in ["time_out", "pose_time_out"]:
         # Check if the final result (object label) is consistent with the target
-        if target_object in lm.graph_id_to_target[lm.get_current_mlh()["graph_id"]]:
+        if target_object in lm.graph_id_to_target[lm._get_current_mlh()["graph_id"]]:
             stats[performance_type] = "correct_mlh"
         else:
             stats[performance_type] = "confused_mlh"

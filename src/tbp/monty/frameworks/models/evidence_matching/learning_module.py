@@ -544,7 +544,7 @@ class EvidenceGraphLM(GraphLM):
 
         If the LM has not reached a "match" terminal state, pass_message == False.
         """
-        mlh = self.get_current_mlh()
+        mlh = self._get_current_mlh()
         pose_features = self._object_pose_to_features(mlh["rotation"].inv())
         object_id_features = self._object_id_to_features(mlh["graph_id"])
         pass_message = bool(
@@ -620,7 +620,7 @@ class EvidenceGraphLM(GraphLM):
             "time_out",
             "pose_time_out",
         }:
-            mlh = self.get_current_mlh()
+            mlh = self._get_current_mlh()
             if "evidence" in mlh and (mlh["evidence"] > self.object_evidence_threshold):
                 # Use most likely hypothesis
                 graph_id = mlh["graph_id"]
@@ -641,7 +641,7 @@ class EvidenceGraphLM(GraphLM):
         possible_object_hypotheses_ids = self.get_possible_hypothesis_ids(object_id)
         # Only try to determine object pose if the evidence for it is high enough.
         if len(possible_object_hypotheses_ids) > 0:
-            mlh = self.get_current_mlh()
+            mlh = self._get_current_mlh()
 
             # Check if all possible poses are similar
             pose_is_unique = self._check_for_unique_poses(
@@ -699,7 +699,7 @@ class EvidenceGraphLM(GraphLM):
         self._hypotheses[object_id].possible[:] = False
         return None
 
-    def get_current_mlh(self):
+    def _get_current_mlh(self):
         """Return the current most likely hypothesis of the learning module.
 
         The MLH location is refreshed from the current hypothesis space so that it
@@ -856,7 +856,7 @@ class EvidenceGraphLM(GraphLM):
         """
         stats = {
             "possible_matches": self.get_possible_matches(),
-            "current_mlh": self.get_current_mlh(),
+            "current_mlh": self._get_current_mlh(),
         }
         self._append_mlh_prediction_error_to_stats()
         if self.has_detailed_logger:
