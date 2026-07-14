@@ -781,6 +781,9 @@ class FeatureChangeFilter(PerceptFilter):
             Percept with `contains_features` set to whether the features changed
             significantly.
         """
+        if not percept.pass_message:
+            return percept
+
         if not percept.contains_features:
             # The features are uninteresting (e.g. off object, or invalid surface
             # normal due to <3/4 of the object in view), so deliver the percept as
