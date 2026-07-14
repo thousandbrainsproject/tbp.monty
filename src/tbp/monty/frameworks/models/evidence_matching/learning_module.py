@@ -305,6 +305,7 @@ class EvidenceGraphLM(GraphLM):
 
         self.current_mlh = {
             "graph_id": "no_observations_yet",
+            "mlh_id": None,
             "location": [0, 0, 0],
             "rotation": Rotation.from_euler("xyz", [0, 0, 0]),
             "scale": 1,
@@ -351,6 +352,7 @@ class EvidenceGraphLM(GraphLM):
         self.hypotheses_updater.reset()
 
         self.current_mlh["graph_id"] = "no_observations_yet"
+        self.current_mlh["mlh_id"] = None
         self.current_mlh["location"] = [0, 0, 0]
         self.current_mlh["rotation"] = Rotation.from_euler("xyz", [0, 0, 0])
         self.current_mlh["scale"] = 1
@@ -703,14 +705,16 @@ class EvidenceGraphLM(GraphLM):
         The MLH location is refreshed from the current hypothesis space so that it
         reflects any displacement applied since the MLH was last computed (e.g. on
         location-only steps). The MLH identity is invariant under displacement, so
-        its stored index still points at the same hypothesis.
+        its stored index still points at the same hypothesis. `mlh_id` is None until
+        an MLH has been computed from a hypothesis space, in which case there is no
+        location to update from.
 
         Returns:
             dict with keys: graph_id, mlh_id, location, rotation, scale, evidence
         """
         mlh = self.current_mlh
         graph_id = mlh["graph_id"]
-        if graph_id in self._hypotheses and "mlh_id" in mlh:
+        if mlh["mlh_id"] is not None and graph_id in self._hypotheses:
             mlh["location"] = self._hypotheses[graph_id].locations[mlh["mlh_id"]]
         return mlh
 
