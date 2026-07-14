@@ -662,7 +662,6 @@ class GraphLM(LearningModule):
     ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
         if not is_feature_step(percepts):
-            # Handle without appending to buffer, matching, or stepping the GSG.
             self._location_only_step(percepts)
             return
 
