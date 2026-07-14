@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 import numpy as np
@@ -26,6 +27,7 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
 )
+from tbp.monty.memento import Memento
 
 __all__ = ["MontyForNoResetEvidenceGraphMatching", "NoResetEvidenceGraphLM"]
 
@@ -72,6 +74,13 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         # TODO: Remove initialization logic from `reset`
         self._super_reset_called = False
         self._super_set_ground_truth_called = False
+
+    def snapshot(self) -> Memento:
+        memo: Memento = self.state_dict()
+        return copy.deepcopy(memo)
+
+    def restore(self, memo: Memento) -> None:
+        self.load_state_dict(copy.deepcopy(memo))
 
     def reset(self) -> None:
         if not self._super_reset_called:
@@ -137,6 +146,17 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
     def reset_stm(self) -> None:
         super().reset_stm()
         self._init_NoResetEvidenceGraphLM()
+
+    def state_dict(self) -> Memento:
+        memo = dict(super().state_dict())
+        memo["_hypotheses"] = self._hypotheses
+        return memo
+
+    def load_state_dict(self, memento: Memento) -> None:
+        memo = dict(memento)
+        self._hypotheses = memo.pop("_hypotheses", {})
+        # IMPORTANT! call superclass last to complete initialization
+        super().load_state_dict(memo)
 
     def _add_displacements(self, percepts: list[Message]) -> list[Message]:
         """Add displacements to the current percept.

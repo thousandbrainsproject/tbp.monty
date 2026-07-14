@@ -397,16 +397,21 @@ class MontyBase(Monty):
         self.motor_system.reset()
         self._goals = []
 
-    def snapshot_ltm(self) -> Memento:
-        return {"lms": [copy.deepcopy(lm.state_dict()) for lm in self.learning_modules]}
+    def snapshot(self) -> Memento:
+        lm_dict: dict[int, Memento] = {
+            idx: lm.state_dict() for idx, lm in enumerate(self.learning_modules)
+        }
+        return {
+            "lm_dict": copy.deepcopy(lm_dict),
+        }
 
-    def restore_ltm(self, memo: Memento) -> None:
-        memo_lms: list[Memento] = memo["lms"]
+    def restore(self, memo: Memento) -> None:
+        lm_dict: dict[int, Memento] = memo["lm_dict"]
         # TODO: this is a weak compatibility check, make it stronger.
-        if len(memo_lms) != len(self.learning_modules):
+        if len(lm_dict) != len(self.learning_modules):
             raise ValueError("Incompatible Memento (different number of LMs)")
         for idx, lm in enumerate(self.learning_modules):
-            m: Memento = memo_lms[idx]
+            m: Memento = lm_dict[idx]
             lm.load_state_dict(copy.deepcopy(m))
 
     def fixme_set_ground_truth(

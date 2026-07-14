@@ -91,6 +91,7 @@ class NoResetEvidenceLMTest(BaseGraphTest):
             # load the eval experiment with the pretrained models
             pretrained_models = train_exp.model.learning_modules[0].state_dict()
             eval_exp.model.learning_modules[0].load_state_dict(pretrained_models)
+            eval_exp._snapshot_monty()
 
             eval_exp.experiment_mode = ExperimentMode.EVAL
             eval_exp.model.set_experiment_mode(eval_exp.experiment_mode)
