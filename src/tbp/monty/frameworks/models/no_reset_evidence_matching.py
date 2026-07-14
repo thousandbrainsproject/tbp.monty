@@ -8,11 +8,13 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import logging
 from typing import Any, Sequence
 
 import numpy as np
 
 from tbp.monty.cmp import Message
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
@@ -26,9 +28,14 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
 )
-from tbp.monty.frameworks.models.percept_utils import sm_location_mean
+from tbp.monty.frameworks.models.percept_utils import (
+    location_only,
+    sm_location_mean,
+)
 
 __all__ = ["MontyForNoResetEvidenceGraphMatching", "NoResetEvidenceGraphLM"]
+
+logger = logging.getLogger(__name__)
 
 
 class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
@@ -160,24 +167,68 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         self.last_location = current_location.copy()
         return percepts
 
-    def _location_only_step(self, percepts: Sequence[Message]) -> None:
-        """Displace hypotheses on a location-only step from the LM-level last location.
+    def matching_step(
+        self,
+        ctx: RuntimeContext,
+        percepts: Sequence[Message],
+    ) -> None:
+        """Update the possible matches given an observation.
 
-        Mirrors `EvidenceGraphLM._location_only_step` but reads and advances the
-        LM-level `self.last_location` rather than `self.buffer.last_location`, matching
-        this class's `_add_displacements`. The LM-level reference survives the
-        between-object `buffer.reset()` used in no-reset inference.
-
-        Args:
-            percepts: Sequence of Message objects from the current step.
+        On location-only steps, hypotheses are displaced from the LM-level
+        `last_location` rather than `self.buffer.last_location`, matching this class's
+        `_add_displacements`. The LM-level reference survives the between-object
+        `buffer.reset()` used in no-reset experiments.
         """
-        if self.last_location is None:
+        if location_only(percepts):
+            if self.last_location is not None:
+                current_location = sm_location_mean(percepts)
+                displacement = current_location - self.last_location
+                self._displace_all_hypotheses(displacement)
+                self.last_location = current_location.copy()
             return
 
-        current_location = sm_location_mean(percepts)
-        displacement = current_location - self.last_location
-        self._displace_all_hypotheses(displacement)
-        self.last_location = current_location.copy()
+        first_movement_detected = self._agent_moved_since_reset()
+        buffer_data = self._add_displacements(percepts)
+        self.buffer.append(buffer_data)
+        self.buffer.append_input_percepts(percepts)
+
+        if first_movement_detected:
+            logger.debug("performing matching step.")
+        else:
+            logger.debug("we have not moved yet.")
+
+        feature_percepts = [p for p in percepts if p.contains_features]
+
+        self._compute_possible_matches(
+            ctx, feature_percepts, first_movement_detected=first_movement_detected
+        )
+
+        if len(self.get_possible_matches()) == 0:
+            self.set_individual_ts(terminal_state="no_match")
+
+        if self.gsg is not None:
+            self.gsg.step(ctx, feature_percepts)
+
+        stats = self.collect_stats_to_save()
+        self.buffer.update_stats(stats, append=self.has_detailed_logger)
+
+    def exploratory_step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        percepts: Sequence[Message],
+    ) -> None:
+        """Step without trying to recognize object (updating possible matches)."""
+        if location_only(percepts):
+            if self.last_location is not None:
+                current_location = sm_location_mean(percepts)
+                displacement = current_location - self.last_location
+                self._displace_all_hypotheses(displacement)
+                self.last_location = current_location.copy()
+            return
+
+        buffer_data = self._add_displacements(percepts)
+        self.buffer.append(buffer_data)
+        self.buffer.append_input_percepts(percepts)
 
     def _agent_moved_since_reset(self):
         """Overwrites the logic of whether the agent has moved since the last reset.

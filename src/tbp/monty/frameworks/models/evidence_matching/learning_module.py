@@ -35,7 +35,10 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
 )
 from tbp.monty.frameworks.models.goal_generation import EvidenceGoalGenerator
 from tbp.monty.frameworks.models.graph_matching import GraphLM
-from tbp.monty.frameworks.models.percept_utils import sm_location_mean
+from tbp.monty.frameworks.models.percept_utils import (
+    location_only,
+    sm_location_mean,
+)
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
     get_scaled_evidences,
@@ -352,6 +355,63 @@ class EvidenceGraphLM(GraphLM):
         self.current_mlh["rotation"] = Rotation.from_euler("xyz", [0, 0, 0])
         self.current_mlh["scale"] = 1
         self.current_mlh["evidence"] = 0
+
+    def matching_step(
+        self,
+        ctx: RuntimeContext,
+        percepts: Sequence[Message],
+    ) -> None:
+        """Update the possible matches given an observation."""
+        if location_only(percepts):
+            if self.buffer.last_location is not None:
+                current_location = sm_location_mean(percepts)
+                displacement = current_location - self.buffer.last_location
+                self._displace_all_hypotheses(displacement)
+                self.buffer.last_location = current_location.copy()
+            return
+
+        first_movement_detected = self._agent_moved_since_reset()
+        buffer_data = self._add_displacements(percepts)
+        self.buffer.append(buffer_data)
+        self.buffer.append_input_percepts(percepts)
+
+        if first_movement_detected:
+            logger.debug("performing matching step.")
+        else:
+            logger.debug("we have not moved yet.")
+
+        feature_percepts = [p for p in percepts if p.contains_features]
+
+        self._compute_possible_matches(
+            ctx, feature_percepts, first_movement_detected=first_movement_detected
+        )
+
+        if len(self.get_possible_matches()) == 0:
+            self.set_individual_ts(terminal_state="no_match")
+
+        if self.gsg is not None:
+            self.gsg.step(ctx, feature_percepts)
+
+        stats = self.collect_stats_to_save()
+        self.buffer.update_stats(stats, append=self.has_detailed_logger)
+
+    def exploratory_step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        percepts: Sequence[Message],
+    ) -> None:
+        """Step without trying to recognize object (updating possible matches)."""
+        if location_only(percepts):
+            if self.buffer.last_location is not None:
+                current_location = sm_location_mean(percepts)
+                displacement = current_location - self.buffer.last_location
+                self._displace_all_hypotheses(displacement)
+                self.buffer.last_location = current_location.copy()
+            return
+
+        buffer_data = self._add_displacements(percepts)
+        self.buffer.append(buffer_data)
+        self.buffer.append_input_percepts(percepts)
 
     def receive_votes(self, vote_data):
         """Get evidence count votes and use to update own evidence counts.
@@ -842,24 +902,6 @@ class EvidenceGraphLM(GraphLM):
             self.possible_matches = self._threshold_possible_matches()
             self.previous_mlh = self.current_mlh
             self.current_mlh = self._calculate_most_likely_hypothesis()
-
-    def _location_only_step(self, percepts: Sequence[Message]) -> None:
-        """Displace all hypotheses by the incremental movement; no evidence update.
-
-        Keeps the hypothesis space synced with the sensor's movements on steps that
-        carry a new location but no features. Evidence is not changed.
-
-        Args:
-            percepts: Sequence of Message objects from the current step.
-        """
-        if self.buffer.last_location is None:
-            # No reference location yet (no feature step has run; no hypotheses exist).
-            return
-
-        current_location = sm_location_mean(percepts)
-        displacement = current_location - self.buffer.last_location
-        self._displace_all_hypotheses(displacement)
-        self.buffer.last_location = current_location.copy()
 
     def _displace_all_hypotheses(self, displacement: npt.NDArray[np.float64]) -> None:
         """Displace every initialized graph's hypotheses.
