@@ -240,13 +240,6 @@ class ObservationProcessor:
             morphological_features["on_object"] = float(on_object)
 
         # Sensor module returns features at a location in the form of a Message class.
-        # `pass_message` is a bool indicating whether the message should be delivered
-        # to a learning module; SM percepts default to `True` and are only set to
-        # `False` on motor-only steps (handled by `SensorModule.step`).
-        # `contains_features` is a bool indicating whether the input is "interesting",
-        # which indicates that it merits processing by the learning module (as opposed
-        # to a location-only message); it will be `True` so long as we are on the object
-        # and the surface normal and principal curvature directions were valid.
         percept = Message(
             location=np.array([x, y, z]),
             morphological_features=morphological_features,
