@@ -59,21 +59,6 @@ class MontyForGraphMatching(MontyBase):
         """Initialize and reset LM."""
         super().__init__(*args, **kwargs)
 
-    # =============== Public Interface Functions ===============
-    # ------------------- Main Algorithm -----------------------
-    def reset(self) -> None:
-        self._is_done = False
-        self.reset_episode_steps()
-        self.switch_to_matching_step()
-        for lm in self.learning_modules:
-            lm.reset_stm()
-
-        for sm in self.sensor_modules:
-            sm.reset()
-
-        self.motor_system.reset()
-        self._goals = []
-
     def fixme_set_ground_truth(
         self,
         primary_target: dict[str, Any] | None = None,
