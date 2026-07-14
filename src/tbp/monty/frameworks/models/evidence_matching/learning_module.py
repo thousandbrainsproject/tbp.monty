@@ -518,7 +518,6 @@ class EvidenceGraphLM(GraphLM):
                                 "pose_vectors": graph_hyps.poses[hyp_id].T,
                                 "pose_fully_defined": True,
                             },
-                            # No feature when voting.
                             non_morphological_features=None,
                             confidence=evidences[graph_id][hyp_id],
                             pass_message=True,
