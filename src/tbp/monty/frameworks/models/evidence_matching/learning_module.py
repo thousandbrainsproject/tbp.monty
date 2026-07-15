@@ -557,14 +557,7 @@ class EvidenceGraphLM(GraphLM):
             if len(self.buffer) == 0
             else np.clip(mlh["evidence"] / len(self.buffer), 0, 1)
         )
-        # TODO H1: update this to send detected object location
-        # Use something like this + incorporate mlh location. -> while on same object,
-        # this should not change, even when moving over the object. Would also have to
-        # update mlh during exploration (just add displacements).
-        # Discuss this first before implementing. This would make higher level models
-        # much simpler but also require some arbitrary object center and give less
-        # resolution of where on a compositional object we are (in this lm). Would
-        # also require update in terminal condition re. path_similarity_th.
+
         return Message(
             # Same as input location from patch (rel body)
             # NOTE: The receiving LM extracts the location information directly from
