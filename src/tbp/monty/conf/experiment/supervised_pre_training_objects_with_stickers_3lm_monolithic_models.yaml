@@ -3,7 +3,7 @@
 defaults:
   - /monty: evidencegraph_exp1000_e3_t100_tot2500
   - /monty/motor_system_config: naive_scan_1
-  - /monty/learning_module: evidence_3lm_heterarchy
+  - /monty/learning_module: evidence_3lm_gsg
   - /monty/sensor_module: 3sm_2d3d_dist
   - /monty/connectivity: 3lm_3sm_monolithic
   - /environment: habitat_dist_agent_sensors3
