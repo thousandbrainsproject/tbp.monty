@@ -2,14 +2,7 @@
 title: Environment Improvements
 description: New environments and benchmark experiments we would like to add.
 ---
+Items related to setting up new environments or benchmarks for Monty are listed in this section. This also includes changes to Monty's environment interface and simulator protocol as well as adding metrics to evaluate Monty.
 
-These are the things we would like to implement:
-
-- [Make dataset to test compositional objects](environment-improvements/make-dataset-to-test-compositional-objects.md)
-- [Object behavior test bed](environment-improvements/object-behavior-test-bed.md)
-- [Set up Environment that allows for object manipulation](environment-improvements/set-up-environment-that-allows-for-object-manipulation.md)
-- [Set up object manipulation benchmark tasks and evaluation measures](environment-improvements/set-up-object-manipulation-benchmark-tasks-and-evaluation-measures.md)
-- [Create dataset and metrics to evaluate categories and generalization](environment-improvements/create-dataset-and-metrics-to-evaluate-categories-and-generalization.md)
-- [Create dataset to test new feature-morphology pairs](environment-improvements/create-dataset-to-test-new-feature-morphology-pairs.md)
-
-!snippet[../snippets/contributing-tasks.md]
+> [!NOTE]
+> For additional info on how to set up a custom environment to run Monty in, see out Tutorials on [using Monty in a custom application](../how-to-use-monty/tutorials/using-monty-in-a-custom-application.md) and [using Monty for robotics](../how-to-use-monty/tutorials/using-monty-for-robotics.md).

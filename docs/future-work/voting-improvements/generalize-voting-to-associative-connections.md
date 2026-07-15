@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: large
 improved-metric: learning
 output-type: RFC, prototype, PR, monty-feature
-skills: research, python, monty
+skills: research, python, monty-advanced
 contributor: OgnjenX
 status: scoping
 ---

@@ -66,12 +66,11 @@ Controls which columns are displayed in the table and in what order.
 - `output-type` - Type of output expected
 - `rfc` - Related RFC link or reference
 - `status` - Current status with contributor avatars
-- `tags` - Categorization tags
 - `skills` - Required skills for the work
 
 **Examples:**
 - Show only title and status: `?columns=title,status`
-- Show title, tags, and skills: `?columns=title,tags,skills`
+- Show title and skills: `?columns=title,skills`
 - Show all columns (default): No parameter needed
 
 **Note:** Column names are case-insensitive and whitespace around commas is ignored.

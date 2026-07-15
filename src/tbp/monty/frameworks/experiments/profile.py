@@ -8,8 +8,11 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import cProfile
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import wandb
@@ -19,7 +22,7 @@ from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 __all__ = ["ProfileExperimentMixin"]
 
 
-def make_stats_df(stats):
+def make_stats_df(stats: cProfile.Profile) -> pd.DataFrame | None:
     """Convert cProfile.Profile() stats to dataframe.
 
     Take a cProfile.Profile() object, gather stats, put in dataframe, sort by
@@ -48,7 +51,9 @@ class ProfileExperimentMixin:
         NOTE: make sure this class is leftmost in mixin order.
     """
 
-    def __init_subclass__(cls, **kwargs):
+    profile_dir: Path
+
+    def __init_subclass__(cls, /, **kwargs: Any) -> None:
         """Ensure that the mixin is used in the correct way.
 
         We want to ensure that the mixin is always the leftmost class listed in
@@ -71,11 +76,11 @@ class ProfileExperimentMixin:
                 "of MontyExperiment."
             )
 
-    def make_profile_dir(self):
+    def make_profile_dir(self) -> None:
         self.profile_dir = Path(self.output_dir) / "profile"
         self.profile_dir.mkdir(exist_ok=True, parents=True)
 
-    def setup_experiment(self, config):
+    def setup_experiment(self, config: dict[str, Any]) -> None:
         filename = "profile-setup_experiment.csv"
         pr = cProfile.Profile()
         pr.enable()
@@ -86,7 +91,7 @@ class ProfileExperimentMixin:
         df = make_stats_df(pr)
         df.to_csv(self.profile_dir / filename)
 
-    def run_episode(self):
+    def run_episode(self) -> None:
         mode, epoch, episode = self.get_epoch_state()
         filename = f"profile-{mode}_epoch_{epoch}_episode_{episode}.csv"
         pr = cProfile.Profile()
@@ -96,7 +101,7 @@ class ProfileExperimentMixin:
         df = make_stats_df(pr)
         df.to_csv(self.profile_dir / filename)
 
-    def train(self):
+    def train(self) -> None:
         filename = "profile-train.csv"
         pr = cProfile.Profile()
         pr.enable()
@@ -105,7 +110,7 @@ class ProfileExperimentMixin:
         df = make_stats_df(pr)
         df.to_csv(self.profile_dir / filename)
 
-    def evaluate(self):
+    def evaluate(self) -> None:
         filename = "profile-evaluate.csv"
         pr = cProfile.Profile()
         pr.enable()
@@ -114,7 +119,7 @@ class ProfileExperimentMixin:
         df = make_stats_df(pr)
         df.to_csv(self.profile_dir / filename)
 
-    def close(self):
+    def close(self) -> None:
         # If wandb is in use, send tables to wandb
         if len(self.wandb_handlers) > 0:
             profile_path = Path(self.profile_dir)

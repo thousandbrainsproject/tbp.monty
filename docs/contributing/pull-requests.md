@@ -25,7 +25,8 @@ Before submitting a Pull Request, you should set up your development environment
    ```
 3. Create a new branch on your fork to work on the issue:
    ```shell
-   git checkout -b <my_branch_name>
+   git switch -c <my_branch_name>
+   git push -u origin <my_branch_name>
    ```
 4. Implement your changes. Keep in mind any tests or benchmarks that you may need to add or update.
 5. If you've added/deleted/modified code, test your changes locally via:

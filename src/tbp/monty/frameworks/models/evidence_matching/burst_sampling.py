@@ -55,7 +55,6 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_multiple_orthonormal_vectors,
 )
-from tbp.monty.geometry import Rotation
 
 
 @dataclass
@@ -134,7 +133,7 @@ class BurstSamplingHypothesesUpdater:
         burst_trigger_slope: float = 1.0,
         include_telemetry: bool = False,
         initial_possible_poses: Literal["uniform", "informed"]
-        | list[Rotation] = "informed",
+        | list[list[float]] = "informed",
         max_nneighbors: int = 3,
         past_weight: float = 1,
         present_weight: float = 1,

@@ -19,6 +19,7 @@ from omegaconf import OmegaConf
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 
@@ -39,12 +40,12 @@ class BaseConfigTest(unittest.TestCase):
         shutil.rmtree(self.output_dir)
 
     def test_can_set_up(self) -> None:
-        exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             pass
 
     def test_can_run_episode(self) -> None:
-        exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -52,21 +53,21 @@ class BaseConfigTest(unittest.TestCase):
             exp.run_episode()
 
     def test_can_run_train_epoch(self) -> None:
-        exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
             exp.run_epoch()
 
     def test_can_run_eval_epoch(self) -> None:
-        exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode(exp.experiment_mode)
             exp.run_epoch()
 
     def test_observation_unpacking(self) -> None:
-        exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             monty_module_sids = {s.sensor_module_id for s in exp.model.sensor_modules}
 
@@ -109,7 +110,7 @@ class BaseConfigTest(unittest.TestCase):
     def test_can_save_and_load(self) -> None:
         config_1: Mapping = OmegaConf.to_object(self.base_cfg)  # type: ignore[assignment,type-arg]
 
-        exp = hydra.utils.instantiate(config_1["experiment"])
+        exp = instantiate_experiment(config_1["experiment"])
         with exp:
             # Change something about exp.state that will be saved via save_state_dir.
             new_attr = False
@@ -123,7 +124,7 @@ class BaseConfigTest(unittest.TestCase):
         )
         config_2["experiment"]["config"]["model_name_or_path"] = exp.output_dir
 
-        exp_2 = hydra.utils.instantiate(config_2["experiment"])
+        exp_2 = instantiate_experiment(config_2["experiment"])
         with exp_2:
             # Test 1: untouched attributes are saved and loaded correctly
             prev_attr_1_value = prev_model.learning_modules[0].test_attr_1
@@ -151,7 +152,7 @@ class BaseConfigTest(unittest.TestCase):
         # TODO: This seems to test the behaviour of the Python `logging` library, which
         #   we should just assume works as advertised. Change this test to introspect
         #   the experiment to see if the loggers got configured correctly instead.
-        exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             # Add some stuff to the logs, verify it shows up
             info_message = "INFO is in the log"
@@ -176,7 +177,7 @@ class BaseConfigTest(unittest.TestCase):
         log_cfg = base_config["experiment"]["config"]["logging"]
         log_cfg["python_log_level"] = logging.INFO
 
-        exp = hydra.utils.instantiate(base_config["experiment"])
+        exp = instantiate_experiment(base_config["experiment"])
         with exp:
             # Add some stuff to the logs, verify it shows up
             debug_message = "DEBUG is in the log"

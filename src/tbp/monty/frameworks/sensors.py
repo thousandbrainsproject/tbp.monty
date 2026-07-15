@@ -33,3 +33,4 @@ class SensorConfig:
     position: VectorXYZ = ZERO_VECTOR
     rotation: QuaternionWXYZ = IDENTITY_QUATERNION
     zoom: float = 1.0
+    semantic: bool = False

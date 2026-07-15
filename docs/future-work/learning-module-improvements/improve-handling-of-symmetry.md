@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: unknown
 improved-metric: pose, numsteps
 output-type: prototype, analysis, PR
-skills: python, research, monty
+skills: python, research, monty-advanced
 contributor: 
 status: open
 ---

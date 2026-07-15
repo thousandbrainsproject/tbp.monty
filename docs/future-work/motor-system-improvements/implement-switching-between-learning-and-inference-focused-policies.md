@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: unknown
 improved-metric: goal-policy, learning, accuracy, numsteps
 output-type: RFC, monty-feature, PR
-skills: python, monty, refactoring
+skills: python, monty-advanced, refactoring
 contributor: 
 status: open
 ---

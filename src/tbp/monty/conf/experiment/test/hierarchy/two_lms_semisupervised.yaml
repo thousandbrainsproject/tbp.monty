@@ -30,4 +30,3 @@ experiment:
     monty_config:
       monty_args:
         num_exploratory_steps: 0
-        min_train_steps: 200

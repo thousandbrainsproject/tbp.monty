@@ -22,7 +22,7 @@ from tbp.monty.geometry import Rotation
 logger = logging.getLogger(__name__)
 
 
-def get_correct_k_n(k_n, num_datapoints):
+def get_correct_k_n(k_n: int, num_datapoints: int) -> int | None:
     """Determine k_n given the number of datapoints.
 
     The k_n specified in the hyperparameter may not be possible to achieve with the

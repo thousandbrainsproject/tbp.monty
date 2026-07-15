@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -223,6 +224,14 @@ class EvidenceGraphLM(GraphLM):
             for debugging purposes.
     """
 
+    current_mlh: dict[str, Any]
+
+    # Dictionary with graph_ids as keys. For each graph we initialize a set of
+    # hypotheses at the first step of an episode. Each Hypotheses bundles the
+    # evidence, possible_locations, possible_poses, and a boolean possible mask
+    # used for symmetry checks.
+    _hypotheses: dict[str, Hypotheses]
+
     def __init__(
         self,
         max_match_distance,
@@ -292,21 +301,6 @@ class EvidenceGraphLM(GraphLM):
         # Set feature weights to 1 if not otherwise specified
         self._fill_feature_weights_with_default(default=1)
 
-        # Dictionary with graph_ids as keys. For each graph we initialize a set of
-        # hypotheses at the first step of an episode. Each Hypotheses bundles the
-        # evidence, possible_locations, possible_poses, and a boolean possible mask
-        # used for symmetry checks.
-        self._hypotheses: dict[str, Hypotheses] = {}
-
-        self.current_mlh = {
-            "graph_id": "no_observations_yet",
-            "location": [0, 0, 0],
-            "rotation": Rotation.from_euler("xyz", [0, 0, 0]),
-            "scale": 1,
-            "evidence": 0,
-        }
-        self.previous_mlh = self.current_mlh
-
         if hypotheses_updater_args is None:
             hypotheses_updater_args = {}
         # Every HypothesesUpdater gets at least the following arguments because they are
@@ -328,11 +322,25 @@ class EvidenceGraphLM(GraphLM):
         self.hypotheses_updater = hypotheses_updater_class(**hypotheses_updater_args)
         self.hypotheses_updater_telemetry: HypothesesUpdaterTelemetry = {}
 
-    # =============== Public Interface Functions ===============
+        # TODO: make this part of `__init__()` after `reset_stm()` is removed.
+        self._init_EvidenceGraphLM()
 
-    # ------------------- Main Algorithm -----------------------
-    def reset(self):
-        """Reset evidence count and other variables."""
+    def _init_EvidenceGraphLM(self) -> None:  # noqa: N802
+        self.symmetry_evidence = 0
+        self._hypotheses = {}
+
+        self.hypotheses_updater.reset()  # FIXME: move reset() logic to __init__()
+
+        self.current_mlh = {
+            "graph_id": "no_observations_yet",
+            "location": [0, 0, 0],
+            "rotation": Rotation.from_euler("xyz", [0, 0, 0]),
+            "scale": 1,
+            "evidence": 0,
+        }
+        self.previous_mlh = self.current_mlh
+
+    def init_from_ltm(self) -> None:
         # Now here, as opposed to the displacement and feature-location LMs,
         # possible_matches is a list of IDs, not a dictionary with the object graphs.
         self.possible_matches = self.graph_memory.get_initial_hypotheses()
@@ -341,15 +349,10 @@ class EvidenceGraphLM(GraphLM):
             # TODO H: Differentiate between features from different input channels
             # TODO: could do this in the object model class
             self.graph_memory.initialize_feature_arrays()
-        self.symmetry_evidence = 0
-        self._hypotheses = {}
-        self.hypotheses_updater.reset()
 
-        self.current_mlh["graph_id"] = "no_observations_yet"
-        self.current_mlh["location"] = [0, 0, 0]
-        self.current_mlh["rotation"] = Rotation.from_euler("xyz", [0, 0, 0])
-        self.current_mlh["scale"] = 1
-        self.current_mlh["evidence"] = 0
+    def reset_stm(self) -> None:
+        super().reset_stm()
+        self._init_EvidenceGraphLM()
 
     def receive_votes(self, vote_data):
         """Get evidence count votes and use to update own evidence counts.
@@ -478,8 +481,7 @@ class EvidenceGraphLM(GraphLM):
         output therefore has the same format to keep the messaging protocol
         consistent and make it easy to stack multiple LMs on top of each other.
 
-        If the evidence for mlh is < object_evidence_threshold,
-        interesting_features == False
+        If the LM has not reached a "match" terminal state, use_state == False.
         """
         mlh = self.get_current_mlh()
         pose_features = self._object_pose_to_features(mlh["rotation"].inv())
@@ -488,11 +490,9 @@ class EvidenceGraphLM(GraphLM):
         #       1) The last input it received was on_object (+getting SM input
         #           check will make sure that we are also currently on object)
         #           NOTE: May want to relax this check but still need a motor input
-        #       2) Its most likely hypothesis has an evidence >
-        #           object_evidence_threshold
+        #       2) It has reached a "match" terminal state
         use_state = bool(
-            self.buffer.get_currently_on_object()
-            and mlh["evidence"] > self.object_evidence_threshold
+            self.buffer.get_currently_on_object() and self.terminal_state == "match"
         )
         # TODO H: is this a good way to scale evidence to [0, 1]?
         confidence = (
@@ -676,7 +676,7 @@ class EvidenceGraphLM(GraphLM):
         Returns:
             The two most likely object IDs.
         """
-        graph_ids, graph_evidences = self.get_evidence_for_each_graph()
+        graph_ids, graph_evidences = self.evidence_for_each_graph()
 
         # If all hypothesis spaces are empty return None for both mlh ids. The gsg will
         # not generate a goal.
@@ -763,12 +763,18 @@ class EvidenceGraphLM(GraphLM):
             return possible_object_hypotheses_ids
         return np.empty((0,), dtype=np.int64)
 
-    def get_evidence_for_each_graph(
+    def evidence_for_each_graph(
         self,
     ) -> tuple[list[str], npt.NDArray[np.float64]]:
-        """Return maximum evidence count for a pose on each graph."""
+        """Return maximum evidence count for a pose on each graph.
+
+        Returns:
+            The ids of the graphs with a non-empty hypothesis space and the
+            maximum hypotheses evidence on each of them. When no graph has any
+            hypotheses yet, returns `(["patch_off_object"], [0])`.
+        """
         graph_ids = self.get_all_known_object_ids()
-        if graph_ids[0] not in self._hypotheses:
+        if not graph_ids or graph_ids[0] not in self._hypotheses:
             return ["patch_off_object"], np.array([0])
 
         available_graph_ids = []
@@ -1141,7 +1147,7 @@ class EvidenceGraphLM(GraphLM):
             logger.info("no objects in memory yet.")
             return []
 
-        graph_ids, graph_evidences = self.get_evidence_for_each_graph()
+        graph_ids, graph_evidences = self.evidence_for_each_graph()
 
         if len(graph_ids) == 0:
             logger.info("All hypothesis spaces are empty. No possible matches.")

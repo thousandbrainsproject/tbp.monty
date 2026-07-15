@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -81,11 +82,11 @@ class NoResetEvidenceLMTest(BaseGraphTest):
         unsupervised Inference Experiment. Disabling the reset logic does not support
         training at the moment.
         """
-        train_exp = hydra.utils.instantiate(self.pretraining_cfg.experiment)
+        train_exp = instantiate_experiment(self.pretraining_cfg.experiment)
         with train_exp:
             train_exp.run()
 
-        eval_exp = hydra.utils.instantiate(self.unsupervised_cfg.experiment)
+        eval_exp = instantiate_experiment(self.unsupervised_cfg.experiment)
         with eval_exp:
             # load the eval experiment with the pretrained models
             pretrained_models = train_exp.model.learning_modules[0].state_dict()
@@ -95,15 +96,14 @@ class NoResetEvidenceLMTest(BaseGraphTest):
             eval_exp.model.set_experiment_mode(eval_exp.experiment_mode)
             eval_exp.pre_epoch()
 
-            lm = eval_exp.model.learning_modules[0]
-
             # first episode
+            eval_exp.pre_episode()
+            lm = eval_exp.model.learning_modules[0]
             self.assertEqual(
                 len(lm._hypotheses),
                 0,
                 "evidence dict should be empty before the first episode",
             )
-            eval_exp.pre_episode()
             episode_1_steps = eval_exp.run_episode_steps()
             eval_exp.post_episode(episode_1_steps)
             post_episode1_evidence = copy.deepcopy(
@@ -117,6 +117,7 @@ class NoResetEvidenceLMTest(BaseGraphTest):
 
             # second episode
             eval_exp.pre_episode()
+            lm = eval_exp.model.learning_modules[0]
             self.assert_dicts_equal(
                 post_episode1_evidence,
                 {graph_id: hyp.evidence for graph_id, hyp in lm._hypotheses.items()},
