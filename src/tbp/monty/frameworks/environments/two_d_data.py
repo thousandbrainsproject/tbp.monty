@@ -266,15 +266,31 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
     Images should be stored in .png format for rgb and .data format for depth.
     """
 
-    def __init__(self, patch_size: int = 64, data_path: str | Path | None = None):
+    def __init__(
+        self,
+        patch_size: int = 64,
+        data_path: str | Path | None = None,
+        hfov: float = 54.201,
+        depth_clip_value: float = 1.1,
+    ):
         """Initialize environment.
 
         Args:
             patch_size: height and width of patch in pixels, defaults to 64
             data_path: path to the image dataset. If None, defaults to
                 ~/tbp/data/worldimages/labeled_scenes/
+            hfov: horizontal field of view (degrees) of the camera that captured
+                the images, used to unproject depth into 3D. Defaults to 54.201,
+                the iPad front camera; set it to your camera's HFOV for other
+                devices.
+            depth_clip_value: depth (meters) beyond which points are treated as
+                background when unprojecting. Defaults to 1.1, tuned for the
+                iPad-range Monty Meets World captures; raise it for cameras
+                imaging farther scenes.
         """
         self.patch_size = patch_size
+        self.hfov = hfov
+        self.depth_clip_value = depth_clip_value
         # Images are always presented upright so patch and agent rotation is always
         # the same. Since we don't use this, value doesn't matter much.
         self.rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
@@ -567,14 +583,14 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             resolutions=[self.current_depth_image.shape],
             world_coord=True,
             zooms=1,
-            # hfov of iPad front camera from
-            # https://developer.apple.com/library/archive/documentation/DeviceInformation/Reference/iOSDeviceCompatibility/Cameras/Cameras.html
-            # TODO: determine dynamically which device is sending data
-            hfov=54.201,
+            # Camera HFOV. Defaults to the iPad front camera (54.201 deg,
+            # https://developer.apple.com/library/archive/documentation/DeviceInformation/Reference/iOSDeviceCompatibility/Cameras/Cameras.html)
+            # but is configurable so images from other cameras unproject correctly.
+            hfov=self.hfov,
             get_all_points=True,
             use_semantic_sensor=False,
             depth_clip_sensors=[0],
-            clip_value=1.1,
+            clip_value=self.depth_clip_value,
         )
         obs_3d = transform.call(obs, state=state)
         current_scene_point_cloud = obs_3d[agent_id][sensor_id]["semantic_3d"]
@@ -688,16 +704,30 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
 class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
     """Environment for moving over a 2D streamed image with depth channel."""
 
-    def __init__(self, patch_size: int = 64, data_path: str | Path | None = None):
+    def __init__(
+        self,
+        patch_size: int = 64,
+        data_path: str | Path | None = None,
+        hfov: float = 54.201,
+        depth_clip_value: float = 1.1,
+    ):
         """Initialize environment.
 
         Args:
             patch_size: height and width of patch in pixels, defaults to 64
             data_path: path to the image dataset. If None, defaults to
                 ~/tbp/data/worldimages/world_data_stream/
+            hfov: horizontal field of view (degrees) of the capturing camera,
+                used to unproject depth into 3D. Defaults to 54.201 (iPad front
+                camera); set it to your camera's HFOV for other devices.
+            depth_clip_value: depth (meters) beyond which points are treated as
+                background when unprojecting. Defaults to 1.1; raise it for
+                cameras imaging farther scenes.
         """
         # TODO: use super() to avoid repeating lines of code
         self.patch_size = patch_size
+        self.hfov = hfov
+        self.depth_clip_value = depth_clip_value
         # Letters are always presented upright
         self.rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
         self.state = 0

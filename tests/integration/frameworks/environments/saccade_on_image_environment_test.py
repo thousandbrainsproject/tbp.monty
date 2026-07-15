@@ -43,6 +43,21 @@ class TwoDMovementTest(unittest.TestCase):
         self.current_state = self.env._state()
         self.prev_loc = self.current_state[AGENT_ID].sensors[SENSOR_ID].position
 
+    def test_configurable_camera_intrinsics(self):
+        """Camera HFOV and depth clip are configurable; defaults preserve iPad."""
+        # Defaults are backward-compatible (iPad front camera).
+        self.assertAlmostEqual(self.env.hfov, 54.201)
+        self.assertAlmostEqual(self.env.depth_clip_value, 1.1)
+        # Custom values flow through to the environment.
+        env = SaccadeOnImageEnvironment(
+            patch_size=48,
+            data_path=str(self.DATA_PATH) + "/",
+            hfov=90.0,
+            depth_clip_value=2.0,
+        )
+        self.assertAlmostEqual(env.hfov, 90.0)
+        self.assertAlmostEqual(env.depth_clip_value, 2.0)
+
     def test_move_forward(self):
         action = MoveForward(agent_id=AGENT_ID, distance=1)
         _ = self.env.step([action])
