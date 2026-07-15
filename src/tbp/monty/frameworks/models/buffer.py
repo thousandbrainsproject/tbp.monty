@@ -105,7 +105,9 @@ class FeatureAtLocationBuffer:
 
         Per-channel feature rows are stored only for percepts that carry features. If
         an input channel does not contain features, its feature array is padded with
-        NaNs and are later dropped by `_extract_entries_with_content`.
+        NaNs to keep index alignment with features from channels that did receive input.
+        These NaN values are later dropped by `_extract_entries_with_content` when
+        building graphs.
 
         TODO S: Store messages instead of list of percepts?
         A provisional version of this is implemented below, as the GSG uses
