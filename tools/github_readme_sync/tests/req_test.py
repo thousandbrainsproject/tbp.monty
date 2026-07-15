@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -10,192 +10,265 @@
 
 import os
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
-from tools.github_readme_sync.readme import ReadMe
-from tools.github_readme_sync.req import REQUEST_TIMEOUT_SECONDS, delete, get, post, put
+from tools.github_readme_sync.req import (
+    REQUEST_TIMEOUT_SECONDS,
+    delete,
+    get,
+    get_collection,
+    patch as patch_request,
+    post,
+)
 
 
 @patch.dict(os.environ, {"README_API_KEY": "test_api_key"})
 class TestReq(unittest.TestCase):
-    @patch("requests.get")
-    def test_get_success(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"key": "value"}
-        mock_get.return_value = mock_response
+    """Tests for the shared ReadMe API v2 request helpers."""
 
-        url = "https://api.example.com/data"
-        result = get(url)
+    @patch("tools.github_readme_sync.req.requests.get")
+    def test_get_success_unwraps_v2_data(self, mock_get):
+        response = MagicMock()
+        response.status_code = 200
+        response.json.return_value = {"data": {"slug": "test-doc"}}
+        mock_get.return_value = response
 
-        self.assertEqual(result, {"key": "value"})
+        result = get("https://api.example.com/data")
+
+        self.assertEqual(result, {"slug": "test-doc"})
         mock_get.assert_called_once_with(
-            url,
-            headers={"Authorization": "Basic test_api_key"},
+            "https://api.example.com/data",
+            headers={"Authorization": "Bearer test_api_key"},
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
-    @patch("requests.get")
-    def test_get_404(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-        mock_get.return_value = mock_response
+    @patch("tools.github_readme_sync.req.requests.get")
+    def test_get_preserves_caller_headers(self, mock_get):
+        response = MagicMock()
+        response.status_code = 200
+        response.json.return_value = {"data": {"name": "0.40"}}
+        mock_get.return_value = response
 
-        url = "https://api.example.com/data"
-        result = get(url)
+        caller_headers = {"prefer": "handling=strict"}
+        result = get("https://api.example.com/data", caller_headers)
+
+        self.assertEqual(result, {"name": "0.40"})
+        # The helper adds Bearer authentication without mutating the input.
+        self.assertEqual(caller_headers, {"prefer": "handling=strict"})
+        mock_get.assert_called_once_with(
+            "https://api.example.com/data",
+            headers={
+                "prefer": "handling=strict",
+                "Authorization": "Bearer test_api_key",
+            },
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+
+    @patch("tools.github_readme_sync.req.requests.get")
+    def test_get_404_returns_none(self, mock_get):
+        response = MagicMock()
+        response.status_code = 404
+        mock_get.return_value = response
+
+        result = get("https://api.example.com/missing")
 
         self.assertIsNone(result)
-        mock_get.assert_called_once_with(
-            url,
-            headers={"Authorization": "Basic test_api_key"},
-            timeout=REQUEST_TIMEOUT_SECONDS,
+
+    @patch("tools.github_readme_sync.req.requests.get")
+    def test_get_non_404_failure_raises(self, mock_get):
+        response = MagicMock()
+        response.status_code = 500
+        response.text = "Internal Server Error"
+        mock_get.return_value = response
+
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"GET https://api\.example\.com/data failed with 500",
+        ):
+            get("https://api.example.com/data")
+
+    @patch("tools.github_readme_sync.req.requests.get")
+    def test_get_collection_follows_v2_pagination(self, mock_get):
+        first_response = MagicMock()
+        first_response.status_code = 200
+        first_response.url = "https://api.readme.com/v2/branches/0.40/guides"
+        first_response.json.return_value = {
+            "data": [{"slug": "doc-1"}],
+            "paging": {"next": "/v2/branches/0.40/guides?page=2"},
+        }
+
+        second_response = MagicMock()
+        second_response.status_code = 200
+        second_response.url = "https://api.readme.com/v2/branches/0.40/guides?page=2"
+        second_response.json.return_value = {
+            "data": [{"slug": "doc-2"}],
+            "paging": {"next": None},
+        }
+
+        mock_get.side_effect = [first_response, second_response]
+
+        result = get_collection("https://api.readme.com/v2/branches/0.40/guides")
+
+        self.assertEqual(result, [{"slug": "doc-1"}, {"slug": "doc-2"}])
+        self.assertEqual(
+            mock_get.call_args_list,
+            [
+                call(
+                    "https://api.readme.com/v2/branches/0.40/guides",
+                    headers={"Authorization": "Bearer test_api_key"},
+                    timeout=REQUEST_TIMEOUT_SECONDS,
+                ),
+                call(
+                    "https://api.readme.com/v2/branches/0.40/guides?page=2",
+                    headers={"Authorization": "Bearer test_api_key"},
+                    timeout=REQUEST_TIMEOUT_SECONDS,
+                ),
+            ],
         )
 
-    @patch("requests.get")
-    def test_get_failure(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 500
-        mock_response.text = "Internal Server Error"
-        mock_get.return_value = mock_response
+    @patch("tools.github_readme_sync.req.requests.get")
+    def test_get_collection_404_returns_items_already_collected(self, mock_get):
+        first_response = MagicMock()
+        first_response.status_code = 200
+        first_response.url = "https://api.readme.com/v2/items"
+        first_response.json.return_value = {
+            "data": [{"slug": "doc-1"}],
+            "paging": {"next": "/v2/items?page=2"},
+        }
 
-        url = "https://api.example.com/data"
-        with self.assertLogs(level="ERROR") as log:
-            result = get(url)
+        second_response = MagicMock()
+        second_response.status_code = 404
+        mock_get.side_effect = [first_response, second_response]
 
-        self.assertIsNone(result)
-        self.assertIn("Failed to get https://api.example.com/data", log.output[0])
-        mock_get.assert_called_once_with(
-            url,
-            headers={"Authorization": "Basic test_api_key"},
-            timeout=REQUEST_TIMEOUT_SECONDS,
+        result = get_collection("https://api.readme.com/v2/items")
+
+        self.assertEqual(result, [{"slug": "doc-1"}])
+
+    @patch("tools.github_readme_sync.req.requests.get")
+    def test_get_collection_rejects_non_list_data(self, mock_get):
+        response = MagicMock()
+        response.status_code = 200
+        response.url = "https://api.readme.com/v2/items"
+        response.json.return_value = {"data": {"slug": "not-a-list"}}
+        mock_get.return_value = response
+
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "Expected collection data .* to be a list",
+        ):
+            get_collection("https://api.readme.com/v2/items")
+
+    @patch("tools.github_readme_sync.req.requests.get")
+    def test_get_collection_failure_raises_instead_of_returning_partial_data(
+        self, mock_get
+    ):
+        response = MagicMock()
+        response.status_code = 429
+        response.text = "Rate limited"
+        mock_get.return_value = response
+
+        with self.assertRaisesRegex(RuntimeError, "failed with 429"):
+            get_collection("https://api.readme.com/v2/items")
+
+    @patch("tools.github_readme_sync.req.requests.post")
+    def test_post_success_unwraps_v2_data(self, mock_post):
+        response = MagicMock()
+        response.status_code = 201
+        response.content = b'{"data": {"uri": "/guides/doc"}}'
+        response.json.return_value = {"data": {"uri": "/guides/doc"}}
+        mock_post.return_value = response
+
+        result = post(
+            "https://api.example.com/data",
+            {"slug": "doc"},
+            {"prefer": "handling=strict"},
         )
 
-    @patch("requests.post")
-    def test_post_success(self, mock_post):
-        mock_response = MagicMock()
-        mock_response.status_code = 201
-        mock_response.text = "Created"
-        mock_post.return_value = mock_response
-
-        url = "https://api.example.com/data"
-        data = {"key": "value"}
-        result = post(url, data, {"version": "1.0"})
-
-        self.assertEqual(result, "Created")
+        self.assertEqual(result, {"uri": "/guides/doc"})
         mock_post.assert_called_once_with(
-            url,
-            json=data,
-            headers={"Authorization": "Basic test_api_key", "version": "1.0"},
+            "https://api.example.com/data",
+            json={"slug": "doc"},
+            headers={
+                "prefer": "handling=strict",
+                "Authorization": "Bearer test_api_key",
+            },
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
-    @patch("requests.post")
-    def test_post_failure(self, mock_post):
-        mock_response = MagicMock()
-        mock_response.status_code = 400
-        mock_response.text = "Bad Request"
-        mock_post.return_value = mock_response
+    @patch("tools.github_readme_sync.req.requests.post")
+    def test_post_success_without_body_returns_empty_dict(self, mock_post):
+        response = MagicMock()
+        response.status_code = 204
+        response.content = b""
+        mock_post.return_value = response
 
-        url = "https://api.example.com/data"
-        data = {"key": "value"}
-        with self.assertLogs(level="ERROR") as log:
-            result = post(url, data)
+        self.assertEqual(post("https://api.example.com/data", {}), {})
 
-        self.assertIsNone(result)
-        self.assertIn("Failed to post https://api.example.com/data", log.output[0])
-        mock_post.assert_called_once_with(
-            url,
-            json=data,
-            headers={"Authorization": "Basic test_api_key"},
-            timeout=REQUEST_TIMEOUT_SECONDS,
+    @patch("tools.github_readme_sync.req.requests.post")
+    def test_post_failure_raises_with_api_response(self, mock_post):
+        response = MagicMock()
+        response.status_code = 409
+        response.text = "Slug already exists"
+        mock_post.return_value = response
+
+        with self.assertRaisesRegex(RuntimeError, "failed with 409"):
+            post("https://api.example.com/data", {"slug": "doc"})
+
+    @patch("tools.github_readme_sync.req.requests.patch")
+    def test_patch_success(self, mock_patch):
+        response = MagicMock()
+        response.status_code = 200
+        mock_patch.return_value = response
+
+        result = patch_request(
+            "https://api.example.com/data",
+            {"title": "Updated"},
         )
-
-    @patch("requests.put")
-    def test_put_success(self, mock_put):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_put.return_value = mock_response
-
-        url = "https://api.example.com/data"
-        data = {"key": "value"}
-        result = put(url, data)
 
         self.assertTrue(result)
-        mock_put.assert_called_once_with(
-            url,
-            json=data,
-            headers={"Authorization": "Basic test_api_key"},
+        mock_patch.assert_called_once_with(
+            "https://api.example.com/data",
+            json={"title": "Updated"},
+            headers={"Authorization": "Bearer test_api_key"},
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
-    @patch("requests.put")
-    def test_put_failure(self, mock_put):
-        mock_response = MagicMock()
-        mock_response.status_code = 400
-        mock_response.text = "Bad Request"
-        mock_put.return_value = mock_response
+    @patch("tools.github_readme_sync.req.requests.patch")
+    def test_patch_failure_raises(self, mock_patch):
+        response = MagicMock()
+        response.status_code = 400
+        response.text = "Bad Request"
+        mock_patch.return_value = response
 
-        url = "https://api.example.com/data"
-        data = {"key": "value"}
-        with self.assertLogs(level="ERROR") as log:
-            result = put(url, data)
+        with self.assertRaisesRegex(RuntimeError, "failed with 400"):
+            patch_request("https://api.example.com/data", {})
 
-        self.assertFalse(result)
-        self.assertIn("Failed to put https://api.example.com/data", log.output[0])
-        mock_put.assert_called_once_with(
-            url,
-            json=data,
-            headers={"Authorization": "Basic test_api_key"},
-            timeout=REQUEST_TIMEOUT_SECONDS,
-        )
+    @patch("tools.github_readme_sync.req.requests.delete")
+    def test_delete_success_returns_none(self, mock_delete):
+        response = MagicMock()
+        response.status_code = 204
+        mock_delete.return_value = response
 
-    @patch("requests.delete")
-    def test_delete_success(self, mock_delete):
-        mock_response = MagicMock()
-        mock_response.status_code = 204
-        mock_delete.return_value = mock_response
+        result = delete("https://api.example.com/data")
 
-        url = "https://api.example.com/data"
-        result = delete(url)
-
-        self.assertTrue(result)
+        # Successful DELETE calls now complete normally instead of returning True.
+        self.assertIsNone(result)
         mock_delete.assert_called_once_with(
-            url,
-            headers={"Authorization": "Basic test_api_key"},
+            "https://api.example.com/data",
+            headers={"Authorization": "Bearer test_api_key"},
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
-    @patch("requests.delete")
-    def test_delete_failure(self, mock_delete):
-        mock_response = MagicMock()
-        mock_response.status_code = 400
-        mock_delete.return_value = mock_response
+    @patch("tools.github_readme_sync.req.requests.delete")
+    def test_delete_failure_raises(self, mock_delete):
+        response = MagicMock()
+        response.status_code = 400
+        response.text = "Bad Request"
+        mock_delete.return_value = response
 
-        url = "https://api.example.com/data"
-        result = delete(url)
+        with self.assertRaisesRegex(RuntimeError, "failed with 400"):
+            delete("https://api.example.com/data")
 
-        self.assertFalse(result)
-        mock_delete.assert_called_once_with(
-            url,
-            headers={"Authorization": "Basic test_api_key"},
-            timeout=REQUEST_TIMEOUT_SECONDS,
-        )
 
-    @patch("requests.delete")
-    def test_delete_version(self, mock_delete):
-        mock_response = MagicMock()
-        mock_response.status_code = 204
-        mock_delete.return_value = mock_response
-
-        url = "https://dash.readme.com/api/v1/version/v1.0.0"
-
-        rdme = ReadMe("1.0.0")
-        with self.assertLogs() as log:
-            rdme.delete_version()
-
-        self.assertIn("Successfully deleted version 1.0.0", log.output[0])
-        mock_delete.assert_called_once_with(
-            url,
-            headers={"Authorization": "Basic test_api_key"},
-            timeout=REQUEST_TIMEOUT_SECONDS,
-        )
+if __name__ == "__main__":
+    unittest.main()

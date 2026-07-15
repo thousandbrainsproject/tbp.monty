@@ -11,9 +11,7 @@
 import logging
 import shutil
 from pathlib import Path
-
 from slugify import slugify
-
 from tools.github_readme_sync.colors import BLUE, CYAN, RESET
 from tools.github_readme_sync.hierarchy import INDENTATION_UNIT
 from tools.github_readme_sync.readme import ReadMe
@@ -32,30 +30,38 @@ def export(output_dir: str, rdme: ReadMe):
     output_dir.mkdir(exist_ok=True, parents=True)
 
     for i, category in enumerate(categories):
+        # API v2 categories no longer have server-side slugs.
+        # Generate a local slug from the category title for the folder
+        # name and hierarchy.md.
+        category_slug = slugify(category["title"])
+
         category_entry = {
             "title": category["title"],
-            "slug": slugify(category["title"]),
+            "slug": category_slug,
             "children": [],
         }
         hierarchy.append(category_entry)
 
-        logger.info(
-            "\n" if i > 0 else "" + f"{BLUE}{slugify(category['title']).upper()}{RESET}"
-        )
+        prefix = "\n" if i > 0 else ""
+        logger.info(f"{prefix}{BLUE}{category_slug.upper()}{RESET}")
 
-        category_folder_path = output_dir / slugify(category["title"])
+        category_folder_path = output_dir / category_slug
         category_folder_path.mkdir(exist_ok=True, parents=True)
 
-        docs_from_server = rdme.get_category_docs(category)
+        # API v2 returns category pages as a flat collection.
+        # Rebuild the hierarchy using each page's parent URI.
+        docs_from_server = rdme.get_category_doc_tree(category)
+
         for server_doc in docs_from_server:
             hierarchy_doc = {
                 "title": server_doc["title"],
-                "slug": slugify(server_doc["title"]),
+                # Preserve the actual ReadMe slug. Do not derive a slug
+                # from the page title.
+                "slug": server_doc["slug"],
                 "children": [],
             }
             category_entry["children"].append(hierarchy_doc)
 
-            # Call process_doc with named parameters
             process_doc(
                 server_doc=server_doc,
                 hierarchy_doc=hierarchy_doc,
@@ -67,15 +73,25 @@ def export(output_dir: str, rdme: ReadMe):
     return hierarchy
 
 
-def process_doc(*, server_doc, hierarchy_doc, folder_path, indent_level, rdme):
+def process_doc(
+    *,
+    server_doc,
+    hierarchy_doc,
+    folder_path,
+    indent_level,
+    rdme,
+):
     indent = INDENTATION_UNIT * indent_level
     logger.info(f"{indent}{CYAN}{hierarchy_doc['slug']}{RESET}")
 
     doc_path = folder_path / f"{hierarchy_doc['slug']}.md"
-    with doc_path.open("w") as f:
+
+    # Documentation may contain Unicode text.
+    with doc_path.open("w", encoding="utf-8") as f:
         f.write(rdme.get_doc_by_slug(server_doc["slug"]))
 
     children = server_doc.get("children", [])
+
     if children:
         child_folder_path = folder_path / hierarchy_doc["slug"]
         child_folder_path.mkdir(exist_ok=True, parents=True)
@@ -83,12 +99,12 @@ def process_doc(*, server_doc, hierarchy_doc, folder_path, indent_level, rdme):
     for child in children:
         child_entry = {
             "title": child["title"],
-            "slug": slugify(child["title"]),
+            # Preserve the child page's actual ReadMe slug.
+            "slug": child["slug"],
             "children": [],
         }
         hierarchy_doc["children"].append(child_entry)
 
-        # Process the child document recursively with increased indent level
         process_doc(
             server_doc=child,
             hierarchy_doc=child_entry,
