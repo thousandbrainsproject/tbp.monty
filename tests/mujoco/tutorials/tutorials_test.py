@@ -31,20 +31,14 @@ class TutorialsTest(TestCase):
     need to change these.
     """
 
-    # TODO - Find a way to make these test configs be the source of truth for the
+    # TODO: Find a way to make these test configs be the source of truth for the
     #   documentation rather than having to manually keep them in sync.
 
     def test_first_experiment(self) -> None:
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=[
-                    "experiment=tutorial/first_experiment_mujoco",
-                    # We don't need to run the whole thing.
-                    "experiment.config.n_eval_epochs=1",
-                    "experiment.config.max_eval_steps=3",
-                    "experiment.config.max_total_steps=3",
-                ],
+                overrides=["experiment=tutorial/first_experiment_mujoco"],
             )
             experiment = instantiate_experiment(config.experiment)
             with experiment:

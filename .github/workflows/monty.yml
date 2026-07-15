@@ -504,9 +504,8 @@ jobs:
       labels: tbp-linux-x64-ubuntu2204-8core
     timeout-minutes: 120
     needs:
-      - install_monty
       - should_run_monty
-      - test_monty
+      - test_uv_monty
     steps:
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}

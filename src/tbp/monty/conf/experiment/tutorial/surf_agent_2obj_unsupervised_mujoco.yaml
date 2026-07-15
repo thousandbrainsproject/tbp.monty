@@ -8,7 +8,7 @@ defaults:
   - /monty: graph_exp1000_e3_t100_tot2500
   - /monty/motor_system_config: surface
   - /monty/learning_module: evidence_tutorial_surf_agent_2obj_unsupervised
-  # We will use the default surface sensor modules (one habitat surface patch, one logging view finder)
+  # We will use the default surface sensor modules
   - /monty/sensor_module: camera_surf
   - /monty/connectivity: 1lm_1sm
   - /environment: mujoco_ycb_surf_agent
