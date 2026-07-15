@@ -30,13 +30,7 @@ class TutorialsTest(TestCase):
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=[
-                    "experiment=tutorial/first_experiment",
-                    # We don't need to run the whole thing.
-                    "experiment.config.n_eval_epochs=1",
-                    "experiment.config.max_eval_steps=3",
-                    "experiment.config.max_total_steps=3",
-                ],
+                overrides=["experiment=tutorial/first_experiment"],
             )
             experiment = instantiate_experiment(config.experiment)
             with experiment:
