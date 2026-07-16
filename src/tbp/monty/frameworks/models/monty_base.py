@@ -398,20 +398,20 @@ class MontyBase(Monty):
         self._goals = []
 
     def snapshot(self) -> Memento:
-        lm_dict: dict[int, Memento] = {
-            idx: lm.state_dict() for idx, lm in enumerate(self.learning_modules)
+        lm_dict = {
+            lm.learning_module_id: lm.state_dict() for lm in self.learning_modules
         }
         return {
             "lm_dict": copy.deepcopy(lm_dict),
         }
 
     def restore(self, memo: Memento) -> None:
-        lm_dict: dict[int, Memento] = memo["lm_dict"]
+        lm_dict = memo["lm_dict"]
         # TODO: this is a weak compatibility check, make it stronger.
         if len(lm_dict) != len(self.learning_modules):
             raise ValueError("Incompatible Memento (different number of LMs)")
-        for idx, lm in enumerate(self.learning_modules):
-            m: Memento = lm_dict[idx]
+        for lm in self.learning_modules:
+            m: Memento = lm_dict[lm.learning_module_id]
             lm.load_state_dict(copy.deepcopy(m))
 
     def fixme_set_ground_truth(
