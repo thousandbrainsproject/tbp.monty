@@ -368,6 +368,13 @@ class RuntimeLearningModule(Protocol):
         """Return learning module output (same format as input)."""
         ...
 
+    def init_from_ltm(self) -> None:
+        """Initialize LM state from long-term memory.
+
+        For example, getting initial hypotheses.
+        """
+        ...
+
 
 class LearningModule(
     RuntimeLearningModule, Snapshotable, ExperimentLearningModule, metaclass=abc.ABCMeta
@@ -423,6 +430,10 @@ class LearningModule(
 
     @abc.abstractmethod
     def get_output(self) -> Message | None:
+        pass
+
+    @abc.abstractmethod
+    def init_from_ltm(self) -> None:
         pass
 
     ###
