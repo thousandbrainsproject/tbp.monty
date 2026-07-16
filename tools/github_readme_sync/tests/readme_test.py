@@ -14,7 +14,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 from tools.github_readme_sync.readme import (
     API_PREFIX,
@@ -485,10 +485,13 @@ class TestReadme(unittest.TestCase):
     @patch("tools.github_readme_sync.readme.post")
     @patch("tools.github_readme_sync.readme.patch")
     @patch.object(ReadMe, "get_doc")
-    @patch.object(ReadMe, "process_markdown", return_value="Updated body")
+    @patch.object(
+        ReadMe,
+        "process_markdown",
+        new=MagicMock(return_value="Updated body"),
+    )
     def test_create_or_update_doc_updates_without_sending_slug(
         self,
-        mock_process_markdown,
         mock_get_doc,
         mock_patch,
         mock_post,
@@ -530,12 +533,18 @@ class TestReadme(unittest.TestCase):
         mock_post.assert_not_called()
 
     @patch("tools.github_readme_sync.readme.post")
-    @patch.object(ReadMe, "get_doc", return_value=None)
-    @patch.object(ReadMe, "process_markdown", return_value="Body")
+    @patch.object(
+        ReadMe,
+        "get_doc",
+        new=MagicMock(return_value=None),
+    )
+    @patch.object(
+        ReadMe,
+        "process_markdown",
+        new=MagicMock(return_value="Body"),
+    )
     def test_create_or_update_doc_rejects_changed_created_slug(
         self,
-        mock_process_markdown,
-        mock_get_doc,
         mock_post,
     ):
         mock_post.return_value = {
@@ -553,12 +562,18 @@ class TestReadme(unittest.TestCase):
             )
 
     @patch("tools.github_readme_sync.readme.post")
-    @patch.object(ReadMe, "get_doc", return_value=None)
-    @patch.object(ReadMe, "process_markdown", return_value="Body")
+    @patch.object(
+        ReadMe,
+        "get_doc",
+        new=MagicMock(return_value=None),
+    )
+    @patch.object(
+        ReadMe,
+        "process_markdown",
+        new=MagicMock(return_value="Body"),
+    )
     def test_create_or_update_doc_requires_created_uri(
         self,
-        mock_process_markdown,
-        mock_get_doc,
         mock_post,
     ):
         mock_post.return_value = {"slug": "new-doc"}

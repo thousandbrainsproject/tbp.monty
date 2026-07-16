@@ -80,9 +80,9 @@ def process_children(
         )
 
         print_child(
-            path_prefix.count("/"),
-            doc,
-            created,
+            level=path_prefix.count("/"),
+            doc=doc,
+            created=created,
         )
         set_do_not_delete(to_be_deleted, child["slug"])
 

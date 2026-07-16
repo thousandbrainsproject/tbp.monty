@@ -108,8 +108,19 @@ class ReadMe:
         return response
 
     def get_category_doc_tree(self, category: Any) -> list[Any]:
-        """Rebuild a nested page tree from API v2's flat page collection."""
+        """Rebuild a nested page tree from API v2's flat page collection.
 
+        Args:
+            category: The ReadMe category whose pages should be retrieved.
+
+        Returns:
+            The category's pages organized as a nested tree. Each page contains
+            a ``children`` list containing its direct child pages.
+
+        Raises:
+            ValueError: If a page has no URI, a duplicate URI is returned, or a
+                page references a parent URI that is not present in the category.
+        """
         pages = self.get_category_docs(category)
 
         if not pages:
@@ -119,8 +130,8 @@ class ReadMe:
 
         # First create independent page dictionaries with empty children lists.
         # We use resource URIs because v2 uses URIs as resource identifiers.
-        for page in pages:
-            page = dict(page)
+        for raw_page in pages:
+            page = dict(raw_page)
             page["children"] = []
 
             uri = page.get("uri")
@@ -195,8 +206,18 @@ class ReadMe:
         return front_matter_str + body
 
     def get_doc(self, slug: str) -> dict | None:
-        """Return one guide and verify ReadMe resolved the requested slug."""
+        """Return one guide and verify its slug and URI.
 
+        Args:
+            slug: The guide slug to retrieve.
+
+        Returns:
+            The guide returned by ReadMe, or ``None`` if ReadMe returns a 404.
+
+        Raises:
+            ValueError: If ReadMe resolves the request to a different slug or
+                returns a guide without a URI.
+        """
         doc = get(self.branch_url(f"/guides/{slug}"))
 
         if doc is None:
@@ -221,7 +242,6 @@ class ReadMe:
 
     def make_version_stable(self):
         """Make a release version the project's stable/default version."""
-
         # Versions containing a suffix are preview versions, such as
         # 0.40-brothman-newtest3. Do not make those stable.
         if self.version_has_suffix():
@@ -563,8 +583,15 @@ class ReadMe:
         return body
 
     def get_stable_version(self) -> str:
-        """Return the name of the project's stable/default version."""
+        """Return the name of the project's stable/default version.
 
+        Returns:
+            The name of the branch currently identified by ReadMe as stable.
+
+        Raises:
+            ValueError: If no stable branch exists or the stable branch response
+                does not contain a name.
+        """
         # ReadMe v2 supports "stable" as an alias for the current
         # stable/default version.
         stable = get(f"{API_PREFIX}/branches/stable")

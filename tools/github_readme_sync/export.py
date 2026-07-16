@@ -11,7 +11,9 @@
 import logging
 import shutil
 from pathlib import Path
+
 from slugify import slugify
+
 from tools.github_readme_sync.colors import BLUE, CYAN, RESET
 from tools.github_readme_sync.hierarchy import INDENTATION_UNIT
 from tools.github_readme_sync.readme import ReadMe

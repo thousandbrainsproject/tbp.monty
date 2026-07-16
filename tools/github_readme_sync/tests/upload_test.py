@@ -119,9 +119,9 @@ class TestUpload(unittest.TestCase):
             file_path="/path/to/files/parent",
         )
         mock_print_child.assert_called_once_with(
-            0,
-            mock_load_doc.return_value,
-            True,
+            level=0,
+            doc=mock_load_doc.return_value,
+            created=True,
         )
         self.assertEqual(to_be_deleted, [])
 

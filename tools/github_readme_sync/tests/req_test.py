@@ -17,8 +17,10 @@ from tools.github_readme_sync.req import (
     delete,
     get,
     get_collection,
-    patch as patch_request,
     post,
+)
+from tools.github_readme_sync.req import (
+    patch as patch_request,
 )
 
 
@@ -153,7 +155,7 @@ class TestReq(unittest.TestCase):
         mock_get.return_value = response
 
         with self.assertRaisesRegex(
-            RuntimeError,
+            TypeError,
             "Expected collection data .* to be a list",
         ):
             get_collection("https://api.readme.com/v2/items")

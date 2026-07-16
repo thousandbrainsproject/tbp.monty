@@ -53,8 +53,19 @@ def get(url: str, headers=None):
 
 
 def get_collection(url: str, headers=None) -> list:
-    """Retrieve every page from a paginated v2 collection endpoint."""
+    """Retrieve every page from a paginated v2 collection endpoint.
 
+    Args:
+        url: The initial collection endpoint URL.
+        headers: Optional additional HTTP request headers.
+
+    Returns:
+        A flat list containing the resources from every response page.
+
+    Raises:
+        RuntimeError: If ReadMe returns an unsuccessful HTTP response.
+        TypeError: If the response's ``data`` field is not a list.
+    """
     headers = _auth_headers(headers)
     items = []
     next_url = url
@@ -88,7 +99,7 @@ def get_collection(url: str, headers=None) -> list:
         # ReadMe v2 collection responses should always contain a list
         # under "data".
         if not isinstance(data, list):
-            raise RuntimeError(
+            raise TypeError(
                 f"Expected collection data from {next_url} to be a list, "
                 f"received {type(data).__name__}"
             )
