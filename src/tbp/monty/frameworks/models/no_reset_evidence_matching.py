@@ -148,15 +148,23 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         self._init_NoResetEvidenceGraphLM()
 
     def state_dict(self) -> Memento:
-        memo = dict(super().state_dict())
-        memo["_hypotheses"] = self._hypotheses
-        return memo
+        return {
+            "graph_memory": self.graph_memory.state_dict(),
+            "target_to_graph_id": self.target_to_graph_id,
+            "graph_id_to_target": self.graph_id_to_target,
+            "_hypotheses": self._hypotheses,
+        }
 
     def load_state_dict(self, memento: Memento) -> None:
         memo = dict(memento)
         self._hypotheses = memo.pop("_hypotheses", {})
-        # IMPORTANT! call superclass last to complete initialization
-        super().load_state_dict(memo)
+        self.graph_memory.load_state_dict(memo.pop("graph_memory"))
+        self.target_to_graph_id = memo.pop("target_to_graph_id")
+        self.graph_id_to_target = memo.pop("graph_id_to_target")
+
+        # After loading the long-term memory, give the LM a chance to
+        # update any internal state based on the contents of memory.
+        self.init_from_ltm()
 
     def _add_displacements(self, percepts: list[Message]) -> list[Message]:
         """Add displacements to the current percept.
