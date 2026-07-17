@@ -209,10 +209,10 @@ class TwoDSensorModule(SensorModule):
                     true_surface_normal,
                 )
 
+        observed_state = self._message_noise(observed_state, rng=ctx.rng)
+
         if motor_only_step:
             observed_state.pass_message = False
-        else:
-            observed_state = self._message_noise(observed_state, rng=ctx.rng)
 
         observed_state = self._update_2d_position_and_displacement(
             observed_state, curvature_pose_vectors, true_surface_normal

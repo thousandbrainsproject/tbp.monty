@@ -650,11 +650,10 @@ class CameraSM(SensorModule):
             )
 
         percept = self._observation_processor.process(observation)
+        percept = self._message_noise(percept, rng=ctx.rng)
 
         if motor_only_step:
             percept.pass_message = False
-        else:
-            percept = self._message_noise(percept, rng=ctx.rng)
 
         percept = self._percept_filter(percept)
 
