@@ -11,11 +11,13 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import requests
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 REQUEST_TIMEOUT_SECONDS = 60
 logger = logging.getLogger(__name__)
@@ -33,9 +35,7 @@ def _auth_headers(
         A new dictionary containing the caller's headers and authorization.
     """
     request_headers = dict(headers or {})
-    request_headers["Authorization"] = (
-        f"Bearer {os.getenv('README_API_KEY')}"
-    )
+    request_headers["Authorization"] = f"Bearer {os.getenv('README_API_KEY')}"
     return request_headers
 
 
@@ -52,9 +52,7 @@ def _unwrap_data(payload: Mapping[str, Any]) -> Any:
         ValueError: If the response does not contain a ``data`` field.
     """
     if "data" not in payload:
-        raise ValueError(
-            "ReadMe response is missing the required 'data' field"
-        )
+        raise ValueError("ReadMe response is missing the required 'data' field")
 
     return payload["data"]
 
@@ -76,8 +74,7 @@ def get(
         # create_or_update_doc() interprets the failure as a missing page
         # and incorrectly creates a duplicate.
         raise RuntimeError(
-            f"GET {url} failed with "
-            f"{response.status_code}: {response.text}"
+            f"GET {url} failed with {response.status_code}: {response.text}"
         )
 
     return _unwrap_data(response.json())
@@ -177,7 +174,19 @@ def patch(
     data: Mapping[str, Any],
     headers: Mapping[str, str] | None = None,
 ) -> bool:
-    """Update a resource."""
+    """Update a resource.
+
+    Args:
+        url: The URL of the resource to update.
+        data: The request body to send as JSON.
+        headers: Optional additional request headers.
+
+    Returns:
+        ``True`` when the resource is updated successfully.
+
+    Raises:
+        RuntimeError: If the request returns a client or server error.
+    """
     headers = _auth_headers(headers)
     response = requests.patch(
         url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
