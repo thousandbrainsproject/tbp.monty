@@ -7,9 +7,12 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Mapping
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
@@ -18,23 +21,48 @@ REQUEST_TIMEOUT_SECONDS = 60
 logger = logging.getLogger(__name__)
 
 
-def _auth_headers(headers=None) -> dict:
-    # v2 uses Bearer tokens.
-    # Copy caller-provided headers so adding Authorization does not mutate them.
-    headers = dict(headers or {})
-    headers["Authorization"] = f"Bearer {os.getenv('README_API_KEY')}"
-    return headers
+def _auth_headers(
+    headers: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Build authenticated request headers without modifying the input.
+
+    Args:
+        headers: Optional request headers supplied by the caller.
+
+    Returns:
+        A new dictionary containing the caller's headers and authorization.
+    """
+    request_headers = dict(headers or {})
+    request_headers["Authorization"] = (
+        f"Bearer {os.getenv('README_API_KEY')}"
+    )
+    return request_headers
 
 
-def _unwrap_data(payload):
-    # Single-resource and collection responses nest the payload under "data" in v2.
-    # Return the inner value so callers never see the wrapper.
-    if isinstance(payload, dict) and "data" in payload:
-        return payload["data"]
-    return payload
+def _unwrap_data(payload: Mapping[str, Any]) -> Any:
+    """Return the resource stored in a response envelope.
+
+    Args:
+        payload: The decoded JSON response object.
+
+    Returns:
+        The value stored under the response's ``data`` field.
+
+    Raises:
+        ValueError: If the response does not contain a ``data`` field.
+    """
+    if "data" not in payload:
+        raise ValueError(
+            "ReadMe response is missing the required 'data' field"
+        )
+
+    return payload["data"]
 
 
-def get(url: str, headers=None):
+def get(
+    url: str,
+    headers: Mapping[str, str] | None = None,
+) -> Any | None:
     headers = _auth_headers(headers)
     response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS)
     logger.debug("get %s %s", url, response.status_code)
@@ -52,8 +80,11 @@ def get(url: str, headers=None):
     return _unwrap_data(response.json())
 
 
-def get_collection(url: str, headers=None) -> list:
-    """Retrieve every page from a paginated v2 collection endpoint.
+def get_collection(
+    url: str,
+    headers: Mapping[str, str] | None = None,
+) -> list[dict[str, Any]]:
+    """Retrieve every page from a paginated collection endpoint.
 
     Args:
         url: The initial collection endpoint URL.
@@ -96,7 +127,7 @@ def get_collection(url: str, headers=None) -> list:
         payload = response.json()
         data = _unwrap_data(payload)
 
-        # ReadMe v2 collection responses should always contain a list
+        # ReadMe collection responses should always contain a list
         # under "data".
         if not isinstance(data, list):
             raise TypeError(
@@ -116,7 +147,11 @@ def get_collection(url: str, headers=None) -> list:
     return items
 
 
-def post(url: str, data: dict, headers=None):
+def post(
+    url: str,
+    data: Mapping[str, Any],
+    headers: Mapping[str, str] | None = None,
+) -> Any:
     headers = _auth_headers(headers)
     response = requests.post(
         url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
@@ -134,8 +169,12 @@ def post(url: str, data: dict, headers=None):
     return _unwrap_data(response.json())
 
 
-def patch(url: str, data: dict, headers=None) -> bool:
-    # v2 updates use PATCH (replaces put for guides/branches).
+def patch(
+    url: str,
+    data: Mapping[str, Any],
+    headers: Mapping[str, str] | None = None,
+) -> bool:
+    """Update a resource."""
     headers = _auth_headers(headers)
     response = requests.patch(
         url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
@@ -148,7 +187,10 @@ def patch(url: str, data: dict, headers=None) -> bool:
     return True
 
 
-def delete(url: str, headers=None) -> None:
+def delete(
+    url: str,
+    headers: Mapping[str, str] | None = None,
+) -> None:
     headers = _auth_headers(headers)
 
     response = requests.delete(

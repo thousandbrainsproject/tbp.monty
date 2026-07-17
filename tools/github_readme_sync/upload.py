@@ -119,7 +119,7 @@ def get_all_categories_docs(rdme: ReadMe):
             }
         )
 
-        # API v2 returns the category's pages as a flat collection.
+        # The API returns the category's pages as a flat collection.
         for doc in rdme.get_category_docs(category):
             all_categories_and_docs.append(
                 {

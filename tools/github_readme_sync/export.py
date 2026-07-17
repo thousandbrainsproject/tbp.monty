@@ -32,7 +32,7 @@ def export(output_dir: str, rdme: ReadMe):
     output_dir.mkdir(exist_ok=True, parents=True)
 
     for i, category in enumerate(categories):
-        # API v2 categories no longer have server-side slugs.
+        # API categories do not have server-side slugs.
         # Generate a local slug from the category title for the folder
         # name and hierarchy.md.
         category_slug = slugify(category["title"])
@@ -50,7 +50,7 @@ def export(output_dir: str, rdme: ReadMe):
         category_folder_path = output_dir / category_slug
         category_folder_path.mkdir(exist_ok=True, parents=True)
 
-        # API v2 returns category pages as a flat collection.
+        # The API returns category pages as a flat collection.
         # Rebuild the hierarchy using each page's parent URI.
         docs_from_server = rdme.get_category_doc_tree(category)
 

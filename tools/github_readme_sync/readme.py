@@ -38,8 +38,8 @@ from tools.github_readme_sync.req import delete, get, get_collection, patch, pos
 logger = logging.getLogger(__name__)
 
 API_PREFIX = "https://api.readme.com/v2"
-GUIDES_SECTION = "guides"  # v2 category paths are /categories/{section}/…
-GUIDES_SECTION_BODY = "guide"  # v2 POST body wants singular guide.
+GUIDES_SECTION = "guides"  # category paths are /categories/{section}/…
+GUIDES_SECTION_BODY = "guide"  # POST body wants a singular 'guide'.
 GITHUB_RAW = "https://raw.githubusercontent.com"
 
 regex_images = re.compile(r"!\[(.*?)\]\((.*?)\)")
@@ -77,7 +77,6 @@ class ReadMe:
         self.version = version
 
     def _is_hidden(self, resource: dict) -> bool:
-        # v1 bool hidden → v2 privacy.view == anyone_with_link
         return (resource.get("privacy") or {}).get("view") == "anyone_with_link"
 
     def branch_url(self, suffix: str = "") -> str:
@@ -94,8 +93,6 @@ class ReadMe:
 
     def get_category_docs(self, category: Any) -> list[Any]:
         """Return a category's pages as a flat v2 collection."""
-        # API v2 identifies categories by title rather than by the
-        # category slug or hexadecimal ID used in API v1.
         title = quote(category["title"], safe="")
 
         response = get_collection(
@@ -108,7 +105,7 @@ class ReadMe:
         return response
 
     def get_category_doc_tree(self, category: Any) -> list[Any]:
-        """Rebuild a nested page tree from API v2's flat page collection.
+        """Rebuild a nested page tree from the APIs flat page collection.
 
         Args:
             category: The ReadMe category whose pages should be retrieved.
@@ -129,7 +126,7 @@ class ReadMe:
         pages_by_uri = {}
 
         # First create independent page dictionaries with empty children lists.
-        # We use resource URIs because v2 uses URIs as resource identifiers.
+        # We use resource URIs as the API uses URIs as resource identifiers.
         for raw_page in pages:
             page = dict(raw_page)
             page["children"] = []
@@ -252,7 +249,7 @@ class ReadMe:
         patch(
             f"{API_PREFIX}/branches/{self.version}",
             {
-                # The live ReadMe v2 API and tested project behavior use
+                # The live ReadMe API and tested project behavior use
                 # privacy.view="default" to make this version stable/default.
                 # This differs from the public migration guide.
                 "privacy": {"view": "default"},
@@ -433,7 +430,6 @@ class ReadMe:
         if parent_id:
             update_doc_request["parent"] = {"uri": parent_id}
 
-        # ReadMe v2 stores the document description as the content excerpt.
         if "description" in doc:
             update_doc_request["content"]["excerpt"] = doc["description"]
 
@@ -592,8 +588,6 @@ class ReadMe:
             ValueError: If no stable branch exists or the stable branch response
                 does not contain a name.
         """
-        # ReadMe v2 supports "stable" as an alias for the current
-        # stable/default version.
         stable = get(f"{API_PREFIX}/branches/stable")
         if stable is None:
             raise ValueError("No stable version found")
