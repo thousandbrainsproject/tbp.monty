@@ -652,8 +652,6 @@ class CameraSM(SensorModule):
         percept = self._observation_processor.process(observation)
 
         if motor_only_step:
-            # Motor-only steps do not reach the LMs and can skip the feature
-            # change filter.
             percept.pass_message = False
         else:
             percept = self._message_noise(percept, rng=ctx.rng)

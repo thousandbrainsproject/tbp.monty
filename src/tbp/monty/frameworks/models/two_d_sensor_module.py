@@ -210,7 +210,6 @@ class TwoDSensorModule(SensorModule):
                 )
 
         if motor_only_step:
-            # Do not deliver motor-only steps to the LM.
             observed_state.pass_message = False
         else:
             observed_state = self._message_noise(observed_state, rng=ctx.rng)
