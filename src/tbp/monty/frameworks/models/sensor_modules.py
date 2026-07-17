@@ -764,12 +764,8 @@ class FeatureChangeFilter(PerceptFilter):
     def __call__(self, percept: Message) -> Message:
         """Labels each percept as containing features or location-only.
 
-        Sets `contains_features` to distinguish a real feature change (stored and
-        matched by the LM) from a location-only step (which only syncs the agent
-        location in the LM). A percept is location-only when its features are
-        uninteresting (e.g. off object, or an invalid surface normal due to <3/4
-        of the object in view) but its location is still valid. Delivery is decided
-        by the caller via `pass_message`; this filter does not drop percepts.
+        Sets `contains_features` to `True` when feature changes are significant
+        compared to the previous `percept`.
 
         Args:
             percept: Percept to check for feature change.
@@ -783,8 +779,7 @@ class FeatureChangeFilter(PerceptFilter):
 
         if not percept.contains_features:
             # The features are uninteresting (e.g. off object, or invalid surface
-            # normal due to <3/4 of the object in view), so deliver the percept as
-            # location-only; the location is valid even when the features are not.
+            # normal due to <3/4 of the object in view).
             return percept
 
         if not self._last_percept:  # first step
@@ -795,7 +790,6 @@ class FeatureChangeFilter(PerceptFilter):
         significant_feature_change = self._feature_changes_are_significant(percept)
         percept.contains_features = significant_feature_change
         if significant_feature_change:
-            # Only update the "last feature" when a significant change has occurred.
             self._last_percept = percept
             self._last_sent_n_steps_ago = 0
         else:
