@@ -48,6 +48,16 @@ from tbp.monty.simulators.mujoco.objects import (
 if TYPE_CHECKING:
     from types import TracebackType
 
+__all__ = [
+    "DEFAULT_RESOLUTION",
+    "ActuateMethodMissing",
+    "DataPathNotConfigured",
+    "MissingObjectModel",
+    "MissingObjectTexture",
+    "MuJoCoSimulator",
+    "UnknownObjectType",
+]
+
 logger = logging.getLogger(__name__)
 
 # Scaling factor to make MuJoCo primitives roughly the same size
@@ -140,6 +150,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     spec: MjSpec
     model: MjModel
     data: MjData
+    id_to_semantic_id: dict[ObjectID, SemanticID]
 
     _data_path: Path | None
     _raise_actuate_missing: bool
@@ -168,18 +179,18 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.spec = MjSpec()
         self.model = self.spec.compile()
         self.data = MjData(self.model)
+        self.id_to_semantic_id = self._default_id_mapping()
+
         self._data_path = Path(data_path) if data_path else None
+        self._loaded_custom_types: set[str] = set()
         self._raise_actuate_missing = raise_actuate_missing
         self._renderers = {}
-
         self._agent_partials = [] if agents is None else agents
         self._agents = {}
         self._create_agents()
-        self._loaded_custom_types: set[str] = set()
 
         # Track how many objects we add to the environment.
-        # Note: We can't use the `model.ngeoms` for this since that will include parts
-        # of the agents, especially when we start to add more structure to them.
+        # This is used to give added objects unique names.
         self._object_count = 0
 
         self._recompile()
@@ -295,6 +306,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.spec = MjSpec()
         self._create_agents()
         self._recompile()
+        self.id_to_semantic_id = self._default_id_mapping()
         self._object_count = 0
         self._loaded_custom_types = set()
 
@@ -308,11 +320,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:
-        if semantic_id is not None:
-            logger.warning(
-                "MuJoCo does not support adding objects with custom semantic IDs."
-            )
-
         obj_name = f"{name}_{self._object_count}"
 
         if name in PRIMITIVE_OBJECTS:
@@ -328,16 +335,23 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             self._add_primitive_object(obj_name, name, position, rotation, scale)
         else:
             self._add_custom_object(obj_name, name, position, rotation, scale)
-        self._object_count += 1
 
         self._recompile()
+        self._object_count += 1
 
-        # Using the object count for the semantic_id will give a distinct
-        # value for each added object, and _might_ map to MuJoCo's internal
-        # object IDs if we need to use those.
+        added_obj = self.model.geom(obj_name)
+        # MuJoCo gives us NumPy arrays because `geom()` returns an accessor object
+        # for the arrays in the model associated with the geom. We can assume `type`
+        # always returns a single element array and just take the first element.
+        # See https://mujoco.readthedocs.io/en/latest/python.html#named-access
+        if semantic_id is None:
+            semantic_id = SemanticID(added_obj.type[0])
+        object_id = ObjectID(added_obj.id)
+        self.id_to_semantic_id[object_id] = semantic_id
+
         return ObjectInfo(
-            object_id=ObjectID(self._object_count),
-            semantic_id=SemanticID(self._object_count),
+            object_id=object_id,
+            semantic_id=semantic_id,
         )
 
     def _add_custom_object(
@@ -559,3 +573,15 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         exc_tb: TracebackType | None,
     ) -> bool | None:
         self.close()
+
+    @staticmethod
+    def _default_id_mapping() -> dict[ObjectID, SemanticID]:
+        """Create the default ID mapping with an entry for the background.
+
+        This is needed because the Habitat version would return 0 for the
+        background, and MuJoCo sets the background to -1.
+
+        Returns:
+            new mapping dictionary
+        """
+        return {ObjectID(-1): SemanticID(0)}

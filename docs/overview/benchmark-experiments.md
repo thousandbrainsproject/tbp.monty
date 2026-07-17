@@ -136,6 +136,8 @@ To measure performance, we introduced two new metrics:
 
 !table[../../benchmarks/logos_on_objects.csv]
 
+Note: These experiments use 100 inference steps rather than the typical 500. Monolithic models often time out, making the benchmarks prohibitively slow at the larger step limit.
+
 > [!WARNING]
 >
 > These benchmarks are not currently expected to have good performance and are used to track our research progress for compositional datasets.
@@ -171,14 +173,10 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > To generate the pretrained models, run the following experiments in order:
 > ```
-> python run.py experiment=supervised_pre_training_flat_objects_wo_logos
-> python run.py experiment=supervised_pre_training_logos_after_flat_objects
-> python run.py experiment=supervised_pre_training_curved_objects_after_flat_and_logo
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_monolithic_models
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl1_comp_models_burst_sampling
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl2_comp_models
-> python run.py experiment=supervised_pre_training_objects_with_logos_lvl3_comp_models
+> python run.py experiment=supervised_pre_training_objects_with_stickers_3d_children
+> python run.py experiment=supervised_pre_training_objects_with_stickers_2d_children
+> python run.py experiment=supervised_pre_training_objects_with_stickers_comp_models
+> python run.py experiment=supervised_pre_training_objects_with_stickers_monolithic_models
 > ```
 
 > [!NOTE]
@@ -186,8 +184,8 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > | Models | Archive Format | Download Link |
 > | --- | --- | --- |
-> | pretrained_compositional_objects_v3 | tgz | [pretrained_compositional_objects_v3.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v3.tgz) |
-> | pretrained_compositional_objects_v3 | zip | [pretrained_compositional_objects_v3.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v3.zip) |
+> | pretrained_compositional_objects_v4 | tgz | [pretrained_compositional_objects_v4.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v4.tgz) |
+> | pretrained_compositional_objects_v4 | zip | [pretrained_compositional_objects_v4.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v4.zip) |
 >
 > Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 >
@@ -196,16 +194,16 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v3.tgz | tar -xzf -
+> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v4.tgz | tar -xzf -
 > ```
 > ```plaintext zip
 > mkdir -p ~/tbp/results/monty/pretrained_models/
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v3.zip
+> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v4.zip
 >
-> unzip pretrained_compositional_objects_v3.zip
+> unzip pretrained_compositional_objects_v4.zip
 > ```
 
 

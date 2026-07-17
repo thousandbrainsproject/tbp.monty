@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: medium
 improved-metric: 
 output-type: RFC
-skills: monty
+skills: monty-advanced
 contributor: 
 status: open
 ---

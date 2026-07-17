@@ -10,6 +10,7 @@
 
 import pytest
 
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -31,7 +32,7 @@ class TutorialsTest(TestCase):
                 config_name="experiment",
                 overrides=["experiment=tutorial/first_experiment"],
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -39,12 +40,18 @@ class TutorialsTest(TestCase):
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/surf_agent_2obj_train"],
+                overrides=[
+                    "experiment=tutorial/surf_agent_2obj_train",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_train_epochs=1",
+                    "experiment.config.max_train_steps=3",
+                    "experiment.config.max_total_steps=3",
+                ],
             )
             config.experiment.config.logging.output_dir = str(
                 output_dir_from_run_name(config)
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -60,7 +67,7 @@ class TutorialsTest(TestCase):
                     "experiment.config.max_total_steps=3",
                 ],
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -76,7 +83,7 @@ class TutorialsTest(TestCase):
                     "experiment.config.max_total_steps=3",
                 ],
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -84,12 +91,18 @@ class TutorialsTest(TestCase):
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/dist_agent_5lm_2obj_train"],
+                overrides=[
+                    "experiment=tutorial/dist_agent_5lm_2obj_train",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_train_epochs=1",
+                    "experiment.config.max_train_steps=3",
+                    "experiment.config.max_total_steps=3",
+                ],
             )
             config.experiment.config.logging.output_dir = str(
                 output_dir_from_run_name(config)
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -103,7 +116,7 @@ class TutorialsTest(TestCase):
                     "experiment.config.max_total_steps=3",
                 ],
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -111,11 +124,17 @@ class TutorialsTest(TestCase):
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/omniglot_training"],
+                overrides=[
+                    "experiment=tutorial/omniglot_training",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_train_epochs=1",
+                    "experiment.config.max_train_steps=3",
+                    "experiment.config.max_total_steps=3",
+                ],
             )
             inference_output_dir = str(output_dir_from_run_name(config))
             config.experiment.config.logging.output_dir = inference_output_dir
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -130,7 +149,7 @@ class TutorialsTest(TestCase):
                     "experiment.config.max_total_steps=3",
                 ],
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
@@ -150,6 +169,6 @@ class TutorialsTest(TestCase):
                     "experiment.config.monty_config.monty_args.num_exploratory_steps=3",
                 ],
             )
-            experiment = hydra.utils.instantiate(config.experiment)
+            experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()

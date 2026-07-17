@@ -10,43 +10,22 @@ from __future__ import annotations
 
 import unittest
 from functools import partial
-from typing import Any
 
 import numpy as np
 import quaternion as qt
+from hypothesis import given, settings
+from hypothesis import strategies as st
+from mujoco import mjtGeom
 
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
-from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR
 from tbp.monty.simulators.mujoco.agents import NoopAgent
 from tbp.monty.simulators.mujoco.simulator import DEFAULT_RESOLUTION, MuJoCoSimulator
 
-TEST_SENSOR_ID = SensorID("patch")
-TEST_AGENT_ID = AgentID("agent_id_0")
-
-
-def default_agent_args() -> dict[str, Any]:
-    """Creates a new dictionary of default agent args.
-
-    This way the caller is free to modify it without having to
-    make a copy.
-
-    Returns:
-        dict[str, Any]: A dictionary of default agent arguments.
-    """
-    return {
-        "agent_id": TEST_AGENT_ID,
-        "sensor_configs": {
-            TEST_SENSOR_ID: SensorConfig(
-                position=ZERO_VECTOR,
-                rotation=IDENTITY_QUATERNION,
-                resolution=DEFAULT_RESOLUTION,
-                zoom=1.0,
-            ),
-        },
-        "position": ZERO_VECTOR,
-        "rotation": IDENTITY_QUATERNION,
-    }
+VIEW_FINDER_SENSOR_ID = SensorID("view_finder")
+PATCH_SENSOR_ID = SensorID("patch")
+AGENT_ID = AgentID("agent_id_0")
 
 
 class NoopAgentTest(unittest.TestCase):
@@ -55,13 +34,21 @@ class NoopAgentTest(unittest.TestCase):
         # test with some non-zero values
         agent_pos = (0.0, 1.5, -1.0)
         agent_quat = (np.sin(np.pi / 4), np.cos(np.pi / 4), 0.0, 0.0)
-        agent_args = default_agent_args()
-        agent_args.update({"position": agent_pos, "rotation": agent_quat})
 
         sim = MuJoCoSimulator(
-            agents=[partial(NoopAgent, **agent_args)],
+            agents=[
+                partial(
+                    NoopAgent,
+                    agent_id=AGENT_ID,
+                    sensor_configs={
+                        PATCH_SENSOR_ID: SensorConfig(resolution=DEFAULT_RESOLUTION)
+                    },
+                    position=agent_pos,
+                    rotation=agent_quat,
+                )
+            ],
         )
-        agent_state = sim.states[TEST_AGENT_ID]
+        agent_state = sim.states[AGENT_ID]
 
         assert np.allclose(agent_state.position, agent_pos)
         assert np.allclose(qt.as_float_array(agent_state.rotation), agent_quat)
@@ -73,14 +60,22 @@ class NoopAgentTest(unittest.TestCase):
         values easier.
         """
         sim = MuJoCoSimulator(
-            agents=[partial(NoopAgent, **default_agent_args())],
+            agents=[
+                partial(
+                    NoopAgent,
+                    agent_id=AGENT_ID,
+                    sensor_configs={
+                        PATCH_SENSOR_ID: SensorConfig(resolution=DEFAULT_RESOLUTION)
+                    },
+                )
+            ]
         )
         with sim:
             sim.add_object("box", position=(0.0, 0.0, -5.0))
 
-            obs = sim.observations[TEST_AGENT_ID]
-            depth = obs[SensorID("patch")]["depth"]
-            rgba = obs[SensorID("patch")]["rgba"]
+            obs = sim.observations[AGENT_ID]
+            depth = obs[PATCH_SENSOR_ID]["depth"]
+            rgba = obs[PATCH_SENSOR_ID]["rgba"]
 
             # We don't want to assert on the specifics of the data, since they may
             # be sensitive to rendering differences, but we want to get a rough idea
@@ -96,6 +91,70 @@ class NoopAgentTest(unittest.TestCase):
             assert rgba.min() == 0
             assert rgba.max() == 255
 
+    def test_agent_observation_semantic_default_ids(self) -> None:
+        """Test that the semantic sensor default ids match expectations.
+
+        We want the semantic sensor to behave similar to how the Habitat version does
+        so we need to confirm that the values returned map correctly.
+        """
+        sim = MuJoCoSimulator(
+            agents=[
+                partial(
+                    NoopAgent,
+                    agent_id=AGENT_ID,
+                    sensor_configs={
+                        PATCH_SENSOR_ID: SensorConfig(
+                            resolution=DEFAULT_RESOLUTION,
+                            semantic=True,
+                        )
+                    },
+                )
+            ],
+        )
+
+        with sim:
+            sim.add_object("box", position=(-2.5, 0.0, -5.0))
+            sim.add_object("sphere", position=(2.5, 0.0, -5.0))
+            obs = sim.observations[AGENT_ID]
+            semantic = obs[PATCH_SENSOR_ID]["semantic"]
+            unique_ids = set(np.unique(semantic))
+
+            assert semantic.shape == (64, 64)
+            assert unique_ids == {0, mjtGeom.mjGEOM_BOX, mjtGeom.mjGEOM_SPHERE}
+
+    def test_agent_observation_semantic_custom_ids(self) -> None:
+        """Test that the semantic sensor with custom ids match expectations.
+
+        If we give semantic ids to `add_object` we want to make sure that the
+        returned semantic sensor values use those IDs and not the defaults.
+        """
+        sim = MuJoCoSimulator(
+            agents=[
+                partial(
+                    NoopAgent,
+                    agent_id=AGENT_ID,
+                    sensor_configs={
+                        PATCH_SENSOR_ID: SensorConfig(
+                            resolution=DEFAULT_RESOLUTION,
+                            semantic=True,
+                        )
+                    },
+                )
+            ],
+        )
+        box_id = SemanticID(100)
+        sphere_id = SemanticID(101)
+
+        with sim:
+            sim.add_object("box", position=(-2.5, 0.0, -5.0), semantic_id=box_id)
+            sim.add_object("sphere", position=(2.5, 0.0, -5.0), semantic_id=sphere_id)
+            obs = sim.observations[AGENT_ID]
+            semantic = obs[PATCH_SENSOR_ID]["semantic"]
+            unique_ids = set(np.unique(semantic))
+
+            assert semantic.shape == (64, 64)
+            assert unique_ids == {0, box_id, sphere_id}
+
     def test_agent_observation_multiple_resolutions(self) -> None:
         """Test two sensors with different resolutions.
 
@@ -106,31 +165,97 @@ class NoopAgentTest(unittest.TestCase):
 
         This test confirms that that is working properly.
         """
-        agent_args = default_agent_args()
-        agent_args.update(
-            sensor_configs={
-                "patch": SensorConfig(
-                    position=ZERO_VECTOR,
-                    rotation=IDENTITY_QUATERNION,
-                    resolution=DEFAULT_RESOLUTION,
-                    zoom=1.0,
-                ),
-                "view_finder": SensorConfig(
-                    position=ZERO_VECTOR,
-                    rotation=IDENTITY_QUATERNION,
-                    resolution=Resolution2D(height=256, width=256),
-                    zoom=1.0,
-                ),
-            }
-        )
         sim = MuJoCoSimulator(
-            agents=[partial(NoopAgent, **agent_args)],
+            agents=[
+                partial(
+                    NoopAgent,
+                    agent_id=AGENT_ID,
+                    sensor_configs={
+                        PATCH_SENSOR_ID: SensorConfig(
+                            resolution=DEFAULT_RESOLUTION,
+                            zoom=1.0,
+                        ),
+                        VIEW_FINDER_SENSOR_ID: SensorConfig(
+                            resolution=Resolution2D(height=256, width=256),
+                            zoom=1.0,
+                        ),
+                    },
+                )
+            ],
         )
 
         with sim:
-            obs = sim.observations[TEST_AGENT_ID]
-            patch_rgba = obs[SensorID("patch")]["rgba"]
-            view_finder_rgba = obs[SensorID("view_finder")]["rgba"]
+            obs = sim.observations[AGENT_ID]
+            patch_rgba = obs[PATCH_SENSOR_ID]["rgba"]
+            view_finder_rgba = obs[VIEW_FINDER_SENSOR_ID]["rgba"]
 
-            assert patch_rgba.shape == (64, 64, 4)
+            assert patch_rgba.shape == (
+                DEFAULT_RESOLUTION.height,
+                DEFAULT_RESOLUTION.width,
+                4,
+            )
             assert view_finder_rgba.shape == (256, 256, 4)
+
+    @given(
+        # Using integers because arbitrary floats make the calculated ratio
+        # too imprecise for a testable property due to the pixelation.
+        zoom=st.integers(min_value=1, max_value=10),
+    )
+    @settings(deadline=None)
+    def test_agent_observation_zoom(self, zoom) -> None:
+        """Test that the sensor config zoom setting works correctly.
+
+        Since we're implementing zoom by modifying the camera's field of view,
+        we need to verify that this works as intended.
+
+        Our approach is to calculate the ratio of the number of pixels covered by
+        the object, and the total number of pixels, and calculate an expected value.
+        """
+        # We need to generate denser images to get the actual ratios close enough
+        # to the expected values to be able to have a testable property.
+        res = Resolution2D(height=2048, width=2048)
+        # The number of pixels covered at zoom 1 by a 1-meter cube 10 meters away
+        # in a 2048x2048 image.
+        zoom_1x_covered_pixels = 51_984
+        total_pixels = res.width * res.height
+
+        sim = MuJoCoSimulator(
+            agents=[
+                partial(
+                    NoopAgent,
+                    agent_id=AGENT_ID,
+                    sensor_configs={
+                        PATCH_SENSOR_ID: SensorConfig(
+                            resolution=res,
+                            zoom=zoom,
+                            semantic=True,
+                        )
+                    },
+                )
+            ],
+        )
+        sim.add_object(
+            "box",
+            position=(0.0, 0.0, -10.0),
+            # Use 1 so that we can just sum up the resulting semantic image values.
+            semantic_id=SemanticID(1),
+        )
+
+        with sim:
+            obs = sim.observations[AGENT_ID]
+            semantic = obs[PATCH_SENSOR_ID]["semantic"]
+
+            covered_pixels = semantic.sum()
+            actual_ratio = covered_pixels / total_pixels
+            # In one case, the object becomes large enough that it takes up the
+            # entire image and the expected ratio ends up larger than 1.0, so we
+            # need to clamp it to 1.0.
+            expected_ratio = min(
+                1.0,
+                zoom_1x_covered_pixels * zoom**2 / total_pixels,
+            )
+
+            # The tolerance is so low because this is the closest we can get with
+            # the method we're using here. Most of the values are within 1e-3 or
+            # closer, but there are exceptions.
+            np.testing.assert_allclose(actual_ratio, expected_ratio, atol=1e-2)

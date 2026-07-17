@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: unknown
 improved-metric: learning, compositional
 output-type: RFC, prototype, monty-feature, PR, publication
-skills: python, research, monty
+skills: python, research, monty-advanced
 contributor: 
 status: open
 ---

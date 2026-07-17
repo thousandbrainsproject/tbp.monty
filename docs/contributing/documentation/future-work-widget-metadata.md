@@ -35,6 +35,9 @@ status:
 
 The following fields are validated against allow lists defined in snippet files to ensure consistency and quality.
 
+> [!WARNING]
+> If you want to add a new allowed value for the metadata fields, you will need to make a separate PR modifying the corresponding file in the [snippets folder](../../snippets/). This is because the future work validation tool uses what is in the main branch, not on your PR branch, when run in GitHub actions as part of the PR CI process.
+
 # RFC
 
 Does this work item require an RFC? (These values are processed in the `validator.py` code) and can be of the form:
@@ -80,7 +83,9 @@ Skills is a comma separated list of skills that will be needed to complete this.
 > [!NOTE] Notes on Some of the Fields
 > **research** means the ability to run controlled experiments, interpret results, investigate unexpected behavior, come up with novel solutions, draw from existing literature, and communicate the results
 > 
-> **monty** refers to knowledge of how Monty works, how it is structured, and usually more detailed knowledge of the part of its algorithm that the specific future work item touches. This is usually required for tasks that involve innovative changes to the existing Monty algorithm or larger structural changes to the code base.
+> **monty-beginner** are tasks that require understanding one component of Monty to be able to modify it and experiment with it. They also require knowing how to run experiments with Monty and update experiment configs. These are good tasks to get started with Monty and get an initial understanding of how Monty works. Having a monty-beginner task tag doesn't mean that this item is easy or small in scope. It only indicates how much understanding of Monty's components and the system as a whole is required.
+>
+> **monty-advanced** are tasks that require an understanding of Monty as a whole. They require understanding several Monty components and how they interact with each other. Some tasks might not involve changing several Monty components, but they require an in-depth understanding of one (such as the algorithm within LMs) and how changes to it affect the whole system. They also require an understanding of Monty's design philosophy and the theory behind it to know how to make larger structural changes to Monty. We recommend starting with a beginner task to learn about Monty and to stay in communication with our team for the advanced tasks.
 
 # Contributor
 

@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: large
 improved-metric: numsteps, pose, scale
 output-type: experiments, analysis, PR, publication
-skills: python, research, monty
+skills: python, research, monty-advanced
 contributor: 
 status: open
 ---

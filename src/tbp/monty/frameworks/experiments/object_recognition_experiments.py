@@ -46,7 +46,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         last_step = self.run_episode_steps()
         self.post_episode(last_step)
 
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         """Pre-episode hook.
 
         Passes the primary target object and the mapping from semantic IDs to labels
@@ -65,7 +65,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
 
         self.reset_episode_rng()
 
-        self._recreation_restore()
+        self._restore_monty()
 
         # TODO, eventually it would be better to pass
         # self.env_interface.semantic_id_to_label via an "Observation" object when this
