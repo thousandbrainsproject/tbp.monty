@@ -68,15 +68,18 @@ def get(
     logger.debug("get %s %s", url, response.status_code)
     if response.status_code == 404:
         return None
-    if response.status_code < 200 or response.status_code >= 300:
+
+    if response.status_code >= 400:
         # Only a 404 means "the resource does not exist."
         #
-        # A 401, 403, 429, or 500 must stop the upload. Otherwise,
+        # Other failures must stop the upload. Otherwise,
         # create_or_update_doc() interprets the failure as a missing page
         # and incorrectly creates a duplicate.
         raise RuntimeError(
-            f"GET {url} failed with {response.status_code}: {response.text}"
+            f"GET {url} failed with "
+            f"{response.status_code}: {response.text}"
         )
+
     return _unwrap_data(response.json())
 
 
@@ -117,7 +120,7 @@ def get_collection(
         if response.status_code == 404:
             return items
 
-        if response.status_code < 200 or response.status_code >= 300:
+        if response.status_code >= 400:
             # Do not return a partial collection. Some callers (cleanup code) use this
             # inventory to determine which documents should be deleted.
             raise RuntimeError(
@@ -157,7 +160,7 @@ def post(
         url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
     )
     logger.debug("post %s %s", url, response.status_code)
-    if response.status_code < 200 or response.status_code >= 300:
+    if response.status_code >= 400:
         # Preserve the API response, especially when strict slug handling
         # produces a 409 Conflict.
         raise RuntimeError(
@@ -180,7 +183,7 @@ def patch(
         url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
     )
     logger.debug("patch %s %s", url, response.status_code)
-    if response.status_code < 200 or response.status_code >= 300:
+    if response.status_code >= 400:
         raise RuntimeError(
             f"PATCH {url} failed with {response.status_code}: {response.text}"
         )
@@ -201,7 +204,7 @@ def delete(
 
     logger.debug("delete %s %s", url, response.status_code)
 
-    if response.status_code < 200 or response.status_code >= 300:
+    if response.status_code >= 400:
         raise RuntimeError(
             f"DELETE {url} failed with {response.status_code}: {response.text}"
         )
