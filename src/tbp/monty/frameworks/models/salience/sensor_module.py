@@ -8,6 +8,8 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from typing import Collection
+
 import numpy as np
 import quaternion as qt
 
@@ -15,7 +17,6 @@ from tbp.monty.cmp import Goal
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
-    SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
@@ -29,6 +30,7 @@ from tbp.monty.frameworks.models.salience.strategies import (
 from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.memento import Memento
+from tbp.monty.observations import SensorObservation
 
 __all__ = ["SalienceSM"]
 
@@ -169,5 +171,5 @@ class SalienceSM(SensorModule):
         self._snapshot_telemetry.reset()
         self.is_exploring = False
 
-    def propose_goals(self) -> list[Goal]:
+    def propose_goals(self) -> Collection[Goal]:
         return self._goals
