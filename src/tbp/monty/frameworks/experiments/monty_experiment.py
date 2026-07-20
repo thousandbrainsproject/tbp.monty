@@ -63,7 +63,7 @@ class MontyExperiment:
 
     _recreation_mode: bool
     _monty_cfg: DictConfig | None  # dehydrated Monty config
-    _monty_ltm: Memento
+    _monty_memo: Memento
     _step_hook: StepHook
 
     def __init__(self, config: DictConfig) -> None:
@@ -77,7 +77,7 @@ class MontyExperiment:
         # Feature flag for "recreation" episode/epoch strategy.
         self._recreation_mode = False
         self._monty_cfg = None
-        self._monty_ltm = {}
+        self._monty_memo = {}
 
         self.rng = np.random.RandomState(config["seed"])
 
@@ -457,14 +457,14 @@ class MontyExperiment:
 
     def _snapshot_monty(self) -> None:
         """Capture episodic state of Monty model."""
-        self._monty_ltm = self.model.snapshot_ltm()
+        self._monty_memo = self.model.snapshot()
 
     def _restore_monty(self) -> None:
         """Recreate episodic state of Monty model."""
         if self._recreation_mode:
             self._create_monty()
-            if self._monty_ltm:
-                self.model.restore_ltm(self._monty_ltm)
+            if self._monty_memo:
+                self.model.restore(self._monty_memo)
             self.logger_handler.model = self.model
         else:
             self.model.reset()
