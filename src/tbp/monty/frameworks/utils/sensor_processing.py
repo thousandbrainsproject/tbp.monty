@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 
 import numpy as np
+import scipy
 import torch
 from numpy.typing import ArrayLike
 
@@ -709,7 +710,7 @@ def principal_curvatures(
             # `buv` is real symmetric and `guv` is real symmetric positive
             # definite, so the generalized spectral theorem guarantees real
             # eigenvalues and a complete basis of real eigenvectors.
-            eigval, eigvec = np.linalg.eigh(m)
+            eigval, eigvec = scipy.linalg.eigh(m)
 
             # `eigh` returns eigenvalues in ascending order. Preserve the existing
             # convention of ordering principal curvatures from largest to smallest.
