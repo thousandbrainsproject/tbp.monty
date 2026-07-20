@@ -30,7 +30,8 @@ experiment:
     model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor/supervised_pre_training_objects_with_stickers_2d_children/pretrained/}
     min_lms_match: 4
     seed: 42
-    supervised_lm_ids: all
+    supervised_lm_ids:
+      - learning_module_2
     logging:
       run_name: supervised_pre_training_objects_with_stickers_3lm_monolithic_models
       output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/monolithic_3lm}
