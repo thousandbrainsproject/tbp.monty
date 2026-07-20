@@ -700,8 +700,6 @@ def principal_curvatures(
             buv[1, 1] = 2 * params[1]
 
             # Step 4) compute the principle curvatures and directions:
-            # TODO: here convex PCs are negative but I think they should be positive
-            m = np.linalg.inv(guv).dot(buv)
 
             # Solve the symmetric-definite generalized eigenvalue problem:
             #
@@ -710,7 +708,7 @@ def principal_curvatures(
             # `buv` is real symmetric and `guv` is real symmetric positive
             # definite, so the generalized spectral theorem guarantees real
             # eigenvalues and a complete basis of real eigenvectors.
-            eigval, eigvec = scipy.linalg.eigh(m)
+            eigval, eigvec = scipy.linalg.eigh(buv, guv)
 
             # `eigh` returns eigenvalues in ascending order. Preserve the existing
             # convention of ordering principal curvatures from largest to smallest.
