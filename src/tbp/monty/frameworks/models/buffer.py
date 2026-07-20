@@ -344,11 +344,9 @@ class FeatureAtLocationBuffer:
         )
         for channel_name, channel in self.features.items():
             # Here we want to make sure the input-specific observation was on the object
-            channel_off_object_ids = np.where(channel["on_object"] == 0)[0]
+            channel_on_object_count = np.count_nonzero(channel["on_object"] == 1)
             logger.debug(
-                f"{channel_name} has "
-                f"{len(self.locations) - len(channel_off_object_ids)} "
-                "on object observations"
+                f"{channel_name} has {channel_on_object_count} on object observations"
             )
 
             channel_features_on_object = {}
