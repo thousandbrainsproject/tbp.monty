@@ -430,7 +430,7 @@ def surface_normal_total_least_squares(
         # and `p_mean @ p_mean.T` are symmetric by construction. This follows
         # from the spectral theorem.
         if not np.allclose(m_mat, m_mat.T):
-            logger.debug("Surface normal covariance matrix is note symmetric.")
+            logger.debug("Surface normal covariance matrix is not symmetric.")
             return n_dir, valid_sn
 
         try:
