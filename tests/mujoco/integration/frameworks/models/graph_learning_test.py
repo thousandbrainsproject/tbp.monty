@@ -566,6 +566,7 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm: FeatureGraphLM,
         obj_name: str,
         observations: Sequence[Message],
+        sender_id: str = "patch",
         offset: npt.NDArray[np.float64] | None = None,
     ) -> list[Message]:
         if offset is None:
@@ -578,6 +579,7 @@ class GraphLearningTest(BaseGraphTest):
         offset_obs = []
         for observation in observations:
             obs_to_learn = copy.deepcopy(observation)
+            obs_to_learn.sender_id = sender_id
             obs_to_learn.location += offset
             offset_obs.append(obs_to_learn)
             graph_lm.exploratory_step(self.ctx, [obs_to_learn])
@@ -593,10 +595,11 @@ class GraphLearningTest(BaseGraphTest):
         return offset_obs
 
     def get_gm_with_fake_object(self) -> FeatureGraphLM:
+        sender_id = "patch"
         graph_lm = FeatureGraphLM(
             max_match_distance=0.005,
             tolerances={
-                "patch": {
+                sender_id: {
                     "hsv": [0.1, 1, 1],
                     "principal_curvatures_log": [1, 1],
                 }
@@ -604,7 +607,10 @@ class GraphLearningTest(BaseGraphTest):
         )
 
         self.gm_learn_object(
-            graph_lm, obj_name="new_object0", observations=self.fake_obs_learn
+            graph_lm,
+            obj_name="new_object0",
+            observations=self.fake_obs_learn,
+            sender_id=sender_id,
         )
 
         self.assertEqual(

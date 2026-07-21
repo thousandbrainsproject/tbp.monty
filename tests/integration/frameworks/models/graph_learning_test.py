@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.hydra import instantiate_experiment
@@ -25,10 +26,11 @@ import shutil
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 import hydra
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from omegaconf import DictConfig
 
@@ -567,11 +569,11 @@ class GraphLearningTest(BaseGraphTest):
     def gm_learn_object(
         self,
         graph_lm: FeatureGraphLM,
-        obj_name,
-        observations,
-        sender_id="patch",
-        offset=None,
-    ):
+        obj_name: str,
+        observations: Sequence[Message],
+        sender_id: str = "patch",
+        offset: npt.NDArray[np.float64] | None = None,
+    ) -> list[Message]:
         if offset is None:
             offset = np.zeros(3)
 
@@ -597,7 +599,7 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm.fixme_update_ground_truth()
         return offset_obs
 
-    def get_gm_with_fake_object(self):
+    def get_gm_with_fake_object(self) -> FeatureGraphLM:
         sender_id = "patch"
         graph_lm = FeatureGraphLM(
             max_match_distance=0.005,
