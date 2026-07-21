@@ -121,7 +121,7 @@ These experiments are currently run without multiprocessing (using `run.py`).
 
 ## Stickers on Objects
 
-The following experiments evaluate Monty's ability to learn and infer compositional objects, where these consist of simple 3D objects (a disk, a cube, a cylinder, a sphere, and a mug) with 2D stickers on their surface. The stickers bear either the [TBP](https://thousandbrains.org/) design or the [Numenta](https://www.numenta.com/) design. In the dataset, the stickers can be in a standard orientation on the object, or oriented vertically. Finally, there is an instance of the mug with the TBP sticker bent half-way at 45 degrees.
+The following experiments evaluate Monty's ability to learn and infer compositional objects, where these consist of simple 3D objects (a disk, a cube, a cylinder, a sphere, and a mug) with 2D stickers on their surface. The stickers are either the [TBP](https://thousandbrains.org/) logo or the [Numenta](https://www.numenta.com/) logo. In the dataset, the stickers can be in a standard orientation on the object, or oriented vertically. Finally, there is an instance of the mug with the TBP sticker bent half-way at 45 degrees.
 
 ![](../figures/overview/comp_sticker_dataset_examples.png)
 
