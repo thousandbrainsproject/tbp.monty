@@ -408,7 +408,7 @@ class MontyExperiment:
     def _create_monty(self) -> None:
         """Create a Monty model from dehydrated config.
 
-        **WARNING:** `self._recreation_config` must be initialized
+        **WARNING:** `self._monty_cfg` must be initialized
         with the dehydrated config before calling this method.
         """
         # create a shallow `dict` so we can use `pop()` to remove consumed elements

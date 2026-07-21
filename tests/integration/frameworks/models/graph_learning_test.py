@@ -565,7 +565,12 @@ class GraphLearningTest(BaseGraphTest):
         self.check_eval_results(eval_stats)
 
     def gm_learn_object(
-        self, graph_lm: FeatureGraphLM, obj_name, observations, offset=None
+        self,
+        graph_lm: FeatureGraphLM,
+        obj_name,
+        observations,
+        sender_id="patch",
+        offset=None,
     ):
         if offset is None:
             offset = np.zeros(3)
@@ -577,6 +582,7 @@ class GraphLearningTest(BaseGraphTest):
         offset_obs = []
         for observation in observations:
             obs_to_learn = copy.deepcopy(observation)
+            obs_to_learn.sender_id = sender_id
             obs_to_learn.location += offset
             offset_obs.append(obs_to_learn)
             graph_lm.exploratory_step(self.ctx, [obs_to_learn])
@@ -592,10 +598,11 @@ class GraphLearningTest(BaseGraphTest):
         return offset_obs
 
     def get_gm_with_fake_object(self):
+        sender_id = "patch"
         graph_lm = FeatureGraphLM(
             max_match_distance=0.005,
             tolerances={
-                "patch": {
+                sender_id: {
                     "hsv": [0.1, 1, 1],
                     "principal_curvatures_log": [1, 1],
                 }
@@ -603,7 +610,10 @@ class GraphLearningTest(BaseGraphTest):
         )
 
         self.gm_learn_object(
-            graph_lm, obj_name="new_object0", observations=self.fake_obs_learn
+            graph_lm,
+            obj_name="new_object0",
+            observations=self.fake_obs_learn,
+            sender_id=sender_id,
         )
 
         self.assertEqual(
@@ -618,31 +628,25 @@ class GraphLearningTest(BaseGraphTest):
         )
         return graph_lm
 
-    def get_5lm_gm_with_fake_objects(self, objects) -> list[TrainedGraphLM]:
-        graph_lms = []
+    def get_5lm_gm_with_fake_objects(self, graph_lms, objects) -> list[TrainedGraphLM]:
+        tms: list[TrainedGraphLM] = []
         for lm in range(5):
-            graph_lm = FeatureGraphLM(
-                max_match_distance=0.005,
-                tolerances={
-                    "patch": {
-                        "hsv": [0.1, 1, 1],
-                        "principal_curvatures_log": [1, 1],
-                    }
-                },
-            )
+            # wrap already-configured `graph_lm`
+            graph_lm = graph_lms[lm]
             object_obs = []
+            sender_id = f"patch_{lm}"
             for i, obj in enumerate(objects):
                 obj_name = f"new_object{i}"
                 offset_obs = self.gm_learn_object(
-                    graph_lm,
+                    graph_lm=graph_lm,
                     obj_name=obj_name,
                     observations=obj,
+                    sender_id=sender_id,
                     offset=self.lm_offsets[lm],
                 )
                 object_obs.append(EpisodeObservations(obj_name, offset_obs))
-            graph_lms.append(TrainedGraphLM(graph_lm, object_obs))
-
-        return graph_lms
+            tms.append(TrainedGraphLM(graph_lm, object_obs))
+        return tms
 
     def test_same_sequence_recognition(self):
         """Test that the object is recognized with same action sequence."""
@@ -938,48 +942,50 @@ class GraphLearningTest(BaseGraphTest):
         """Test 5 feature LMs voting with two evaluation settings."""
         exp = instantiate_experiment(self.five_lm_feature_cfg.experiment)
         with exp:
-            objects = [self.fake_obs_learn, self.fake_obs_house_3d]
-            trained_modules = self.get_5lm_gm_with_fake_objects(objects)
             exp.experiment_mode = ExperimentMode.EVAL
             monty = exp.model
             monty.set_experiment_mode(exp.experiment_mode)
-            monty.learning_modules = [tm.learning_module for tm in trained_modules]
 
-            for tm in trained_modules:
-                tm.mode = ExperimentMode.EVAL
+            trained_modules = self.get_5lm_gm_with_fake_objects(
+                graph_lms=monty.learning_modules,
+                objects=[self.fake_obs_learn, self.fake_obs_house_3d],
+            )
+            tm0 = trained_modules[0]
 
             exp.pre_epoch()
             ctx = RuntimeContext(rng=exp.rng)
+            # FIXME: snapshot must be initialized after training
+            exp._snapshot_monty()
 
-            for episode_num in range(tm.num_episodes):
+            for episode_num in range(tm0.num_episodes):
                 exp.pre_episode()
-                # Normally the experiment `pre_episode` method would call the model
-                # `reset` method, but it expects to feed data from an environment
-                # interface to the model, and we aren't using that, so we call it again
-                # with the correct target value.
-                monty.reset()
+                # When `exp._recreation_mode = True`, `exp.model` is replaced
+                monty = exp.model
+                monty.set_experiment_mode(exp.experiment_mode)
+                for idx, tm in enumerate(trained_modules):
+                    tm.learning_module = monty.learning_modules[idx]
+                # The experiment `pre_episode` method calls `fixme_set_ground_truth`
+                # on the model, but that expects data from an environment interface
+                # and we aren't using that, so we call it again with the correct target.
                 monty.fixme_set_ground_truth(self.placeholder_target)
-                for step in range(tm.num_observations(episode_num)):
+                for step in range(tm0.num_observations(episode_num)):
                     # Manually run through the internal Monty steps since we aren't
                     # using the data from the environment interface and are instead
                     # providing faked observations.
                     monty.sensor_module_outputs = [
-                        lm.episodes[episode_num].observations[step]
-                        for lm in trained_modules
+                        tm.episodes[episode_num].observations[step]
+                        for tm in trained_modules
                     ]
                     monty._step_learning_modules(ctx)
                     monty._vote()
                     monty._pass_goals()
                     monty._set_step_type_and_check_if_done()
                     monty._post_step()
-                exp.post_episode(tm.num_observations(episode_num))
+                exp.post_episode(tm0.num_observations(episode_num))
             exp.post_epoch()
 
         output_dir = Path(exp.output_dir)
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
-        # Just testing 1 episode here. Somehow the second rotation doesn't get
-        # recognized. Probably just some parameter setting due to flaws in old
-        # LM but didn't want to dig too deep into that for now.
         self.check_multilm_eval_results(
-            eval_stats, num_lms=5, min_done=3, num_episodes=1
+            eval_stats, num_lms=5, min_done=3, num_episodes=2
         )
