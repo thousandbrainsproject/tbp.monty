@@ -1,3 +1,3 @@
 Experiment,Correct Child or Parent (%)|align right,Used MLH (%)|align right,Num Match Steps|align right,Rotation Error (degrees)|align right,Avg Prediction Error|align right,Run Time (mins)|align right,Num Episodes|hidden
-base_infer_objects_with_stickers_monolithic_models,78.86,92.57,97,39.88,0.20,60,350
-base_infer_objects_with_stickers_comp_models,70.86,43.14,32,49.49,0.30,16,350
+base_infer_objects_with_stickers_monolithic_models,42.00,53.43,77,94.00,0.38,27,350
+base_infer_objects_with_stickers_comp_models,25.71,80.00,78,100.83,0.38,23,350
