@@ -26,7 +26,6 @@ from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.models.abstract_monty_classes import Monty
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
 from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.utils.logging_utils import (
