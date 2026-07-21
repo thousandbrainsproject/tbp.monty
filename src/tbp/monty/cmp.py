@@ -42,9 +42,11 @@ class Message:
             the receiver (as opposed to withheld, e.g. on motor-only steps).
         sender_id: string identifying the sender of the message.
         sender_type: string identifying the type of sender. Can be "SM" or "LM".
-        contains_features: boolean indicating whether the message carries features
-            or is a location-only message that only syncs the receiver's sense of
-            the agent location.
+        process_features_in_lm: boolean indicating whether the receiving learning
+            module should process the message's features, as opposed to treating it
+            as a location-only message that only syncs the receiver's sense of the
+            sensor location. Note that the message may still carry features even when
+            this is False (e.g. so the motor system can use them).
     """
 
     def __init__(
@@ -57,7 +59,7 @@ class Message:
         pass_message: bool,
         sender_id: str,
         sender_type: Literal["SM", "LM"],
-        contains_features: bool,
+        process_features_in_lm: bool,
     ):
         """Initialize a message."""
         self.location = location
@@ -68,9 +70,9 @@ class Message:
         self.pass_message = pass_message
         self.sender_id = sender_id
         self.sender_type = sender_type
-        self.contains_features = contains_features
+        self.process_features_in_lm = process_features_in_lm
         self._set_allowable_sender_types()
-        if self.contains_features:
+        if self.process_features_in_lm:
             self._check_all_attributes()
 
     def __repr__(self):
@@ -213,8 +215,9 @@ class Message:
         assert isinstance(self.pass_message, bool), (
             f"pass_message must be a boolean but is {type(self.pass_message)}"
         )
-        assert isinstance(self.contains_features, bool), (
-            f"contains_features must be a boolean but is {type(self.contains_features)}"
+        assert isinstance(self.process_features_in_lm, bool), (
+            "process_features_in_lm must be a boolean but is "
+            f"{type(self.process_features_in_lm)}"
         )
         assert isinstance(self.sender_id, str), (
             f"sender_id must be string but is {type(self.sender_id)}"
@@ -254,7 +257,7 @@ class Goal(Message):
         pass_message: bool,
         sender_id: str,
         sender_type: str,
-        contains_features: bool,
+        process_features_in_lm: bool,
         goal_tolerances: dict[str, Any] | None,
         info: dict[str, Any] | None = None,
     ):
@@ -275,8 +278,9 @@ class Goal(Message):
               the receiver.
             sender_id: the ID of the sender of the goal (e.g., `"LM_0"`).
             sender_type: the type of sender of the goal (e.g., `"GSG"`).
-            contains_features: a boolean indicating whether the goal carries features
-              or only a target location.
+            process_features_in_lm: a boolean indicating whether the receiving
+              learning module should process the goal's features, as opposed to
+              treating it as carrying only a target location.
             goal_tolerances: Dictionary of tolerances that GSGs use when determining
                 whether the current state of the LM matches the driving goal
                 or `None`. As such, a GSG can send a goal with more or less
@@ -295,7 +299,7 @@ class Goal(Message):
             pass_message,
             sender_id,
             sender_type,
-            contains_features,
+            process_features_in_lm,
         )
 
     def _set_allowable_sender_types(self):
@@ -363,7 +367,7 @@ def encode_goal(goal: Goal) -> dict[str, Any]:
         "non_morphological_features": goal.non_morphological_features,
         "confidence": goal.confidence,
         "pass_message": goal.pass_message,
-        "contains_features": goal.contains_features,
+        "process_features_in_lm": goal.process_features_in_lm,
         "sender_id": goal.sender_id,
         "sender_type": goal.sender_type,
         "goal_tolerances": goal.goal_tolerances,

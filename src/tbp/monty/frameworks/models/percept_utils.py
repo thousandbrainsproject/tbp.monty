@@ -53,4 +53,4 @@ def location_only(percepts: Sequence[Message]) -> bool:
     Returns:
         True if no SM percept carries features.
     """
-    return not any(p.contains_features for p in sm_percepts(percepts))
+    return not any(p.process_features_in_lm for p in sm_percepts(percepts))

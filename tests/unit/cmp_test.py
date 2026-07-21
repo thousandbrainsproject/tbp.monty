@@ -34,7 +34,7 @@ class EncodeGoalTest(unittest.TestCase):
             "non_morphological_features": None,
             "confidence": 1.0,
             "pass_message": True,
-            "contains_features": True,
+            "process_features_in_lm": True,
             "sender_id": "LM_0",
             "sender_type": "GSG",
             "goal_tolerances": None,

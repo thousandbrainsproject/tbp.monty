@@ -109,7 +109,7 @@ class PolicyTest(unittest.TestCase):
             },
             confidence=1.0,
             pass_message=True,
-            contains_features=True,
+            process_features_in_lm=True,
             sender_id=fake_sender_id,
             sender_type="SM",
         )
@@ -943,7 +943,7 @@ class PolicyTest(unittest.TestCase):
             },
             confidence=1.0,
             pass_message=True,
-            contains_features=True,
+            process_features_in_lm=True,
             sender_id="patch",
             sender_type="SM",
         )

@@ -21,22 +21,22 @@ from tests.unit.frameworks.models.buffer_test import create_mock_message
 
 
 class PerceptUtilsTest(unittest.TestCase):
-    def sm(self, sender_id, location, contains_features=True):
+    def sm(self, sender_id, location, process_features_in_lm=True):
         return create_mock_message(
             sender_id,
             "SM",
             location,
             on_object=True,
-            contains_features=contains_features,
+            process_features_in_lm=process_features_in_lm,
         )
 
-    def lm(self, sender_id, location, contains_features=True):
+    def lm(self, sender_id, location, process_features_in_lm=True):
         return create_mock_message(
             sender_id,
             "LM",
             location,
             on_object=True,
-            contains_features=contains_features,
+            process_features_in_lm=process_features_in_lm,
         )
 
     def test_sm_percepts_keeps_only_sm_senders(self):
@@ -57,9 +57,9 @@ class PerceptUtilsTest(unittest.TestCase):
 
     def test_location_only_ignores_lm_features(self):
         location = np.zeros(3)
-        sm_location_only = self.sm("sm_0", location, contains_features=False)
-        sm_with_features = self.sm("sm_0", location, contains_features=True)
-        lm_with_features = self.lm("lm_0", location, contains_features=True)
+        sm_location_only = self.sm("sm_0", location, process_features_in_lm=False)
+        sm_with_features = self.sm("sm_0", location, process_features_in_lm=True)
+        lm_with_features = self.lm("lm_0", location, process_features_in_lm=True)
 
         self.assertTrue(location_only([sm_location_only, lm_with_features]))
         self.assertFalse(location_only([sm_with_features]))

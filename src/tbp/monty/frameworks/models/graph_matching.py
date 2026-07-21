@@ -618,7 +618,7 @@ class GraphLM(LearningModule):
         else:
             logger.debug("we have not moved yet.")
 
-        feature_percepts = [p for p in percepts if p.contains_features]
+        feature_percepts = [p for p in percepts if p.process_features_in_lm]
 
         self._compute_possible_matches(
             ctx, feature_percepts, first_movement_detected=first_movement_detected

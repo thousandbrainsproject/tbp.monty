@@ -163,7 +163,7 @@ class LookAtGoalTest(unittest.TestCase):
             pass_message=True,
             sender_id="view_finder",
             sender_type="SM",
-            contains_features=False,
+            process_features_in_lm=False,
             goal_tolerances=None,
             info=None,
         )

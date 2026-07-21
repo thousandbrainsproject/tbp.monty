@@ -383,7 +383,7 @@ class EvidenceGraphLM(GraphLM):
         else:
             logger.debug("we have not moved yet.")
 
-        feature_percepts = [p for p in percepts if p.contains_features]
+        feature_percepts = [p for p in percepts if p.process_features_in_lm]
 
         self._compute_possible_matches(
             ctx, feature_percepts, first_movement_detected=first_movement_detected
@@ -524,7 +524,7 @@ class EvidenceGraphLM(GraphLM):
                             non_morphological_features=None,
                             confidence=evidences[graph_id][hyp_id],
                             pass_message=True,
-                            contains_features=True,
+                            process_features_in_lm=True,
                             sender_id=self.learning_module_id,
                             sender_type="LM",
                         )
@@ -580,7 +580,7 @@ class EvidenceGraphLM(GraphLM):
             },
             confidence=confidence,
             pass_message=pass_message,
-            contains_features=True,
+            process_features_in_lm=True,
             sender_id=self.learning_module_id,
             sender_type="LM",
         )

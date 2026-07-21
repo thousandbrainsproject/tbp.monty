@@ -246,7 +246,7 @@ class ObservationProcessor:
             non_morphological_features=features,
             confidence=1.0,
             pass_message=True,
-            contains_features=on_object and valid_signals,
+            process_features_in_lm=on_object and valid_signals,
             sender_id=self._sensor_module_id,
             sender_type="SM",
         )
@@ -642,7 +642,7 @@ class CameraSM(SensorModule):
 
         Returns:
             Percept with features and morphological features. Noise may be
-            added. The `pass_message` and `contains_features` flags may be set.
+            added. The `pass_message` and `process_features_in_lm` flags may be set.
         """
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
@@ -764,20 +764,20 @@ class FeatureChangeFilter(PerceptFilter):
     def __call__(self, percept: Message) -> Message:
         """Labels each percept as containing features or location-only.
 
-        Sets `contains_features` to `True` when feature changes are significant
+        Sets `process_features_in_lm` to `True` when feature changes are significant
         compared to the previous `percept`.
 
         Args:
             percept: Percept to check for feature change.
 
         Returns:
-            Percept with `contains_features` set to whether the features changed
+            Percept with `process_features_in_lm` set to whether the features changed
             significantly.
         """
         if not percept.pass_message:
             return percept
 
-        if not percept.contains_features:
+        if not percept.process_features_in_lm:
             # The features are uninteresting (e.g. off object, or invalid surface
             # normal due to <3/4 of the object in view).
             return percept
@@ -788,7 +788,7 @@ class FeatureChangeFilter(PerceptFilter):
             return percept
 
         significant_feature_change = self._feature_changes_are_significant(percept)
-        percept.contains_features = significant_feature_change
+        percept.process_features_in_lm = significant_feature_change
         if significant_feature_change:
             self._last_percept = percept
             self._last_sent_n_steps_ago = 0

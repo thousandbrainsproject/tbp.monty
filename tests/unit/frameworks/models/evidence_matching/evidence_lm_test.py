@@ -240,7 +240,7 @@ class EvidenceLMTest(BaseGraphTest):
     def test_location_only_step_displaces_hypotheses_elm(self):
         """A location-only step displaces hypotheses without updating evidence.
 
-        A percept carrying a new location but no features (contains_features=False)
+        A percept carrying a new location but no features (process_features_in_lm=False)
         is routed by matching_step to _location_only_step, which advances every
         hypothesis location by its pose-rotated displacement while leaving evidence
         and the MLH identity untouched.
@@ -264,7 +264,7 @@ class EvidenceLMTest(BaseGraphTest):
         displacement = np.array([0.1, 0.2, 0.3])
         location_only = copy.deepcopy(fake_obs_test[-1])
         location_only.location = last_location_before + displacement
-        location_only.contains_features = False
+        location_only.process_features_in_lm = False
 
         graph_lm.add_lm_processing_to_buffer_stats(lm_processed=False)
         graph_lm.matching_step(self.ctx, [location_only])

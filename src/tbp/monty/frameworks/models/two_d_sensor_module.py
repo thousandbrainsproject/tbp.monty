@@ -182,7 +182,7 @@ class TwoDSensorModule(SensorModule):
 
         Returns:
             Message with features and morphological features. Noise may be added.
-            The `pass_message` and `contains_features` flags may be set.
+            The `pass_message` and `process_features_in_lm` flags may be set.
         """
         if self.state and self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
@@ -196,7 +196,7 @@ class TwoDSensorModule(SensorModule):
 
         curvature_pose_vectors = None
         true_surface_normal = None
-        if observed_state.contains_features and observed_state.get_on_object():
+        if observed_state.process_features_in_lm and observed_state.get_on_object():
             # pose_vectors are only present when the patch center is on the object.
             curvature_pose_vectors = observed_state.get_pose_vectors().copy()
             true_surface_normal = observed_state.get_surface_normal().copy()

@@ -25,7 +25,7 @@ At the moment all the feature extraction is predefined but in the future, one co
 Each sensor module accepts `noise_params`, which configure the `DefaultMessageNoise` that adds feature and location noise to the created Cortical Message before sending. Features and location noise can be configured individually.
 
 ## Feature Change Filtering
-Each sensor module accepts `delta_thresholds`, which configure a `FeatureChangeFilter` that may set the `contains_features` message attribute to False if sensed features did not change significantly between subsequent observations (the message is still delivered as a location-only message). Significance is defined by the `delta_thresholds` parameter for each feature.
+Each sensor module accepts `delta_thresholds`, which configure a `FeatureChangeFilter` that may set the `process_features_in_lm` message attribute to False if sensed features did not change significantly between subsequent observations (the message is still delivered as a location-only message). Significance is defined by the `delta_thresholds` parameter for each feature.
 
 # Transforms
 Before sending information to the sensor module which extracts features and poses, we can apply transforms to the raw input. Possible transforms are listed in tables below.  **Transforms are applied to all sensors in an environment before sending observations to the SMs** and are specified in the environment interface arguments.

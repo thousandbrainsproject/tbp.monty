@@ -44,7 +44,7 @@ def make_message(
     location: np.ndarray | None = None,
     on_object: bool = True,
     pass_message: bool = True,
-    contains_features: bool = True,
+    process_features_in_lm: bool = True,
     pose_vectors: np.ndarray | None = None,
     pose_fully_defined: bool = False,
     principal_curvatures: np.ndarray | None = None,
@@ -76,7 +76,7 @@ def make_message(
         non_morphological_features=non_morphological_features,
         confidence=1.0,
         pass_message=pass_message,
-        contains_features=contains_features,
+        process_features_in_lm=process_features_in_lm,
         sender_id=sender_id,
         sender_type=sender_type,
     )
@@ -185,7 +185,7 @@ class TwoDSensorModuleInitTest(unittest.TestCase):
             non_morphological_features={},
             confidence=1.0,
             pass_message=True,
-            contains_features=False,
+            process_features_in_lm=False,
             sender_id="test",
             sender_type="SM",
         )
@@ -198,7 +198,7 @@ class TwoDSensorModuleInitTest(unittest.TestCase):
         )
 
         assert msg.pass_message is True
-        assert msg.contains_features is False
+        assert msg.process_features_in_lm is False
         assert "pose_vectors" not in msg.morphological_features
         np.testing.assert_allclose(msg.displacement["displacement"], np.zeros(3))
         assert two_d_sm._tangent_frame is None

@@ -57,7 +57,7 @@ def create_mock_message(
     location: npt.NDArray[np.float64],
     on_object: bool,
     pose_vectors: npt.NDArray[np.float64] | None = None,
-    contains_features: bool = True,
+    process_features_in_lm: bool = True,
 ) -> Message:
     """Create a mock Message for testing the buffer.
 
@@ -67,7 +67,7 @@ def create_mock_message(
         location: 3D location array.
         on_object: Whether the observation is on the object.
         pose_vectors: Optional pose vectors (3x3 array). Defaults to identity.
-        contains_features: Whether the message carries features (True) or is a
+        process_features_in_lm: Whether the message carries features (True) or is a
             location-only message (False).
 
     Returns:
@@ -80,7 +80,7 @@ def create_mock_message(
     msg.sender_id = sender_id
     msg.sender_type = sender_type
     msg.location = location
-    msg.contains_features = contains_features
+    msg.process_features_in_lm = process_features_in_lm
     msg.morphological_features = {
         "pose_vectors": pose_vectors.flatten(),
         "pose_fully_defined": True,
@@ -199,14 +199,14 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
             sender_type="SM",
             location=np.array([0.0, 0.0, 0.0]),
             on_object=True,
-            contains_features=True,
+            process_features_in_lm=True,
         )
         location_only_sm = create_mock_message(
             sender_id="SM_1",
             sender_type="SM",
             location=np.array([2.0, 2.0, 2.0]),
             on_object=True,
-            contains_features=False,
+            process_features_in_lm=False,
         )
         self.buffer.append([feature_sm, location_only_sm])
 

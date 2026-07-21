@@ -95,7 +95,7 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
             },
             confidence=1.0,
             pass_message=True,
-            contains_features=True,
+            process_features_in_lm=True,
             sender_id="patch",
             sender_type="SM",
         )
@@ -272,7 +272,7 @@ class JumpToGoalTest(ParametrizedTestCase):
             pass_message=True,
             sender_id="test",
             sender_type="SM",
-            contains_features=True,
+            process_features_in_lm=True,
             goal_tolerances=None,
             info=None,
         )

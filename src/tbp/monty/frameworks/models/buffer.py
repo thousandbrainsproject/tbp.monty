@@ -124,7 +124,7 @@ class FeatureAtLocationBuffer:
 
             if input_channel not in self.features:
                 self.features[input_channel] = {}
-            if msg.contains_features:
+            if msg.process_features_in_lm:
                 for attr in msg.morphological_features:
                     attr_val = msg.morphological_features[attr]
                     self._add_attr_to_feature_buffer(input_channel, attr, attr_val)

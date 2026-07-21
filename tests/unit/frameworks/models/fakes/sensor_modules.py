@@ -55,7 +55,7 @@ class FakeSensorModule(SensorModule):
             non_morphological_features=observation,
             confidence=1,
             pass_message=True,
-            contains_features=True,
+            process_features_in_lm=True,
             sender_id=self.sensor_module_id,
             sender_type="SM",
         )
