@@ -15,9 +15,6 @@ on:
     types:
       - checks_requested
 
-env:
-  UV_PYTHON: 3.10.17 # version of Python to use in `uv` environment
-
 jobs:
   build_sphinx_monty:
     name: build-sphinx-monty
@@ -543,7 +540,6 @@ jobs:
         working-directory: tbp.monty
         continue-on-error: true
         run: |
-          uv venv --seed
           uv sync --locked --extra dev --extra simulator_mujoco
       - name: Test tutorials
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
@@ -594,7 +590,6 @@ jobs:
         working-directory: tbp.monty
         continue-on-error: true
         run: |
-          uv venv --seed
           uv sync --locked --extra dev --extra simulator_mujoco
       - name: Run tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
