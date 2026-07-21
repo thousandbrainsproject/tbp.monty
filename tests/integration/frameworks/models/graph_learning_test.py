@@ -630,11 +630,10 @@ class GraphLearningTest(BaseGraphTest):
 
     def get_5lm_gm_with_fake_objects(self, graph_lms, objects) -> list[TrainedGraphLM]:
         tms: list[TrainedGraphLM] = []
-        for lm in range(5):
+        for idx, graph_lm in enumerate(graph_lms):
             # wrap already-configured `graph_lm`
-            graph_lm = graph_lms[lm]
             object_obs = []
-            sender_id = f"patch_{lm}"
+            sender_id = f"patch_{idx}"
             for i, obj in enumerate(objects):
                 obj_name = f"new_object{i}"
                 offset_obs = self.gm_learn_object(
@@ -642,7 +641,7 @@ class GraphLearningTest(BaseGraphTest):
                     obj_name=obj_name,
                     observations=obj,
                     sender_id=sender_id,
-                    offset=self.lm_offsets[lm],
+                    offset=self.lm_offsets[idx],
                 )
                 object_obs.append(EpisodeObservations(obj_name, offset_obs))
             tms.append(TrainedGraphLM(graph_lm, object_obs))
@@ -940,6 +939,8 @@ class GraphLearningTest(BaseGraphTest):
 
     def test_5lm_feature_experiment(self):
         """Test 5 feature LMs voting with two evaluation settings."""
+        objects = [self.fake_obs_learn, self.fake_obs_house_3d]
+        num_episodes = len(objects)
         exp = instantiate_experiment(self.five_lm_feature_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
@@ -948,7 +949,7 @@ class GraphLearningTest(BaseGraphTest):
 
             trained_modules = self.get_5lm_gm_with_fake_objects(
                 graph_lms=monty.learning_modules,
-                objects=[self.fake_obs_learn, self.fake_obs_house_3d],
+                objects=objects,
             )
             tm0 = trained_modules[0]
 
@@ -957,7 +958,7 @@ class GraphLearningTest(BaseGraphTest):
             # FIXME: snapshot must be initialized after training
             exp._snapshot_monty()
 
-            for episode_num in range(tm0.num_episodes):
+            for episode_num in range(num_episodes):
                 exp.pre_episode()
                 # When `exp._recreation_mode = True`, `exp.model` is replaced
                 monty = exp.model
@@ -968,7 +969,8 @@ class GraphLearningTest(BaseGraphTest):
                 # on the model, but that expects data from an environment interface
                 # and we aren't using that, so we call it again with the correct target.
                 monty.fixme_set_ground_truth(self.placeholder_target)
-                for step in range(tm0.num_observations(episode_num)):
+                num_steps = tm0.num_observations(episode_num)
+                for step in range(num_steps):
                     # Manually run through the internal Monty steps since we aren't
                     # using the data from the environment interface and are instead
                     # providing faked observations.
@@ -981,11 +983,11 @@ class GraphLearningTest(BaseGraphTest):
                     monty._pass_goals()
                     monty._set_step_type_and_check_if_done()
                     monty._post_step()
-                exp.post_episode(tm0.num_observations(episode_num))
+                exp.post_episode(num_steps)
             exp.post_epoch()
 
         output_dir = Path(exp.output_dir)
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_multilm_eval_results(
-            eval_stats, num_lms=5, min_done=3, num_episodes=2
+            eval_stats, num_lms=5, min_done=3, num_episodes=num_episodes
         )
