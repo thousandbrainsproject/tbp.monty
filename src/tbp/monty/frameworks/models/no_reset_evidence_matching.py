@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 import numpy as np
@@ -26,6 +27,7 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
 )
+from tbp.monty.memento import Memento
 
 __all__ = ["MontyForNoResetEvidenceGraphMatching", "NoResetEvidenceGraphLM"]
 
@@ -72,6 +74,13 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         # TODO: Remove initialization logic from `reset`
         self._super_reset_called = False
         self._super_set_ground_truth_called = False
+
+    def snapshot(self) -> Memento:
+        memo: Memento = self.state_dict()
+        return copy.deepcopy(memo)
+
+    def restore(self, memo: Memento) -> None:
+        self.load_state_dict(copy.deepcopy(memo))
 
     def reset(self) -> None:
         if not self._super_reset_called:
@@ -137,6 +146,25 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
     def reset_stm(self) -> None:
         super().reset_stm()
         self._init_NoResetEvidenceGraphLM()
+
+    def state_dict(self) -> Memento:
+        return {
+            "graph_memory": self.graph_memory.state_dict(),
+            "target_to_graph_id": self.target_to_graph_id,
+            "graph_id_to_target": self.graph_id_to_target,
+            "_hypotheses": self._hypotheses,
+        }
+
+    def load_state_dict(self, memento: Memento) -> None:
+        memo = dict(memento)
+        self._hypotheses = memo.pop("_hypotheses", {})
+        self.graph_memory.load_state_dict(memo.pop("graph_memory"))
+        self.target_to_graph_id = memo.pop("target_to_graph_id")
+        self.graph_id_to_target = memo.pop("graph_id_to_target")
+
+        # After loading the long-term memory, give the LM a chance to
+        # update any internal state based on the contents of memory.
+        self.init_from_ltm()
 
     def _add_displacements(self, percepts: list[Message]) -> list[Message]:
         """Add displacements to the current percept.

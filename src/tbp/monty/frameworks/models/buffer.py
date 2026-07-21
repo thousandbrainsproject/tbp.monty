@@ -342,26 +342,20 @@ class FeatureAtLocationBuffer:
             f"Observed {np.array(self.locations).shape} locations, "
             f"{len(global_on_object_ids)} global on object"
         )
-        for input_channel in self.features:
+        for channel_name, channel in self.features.items():
             # Here we want to make sure the input-specific observation was on the object
-            channel_off_object_ids = np.where(
-                self.features[input_channel]["on_object"] is False
-            )[0]
+            channel_on_object_count = np.count_nonzero(channel["on_object"] == 1)
             logger.debug(
-                f"{input_channel} has "
-                f"{len(self.locations) - len(channel_off_object_ids)} "
-                "on object observations"
+                f"{channel_name} has {channel_on_object_count} on object observations"
             )
 
             channel_features_on_object = {}
-            for feature in self.features[input_channel]:
+            for feature in channel:
                 # Pad end of array with nans if last steps of episode were off object
                 # for this channel
-                padded_feature = self._pad_to_target_length(
-                    self.features[input_channel][feature]
-                )
+                padded_feature = self._pad_to_target_length(channel[feature])
                 logger.debug(
-                    f"{input_channel} observations for feature {feature} have "
+                    f"{channel_name} observations for feature {feature} have "
                     f"shape {padded_feature.shape}"
                 )
                 # Get feature at each time step where the global on_object flag was
@@ -371,7 +365,7 @@ class FeatureAtLocationBuffer:
                     global_on_object_ids
                 ]
 
-            all_features_on_object[input_channel] = channel_features_on_object
+            all_features_on_object[channel_name] = channel_features_on_object
         return all_features_on_object
 
     def get_num_observations_on_object(self):

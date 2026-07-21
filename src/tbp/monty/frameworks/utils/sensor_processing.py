@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 
 import numpy as np
+import scipy
 import torch
 from numpy.typing import ArrayLike
 
@@ -409,6 +410,11 @@ def surface_normal_total_least_squares(
             the patch to make any estimate of the surface normal.
     """
     point_cloud = point_cloud_base.copy()
+
+    # Initialize returned values for the failure cases
+    n_dir = np.array([0.0, 0.0, 1.0])
+    valid_sn = False
+
     # Make sure that patch center is on the object
     if point_cloud[center_id, 3] > 0:
         # Define local neighborhood for least-squares fitting
@@ -421,9 +427,22 @@ def surface_normal_total_least_squares(
         p_mean = 1 / n_points * np.mean(x_mat, axis=0, keepdims=True).T
         m_mat = 1 / n_points * np.matmul(x_mat.T, x_mat) - np.matmul(p_mean, p_mean.T)
 
+        # The matrix `m_mat` must be real and symmetric as both `x_mat.T @ x_mat`
+        # and `p_mean @ p_mean.T` are symmetric by construction. This follows
+        # from the spectral theorem.
+        if not np.allclose(m_mat, m_mat.T):
+            logger.debug("Surface normal covariance matrix is not symmetric.")
+            return n_dir, valid_sn
+
         try:
             # Find eigenvector of M with the minimum eigenvalue
-            eig_val, eig_vec = np.linalg.eig(m_mat)
+
+            # Because `m_mat` is real and symmetric, we can use `eigh` to return
+            # real results and avoid having to handle complex values.
+            eig_val, eig_vec = np.linalg.eigh(m_mat)
+
+            # The eigenvector with the smallest eigenvalue is the direction of
+            # minimum point-cloud variation: the normal to the best-fit plane.
             n_dir = eig_vec[:, np.argmin(eig_val)]
             valid_sn = True
 
@@ -431,16 +450,12 @@ def surface_normal_total_least_squares(
             if np.dot(view_dir, n_dir) < 0:
                 n_dir *= -1
         except np.linalg.LinAlgError:
-            n_dir = np.array([0.0, 0.0, 1.0])
-            valid_sn = False
             logger.debug(
                 "Warning : Non-diagonalizable matrix for surface normal estimation!"
             )
 
     # Patch center does not lie on an object
     else:
-        n_dir = np.array([0.0, 0.0, 1.0])
-        valid_sn = False
         logger.debug("Warning : Patch center does not lie on an object!")
 
     return n_dir, valid_sn
@@ -662,7 +677,13 @@ def principal_curvatures(
         # in a system with insufficient data to be solvable.
         if non_singular_mat(a_mat):
             # Step 2) do least-squares fit to get the parameters of the quadratic form
-            params = np.linalg.solve(a_mat, b)
+
+            # This call to `solve` returns a column vector, and newer versions of
+            # NumPy no longer do implicit conversions from single element arrays to
+            # scalars like we are doing below when setting `guv` and `buv`. Calling
+            # `ravel` gives us a view of the array as a row vector, making the elements
+            # scalar values.
+            params = np.linalg.solve(a_mat, b).ravel()
 
             # Step 3) compute 1st and 2nd fundamental forms guv and buv:
             # TODO: Extract improved surface normal estimate from fitted curve
@@ -679,12 +700,20 @@ def principal_curvatures(
             buv[1, 1] = 2 * params[1]
 
             # Step 4) compute the principle curvatures and directions:
-            # TODO: here convex PCs are negative but I think they should be positive
-            m = np.linalg.inv(guv).dot(buv)
-            eigval, eigvec = np.linalg.eig(m)
-            idx = eigval.argsort()[::-1]
-            eigval_sorted = eigval[idx]
-            eigvec_sorted = eigvec[:, idx]
+
+            # Solve the symmetric-definite generalized eigenvalue problem:
+            #
+            #     buv @ v = k * guv @ v
+            #
+            # `buv` is real symmetric and `guv` is real symmetric positive
+            # definite, so the generalized spectral theorem guarantees real
+            # eigenvalues and a complete basis of real eigenvectors.
+            eigval, eigvec = scipy.linalg.eigh(buv, guv)
+
+            # `eigh` returns eigenvalues in ascending order. Preserve the existing
+            # convention of ordering principal curvatures from largest to smallest.
+            eigval_sorted = eigval[::-1]
+            eigvec_sorted = eigvec[:, ::-1]
 
             k1 = eigval_sorted[0]
             k2 = eigval_sorted[1]
