@@ -11,9 +11,41 @@ import unittest
 
 import numpy as np
 
-from tbp.monty.cmp import Goal, encode_goal
+from tbp.monty.cmp import Goal, Message, encode_goal, location_mean
 from tbp.monty.frameworks.models.buffer import BufferEncoder
 from tbp.monty.geometry import Rotation
+
+
+def _message(sender_type: str, location) -> Message:
+    return Message(
+        location=location,
+        morphological_features={},
+        non_morphological_features={},
+        confidence=1.0,
+        pass_message=True,
+        sender_id=f"{sender_type}_0",
+        sender_type=sender_type,
+        process_features_in_lm=False,
+    )
+
+
+class CMPMessageTest(unittest.TestCase):
+    def test_is_from_sm(self):
+        self.assertTrue(_message("SM", np.zeros(3)).is_from_sm())
+        self.assertFalse(_message("LM", np.zeros(3)).is_from_sm())
+
+    def test_location_mean_averages_locations(self):
+        messages = [
+            _message("SM", np.array([0.0, 0.0, 0.0])),
+            _message("SM", np.array([2.0, 4.0, 6.0])),
+        ]
+        np.testing.assert_array_equal(
+            location_mean(messages), np.array([1.0, 2.0, 3.0])
+        )
+
+    def test_location_mean_none_when_no_location(self):
+        self.assertIsNone(location_mean([]))
+        self.assertIsNone(location_mean([_message("SM", None)]))
 
 
 class EncodeGoalTest(unittest.TestCase):

@@ -23,8 +23,8 @@ import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from scipy.spatial.transform import Rotation as ScipyRotation
 
+from tbp.monty.cmp import Goal, encode_goal, location_mean
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
-from tbp.monty.frameworks.models.percept_utils import sm_location_mean, sm_percepts
 from tbp.monty.frameworks.utils.dataclass_utils import is_dataclass_instance
 from tbp.monty.geometry import Rotation
 
@@ -113,7 +113,9 @@ class FeatureAtLocationBuffer:
         A provisional version of this is implemented below, as the GSG uses
         messages for computations.
         """
-        loc = sm_location_mean(percepts)
+        sm_messages = [p for p in percepts if p.is_from_sm()]
+        loc = location_mean(sm_messages)
+        assert loc is not None, "SM percepts must carry a location"
         self.locations = np.vstack([self.locations, loc])
 
         any_obs_on_obj = False
@@ -511,12 +513,14 @@ class FeatureAtLocationBuffer:
         Args:
             percepts: Sequence of Message objects from the current step.
         """
-        first_percept = sm_percepts(percepts)[0]
+        sm_messages = [p for p in percepts if p.is_from_sm()]
+        first_percept = sm_messages[0]
         if getattr(first_percept, "displacement", None):
             for name in first_percept.displacement:
                 self._add_displacement(name, first_percept.displacement[name])
 
-        current_location = sm_location_mean(percepts)
+        current_location = location_mean(sm_messages)
+        assert current_location is not None, "SM percepts must carry a location"
         self.last_location = current_location.copy()
 
     def _add_displacement(
@@ -723,3 +727,4 @@ BufferEncoder.register(Action, ActionJSONEncoder)
 BufferEncoder.register(DictConfig, lambda obj: OmegaConf.to_object(obj))
 BufferEncoder.register(ListConfig, lambda obj: OmegaConf.to_object(obj))
 BufferEncoder.register(Rotation, lambda obj: obj.as_euler("xyz", degrees=True))
+BufferEncoder.register(Goal, encode_goal)

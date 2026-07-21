@@ -79,6 +79,7 @@ def create_mock_message(
     msg = Mock()
     msg.sender_id = sender_id
     msg.sender_type = sender_type
+    msg.is_from_sm = Mock(return_value=sender_type == "SM")
     msg.location = location
     msg.process_features_in_lm = process_features_in_lm
     msg.morphological_features = {

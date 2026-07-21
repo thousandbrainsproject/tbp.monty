@@ -19,7 +19,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.spatial import KDTree
 
-from tbp.monty.cmp import Message
+from tbp.monty.cmp import Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
@@ -35,15 +35,12 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
 )
 from tbp.monty.frameworks.models.goal_generation import EvidenceGoalGenerator
 from tbp.monty.frameworks.models.graph_matching import GraphLM
-from tbp.monty.frameworks.models.percept_utils import (
-    location_only,
-    sm_location_mean,
-)
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
     get_scaled_evidences,
 )
 from tbp.monty.geometry import Rotation
+from tbp.monty.runtime import is_location_only_step
 
 __all__ = ["EvidenceGraphLM", "InvalidEvidenceThresholdConfig"]
 
@@ -365,9 +362,11 @@ class EvidenceGraphLM(GraphLM):
         percepts: Sequence[Message],
     ) -> None:
         """Update the possible matches given an observation."""
-        if location_only(percepts):
+        if is_location_only_step(percepts):
             if self.buffer.last_location is not None:
-                current_location = sm_location_mean(percepts)
+                sm_messages = [p for p in percepts if p.is_from_sm()]
+                current_location = location_mean(sm_messages)
+                assert current_location is not None, "SM percepts must carry a location"
                 displacement = current_location - self.buffer.last_location
                 self._displace_all_hypotheses(displacement)
                 self.buffer.last_location = current_location.copy()
@@ -404,9 +403,11 @@ class EvidenceGraphLM(GraphLM):
         percepts: Sequence[Message],
     ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
-        if location_only(percepts):
+        if is_location_only_step(percepts):
             if self.buffer.last_location is not None:
-                current_location = sm_location_mean(percepts)
+                sm_messages = [p for p in percepts if p.is_from_sm()]
+                current_location = location_mean(sm_messages)
+                assert current_location is not None, "SM percepts must carry a location"
                 displacement = current_location - self.buffer.last_location
                 self._displace_all_hypotheses(displacement)
                 self.buffer.last_location = current_location.copy()

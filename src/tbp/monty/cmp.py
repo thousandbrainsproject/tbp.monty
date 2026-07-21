@@ -9,12 +9,10 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, Sequence
 
 import numpy as np
 import numpy.typing as npt
-
-from tbp.monty.frameworks.models.buffer import BufferEncoder
 
 
 class Message:
@@ -111,6 +109,9 @@ class Message:
     def _set_allowable_sender_types(self):
         """Set the allowable sender types of this Message class."""
         self.allowable_sender_types = ("SM", "LM")
+
+    def is_from_sm(self) -> bool:
+        return self.sender_type == "SM"
 
     def transform_morphological_features(self, translation=None, rotation=None):
         """Apply translation and/or rotation to morphological features."""
@@ -375,4 +376,16 @@ def encode_goal(goal: Goal) -> dict[str, Any]:
     }
 
 
-BufferEncoder.register(Goal, encode_goal)
+def location_mean(messages: Sequence[Message]) -> npt.NDArray[np.float64] | None:
+    """Compute the mean location across messages.
+
+    Args:
+        messages: Sequence of Message objects.
+
+    Returns:
+        The mean of the messages' locations, or None if no message has a location.
+    """
+    locations = [m.location for m in messages if m.location is not None]
+    if not locations:
+        return None
+    return np.mean(locations, axis=0)

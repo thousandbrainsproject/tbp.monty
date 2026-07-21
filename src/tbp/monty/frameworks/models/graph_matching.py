@@ -15,7 +15,7 @@ from typing import Any, ClassVar, Collection, Sequence
 import numpy as np
 import torch
 
-from tbp.monty.cmp import Goal, Message
+from tbp.monty.cmp import Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -33,12 +33,9 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
-from tbp.monty.frameworks.models.percept_utils import (
-    location_only,
-    sm_location_mean,
-)
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
+from tbp.monty.runtime import is_location_only_step
 
 __all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
 
@@ -248,7 +245,7 @@ class MontyForGraphMatching(MontyBase):
                     logger.debug(f"Stepping learning module {i}")
 
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
-                    lm_processed=not location_only(sensory_inputs)
+                    lm_processed=not is_location_only_step(sensory_inputs)
                 )
             else:
                 if self.step_type == "matching_step":
@@ -604,7 +601,7 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Update the possible matches given an observation."""
-        if location_only(percepts):
+        if is_location_only_step(percepts):
             # Skip without appending to buffer, matching, or stepping the GSG.
             return
 
@@ -639,7 +636,7 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
-        if location_only(percepts):
+        if is_location_only_step(percepts):
             return
 
         buffer_data = self._add_displacements(percepts)
@@ -1029,8 +1026,10 @@ class GraphLM(LearningModule):
         Returns:
             Percepts with displacements.
         """
+        sm_messages = [p for p in percepts if p.is_from_sm()]
+        current_location = location_mean(sm_messages)
+        assert current_location is not None, "SM percepts must carry a location"
         if self.buffer.last_location is not None:
-            current_location = sm_location_mean(percepts)
             displacement = current_location - self.buffer.last_location
         else:
             displacement = np.zeros(3)
