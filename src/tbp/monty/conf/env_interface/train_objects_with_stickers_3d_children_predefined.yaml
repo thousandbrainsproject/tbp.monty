@@ -4,11 +4,11 @@ do_train: true
 train_env_interface_args:
   parent_to_child_mapping: null
   object_names:
-#  - 001_cube
-#  - 006_disk
+  - 001_cube
+  - 006_disk
   - 011_cylinder
   - 016_sphere
-#  - 023_mug
+  - 023_mug
   object_init_sampler:
     _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
     rotations: ${constants.rotations_all}
