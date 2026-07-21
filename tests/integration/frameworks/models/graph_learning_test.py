@@ -963,6 +963,7 @@ class GraphLearningTest(BaseGraphTest):
             for episode_num in range(num_episodes):
                 exp.pre_episode()
                 # When `exp._recreation_mode = True`, `exp.model` is replaced
+                # so we need to update our local reference.
                 monty = exp.model
                 monty.set_experiment_mode(exp.experiment_mode)
                 for idx, tm in enumerate(trained_modules):
