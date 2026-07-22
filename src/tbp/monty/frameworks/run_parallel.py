@@ -468,7 +468,7 @@ def print_benchmark_stats(overall_stats: dict) -> None:
         "overall/num_episodes",
     ]
     benchmark_stats = [overall_stats[k] for k in benchmark_keys]
-    comma_keys = ",".join([k[8:] for k in benchmark_keys])
+    comma_keys = ",".join([k[len("overall/"):] for k in benchmark_keys])
     comma_stats = ",".join([str(s) for s in benchmark_stats])
     print(f"Benchmark Stats\n{comma_keys}\n{comma_stats}")
 
