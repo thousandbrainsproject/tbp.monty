@@ -709,6 +709,8 @@ def principal_curvatures(
             # definite, so the generalized spectral theorem guarantees real
             # eigenvalues and a complete basis of real eigenvectors.
             eigval, eigvec = scipy.linalg.eigh(buv, guv)
+            eigvec[:, 0] = normalize(eigvec[:, 0])
+            eigvec[:, 1] = normalize(eigvec[:, 1])
 
             # `eigh` returns eigenvalues in ascending order. Preserve the existing
             # convention of ordering principal curvatures from largest to smallest.
