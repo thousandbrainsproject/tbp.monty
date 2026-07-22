@@ -325,7 +325,7 @@ class GraphLearningTest(BaseGraphTest):
                     graph_2 = graph_memory_2[obj_name][input_channel]
                     self.check_graphs_equal(graph_1, graph_2)
 
-    def test_time_out(self):
+    def test_time_out(self) -> None:
         """Test time_out and pose_time_out detection and logging.
 
         # TODO: This test is a little shaky and should be improved.
@@ -342,15 +342,26 @@ class GraphLearningTest(BaseGraphTest):
             for e in range(6):
                 if e % 2 == 0:
                     exp.pre_epoch()
-                if e == 2:
+                if e >= 2:
                     # Set max steps low & raise mmd to get pose time outs
                     exp.max_train_steps = 3
-                    exp.model.learning_modules[0].max_match_distance = 0.1
-                if e == 4:
+                    if exp._recreation_mode:
+                        lm_cfg = exp._monty_cfg["learning_modules"]["learning_module_0"]
+                        lm_cfg["max_match_distance"] = 0.1
+                    else:
+                        exp.model.learning_modules[0].max_match_distance = 0.1
+                if e >= 4:
                     # set curvature threshold high to get time outs
-                    exp.model.learning_modules[0].tolerances["patch"][
-                        "principal_curvatures_log"
-                    ] = [10, 10]
+                    if exp._recreation_mode:
+                        lm_cfg = exp._monty_cfg["learning_modules"]["learning_module_0"]
+                        lm_cfg["tolerances"]["patch"]["principal_curvatures_log"] = [
+                            10,
+                            10,
+                        ]
+                    else:
+                        exp.model.learning_modules[0].tolerances["patch"][
+                            "principal_curvatures_log"
+                        ] = [10, 10]
                 exp.run_episode()
                 if e % 2 == 1:
                     exp.post_epoch()
@@ -371,11 +382,6 @@ class GraphLearningTest(BaseGraphTest):
             "pose time out episode should have more than one possible pose.",
         )
         for episode in [4, 5]:
-            self.assertEqual(
-                train_stats["primary_performance"][episode],
-                "time_out",
-                "time out not recognized/logged correctly",
-            )
             self.assertEqual(
                 train_stats["primary_performance"][episode],
                 "time_out",
