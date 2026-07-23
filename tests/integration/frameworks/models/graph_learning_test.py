@@ -339,10 +339,10 @@ class GraphLearningTest(BaseGraphTest):
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
-            for e in range(6):
-                if e % 2 == 0:
+            for episode_num in range(6):
+                if episode_num % 2 == 0:
                     exp.pre_epoch()
-                if e >= 2:
+                if episode_num >= 2:
                     # Set max steps low & raise mmd to get pose time outs
                     exp.max_train_steps = 3
                     if exp._recreation_mode:
@@ -350,7 +350,7 @@ class GraphLearningTest(BaseGraphTest):
                         lm_cfg["max_match_distance"] = 0.1
                     else:
                         exp.model.learning_modules[0].max_match_distance = 0.1
-                if e >= 4:
+                if episode_num >= 4:
                     # set curvature threshold high to get time outs
                     if exp._recreation_mode:
                         lm_cfg = exp._monty_cfg["learning_modules"]["learning_module_0"]
@@ -363,7 +363,7 @@ class GraphLearningTest(BaseGraphTest):
                             "principal_curvatures_log"
                         ] = [10, 10]
                 exp.run_episode()
-                if e % 2 == 1:
+                if episode_num % 2 == 1:
                     exp.post_epoch()
 
         output_dir = Path(exp.output_dir)
