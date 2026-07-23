@@ -23,7 +23,7 @@ from tbp.monty.frameworks.experiments import monty_experiment
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.monty_handlers import MontyHandler
 from tbp.monty.frameworks.models.monty_base import MontyBase
-from tbp.monty.frameworks.telemetry.consumers import TelemetryConsumer
+from tbp.monty.frameworks.telemetry.subscribers import TelemetryConsumer
 from tbp.monty.frameworks.telemetry.producers import TelemetryEmitter
 from tbp.monty.frameworks.telemetry.schemas import TelemetryEvent, TelemetrySchema
 from tbp.monty.frameworks.utils.logging_utils import (
