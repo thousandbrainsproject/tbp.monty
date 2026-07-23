@@ -508,6 +508,7 @@ class GraphLearningTest(BaseGraphTest):
         with exp:
             exp.run()
 
+        # TODO: improve load_stats with a structured return type
         train_stats, eval_stats, detailed_stats, lm_models = load_stats(
             exp.output_dir,
             load_train=True,
