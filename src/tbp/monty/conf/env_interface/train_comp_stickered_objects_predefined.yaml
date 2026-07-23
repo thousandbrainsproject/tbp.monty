@@ -4,20 +4,17 @@ do_train: true
 train_env_interface_args:
   parent_to_child_mapping: null
   object_names:
-  - 021_logo_tbp
-  - 022_logo_numenta
+  - 002_cube_tbp_horz
+  - 004_cube_numenta_horz
+  - 007_disk_tbp_horz
+  - 009_disk_numenta_horz
+  - 012_cylinder_tbp_horz
+  - 014_cylinder_numenta_horz
+  - 017_sphere_tbp_horz
+  - 019_sphere_numenta_horz
+  - 024_mug_tbp_horz
+  - 026_mug_numenta_horz
   object_init_sampler:
-    positions:
-      - [ 0.0, 1.5, 0.0 ]
-      - [ -0.015, 1.5, 0.0 ]
-      - [ -0.03, 1.5, 0.0 ]
-      - [ -0.045, 1.5, 0.0 ]
-      - [ 0.015, 1.5, 0.0 ]
-      - [ 0.03, 1.5, 0.0 ]
-      - [ 0.045, 1.5, 0.0 ]
-    rotations:
-    - - 0.0
-      - 0.0
-      - 0.0
     _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    rotations: ${constants.rotations_all}
 train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}

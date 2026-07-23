@@ -9,13 +9,14 @@ env_init_args:
     - -0.1
   scene_id: null
   seed: 42
-  data_path: null
+  data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/compositional_objects}
   agents:
     agent_args:
       agent_id: agent_id_0
       sensor_ids:
       - patch_0
       - patch_1
+      - patch_2
       - view_finder
       height: 0.0
       position:
@@ -29,7 +30,12 @@ env_init_args:
         - 64
       - - 64
         - 64
+      - - 64
+        - 64
       positions:
+      - - 0.0
+        - 0.0
+        - 0.0
       - - 0.0
         - 0.0
         - 0.0
@@ -52,11 +58,17 @@ env_init_args:
         - 0.0
         - 0.0
         - 0.0
+      - - 1.0
+        - 0.0
+        - 0.0
+        - 0.0
       semantics:
       - false
       - false
       - false
+      - false
       zooms:
+      - 30.0
       - 10.0
       - 5.0
       - 1.0

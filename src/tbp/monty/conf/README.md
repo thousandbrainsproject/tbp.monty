@@ -29,11 +29,11 @@ To generate models for the YCB experiments, run the following pretraining:
 
 All of the above can be run at the same time, in parallel.
 
-#### Objects with Logos Experiments
+#### Objects with Stickers Experiments
 
-The compositional benchmark uses objects with logo stickers as a single baseline condition. It includes flat objects, curved objects, and rotated logo stickers.
+The compositional benchmark uses objects with stickers as a single baseline condition. It includes flat objects, curved objects, and rotated stickers.
 
-To generate models for the objects with logos experiments, run the following pretraining in order. Some pretraining depends on the previous models.
+To generate models for the objects with stickers experiments, run the following pretraining in order. Some pretraining depends on the previous models.
 
 - `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_3d_children`
 - `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_2d_children`

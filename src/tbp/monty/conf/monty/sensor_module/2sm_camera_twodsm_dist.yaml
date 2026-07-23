@@ -1,0 +1,51 @@
+# @package experiment.config.monty_config.sensor_modules
+
+sensor_module_0:
+  _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+  sensor_module_id: patch_0
+  features:
+  - pose_vectors
+  - pose_fully_defined
+  - on_object
+  - object_coverage
+  - rgba
+  - hsv
+  - principal_curvatures
+  - principal_curvatures_log
+  - gaussian_curvature
+  - mean_curvature
+  - gaussian_curvature_sc
+  - mean_curvature_sc
+  save_raw_obs: true
+sensor_module_1:
+  _target_: tbp.monty.frameworks.models.two_d_sensor_module.TwoDSensorModule
+  sensor_module_id: patch_1
+  save_raw_obs: false
+  edge_detector:
+    _target_: tbp.monty.frameworks.utils.edge_detection.EdgeDetector
+    gaussian_sigma: 1.0
+    kernel_size: 7
+    strength_threshold: 0.1
+    coherence_threshold: 0.5
+    radius: 14.0
+    sigma_r: 7.0
+    depth_edge_threshold: 0.01
+    max_center_offset: null
+  noise_params: null
+  features:
+    - pose_vectors
+    - pose_fully_defined
+    - principal_curvatures
+    - on_object
+    - object_coverage
+    - rgba
+    - hsv
+    - edge_strength
+    - coherence
+    - mean_depth
+    - min_depth
+  delta_thresholds: null
+sensor_module_2:
+  _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+  sensor_module_id: view_finder
+  save_raw_obs: true
