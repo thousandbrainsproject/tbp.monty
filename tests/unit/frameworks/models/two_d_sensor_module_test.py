@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import unittest
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 from unittest.mock import Mock, sentinel
 
 import numpy as np
@@ -43,13 +43,14 @@ FLAT_SURFACE_POSE = DEFAULT_POSE_2D
 def make_message(
     location: np.ndarray | None = None,
     on_object: bool = True,
-    use_state: bool = True,
+    pass_message: bool = True,
+    process_features_in_lm: bool = True,
     pose_vectors: np.ndarray | None = None,
     pose_fully_defined: bool = False,
     principal_curvatures: np.ndarray | None = None,
     non_morphological_features: dict | None = None,
     sender_id: str = "patch",
-    sender_type: str = "SM",
+    sender_type: Literal["SM", "LM"] = "SM",
 ):
     if location is None:
         location = np.array([0.0, 0.0, 0.0])
@@ -74,7 +75,8 @@ def make_message(
         morphological_features=morphological_features,
         non_morphological_features=non_morphological_features,
         confidence=1.0,
-        use_state=use_state,
+        pass_message=pass_message,
+        process_features_in_lm=process_features_in_lm,
         sender_id=sender_id,
         sender_type=sender_type,
     )
@@ -161,7 +163,7 @@ class TwoDSensorModuleInitTest(unittest.TestCase):
         two_d_sm = make_2d_sm(edge_detector=Mock(return_value=make_no_edge()))
         world_location = np.array([1.0, 2.0, 3.0])
         percept = make_message(
-            location=world_location.copy(), on_object=True, use_state=True
+            location=world_location.copy(), on_object=True, pass_message=True
         )
         two_d_sm._observation_processor.process = Mock(return_value=percept)
 
@@ -182,7 +184,8 @@ class TwoDSensorModuleInitTest(unittest.TestCase):
             morphological_features={"on_object": 0.0},
             non_morphological_features={},
             confidence=1.0,
-            use_state=False,
+            pass_message=True,
+            process_features_in_lm=False,
             sender_id="test",
             sender_type="SM",
         )
@@ -194,7 +197,8 @@ class TwoDSensorModuleInitTest(unittest.TestCase):
             motor_only_step=False,
         )
 
-        assert msg.use_state is False
+        assert msg.pass_message is True
+        assert msg.process_features_in_lm is False
         assert "pose_vectors" not in msg.morphological_features
         np.testing.assert_allclose(msg.displacement["displacement"], np.zeros(3))
         assert two_d_sm._tangent_frame is None
@@ -224,7 +228,7 @@ class TwoDSensorModuleInitTest(unittest.TestCase):
         assert msg.sender_id == two_d_sm.sensor_module_id
         assert msg.sender_type == "SM"
         assert msg.confidence == 1.0
-        assert isinstance(msg.use_state, bool)
+        assert isinstance(msg.pass_message, bool)
 
         assert msg.location.shape == (3,)
         assert msg.morphological_features["pose_vectors"].shape == (3, 3)
@@ -241,7 +245,7 @@ class TwoDSensorModuleEdgeTest(unittest.TestCase):
         percept = make_message(
             location=np.array([1.0, 2.0, 3.0]),
             on_object=True,
-            use_state=True,
+            pass_message=True,
             pose_vectors=np.identity(3),
             pose_fully_defined=False,
             sender_id="test",
@@ -274,7 +278,7 @@ class TwoDSensorModuleEdgeTest(unittest.TestCase):
         percept = make_message(
             location=np.array([1.0, 2.0, 3.0]),
             on_object=True,
-            use_state=True,
+            pass_message=True,
             pose_vectors=FLAT_SURFACE_POSE,
             pose_fully_defined=False,
             sender_id="test",
@@ -409,13 +413,13 @@ class TwoDSensorModuleTangentFrameTest(unittest.TestCase):
                     location=np.array([0.0, 0.0, 0.0]),
                     pose_vectors=first_pose,
                     on_object=True,
-                    use_state=True,
+                    pass_message=True,
                 ),
                 make_message(
                     location=np.array([1.0, 0.0, 0.0]),
                     pose_vectors=second_pose,
                     on_object=True,
-                    use_state=True,
+                    pass_message=True,
                 ),
             ]
         )
@@ -454,7 +458,7 @@ class TwoDSensorModuleTangentFrameTest(unittest.TestCase):
             make_message(
                 location=location.copy(),
                 on_object=True,
-                use_state=True,
+                pass_message=True,
                 pose_vectors=FLAT_SURFACE_POSE,
             )
             for location in locations

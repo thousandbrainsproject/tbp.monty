@@ -147,7 +147,8 @@ class SalienceSMTest(unittest.TestCase):
             expected_goal = Goal(
                 location=locations[i],
                 confidence=salience[i],
-                use_state=False,
+                pass_message=False,
+                process_features_in_lm=False,
                 morphological_features=None,
                 non_morphological_features=None,
                 goal_tolerances=None,
@@ -157,7 +158,7 @@ class SalienceSMTest(unittest.TestCase):
             # TODO: implement __eq__ for GoalState
             np.testing.assert_array_equal(g.location, expected_goal.location)
             self.assertEqual(g.confidence, expected_goal.confidence)
-            self.assertEqual(g.use_state, expected_goal.use_state)
+            self.assertEqual(g.pass_message, expected_goal.pass_message)
             self.assertEqual(
                 g.morphological_features, expected_goal.morphological_features
             )

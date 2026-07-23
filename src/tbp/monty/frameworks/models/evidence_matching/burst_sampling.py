@@ -176,7 +176,7 @@ class BurstSamplingHypothesesUpdater:
             burst_trigger_slope: A threshold below which a sampling burst is triggered.
                 Defaults to 1.0.
             include_telemetry: Flag to control if we want to calculate and return the
-                burst sampling telemetry in the `update_hypotheses` method. Defaults to
+                burst sampling telemetry in the `update_evidence` method. Defaults to
                 False.
             initial_possible_poses: Initial
                 possible poses to test. Defaults to "informed".
@@ -277,26 +277,47 @@ class BurstSamplingHypothesesUpdater:
         if not exc_type and self.sampling_burst_steps > 0:
             self.sampling_burst_steps -= 1
 
-    def update_hypotheses(
+    def displace_hypotheses(
+        self,
+        hypotheses: Hypotheses,
+        displacement: npt.NDArray[np.float64] | None,
+        graph_id: str,  # noqa: ARG002
+    ) -> Hypotheses:
+        """Displace existing hypothesis locations by the sensed displacement.
+
+        Displaces the full current hypothesis set. A no-op when there are no hypotheses
+        yet or there is no displacement (e.g. before the first movement). Does not touch
+        evidence or the `EvidenceSlopeTracker`.
+
+        Args:
+            hypotheses: Hypothesis space for the graph.
+            displacement: LM displacement between the current and previous input.
+            graph_id: Identifier of the graph being updated.
+
+        Returns:
+            The displaced hypothesis space.
+        """
+        if hypotheses.count == 0 or displacement is None:
+            return hypotheses
+        return self._hypotheses_displacer.displace_hypotheses(displacement, hypotheses)
+
+    def update_evidence(
         self,
         hypotheses: Hypotheses,
         features: dict,
-        displacement: npt.NDArray[np.float64] | None,
         graph_id: str,
         evidence_update_threshold: float,
     ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
-        """Update hypotheses based on sensor displacement and sensed features.
+        """Update hypothesis evidence from sensed features via burst sampling.
 
-        Updates the existing hypothesis space or initializes a new hypothesis space
-        if one does not exist (i.e., at the beginning of the episode). Updating the
-        hypothesis space includes displacing the hypotheses' possible locations, as well
-        as updating their evidence scores. Evidence from all available input channels
-        is computed and summed by the displacer.
+        Assumes hypotheses have already been displaced for this step. Samples and
+        rebuilds the hypothesis space, then updates the evidence scores of the retained
+        existing hypotheses. Evidence from all available input channels is computed and
+        summed by the displacer.
 
         Args:
             hypotheses: Hypothesis space for the graph id.
             features: Input features keyed by channel name.
-            displacement: LM displacement between the current and previous input.
             graph_id: Identifier of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
@@ -343,16 +364,15 @@ class BurstSamplingHypothesesUpdater:
             tracker=tracker,
         )
 
-        # We only displace existing hypotheses since the newly sampled hypotheses
-        # should not be affected by the displacement from the last sensory input.
+        # The existing hypotheses were already displaced by the LM before sampling, so
+        # we only need to compute the evidence here.
         if len(hypotheses_selection.ids_to_retain):
             existing_hypotheses, displacer_telemetry = (
-                self._hypotheses_displacer.displace_hypotheses_and_compute_evidence(
-                    displacement=displacement,
+                self._hypotheses_displacer.compute_evidence(
                     features=features,
                     evidence_update_threshold=evidence_update_threshold,
                     graph_id=graph_id,
-                    possible_hypotheses=existing_hypotheses,
+                    hypotheses=existing_hypotheses,
                 )
             )
         else:

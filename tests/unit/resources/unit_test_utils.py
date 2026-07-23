@@ -41,7 +41,8 @@ class BaseGraphTest(TestCase):
                 "hsv": [0, 1, 1],
             },
             confidence=1.0,
-            use_state=True,
+            pass_message=True,
+            process_features_in_lm=True,
             sender_id=fake_sender_id,
             sender_type="SM",
         )

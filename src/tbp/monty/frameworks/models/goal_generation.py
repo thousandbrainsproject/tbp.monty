@@ -149,7 +149,7 @@ class GraphGoalGenerator(GoalGenerator):
         #             "location_rel_model": None
         #         },
         #         confidence=1.0,  # Should have high confidence
-        #         use_state=False,
+        #         pass_message=False,
         #         sender_id=self.parent_lm.learning_module_id,
         #         sender_type="GSG",
         #         goal_tolerances=None,
@@ -729,7 +729,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             A dictionary containing the hypothesis to test, the target location and
             surface normal of the target point on the object.
         """
-        mlh = self.parent_lm.get_current_mlh()
+        mlh = self.parent_lm._get_current_mlh()
         mlh_id = mlh["graph_id"]
 
         target_object = self.parent_lm.get_graph(mlh_id)
@@ -839,9 +839,10 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             },
             non_morphological_features=None,
             confidence=goal_confidence,
-            use_state=True,
+            pass_message=True,
             sender_id=self.parent_lm.learning_module_id,
             sender_type="GSG",
+            process_features_in_lm=True,
             goal_tolerances=None,
             info=info,
         )
@@ -924,7 +925,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             return True
 
         # Used to check if pose for top MLH has changed
-        top_mlh = self.parent_lm.get_current_mlh()
+        top_mlh = self.parent_lm._get_current_mlh()
 
         # If the MLH evidence is significantly above the second MLH (where "significant"
         # is determined by x_percent_scale_factor below), then focus on discriminating

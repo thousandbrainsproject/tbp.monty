@@ -46,10 +46,10 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         )
 
         hypotheses_displacer = Mock()
-        hypotheses_displacer.displace_hypotheses_and_compute_evidence = Mock(
+        hypotheses_displacer.compute_evidence = Mock(
             # Have the displacer return the given hypotheses without displacement
             # since we're not testing that.
-            side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
+            side_effect=lambda **kwargs: (kwargs["hypotheses"], Mock()),
         )
         self.updater._hypotheses_displacer = hypotheses_displacer
 
@@ -102,10 +102,9 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         )
         self.updater.evidence_slope_trackers = {"object1": tracker1}
 
-        result, _ = self.updater.update_hypotheses(
+        result, _ = self.updater.update_evidence(
             hypotheses=hypotheses,
             features={"patch": {"pose_fully_defined": True}},
-            displacement=np.zeros(3),
             graph_id="object1",
             evidence_update_threshold=0,
         )
@@ -424,10 +423,9 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             "burst_sampling.EvidenceSlopeTracker",
             return_value=new_tracker,
         ):
-            self.updater.update_hypotheses(
+            self.updater.update_evidence(
                 hypotheses=hypotheses,
                 features={"patch": {"pose_fully_defined": True}},
-                displacement=np.zeros(3),
                 graph_id="new_object",
                 evidence_update_threshold=0,
             )
@@ -666,8 +664,8 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
 
         # Mock the hypotheses displacer
         hypotheses_displacer = Mock()
-        hypotheses_displacer.displace_hypotheses_and_compute_evidence = Mock(
-            side_effect=lambda **kwargs: (kwargs["possible_hypotheses"], Mock()),
+        hypotheses_displacer.compute_evidence = Mock(
+            side_effect=lambda **kwargs: (kwargs["hypotheses"], Mock()),
         )
         updater._hypotheses_displacer = hypotheses_displacer
 

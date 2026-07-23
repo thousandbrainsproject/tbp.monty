@@ -48,29 +48,46 @@ class HypothesisDisplacerTelemetry:
 
 
 class HypothesesDisplacer(Protocol):
-    def displace_hypotheses_and_compute_evidence(
+    def displace_hypotheses(
         self,
         displacement: npt.NDArray[np.float64],
+        hypotheses: Hypotheses,
+    ) -> Hypotheses:
+        """Displace hypothesis locations using the sensed sensor displacement.
+
+        Each hypothesis location is updated by the pose-rotated displacement.
+        Evidence, poses, and possible flags are left unchanged.
+
+        Args:
+            displacement: Displacement of the sensor (in common RF).
+            hypotheses: Hypotheses to displace.
+
+        Returns:
+            Hypotheses with displaced locations.
+        """
+        ...
+
+    def compute_evidence(
+        self,
         features: dict[str, dict],
         evidence_update_threshold: float,
         graph_id: str,
-        possible_hypotheses: Hypotheses,
+        hypotheses: Hypotheses,
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
-        """Updates evidence by comparing features after applying sensed displacement.
+        """Updates evidence by comparing sensed features to features in the model.
 
-        Applies the sensor displacement to the existing hypotheses and uses the
-        result as search locations for comparing features from all available input
-        channels. Per-channel evidence is summed and applied as a weighted update.
+        Uses the hypothesis locations as search locations for comparing features from
+        all available input channels. Per-channel evidence is summed and applied as a
+        weighted update. Assumes hypotheses have already been displaced for this step.
 
         Args:
-            displacement: Displacement vector.
             features: All-channel input features, keyed by channel name.
             evidence_update_threshold: Evidence update threshold.
             graph_id: The ID of the current graph.
-            possible_hypotheses: hypotheses to be modified.
+            hypotheses: Hypotheses to compute evidence for.
 
         Returns:
-            Displaced hypotheses with computed evidence and telemetry.
+            Hypotheses with computed evidence and telemetry.
         """
         ...
 
@@ -121,27 +138,64 @@ class DefaultHypothesesDisplacer:
         self.present_weight = present_weight
         self._feature_evidence_scorer = feature_evidence_scorer
 
-    def displace_hypotheses_and_compute_evidence(
+    def displace_hypotheses(
         self,
         displacement: npt.NDArray[np.float64],
+        hypotheses: Hypotheses,
+    ) -> Hypotheses:
+        """Displace hypothesis locations using the sensed sensor displacement.
+
+        Each hypothesis location is updated by the pose-rotated displacement.
+        Evidence, poses, and possible flags are left unchanged.
+
+        Args:
+            displacement: Displacement of the sensor (in common RF).
+            hypotheses: Hypotheses to displace.
+
+        Returns:
+            Hypotheses with displaced locations.
+        """
+        # Have to do this for all hypotheses so we don't lose the path information
+        rotated_displacements = hypotheses.poses.dot(displacement)
+        search_locations = hypotheses.locations + rotated_displacements
+        return Hypotheses(
+            evidence=hypotheses.evidence,
+            locations=search_locations,
+            poses=hypotheses.poses,
+            possible=hypotheses.possible,
+        )
+
+    def compute_evidence(
+        self,
         features: dict[str, dict],
         evidence_update_threshold: float,
         graph_id: str,
-        possible_hypotheses: Hypotheses,
+        hypotheses: Hypotheses,
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
-        # Have to do this for all hypotheses so we don't lose the path information
-        rotated_displacements = possible_hypotheses.poses.dot(displacement)
-        search_locations = possible_hypotheses.locations + rotated_displacements
+        """Updates evidence by comparing sensed features to features in the model.
+
+        Uses the hypothesis locations as search locations for comparing features from
+        all available input channels. Per-channel evidence is summed and applied as a
+        weighted update. Assumes hypotheses have already been displaced for this step.
+
+        Args:
+            features: All-channel input features, keyed by channel name.
+            evidence_update_threshold: Evidence update threshold.
+            graph_id: The ID of the current graph.
+            hypotheses: Hypotheses to compute evidence for.
+
+        Returns:
+            Hypotheses with computed evidence and telemetry.
+        """
+        search_locations = hypotheses.locations  # already displaced
 
         # Get indices of hypotheses with evidence > threshold
-        hyp_idxs_to_test = np.where(
-            possible_hypotheses.evidence >= evidence_update_threshold
-        )[0]
+        hyp_idxs_to_test = np.where(hypotheses.evidence >= evidence_update_threshold)[0]
         num_hypotheses_to_test = hyp_idxs_to_test.shape[0]
         if num_hypotheses_to_test > 0:
             logger.info(
                 f"Testing {num_hypotheses_to_test} out of "
-                f"{possible_hypotheses.count} hypotheses for {graph_id} "
+                f"{hypotheses.count} hypotheses for {graph_id} "
                 f"(evidence > {evidence_update_threshold})"
             )
 
@@ -149,25 +203,23 @@ class DefaultHypothesesDisplacer:
             input_channels = all_usable_input_channels(
                 features, self.graph_memory.get_input_channels_in_graph(graph_id)
             )
-            total_evidence_to_add = np.zeros_like(possible_hypotheses.evidence)
+            total_evidence_to_add = np.zeros_like(hypotheses.evidence)
             for channel in input_channels:
                 new_evidence = self._calculate_evidence_for_new_locations(
                     graph_id=graph_id,
                     input_channel=channel,
                     search_locations=search_locations[hyp_idxs_to_test],
-                    channel_possible_poses=possible_hypotheses.poses[hyp_idxs_to_test],
+                    channel_possible_poses=hypotheses.poses[hyp_idxs_to_test],
                     channel_features=features[channel],
                 )
                 min_update = np.clip(np.min(new_evidence), 0, np.inf)
 
-                channel_evidence = (
-                    np.ones_like(possible_hypotheses.evidence) * min_update
-                )
+                channel_evidence = np.ones_like(hypotheses.evidence) * min_update
                 channel_evidence[hyp_idxs_to_test] = new_evidence
                 total_evidence_to_add += channel_evidence
 
             # Prediction error from summed evidence
-            mlh_index = np.argmax(possible_hypotheses.evidence)
+            mlh_index = np.argmax(hypotheses.evidence)
             evidence_for_mlh = total_evidence_to_add[mlh_index]
 
             # Each channel contributes evidence in range [MIN_EVIDENCE, MAX_EVIDENCE].
@@ -186,19 +238,19 @@ class DefaultHypothesesDisplacer:
             # np.average and evidence will be bound to [-C, 2C] where C is the
             # number of channels. Otherwise it keeps growing.
             evidence = (
-                possible_hypotheses.evidence * self.past_weight
+                hypotheses.evidence * self.past_weight
                 + total_evidence_to_add * self.present_weight
             )
         else:
-            evidence = possible_hypotheses.evidence
+            evidence = hypotheses.evidence
             # If we haven't moved yet, there is no prediction, and thus no error
             mlh_prediction_error = None
 
         return Hypotheses(
             evidence=evidence,
             locations=search_locations,
-            poses=possible_hypotheses.poses,
-            possible=possible_hypotheses.possible,
+            poses=hypotheses.poses,
+            possible=hypotheses.possible,
         ), HypothesisDisplacerTelemetry(mlh_prediction_error=mlh_prediction_error)
 
     def _calculate_evidence_for_new_locations(

@@ -255,9 +255,7 @@ class FeatureGraphLM(GraphLM):
             lm_episode_stats = {
                 "detected_path": detected_path,
                 "detected_location_on_model": current_model_loc,
-                "detected_location_rel_body": self.buffer.get_current_location(
-                    input_channel="first"
-                ),
+                "detected_location_rel_body": self.buffer.get_current_location(),
                 "detected_rotation": r_euler[0],
                 "detected_rotation_quat": [rot.as_quat() for rot in r],
                 "detected_scale": scale,

@@ -56,26 +56,48 @@ class HypothesesUpdater(ContextManager[Self], Protocol):
     def reset(self) -> None:
         """Resets updater at the beginning of an episode."""
 
-    def update_hypotheses(
+    def displace_hypotheses(
+        self,
+        hypotheses: Hypotheses,
+        displacement: npt.NDArray[np.float64] | None,
+        graph_id: str,
+    ) -> Hypotheses:
+        """Displace existing hypothesis locations by the sensed displacement.
+
+        A no-op when there are no hypotheses yet or there is no displacement (e.g.
+        before the first movement). Does not touch evidence.
+
+        Args:
+            hypotheses: Hypothesis space for the graph.
+            displacement: LM displacement between the current and previous input.
+            graph_id: ID of the graph being updated.
+
+        Returns:
+            The displaced hypothesis space.
+        """
+        ...
+
+    def update_evidence(
         self,
         hypotheses: Hypotheses,
         features: dict,
-        displacement: npt.NDArray[np.float64] | None,
         graph_id: str,
         evidence_update_threshold: float,
     ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
-        """Update hypotheses based on sensor displacement and sensed features.
+        """Update hypothesis evidence from sensed features (and initialize as needed).
+
+        Assumes hypotheses have already been displaced for this step. Initializes a new
+        hypothesis space if one does not exist, computes evidence for existing
+        hypotheses, and initializes hypotheses for newly available channels.
 
         Args:
             hypotheses: Hypothesis space for the graph.
             features: Input features keyed by channel name.
-            displacement: LM displacement between the current and previous input.
             graph_id: ID of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            Updated graph hypothesis space (or None if no channels available)
-            and telemetry.
+            Updated hypothesis space (or None if no channels available) and telemetry.
         """
         ...
 
@@ -195,26 +217,47 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         """Resets updater at the beginning of an episode."""
         self._initialized_channels = {}
 
-    def update_hypotheses(
+    def displace_hypotheses(
+        self,
+        hypotheses: Hypotheses,
+        displacement: npt.NDArray[np.float64] | None,
+        graph_id: str,  # noqa: ARG002
+    ) -> Hypotheses:
+        """Displace existing hypothesis locations by the sensed displacement.
+
+        A no-op when there are no hypotheses yet or there is no displacement (e.g.
+        before the first movement). Does not touch evidence.
+
+        Args:
+            hypotheses: Hypothesis space for the graph.
+            displacement: LM displacement between the current and previous input.
+            graph_id: Identifier of the graph being updated.
+
+        Returns:
+            The displaced hypothesis space.
+        """
+        if hypotheses.count == 0 or displacement is None:
+            return hypotheses
+        return self._hypotheses_displacer.displace_hypotheses(displacement, hypotheses)
+
+    def update_evidence(
         self,
         hypotheses: Hypotheses,
         features: dict,
-        displacement: npt.NDArray[np.float64] | None,
         graph_id: str,
         evidence_update_threshold: float,
     ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
-        """Update hypotheses based on sensor displacement and sensed features.
+        """Update hypothesis evidence from sensed features (and initialize as needed).
 
-        Updates the existing hypothesis space or initializes a new hypothesis space
-        if one does not exist (i.e., at the beginning of the episode). Updating the
-        hypothesis space includes displacing the hypotheses' possible locations, as well
-        as updating their evidence scores. Evidence from all available input channels
-        is computed and summed by the HypothesesDisplacer.
+        Assumes hypotheses have already been displaced for this step. Initializes a new
+        hypothesis space if one does not exist (i.e., at the beginning of the episode),
+        computes evidence for existing hypotheses, and initializes hypotheses for newly
+        available channels. Evidence from all available input channels is computed and
+        summed by the HypothesesDisplacer.
 
         Args:
             hypotheses: Hypothesis space for the graph.
             features: Input features keyed by channel name.
-            displacement: LM displacement between the current and previous input.
             graph_id: Identifier of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
 
@@ -252,16 +295,12 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 self._initialized_channels[graph_id].add(channel)
             return Hypotheses.concatenate(all_hyps), {}
 
-        # We only displace existing hypotheses since the newly sampled
-        # hypotheses should not be affected by the displacement from the last
-        # sensory input.
-        displaced_hypotheses, displacer_telemetry = (
-            self._hypotheses_displacer.displace_hypotheses_and_compute_evidence(
-                displacement=displacement,
+        updated_hypotheses, displacer_telemetry = (
+            self._hypotheses_displacer.compute_evidence(
                 features=features,
                 evidence_update_threshold=evidence_update_threshold,
                 graph_id=graph_id,
-                possible_hypotheses=hypotheses,
+                hypotheses=hypotheses,
             )
         )
 
@@ -272,12 +311,12 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             if ch not in self._initialized_channels[graph_id]
         ]
         if new_channels:
-            displaced_hypotheses = self._initialize_new_channels(
-                displaced_hypotheses, features, new_channels, graph_id
+            updated_hypotheses = self._initialize_new_channels(
+                updated_hypotheses, features, new_channels, graph_id
             )
 
         telemetry = {"mlh_prediction_error": displacer_telemetry.mlh_prediction_error}
-        return displaced_hypotheses, telemetry
+        return updated_hypotheses, telemetry
 
     def _initialize_new_channels(
         self,
