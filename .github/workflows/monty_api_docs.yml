@@ -54,13 +54,13 @@ jobs:
           github-token: ${{ github.token }}
       - name: Upload GitHub Pages artifact
         if: ${{ steps.should_run_monty_api_docs.outputs.should_run_monty == 'true'}}
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3
         with:
           name: github-pages-${{ github.event.workflow_run.head_sha }}
           path: tbp.monty/sphinx_html
       - name: Deploy Monty API docs
         id: deployment
         if: ${{ steps.should_run_monty_api_docs.outputs.should_run_monty == 'true'}}
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4
         with:
           artifact_name: github-pages-${{ github.event.workflow_run.head_sha }}
