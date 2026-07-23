@@ -92,6 +92,16 @@ class NoResetEvidenceLMTest(BaseGraphTest):
             pretrained_models = train_exp.model.learning_modules[0].state_dict()
             eval_exp.model.learning_modules[0].load_state_dict(pretrained_models)
 
+            # This test assumes that the Monty instance, and the learning modules
+            # in particular, remain stable throughout the test, which is the case
+            # when using the "reset" strategy. However, with the "recreation" strategy
+            # we get a new instance each time `pre_episode()` is called, so we use
+            # the internal `_snapshot_monty()` method to prepare a Memento for use
+            # in re-creating Monty.
+            # TODO: redesign experiments to use Memento snapshots to set Monty to
+            # the state needed for the test and avoid using the "reset" mechanism.
+            eval_exp._snapshot_monty()
+
             eval_exp.experiment_mode = ExperimentMode.EVAL
             eval_exp.model.set_experiment_mode(eval_exp.experiment_mode)
             eval_exp.pre_epoch()

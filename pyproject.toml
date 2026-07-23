@@ -27,7 +27,7 @@ dependencies = [
     'pillow', # imported via conda (conda-forge::pillow)
     'pydantic>=2.10.6',
     'numpy-quaternion==2023.0.3;python_version=="3.8"', # imported via conda (conda-forge::quaternion)
-    'numpy-quaternion==2024.0.13;python_version=="3.10"',
+    'numpy-quaternion;python_version>="3.10"',
     'scikit-image', # imported via conda (conda-forge::scikit-image)
     'scikit-learn==1.3.2;python_version=="3.8"', # imported via conda (conda-forge::scikit-learn)
     'scikit-learn;python_version>="3.9"', # for uv environment
@@ -75,21 +75,30 @@ build = [
 dev = [
     # Check for undeclared dependencies
     'deptry',
-
+    # Python == 3.8, i.e. conda environment
     # Python static type checker
-    'mypy==1.11.2',
+    'mypy==1.11.2;python_version=="3.8"',
     'types-PyYAML',
-
     # Testing, code style, etc...
-    'hypothesis==6.113.0',
-    'parameterized==0.9.0',  # Supports Python 3.8
-    'pytest==7.1.1',
-    'pytest-xdist==2.5.0',
-    'pytest-cov==3.0.0',
-    'unittest-parametrize',  # Python >= 3.9
-
+    'hypothesis==6.113.0;python_version=="3.8"',
+    'parameterized==0.9.0;python_version=="3.8"', # Supports Python 3.8
+    'pytest==7.1.1;python_version=="3.8"',
+    'pytest-xdist==2.5.0;python_version=="3.8"',
+    'pytest-cov==3.0.0;python_version=="3.8"',
     # Python linter and formatter
-    'ruff==0.14.2',
+    'ruff==0.14.2;python_version=="3.8"',
+    # Python >= 3.9, i.e. uv environment
+    # Python static type checker
+    'mypy;python_version>="3.9"',
+    # Testing, code style, etc...
+    'hypothesis;python_version>="3.9"',
+    'parameterized;python_version>="3.9"',
+    'pytest;python_version>="3.9"',
+    'pytest-xdist;python_version>="3.9"',
+    'pytest-cov;python_version>="3.9"',
+    'unittest-parametrize',
+    # Python linter and formatter
+    'ruff;python_version>="3.9"',
 ]
 generate_api_docs_tool = [
     'docutils>=0.17',
@@ -123,7 +132,7 @@ Repository = 'https://github.com/thousandbrainsproject.tbp.monty'
 Issues = 'https://github.com/thousandbrainsproject/tbp.monty/issues'
 
 [tool.deptry]
-exclude= ['venv', '\.venv', '\.direnv', '\.git', 'setup\.py']
+exclude = ['venv', '\.venv', '\.direnv', '\.git', 'setup\.py']
 experimental_namespace_package = true # recognize tbp.monty as a namespace package
 ignore = ['DEP002']
 known_first_party = [
@@ -148,7 +157,7 @@ testpaths = [
     'tests/unit',
 ]
 norecursedirs = [
-    'src/tbp/monty/frameworks/utils',  # ignore where 'seaborn' module is required
+    'src/tbp/monty/frameworks/utils', # ignore where 'seaborn' module is required
     'src/tbp/monty/simulators/mujoco', # ignore where 'mujoco' module is required
 ]
 filterwarnings = [
@@ -223,6 +232,7 @@ ignore = [
     "COM812", # COM812: Trailing comma missing
     "RET501", # RET501: Do not explicitly `return None` in function if it is the only possible return value
     "PLR1711", # PLR1711: Useless `return` statement at end of function
+    "FURB110", # FURB110: Replace ternary `if` expression with `or` operator
     # End of deliberately ignored rules
     # Original inherited flake8 ignores
     "D1", # D1XX: Missing Docstrings
@@ -261,6 +271,7 @@ ignore = [
     "PLR0915", # PLR0915: Too many statements
     "PLR1730", # PLR1730: Replace `if` statement with {replacement}
     "PLR2004", # PLR2004: Magic value used in comparison, consider replacing {value} with a constant variable
+    "PLW0108", # PLW0108: Unnecessary lambda
     "PT009", # PT009: Use a regular `assert` instead of unittest-style `assertEqual`
     "PT018", # PT018: Assertion should be broken down into multiple parts
     "PT027", # PT027: Use `pytest.raises` instead of unittest-style `assertRaises`
@@ -316,5 +327,6 @@ where = ["src"]
 # habitat-sim resources
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
 
-[tool.uv]
-no-build-isolation-package = ["torch-scatter", "torch-sparse"]
+[tool.uv.extra-build-dependencies]
+torch-scatter = ["setuptools", "torch"]
+torch-sparse = ["torch"]
