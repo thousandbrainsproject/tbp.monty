@@ -408,9 +408,15 @@ class MontyExperiment:
     def _create_monty(self) -> None:
         """Create a Monty model from dehydrated config.
 
-        **WARNING:** `self._recreation_config` must be initialized
+        **WARNING:** `self._monty_cfg` must be initialized
         with the dehydrated config before calling this method.
+
+        Raises:
+            ValueError: If `self._monty_cfg` is not initialized
         """
+        if self._monty_cfg is None:
+            raise ValueError("`self._monty_cfg` is not initialized")
+
         # create a shallow `dict` so we can use `pop()` to remove consumed elements
         config = dict(self._monty_cfg)
         instantiate = hydra.utils.instantiate
