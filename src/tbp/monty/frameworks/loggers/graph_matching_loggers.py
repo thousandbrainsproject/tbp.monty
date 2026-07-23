@@ -182,7 +182,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         # mode = model.experiment_mode
         # episode = logger_args[f"{mode}_episodes"]
 
-        # TODO telemetry: temporarily commented out to test PostEpisodeTelemetryConsumer
+        # TODO telemetry: temporarily commented to test EpisodeTelemetryHandler
         # for handler in self.handlers:
         #     handler.report_episode(self.data, output_dir, episode, mode)
 

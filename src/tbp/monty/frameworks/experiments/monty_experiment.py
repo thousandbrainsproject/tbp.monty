@@ -40,11 +40,10 @@ from tbp.monty.frameworks.loggers.exp_logger import (
 )
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
 from tbp.monty.frameworks.models.monty_base import MontyBase
-from tbp.monty.frameworks.telemetry.post_episode import (
-    PostEpisodeTelemetry,
-    PostEpisodeTelemetryConsumer,
+from tbp.monty.frameworks.telemetry.episode.subscribers import (
+    EpisodeTelemetryHandler,
+    MontyHandlerTelemetryConnector,
 )
-from tbp.monty.frameworks.telemetry.producers import TelemetryEmitter
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )
@@ -54,6 +53,9 @@ from tbp.monty.memento import Memento
 __all__ = ["MontyExperiment"]
 
 logger = logging.getLogger("tbp.monty")
+telemeter = telemetry.getTelemeter(
+    __name__, event_level=telemetry.INFO, snapshot_level=telemetry.TRACE
+)  # TODO telemetry: equivalent of logger.setLevel
 
 
 class MontyExperiment:
@@ -405,13 +407,9 @@ class MontyExperiment:
     def init_telemetry(self):
         """Initialize Monty telemetry."""
         # TODO telemetry: Hydra config for levels
-        self.telemetry = TelemetryEmitter(
-            __name__, event_level=telemetry.INFO, snapshot_level=telemetry.TRACE
-        )
-        self.post_episode_telemetry = PostEpisodeTelemetryConsumer(
-            handlers=self.monty_logger.handlers,
-            output_dir=self.output_dir,
-            event_level=telemetry.INFO,
+        self.episode_telemetry = EpisodeTelemetryHandler(telemetry.INFO)
+        self.monty_handler_telemetry = MontyHandlerTelemetryConnector(
+            handlers=self.monty_logger.handlers, output_dir=self.output_dir
         )
 
     def get_epoch_state(self):
@@ -583,14 +581,7 @@ class MontyExperiment:
         get 'confused'/'FP'.
         """
         self.logger_handler.post_episode(self.logger_args)
-
-        self.telemetry.emit(
-            PostEpisodeTelemetry.from_logger_args(
-                logger_args=self.logger_args,
-                model=self.model,
-                emitter=self.__class__.__name__,
-            )
-        )
+        self.episode_telemetry.post_episode(self.logger_args, self.model)
 
         self.model.update_ltm()
         self._snapshot_monty()
@@ -744,8 +735,9 @@ class MontyExperiment:
         # Close monty logging
         self.logger_handler.close(self.logger_args)
 
-        self.post_episode_telemetry.unsubscribe(consume=True)
-        # TODO telemetry: close self.post_episode_telemetry?
+        self.episode_telemetry.unsubscribe()
+        self.monty_handler_telemetry.unsubscribe()
+        # TODO telemetry: close all self.xxx_telemetry?
 
         # Close python logging
         for handler in logger.handlers:

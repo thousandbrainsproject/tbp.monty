@@ -13,4 +13,16 @@ DEBUG = 10
 INFO = 20
 TRACE = 25
 
-# Note: avoid levels >= 30 (logging.WARNING), `logging` prints them to stderr
+
+def getTelemeter(*args, **kwargs):  # noqa: N802 - lowercase
+    """Alias function for the `TelemetryPublisher` constructor.
+
+    Returns:
+        The publisher instance.
+    """
+    # Lazy import to avoid circular dependency
+    from tbp.monty.frameworks.telemetry.publishers import (  # noqa: PLC0415
+        TelemetryPublisher,
+    )
+
+    return TelemetryPublisher(*args, **kwargs)

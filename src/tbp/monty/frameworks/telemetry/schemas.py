@@ -12,23 +12,18 @@ from __future__ import annotations
 import time
 from typing import Final
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, Field
+from typing_extensions import Annotated, Self
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.models.monty_base import MontyBase
 
 
 class TelemetrySchema(BaseModel):
-    """Base class for all telemetry schemas.
+    """Base model class for all telemetry schemas.
 
     Subclasses override ``KIND`` to identify their schema type and add fields for their
-    payload. All instances carry universal context baggage (emitter, timestamp, episode,
-    step, mode).
+    payload.
     """
-
-    KIND: Final[str]
-    """Schema kind, e.g. ``post_episode``.
-    Used by `logging` for routing and as the log message in text sinks."""
 
     VERSION: Final[int] = 1
     """Incremented on backwards-incompatible field changes."""
@@ -36,8 +31,55 @@ class TelemetrySchema(BaseModel):
     timestamp: float = Field(default_factory=time.time, kw_only=True)
     """Unix time in seconds when the schema was constructed."""
 
-    emitter: str
-    """Name of the emitting module, e.g. ``self.__class__.__name__``."""
+    emitter: Annotated[
+        str | object,
+        BeforeValidator(
+            lambda x: x
+            if isinstance(x, str)
+            else f"{x.__class__.__module__}.{x.__class__.__name__}"
+        ),
+    ]
+    """Module and name of the emitting class; object values auto-converted to string."""
+
+    @property
+    def kind(self) -> str:
+        """Schema identifier used by `logging` as the log message in text sinks."""
+        return self.__class__.__name__
+
+    def shallow_copy(self, emitter: str | object) -> Self:
+        """Shallow-copies a schema, with explicit emitter override.
+
+        Returns:
+            The new schema instance.
+        """
+        return self.model_copy(update={"emitter": emitter})
+
+
+class TelemetryEvent(TelemetrySchema):
+    """Base model class for telemetry events.
+
+    Carries instantaneous data changes.
+    """
+
+    pass
+
+
+class TelemetrySnapshot(TelemetrySchema):
+    """Base model class for telemetry snapshots.
+
+    The difference from events is that snapshots are always of level ``telemetry.TRACE``
+    and contain binary or blob data.
+    """
+
+    pass
+
+
+class EpisodeTelemetryMixin(BaseModel):
+    """Base model mixin for telemetry schemas with fields for episode state.
+
+    All instances carry universal context baggage (emitter, timestamp, episode, step,
+    mode).
+    """
 
     mode: ExperimentMode
     """Current experiment mode."""
@@ -48,47 +90,27 @@ class TelemetrySchema(BaseModel):
     step: int
     """Current episode step number."""
 
-    model_config = ConfigDict(extra="allow")
-    """Allows adding instance variables to Pydantic class"""
+    def __init_subclass__(cls, **kwargs):
+        """Ensures the mixin is used only with `TelemetrySchema` subclasses.
 
-    def populate_from_model(self, model: MontyBase):
-        """Populates applicable `TelemetrySchema` values from a `MontyBase` instance."""
-        self.mode = model.experiment_mode
-        # TODO telemetry: self.episode = logger_args[f"{mode}_episodes"]?
-        self.step = model.episode_steps
-
-
-class TelemetryEvent(TelemetrySchema):
-    """Base class for all telemetry events.
-
-    Event carry instantaneous data changes, or commands like `TelemetryStopEvent`.
-    """
-
-    pass
+        Raises:
+            TypeError: If the mixin is used with a non-compatible class.
+        """
+        super().__init_subclass__(**kwargs)
+        if not any(issubclass(b, TelemetrySchema) for b in cls.__bases__):
+            raise TypeError(
+                "Mixin requires a subclass of "
+                f"{TelemetrySchema.__name__}, got {cls.__bases__}"
+            )
 
 
-class TelemetrySnapshot(TelemetrySchema):
-    """Base class for all telemetry snapshots.
-
-    The difference from events is that snapshots are always of level ``telemetry.TRACE``
-    and contain binary or blob data.
-    """
+class EpisodeTelemetryEvent(EpisodeTelemetryMixin, TelemetryEvent):
+    """Base model class for episode-related telemetry events."""
 
     pass
 
 
-class BlankTelemetryEvent(TelemetryEvent):
-    """TelemetryEvent with all fields defaulted, except ``emitter``.
+class EpisodeTelemetrySnapshot(EpisodeTelemetryMixin, TelemetrySnapshot):
+    """Base model class for episode-related telemetry snapshots."""
 
-    Used as a base for internal sentinel schemas that carry no meaningful payload.
-    """
-
-    mode: ExperimentMode = ExperimentMode.EVAL
-    episode: int = -1
-    step: int = -1
-
-
-class TelemetryStopEvent(BlankTelemetryEvent):
-    """Sentinel object to shut down telemetry consumer threads."""
-
-    KIND: Final[str] = "telemetry_stop"
+    pass
