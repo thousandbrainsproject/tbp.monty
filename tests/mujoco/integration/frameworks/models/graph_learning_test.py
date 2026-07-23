@@ -542,7 +542,7 @@ class GraphLearningTest(BaseGraphTest):
             "even those off the object.",
         )
         self.assertEqual(
-            len(detailed_stats["1"]["LM_0"]["possible_matches"]),
+            detailed_stats["1"]["LM_0"]["individual_ts_reached_at_step"],
             train_stats.loc[1]["monty_matching_steps"],
             "matching steps in detailed stats don't match with those in train stats.",
         )
