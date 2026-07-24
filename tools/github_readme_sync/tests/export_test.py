@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -11,7 +11,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 from tools.github_readme_sync.export import export
 from tools.github_readme_sync.readme import ReadMe
@@ -19,65 +19,116 @@ from tools.github_readme_sync.readme import ReadMe
 
 class TestExport(unittest.TestCase):
     def setUp(self):
-        # Create a temporary directory for the test
         self.test_dir = tempfile.TemporaryDirectory()
-        self.test_output_dir = Path(self.test_dir.name)
+        self.output_dir = Path(self.test_dir.name) / "exported-docs"
 
     def tearDown(self):
-        # Clean up the temporary directory after the test
         self.test_dir.cleanup()
 
-    def test_export(self):
-        # Create a mock instance of the ReadMe class
-        mock_readme = MagicMock(spec=ReadMe)
+    def test_export_rebuilds_nested_v2_pages_and_preserves_page_slugs(self):
+        rdme = MagicMock(spec=ReadMe)
 
-        # Inline mock return values for clarity
-        mock_readme.get_categories.return_value = [
-            {"title": "Category 1", "slug": "category-1"},
-            {"title": "Category 2", "slug": "category-2"},
+        # API v2 categories have titles but no category slug. export.py creates
+        # a local folder slug from the title.
+        category = {"title": "How to Use Monty"}
+        rdme.get_categories.return_value = [category]
+
+        # get_category_doc_tree() has already reconstructed the flat v2 page
+        # collection using parent URIs. Deliberately use titles that do not
+        # match the slugs to ensure export preserves server-provided slugs.
+        rdme.get_category_doc_tree.return_value = [
+            {
+                "title": "Getting Started with Monty",
+                "slug": "getting-started",
+                "uri": "/branches/0.40/guides/getting-started",
+                "children": [
+                    {
+                        "title": "Windows Setup via WSL",
+                        "slug": "getting-started-on-windows-via-wsl",
+                        "uri": (
+                            "/branches/0.40/guides/getting-started-on-windows-via-wsl"
+                        ),
+                        "parent": {"uri": "/branches/0.40/guides/getting-started"},
+                        "children": [],
+                    }
+                ],
+            }
         ]
 
-        # Explicitly differentiate the documents for each category
-        mock_readme.get_category_docs.side_effect = lambda category: (
-            [{"title": "Doc 1", "slug": "doc-1"}]
-            if category["slug"] == "category-1"
-            else [{"title": "Doc 2", "slug": "doc-2"}]
+        rdme.get_doc_by_slug.side_effect = lambda slug: {
+            "getting-started": "---\ntitle: Getting Started with Monty\n---\nRoot",
+            "getting-started-on-windows-via-wsl": (
+                "---\ntitle: Windows Setup via WSL\n---\nChild"
+            ),
+        }[slug]
+
+        hierarchy = export(self.output_dir, rdme)
+
+        self.assertEqual(
+            hierarchy,
+            [
+                {
+                    "title": "How to Use Monty",
+                    "slug": "how-to-use-monty",
+                    "children": [
+                        {
+                            "title": "Getting Started with Monty",
+                            "slug": "getting-started",
+                            "children": [
+                                {
+                                    "title": "Windows Setup via WSL",
+                                    "slug": ("getting-started-on-windows-via-wsl"),
+                                    "children": [],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
         )
 
-        # Explicitly differentiate the document content by slug
-        mock_readme.get_doc_by_slug.side_effect = lambda slug: (
-            "Content of Doc 1" if slug == "doc-1" else "Content of Doc 2"
+        root_file = self.output_dir / "how-to-use-monty" / "getting-started.md"
+        child_file = (
+            self.output_dir
+            / "how-to-use-monty"
+            / "getting-started"
+            / "getting-started-on-windows-via-wsl.md"
         )
 
-        # Call the function under test
-        hierarchy = export(self.test_output_dir, mock_readme)
+        self.assertTrue(root_file.is_file())
+        self.assertTrue(child_file.is_file())
+        self.assertEqual(
+            root_file.read_text(encoding="utf-8"),
+            "---\ntitle: Getting Started with Monty\n---\nRoot",
+        )
+        self.assertEqual(
+            child_file.read_text(encoding="utf-8"),
+            "---\ntitle: Windows Setup via WSL\n---\nChild",
+        )
 
-        # Assert the hierarchy is constructed correctly
-        expected_hierarchy = [
-            {
-                "title": "Category 1",
-                "slug": "category-1",
-                "children": [{"title": "Doc 1", "slug": "doc-1", "children": []}],
-            },
-            {
-                "title": "Category 2",
-                "slug": "category-2",
-                "children": [{"title": "Doc 2", "slug": "doc-2", "children": []}],
-            },
-        ]
-        self.assertEqual(hierarchy, expected_hierarchy)
+        rdme.get_category_doc_tree.assert_called_once_with(category)
+        self.assertEqual(
+            rdme.get_doc_by_slug.call_args_list,
+            [
+                call("getting-started"),
+                call("getting-started-on-windows-via-wsl"),
+            ],
+        )
 
-        # Assert that the directory structure is created as expected
-        self.assertTrue((self.test_output_dir / "category-1").is_dir())
-        self.assertTrue((self.test_output_dir / "category-2").is_dir())
+    def test_export_replaces_an_existing_output_directory(self):
+        rdme = MagicMock(spec=ReadMe)
+        rdme.get_categories.return_value = []
 
-        # Assert that the document files are created as expected
-        self.assertTrue((self.test_output_dir / "category-1" / "doc-1.md").is_file())
-        self.assertTrue((self.test_output_dir / "category-2" / "doc-2.md").is_file())
+        self.output_dir.mkdir(parents=True)
+        stale_file = self.output_dir / "stale.md"
+        stale_file.write_text("old export", encoding="utf-8")
 
-        # Assert the content of the files is correct
-        with (self.test_output_dir / "category-1" / "doc-1.md").open() as f:
-            self.assertEqual(f.read(), "Content of Doc 1")
+        hierarchy = export(self.output_dir, rdme)
 
-        with (self.test_output_dir / "category-2" / "doc-2.md").open() as f:
-            self.assertEqual(f.read(), "Content of Doc 2")
+        self.assertEqual(hierarchy, [])
+        self.assertTrue(self.output_dir.is_dir())
+        self.assertFalse(stale_file.exists())
+
+
+if __name__ == "__main__":
+    unittest.main()

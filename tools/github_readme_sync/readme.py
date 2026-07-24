@@ -33,11 +33,13 @@ from tools.github_readme_sync.constants import (
     IGNORE_YOUTUBE,
     REGEX_CSV_TABLE,
 )
-from tools.github_readme_sync.req import delete, get, post, put
+from tools.github_readme_sync.req import delete, get, get_collection, patch, post
 
 logger = logging.getLogger(__name__)
 
-PREFIX = "https://dash.readme.com/api/v1"
+API_PREFIX = "https://api.readme.com/v2"
+GUIDES_SECTION = "guides"  # category paths are /categories/{section}/…
+GUIDES_SECTION_BODY = "guide"  # POST body wants a singular 'guide'.
 GITHUB_RAW = "https://raw.githubusercontent.com"
 
 regex_images = re.compile(r"!\[(.*?)\]\((.*?)\)")
@@ -74,51 +76,112 @@ class ReadMe:
     def __init__(self, version: str):
         self.version = version
 
-    def normalize_title_to_readme_slug(self, title: str) -> str:
-        # Normalize a ReadMe title into the slug format ReadMe generates.
+    def _is_hidden(self, resource: dict) -> bool:
+        return (resource.get("privacy") or {}).get("view") == "anyone_with_link"
 
-        # ReadMe slugs are generally derived from titles by:
-        # - lowercasing
-        # - replacing whitespace with hyphens
-        # - stripping punctuation/symbols/non-alphanumeric characters
-        # - collapsing repeated hyphens
-
-        slug = title.lower()
-        slug = re.sub(r"\s+", "-", slug)
-        slug = re.sub(r"[^a-z0-9-]", "", slug)
-        slug = re.sub(r"-+", "-", slug)
-        # Strip leading/trailing hyphens that may have resulted from punctuation removal
-        return slug.strip("-")
+    def branch_url(self, suffix: str = "") -> str:
+        # Every version-scoped call becomes …/branches/{self.version}{suffix}
+        return f"{API_PREFIX}/branches/{self.version}{suffix}"
 
     def get_categories(self) -> list[Any]:
-        categories = get(f"{PREFIX}/categories", {"x-readme-version": self.version})
+        """Return guide categories in the order supplied by ReadMe."""
+        categories = get_collection(self.branch_url(f"/categories/{GUIDES_SECTION}"))
         if not categories:
             return []
-        return sorted(categories, key=lambda x: x["order"])
+
+        return categories
 
     def get_category_docs(self, category: Any) -> list[Any]:
-        response = get(
-            f"{PREFIX}/categories/{category['slug']}/docs",
-            {"x-readme-version": self.version},
+        """Return a category's pages as a flat v2 collection."""
+        title = quote(category["title"], safe="")
+
+        response = get_collection(
+            self.branch_url(f"/categories/{GUIDES_SECTION}/{title}/pages")
         )
+
         if not response:
             return []
-        return sorted(response, key=lambda x: x["order"])
+
+        return response
+
+    def get_category_doc_tree(self, category: Any) -> list[Any]:
+        """Rebuild a nested page tree from the APIs flat page collection.
+
+        Args:
+            category: The ReadMe category whose pages should be retrieved.
+
+        Returns:
+            The category's pages organized as a nested tree. Each page contains
+            a ``children`` list containing its direct child pages.
+
+        Raises:
+            ValueError: If a page has no URI, a duplicate URI is returned, or a
+                page references a parent URI that is not present in the category.
+        """
+        pages = self.get_category_docs(category)
+
+        if not pages:
+            return []
+
+        pages_by_uri = {}
+
+        # First create independent page dictionaries with empty children lists.
+        # We use resource URIs as the API uses URIs as resource identifiers.
+        for raw_page in pages:
+            page = dict(raw_page)
+            page["children"] = []
+
+            uri = page.get("uri")
+            if not uri:
+                raise ValueError(f"ReadMe page {page.get('slug')!r} has no uri")
+
+            if uri in pages_by_uri:
+                raise ValueError(f"ReadMe returned duplicate page URI {uri!r}")
+
+            pages_by_uri[uri] = page
+
+        roots = []
+
+        # Iterate over the original API order so sibling ordering remains
+        # the same as the order returned by ReadMe.
+        for original_page in pages:
+            page = pages_by_uri[original_page["uri"]]
+            parent_uri = (page.get("parent") or {}).get("uri")
+
+            if not parent_uri:
+                # A page without a parent is a category-level root page.
+                roots.append(page)
+                continue
+
+            parent = pages_by_uri.get(parent_uri)
+            if parent is None:
+                # Continuing would silently flatten or corrupt the hierarchy.
+                raise ValueError(
+                    f"ReadMe page {page['slug']!r} refers to missing "
+                    f"parent URI {parent_uri!r}"
+                )
+
+            parent["children"].append(page)
+
+        return roots
 
     def get_doc_by_slug(self, slug: str) -> str:
-        response = get(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
+        doc = self.get_doc(slug)
 
-        if not response:
+        if doc is None:
             raise DocumentNotFound(f"Document {slug} not found")
 
         front_matter = OrderedDict()
-        front_matter["title"] = response.get("title")
+        front_matter["title"] = doc.get("title")
 
-        if response.get("hidden"):
+        if self._is_hidden(doc):
             front_matter["hidden"] = True
 
-        if response.get("excerpt"):
-            front_matter["description"] = response.get("excerpt")
+        # Include a fallback for the excerpt in case the content is None
+        # which can happen if the document has no content.
+        excerpt = (doc.get("content") or {}).get("excerpt")
+        if excerpt:
+            front_matter["description"] = excerpt
 
         front_matter_str = (
             f"---\n"
@@ -133,42 +196,82 @@ class ReadMe:
             f"---\n"
         )
 
-        doc_body = response.get("body")
+        # ReadMe may return null for a page that has no body.
+        # Use an empty string so front matter can still be exported.
+        body = (doc.get("content") or {}).get("body") or ""
 
-        return front_matter_str + doc_body
+        return front_matter_str + body
 
-    def get_doc_id(self, slug: str) -> str:
-        response = get(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
-        if response:
-            return response["_id"]
-        return None
+    def get_doc(self, slug: str) -> dict | None:
+        """Return one guide and verify its slug and URI.
+
+        Args:
+            slug: The guide slug to retrieve.
+
+        Returns:
+            The guide returned by ReadMe, or ``None`` if ReadMe returns a 404.
+
+        Raises:
+            ValueError: If ReadMe resolves the request to a different slug or
+                returns a guide without a URI.
+        """
+        doc = get(self.branch_url(f"/guides/{slug}"))
+
+        if doc is None:
+            # None can only mean an actual 404.
+            return None
+
+        returned_slug = doc.get("slug")
+        uri = doc.get("uri")
+
+        # Do not allow ReadMe to resolve an alias or another canonical slug
+        # without the sync tool noticing.
+        if returned_slug != slug:
+            raise ValueError(
+                f"ReadMe resolved requested slug {slug!r} to "
+                f"{returned_slug!r} ({uri!r})"
+            )
+
+        if not uri:
+            raise ValueError(f"ReadMe guide {slug!r} has no uri")
+
+        return doc
 
     def make_version_stable(self):
+        """Make a release version the project's stable/default version."""
+        # Versions containing a suffix are preview versions, such as
+        # 0.40-brothman-newtest3. Do not make those stable.
         if self.version_has_suffix():
             return
+
         logger.info(f"{GREEN}Setting version {self.version} to stable{RESET}")
-        if not put(
-            f"{PREFIX}/version/{self.version}", {"is_stable": True, "is_hidden": False}
-        ):
-            raise ValueError("Failed to make version stable")
+
+        patch(
+            f"{API_PREFIX}/branches/{self.version}",
+            {
+                # The live ReadMe API and tested project behavior use
+                # privacy.view="default" to make this version stable/default.
+                # This differs from the public migration guide.
+                "privacy": {"view": "default"},
+            },
+        )
 
     def version_has_suffix(self) -> bool:
         return "-" in self.version
 
     def create_version_if_not_exists(self) -> bool:
-        if get(f"{PREFIX}/version/{self.version}") is None:
+        if get(f"{API_PREFIX}/branches/{self.version}") is None:
             stable_version = self.get_stable_version()
             logger.info(
                 f"{GRAY}Creating version: {self.version} "
                 f"forked from {stable_version}{RESET}"
             )
             if not post(
-                f"{PREFIX}/version",
+                f"{API_PREFIX}/branches",
                 {
-                    "version": self.version,
-                    "from": stable_version,
-                    "is_stable": False,
-                    "is_hidden": True,
+                    "name": self.version,
+                    "base": stable_version,
+                    "privacy": {"view": "hidden"},
                 },
             ):
                 raise ValueError("Failed to create a new version")
@@ -179,15 +282,15 @@ class ReadMe:
         logger.info(f"{GRAY}Deleting categories for version {self.version}{RESET}")
         categories = self.get_categories()
         for category in categories:
-            self.delete_category(category["slug"])
+            self.delete_category(category["title"])
 
-    def delete_category(self, slug: str):
-        logger.info(f"{GRAY}Deleting category {slug}{RESET}")
-        delete(f"{PREFIX}/categories/{slug}", {"x-readme-version": self.version})
+    def delete_category(self, title: str):
+        logger.info(f"{GRAY}Deleting category {title}{RESET}")
+        delete(self.branch_url(f"/categories/{GUIDES_SECTION}/{quote(title, safe='')}"))
 
     def delete_doc(self, slug: str):
         logger.info(f"{GRAY}Deleting doc {slug}{RESET}")
-        delete(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
+        delete(self.branch_url(f"/guides/{slug}"))
 
     def validate_csv_align_param(self, align_value: str) -> None:
         if align_value not in ["left", "right"]:
@@ -196,28 +299,19 @@ class ReadMe:
             )
 
     def create_category_if_not_exists(self, title: str) -> tuple[str, bool]:
-        # Unfortunately ReadMe's API does not allow us to create a category with a
-        # specific slug, so we have to check if the category exists by converting
-        # the title to readme's style of slug to check if it exists.
-        # http://docs.readme.com/main/reference/createcategory
-        readme_slug = self.normalize_title_to_readme_slug(title)
-
         category = get(
-            f"{PREFIX}/categories/{readme_slug}", {"x-readme-version": self.version}
+            self.branch_url(f"/categories/{GUIDES_SECTION}/{quote(title, safe='')}")
         )
         if category is None:
-            response = post(
-                f"{PREFIX}/categories",
-                {"title": title, "type": "guide"},
-                {"x-readme-version": self.version},
+            created = post(
+                self.branch_url("/categories"),
+                {"title": title, "section": GUIDES_SECTION_BODY},
             )
-            if response is None:
+            if created is None:
                 raise ValueError(f"Failed to create category {title}")
 
-            category = json.loads(response)
-            return category["_id"], True
-
-        return category["_id"], False
+            return created["uri"], True
+        return category["uri"], False
 
     def convert_csv_to_html_table(self, body: str, file_path: str) -> str:
         """Convert CSV table references to HTML tables.
@@ -303,43 +397,81 @@ class ReadMe:
         return REGEX_CSV_TABLE.sub(replace_match, body)
 
     def create_or_update_doc(
-        self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str
+        self,
+        order: int,
+        category_id: str,
+        doc: dict,
+        parent_id: str,
+        file_path: str,
     ) -> tuple[str, bool]:
-        markdown = self.process_markdown(doc["body"], file_path, doc["slug"])
+        # Convert the document body into the format expected by ReadMe.
+        markdown = self.process_markdown(
+            doc["body"],
+            file_path,
+            doc["slug"],
+        )
 
-        create_doc_request = {
+        # This payload is used when updating an existing guide.
+        #
+        # We not include "slug" in this request as updating a doc
+        # uses its slug in the patch URL.
+        update_doc_request = {
             "title": doc["title"],
             "type": "basic",
-            "body": markdown,
-            "category": category_id,
-            "hidden": doc.get("hidden", False),
-            "order": order,
-            "parentDoc": parent_id,
-            "slug": doc["slug"],
+            "content": {"body": markdown},
+            "category": {"uri": category_id},
+            "privacy": {
+                "view": ("anyone_with_link" if doc.get("hidden", False) else "public")
+            },
+            "position": order,
         }
 
-        # Include description field as excerpt if it exists in the document
+        # Include the parent URI when this guide is nested under another guide.
+        if parent_id:
+            update_doc_request["parent"] = {"uri": parent_id}
+
         if "description" in doc:
-            create_doc_request["excerpt"] = doc["description"]
+            update_doc_request["content"]["excerpt"] = doc["description"]
 
-        doc_id = self.get_doc_id(doc["slug"])
-        created = doc_id is None
-        if doc_id:
-            if not put(
-                f"{PREFIX}/docs/{doc['slug']}",
-                create_doc_request,
-                {"x-readme-version": self.version},
-            ):
-                raise ValueError(f"Failed to update doc {doc['title']}")
-        else:
-            response = post(
-                f"{PREFIX}/docs", create_doc_request, {"x-readme-version": self.version}
+        existing_doc = self.get_doc(doc["slug"])
+
+        if existing_doc is not None:
+            # The guide already exists, so update it without sending its slug.
+            patch(
+                self.branch_url(f"/guides/{doc['slug']}"),
+                update_doc_request,
             )
-            if response is None:
-                raise ValueError(f"Failed to create doc {doc['title']}")
-            doc_id = json.loads(response)["_id"]
 
-        return doc_id, created
+            # Return the existing guide URI for use as the parent of nested pages.
+            return existing_doc["uri"], False
+
+        # The guide does not exist, so create it using the requested slug.
+        create_doc_request = dict(update_doc_request)
+        create_doc_request["slug"] = doc["slug"]
+
+        created = post(
+            self.branch_url("/guides"),
+            create_doc_request,
+            # Prevent ReadMe from silently changing a duplicate slug into slug-1.
+            # A slug collision will instead cause the request to fail.
+            headers={"prefer": "handling=strict"},
+        )
+
+        actual_slug = created.get("slug")
+        created_uri = created.get("uri")
+
+        # Keep this protection even though strict handling should prevent
+        # ReadMe from assigning a different slug.
+        if actual_slug != doc["slug"]:
+            raise ValueError(
+                f"ReadMe created {doc['title']!r} with slug "
+                f"{actual_slug!r}; expected {doc['slug']!r}"
+            )
+
+        if not created_uri:
+            raise ValueError(f"Created doc {doc['title']!r} has no uri")
+
+        return created_uri, True
 
     def process_markdown(self, body: str, file_path: str, slug: str) -> str:
         body = self.insert_edit_this_page(body, slug, file_path)
@@ -447,15 +579,24 @@ class ReadMe:
         return body
 
     def get_stable_version(self) -> str:
-        versions = get(f"{PREFIX}/version")
-        if versions is None or not versions:
-            raise ValueError("Failed to retrieve versions or no versions found")
+        """Return the name of the project's stable/default version.
 
-        for version in versions:
-            if version["is_stable"]:
-                return version["version_clean"]
+        Returns:
+            The name of the branch currently identified by ReadMe as stable.
 
-        raise ValueError("No stable version found")
+        Raises:
+            ValueError: If no stable branch exists or the stable branch response
+                does not contain a name.
+        """
+        stable = get(f"{API_PREFIX}/branches/stable")
+        if stable is None:
+            raise ValueError("No stable version found")
+
+        name = stable.get("name")
+        if not name:
+            raise ValueError("Stable version response did not contain a name")
+
+        return name
 
     def parse_images(self, markdown_text: str) -> str:
         def replace_image(match):
@@ -504,7 +645,7 @@ class ReadMe:
         return regex_images.sub(replace_image, markdown_text)
 
     def delete_version(self):
-        delete(f"{PREFIX}/version/v{self.version}")
+        delete(f"{API_PREFIX}/branches/{self.version}")
         logger.info(f"{GREEN}Successfully deleted version {self.version}{RESET}")
 
     def _should_ignore_video(self, identifier: str, ignore_list: list[str]) -> bool:

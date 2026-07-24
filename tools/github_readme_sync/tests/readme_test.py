@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -14,9 +14,14 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, call, patch
 
-from tools.github_readme_sync.readme import GITHUB_RAW, ReadMe
+from tools.github_readme_sync.readme import (
+    API_PREFIX,
+    GITHUB_RAW,
+    DocumentNotFound,
+    ReadMe,
+)
 
 
 class TestReadme(unittest.TestCase):
@@ -25,337 +30,562 @@ class TestReadme(unittest.TestCase):
         self.readme = ReadMe(self.version)
 
     @patch("tools.github_readme_sync.readme.get")
-    def test_get_stable_version(self, mock_get):
-        mock_get.return_value = [
-            {
-                "version": "0.0-dry-run",
-                "version_clean": "0.0.0-dry-run",
-                "codename": "",
-                "is_stable": False,
-                "is_beta": False,
-                "is_hidden": True,
-                "is_deprecated": False,
-                "pdfStatus": "",
-                "_id": "66f2da3113724c00253aa01c",
-                "createdAt": "2024-09-24T15:26:41.131Z",
-            },
-            {
-                "version": "1.0.0",
-                "version_clean": "1.0.0",
-                "codename": "",
-                "is_stable": True,
-                "is_beta": False,
-                "is_hidden": False,
-                "is_deprecated": False,
-                "pdfStatus": "",
-                "_id": "6669fcac47cf690019d6192d",
-                "createdAt": "2024-06-12T19:53:16.502Z",
-            },
-        ]
+    def test_get_stable_version_uses_v2_stable_alias(self, mock_get):
+        mock_get.return_value = {
+            "name": "0.40",
+            "privacy": {"view": "default"},
+        }
+
         stable_version = self.readme.get_stable_version()
-        self.assertEqual(stable_version, "1.0.0")
-        mock_get.assert_called_once_with(
-            "https://dash.readme.com/api/v1/version",
-        )
+
+        self.assertEqual(stable_version, "0.40")
+        mock_get.assert_called_once_with(f"{API_PREFIX}/branches/stable")
 
     @patch("tools.github_readme_sync.readme.get")
-    def test_get_stable_version_none(self, mock_get):
-        # Simulate None being returned by the API
+    def test_get_stable_version_raises_when_alias_is_missing(self, mock_get):
         mock_get.return_value = None
 
-        # Assert that ValueError is raised when no versions are returned
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaisesRegex(ValueError, "No stable version found"):
             self.readme.get_stable_version()
 
+    @patch("tools.github_readme_sync.readme.get")
+    def test_get_stable_version_requires_name(self, mock_get):
+        mock_get.return_value = {"privacy": {"view": "default"}}
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Stable version response did not contain a name",
+        ):
+            self.readme.get_stable_version()
+
+    @patch("tools.github_readme_sync.readme.get_collection")
+    def test_get_categories_uses_branch_scoped_v2_endpoint(
+        self,
+        mock_get_collection,
+    ):
+        categories = [
+            {"title": "Category 2", "uri": "/categories/Category%202"},
+            {"title": "Category 1", "uri": "/categories/Category%201"},
+        ]
+        mock_get_collection.return_value = categories
+
+        result = self.readme.get_categories()
+
+        # The API response order is preserved; v2 does not return the old
+        # category order property that the v1 tests sorted on.
+        self.assertEqual(result, categories)
+        mock_get_collection.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}/categories/guides"
+        )
+
+    @patch("tools.github_readme_sync.readme.get_collection")
+    def test_get_categories_empty_collection(self, mock_get_collection):
+        mock_get_collection.return_value = []
+
+        self.assertEqual(self.readme.get_categories(), [])
+
+    @patch("tools.github_readme_sync.readme.get_collection")
+    def test_get_category_docs_uses_quoted_category_title(
+        self,
+        mock_get_collection,
+    ):
+        pages = [
+            {
+                "title": "Doc 1",
+                "slug": "doc-1",
+                "uri": "/branches/1.0.0/guides/doc-1",
+            }
+        ]
+        mock_get_collection.return_value = pages
+
+        result = self.readme.get_category_docs({"title": "How to Use Monty & More"})
+
+        self.assertEqual(result, pages)
+        mock_get_collection.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}/categories/"
+            "guides/How%20to%20Use%20Monty%20%26%20More/pages"
+        )
+
+    @patch.object(ReadMe, "get_category_docs")
+    def test_get_category_doc_tree_rebuilds_nested_pages(
+        self,
+        mock_get_category_docs,
+    ):
+        parent_uri = "/branches/1.0.0/guides/parent"
+        mock_get_category_docs.return_value = [
+            {
+                "title": "Parent",
+                "slug": "parent",
+                "uri": parent_uri,
+                "parent": None,
+            },
+            {
+                "title": "First Child",
+                "slug": "first-child",
+                "uri": "/branches/1.0.0/guides/first-child",
+                "parent": {"uri": parent_uri},
+            },
+            {
+                "title": "Second Child",
+                "slug": "second-child",
+                "uri": "/branches/1.0.0/guides/second-child",
+                "parent": {"uri": parent_uri},
+            },
+            {
+                "title": "Other Root",
+                "slug": "other-root",
+                "uri": "/branches/1.0.0/guides/other-root",
+                "parent": None,
+            },
+        ]
+
+        roots = self.readme.get_category_doc_tree({"title": "Category"})
+
         self.assertEqual(
-            str(context.exception), "Failed to retrieve versions or no versions found"
+            [page["slug"] for page in roots],
+            ["parent", "other-root"],
         )
-        mock_get.assert_called_once_with(
-            "https://dash.readme.com/api/v1/version",
+        self.assertEqual(
+            [child["slug"] for child in roots[0]["children"]],
+            ["first-child", "second-child"],
         )
+        self.assertEqual(roots[1]["children"], [])
 
-    @patch("tools.github_readme_sync.readme.get")
-    def test_get_categories(self, mock_get):
-        mock_get.return_value = [
-            {"order": 2, "name": "Category 2"},
-            {"order": 1, "name": "Category 1"},
+    @patch.object(ReadMe, "get_category_docs")
+    def test_get_category_doc_tree_rejects_page_without_uri(
+        self,
+        mock_get_category_docs,
+    ):
+        mock_get_category_docs.return_value = [
+            {"title": "Missing URI", "slug": "missing-uri"}
         ]
-        categories = self.readme.get_categories()
-        self.assertEqual(len(categories), 2)
-        self.assertEqual(categories[0]["name"], "Category 1")
-        mock_get.assert_called_once_with(
-            "https://dash.readme.com/api/v1/categories",
-            {"x-readme-version": self.version},
-        )
 
-    @patch("tools.github_readme_sync.readme.get")
-    def test_get_categories_none(self, mock_get):
-        mock_get.return_value = None
-        categories = self.readme.get_categories()
-        # assert empty list
-        self.assertEqual(categories, [])
-        mock_get.assert_called_once_with(
-            "https://dash.readme.com/api/v1/categories",
-            {"x-readme-version": self.version},
-        )
+        with self.assertRaisesRegex(ValueError, "has no uri"):
+            self.readme.get_category_doc_tree({"title": "Category"})
 
-    @patch("tools.github_readme_sync.readme.get")
-    def test_get_categories_raises_error(self, mock_get):
-        mock_get.side_effect = ValueError("Failed to get categories")
-        with self.assertRaises(ValueError) as context:
-            self.readme.get_categories()
-        self.assertEqual(str(context.exception), "Failed to get categories")
-
-    @patch("tools.github_readme_sync.readme.get")
-    def test_get_category_docs(self, mock_get):
-        mock_get.return_value = [
-            {"order": 2, "name": "Doc 2"},
-            {"order": 1, "name": "Doc 1"},
+    @patch.object(ReadMe, "get_category_docs")
+    def test_get_category_doc_tree_rejects_duplicate_uri(
+        self,
+        mock_get_category_docs,
+    ):
+        duplicate_uri = "/branches/1.0.0/guides/duplicate"
+        mock_get_category_docs.return_value = [
+            {"title": "One", "slug": "one", "uri": duplicate_uri},
+            {"title": "Two", "slug": "two", "uri": duplicate_uri},
         ]
-        docs = self.readme.get_category_docs({"slug": "example-category"})
-        self.assertEqual(len(docs), 2)
-        self.assertEqual(docs[0]["name"], "Doc 1")
-        mock_get.assert_called_once_with(
-            "https://dash.readme.com/api/v1/categories/example-category/docs",
-            {"x-readme-version": self.version},
-        )
+
+        with self.assertRaisesRegex(ValueError, "duplicate page URI"):
+            self.readme.get_category_doc_tree({"title": "Category"})
+
+    @patch.object(ReadMe, "get_category_docs")
+    def test_get_category_doc_tree_rejects_missing_parent(
+        self,
+        mock_get_category_docs,
+    ):
+        mock_get_category_docs.return_value = [
+            {
+                "title": "Orphan",
+                "slug": "orphan",
+                "uri": "/branches/1.0.0/guides/orphan",
+                "parent": {"uri": "/branches/1.0.0/guides/missing"},
+            }
+        ]
+
+        with self.assertRaisesRegex(ValueError, "refers to missing parent URI"):
+            self.readme.get_category_doc_tree({"title": "Category"})
 
     @patch("tools.github_readme_sync.readme.get")
-    def test_get_category_docs_raises_error(self, mock_get):
-        mock_get.side_effect = ValueError("Failed to get category docs")
-        with self.assertRaises(ValueError) as context:
-            self.readme.get_category_docs({"slug": "example-category"})
-        self.assertEqual(str(context.exception), "Failed to get category docs")
-
-    @patch("tools.github_readme_sync.readme.get")
-    def test_get_doc_by_slug(self, mock_get):
+    def test_get_doc_by_slug_exports_v2_content_and_frontmatter(self, mock_get):
         mock_get.return_value = {
             "title": "Test Document",
-            "body": "This is a test document.",
-            "hidden": False,
+            "slug": "test-doc",
+            "uri": "/branches/1.0.0/guides/test-doc",
+            "privacy": {"view": "public"},
+            "content": {
+                "body": "This is a test document.",
+                "excerpt": "A description",
+            },
         }
+
         doc = self.readme.get_doc_by_slug("test-doc")
+
         self.assertIn("title: Test Document", doc)
+        self.assertIn("description: A description", doc)
         self.assertIn("This is a test document.", doc)
         mock_get.assert_called_once_with(
-            "https://dash.readme.com/api/v1/docs/test-doc",
-            {"x-readme-version": self.version},
+            f"{API_PREFIX}/branches/{self.version}/guides/test-doc"
         )
 
     @patch("tools.github_readme_sync.readme.get")
-    def test_get_doc_by_slug_escaped(self, mock_get):
+    def test_get_doc_by_slug_exports_hidden_page_and_empty_body(self, mock_get):
         mock_get.return_value = {
             "title": "[Test] Document",
-            "body": "This is a test document.",
-            "hidden": True,
+            "slug": "test-doc",
+            "uri": "/branches/1.0.0/guides/test-doc",
+            "privacy": {"view": "anyone_with_link"},
+            "content": {"body": None, "excerpt": None},
         }
+
         doc = self.readme.get_doc_by_slug("test-doc")
+
         self.assertEqual(
             doc,
-            """---
-title: '[Test] Document'
-hidden: true
----
-This is a test document.""",
-        )
-        mock_get.assert_called_once_with(
-            "https://dash.readme.com/api/v1/docs/test-doc",
-            {"x-readme-version": self.version},
+            "---\ntitle: '[Test] Document'\nhidden: true\n---\n",
         )
 
     @patch("tools.github_readme_sync.readme.get")
-    def test_get_doc_by_slug_raises_error(self, mock_get):
-        mock_get.side_effect = ValueError("Failed to get doc")
-        with self.assertRaises(ValueError) as context:
-            self.readme.get_doc_by_slug("test-doc")
-        self.assertEqual(str(context.exception), "Failed to get doc")
+    def test_get_doc_by_slug_raises_document_not_found(self, mock_get):
+        mock_get.return_value = None
+
+        with self.assertRaisesRegex(DocumentNotFound, "Document missing not found"):
+            self.readme.get_doc_by_slug("missing")
 
     @patch("tools.github_readme_sync.readme.get")
-    def test_get_doc_id(self, mock_get):
-        mock_get.return_value = {"_id": "123"}
-        doc_id = self.readme.get_doc_id("test-doc")
-        self.assertEqual(doc_id, "123")
-        mock_get.assert_called_once_with(
-            "https://dash.readme.com/api/v1/docs/test-doc",
-            {"x-readme-version": self.version},
-        )
+    def test_get_doc_rejects_alias_or_changed_slug(self, mock_get):
+        mock_get.return_value = {
+            "title": "Document",
+            "slug": "canonical-slug",
+            "uri": "/branches/1.0.0/guides/canonical-slug",
+        }
 
-    @patch("tools.github_readme_sync.readme.put")
-    def test_make_version_stable(self, mock_put):
-        mock_put.return_value = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "resolved requested slug 'requested-slug' to 'canonical-slug'",
+        ):
+            self.readme.get_doc("requested-slug")
+
+    @patch("tools.github_readme_sync.readme.get")
+    def test_get_doc_requires_resource_uri(self, mock_get):
+        mock_get.return_value = {"title": "Document", "slug": "test-doc"}
+
+        with self.assertRaisesRegex(ValueError, "has no uri"):
+            self.readme.get_doc("test-doc")
+
+    @patch("tools.github_readme_sync.readme.patch")
+    def test_make_version_stable_uses_live_v2_privacy_behavior(self, mock_patch):
         self.readme.make_version_stable()
-        mock_put.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/version/{self.version}",
-            {"is_stable": True, "is_hidden": False},
+
+        mock_patch.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}",
+            {"privacy": {"view": "default"}},
         )
 
-    @patch("tools.github_readme_sync.readme.put")
-    def test_make_version_stable_with_suffix(self, mock_put):
+    @patch("tools.github_readme_sync.readme.patch")
+    def test_make_version_stable_skips_preview_version(self, mock_patch):
         self.readme.version = "1.0.0-beta"
+
         self.readme.make_version_stable()
-        mock_put.assert_not_called()
 
-    @patch("tools.github_readme_sync.readme.get")
+        mock_patch.assert_not_called()
+
+    @patch.object(ReadMe, "get_stable_version", return_value="0.39")
     @patch("tools.github_readme_sync.readme.post")
-    def test_create_version_if_not_exists(self, mock_post, mock_get):
-        # Mock the first get call to check if the version exists (returns None)
-        mock_get.side_effect = [
-            None,  # First get call for checking if the version exists
-            [
-                {
-                    "version": "0.0.0-base",
-                    "version_clean": "0.0.0-base",
-                    "is_stable": True,
-                    "is_beta": False,
-                    "is_hidden": False,
-                    "is_deprecated": False,
-                    "pdfStatus": "",
-                    "_id": "66f2da3113724c00253aa01c",
-                    "createdAt": "2024-09-24T15:26:41.131Z",
-                }
-            ],  # Second get call to retrieve stable versions
-        ]
+    @patch("tools.github_readme_sync.readme.get")
+    def test_create_version_if_not_exists_uses_v2_branch_payload(
+        self,
+        mock_get,
+        mock_post,
+        mock_get_stable_version,
+    ):
+        mock_get.return_value = None
+        mock_post.return_value = {
+            "name": self.version,
+            "uri": f"/branches/{self.version}",
+        }
 
-        # Mock the post call to create the new version
-        mock_post.return_value = True
-
-        # Call the method to test
         created = self.readme.create_version_if_not_exists()
 
-        # Assert the version was created
         self.assertTrue(created)
-
-        # Check if the right API calls were made
-        mock_get.assert_any_call(
-            f"https://dash.readme.com/api/v1/version/{self.version}"
-        )
-
-        mock_get.assert_any_call("https://dash.readme.com/api/v1/version")
-
+        mock_get.assert_called_once_with(f"{API_PREFIX}/branches/{self.version}")
+        mock_get_stable_version.assert_called_once_with()
         mock_post.assert_called_once_with(
-            "https://dash.readme.com/api/v1/version",
+            f"{API_PREFIX}/branches",
             {
-                "version": self.version,
-                "from": "0.0.0-base",
-                "is_stable": False,
-                "is_hidden": True,
+                "name": self.version,
+                "base": "0.39",
+                "privacy": {"view": "hidden"},
             },
         )
+
+    @patch("tools.github_readme_sync.readme.post")
+    @patch("tools.github_readme_sync.readme.get")
+    def test_create_version_if_not_exists_returns_false_when_branch_exists(
+        self,
+        mock_get,
+        mock_post,
+    ):
+        mock_get.return_value = {"name": self.version}
+
+        created = self.readme.create_version_if_not_exists()
+
+        self.assertFalse(created)
+        mock_post.assert_not_called()
 
     @patch.object(ReadMe, "get_categories")
     @patch("tools.github_readme_sync.readme.delete")
-    def test_delete_categories(self, mock_delete, mock_get_categories):
+    def test_delete_categories_uses_category_titles(
+        self,
+        mock_delete,
+        mock_get_categories,
+    ):
         mock_get_categories.return_value = [
-            {"slug": "category-1"},
-            {"slug": "category-2"},
+            {"title": "Category 1"},
+            {"title": "Category 2"},
         ]
+
         self.readme.delete_categories()
-        mock_get_categories.assert_called_once_with()
-        self.assertEqual(mock_delete.call_count, 2)
 
-    @patch("tools.github_readme_sync.readme.delete")
-    def test_delete_category(self, mock_delete):
-        self.readme.delete_category("category-1")
-        mock_delete.assert_called_once_with(
-            "https://dash.readme.com/api/v1/categories/category-1",
-            {"x-readme-version": self.version},
+        self.assertEqual(
+            mock_delete.call_args_list,
+            [
+                call(
+                    f"{API_PREFIX}/branches/{self.version}/"
+                    "categories/guides/Category%201"
+                ),
+                call(
+                    f"{API_PREFIX}/branches/{self.version}/"
+                    "categories/guides/Category%202"
+                ),
+            ],
         )
 
     @patch("tools.github_readme_sync.readme.delete")
-    def test_delete_doc(self, mock_delete):
+    def test_delete_category_quotes_title(self, mock_delete):
+        self.readme.delete_category("How to Use Monty & More")
+
+        mock_delete.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}/categories/"
+            "guides/How%20to%20Use%20Monty%20%26%20More"
+        )
+
+    @patch("tools.github_readme_sync.readme.delete")
+    def test_delete_doc_uses_branch_scoped_v2_endpoint(self, mock_delete):
         self.readme.delete_doc("doc-1")
+
         mock_delete.assert_called_once_with(
-            "https://dash.readme.com/api/v1/docs/doc-1",
-            {"x-readme-version": self.version},
+            f"{API_PREFIX}/branches/{self.version}/guides/doc-1"
         )
 
-    @patch("tools.github_readme_sync.readme.get")
+    @patch("tools.github_readme_sync.readme.delete")
+    def test_delete_version_uses_v2_branch_endpoint(self, mock_delete):
+        self.readme.delete_version()
+
+        mock_delete.assert_called_once_with(f"{API_PREFIX}/branches/{self.version}")
+
     @patch("tools.github_readme_sync.readme.post")
-    def test_create_category_if_not_exists(self, mock_post, mock_get):
+    @patch("tools.github_readme_sync.readme.get")
+    def test_create_category_if_not_exists_uses_title_and_resource_uri(
+        self,
+        mock_get,
+        mock_post,
+    ):
         mock_get.return_value = None
-        mock_post.return_value = json.dumps({"_id": "new-category-id"})
-        category_id, created = self.readme.create_category_if_not_exists("New Category")
+        mock_post.return_value = {
+            "title": "New Category",
+            "uri": "/branches/1.0.0/categories/guides/New%20Category",
+        }
+
+        category_uri, created = self.readme.create_category_if_not_exists(
+            "New Category"
+        )
+
         self.assertTrue(created)
-        self.assertEqual(category_id, "new-category-id")
+        self.assertEqual(
+            category_uri,
+            "/branches/1.0.0/categories/guides/New%20Category",
+        )
         mock_get.assert_called_once_with(
-            "https://dash.readme.com/api/v1/categories/new-category",
-            {"x-readme-version": self.version},
+            f"{API_PREFIX}/branches/{self.version}/categories/guides/New%20Category"
         )
         mock_post.assert_called_once_with(
-            "https://dash.readme.com/api/v1/categories",
-            {"title": "New Category", "type": "guide"},
-            {"x-readme-version": self.version},
+            f"{API_PREFIX}/branches/{self.version}/categories",
+            {"title": "New Category", "section": "guide"},
         )
 
-    @patch("tools.github_readme_sync.readme.get")
-    @patch("tools.github_readme_sync.readme.put")
     @patch("tools.github_readme_sync.readme.post")
-    @patch.dict(os.environ, {"IMAGE_PATH": "user/repo"})
-    def test_create_or_update_doc(self, mock_post, mock_put, mock_get):
-        mock_get.return_value = None  # Doc does not exist
-        mock_post.return_value = json.dumps({"_id": "new-doc-id"})
-        doc_id, created = self.readme.create_or_update_doc(
-            order=1,
-            category_id="category-id",
-            doc={"title": "New Doc", "body": "This is a new doc.", "slug": "new-doc"},
-            parent_id="parent-doc-id",
-            file_path="docs/new-doc.md",
-        )
-        self.assertTrue(created)
-        self.assertEqual(doc_id, "new-doc-id")
-        # Get the actual body from the call arguments
-        actual_body = mock_post.call_args[0][1]["body"]
-        self.assertTrue(actual_body.startswith("This is a new doc."))
+    @patch("tools.github_readme_sync.readme.get")
+    def test_create_category_if_not_exists_returns_existing_uri(
+        self,
+        mock_get,
+        mock_post,
+    ):
+        mock_get.return_value = {
+            "title": "Existing Category",
+            "uri": "/branches/1.0.0/categories/guides/Existing%20Category",
+        }
 
+        category_uri, created = self.readme.create_category_if_not_exists(
+            "Existing Category"
+        )
+
+        self.assertFalse(created)
+        self.assertEqual(
+            category_uri,
+            "/branches/1.0.0/categories/guides/Existing%20Category",
+        )
+        mock_post.assert_not_called()
+
+    @patch("tools.github_readme_sync.readme.post")
+    @patch("tools.github_readme_sync.readme.patch")
+    @patch.object(ReadMe, "get_doc")
+    @patch.object(ReadMe, "process_markdown", return_value="Processed body")
+    def test_create_or_update_doc_creates_v2_guide(
+        self,
+        mock_process_markdown,
+        mock_get_doc,
+        mock_patch,
+        mock_post,
+    ):
+        mock_get_doc.return_value = None
+        mock_post.return_value = {
+            "slug": "new-doc",
+            "uri": "/branches/1.0.0/guides/new-doc",
+        }
+        doc = {
+            "title": "New Doc",
+            "body": "This is a new doc.",
+            "slug": "new-doc",
+            "description": "A description",
+        }
+
+        doc_uri, created = self.readme.create_or_update_doc(
+            order=1,
+            category_id="/branches/1.0.0/categories/guides/Category",
+            doc=doc,
+            parent_id="/branches/1.0.0/guides/parent-doc",
+            file_path="docs/category",
+        )
+
+        self.assertTrue(created)
+        self.assertEqual(doc_uri, "/branches/1.0.0/guides/new-doc")
+        mock_process_markdown.assert_called_once_with(
+            "This is a new doc.",
+            "docs/category",
+            "new-doc",
+        )
         mock_post.assert_called_once_with(
-            "https://dash.readme.com/api/v1/docs",
+            f"{API_PREFIX}/branches/{self.version}/guides",
             {
                 "title": "New Doc",
                 "type": "basic",
-                "body": mock_post.call_args[0][1]["body"],  # Use actual body
-                "category": "category-id",
-                "hidden": False,
-                "order": 1,
-                "parentDoc": "parent-doc-id",
+                "content": {
+                    "body": "Processed body",
+                    "excerpt": "A description",
+                },
+                "category": {"uri": "/branches/1.0.0/categories/guides/Category"},
+                "privacy": {"view": "public"},
+                "position": 1,
+                "parent": {"uri": "/branches/1.0.0/guides/parent-doc"},
                 "slug": "new-doc",
             },
-            {"x-readme-version": self.version},
+            headers={"prefer": "handling=strict"},
         )
-        mock_put.assert_not_called()
+        mock_patch.assert_not_called()
 
-    @patch("tools.github_readme_sync.readme.get")
     @patch("tools.github_readme_sync.readme.post")
-    @patch.dict(os.environ, {"IMAGE_PATH": "user/repo"})
-    def test_description_field_is_sent_to_readme_as_excerpt(self, mock_post, mock_get):
-        mock_get.return_value = None  # Doc does not exist
-        mock_post.return_value = json.dumps({"_id": "glossary-id"})
-
-        # Create a document with a description field
-        doc_with_description = {
-            "title": "Glossary",
-            "body": "Glossary content",
-            "slug": "glossary",
-            "description": "A collection of terms",
+    @patch("tools.github_readme_sync.readme.patch")
+    @patch.object(ReadMe, "get_doc")
+    @patch.object(
+        ReadMe,
+        "process_markdown",
+        new=MagicMock(return_value="Updated body"),
+    )
+    def test_create_or_update_doc_updates_without_sending_slug(
+        self,
+        mock_get_doc,
+        mock_patch,
+        mock_post,
+    ):
+        mock_get_doc.return_value = {
+            "slug": "existing-doc",
+            "uri": "/branches/1.0.0/guides/existing-doc",
+        }
+        doc = {
+            "title": "Existing Doc",
+            "body": "Updated source",
+            "slug": "existing-doc",
+            "hidden": True,
         }
 
-        self.readme.create_or_update_doc(
-            order=1,
-            category_id="category-id",
-            doc=doc_with_description,
-            parent_id="parent-doc-id",
-            file_path="docs/glossary.md",
+        doc_uri, created = self.readme.create_or_update_doc(
+            order=2,
+            category_id="/branches/1.0.0/categories/guides/Category",
+            doc=doc,
+            parent_id=None,
+            file_path="docs/category",
         )
 
-        self.assertIn(
-            "excerpt",
-            mock_post.call_args[0][1],
-            "Excerpt field is missing",
+        self.assertFalse(created)
+        self.assertEqual(doc_uri, "/branches/1.0.0/guides/existing-doc")
+        expected_payload = {
+            "title": "Existing Doc",
+            "type": "basic",
+            "content": {"body": "Updated body"},
+            "category": {"uri": "/branches/1.0.0/categories/guides/Category"},
+            "privacy": {"view": "anyone_with_link"},
+            "position": 2,
+        }
+        mock_patch.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}/guides/existing-doc",
+            expected_payload,
         )
-        self.assertEqual(
-            mock_post.call_args[0][1]["excerpt"],
-            "A collection of terms",
-            "Excerpt field value is incorrect",
-        )
+        self.assertNotIn("slug", expected_payload)
+        mock_post.assert_not_called()
+
+    @patch("tools.github_readme_sync.readme.post")
+    @patch.object(
+        ReadMe,
+        "get_doc",
+        new=MagicMock(return_value=None),
+    )
+    @patch.object(
+        ReadMe,
+        "process_markdown",
+        new=MagicMock(return_value="Body"),
+    )
+    def test_create_or_update_doc_rejects_changed_created_slug(
+        self,
+        mock_post,
+    ):
+        mock_post.return_value = {
+            "slug": "new-doc-1",
+            "uri": "/branches/1.0.0/guides/new-doc-1",
+        }
+
+        with self.assertRaisesRegex(ValueError, "expected 'new-doc'"):
+            self.readme.create_or_update_doc(
+                order=0,
+                category_id="/branches/1.0.0/categories/guides/Category",
+                doc={"title": "New Doc", "body": "Body", "slug": "new-doc"},
+                parent_id=None,
+                file_path="docs/category",
+            )
+
+    @patch("tools.github_readme_sync.readme.post")
+    @patch.object(
+        ReadMe,
+        "get_doc",
+        new=MagicMock(return_value=None),
+    )
+    @patch.object(
+        ReadMe,
+        "process_markdown",
+        new=MagicMock(return_value="Body"),
+    )
+    def test_create_or_update_doc_requires_created_uri(
+        self,
+        mock_post,
+    ):
+        mock_post.return_value = {"slug": "new-doc"}
+
+        with self.assertRaisesRegex(ValueError, "has no uri"):
+            self.readme.create_or_update_doc(
+                order=0,
+                category_id="/branches/1.0.0/categories/guides/Category",
+                doc={"title": "New Doc", "body": "Body", "slug": "new-doc"},
+                parent_id=None,
+                file_path="docs/category",
+            )
 
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo/refs/head/main/docs/figures"})
     def test_correct_image_locations_markdown(self):
@@ -864,3 +1094,7 @@ This is a test document.""",
         self.assertIn("<h1>Test Content</h1>", sanitized_html)
         self.assertIn("<p>This is a test paragraph</p>", sanitized_html)
         self.assertIn("<p>More content after the script</p>", sanitized_html)
+
+
+if __name__ == "__main__":
+    unittest.main()
