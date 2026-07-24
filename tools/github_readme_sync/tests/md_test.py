@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,27 +9,30 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
+from textwrap import dedent
 
 from tools.github_readme_sync.md import parse_frontmatter, process_markdown
 
 
 class TestMarkdown(unittest.TestCase):
     def test_parse_frontmatter_with_empty_frontmatter(self):
-        content = """---
----
+        content = dedent("""\
+        ---
+        ---
 
-Content here.
-"""
+        Content here.
+        """)
         expected = None  # Adjusted to match the actual return value
         result = parse_frontmatter(content)
         self.assertEqual(result, expected)
 
     def test_process_markdown_with_empty_frontmatter_raises_error(self):
-        body = """---
----
+        body = dedent("""\
+        ---
+        ---
 
-Content here.
-"""
+        Content here.
+        """)
         slug = "empty-frontmatter-slug"
         with self.assertRaises(ValueError) as context:
             process_markdown(body, slug)
@@ -42,13 +45,14 @@ Content here.
         self.assertEqual(result, expected)
 
     def test_process_markdown_with_frontmatter(self):
-        body = """---
-title: Sample Title
-hidden: true
----
+        body = dedent("""\
+        ---
+        title: Sample Title
+        hidden: true
+        ---
 
-This is the body of the markdown.
-"""
+        This is the body of the markdown.
+        """)
         slug = "sample-slug"
         expected = {
             "title": "Sample Title",
@@ -75,10 +79,17 @@ This is the body of the markdown.
         self.assertEqual(str(context.exception), "No frontmatter found in the document")
 
     def test_process_markdown_with_frontmatter_in_body(self):
-        body = (
-            "---\ntitle: Sample Title\nhidden: true\n---\n\nThis is the body of the "
-            "markdown. More front matter here.\n---\nhidden: false\n---something else"
-        )
+        body = dedent("""\
+        ---
+        title: Sample Title
+        hidden: true
+        ---
+
+        This is the body of the markdown. More front matter here.
+        ---
+        hidden: false
+        ---something else
+        """)
         slug = "frontmatter-in-body-slug"
         expected = {
             "title": "Sample Title",
@@ -92,13 +103,14 @@ This is the body of the markdown.
         self.assertEqual(result, expected)
 
     def test_process_markdown_completed_status_sets_hidden(self):
-        body = """---
-title: Some Completed Task
-status: completed
----
+        body = dedent("""\
+        ---
+        title: Some Completed Task
+        status: completed
+        ---
 
-This task has been completed.
-"""
+        This task has been completed.
+        """)
         slug = "completed-task-slug"
         result = process_markdown(body, slug)
         self.assertTrue(
@@ -107,13 +119,17 @@ This task has been completed.
         )
 
     def test_description_field_in_frontmatter_is_processed(self):
-        body = """---
-title: Glossary
-description: A collection of terms and definitions used in the Thousand Brains Project
----
+        description = (
+            "A collection of terms and definitions used in the Thousand Brains Project"
+        )
+        body = dedent(f"""\
+        ---
+        title: Glossary
+        description: {description}
+        ---
 
-This is the glossary content.
-"""
+        This is the glossary content.
+        """)
         slug = "glossary"
         result = process_markdown(body, slug)
         self.assertIn(
@@ -123,6 +139,33 @@ This is the glossary content.
         )
         self.assertEqual(
             result["description"],
-            "A collection of terms and definitions used in the Thousand Brains Project",
+            description,
             "Description field value is incorrect",
         )
+
+    def test_process_markdown_includes_future_work_metadata_fields(self):
+        body = dedent("""\
+        ---
+        title: Deal with Incomplete Models
+        description: Example description
+        estimated-scope: large
+        improved-metric: learning
+        output-type: prototype, monty-feature, PR
+        skills: python, research, monty
+        contributor: vkakerbeck
+        status: open
+        rfc: required
+        ---
+
+        Body content here.
+        """)
+        slug = "deal-with-incomplete-models"
+        result = process_markdown(body, slug)
+
+        self.assertEqual(result["estimated-scope"], "large")
+        self.assertEqual(result["improved-metric"], "learning")
+        self.assertEqual(result["output-type"], "prototype, monty-feature, PR")
+        self.assertEqual(result["skills"], "python, research, monty")
+        self.assertEqual(result["contributor"], "vkakerbeck")
+        self.assertEqual(result["status"], "open")
+        self.assertEqual(result["rfc"], "required")

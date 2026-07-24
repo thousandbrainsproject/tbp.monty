@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,6 +9,8 @@
 # https://opensource.org/licenses/MIT.
 
 import yaml
+
+from tools.github_readme_sync.future_work_metadata import FUTURE_WORK_METADATA_KEYS
 
 
 def process_markdown(body: str, slug: str) -> dict:
@@ -22,6 +24,10 @@ def process_markdown(body: str, slug: str) -> dict:
     )
     if "description" in frontmatter:
         doc["description"] = frontmatter.get("description", "")
+
+    for key in FUTURE_WORK_METADATA_KEYS:
+        if frontmatter.get(key):
+            doc[key] = frontmatter[key]
 
     body = body.split("---\n", maxsplit=2)
     if len(body) > 2:
