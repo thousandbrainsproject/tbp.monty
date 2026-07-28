@@ -43,6 +43,7 @@ from tbp.monty.frameworks.loggers.monty_handlers import (
 from tbp.monty.frameworks.utils.logging_utils import (
     maybe_rename_existing_dir,
     maybe_rename_existing_file,
+    overall_accuracy,
 )
 from tbp.monty.hydra import instantiate_experiment, register_resolvers
 
@@ -456,6 +457,37 @@ def get_overall_stats(stats):
     return overall_stats
 
 
+def get_per_lm_stats(eval_stats):
+    """Reconstruct LM-level metrics from the merged evaluation rows.
+
+    Returns:
+        Pooled and named per-LM performance percentages.
+    """
+    performance_groups = {
+        "confused": ("confused", "confused_mlh"),
+        "no_match": ("no_match",),
+        "patch_off_object": ("patch_off_object",),
+        "no_label": ("no_label",),
+        "pose_time_out": ("pose_time_out",),
+        "time_out": ("time_out",),
+        "consistent_child_obj": ("consistent_child_obj",),
+    }
+    stats = {"overall/percent_correct_per_lm": overall_accuracy(eval_stats)}
+    for performance, labels in performance_groups.items():
+        stats[f"overall/percent_{performance}_per_lm"] = (
+            eval_stats["primary_performance"].isin(labels).mean() * 100
+        )
+
+    for lm_id, lm_stats in eval_stats.groupby("lm_id"):
+        stats[f"{lm_id}/overall/percent_correct"] = overall_accuracy(lm_stats)
+        for performance, labels in performance_groups.items():
+            stats[f"{lm_id}/overall/percent_{performance}"] = (
+                lm_stats["primary_performance"].isin(labels).mean() * 100
+            )
+
+    return stats
+
+
 def print_benchmark_stats(overall_stats: dict) -> None:
     benchmark_keys = [
         "overall/percent_correct",
@@ -702,7 +734,9 @@ def run_episodes_parallel(
                 eval_stats = pd.read_csv(csv_path)
                 eval_table = wandb.Table(dataframe=eval_stats)
                 if wandb_run:
-                    wandb_run.log({"eval_stats": eval_table})
+                    wandb_run.log(
+                        {"eval_stats": eval_table, **get_per_lm_stats(eval_stats)}
+                    )
             else:
                 print(f"No csv table found at {csv_path} to log to wandb")
 
