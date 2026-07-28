@@ -36,7 +36,7 @@ experiment:
         learning_module_0:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
-            max_nneighbors: 5
+            max_nneighbors: 10
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
           feature_weights:
             patch:
@@ -68,26 +68,33 @@ experiment:
           - pose_vectors
           - pose_fully_defined
           - on_object
-          - object_coverage
           - hsv
           - principal_curvatures_log
           delta_thresholds:
             on_object: 0
-            n_steps: 20
-            hsv:
-            - 0.1
-            - 0.1
-            - 0.1
-            pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
-            principal_curvatures_log:
-            - 2
-            - 2
             distance: 0.01
           save_raw_obs: false
+          noise_params:
+            features:
+              pose_vectors: 2
+              hsv: 0.1
+              principal_curvatures_log: 0.1
+              pose_fully_defined: 0.01
+            location: 0.002
         sensor_module_1:
           _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
           sensor_module_id: view_finder
           save_raw_obs: false
+          salience_strategy:
+            _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2.from_config
+            config:
+              _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.Vocus2SalienceConfig
+              center_sigma: 1.0
+              surround_sigma: 6.5
+              n_scales: 2
+              max_octaves: 5
+              use_depth: true
+              use_orientation: false
       sm_to_agent_dict:
         patch: agent_id_0
         view_finder: agent_id_0
@@ -112,8 +119,8 @@ experiment:
             view_finder:
               _target_: tbp.monty.frameworks.sensors.SensorConfig
               resolution:
-                width: 64
-                height: 64
+                width: 256
+                height: 256
               zoom: 1.0
           position:
           - 0.0
@@ -133,8 +140,8 @@ experiment:
         resolutions:
         - - 64
           - 64
-        - - 64
-          - 64
+        - - 256
+          - 256
         world_coord: true
         zooms:
         - 10.0
@@ -155,8 +162,7 @@ experiment:
       - c_lego_duplo
       - banana
       object_init_sampler:
-        _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-        rotations: ${constants.rotations_all}
+        _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
       positioning_procedures:
       - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
         agent_id: agent_id_0
@@ -182,14 +188,14 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
-      run_name: base_config_10distinctobj_dist_agent_mujoco
+      run_name: randrot_noise_10distinctobj_vocus_on_vocusm_mujoco
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: 3
-    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
-    n_eval_epochs: ${constants.rotations_all_count}
+    model_name_or_path: ${constants.pretrained_dir}/supervised_pre_training_10distinctobj_vocus2/pretrained/
+    n_eval_epochs: 10
     min_lms_match: 1
     seed: 42
     supervised_lm_ids: []
