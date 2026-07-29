@@ -602,7 +602,6 @@ class GraphLM(LearningModule):
     ) -> None:
         """Update the possible matches given an observation."""
         if is_location_only_step(percepts):
-            # Skip without appending to buffer, matching, or stepping the GSG.
             return
 
         first_movement_detected = self._agent_moved_since_reset()
