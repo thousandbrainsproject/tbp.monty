@@ -204,13 +204,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         ctx: RuntimeContext,
         percepts: Sequence[Message],
     ) -> None:
-        """Update the possible matches given an observation.
-
-        On location-only steps, hypotheses are displaced from the LM-level
-        `last_location` rather than `self.buffer.last_location`, matching this class's
-        `_add_displacements`. The LM-level reference survives the between-object
-        `buffer.reset()` used in no-reset experiments.
-        """
+        """Update the possible matches given an observation."""
         if is_location_only_step(percepts):
             if self.last_location is not None:
                 sm_percepts = [p for p in percepts if p.is_from_sm()]
