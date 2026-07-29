@@ -113,8 +113,8 @@ class FeatureAtLocationBuffer:
         A provisional version of this is implemented below, as the GSG uses
         messages for computations.
         """
-        sm_messages = [p for p in percepts if p.is_from_sm()]
-        loc = location_mean(sm_messages)
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        loc = location_mean(sm_percepts)
         assert loc is not None, "SM percepts must carry a location"
         self.locations = np.vstack([self.locations, loc])
 
@@ -513,13 +513,13 @@ class FeatureAtLocationBuffer:
         Args:
             percepts: Sequence of Message objects from the current step.
         """
-        sm_messages = [p for p in percepts if p.is_from_sm()]
-        first_percept = sm_messages[0]
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        first_percept = sm_percepts[0]
         if getattr(first_percept, "displacement", None):
             for name in first_percept.displacement:
                 self._add_displacement(name, first_percept.displacement[name])
 
-        current_location = location_mean(sm_messages)
+        current_location = location_mean(sm_percepts)
         assert current_location is not None, "SM percepts must carry a location"
         self.last_location = current_location.copy()
 

@@ -409,13 +409,13 @@ class DisplacementGraphLM(GraphLM):
         displacement = np.zeros(3)
         ppf = np.zeros(4)
         # TODO S: calculate displacements for each separately (mostly for rotation disp)
-        sm_messages = [p for p in percepts if p.is_from_sm()]
-        percept_to_use = sm_messages[0]
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        percept_to_use = sm_percepts[0]
 
         if len(self.buffer) > 0:
             # TODO S: Make sure result of get_current_location() and get_current_pose()
             # is on object (should always be atm).
-            current_location = location_mean(sm_messages)
+            current_location = location_mean(sm_percepts)
             assert current_location is not None, "SM percepts must carry a location"
             displacement = current_location - self.buffer.last_location
 

@@ -364,8 +364,8 @@ class EvidenceGraphLM(GraphLM):
         """Update the possible matches given an observation."""
         if is_location_only_step(percepts):
             if self.buffer.last_location is not None:
-                sm_messages = [p for p in percepts if p.is_from_sm()]
-                current_location = location_mean(sm_messages)
+                sm_percepts = [p for p in percepts if p.is_from_sm()]
+                current_location = location_mean(sm_percepts)
                 assert current_location is not None, "SM percepts must carry a location"
                 displacement = current_location - self.buffer.last_location
                 self._displace_all_hypotheses(displacement)
@@ -405,8 +405,8 @@ class EvidenceGraphLM(GraphLM):
         """Step without trying to recognize object (updating possible matches)."""
         if is_location_only_step(percepts):
             if self.buffer.last_location is not None:
-                sm_messages = [p for p in percepts if p.is_from_sm()]
-                current_location = location_mean(sm_messages)
+                sm_percepts = [p for p in percepts if p.is_from_sm()]
+                current_location = location_mean(sm_percepts)
                 assert current_location is not None, "SM percepts must carry a location"
                 displacement = current_location - self.buffer.last_location
                 self._displace_all_hypotheses(displacement)

@@ -186,8 +186,8 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         Returns:
             The list of percepts, each updated with a displacement vector.
         """
-        sm_messages = [p for p in percepts if p.is_from_sm()]
-        current_location = location_mean(sm_messages)
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        current_location = location_mean(sm_percepts)
         assert current_location is not None, "SM percepts must carry a location"
         if self.last_location is not None:
             displacement = current_location - self.last_location
@@ -213,8 +213,8 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         """
         if is_location_only_step(percepts):
             if self.last_location is not None:
-                sm_messages = [p for p in percepts if p.is_from_sm()]
-                current_location = location_mean(sm_messages)
+                sm_percepts = [p for p in percepts if p.is_from_sm()]
+                current_location = location_mean(sm_percepts)
                 assert current_location is not None, "SM percepts must carry a location"
                 displacement = current_location - self.last_location
                 self._displace_all_hypotheses(displacement)
@@ -254,8 +254,8 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         """Step without trying to recognize object (updating possible matches)."""
         if is_location_only_step(percepts):
             if self.last_location is not None:
-                sm_messages = [p for p in percepts if p.is_from_sm()]
-                current_location = location_mean(sm_messages)
+                sm_percepts = [p for p in percepts if p.is_from_sm()]
+                current_location = location_mean(sm_percepts)
                 assert current_location is not None, "SM percepts must carry a location"
                 displacement = current_location - self.last_location
                 self._displace_all_hypotheses(displacement)
