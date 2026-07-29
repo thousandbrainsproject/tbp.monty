@@ -398,21 +398,26 @@ class MontyBase(Monty):
         self._goals = []
 
     def snapshot(self) -> Memento:
+        memo = {}
         lm_dict = {
             lm.learning_module_id: lm.state_dict() for lm in self.learning_modules
         }
-        return {
-            "lm_dict": copy.deepcopy(lm_dict),
-        }
+        memo["lm_dict"] = copy.deepcopy(lm_dict)
+        if hasattr(self, "has_detailed_logger"):
+            memo["has_detailed_logger"] = self.has_detailed_logger  # FIXME: config?
+        return memo
 
     def restore(self, memo: Memento) -> None:
-        lm_dict = memo["lm_dict"]
+        memo = dict(memo)
+        lm_dict = memo.pop("lm_dict")
         # TODO: this is a weak compatibility check, make it stronger.
         if len(lm_dict) != len(self.learning_modules):
             raise ValueError("Incompatible Memento (different number of LMs)")
         for lm in self.learning_modules:
             m: Memento = lm_dict[lm.learning_module_id]
             lm.load_state_dict(copy.deepcopy(m))
+        if "has_detailed_logger" in memo:
+            self.has_detailed_logger = memo.pop("has_detailed_logger")  # FIXME: cfg?
 
     def fixme_set_ground_truth(
         self,
