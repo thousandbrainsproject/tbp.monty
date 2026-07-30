@@ -1027,7 +1027,9 @@ class GraphLM(LearningModule):
         """
         sm_percepts = [p for p in percepts if p.is_from_sm()]
         current_location = location_mean(sm_percepts)
-        assert current_location is not None, "SM percepts must carry a location"
+        assert current_location is not None, (
+            "Should have at least one sensor module percept with location"
+        )
         if self.buffer.last_location is not None:
             displacement = current_location - self.buffer.last_location
         else:

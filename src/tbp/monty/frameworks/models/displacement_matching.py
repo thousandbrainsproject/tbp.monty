@@ -416,7 +416,9 @@ class DisplacementGraphLM(GraphLM):
             # TODO S: Make sure result of get_current_location() and get_current_pose()
             # is on object (should always be atm).
             current_location = location_mean(sm_percepts)
-            assert current_location is not None, "SM percepts must carry a location"
+            assert current_location is not None, (
+                "Should have at least one sensor module percept with location"
+            )
             displacement = current_location - self.buffer.last_location
 
             pos1 = torch.tensor(self.buffer.last_location)

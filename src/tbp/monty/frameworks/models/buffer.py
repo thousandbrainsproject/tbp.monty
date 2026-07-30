@@ -115,7 +115,9 @@ class FeatureAtLocationBuffer:
         """
         sm_percepts = [p for p in percepts if p.is_from_sm()]
         loc = location_mean(sm_percepts)
-        assert loc is not None, "SM percepts must carry a location"
+        assert loc is not None, (
+            "Should have at least one sensor module percept with location"
+        )
         self.locations = np.vstack([self.locations, loc])
 
         any_obs_on_obj = False
@@ -520,7 +522,9 @@ class FeatureAtLocationBuffer:
                 self._add_displacement(name, first_percept.displacement[name])
 
         current_location = location_mean(sm_percepts)
-        assert current_location is not None, "SM percepts must carry a location"
+        assert current_location is not None, (
+            "Should have at least one sensor module percept with location"
+        )
         self.last_location = current_location.copy()
 
     def _add_displacement(

@@ -188,7 +188,9 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         """
         sm_percepts = [p for p in percepts if p.is_from_sm()]
         current_location = location_mean(sm_percepts)
-        assert current_location is not None, "SM percepts must carry a location"
+        assert current_location is not None, (
+            "Should have at least one sensor module percept with location"
+        )
         if self.last_location is not None:
             displacement = current_location - self.last_location
         else:
@@ -209,7 +211,9 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
             if self.last_location is not None:
                 sm_percepts = [p for p in percepts if p.is_from_sm()]
                 current_location = location_mean(sm_percepts)
-                assert current_location is not None, "SM percepts must carry a location"
+                assert current_location is not None, (
+                    "Should have at least one sensor module percept with location"
+                )
                 displacement = current_location - self.last_location
                 self._displace_all_hypotheses(displacement)
                 self.last_location = current_location.copy()
@@ -250,7 +254,9 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
             if self.last_location is not None:
                 sm_percepts = [p for p in percepts if p.is_from_sm()]
                 current_location = location_mean(sm_percepts)
-                assert current_location is not None, "SM percepts must carry a location"
+                assert current_location is not None, (
+                    "Should have at least one sensor module percept with location"
+                )
                 displacement = current_location - self.last_location
                 self._displace_all_hypotheses(displacement)
                 self.last_location = current_location.copy()
