@@ -201,6 +201,30 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         self.last_location = current_location.copy()
         return percepts
 
+    def _displace_hypotheses(self, percepts: Sequence[Message]) -> None:
+        """Displace all hypotheses by the movement since the last location.
+
+        Evidence is not changed, so the MLH identity is invariant under displacement.
+        Updates `self.last_location` to the current location.
+
+        Args:
+            percepts: Percepts for the current location-only step.
+        """
+        if self.last_location is None:
+            return
+
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        current_location = location_mean(sm_percepts)
+        assert current_location is not None, (
+            "Should have at least one sensor module percept with location"
+        )
+        displacement = current_location - self.last_location
+        for graph_id, hypotheses in self._hypotheses.items():
+            self._hypotheses[graph_id] = self.hypotheses_updater.displace_hypotheses(
+                hypotheses, displacement, graph_id
+            )
+        self.last_location = current_location.copy()
+
     def matching_step(
         self,
         ctx: RuntimeContext,
@@ -208,15 +232,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
     ) -> None:
         """Update the possible matches given an observation."""
         if is_location_only_step(percepts):
-            if self.last_location is not None:
-                sm_percepts = [p for p in percepts if p.is_from_sm()]
-                current_location = location_mean(sm_percepts)
-                assert current_location is not None, (
-                    "Should have at least one sensor module percept with location"
-                )
-                displacement = current_location - self.last_location
-                self._displace_all_hypotheses(displacement)
-                self.last_location = current_location.copy()
+            self._displace_hypotheses(percepts)
             return
 
         first_movement_detected = self._agent_moved_since_reset()
@@ -251,15 +267,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
     ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
         if is_location_only_step(percepts):
-            if self.last_location is not None:
-                sm_percepts = [p for p in percepts if p.is_from_sm()]
-                current_location = location_mean(sm_percepts)
-                assert current_location is not None, (
-                    "Should have at least one sensor module percept with location"
-                )
-                displacement = current_location - self.last_location
-                self._displace_all_hypotheses(displacement)
-                self.last_location = current_location.copy()
+            self._displace_hypotheses(percepts)
             return
 
         buffer_data = self._add_displacements(percepts)
