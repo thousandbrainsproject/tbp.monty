@@ -95,5 +95,6 @@ class MontyForGraphMatchingTest(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "Every LM ID"):
             self.model.min_lms_match = ["learning_module_0", 1]  # type: ignore[list-item]
 
+
 if __name__ == "__main__":
     unittest.main()
