@@ -286,8 +286,7 @@ class BurstSamplingHypothesesUpdater:
         """Displace existing hypothesis locations by the sensed displacement.
 
         Displaces the full current hypothesis set. A no-op when there are no hypotheses
-        yet or there is no displacement (e.g. before the first movement). Does not touch
-        evidence or the `EvidenceSlopeTracker`.
+        yet or there is no displacement (e.g. before the first movement).
 
         Args:
             hypotheses: Hypothesis space for the graph.
