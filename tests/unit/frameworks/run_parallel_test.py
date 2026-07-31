@@ -39,6 +39,7 @@ class PerLMStatsTest(unittest.TestCase):
                 "LM_0/overall/percent_correct": 50.0,
                 "LM_1/overall/percent_correct": 25.0,
             },
+            "per-LM accuracy should match the expected LM_0 and LM_1 keys and values",
         )
 
 

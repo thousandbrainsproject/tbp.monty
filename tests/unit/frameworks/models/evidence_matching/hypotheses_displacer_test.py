@@ -88,9 +88,15 @@ class DefaultHypothesesDisplacerTest(TestCase):
         )
 
         self.assertEqual(
-            graph.find_nearest_neighbors.call_args.kwargs["num_neighbors"], 1
+            graph.find_nearest_neighbors.call_args.kwargs["num_neighbors"],
+            1,
+            "a one-node graph[channel] should request for one nearest neighbor",
         )
-        self.assertEqual(evidence.shape, (1,))
+        self.assertEqual(
+            evidence.shape,
+            (1,),
+            "a single search location should produce exactly one evidence value",
+        )
 
     def test_multi_channel_evidence_sums(self) -> None:
         """Test that evidence from two channels is summed and added to hypotheses.

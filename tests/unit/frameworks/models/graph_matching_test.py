@@ -50,35 +50,57 @@ class MontyForGraphMatchingTest(unittest.TestCase):
         self.model.matching_steps = 1
 
     def set_terminal_states(self, *states: str | None) -> None:
-        self.assertEqual(len(self.learning_modules), len(states))
+        self.assertEqual(
+            len(self.learning_modules),
+            len(states),
+            "the test fixture must provide one terminal state per learning module",
+        )
         for learning_module, terminal_state in zip(self.learning_modules, states):
             learning_module.terminal_state = terminal_state
 
     def test_integer_requires_any_configured_number_of_matches(self) -> None:
         self.model.min_lms_match = 2
         self.set_terminal_states("match", None, None)
-        self.assertFalse(self.model.check_terminal_conditions())
+        self.assertFalse(
+            self.model.check_terminal_conditions(),
+            "one matched LM does not satisfy min_lms_match = 2",
+        )
 
         self.set_terminal_states("match", None, "match")
-        self.assertTrue(self.model.check_terminal_conditions())
+        self.assertTrue(
+            self.model.check_terminal_conditions(),
+            "two matched LMs satisfy min_lms_match = 2",
+        )
 
     def test_string_requires_the_named_lm(self) -> None:
         self.model.min_lms_match = "learning_module_1"
         self.set_terminal_states("match", None, "match")
-        self.assertFalse(self.model.check_terminal_conditions())
+        self.assertFalse(
+            self.model.check_terminal_conditions(),
+            'the specific LM ("learning_module_1") has not reached terminal state',
+        )
 
         self.set_terminal_states("match", "match", "match")
-        self.assertTrue(self.model.check_terminal_conditions())
+        self.assertTrue(
+            self.model.check_terminal_conditions(),
+            "the named LM should satisfy the requirement once it reaches match",
+        )
 
     def test_hydra_list_requires_every_named_lm(self) -> None:
         self.model.min_lms_match = OmegaConf.create(
             ["learning_module_0", "learning_module_2"]
         )
         self.set_terminal_states("match", "match", None)
-        self.assertFalse(self.model.check_terminal_conditions())
+        self.assertFalse(
+            self.model.check_terminal_conditions(),
+            'the specific LM ("learning_module_2") has not reached terminal state',
+        )
 
         self.set_terminal_states("match", "match", "match")
-        self.assertTrue(self.model.check_terminal_conditions())
+        self.assertTrue(
+            self.model.check_terminal_conditions(),
+            "the list requirement should pass when every named LM matches",
+        )
 
     def test_rejects_empty_named_requirement(self) -> None:
         with self.assertRaisesRegex(ValueError, "at least one LM ID"):
