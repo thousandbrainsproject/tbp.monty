@@ -75,7 +75,7 @@ class MontyExperiment:
         self.config = config
 
         # Feature flag for "recreation" episode/epoch strategy.
-        self._recreation_mode = True
+        self._recreation_mode = False
         logger.warning(f"_recreation_mode = {self._recreation_mode}")
         self._monty_cfg = None
         self._monty_memo = {}
