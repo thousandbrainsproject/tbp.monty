@@ -144,6 +144,7 @@ class DefaultHypothesesDisplacer:
         hypotheses: Hypotheses,
     ) -> Hypotheses:
         # Have to do this for all hypotheses so we don't lose the path information
+        # https://docs.thousandbrains.org/docs/glossary#path-integration
         rotated_displacements = hypotheses.poses.dot(displacement)
         search_locations = hypotheses.locations + rotated_displacements
         return Hypotheses(
