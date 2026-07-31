@@ -29,4 +29,3 @@ experiment:
     python_log_level: DEBUG
     logging:
       run_name: base_infer_objects_with_stickers_monolithic_models
-      parent_lm_id: LM_1

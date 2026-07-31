@@ -16,7 +16,7 @@ from tbp.monty.frameworks.run_parallel import get_per_lm_stats, parse_episode_sp
 
 
 class PerLMStatsTest(unittest.TestCase):
-    def test_reconstructs_named_and_parent_accuracy(self):
+    def test_reconstructs_named_accuracy(self):
         eval_stats = pd.DataFrame(
             {
                 "lm_id": ["LM_0"] * 4 + ["LM_1"] * 4,
@@ -34,22 +34,12 @@ class PerLMStatsTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            get_per_lm_stats(eval_stats, parent_lm_id="LM_1"),
-            {
-                "LM_0/overall/percent_correct": 50.0,
-                "LM_1/overall/percent_correct": 25.0,
-                "overall/percent_correct_parent": 25.0,
-            },
-        )
-        self.assertEqual(
             get_per_lm_stats(eval_stats),
             {
                 "LM_0/overall/percent_correct": 50.0,
                 "LM_1/overall/percent_correct": 25.0,
             },
         )
-        with self.assertRaisesRegex(ValueError, "LM_2"):
-            get_per_lm_stats(eval_stats, parent_lm_id="LM_2")
 
 
 class ParseEpisodeSpecTest(unittest.TestCase):

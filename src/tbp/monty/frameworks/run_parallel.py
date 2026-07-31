@@ -457,27 +457,16 @@ def get_overall_stats(stats):
     return overall_stats
 
 
-def get_per_lm_stats(eval_stats, parent_lm_id=None):
+def get_per_lm_stats(eval_stats):
     """Reconstruct LM accuracy metrics from the merged evaluation rows.
 
     Returns:
-        Named per-LM accuracy percentages and, when configured, parent accuracy.
-
-    Raises:
-        ValueError: If the configured parent LM is absent from the evaluation rows.
+        Named per-LM accuracy percentages.
     """
     stats = {
         f"{lm_id}/overall/percent_correct": overall_accuracy(lm_stats)
         for lm_id, lm_stats in eval_stats.groupby("lm_id")
     }
-
-    if parent_lm_id is not None:
-        parent_key = f"{parent_lm_id}/overall/percent_correct"
-        if parent_key not in stats:
-            raise ValueError(
-                f"Configured parent LM {parent_lm_id!r} is not present in eval stats"
-            )
-        stats["overall/percent_correct_parent"] = stats[parent_key]
 
     return stats
 
@@ -729,13 +718,7 @@ def run_episodes_parallel(
                 eval_table = wandb.Table(dataframe=eval_stats)
                 if wandb_run:
                     wandb_run.log(
-                        {
-                            "eval_stats": eval_table,
-                            **get_per_lm_stats(
-                                eval_stats,
-                                experiments[0]["config"]["logging"].get("parent_lm_id"),
-                            ),
-                        }
+                        {"eval_stats": eval_table, **get_per_lm_stats(eval_stats)}
                     )
             else:
                 print(f"No csv table found at {csv_path} to log to wandb")
