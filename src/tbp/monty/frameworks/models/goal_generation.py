@@ -134,28 +134,8 @@ class GraphGoalGenerator(GoalGenerator):
         > plan : set the default driving Goal to a meaningful, non-None value
         that is compatible with the current method for checking convergence of an
         LM, such that achieving the driving Goal can be used as a test for Monty
-        convergence. This might be something like the below.
+        convergence.
         """
-        # if goal is None:
-        #     # The current default Goal, which is to reduce uncertainty; this is
-        #     # defined by having a high-confidence in the Goal, and an arbitrary
-        #     # single object ID.
-        #     self.driving_goal = Goal(
-        #         location=None,
-        #         morphological_features=None,
-        #         non_morphological_features={
-        #             "object_id": "*",  # Match any object so long as it is described
-        #             # by a single ID
-        #             "location_rel_model": None
-        #         },
-        #         confidence=1.0,  # Should have high confidence
-        #         pass_message=False,
-        #         sender_id=self.parent_lm.learning_module_id,
-        #         sender_type="GSG",
-        #         goal_tolerances=None,
-        #     )
-        # else:
-
         self.driving_goal = goal
 
     def output_goals(self) -> list[Goal]:
