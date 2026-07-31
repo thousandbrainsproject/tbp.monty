@@ -360,6 +360,7 @@ experiment:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
       run_name: base_infer_objects_with_stickers_comp_models
+      parent_lm_id: LM_1
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 100
@@ -367,7 +368,8 @@ experiment:
     n_train_epochs: 3
     n_eval_epochs: ${constants.rotations_all_count}
     model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_objects_with_stickers_comp_models/pretrained/
-    min_lms_match: 1
+    min_lms_match:
+    - learning_module_1
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG

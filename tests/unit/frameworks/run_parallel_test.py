@@ -10,7 +10,46 @@
 
 import unittest
 
-from tbp.monty.frameworks.run_parallel import parse_episode_spec
+import pandas as pd
+
+from tbp.monty.frameworks.run_parallel import get_per_lm_stats, parse_episode_spec
+
+
+class PerLMStatsTest(unittest.TestCase):
+    def test_reconstructs_named_and_parent_accuracy(self):
+        eval_stats = pd.DataFrame(
+            {
+                "lm_id": ["LM_0"] * 4 + ["LM_1"] * 4,
+                "primary_performance": [
+                    "correct",
+                    "correct_mlh",
+                    "consistent_child_obj",
+                    "no_match",
+                    "confused",
+                    "confused_mlh",
+                    "time_out",
+                    "correct",
+                ],
+            }
+        )
+
+        self.assertEqual(
+            get_per_lm_stats(eval_stats, parent_lm_id="LM_1"),
+            {
+                "LM_0/overall/percent_correct": 50.0,
+                "LM_1/overall/percent_correct": 25.0,
+                "overall/percent_correct_parent": 25.0,
+            },
+        )
+        self.assertEqual(
+            get_per_lm_stats(eval_stats),
+            {
+                "LM_0/overall/percent_correct": 50.0,
+                "LM_1/overall/percent_correct": 25.0,
+            },
+        )
+        with self.assertRaisesRegex(ValueError, "LM_2"):
+            get_per_lm_stats(eval_stats, parent_lm_id="LM_2")
 
 
 class ParseEpisodeSpecTest(unittest.TestCase):
