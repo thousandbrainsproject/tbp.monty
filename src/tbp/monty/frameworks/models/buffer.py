@@ -177,7 +177,7 @@ class FeatureAtLocationBuffer:
         """Reset the buffer."""
         self.__init__()
 
-    def get_current_location(self):
+    def current_location(self):
         """Get the current location.
 
         Note:
@@ -225,7 +225,7 @@ class FeatureAtLocationBuffer:
         channel_pose = pose_vectors[-1].reshape((3, 3))
         return np.vstack(
             [
-                self.get_current_location(),
+                self.current_location(),
                 channel_pose,
             ]
         )

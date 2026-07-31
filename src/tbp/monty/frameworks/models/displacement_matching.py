@@ -133,7 +133,7 @@ class DisplacementGraphLM(GraphLM):
                 lm_episode_stats = {
                     "detected_path": detected_path,
                     "detected_location_on_model": current_model_loc,
-                    "detected_location_rel_body": self.buffer.get_current_location(),
+                    "detected_location_rel_body": self.buffer.current_location(),
                     "detected_rotation": r_euler,
                     "detected_rotation_quat": r.as_quat(),
                     "detected_scale": scale,
@@ -413,7 +413,7 @@ class DisplacementGraphLM(GraphLM):
         percept_to_use = sm_percepts[0]
 
         if len(self.buffer) > 0:
-            # TODO S: Make sure result of get_current_location() and get_current_pose()
+            # TODO S: Make sure result of current_location() and get_current_pose()
             # is on object (should always be atm).
             current_location = location_mean(sm_percepts)
             assert current_location is not None, (

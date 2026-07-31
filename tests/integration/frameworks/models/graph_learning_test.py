@@ -594,7 +594,7 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm.detected_object = obj_name
         graph_lm.detected_rotation_r = None
         graph_lm.buffer.stats["detected_location_rel_body"] = (
-            graph_lm.buffer.get_current_location()
+            graph_lm.buffer.current_location()
         )
 
         graph_lm.update_ltm_from_stm()

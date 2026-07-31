@@ -61,7 +61,7 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm.detected_object = "new_object0"
         graph_lm.detected_rotation_r = None
         graph_lm.buffer.stats["detected_location_rel_body"] = (
-            graph_lm.buffer.get_current_location()
+            graph_lm.buffer.current_location()
         )
 
         self.assertEqual(
@@ -112,7 +112,7 @@ class EvidenceLMTest(BaseGraphTest):
         graph_lm.detected_object = obj_two_target["object"]
         graph_lm.detected_rotation_r = None
         graph_lm.buffer.stats["detected_location_rel_body"] = (
-            graph_lm.buffer.get_current_location()
+            graph_lm.buffer.current_location()
         )
 
         self.assertEqual(
