@@ -200,7 +200,7 @@ class FeatureAtLocationBuffer:
         be drawn from different time steps. A warning is logged when this happens.
 
         Note:
-            This cannot happen for when `input_channel="first"`, i.e., first SM channel,
+            This cannot happen for when the `input_channel` is the first SM channel,
             since percepts are currently only appended to the buffer when the SM
             channels contain features. Its pose vectors are therefore always from the
             current step.
