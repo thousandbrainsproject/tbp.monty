@@ -143,18 +143,6 @@ class DefaultHypothesesDisplacer:
         displacement: npt.NDArray[np.float64],
         hypotheses: Hypotheses,
     ) -> Hypotheses:
-        """Displace hypothesis locations using the sensed sensor displacement.
-
-        Each hypothesis location is updated by the pose-rotated displacement.
-        Evidence, poses, and possible flags are left unchanged.
-
-        Args:
-            displacement: Displacement of the sensor (in common RF).
-            hypotheses: Hypotheses to displace.
-
-        Returns:
-            Hypotheses with displaced locations.
-        """
         # Have to do this for all hypotheses so we don't lose the path information
         rotated_displacements = hypotheses.poses.dot(displacement)
         search_locations = hypotheses.locations + rotated_displacements
@@ -172,21 +160,6 @@ class DefaultHypothesesDisplacer:
         graph_id: str,
         hypotheses: Hypotheses,
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
-        """Updates evidence by comparing sensed features to features in the model.
-
-        Uses the hypothesis locations as search locations for comparing features from
-        all available input channels. Per-channel evidence is summed and applied as a
-        weighted update. Assumes hypotheses have already been displaced for this step.
-
-        Args:
-            features: All-channel input features, keyed by channel name.
-            evidence_update_threshold: Evidence update threshold.
-            graph_id: The ID of the current graph.
-            hypotheses: Hypotheses to compute evidence for.
-
-        Returns:
-            Hypotheses with computed evidence and telemetry.
-        """
         search_locations = hypotheses.locations  # already displaced
 
         # Get indices of hypotheses with evidence > threshold

@@ -214,7 +214,6 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         """Exit context manager, runs after updating the hypotheses."""
 
     def reset(self) -> None:
-        """Resets updater at the beginning of an episode."""
         self._initialized_channels = {}
 
     def displace_hypotheses(
@@ -223,19 +222,6 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         displacement: npt.NDArray[np.float64] | None,
         graph_id: str,  # noqa: ARG002
     ) -> Hypotheses:
-        """Displace existing hypothesis locations by the sensed displacement.
-
-        A no-op when there are no hypotheses yet or there is no displacement (e.g.
-        before the first movement). Does not touch evidence.
-
-        Args:
-            hypotheses: Hypothesis space for the graph.
-            displacement: LM displacement between the current and previous input.
-            graph_id: Identifier of the graph being updated.
-
-        Returns:
-            The displaced hypothesis space.
-        """
         if hypotheses.count == 0 or displacement is None:
             return hypotheses
         return self._hypotheses_displacer.displace_hypotheses(displacement, hypotheses)
@@ -247,24 +233,6 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         graph_id: str,
         evidence_update_threshold: float,
     ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
-        """Update hypothesis evidence from sensed features (and initialize as needed).
-
-        Assumes hypotheses have already been displaced for this step. Initializes a new
-        hypothesis space if one does not exist (i.e., at the beginning of the episode),
-        computes evidence for existing hypotheses, and initializes hypotheses for newly
-        available channels. Evidence from all available input channels is computed and
-        summed by the HypothesesDisplacer.
-
-        Args:
-            hypotheses: Hypothesis space for the graph.
-            features: Input features keyed by channel name.
-            graph_id: Identifier of the graph being updated.
-            evidence_update_threshold: Evidence update threshold.
-
-        Returns:
-            Updated hypothesis space (or None if no channels available)
-            and telemetry.
-        """
         # Get all usable input channels
         # NOTE: We might also want to check the confidence in the input channel
         # features, but this information is currently not available here.
