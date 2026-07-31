@@ -161,7 +161,7 @@ class DefaultHypothesesDisplacer:
         graph_id: str,
         hypotheses: Hypotheses,
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
-        search_locations = hypotheses.locations  # already displaced
+        search_locations = hypotheses.locations
 
         # Get indices of hypotheses with evidence > threshold
         hyp_idxs_to_test = np.where(hypotheses.evidence >= evidence_update_threshold)[0]
