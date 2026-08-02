@@ -275,7 +275,7 @@ experiment:
       transform:
       - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
         agent_id: agent_id_0
-        sigma: ${constants.blur_sigma}
+        sigma: 5
         sensor_ids:
         - patch_0
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
@@ -348,19 +348,19 @@ experiment:
       python_log_level: INFO
       python_log_to_file: true
       python_log_to_stderr: true
-      output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/heterarch_3sm_composite}
+      output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: debugging
-      run_name: supervised_pre_training_objects_with_stickers_comp_models
+      run_name: supervised_pre_training_objects_with_stickers_comp_models_3lm
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor/supervised_pre_training_objects_with_stickers_2d_children/pretrained/}
+    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_objects_with_stickers_2d_children_3lm/pretrained/}
     min_lms_match: 3
     seed: 42
     supervised_lm_ids:
@@ -442,4 +442,3 @@ constants:
   - - 0
     - 180
     - 0
-  blur_sigma: 5

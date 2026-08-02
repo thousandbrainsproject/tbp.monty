@@ -273,6 +273,11 @@ experiment:
           agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
       env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
       transform:
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
+        agent_id: agent_id_0
+        sigma: 5
+        sensor_ids:
+        - patch_0
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
         agent_id: agent_id_0
         max_depth: 1
@@ -328,12 +333,12 @@ experiment:
       python_log_level: INFO
       python_log_to_file: true
       python_log_to_stderr: true
-      output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/3d_sensor}
+      output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
       resume_wandb_run: false
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: debugging
-      run_name: supervised_pre_training_objects_with_stickers_3d_children
+      run_name: supervised_pre_training_objects_with_stickers_3d_children_3lm
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
