@@ -44,6 +44,18 @@ sensor_module_1:
     - mean_curvature
     - gaussian_curvature_sc
     - mean_curvature_sc
+  delta_thresholds:
+    on_object: 0
+    n_steps: 20
+    hsv:
+      - 0.1
+      - 0.1
+      - 0.1
+    pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+    principal_curvatures_log:
+      - 2
+      - 2
+    distance: 0.01
   save_raw_obs: true
 sensor_module_2:
   _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
@@ -61,6 +73,18 @@ sensor_module_2:
     - mean_curvature
     - gaussian_curvature_sc
     - mean_curvature_sc
+  delta_thresholds:
+    on_object: 0
+    n_steps: 100
+    hsv:
+      - 0.2
+      - 0.2
+      - 0.2
+    pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+    principal_curvatures_log:
+      - 4
+      - 4
+    distance: 0.05
   save_raw_obs: true
 sensor_module_3:
   _target_: tbp.monty.frameworks.models.sensor_modules.Probe
