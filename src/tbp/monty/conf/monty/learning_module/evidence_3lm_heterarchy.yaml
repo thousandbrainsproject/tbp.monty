@@ -81,3 +81,11 @@ learning_module_2:
   num_model_voxels_per_dim: 200
   max_nodes_per_graph: 5000
   object_evidence_threshold: 20
+  gsg:
+    _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+    goal_tolerances:
+      location: 0.015
+    elapsed_steps_factor: 10
+    min_post_goal_success_steps: 5
+    x_percent_scale_factor: 0.75
+    desired_object_distance: 0.03
