@@ -678,9 +678,9 @@ class EvidenceGraphLM(GraphLM):
         """
         graph_ids, graph_evidences = self.evidence_for_each_graph()
 
-        # If all hypothesis spaces are empty return None for both mlh ids. The gsg will
-        # not generate a goal.
-        if len(graph_ids) == 0:
+        # If all hypothesis spaces are empty, or no current hypotheses have been
+        # initialized, return None for both MLH ids. The GSG will not generate a goal.
+        if not graph_ids or graph_ids[0] == "patch_off_object":
             return None, None
 
         # If we have a single hypothesis space, return the second object id as None.
