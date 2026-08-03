@@ -120,7 +120,7 @@
   - [less-dependency-on-first-observation](future-work/learning-module-improvements/less-dependency-on-first-observation.md)
   - [deal-with-incomplete-models](future-work/learning-module-improvements/deal-with-incomplete-models.md)
   - [test-grid-object-models-for-unsupervised-learning](future-work/learning-module-improvements/test-grid-object-models-for-unsupervised-learning.md)
-  - [use-constrained-grid-object-mdoels-for-all-benchmark-experiments](future-work/learning-module-improvements/use-constrained-grid-object-mdoels-for-all-benchmark-experiments.md)
+  - [use-constrained-grid-object-models-for-all-benchmark-experiments](future-work/learning-module-improvements/use-constrained-grid-object-models-for-all-benchmark-experiments.md)
   - [unsupervised-learning-with-burst-sampling](future-work/learning-module-improvements/unsupervised-learning-with-burst-sampling.md)
   - [unsupervised-learning-in-a-hierarchy](future-work/learning-module-improvements/unsupervised-learning-in-a-hierarchy.md)
   - [learning-and-forgetting-speed-parameter](future-work/learning-module-improvements/learning-and-forgetting-speed-parameter.md)
