@@ -55,6 +55,7 @@ class SalienceSM(SensorModule):
         )
 
         self._goals: list[Goal] = []
+        self._region = list[Goal] = []
         # TODO: Goes away once experiment code is extracted
         self.is_exploring = False
 
@@ -73,6 +74,9 @@ class SalienceSM(SensorModule):
             + qt.rotate_vectors(agent.rotation, sensor.position),
             rotation=agent.rotation * sensor.rotation,
         )
+
+    def propose_region(self) -> list[Goal]:
+        return self._region
 
     def step(
         self,

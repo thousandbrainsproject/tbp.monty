@@ -448,7 +448,7 @@ class LearningModule(
     def load_state_dict(self, memento: Memento) -> None:
         pass
 
-    def propose_regions(self) -> list[list[Goal]]:
+    def propose_region(self) -> list[Goal]:
         return []
 
 
@@ -580,5 +580,5 @@ class SensorModule(RuntimeSensorModule, ExperimentSensorModule, metaclass=abc.AB
     def reset(self) -> None:
         pass
 
-    def propose_regions(self) -> list[list[Goal]]:
+    def propose_region(self) -> list[Goal]:
         return []
