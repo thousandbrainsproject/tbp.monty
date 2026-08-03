@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: medium
 improved-metric: learning-experience
 output-type: PR
-skills: monty
+skills: monty-beginner, monty-advanced
 contributor: 
 status: evergreen
 ---

@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: medium
 improved-metric: learning, accuracy, numsteps
 output-type: experiments, analysis, PR
-skills: python, research, monty
+skills: python, research, monty-beginner
 contributor: 
 status: open
 ---

@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: medium
 improved-metric: learning, accuracy, speed, numsteps
 output-type: monty-feature, PR
-skills: python, monty
+skills: python, monty-beginner
 contributor: 
 status: open
 ---

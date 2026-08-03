@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: medium
 improved-metric: learning, generalization, scale
 output-type: experiments, analysis, PR
-skills: research, monty
+skills: research, monty-advanced
 contributor: 
 status: open
 ---
