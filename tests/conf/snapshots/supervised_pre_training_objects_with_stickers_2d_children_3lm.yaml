@@ -295,10 +295,22 @@ experiment:
         - - 0.0
           - 1.5
           - 0.0
+        - - -0.015
+          - 1.5
+          - 0.0
         - - -0.03
           - 1.5
           - 0.0
+        - - -0.045
+          - 1.5
+          - 0.0
+        - - 0.015
+          - 1.5
+          - 0.0
         - - 0.03
+          - 1.5
+          - 0.0
+        - - 0.045
           - 1.5
           - 0.0
         rotations:
@@ -333,8 +345,8 @@ experiment:
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
-    n_train_epochs: 3
-    n_eval_epochs: 3
+    n_train_epochs: 7
+    n_eval_epochs: 7
     model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_objects_with_stickers_3d_children_3lm/pretrained/}
     min_lms_match: 1
     seed: 42
