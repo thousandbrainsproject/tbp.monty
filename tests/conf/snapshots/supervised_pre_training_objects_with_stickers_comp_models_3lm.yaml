@@ -118,14 +118,10 @@ experiment:
           - pose_fully_defined
           - on_object
           - object_coverage
-          - rgba
+          - min_depth
+          - mean_depth
           - hsv
-          - principal_curvatures
           - principal_curvatures_log
-          - gaussian_curvature
-          - mean_curvature
-          - gaussian_curvature_sc
-          - mean_curvature_sc
           delta_thresholds:
             on_object: 0
             n_steps: 20
@@ -147,14 +143,8 @@ experiment:
           - pose_fully_defined
           - on_object
           - object_coverage
-          - rgba
           - hsv
-          - principal_curvatures
           - principal_curvatures_log
-          - gaussian_curvature
-          - mean_curvature
-          - gaussian_curvature_sc
-          - mean_curvature_sc
           delta_thresholds:
             on_object: 0
             n_steps: 100

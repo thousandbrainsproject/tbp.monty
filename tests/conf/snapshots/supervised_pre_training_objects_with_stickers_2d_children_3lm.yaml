@@ -6,7 +6,7 @@ experiment:
       monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
       monty_args:
         num_exploratory_steps: 1000
-        min_eval_steps: ${constants.min_eval_steps}
+        min_eval_steps: 3
         min_train_steps: 3
         max_total_steps: 2500
       motor_system_config:
@@ -118,14 +118,10 @@ experiment:
           - pose_fully_defined
           - on_object
           - object_coverage
-          - rgba
+          - min_depth
+          - mean_depth
           - hsv
-          - principal_curvatures
           - principal_curvatures_log
-          - gaussian_curvature
-          - mean_curvature
-          - gaussian_curvature_sc
-          - mean_curvature_sc
           delta_thresholds:
             on_object: 0
             n_steps: 20
@@ -147,14 +143,8 @@ experiment:
           - pose_fully_defined
           - on_object
           - object_coverage
-          - rgba
           - hsv
-          - principal_curvatures
           - principal_curvatures_log
-          - gaussian_curvature
-          - mean_curvature
-          - gaussian_curvature_sc
-          - mean_curvature_sc
           delta_thresholds:
             on_object: 0
             n_steps: 100

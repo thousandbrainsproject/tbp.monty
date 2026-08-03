@@ -51,12 +51,20 @@ experiment:
           max_graph_size: 0.1
           num_model_voxels_per_dim: 100
           object_evidence_threshold: 5
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+            goal_tolerances:
+              location: 0.015
+            elapsed_steps_factor: 10
+            min_post_goal_success_steps: 5
+            x_percent_scale_factor: 0.75
+            desired_object_distance: 0.03
         learning_module_1:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
             max_nneighbors: 10
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
-          max_match_distance: 0.001
+          max_match_distance: 0.01
           tolerances:
             patch_1:
               hsv: ${np.array:[0.1, 1, 1]}
@@ -65,13 +73,20 @@ experiment:
           max_graph_size: 0.3
           num_model_voxels_per_dim: 200
           max_nodes_per_graph: 2000
-          object_evidence_threshold: 20
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+            goal_tolerances:
+              location: 0.015
+            elapsed_steps_factor: 10
+            min_post_goal_success_steps: 5
+            x_percent_scale_factor: 0.75
+            desired_object_distance: 0.03
         learning_module_2:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
             max_nneighbors: 10
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
-          max_match_distance: 0.001
+          max_match_distance: 0.01
           tolerances:
             patch_2:
               hsv: ${np.array:[0.1, 1, 1]}
@@ -88,6 +103,14 @@ experiment:
           max_graph_size: 0.4
           num_model_voxels_per_dim: 200
           max_nodes_per_graph: 2000
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+            goal_tolerances:
+              location: 0.015
+            elapsed_steps_factor: 10
+            min_post_goal_success_steps: 5
+            x_percent_scale_factor: 0.75
+            desired_object_distance: 0.03
       sensor_modules:
         sensor_module_0:
           _target_: tbp.monty.frameworks.models.two_d_sensor_module.TwoDSensorModule
@@ -125,14 +148,10 @@ experiment:
           - pose_fully_defined
           - on_object
           - object_coverage
-          - rgba
+          - min_depth
+          - mean_depth
           - hsv
-          - principal_curvatures
           - principal_curvatures_log
-          - gaussian_curvature
-          - mean_curvature
-          - gaussian_curvature_sc
-          - mean_curvature_sc
           delta_thresholds:
             on_object: 0
             n_steps: 20
@@ -154,14 +173,8 @@ experiment:
           - pose_fully_defined
           - on_object
           - object_coverage
-          - rgba
           - hsv
-          - principal_curvatures
           - principal_curvatures_log
-          - gaussian_curvature
-          - mean_curvature
-          - gaussian_curvature_sc
-          - mean_curvature_sc
           delta_thresholds:
             on_object: 0
             n_steps: 100
@@ -266,6 +279,11 @@ experiment:
           agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
       env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
       transform:
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
+        agent_id: agent_id_0
+        sigma: 5
+        sensor_ids:
+        - patch_0
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
         agent_id: agent_id_0
         max_depth: 1
