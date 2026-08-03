@@ -136,6 +136,8 @@ To measure performance, we introduced two new metrics:
 
 !table[../../benchmarks/logos_on_objects.csv]
 
+Note: These experiments use 100 inference steps rather than the typical 500. Monolithic models often time out, making the benchmarks prohibitively slow at the larger step limit.
+
 > [!WARNING]
 >
 > These benchmarks are not currently expected to have good performance and are used to track our research progress for compositional datasets.

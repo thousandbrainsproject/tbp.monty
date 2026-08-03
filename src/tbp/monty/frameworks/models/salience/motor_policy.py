@@ -68,7 +68,10 @@ class LookAtGoal(MotorPolicy):
         self._agent_id = agent_id
         self._sensor_id = sensor_id
 
-    def reset(self, motor_system: ExperimentMotorSystem) -> None:
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    def reset(self) -> None:
         pass
 
     def load_state_dict(self, memento: Memento) -> None:

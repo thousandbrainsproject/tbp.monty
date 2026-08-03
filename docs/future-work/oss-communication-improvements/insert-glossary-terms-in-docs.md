@@ -5,6 +5,7 @@ estimated-scope: small
 improved-metric: learning-experience
 skills: github-readme-sync-tool, css, javascript
 output-type: documentation
+status: open
 ---
 
 Automatically identify glossary terms from `docs/overview/glossary.md` in all markdown files within the `/docs` directory and add subtle hover tooltips that display the glossary definition when users hover over those terms.

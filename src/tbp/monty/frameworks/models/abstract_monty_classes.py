@@ -129,6 +129,14 @@ class RuntimeMonty(Protocol):
         """
         ...
 
+    def snapshot(self) -> Memento:
+        """Return an opaque snapshot of Monty state."""
+        ...
+
+    def restore(self, memo: Memento) -> None:
+        """Restore Monty state from an opaque snapshot."""
+        ...
+
 
 class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
     def _matching_step(
@@ -277,6 +285,14 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def snapshot(self) -> Memento:
+        pass
+
+    @abc.abstractmethod
+    def restore(self, memo: Memento) -> None:
+        pass
+
+    @abc.abstractmethod
     def fixme_set_ground_truth(
         self,
         primary_target: dict[str, Any] | None = None,
@@ -352,6 +368,13 @@ class RuntimeLearningModule(Protocol):
         """Return learning module output (same format as input)."""
         ...
 
+    def init_from_ltm(self) -> None:
+        """Initialize LM state from long-term memory.
+
+        For example, getting initial hypotheses.
+        """
+        ...
+
 
 class LearningModule(
     RuntimeLearningModule, Snapshotable, ExperimentLearningModule, metaclass=abc.ABCMeta
@@ -407,6 +430,10 @@ class LearningModule(
 
     @abc.abstractmethod
     def get_output(self) -> Message | None:
+        pass
+
+    @abc.abstractmethod
+    def init_from_ltm(self) -> None:
         pass
 
     ###

@@ -21,7 +21,7 @@ class MotorSystemTest(unittest.TestCase):
 
     def test_reset_calls_reset_on_policy_selector(self):
         self.motor_system.reset()
-        self.policy_selector.reset.assert_called_once_with(self.motor_system)
+        self.policy_selector.reset.assert_called_once_with()
 
     def test_state_dict_returns_state_dict_of_policy(self):
         state_dict = Mock()

@@ -4,7 +4,7 @@ rfc: required
 estimated-scope: large
 improved-metric: goal-policy, dynamic
 output-type: experiments, testbed
-skills: python, monty, research
+skills: python, monty-beginner, research
 contributor: 
 status: open
 ---

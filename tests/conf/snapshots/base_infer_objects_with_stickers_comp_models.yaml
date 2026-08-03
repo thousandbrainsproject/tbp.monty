@@ -362,7 +362,7 @@ experiment:
       run_name: base_infer_objects_with_stickers_comp_models
     show_sensor_output: false
     max_train_steps: 1000
-    max_eval_steps: 500
+    max_eval_steps: 100
     max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: ${constants.rotations_all_count}
