@@ -105,7 +105,7 @@
   - [detect-local-and-global-flow](future-work/sensor-module-improvements/detect-local-and-global-flow.md)
   - [change-detecting-sm](future-work/sensor-module-improvements/change-detecting-sm.md)
 - [learning-module-improvements](future-work/learning-module-improvements.md)
-  - [contributing-learning-modules](future-work/learning-module-improvements/contributing-learning-modules.md)
+  - [explore-alternative-internal-representations-for-lms](future-work/learning-module-improvements/explore-alternative-internal-representations-for-lms.md)
   - [use-off-object-observations](future-work/learning-module-improvements/use-off-object-observations.md)
   - [use-out-of-model-movements](future-work/learning-module-improvements/use-out-of-model-movements.md)
   - [implement-and-test-rapid-evidence-decay-as-form-of-unsupervised-memory-resetting](future-work/learning-module-improvements/implement-and-test-rapid-evidence-decay-as-form-of-unsupervised-memory-resetting.md)
