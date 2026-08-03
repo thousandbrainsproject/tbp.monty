@@ -404,6 +404,31 @@ class ReadMe:
         parent_id: str,
         file_path: str,
     ) -> tuple[str, bool]:
+        """Create a new ReadMe guide or update an existing guide.
+
+        Process the guide's Markdown content and construct the request payload
+        expected by the ReadMe API. If a guide with the requested slug already
+        exists, update it. Otherwise, create a new guide using the requested slug.
+
+        Args:
+            order: Position of the guide within its category or parent guide.
+            category_id: URI of the ReadMe category containing the guide.
+            doc: Guide data, including its title, slug, body, and optional
+                description and hidden status.
+            parent_id: Optional URI of the parent guide. Only exists if it
+                is a nested resource.
+            file_path: Path to the source Markdown file, used when processing the
+                guide's content.
+
+        Returns:
+            A tuple containing the guide's URI and a boolean indicating whether the
+            guide was created. The boolean is ``False`` when an existing guide was
+            updated. The URI is used to set the parent of any nested guides.
+
+        Raises:
+            ValueError: If ReadMe creates the guide with a different slug than the
+                requested slug, or if the creation response does not contain a URI.
+        """
         # Convert the document body into the format expected by ReadMe.
         markdown = self.process_markdown(
             doc["body"],
@@ -413,8 +438,7 @@ class ReadMe:
 
         # This payload is used when updating an existing guide.
         #
-        # We not include "slug" in this request as updating a doc
-        # uses its slug in the patch URL.
+        # "slug" is omitted as updating a doc uses its slug in the patch URL.
         update_doc_request = {
             "title": doc["title"],
             "type": "basic",
@@ -436,13 +460,10 @@ class ReadMe:
         existing_doc = self.get_doc(doc["slug"])
 
         if existing_doc is not None:
-            # The guide already exists, so update it without sending its slug.
             patch(
                 self.branch_url(f"/guides/{doc['slug']}"),
                 update_doc_request,
             )
-
-            # Return the existing guide URI for use as the parent of nested pages.
             return existing_doc["uri"], False
 
         # The guide does not exist, so create it using the requested slug.

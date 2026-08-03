@@ -28,7 +28,7 @@ from tools.github_readme_sync.req import (
 class TestReq(unittest.TestCase):
     """Tests for the shared ReadMe API v2 request helpers."""
 
-    @patch("tools.github_readme_sync.req.requests.get")
+    @patch("tools.github_readme_sync.req._SESSION.get")
     def test_get_success_unwraps_v2_data(self, mock_get):
         response = MagicMock()
         response.status_code = 200
@@ -44,8 +44,8 @@ class TestReq(unittest.TestCase):
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
-    @patch("tools.github_readme_sync.req.requests.get")
-    def test_get_preserves_caller_headers(self, mock_get):
+    @patch("tools.github_readme_sync.req._SESSION.get")
+    def test_get_adds_authentication_to_caller_headers(self, mock_get):
         response = MagicMock()
         response.status_code = 200
         response.json.return_value = {"data": {"name": "0.40"}}
@@ -55,8 +55,13 @@ class TestReq(unittest.TestCase):
         result = get("https://api.example.com/data", caller_headers)
 
         self.assertEqual(result, {"name": "0.40"})
-        # The helper adds Bearer authentication without mutating the input.
-        self.assertEqual(caller_headers, {"prefer": "handling=strict"})
+        self.assertEqual(
+            caller_headers,
+            {
+                "prefer": "handling=strict",
+                "Authorization": "Bearer test_api_key",
+            },
+        )
         mock_get.assert_called_once_with(
             "https://api.example.com/data",
             headers={
@@ -66,7 +71,7 @@ class TestReq(unittest.TestCase):
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
-    @patch("tools.github_readme_sync.req.requests.get")
+    @patch("tools.github_readme_sync.req._SESSION.get")
     def test_get_404_returns_none(self, mock_get):
         response = MagicMock()
         response.status_code = 404
@@ -76,7 +81,7 @@ class TestReq(unittest.TestCase):
 
         self.assertIsNone(result)
 
-    @patch("tools.github_readme_sync.req.requests.get")
+    @patch("tools.github_readme_sync.req._SESSION.get")
     def test_get_non_404_failure_raises(self, mock_get):
         response = MagicMock()
         response.status_code = 500
@@ -89,7 +94,7 @@ class TestReq(unittest.TestCase):
         ):
             get("https://api.example.com/data")
 
-    @patch("tools.github_readme_sync.req.requests.get")
+    @patch("tools.github_readme_sync.req._SESSION.get")
     def test_get_collection_follows_v2_pagination(self, mock_get):
         first_response = MagicMock()
         first_response.status_code = 200
@@ -128,7 +133,7 @@ class TestReq(unittest.TestCase):
             ],
         )
 
-    @patch("tools.github_readme_sync.req.requests.get")
+    @patch("tools.github_readme_sync.req._SESSION.get")
     def test_get_collection_404_returns_items_already_collected(self, mock_get):
         first_response = MagicMock()
         first_response.status_code = 200
@@ -146,7 +151,7 @@ class TestReq(unittest.TestCase):
 
         self.assertEqual(result, [{"slug": "doc-1"}])
 
-    @patch("tools.github_readme_sync.req.requests.get")
+    @patch("tools.github_readme_sync.req._SESSION.get")
     def test_get_collection_rejects_non_list_data(self, mock_get):
         response = MagicMock()
         response.status_code = 200
@@ -156,11 +161,11 @@ class TestReq(unittest.TestCase):
 
         with self.assertRaisesRegex(
             TypeError,
-            "Expected collection data .* to be a list",
+            r"Expected ReadMe response data to be a list, received dict",
         ):
             get_collection("https://api.readme.com/v2/items")
 
-    @patch("tools.github_readme_sync.req.requests.get")
+    @patch("tools.github_readme_sync.req._SESSION.get")
     def test_get_collection_failure_raises_instead_of_returning_partial_data(
         self, mock_get
     ):
@@ -172,7 +177,7 @@ class TestReq(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "failed with 429"):
             get_collection("https://api.readme.com/v2/items")
 
-    @patch("tools.github_readme_sync.req.requests.post")
+    @patch("tools.github_readme_sync.req._SESSION.post")
     def test_post_success_unwraps_v2_data(self, mock_post):
         response = MagicMock()
         response.status_code = 201
@@ -197,7 +202,7 @@ class TestReq(unittest.TestCase):
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
-    @patch("tools.github_readme_sync.req.requests.post")
+    @patch("tools.github_readme_sync.req._SESSION.post")
     def test_post_success_without_body_returns_empty_dict(self, mock_post):
         response = MagicMock()
         response.status_code = 204
@@ -206,7 +211,7 @@ class TestReq(unittest.TestCase):
 
         self.assertEqual(post("https://api.example.com/data", {}), {})
 
-    @patch("tools.github_readme_sync.req.requests.post")
+    @patch("tools.github_readme_sync.req._SESSION.post")
     def test_post_failure_raises_with_api_response(self, mock_post):
         response = MagicMock()
         response.status_code = 409
@@ -216,7 +221,7 @@ class TestReq(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "failed with 409"):
             post("https://api.example.com/data", {"slug": "doc"})
 
-    @patch("tools.github_readme_sync.req.requests.patch")
+    @patch("tools.github_readme_sync.req._SESSION.patch")
     def test_patch_success(self, mock_patch):
         response = MagicMock()
         response.status_code = 200
@@ -235,7 +240,7 @@ class TestReq(unittest.TestCase):
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
-    @patch("tools.github_readme_sync.req.requests.patch")
+    @patch("tools.github_readme_sync.req._SESSION.patch")
     def test_patch_failure_raises(self, mock_patch):
         response = MagicMock()
         response.status_code = 400
@@ -245,7 +250,7 @@ class TestReq(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "failed with 400"):
             patch_request("https://api.example.com/data", {})
 
-    @patch("tools.github_readme_sync.req.requests.delete")
+    @patch("tools.github_readme_sync.req._SESSION.delete")
     def test_delete_success_returns_none(self, mock_delete):
         response = MagicMock()
         response.status_code = 204
@@ -261,7 +266,7 @@ class TestReq(unittest.TestCase):
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
-    @patch("tools.github_readme_sync.req.requests.delete")
+    @patch("tools.github_readme_sync.req._SESSION.delete")
     def test_delete_failure_raises(self, mock_delete):
         response = MagicMock()
         response.status_code = 400

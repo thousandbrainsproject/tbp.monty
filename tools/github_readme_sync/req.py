@@ -11,58 +11,162 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 from urllib.parse import urljoin
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
 REQUEST_TIMEOUT_SECONDS = 60
+
+# Retry a request up to three times after the initial attempt.
+MAX_RETRIES = 3
+
+# Wait progressively longer between retries so temporary API or network
+# problems have time to recover.
+RETRY_BACKOFF_FACTOR = 3
+
+# Retry rate limiting and temporary server failures.
+#
+# Other client errors, such as 400, 401, 403, 404, and 409, normally mean
+# the request must be corrected and should not be automatically retried.
+RETRY_STATUS_CODES = (429, 500, 502, 503, 504)
+
 logger = logging.getLogger(__name__)
 
 
-def _auth_headers(
-    headers: Mapping[str, str] | None = None,
-) -> dict[str, str]:
-    """Build authenticated request headers without modifying the input.
+class ReadMeResponse(TypedDict):
+    """Expected structure shared by ReadMe API responses."""
 
-    Args:
-        headers: Optional request headers supplied by the caller.
+    data: object
+
+
+def _create_retry_session() -> requests.Session:
+    """Create an HTTP session configured to retry failures.
 
     Returns:
-        A new dictionary containing the caller's headers and authorization.
+        A session that retries requests after failures.
     """
-    request_headers = dict(headers or {})
-    request_headers["Authorization"] = f"Bearer {os.getenv('README_API_KEY')}"
-    return request_headers
+    retry = Retry(
+        # Retry up to three times after the initial request.
+        total=MAX_RETRIES,
+        # Increase the delay between retries instead of repeatedly sending
+        # requests to an API that may be temporarily unavailable.
+        backoff_factor=RETRY_BACKOFF_FACTOR,
+        # Retry rate limiting and temporary server failures.
+        status_forcelist=RETRY_STATUS_CODES,
+        # Retry every HTTP method used by this module.
+        allowed_methods=frozenset({"DELETE", "GET", "PATCH", "POST"}),
+        # Follow ReadMe's Retry-After header when it tells us how long to
+        # wait before sending another request.
+        respect_retry_after_header=True,
+        # Return the final unsuccessful response after all retries fail.
+        #
+        # This lets the existing code below raise its detailed RuntimeError
+        # containing the response status code and body.
+        raise_on_status=False,
+    )
+
+    adapter = HTTPAdapter(max_retries=retry)
+    session = requests.Session()
+
+    # Install the retry behavior for both HTTP and HTTPS URLs.
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+
+    return session
 
 
-def _unwrap_data(payload: Mapping[str, Any]) -> Any:
-    """Return the resource stored in a response envelope.
+# Reuse one session for every request so all request functions have the same
+# retry behavior. A session also reuses its underlying HTTP connections.
+_SESSION = _create_retry_session()
+
+
+def _auth_headers(
+    headers: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Add authorization to the supplied request headers.
+
+    Args:
+        headers: Optional mutable request headers supplied by the caller.
+
+    Returns:
+        The supplied headers with authorization added, or a new dictionary
+        when no headers are supplied.
+    """
+    if headers is None:
+        headers = {}
+
+    headers["Authorization"] = f"Bearer {os.getenv('README_API_KEY')}"
+    return headers
+
+
+def _unwrap_object(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Return an object stored in a response envelope.
 
     Args:
         payload: The decoded JSON response object.
 
     Returns:
-        The value stored under the response's ``data`` field.
+        The object stored under the response's ``data`` field.
 
     Raises:
         ValueError: If the response does not contain a ``data`` field.
+        TypeError: If the response's ``data`` field is not an object.
     """
     if "data" not in payload:
         raise ValueError("ReadMe response is missing the required 'data' field")
 
-    return payload["data"]
+    data = payload["data"]
+
+    # JSON objects are decoded into Python dictionaries.
+    if not isinstance(data, dict):
+        raise TypeError(
+            "Expected ReadMe response data to be an object, "
+            f"received {type(data).__name__}"
+        )
+
+    return data
+
+
+def _unwrap_list(payload: Mapping[str, Any]) -> list[Any]:
+    """Return a list stored in a response envelope.
+
+    Args:
+        payload: The decoded JSON response object.
+
+    Returns:
+        The list stored under the response's ``data`` field.
+
+    Raises:
+        ValueError: If the response does not contain a ``data`` field.
+        TypeError: If the response's ``data`` field is not a list.
+    """
+    if "data" not in payload:
+        raise ValueError("ReadMe response is missing the required 'data' field")
+
+    data = payload["data"]
+
+    # JSON arrays are decoded into Python lists.
+    if not isinstance(data, list):
+        raise TypeError(
+            "Expected ReadMe response data to be a list, "
+            f"received {type(data).__name__}"
+        )
+
+    return data
 
 
 def get(
     url: str,
-    headers: Mapping[str, str] | None = None,
-) -> Any | None:
+    headers: dict[str, str] | None = None,
+) -> dict[str, Any] | None:
     headers = _auth_headers(headers)
-    response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS)
+    response = _SESSION.get(url, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS)
     logger.debug("get %s %s", url, response.status_code)
     if response.status_code == 404:
         return None
@@ -76,13 +180,13 @@ def get(
         raise RuntimeError(
             f"GET {url} failed with {response.status_code}: {response.text}"
         )
-
-    return _unwrap_data(response.json())
+    payload: ReadMeResponse = response.json()
+    return _unwrap_object(payload)
 
 
 def get_collection(
     url: str,
-    headers: Mapping[str, str] | None = None,
+    headers: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Retrieve every page from a paginated collection endpoint.
 
@@ -95,14 +199,13 @@ def get_collection(
 
     Raises:
         RuntimeError: If ReadMe returns an unsuccessful HTTP response.
-        TypeError: If the response's ``data`` field is not a list.
     """
     headers = _auth_headers(headers)
     items = []
     next_url = url
 
     while next_url:
-        response = requests.get(
+        response = _SESSION.get(
             next_url,
             headers=headers,
             timeout=REQUEST_TIMEOUT_SECONDS,
@@ -125,15 +228,7 @@ def get_collection(
             )
 
         payload = response.json()
-        data = _unwrap_data(payload)
-
-        # ReadMe collection responses should always contain a list
-        # under "data".
-        if not isinstance(data, list):
-            raise TypeError(
-                f"Expected collection data from {next_url} to be a list, "
-                f"received {type(data).__name__}"
-            )
+        data = _unwrap_list(payload)
 
         items.extend(data)
 
@@ -150,10 +245,10 @@ def get_collection(
 def post(
     url: str,
     data: Mapping[str, Any],
-    headers: Mapping[str, str] | None = None,
-) -> Any:
+    headers: dict[str, str] | None = None,
+) -> dict[str, Any]:
     headers = _auth_headers(headers)
-    response = requests.post(
+    response = _SESSION.post(
         url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
     )
     logger.debug("post %s %s", url, response.status_code)
@@ -166,13 +261,15 @@ def post(
 
     if not response.content:
         return {}
-    return _unwrap_data(response.json())
+
+    payload: ReadMeResponse = response.json()
+    return _unwrap_object(payload)
 
 
 def patch(
     url: str,
     data: Mapping[str, Any],
-    headers: Mapping[str, str] | None = None,
+    headers: dict[str, str] | None = None,
 ) -> bool:
     """Update a resource.
 
@@ -188,7 +285,7 @@ def patch(
         RuntimeError: If the request returns a client or server error.
     """
     headers = _auth_headers(headers)
-    response = requests.patch(
+    response = _SESSION.patch(
         url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
     )
     logger.debug("patch %s %s", url, response.status_code)
@@ -201,11 +298,11 @@ def patch(
 
 def delete(
     url: str,
-    headers: Mapping[str, str] | None = None,
+    headers: dict[str, str] | None = None,
 ) -> None:
     headers = _auth_headers(headers)
 
-    response = requests.delete(
+    response = _SESSION.delete(
         url,
         headers=headers,
         timeout=REQUEST_TIMEOUT_SECONDS,
