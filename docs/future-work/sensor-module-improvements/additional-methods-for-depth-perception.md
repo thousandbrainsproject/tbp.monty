@@ -14,7 +14,11 @@ Monty relies significantly on estimated depth for figuring out how its vision se
 
 For this task, one could test existing computer vision techniques that estimate depth based, for example, on parallax. We are particularly interested in techniques that are motivated by how biological systems solve this.
 
-To assist with this task, a [video overview of depth processing in the brain and computer vision systems, and their relevance to Monty, is available here](https://www.youtube.com/watch?v=6xr42m5vjbM). Below is a discussion summarizing some of the content of this video, as well as how these ideas might be combined to improve depth estimation in Monty. 
+To assist with this task, a video overview of depth processing in the brain and computer vision systems, and their relevance to Monty, is linked below:
+
+[2025/01 - Depth Perception from Parallax](https://www.youtube.com/watch?v=6xr42m5vjbM)
+
+The following is a discussion summarizing some of the content of the above video, as well as how these ideas might be combined to improve depth estimation in Monty. 
 
 ## Depth Estimation in the Brain and Artificial Systems
 
