@@ -17,6 +17,7 @@ import torch
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
@@ -44,7 +45,7 @@ logger = logging.getLogger(__name__)
 class MontyForGraphMatching(MontyBase):
     """General Monty model for recognizing objects using graphs."""
 
-    _min_lms_match: int | frozenset[str]
+    _match_criterion: MatchCriterion
 
     LOGGING_REGISTRY: ClassVar[dict[str, type[BaseMontyLogger]]] = {
         # Don't do any formal logging, just save models. Used for pretraining.
@@ -60,52 +61,6 @@ class MontyForGraphMatching(MontyBase):
     def __init__(self, *args, **kwargs):
         """Initialize and reset LM."""
         super().__init__(*args, **kwargs)
-
-    @property
-    def min_lms_match(self) -> int | frozenset[str]:
-        """Return the count or named LMs required to reach a match."""
-        return self._min_lms_match
-
-    @min_lms_match.setter
-    def min_lms_match(self, value: int | str | Sequence[str]) -> None:
-        """Set and validate the count or named LMs required to reach a match.
-
-        Args:
-            value: A match count, one required LM ID, or a sequence of required LM IDs.
-
-        Raises:
-            TypeError: If value is not an integer or string sequence.
-            ValueError: If no LM IDs are provided or an LM ID is unknown.
-        """
-        if isinstance(value, int):
-            self._min_lms_match = value
-            return
-
-        if isinstance(value, str):
-            required_lm_ids = [value]
-        elif isinstance(value, Sequence):
-            required_lm_ids = list(value)
-        else:
-            raise TypeError(
-                "min_lms_match must be an int, an LM ID string, or a sequence "
-                "of LM ID strings"
-            )
-
-        if not required_lm_ids:
-            raise ValueError("min_lms_match must contain at least one LM ID")
-
-        if not all(isinstance(lm_id, str) for lm_id in required_lm_ids):
-            raise TypeError("Every LM ID in min_lms_match must be a string")
-
-        available_lm_ids = {lm.learning_module_id for lm in self.learning_modules}
-        unknown_lm_ids = set(required_lm_ids) - available_lm_ids
-        if unknown_lm_ids:
-            raise ValueError(
-                f"Unknown LM IDs in min_lms_match: {sorted(unknown_lm_ids)}. "
-                f"Available LM IDs: {sorted(available_lm_ids)}"
-            )
-
-        self._min_lms_match = frozenset(required_lm_ids)
 
     def fixme_set_ground_truth(
         self,
@@ -164,14 +119,15 @@ class MontyForGraphMatching(MontyBase):
         """Set LM terminal states to time_out."""
         self._set_time_outs(global_time_out=True)
 
-    def check_terminal_conditions(self):
+    def check_terminal_conditions(self) -> bool:
         """Check if all LMs have reached a terminal state.
 
         This could be no_match, match, or time_out. If all LMs have reached one of these
         states, end the episode.
 
         Currently the episode just ends if
-            - the configured min_lms_match count or named LMs have reached "match"
+            - the configured `match_criterion` is satisfied by the LMs that have
+              reached "match"
             - all lms have reached "no_match"
             - We have exceeded max_total_steps
 
@@ -182,7 +138,7 @@ class MontyForGraphMatching(MontyBase):
             may be more difficult if not all LMs know about all objects.
 
         Returns:
-            True if all LMs have reached a terminal state, False otherwise.
+            True if the match criterion is satisfied, False otherwise.
         """
         # First check if all LMs have no match (for example in the first episode when
         # we have no objects in memory yet). If that is the case there is no need to
@@ -202,25 +158,21 @@ class MontyForGraphMatching(MontyBase):
         if not self.exceeded_min_steps:
             return False
 
-        # Check if the configured count or named LMs have reached match.
+        # Check if LMs satisfy the match criterion
         # TODO: we may also want to count no_match as done.
-        matched_lm_ids = set()
+        terminal_states: dict[str, str | None] = {}
         for lm in self.learning_modules:
             lm.update_terminal_condition()
             logger.debug(
                 f"{lm.learning_module_id} has terminal state: {lm.terminal_state}"
             )
-            if lm.terminal_state == "match":
-                matched_lm_ids.add(lm.learning_module_id)
+            terminal_states[lm.learning_module_id] = lm.terminal_state
 
-        if isinstance(self.min_lms_match, int):
-            match_requirement_met = len(matched_lm_ids) >= self.min_lms_match
-        else:
-            match_requirement_met = self.min_lms_match.issubset(matched_lm_ids)
-
-        if match_requirement_met:
+        if self._match_criterion(terminal_states):
             logger.info("\n\nMONTY DETECTED MATCH\n\n")
             return True
+
+        return False
 
     # ------------------ Getters & Setters ---------------------
 
@@ -548,9 +500,9 @@ class MontyForGraphMatching(MontyBase):
                 exploration mode anymore (if we timed out we didn't recognize an object
                 so exploration makes no sense since we won't add anything to memory).
                 This is set to False, if Monty didn't reach a global time out (exceeded
-                max_steps) but instead, the configured min_lms_match condition was
-                satisfied. Then the other LMs will be set to time_out, but we still
-                want to explore.
+                max_steps) but instead, the match criterion was satisfied by the LMs
+                that recognized an object. Then the other LMs will be set to time_out,
+                but we still want to explore.
         """
         # Don't set LM states to time out if we were in exploratory mode
         if self.step_type != "exploratory_step":
