@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: unknown
 improved-metric: speed
 output-type: analysis, PR
-skills: python
+skills: python, spatial-transformations
 contributor: 
 status: open
 ---
