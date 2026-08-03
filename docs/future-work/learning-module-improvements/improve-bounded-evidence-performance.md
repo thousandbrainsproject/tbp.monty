@@ -22,7 +22,7 @@ First, unbounded accumulation introduces a strong temporal bias.
 Hypotheses that are initialized earlier in an episode have more opportunities to accumulate evidence and can dominate the hypothesis space simply due to their age.
 This behavior becomes problematic when new hypotheses are sampled later in time.
 Newly sampled hypotheses are disadvantaged and may fail to out-compete existing ones, even if they are more consistent with recent observations.
-A concrete outcome that we could measure for is that the most likely hypothesis (MLH) that Monty infers approaches the "theoretical limit" (see `TheoreticalLimitLMLoggingMixin`), i.e. the error associated with the best hypothesis that Monty has initialized. Unbound evidence currently means that an older, "good enough" hypothesis will often remain the MLH even where the theoretical limit is lower following [sampling of new hypotheses](https://docs.thousandbrains.org/docs/evidence-based-learning-module#burst-sampling). Note that standard measures of rotation error fail to account for objects that have symmetry, which Monty detects. As such, an additional change may be to modify the theoretical limit to use alternative measures of rotation error that are not biased by symmetry, such as the Chamfer Distance metric used in our [Thousand Brains systems paper](https://arxiv.org/abs/2507.04494).
+A concrete outcome that we could measure for is that the most likely hypothesis (MLH) that Monty infers approaches the "theoretical limit" (see `TheoreticalLimitLMLoggingMixin`), i.e. the error associated with the best hypothesis that Monty has initialized. Unbound evidence currently means that an older, "good enough" hypothesis will often remain the MLH even where the theoretical limit is lower following [sampling of new hypotheses](https://docs.thousandbrains.org/docs/evidence-based-learning-module#burst-sampling).
 
 ### Evidence Interpretation and Hyperparameter Tuning are Challenging
 
@@ -32,11 +32,11 @@ Bounded scores are easier to work with as they allow downstream components to re
 
 ## Potential Solutions
 
-Bounding evidence through methods such as [exponential moving averages](https://youtu.be/A1cOwvZpgjU?si=1oyk6-BTij6TaRdG&t=1668), weighted averages, or normalization by hypothesis age can keep scores within a bounded range.
+Bounding evidence through methods such as [exponential moving averages](https://youtu.be/A1cOwvZpgjU?si=1oyk6-BTij6TaRdG&t=1668), weighted averages (e.g. past and present weight summing to 1), or normalization by hypothesis age can keep scores within a bounded range.
 However, these techniques compress historical information and cause memory to fade over time.
 Monty loses the influence of important past features, such as a mug handle, as a result, recognition can become less accurate in long sequences.
 
-A promising direction is to pair bounded evidence with saliency-driven saccades or other attention mechanisms, which [we now have a working version of](https://docs.thousandbrains.org/docs/salience-sm#saliencestrategy).
+A promising direction is to pair bounded evidence with saliency-driven saccades or other attention mechanisms, which [we now have a working version of](https://docs.thousandbrains.org/docs/salience-sm#saliencestrategy) - currently this combination remains untested.
 If the system consistently revisits the key discriminative features that are important for recognition, and does so efficiently, then those features remain present in recent history.
 
 ## A Biological Connection and Other Benefits
