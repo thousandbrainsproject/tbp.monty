@@ -29,7 +29,7 @@ One concrete example is how we refer to goals, actions, and policies. Currently 
 
 This would allow us to use the term "policies" for all of the above, as we naturally do anyways when discussing model-free and model-based policies.
 
-However, even the above suggestion isn't without its problems. For example, there are likely to be policies that must coordiante a mixture of Goal States and Target Poses ("Mixed" Policies?). This example emphasizes that many such terminology changes will benefit from the RFC process.
+However, even the above suggestion isn't without its problems. For example, there are likely to be policies that must coordinate a mixture of Goal States and Target Poses ("Mixed" Policies?). This example emphasizes that many such terminology changes will benefit from the RFC process.
 
 ### "Models"
 The term model is highly overloaded in Monty - it can refer to Monty as a whole, as well as the models that a Learning Module in Monty learns. In addition, the primary directory where most of the key Monty code exists is `frameworks/models`, which could be interpreted in multiple ways. This is particularly confusing for someone coming across Monty for the first time.
