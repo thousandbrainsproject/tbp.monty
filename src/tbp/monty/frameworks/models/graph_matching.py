@@ -22,6 +22,7 @@ from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
 from tbp.monty.frameworks.loggers.graph_matching_loggers import (
     BasicGraphMatchingLogger,
+    BasicUnsupervisedGraphMatchingLogger,
     DetailedGraphMatchingLogger,
     SelectiveEvidenceLogger,
 )
@@ -49,6 +50,7 @@ class MontyForGraphMatching(MontyBase):
         "SILENT": BaseMontyLogger,
         # Log things like basic stats.csv files, data to reproduce experiments
         "BASIC": BasicGraphMatchingLogger,
+        "BASIC_UNSUPERVISED": BasicUnsupervisedGraphMatchingLogger,
         # Utter deforestation
         "DETAILED": DetailedGraphMatchingLogger,
         # Save specific stats necessary for object similarity analysis.
