@@ -463,12 +463,11 @@ def get_per_lm_stats(eval_stats):
     Returns:
         Named per-LM accuracy percentages.
     """
-    stats = {
+    return {
         f"{lm_id}/overall/percent_correct": overall_accuracy(lm_stats)
         for lm_id, lm_stats in eval_stats.groupby("lm_id")
     }
 
-    return stats
 
 
 def print_benchmark_stats(overall_stats: dict) -> None:
