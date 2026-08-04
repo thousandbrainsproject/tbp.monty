@@ -425,7 +425,8 @@ class MontyExperiment:
         learning_modules = instantiate(config.pop("learning_modules"))
         for lm_id, lm in learning_modules.items():
             lm.learning_module_id = lm_id
-            lm.init_from_ltm()  # TODO: init should have already done everything
+            if self._recreation_mode:
+                lm.init_from_ltm()  # TODO: init should have already done everything
 
         sensor_modules = instantiate(config.pop("sensor_modules"))
         motor_system = instantiate(config.pop("motor_system_config"))
