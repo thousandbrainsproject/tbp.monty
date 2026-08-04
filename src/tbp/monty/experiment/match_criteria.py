@@ -12,7 +12,7 @@ from typing import Mapping, Protocol
 
 from typing_extensions import Self
 
-__all__ = ["AllLMsMatch", "AnyLMsMatch", "MatchCriterion", "NamedLMsMatch"]
+__all__ = ["AnyLMsMatch", "MatchCriterion", "NamedLMsMatch"]
 
 
 class MatchCriterion(Protocol):
@@ -81,14 +81,4 @@ class NamedLMsMatch(MatchCriterion):
         self._ids = frozenset(ids)
 
     def __call__(self: Self, terminal_states: Mapping[str, str | None]) -> bool:
-        unknown_ids = self._ids - terminal_states.keys()
-        if unknown_ids:
-            raise ValueError(f"unknown learning module IDs: {unknown_ids}")
         return all(terminal_states[lm_id] == "match" for lm_id in self._ids)
-
-
-class AllLMsMatch(MatchCriterion):
-    """Satisifed once all learning modules have reached "match"."""
-
-    def __call__(self: Self, terminal_states: Mapping[str, str | None]) -> bool:
-        return all(state == "match" for state in terminal_states.values())

@@ -103,6 +103,7 @@
 \bInterlaminar\b
 \bInterneurons\b
 \binterpretability\b
+\binvariances\b
 \biter\b
 \bKalman\b
 \bkd\b
@@ -167,9 +168,11 @@
 \bskillset\b
 \bSlominski\b
 \bSMs?\b
+\bsomatosensation\b
 \bSpelke\b
 \bSpolsky\b
 \bStanovich\b
+\b[Ss]tereopsis\b
 \bsubclassed\b
 \bsubcomponents\b
 \bsubcortically\b
