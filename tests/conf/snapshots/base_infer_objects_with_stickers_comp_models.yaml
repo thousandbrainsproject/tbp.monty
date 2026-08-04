@@ -370,7 +370,7 @@ experiment:
     match_criterion:
       _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
       ids:
-        - learning_module_1
+      - learning_module_1
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG
