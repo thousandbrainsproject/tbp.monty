@@ -29,6 +29,7 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageFromStreamInterface,
     SaccadeOnImageInterface,
 )
+from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -61,6 +62,7 @@ class MontyExperiment:
     model: MontyBase
     env_interface: Interface | None
 
+    _match_criterion: MatchCriterion
     _recreation_mode: bool
     _monty_cfg: DictConfig | None  # dehydrated Monty config
     _monty_memo: Memento
@@ -93,7 +95,7 @@ class MontyExperiment:
             self.model_path = Path(config["model_name_or_path"])
         else:
             self.model_path = None
-        self.min_lms_match = config["min_lms_match"]
+        self._match_criterion = config["match_criterion"]
         self.show_sensor_output = config["show_sensor_output"]
         self.supervised_lm_ids = config["supervised_lm_ids"]
         if self.supervised_lm_ids == "all":
@@ -449,7 +451,7 @@ class MontyExperiment:
             **config,
             **monty_args,
         )
-        model.min_lms_match = self.min_lms_match
+        model._match_criterion = self._match_criterion
 
         if monty_args["num_exploratory_steps"] > self.max_total_steps:
             new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
