@@ -83,6 +83,13 @@ class EvidenceLMTest(BaseGraphTest):
         )
         return graph_lm
 
+    def test_top_two_mlh_ids_without_current_hypotheses(self):
+        """Return no MLH IDs before matching initializes current hypotheses."""
+        graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
+        graph_lm.reset_stm()
+
+        self.assertEqual(graph_lm.get_top_two_mlh_ids(), (None, None))
+
     def get_elm_with_two_fake_objects(
         self,
         fake_obs,
