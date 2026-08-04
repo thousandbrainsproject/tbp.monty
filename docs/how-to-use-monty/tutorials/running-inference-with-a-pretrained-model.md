@@ -194,7 +194,9 @@ experiment:
     # Specify the path where we saved the pretrained model
     model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_2obj_train/pretrained"}
     n_eval_epochs: 3
-    min_lms_match: 1
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG
