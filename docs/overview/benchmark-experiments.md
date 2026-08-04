@@ -152,23 +152,34 @@ Note: To obtain these results, pretraining was run without parallelization acros
 > | compositional_objects_1.1 | tgz | [compositional_objects_1.1.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.tgz) |
 > | compositional_objects_1.1 | zip | [compositional_objects_1.1.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.zip) |
 > 
-> Unpack the archive in the `~/tbp/data/` folder. For example:
+> Unpack the archive in the `~/tbp/data/habitat/versioned_data/` folder. For example:
 >
 > ```plaintext tgz
-> mkdir -p ~/tbp/data/
+> mkdir -p ~/tbp/data/habitat/versioned_data/
 >
-> cd ~/tbp/data/
+> cd ~/tbp/data/habitat/versioned_data/
 >
 > curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.tgz | tar -xzf -
 > ```
+>
+> or
+>
 > ```plaintext zip
-> mkdir -p ~/tbp/data/
+> mkdir -p ~/tbp/data/habitat/versioned_data/
 > 
-> cd ~/tbp/data/
+> cd ~/tbp/data/habitat/versioned_data/
 > 
 > curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.zip
 > 
 > unzip compositional_objects_1.1.zip
+> ```
+>
+> Then create a symlink so that the experiment configs (which look for `~/tbp/data/habitat/objects/compositional_objects`) can find the versioned dataset folder:
+>
+> ```plaintext
+> mkdir -p ~/tbp/data/habitat/objects/
+>
+> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.1 ~/tbp/data/habitat/objects/compositional_objects
 > ```
 >
 > To generate the pretrained models, run the following experiments in order:
