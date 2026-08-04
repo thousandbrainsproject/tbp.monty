@@ -129,7 +129,7 @@ class AttentionSystemAgeTest(unittest.TestCase):
     """Voxels persist across steps, ageing until they are re-observed or expire."""
 
     def setUp(self) -> None:
-        self.system = AttentionSystem(voxel_size=0.01, lifetime=3)
+        self.system = AttentionSystem(voxel_size=0.01, voxel_lifetime=3)
 
     def observe_near(self) -> None:
         """Observe the near voxel."""
@@ -147,13 +147,13 @@ class AttentionSystemAgeTest(unittest.TestCase):
         self.observe_near()
         self.assertEqual(self.system.grid["age"].to_numpy().dtype, np.int32)
 
-    def test_lifetime_is_exposed(self) -> None:
-        self.assertEqual(AttentionSystem(lifetime=9).lifetime, 9)
+    def test_voxel_lifetime_is_exposed(self) -> None:
+        self.assertEqual(AttentionSystem(voxel_lifetime=9).voxel_lifetime, 9)
 
-    def test_lifetime_must_be_positive(self) -> None:
+    def test_voxel_lifetime_must_be_positive(self) -> None:
         for bad in (0, -1):
             with self.assertRaises(ValueError):
-                AttentionSystem(lifetime=bad)
+                AttentionSystem(voxel_lifetime=bad)
 
     def test_an_unobserved_voxel_is_remembered(self) -> None:
         self.observe_near()
@@ -198,7 +198,7 @@ class AttentionSystemCountTest(unittest.TestCase):
     """Count tallies how many times a voxel has been observed."""
 
     def setUp(self) -> None:
-        self.system = AttentionSystem(voxel_size=0.01, lifetime=3)
+        self.system = AttentionSystem(voxel_size=0.01, voxel_lifetime=3)
 
     def observe_near(self) -> None:
         """Observe the near voxel."""
@@ -286,7 +286,7 @@ class AttentionSystemFilterTest(unittest.TestCase):
     """Step returns only the goals that live in the updated voxel grid."""
 
     def setUp(self) -> None:
-        self.system = AttentionSystem(voxel_size=0.01, lifetime=3)
+        self.system = AttentionSystem(voxel_size=0.01, voxel_lifetime=3)
 
     def test_only_goals_inside_the_grid_are_returned(self) -> None:
         inside = goal_at(NEAR_POINTS[0])

@@ -6,14 +6,6 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-"""Global attention over the regions of space proposed by SMs and LMs.
-
-Each step, sensor and learning modules propose regions -- lists of goals whose
-locations trace out the surface they are attending to. The attention system
-voxelizes those locations into a persistent grid, and only goals that land in an
-occupied voxel of the updated grid are passed on toward the motor system.
-"""
-
 from __future__ import annotations
 
 from typing import Sequence
@@ -43,29 +35,33 @@ def empty_voxel_grid() -> pd.DataFrame:
 
 
 class AttentionSystem:
-    """Global attention system.
+    """Global attention over the regions of space proposed by SMs and LMs.
 
-    Maintains a voxelized estimate of the regions of space currently attended to,
-    merging in the regions delivered on each step. The grid is a memory rather
-    than a snapshot of the latest look: a re-observed voxel is refreshed to a full
-    age with its count accumulated, one that was not seen ages by a step, and one
-    whose age runs out is dropped.
+    Each step, sensor and learning modules propose regions -- lists of goals
+    whose locations trace out the surface they are attending to. Those locations
+    are voxelized into a persistent grid, and only goals that land in an
+    occupied voxel of the updated grid are passed on toward the motor system.
+
+    The grid is a memory rather than a snapshot of the latest look: a
+    re-observed voxel is refreshed to a full age with its count accumulated, one
+    that was not seen ages by a step, and one whose age runs out is dropped.
     """
 
-    def __init__(self, voxel_size: float = 0.05, lifetime: int = 6):
+    def __init__(self, voxel_size: float = 0.05, voxel_lifetime: int = 6):
         """Initialize the attention system.
 
         Args:
             voxel_size: Edge length of a voxel, in world units.
-            lifetime: How many steps a voxel survives without being re-observed.
+            voxel_lifetime: How many steps a voxel survives without being
+                re-observed.
 
         Raises:
-            ValueError: If lifetime is not positive.
+            ValueError: If voxel_lifetime is not positive.
         """
-        if lifetime < 1:
-            raise ValueError(f"lifetime must be >= 1, got {lifetime}")
+        if voxel_lifetime < 1:
+            raise ValueError(f"voxel_lifetime must be >= 1, got {voxel_lifetime}")
         self._voxel_size = voxel_size
-        self._lifetime = lifetime
+        self._voxel_lifetime = voxel_lifetime
         self._voxel_grid = empty_voxel_grid()
 
     @property
@@ -74,9 +70,9 @@ class AttentionSystem:
         return self._voxel_size
 
     @property
-    def lifetime(self) -> int:
+    def voxel_lifetime(self) -> int:
         """How many steps a voxel survives without being re-observed."""
-        return self._lifetime
+        return self._voxel_lifetime
 
     @property
     def grid(self) -> pd.DataFrame:
@@ -169,7 +165,7 @@ class AttentionSystem:
         )
         return pd.DataFrame(
             {
-                "age": np.full(len(counts), self._lifetime, dtype=np.int32),
+                "age": np.full(len(counts), self._voxel_lifetime, dtype=np.int32),
                 "count": counts,
             }
         )
