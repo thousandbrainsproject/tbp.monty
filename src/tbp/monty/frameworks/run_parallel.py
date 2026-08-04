@@ -469,7 +469,6 @@ def get_per_lm_stats(eval_stats):
     }
 
 
-
 def print_benchmark_stats(overall_stats: dict) -> None:
     benchmark_keys = [
         "overall/percent_correct",
