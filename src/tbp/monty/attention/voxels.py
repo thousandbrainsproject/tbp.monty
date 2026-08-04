@@ -9,15 +9,16 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Iterable, Mapping, Protocol, Sequence, Tuple
+from typing import Iterable, Tuple
 
 import numpy as np
 import numpy.typing as npt
-import pandas as pd
 
-from tbp.monty.frameworks.models.buffer import BufferEncoder
+# Hashable voxel coordinates.
+Voxel = Tuple[int, int, int]
 
-Voxel = Tuple[int, int, int]  # hashable voxel coordinates.
+# Names of the row index levels: a voxel's integer grid coordinate.
+VOXEL_LEVELS = ("x", "y", "z")
 
 
 def as_array_voxels(voxels: Iterable) -> npt.NDArray[np.int_]:

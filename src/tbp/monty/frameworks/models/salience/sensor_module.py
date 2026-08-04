@@ -19,9 +19,13 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
+    OnObjectObservation,
     on_object_observation,
 )
 from tbp.monty.frameworks.models.salience.return_inhibitor import ReturnInhibitor
+from tbp.monty.frameworks.models.salience.segmentation.protocol import (
+    SegmentationStrategy,
+)
 from tbp.monty.frameworks.models.salience.strategies import (
     SalienceStrategy,
     Uniform,
@@ -41,6 +45,7 @@ class SalienceSM(SensorModule):
         salience_strategy: SalienceStrategy | None = None,
         return_inhibitor: ReturnInhibitor | None = None,
         snapshot_telemetry: SnapshotTelemetry | None = None,
+        segmentation_strategy: SegmentationStrategy | None = None,
     ) -> None:
         self._sensor_module_id = sensor_module_id
         self._save_raw_obs = save_raw_obs
@@ -54,8 +59,10 @@ class SalienceSM(SensorModule):
             SnapshotTelemetry() if snapshot_telemetry is None else snapshot_telemetry
         )
 
+        self._segmentation_strategy = segmentation_strategy
+
         self._goals: list[Goal] = []
-        self._region = list[Goal] = []
+        self._region: list[Goal] = []
         # TODO: Goes away once experiment code is extracted
         self.is_exploring = False
 
@@ -128,6 +135,60 @@ class SalienceSM(SensorModule):
             for i in range(len(on_object.locations))
         ]
 
+        self._region = self._segment_region(ctx, observation, on_object, salience)
+
+    def _segment_region(
+        self,
+        ctx: RuntimeContext,
+        observation: SensorObservation,
+        on_object: OnObjectObservation,
+        salience: np.ndarray,
+    ) -> list[Goal]:
+        """Segment the surface under fixation into a region proposal.
+
+        The region is the set of on-object locations inside the segmented
+        surface, expressed as goals so it can travel to the attention system via
+        ``propose_region``.
+
+        Args:
+            ctx: The runtime context.
+            observation: Sensor observation.
+            on_object: The on-object view of the observation.
+            salience: Weighted salience, aligned with ``on_object.locations``.
+
+        Returns:
+            The region's goals, or an empty list without a segmentation strategy.
+        """
+        if self._segmentation_strategy is None:
+            return []
+
+        segmentation_map = self._segmentation_strategy(
+            ctx=ctx, rgba=observation["rgba"], depth=observation["depth"]
+        )
+
+        # Restore the weighted salience to image shape; boolean-mask indexing and
+        # np.where enumerate pixels in the same row-major order.
+        salience_map = np.zeros(on_object.on_object_mask.shape)
+        salience_map[on_object.on_object_mask] = salience
+
+        surface_mask = segmentation_map.astype(bool) & on_object.on_object_mask
+        surface_locations = on_object.locations_map[surface_mask]
+        surface_salience = salience_map[surface_mask]
+
+        return [
+            Goal(
+                location=surface_locations[i],
+                morphological_features=None,
+                non_morphological_features=None,
+                confidence=surface_salience[i],
+                use_state=False,
+                sender_id=self._sensor_module_id,
+                sender_type="SM",
+                goal_tolerances=None,
+            )
+            for i in range(len(surface_locations))
+        ]
+
     def _weight_salience(
         self,
         ctx: RuntimeContext,
@@ -169,6 +230,7 @@ class SalienceSM(SensorModule):
 
     def reset(self) -> None:
         self._goals.clear()
+        self._region.clear()
         self._return_inhibitor.reset()
         self._snapshot_telemetry.reset()
         self.is_exploring = False

@@ -13,7 +13,7 @@ import copy
 import logging
 from typing import Any, ClassVar, Sequence
 
-from src.tbp.monty.attention.attention_system import AttentionSystem
+from tbp.monty.attention.attention_system import AttentionSystem
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import SemanticID
@@ -335,6 +335,12 @@ class MontyBase(Monty):
             goals = sm.propose_goals()
             self._goals.extend(goals)
 
+        # The attention system folds the proposed regions into its voxel grid and
+        # returns only the goals that fall within it.
+        regions = [lm.propose_region() for lm in self.learning_modules]
+        regions.extend(sm.propose_region() for sm in self.sensor_modules)
+        self._goals = self._attention_system.step(self._goals, regions)
+
     def _step_motor_system(
         self,
         ctx: RuntimeContext,
@@ -398,6 +404,7 @@ class MontyBase(Monty):
 
         self.motor_system.reset()
         self._goals = []
+        self._attention_system.reset()
 
     def snapshot(self) -> Memento:
         lm_dict = {

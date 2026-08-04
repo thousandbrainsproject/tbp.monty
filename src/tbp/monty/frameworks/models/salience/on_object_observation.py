@@ -20,6 +20,8 @@ class OnObjectObservation:
     center_location: np.ndarray | None
     locations: np.ndarray
     salience: np.ndarray
+    on_object_mask: np.ndarray
+    locations_map: np.ndarray
 
 
 def on_object_observation(
@@ -38,7 +40,8 @@ def on_object_observation(
 
     Returns:
         The grid/matrix formatted (unraveled) on-object salience and location data,
-        along with the location corresponding to the central pixel.
+        along with the location corresponding to the central pixel and the
+        image-shaped on-object mask and locations map.
     """
     rgba = observation["rgba"]
     grid_shape = rgba.shape[:2]
@@ -59,4 +62,6 @@ def on_object_observation(
         center_location=center_location,
         salience=on_object_salience,
         locations=on_object_locations,
+        on_object_mask=on_object,
+        locations_map=locations,
     )
