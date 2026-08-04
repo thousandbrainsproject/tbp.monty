@@ -1,0 +1,9 @@
+{"action":"turn_left","agent_id":"agent_id_0","rotation_degrees":5.0}
+{"action":"look_up","agent_id":"agent_id_0","rotation_degrees":5.0,"constraint_degrees":90.0}
+{"action":"look_up","agent_id":"agent_id_0","rotation_degrees":5.0,"constraint_degrees":90.0}
+{"action":"look_up","agent_id":"agent_id_0","rotation_degrees":5.0,"constraint_degrees":90.0}
+{"action":"look_up","agent_id":"agent_id_0","rotation_degrees":5.0,"constraint_degrees":90.0}
+{"action":"turn_left","agent_id":"agent_id_0","rotation_degrees":5.0}
+{"action":"look_down","agent_id":"agent_id_0","rotation_degrees":5.0,"constraint_degrees":90.0}
+{"action":"turn_right","agent_id":"agent_id_0","rotation_degrees":5.0}
+{"action":"look_down","agent_id":"agent_id_0","rotation_degrees":5.0,"constraint_degrees":90.0}

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -17,6 +17,8 @@ from slugify import slugify
 from tools.github_readme_sync.colors import BLUE, CYAN, RESET
 from tools.github_readme_sync.hierarchy import INDENTATION_UNIT
 from tools.github_readme_sync.readme import ReadMe
+
+logger = logging.getLogger(__name__)
 
 
 def export(output_dir: str, rdme: ReadMe):
@@ -37,7 +39,7 @@ def export(output_dir: str, rdme: ReadMe):
         }
         hierarchy.append(category_entry)
 
-        logging.info(
+        logger.info(
             "\n" if i > 0 else "" + f"{BLUE}{slugify(category['title']).upper()}{RESET}"
         )
 
@@ -67,7 +69,7 @@ def export(output_dir: str, rdme: ReadMe):
 
 def process_doc(*, server_doc, hierarchy_doc, folder_path, indent_level, rdme):
     indent = INDENTATION_UNIT * indent_level
-    logging.info(f"{indent}{CYAN}{hierarchy_doc['slug']}{RESET}")
+    logger.info(f"{indent}{CYAN}{hierarchy_doc['slug']}{RESET}")
 
     doc_path = folder_path / f"{hierarchy_doc['slug']}.md"
     with doc_path.open("w") as f:

@@ -6,7 +6,7 @@ estimated-scope: medium
 improved-metric: compositional
 output-type: experiments, testbed, mesh-models
 skills: python, 3d-modeling
-contributor: scottcanoe, ramyamounir
+contributor: scottcanoe, ramyamounir, hlee9212
 status: evergreen
 ---
 

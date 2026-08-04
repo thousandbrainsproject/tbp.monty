@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -10,9 +10,9 @@
 import unittest
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.utils.logging_utils import compute_pose_error
+from tbp.monty.geometry import Rotation
 
 
 class TestComputePoseError(unittest.TestCase):
@@ -37,7 +37,7 @@ class TestComputePoseError(unittest.TestCase):
         The target rotation is 12°, so the closest in the list [0°, 10°, 20°] is 10°,
         with a 2° error.
         """
-        rotations_list = Rotation.from_euler("z", [0, 10, 20], degrees=True)
+        rotations_list = Rotation.from_euler("z", [[0], [10], [20]], degrees=True)
         target = Rotation.from_euler("z", 12, degrees=True)
         error = compute_pose_error(rotations_list, target, return_degrees=True)
         self.assertAlmostEqual(error, 2, places=6)
@@ -72,10 +72,11 @@ class TestComputePoseError(unittest.TestCase):
           matches the expected result
         """
         quats = [
-            [0, 0, 0, 1],  # Identity
-            [0, 0, 1, 0],  # 180° around Z
-            [0.707, 0, 0, 0.707],  # 90° around X (approx)
+            [1, 0, 0, 0],  # Identity
+            [0, 0, 0, 1],  # 180° around Z
+            [0.707, 0.707, 0, 0],  # 90° around X (approx)
         ]
+
         rotations_list = Rotation.from_quat(quats)
 
         # Verify that the length matches the number of input quaternions
@@ -93,7 +94,3 @@ class TestComputePoseError(unittest.TestCase):
 
         with self.assertRaises(AttributeError):
             compute_pose_error(Rotation.identity(), "not a rotation")
-
-
-if __name__ == "__main__":
-    unittest.main()

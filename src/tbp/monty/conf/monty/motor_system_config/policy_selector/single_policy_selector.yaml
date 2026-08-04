@@ -1,0 +1,3 @@
+# @package experiment.config.monty_config.motor_system_config.policy_selector
+
+_target_: tbp.monty.frameworks.models.motor_policy_selectors.SinglePolicySelector

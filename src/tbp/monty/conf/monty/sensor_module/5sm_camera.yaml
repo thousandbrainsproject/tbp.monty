@@ -1,0 +1,81 @@
+# @package experiment.config.monty_config.sensor_modules
+
+sensor_module_0:
+  _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+  features:
+  - on_object
+  - rgba
+  - hsv
+  - pose_vectors
+  - principal_curvatures
+  - principal_curvatures_log
+  - gaussian_curvature
+  - mean_curvature
+  - gaussian_curvature_sc
+  - mean_curvature_sc
+  sensor_module_id: patch_0
+  save_raw_obs: false
+sensor_module_1:
+  _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+  features:
+  - on_object
+  - rgba
+  - hsv
+  - pose_vectors
+  - principal_curvatures
+  - principal_curvatures_log
+  - gaussian_curvature
+  - mean_curvature
+  - gaussian_curvature_sc
+  - mean_curvature_sc
+  sensor_module_id: patch_1
+  save_raw_obs: false
+sensor_module_2:
+  _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+  features:
+  - on_object
+  - rgba
+  - hsv
+  - pose_vectors
+  - principal_curvatures
+  - principal_curvatures_log
+  - gaussian_curvature
+  - mean_curvature
+  - gaussian_curvature_sc
+  - mean_curvature_sc
+  sensor_module_id: patch_2
+  save_raw_obs: false
+sensor_module_3:
+  _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+  features:
+  - on_object
+  - rgba
+  - hsv
+  - pose_vectors
+  - principal_curvatures
+  - principal_curvatures_log
+  - gaussian_curvature
+  - mean_curvature
+  - gaussian_curvature_sc
+  - mean_curvature_sc
+  sensor_module_id: patch_3
+  save_raw_obs: false
+sensor_module_4:
+  _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+  features:
+  - on_object
+  - rgba
+  - hsv
+  - pose_vectors
+  - principal_curvatures
+  - principal_curvatures_log
+  - gaussian_curvature
+  - mean_curvature
+  - gaussian_curvature_sc
+  - mean_curvature_sc
+  sensor_module_id: patch_4
+  save_raw_obs: false
+sensor_module_5:
+  _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+  sensor_module_id: view_finder
+  save_raw_obs: false

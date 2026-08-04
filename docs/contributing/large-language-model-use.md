@@ -57,11 +57,11 @@ Below we provide further guidance on some edge cases.
 #### Agentic LLMs 
 - Due to the above, we suggest that you do not use agentic workflows that write large amounts of code in an automated way, unless as a means of automating a simple task.
 - An example of a good use of an agentic LLM setup would be widespread changes required to reflect an update in terminology. For example, in a [recent PR](https://github.com/thousandbrainsproject/tbp.tbs_sensorimotor_intelligence/pull/55/files), the order of two figures in our paper was swapped, requiring many small changes to the code and documentation. This was rapidly automated with LLM assistance. We then verified the correctness of the implementation after these changes.
-- On the other hand, we suggest that you do not pass a [Future Work item](https://thousandbrainsproject.readme.io/docs/project-roadmap) description into an LLM, and then open a PR with all of the code it generated.
+- On the other hand, we suggest that you do not pass a [Future Work item](https://docs.thousandbrains.org/docs/project-roadmap) description into an LLM, and then open a PR with all of the code it generated.
 
 ## Contributing on the Forums
 
-- [The TBP Discourse forums](https://thousandbrains.discourse.group/) are an excellent setting to discuss nascent ideas.
+- [The TBP Discourse forums](https://forum.thousandbrains.org/) are an excellent setting to discuss nascent ideas.
 - In these discussions, we would love to engage with you and your ideas. As such, we ask that you not post the outputs of LLMs as if these were your own ideas.
 - If you would like to quote or refer to a conversation you have had with an LLM, please just indicate this clearly.
 - See the advice under [Writing RFCs](#writing-rfcs) for suggestions about when LLMs can be useful "tutors" when exploring a topic.

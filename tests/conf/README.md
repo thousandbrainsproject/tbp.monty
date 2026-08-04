@@ -12,8 +12,16 @@ By failing a snapshot test every time a configuration is changed, we ensure that
 
 Once you observe failing tests and decide that the final configuration changes are as intended, follow this two-step checklist:
 
-1. Run `python conf/update_snapshots.py`. This automatically updates all of the snapshots to reflect the current configurations. After this, your tests will once again pass, since you are comparing generated configs to the ones you just generated.
+1. Run `python src/tbp/monty/conf/update_snapshots.py`. This automatically updates all of the snapshots to reflect the current configurations. After this, your tests will once again pass, since you are comparing generated configs to the ones you just generated.
 
 2. Commit the `tests/conf/snapshots` changes to source control to confirm that all changes are intended.
 
 
+### Updating MuJoCo snapshots (optional)
+
+When making changes to any of the configurations that end with `_mujoco.yaml`, you'll need to run the `update_snapshots.py` script with the `--mujoco` flag to switch it to look at and generate those snapshots.
+
+You will need a working `uv` environment to run the script with the `--mujoco` flag.
+
+> [!note]
+> Since the MuJoCo simulator and `uv` environment are still experimental and not required yet, you can ignore changing them for now.

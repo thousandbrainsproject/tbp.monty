@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: unknown
 improved-metric: multi-object, compositional, numsteps, goal-policy
 output-type: prototype, PR, monty-feature, analysis
-skills: python, monty, research
+skills: python, monty-advanced, research
 contributor: 
 status: open
 ---

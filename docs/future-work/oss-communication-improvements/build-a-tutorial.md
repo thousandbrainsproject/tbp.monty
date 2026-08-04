@@ -32,4 +32,4 @@ The good way to find a topic is to write about something you found difficult to 
 - How to integrate a new simulator.
 - How to build a new action policy.
 
-If you'd like more ideas on what kind of tutorials might be beneficial, you can message us on the [Discourse forum](https://thousandbrains.discourse.group/) and also have a look at the [existing tutorials](../../how-to-use-monty/tutorials.md) and [contributing tutorials](../../contributing/contributing-tutorials.md) pages.
+If you'd like more ideas on what kind of tutorials might be beneficial, you can message us on the [Discourse forum](https://forum.thousandbrains.org/) and also have a look at the [existing tutorials](../../how-to-use-monty/tutorials.md) and [contributing tutorials](../../contributing/contributing-tutorials.md) pages.

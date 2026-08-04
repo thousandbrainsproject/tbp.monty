@@ -1,1 +1,1 @@
-# Please see the [Monty Contributing Guide](https://thousandbrainsproject.readme.io/docs/contributing).
+# Please see the [Monty Contributing Guide](https://docs.thousandbrains.org/docs/contributing).

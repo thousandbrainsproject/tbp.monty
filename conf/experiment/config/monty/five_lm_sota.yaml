@@ -1,4 +1,0 @@
-defaults:
-  - five_lm
-  - motor_system/clear_motor_system_config@
-  - motor_system/informed_goal_state_driven@motor_system_config

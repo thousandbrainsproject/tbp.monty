@@ -9,7 +9,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-const DOCS_BASE_URL = 'https://thousandbrainsproject.readme.io/docs/';
+const DOCS_BASE_URL = 'https://docs.thousandbrains.org/docs/';
 const GITHUB_EDIT_BASE_URL = 'https://github.com/thousandbrainsproject/tbp.monty/edit/main/';
 const GITHUB_AVATAR_URL = 'https://github.com';
 const EXTERNAL_LINK_ICON = 'fa-external-link-alt';
@@ -78,7 +78,7 @@ const ColumnFormatters = {
     const url = urlPrefix ? `${urlPrefix}${value}` : value;
     return `<a href="${url}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(url)}"><i class="${icon}"></i></a>`;
   },
-  formatTagsColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), BADGE_CLASS),
+  formatBadgeColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), BADGE_CLASS),
   formatSkillsColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), BADGE_SKILLS_CLASS),
   formatSizeColumn(cell) {
     const value = (cell.getValue() || '').trim().toLowerCase();
@@ -110,11 +110,12 @@ const ColumnFormatters = {
   },
   formatStatusColumn(cell) {
     const rowData = cell.getRow().getData();
-    const status = cell.getValue() || '';
+    const status = (cell.getValue() || '').trim();
     const contributor = rowData.contributor || '';
 
+    const normalizedStatus = status.toLowerCase();
     const statusText = status
-      ? `<span class="${BADGE_STATUS_CLASS}">${escapeHtml(status)}</span>`
+      ? `<span class="badge ${BADGE_STATUS_CLASS} ${BADGE_STATUS_CLASS}-${escapeHtml(normalizedStatus)}" data-search-value="${escapeHtml(status)}" style="cursor: pointer;">${escapeHtml(status)}</span>`
       : '';
 
     if (!contributor) return statusText;
@@ -155,14 +156,13 @@ const TableConfig = {
 
   getAllColumns() {
     return [
-      { title: 'Title', field: 'title', formatter: ColumnFormatters.formatTitleWithLinksColumn, width: 200, cssClass: 'wrap-text', variableHeight: true },
-      { title: 'Scope', field: 'estimated-scope', formatter: ColumnFormatters.formatSizeColumn },
-      { title: 'Metric', field: 'improved-metric', formatter: ColumnFormatters.formatTagsColumn, maxWidth: 200, cssClass: 'wrap-text' },
-      { title: 'Output Type', field: 'output-type', formatter: ColumnFormatters.formatTagsColumn },
-      { title: 'RFC', field: 'rfc', formatter: ColumnFormatters.formatRfcColumn },
-      { title: 'Status', field: 'status', formatter: ColumnFormatters.formatStatusColumn },
-      { title: 'Tags', field: 'tags', formatter: ColumnFormatters.formatTagsColumn, widthGrow: 2, cssClass: 'wrap-text' },
-      { title: 'Skills', field: 'skills', formatter: ColumnFormatters.formatSkillsColumn, widthGrow: 2, cssClass: 'wrap-text' }
+      { title: 'Topic', field: 'title', formatter: ColumnFormatters.formatTitleWithLinksColumn, width: 200, cssClass: 'wrap-text', variableHeight: true },
+      { title: 'Scope', field: 'estimated-scope', formatter: ColumnFormatters.formatSizeColumn, maxWidth: 80 },
+      { title: 'Metric', field: 'improved-metric', formatter: ColumnFormatters.formatBadgeColumn, maxWidth: 100, cssClass: 'wrap-text', variableHeight: true },
+      { title: 'Output', field: 'output-type', formatter: ColumnFormatters.formatBadgeColumn, maxWidth: 100, cssClass: 'wrap-text', variableHeight: true },
+      { title: 'RFC', field: 'rfc', formatter: ColumnFormatters.formatRfcColumn, maxWidth: 80 },
+      { title: 'Status', field: 'status', formatter: ColumnFormatters.formatStatusColumn, maxWidth: 100, cssClass: 'wrap-text', variableHeight: true },
+      { title: 'Skills', field: 'skills', formatter: ColumnFormatters.formatSkillsColumn, maxWidth: 120, cssClass: 'wrap-text', variableHeight: true }
     ];
   },
 
@@ -218,7 +218,7 @@ const FutureWorkWidget = {
   createTable(data) {
     return new Tabulator('#table', {
       data: data,
-      layout: 'fitDataStretch',
+      layout: 'fitData',
       columns: TableConfig.getDisplayColumns(),
       groupBy: 'path2'
     });
@@ -250,7 +250,7 @@ const FutureWorkWidget = {
         }
 
         const searchableText = [
-          data.title, data.tags, data.skills, data.status,
+          data.title, data.skills, data.status,
           data.contributor, data['estimated-scope'], data['improved-metric'],
           data['output-type'], data.rfc, data.link, data.path2
         ]

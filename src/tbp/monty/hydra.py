@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -8,18 +8,16 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import contextlib
 import importlib
 from pathlib import Path
+from typing import Any, Callable, Mapping
 
+import hydra
 import numpy as np
 from omegaconf import OmegaConf
 
-from tbp.monty.frameworks.agents import AgentID
-
-
-def agent_id_resolver(agent_id: str) -> AgentID:
-    """Returns an AgentID new type from a string."""
-    return AgentID(agent_id)
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 
 
 def monty_class_resolver(class_name: str) -> type:
@@ -55,10 +53,38 @@ def path_expanduser_resolver(path: str) -> str:
     return str(Path(path).expanduser())
 
 
+def tests_dir_resolver(path: str) -> str:
+    return str(Path(__file__).parents[3] / "tests" / Path(path))
+
+
 def register_resolvers() -> None:
-    OmegaConf.register_new_resolver("monty.agent_id", agent_id_resolver)
-    OmegaConf.register_new_resolver("monty.class", monty_class_resolver)
-    OmegaConf.register_new_resolver("np.array", ndarray_resolver)
-    OmegaConf.register_new_resolver("np.ones", ones_resolver)
-    OmegaConf.register_new_resolver("np.list_eval", numpy_list_eval_resolver)
-    OmegaConf.register_new_resolver("path.expanduser", path_expanduser_resolver)
+    """Register custom OmegaConf resolvers for Monty configs.
+
+    Skips resolvers that are already registered rather than raising
+    a ValueError, since multiple entry points (e.g. tests/__init__.py
+    and update_snapshots.py) may call this function in the same process.
+    """
+    resolvers: dict[str, Callable[..., Any]] = {
+        "monty.class": monty_class_resolver,
+        "np.array": ndarray_resolver,
+        "np.ones": ones_resolver,
+        "np.list_eval": numpy_list_eval_resolver,
+        "path.expanduser": path_expanduser_resolver,
+        "path.tests": tests_dir_resolver,
+    }
+    for name, resolver in resolvers.items():
+        with contextlib.suppress(ValueError):
+            OmegaConf.register_new_resolver(name, resolver)
+
+
+def instantiate_experiment(cfg_exp: Mapping[str, Any]) -> MontyExperiment:
+    """Return MontyExperiment initialized from Hydra configuration.
+
+    Raises:
+        TypeError: If the config does not produce a MontyExperiment.
+    """
+    exp = hydra.utils.instantiate(cfg_exp)
+    if not isinstance(exp, MontyExperiment):
+        raise TypeError(f"Hydra did not produce a MontyExperiment from {cfg_exp}")
+    exp._monty_cfg = cfg_exp["config"]["monty_config"]
+    return exp

@@ -35,7 +35,7 @@ A graph is constructed from a list of observations (poses, features). Each obser
 
 ## What are Surface Normals and Principal Curvatures?
 
-See the video in this section for more details: [Surface Normals and Principal Curvatures](../observations-transforms-sensor-modules.md#surface-normals-and-principal-curvatures)
+See the video in this section for more details: [Surface Normals and Principal Curvatures](../sensor-module/sm-for-rgbd-data.md#surface-normals-and-principal-curvatures)
 
 
 **Similar nodes in a graph** (no significant difference in pose or features to an existing node) **are removed** (see above figure) and nodes could have a variety of features attached to them. Removing similar points from a graph helps us to be more efficient when matching and avoids storing redundant information in memory. This way we store more points where features change quickly (like where the handle attaches to the mug) and fewer points where features are not changing as much (like on a flat surface).

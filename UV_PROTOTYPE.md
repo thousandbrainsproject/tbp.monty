@@ -5,11 +5,8 @@ In the future this will change, but for now, avoid trying to use `uv` with this 
 
 ## Setup Notes
 
-Some notes on how to set up this environment.
+Run the following to create a virtual environment and set up all the dependencies.
 
 ```sh
-# The --seed is needed so we can build the torch packages
-uv venv -p 3.9.22 --seed
-uv pip install torch==1.13.1 # Use the version from pyproject.toml
 uv sync --extra dev --extra simulator_mujoco
 ```

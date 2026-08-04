@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -15,9 +15,150 @@ import sys
 
 import numpy as np
 import torch
-from scipy.spatial.transform import Rotation
+from numpy.typing import ArrayLike
+
+from tbp.monty.geometry import Rotation
+from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)
+
+
+class TangentFrame:
+    """Orthonormal tangent frame on a surface.
+
+    Maintains a right-handed (u, v, n) basis where n is the surface normal,
+    u is the horizontal tangent direction, and v is the vertical tangent
+    direction. As the sensor moves across a curved surface, `transport()`
+    rotates the tangent frame to match the new normal.
+
+    See:
+        https://en.wikipedia.org/wiki/Parallel_transport
+
+    Args:
+        surface_normal: Unit surface normal at the initial point.
+    """
+
+    def __init__(self, surface_normal: np.ndarray) -> None:
+        """Initialize an orthonormal (u, v) basis in the tangent plane of a surface.
+
+        A surface normal defines a tangent plane but not a unique basis. We choose
+        `basis_u` as the cross product of `some_axis` and the `surface_normal`, giving
+        a horizontal tangent direction. `basis_v` follows as the cross product of
+        the `surface_normal` and `basis_u`.
+
+        If the `surface_normal` is nearly parallel to some_axis (|cos(theta)| > 0.95),
+        we fall back to using [0, 0, 1] to avoid a degenerate cross product.
+
+        Args:
+            surface_normal: Unit surface normal at the initial point.
+        """
+        # some_axis is arbitrarily chosen
+        some_axis = np.array([0.0, 1.0, 0.0], dtype=np.float32)
+        self._normal = normalize(surface_normal)
+
+        if is_parallel(some_axis, self._normal):
+            some_axis = np.array([0.0, 0.0, 1.0], dtype=np.float32)
+
+        self._u = normalize(np.cross(some_axis, self._normal))
+        self._v = normalize(np.cross(self._normal, self._u))
+
+    @property
+    def basis_u(self) -> np.ndarray:
+        """Horizontal tangent basis vector."""
+        return self._u
+
+    @property
+    def basis_v(self) -> np.ndarray:
+        """Vertical tangent basis vector."""
+        return self._v
+
+    @property
+    def normal(self) -> np.ndarray:
+        """Surface normal associated with this tangent frame."""
+        return self._normal
+
+    def transport(self, new_normal: np.ndarray) -> None:
+        """Parallel-transport the frame to a new surface normal.
+
+        As the sensor moves along a curved surface, the tangent plane
+        rotates with the curvature (e.g. around a cylinder). Parallel
+        transport transforms the basis (u, v) by exactly the rotation needed
+        to stay in the new tangent plane. This is analogous to "unrolling"
+        the curved surface.
+
+        Args:
+            new_normal: Unit surface normal at the new point.
+        """
+        old_normal = self._normal
+
+        if not is_parallel(old_normal, new_normal):
+            cos_angle = np.clip(np.dot(old_normal, new_normal), -1.0, 1.0)
+            rotation_axis = normalize(np.cross(old_normal, new_normal))
+            rotation = Rotation.from_rotvec(rotation_axis * np.arccos(cos_angle))
+            self._u = rotation.apply(self._u)
+
+        # Re-orthonormalize to prevent cumulative floating point error
+        self._u = normalize(project_onto_tangent_plane(self._u, new_normal))
+        self._v = np.cross(new_normal, self._u)
+        self._normal = new_normal.copy()
+
+
+def normalize(v: ArrayLike, epsilon: float = DEFAULT_TOLERANCE) -> np.ndarray:
+    """Normalize a vector to unit length.
+
+    Args:
+        v: Input vector to normalize.
+        epsilon: Small epsilon value below which the vector is considered zero.
+
+    Returns:
+        Unit vector in the direction of v in v's dtype.
+
+    Raises:
+        ValueError: If the vector has near-zero length (norm < epsilon).
+    """
+    v = np.asarray(v)
+    n = np.linalg.norm(v)
+    if n < epsilon:
+        raise ValueError(f"Cannot normalize near-zero vector (norm={n:.2e})")
+    return v / n
+
+
+def project_onto_tangent_plane(v: ArrayLike, n: ArrayLike) -> np.ndarray:
+    """Project a vector onto the tangent plane perpendicular to a normal.
+
+    Removes the component of v that is parallel to n, leaving only the
+    component that lies in the plane perpendicular to n.
+
+    Args:
+        v: Vector to project.
+        n: Normal vector defining the tangent plane. Normalized internally.
+
+    Returns:
+        The projection of v onto the plane perpendicular to n.
+    """
+    n = normalize(n)
+    return v - np.dot(v, n) * n
+
+
+def is_parallel(
+    v1: ArrayLike, v2: ArrayLike, tolerance: float = DEFAULT_TOLERANCE
+) -> bool:
+    """True when v1 and v2 point in the same or opposite direction.
+
+    Assumes unit-length inputs. The metric 1 - |cos(theta)| is compared
+    against tolerance.
+
+    Args:
+        v1: First unit vector.
+        v2: Second unit vector.
+        tolerance: Maximum value of 1 - |cos(theta)| to consider parallel.
+
+    Returns:
+        True if v1 and v2 are parallel (same or opposite direction).
+    """
+    v1 = np.asarray(v1)
+    v2 = np.asarray(v2)
+    return 1.0 - abs(np.dot(v1, v2)) < tolerance
 
 
 def rotations_to_quats(rotations, invert=False):
@@ -52,7 +193,7 @@ def rot_mats_to_quats(rot_mats, invert=False):
 
 
 def euler_to_quats(euler_rots, invert=False):
-    """Convert euler rotations to rotation matrices.
+    """Convert Euler rotations to quaternions.
 
     Args:
         euler_rots: Euler rotations
@@ -73,7 +214,7 @@ def euler_to_quats(euler_rots, invert=False):
 def get_angle(vec1, vec2):
     """Get angle between two vectors.
 
-    NOTE: for efficiency reasons we assume vec1 and vec2 are already
+    NOTE: For efficiency reasons we assume vec1 and vec2 are already
     normalized (which is the case for surface normals and curvature
     directions).
 
@@ -84,21 +225,19 @@ def get_angle(vec1, vec2):
     Returns:
         angle in radians
     """
-    # unit_vector_1 = vec1 / np.linalg.norm(vec1)
-    # unit_vector_2 = vec2 / np.linalg.norm(vec2)
     dot_product = np.dot(vec1, vec2)
     return np.arccos(np.clip(dot_product, -1, 1))
 
 
 def get_angle_beefed_up(v1, v2):
-    """Returns the angle in radians between vectors 'v1' and 'v2'.
+    """Return the angle in radians between vectors 'v1' and 'v2'.
 
-    If one of the vectors is undefined, return arbitrarily large distance
+    If one of the vectors is undefined, return an arbitrarily large distance.
 
-    If one of the vectors is the zero vector, return arbitrarily large distance
+    If one of the vectors is the zero vector, return an arbitrarily large distance.
 
-    Also enforces that vectors are unit vectors (therefore less efficient than
-    the standard get_angle)
+    Also enforces that vectors are unit vectors, which makes it less efficient than
+    the standard get_angle.
 
     >>> angle_between_vecs((1, 0, 0), (0, 1, 0))
     1.5707963267948966
@@ -110,11 +249,11 @@ def get_angle_beefed_up(v1, v2):
     if v1 is None or v2 is None:
         return np.inf
 
-    if np.all(v1 == 0) or np.all(v2 == 0):
+    if np.linalg.norm(v1) < DEFAULT_TOLERANCE or np.linalg.norm(v2) < DEFAULT_TOLERANCE:
         return np.inf
 
-    v1_u = v1 / np.linalg.norm(v1)
-    v2_u = v2 / np.linalg.norm(v2)
+    v1_u = normalize(v1)
+    v2_u = normalize(v2)
 
     result = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
@@ -132,7 +271,7 @@ def get_angles_for_all_hypotheses(hyp_f, query_f):
     hyp_f shape = (num_hyp, num_nn, 3)
     query_f shape = (num_hyp, 3)
         for each hypothesis we want to get num_nn angles.
-    return shape = (num_hyp, num_nn)
+    Return shape = (num_hyp, num_nn)
 
     Args:
         hyp_f: Hypotheses features three pose vectors
@@ -184,7 +323,10 @@ def align_orthonormal_vectors(m1, m2, as_scipy=True):
             Defaults to True.
 
     Returns:
-        ?
+        If `as_scipy` is True, a tuple `(Rotation, float)` containing the
+        alignment rotation and the corresponding alignment error.
+        Otherwise returns `(np.ndarray, None)`, where the array is the rotation
+        matrix aligning the vectors.
     """
     # assert check_orthonormal(m1), "m1 is not orthonormal"
     # assert check_orthonormal(m2), "m2 is not orthonormal"
@@ -210,8 +352,8 @@ def align_multiple_orthonormal_vectors(ms1, ms2, as_scipy=True):
     """Calculate rotations between multiple orthonormal vector sets.
 
     Args:
-        ms1: multiple orthonormal vectors. shape = (N, 3, 3)
-        ms2: orthonormal vectors to align with. shape = (3, 3)
+        ms1: Multiple orthonormal vector sets with shape = (N, 3, 3).
+        ms2: Orthonormal vectors to align with, shape = (3, 3).
         as_scipy: Whether to return a list of N scipy.Rotation objects or
             a np.array of rotation matrices (N, 3, 3).
 
@@ -399,7 +541,7 @@ def apply_rf_transform_to_points(
             frame.
         object_rotation: Rotation of the object in the world relative to the
             learned model of the object. Expresses how the object model needs to be
-            rotated to be consistent with the observations. To transfor the observed
+            rotated to be consistent with the observations. To transform the observed
             locations (rel. body) into the models reference frame, the inverse of
             this rotation is applied.
         object_scale: Scale of the object relative to the model. Not used yet.

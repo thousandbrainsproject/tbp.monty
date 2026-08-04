@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -37,13 +37,13 @@ class TactoFingerAgent(HabitatAgent):
         - "turn_right": Turn finger right using `rotation_step`
 
     Attributes:
-        agent_id: Unique ID used to identify this agent actions and observations
-        position: Agent initial position in meters. Default (0, 0, 0)
-        rotation: Agent initial rotation quaternion. Default (1, 0, 0, 0)
-        height: Agent height in meters. Default 0.1 (10 cm)
-        rotation_step: Rotation step in degrees for the "turn" actions
-        translation_step: Translation step in meters for the "move" actions
-        config: Tacto sensor configuration ('OMNITACT', 'DIGIT'). Default 'DIGIT'
+        agent_id: Unique ID used to identify this agent's actions and observations.
+        position: Agent initial position in meters. Default (0, 0, 0).
+        rotation: Agent initial rotation quaternion. Default (1, 0, 0, 0).
+        height: Agent height in meters. Default 0.1 (10 cm).
+        rotation_step: Rotation step in degrees for the "turn" actions.
+        translation_step: Translation step in meters for the "move" actions.
+        config: Tacto sensor configuration ('OMNITACT', 'DIGIT'). Default 'DIGIT'.
     """
 
     def __init__(

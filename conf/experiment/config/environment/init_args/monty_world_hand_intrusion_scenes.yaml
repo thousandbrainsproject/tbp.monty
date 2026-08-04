@@ -1,1 +1,0 @@
-data_path: ${path.expanduser:${oc.env:MONTY_DATA}/worldimages/hand_intrusion_scenes/}

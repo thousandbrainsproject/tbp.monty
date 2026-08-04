@@ -182,12 +182,14 @@
 \bSync'ing\b
 \bSzegedy\b
 \bTakaki\b
+\b[Tt]eleoperat(e|ed|es|ing|ion)?\b
 \bTGZ|tgz\b
 \bThrun\b
 \btimeseries\b
 \b[Tt]ooltips?\b
 \bTolman's\b
 \btransthalamic\b
+\bunintuitive\b
 \bunmerged\b
 \buntrusted\b
 \bURL\b
@@ -214,3 +216,8 @@
 \bKraus\b
 \b[Mm]onty\b
 \bKD-Tree\b
+\b[Kk]eyframes?\b
+\bFrintrop\b
+\b[Oo]pponency\b
+\bExcalidraw\b
+\blazyconfigs\b

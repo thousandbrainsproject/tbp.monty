@@ -1,0 +1,6 @@
+# @package experiment.config.monty_config.learning_modules
+
+learning_module_0:
+  _target_: tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM
+  k: 5
+  match_attribute: displacement

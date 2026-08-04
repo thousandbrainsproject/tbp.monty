@@ -40,7 +40,14 @@ If all automated checks pass, **Maintainers** will **Review** the Pull Request. 
 
 # 3. Update Pull Request
 
-If automated checks fail or **Maintainers** **Request Changes**, you are responsible for **Updating the Pull Request**. Once you have updated it, the Pull Request will again enter **Review**.
+If automated checks fail or **Maintainers** **Request Changes**, you are responsible for **Updating the Pull Request**. Once you updated it, the Pull Request will again enter **Review**.
+
+> [!NOTE]
+> **Contributors**
+>
+> If a **Maintainer** is already assigned to your pull request, use the GitHub re-request a review feature to let the **Maintainer** know that your pull request is ready for another **Review**.
+>
+> ![Re-request a review](../../figures/contributing/re-request-review.png)
 
 # 4. Approve
 

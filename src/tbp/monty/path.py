@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -13,11 +13,14 @@ import os
 from pathlib import Path
 
 
-def monty_data_path(custom_data_path: str | Path, default_subpath: str | Path) -> Path:
+def monty_data_path(
+    custom_data_path: str | Path | None, default_subpath: str | Path
+) -> Path:
     """Get data path, using custom path if provided, or return the default.
 
     Args:
-        custom_data_path: Custom data path provided by user.
+        custom_data_path: Custom data path provided by the user, or None to use
+            default_subpath.
         default_subpath: Default subpath within MONTY_DATA to use if no custom path.
 
     Returns:

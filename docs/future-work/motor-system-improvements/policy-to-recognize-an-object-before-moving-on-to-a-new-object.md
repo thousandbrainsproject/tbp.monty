@@ -5,9 +5,9 @@ rfc: required
 estimated-scope: large
 improved-metric: multi-object, compositional, goal-policy
 output-type: prototype, monty-feature, PR, RFC, experiments, analysis
-skills: research, python, monty
-contributor: nielsleadholm
-status: paused
+skills: research, python, monty-advanced
+contributor: nielsleadholm, scottcanoe
+status: scoping
 ---
 
 When there are multiple objects in the world (including different parts of a compositional object), it is beneficial to recognize the object currently observed (i.e. converge to high confidence) before moving onto a new object.

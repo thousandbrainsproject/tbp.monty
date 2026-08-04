@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: large
 improved-metric: scale
 output-type: theory, prototype, experiments, analysis
-skills: python, research, monty, literature-review
+skills: python, research, monty-advanced, literature-review
 contributor: 
 status: open
 ---

@@ -105,7 +105,7 @@ The following items focus on concrete steps to get capabilities 1-3 into Monty.
 * Add 'state' to Monty's model representation.
   * [Add state conditioning to models learned in LMs.](../future-work/learning-module-improvements/include-state-in-models.md)
   * [Extend hypothesis representation and updates to incorporate model state.](../future-work/learning-module-improvements/include-state-in-hypotheses.md)
-  * [Extend the CMP output to incorporate model state.](../future-work/cmp-hierarchy-improvements/include-state-in-CMP.md)
+  * [Extend the CMP output to incorporate model state.](../future-work/cmp-hierarchy-improvements/include-state-in-cmp.md)
   * [Update the voting algorithm to take model state into account.](../future-work/voting-improvements/vote-on-state.md)
 * Add time interval representation to Monty
   * [Add a global interval timer and provide its input to LMs.](../future-work/cmp-hierarchy-improvements/global-interval-timer.md)
@@ -135,6 +135,6 @@ We are continually adding more videos to this playlist as we continue to explore
 [7] Clay, V., Leadholm, N., and Hawkins, J. (2024). **The thousand brains project: A new paradigm for sensorimotor intelligence.** URL: [https://arxiv.org/abs/2412.18354](https://arxiv.org/abs/2412.18354).  
 [8] Hawkins, J. C., Ahmad, S., Clay, V., & Leadholm, N. (2025). **Architecture and Operation of Intelligent System.** *U.S. Patent Application No. 18/751,199*.  
 [9] **Monty code:** [https://github.com/thousandbrainsproject/tbp.monty](https://github.com/thousandbrainsproject/tbp.monty)  
-[10] **TBP documentation**: [https://thousandbrainsproject.readme.io/docs/welcome-to-the-thousand-brains-project-documentation](https://thousandbrainsproject.readme.io/docs/welcome-to-the-thousand-brains-project-documentation) 
+[10] **TBP documentation**: [https://docs.thousandbrains.org/docs/welcome-to-the-thousand-brains-project-documentation](https://docs.thousandbrains.org/docs/welcome-to-the-thousand-brains-project-documentation) 
 [11] Hawkins, J., Leadholm, N. and Clay, V. (2025) **Hierarchy or Heterarchy? A Theory of Long-Range Connections for the Sensorimotor Brain** URL: [https://arxiv.org/pdf/2507.05888](https://arxiv.org/pdf/2507.05888)
 [12] Leadholm, N., Clay, V., Knudstrup, S., Lee, H., and Hawkins, J. (2025) **Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference** URL: [https://arxiv.org/abs/2507.04494](https://arxiv.org/abs/2507.04494)

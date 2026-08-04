@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -32,16 +32,16 @@ class TactoSensor(SensorConfig):
     """Base class common for all tacto sensors.
 
     Each specific sensor implementation should inherit this class and pass the
-    appropriated configuration file ('digit' or 'omnitact')
+    appropriate configuration file ('digit' or 'omnitact').
 
     Attributes:
         sensor_id: Sensor ID unique within the sensor module.
             The observations made by this sensor will be prefixed by
-            this id. i.e. "`sensor_id`.cam0"
-        resolution: Camera resolution (width, height). Default (32, 48)
+            this id, i.e. "`sensor_id`.cam0"
+        resolution: Camera resolution (width, height). Default (32, 48).
         position: Sensor position relative to :class:`HabitatAgent`.
-            Default (0, 0, 0)
-        rotation: Sensor rotation quaternion. Default (1, 0, 0, 0)
+            Default (0, 0, 0).
+        rotation: Sensor rotation quaternion. Default (1, 0, 0, 0).
         config: Tacto Sensor specification (DIGIT, OMNITACT)
     """
 

@@ -1,7 +1,0 @@
-defaults:
-  - default_evidence
-
-learning_module_args:
-  hypotheses_updater_args:
-    max_nneighbors: 5
-

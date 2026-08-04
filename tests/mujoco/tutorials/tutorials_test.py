@@ -1,0 +1,178 @@
+# Copyright 2026 Thousand Brains Project
+#
+# Copyright may exist in Contributors' modifications
+# and/or contributions to the work.
+#
+# Use of this source code is governed by the MIT
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+
+
+from unittest import TestCase
+
+import hydra
+
+from tbp.monty.frameworks.run import output_dir_from_run_name
+from tbp.monty.hydra import instantiate_experiment
+from tests import HYDRA_ROOT
+
+
+class TutorialsTest(TestCase):
+    """Tests of the configurations that we have in our tutorial documentation.
+
+    The purpose of these tests is to ensure that the tutorial configs load properly
+    and run to completion without error so that any users of Monty aren't surprised
+    by broken tutorials. We aren't actually testing the results against any expected
+    values, though we could do that if we decide we need to.
+
+    Note: since we aren't checking the results of these experiments, we don't
+    need to run the full training and inference. Limiting the number of steps cuts
+    down on the runtime of these tests. If we start checking the results, we'll
+    need to change these.
+    """
+
+    # TODO: Find a way to make these test configs be the source of truth for the
+    #   documentation rather than having to manually keep them in sync.
+
+    def test_first_experiment(self) -> None:
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=["experiment=tutorial/first_experiment_mujoco"],
+            )
+            experiment = instantiate_experiment(config.experiment)
+            with experiment:
+                experiment.run()
+
+    def test_training_and_inference(self) -> None:
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=[
+                    "experiment=tutorial/surf_agent_2obj_train_mujoco",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_train_epochs=1",
+                    "experiment.config.max_train_steps=3",
+                    "experiment.config.max_total_steps=3",
+                ],
+            )
+            config.experiment.config.logging.output_dir = str(
+                output_dir_from_run_name(config)
+            )
+            experiment = instantiate_experiment(config.experiment)
+            with experiment:
+                experiment.run()
+
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=[
+                    "experiment=tutorial/surf_agent_2obj_eval_mujoco",
+                    # Non-interactive
+                    "experiment.config.show_sensor_output=false",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_eval_epochs=1",
+                    "experiment.config.max_eval_steps=3",
+                    "experiment.config.max_total_steps=3",
+                ],
+            )
+            experiment = instantiate_experiment(config.experiment)
+            with experiment:
+                experiment.run()
+
+    def test_unsupervised_continual_learning(self) -> None:
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=[
+                    "experiment=tutorial/surf_agent_2obj_unsupervised_mujoco",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_train_epochs=1",
+                    "experiment.config.max_train_steps=3",
+                    "experiment.config.max_total_steps=3",
+                ],
+            )
+            experiment = instantiate_experiment(config.experiment)
+            with experiment:
+                experiment.run()
+
+    def test_multiple_learning_modules(self) -> None:
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=[
+                    "experiment=tutorial/dist_agent_5lm_2obj_train_mujoco",
+                    # Non-interactive
+                    "experiment.config.show_sensor_output=false",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_train_epochs=1",
+                    "experiment.config.max_train_steps=3",
+                    "experiment.config.max_total_steps=3",
+                ],
+            )
+            config.experiment.config.logging.output_dir = str(
+                output_dir_from_run_name(config)
+            )
+            experiment = instantiate_experiment(config.experiment)
+            with experiment:
+                experiment.run()
+
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=[
+                    "experiment=tutorial/dist_agent_5lm_2obj_eval_mujoco",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_eval_epochs=1",
+                    "experiment.config.max_eval_steps=3",
+                    "experiment.config.max_total_steps=3",
+                ],
+            )
+            experiment = instantiate_experiment(config.experiment)
+            with experiment:
+                experiment.run()
+
+    def test_omniglot_training_and_inference(self) -> None:
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=["experiment=tutorial/omniglot_training"],
+            )
+            inference_output_dir = str(output_dir_from_run_name(config))
+            config.experiment.config.logging.output_dir = inference_output_dir
+            experiment = instantiate_experiment(config.experiment)
+            with experiment:
+                experiment.run()
+
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=[
+                    "experiment=tutorial/omniglot_inference",
+                    f"experiment.config.model_name_or_path={inference_output_dir}/pretrained/",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_eval_epochs=1",
+                    "experiment.config.max_eval_steps=3",
+                    "experiment.config.max_total_steps=3",
+                ],
+            )
+            experiment = instantiate_experiment(config.experiment)
+            with experiment:
+                experiment.run()
+
+    def test_monty_meets_world_2dimage_inference(self) -> None:
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
+            config = hydra.compose(
+                config_name="experiment",
+                overrides=[
+                    "experiment=tutorial/monty_meets_world_2dimage_inference",
+                    # Non-interactive
+                    "experiment.config.logging.wandb_handlers=[]",
+                    "experiment.config.show_sensor_output=false",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_eval_epochs=1",
+                    "experiment.config.max_eval_steps=3",
+                    "experiment.config.max_total_steps=3",
+                    "experiment.config.monty_config.monty_args.num_exploratory_steps=3",
+                ],
+            )
+            experiment = instantiate_experiment(config.experiment)
+            with experiment:
+                experiment.run()

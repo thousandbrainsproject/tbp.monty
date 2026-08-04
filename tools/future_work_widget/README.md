@@ -7,7 +7,7 @@ A tool that
 
 ## Setup
 
-First, ensure you've setup Monty. See [Getting Started - 2. Set up Your Environment](https://thousandbrainsproject.readme.io/docs/getting-started#2-set-up-your-environment).
+First, ensure you've setup Monty. See [Getting Started - 2. Set up Your Environment](https://docs.thousandbrains.org/docs/getting-started#2-set-up-your-environment).
 
 Next, from the root Monty directory, install this tool's dependencies:
 
@@ -66,12 +66,11 @@ Controls which columns are displayed in the table and in what order.
 - `output-type` - Type of output expected
 - `rfc` - Related RFC link or reference
 - `status` - Current status with contributor avatars
-- `tags` - Categorization tags
 - `skills` - Required skills for the work
 
 **Examples:**
 - Show only title and status: `?columns=title,status`
-- Show title, tags, and skills: `?columns=title,tags,skills`
+- Show title and skills: `?columns=title,skills`
 - Show all columns (default): No parameter needed
 
 **Note:** Column names are case-insensitive and whitespace around commas is ignored.

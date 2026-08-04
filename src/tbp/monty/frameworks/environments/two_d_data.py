@@ -11,10 +11,11 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import PIL
 import quaternion as qt
 from scipy.ndimage import gaussian_filter
@@ -22,14 +23,11 @@ from scipy.ndimage import gaussian_filter
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import DepthTo3DLocations
-from tbp.monty.frameworks.environments.embodied_environment import (
-    EmbodiedEnvironment,
-    ObjectID,
-)
+from tbp.monty.frameworks.environments.environment import SimulatedEnvironment
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Observations,
-    SensorObservations,
+    SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
@@ -38,6 +36,9 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.path import monty_data_path
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -48,15 +49,15 @@ __all__ = [
 ]
 
 
-class OmniglotEnvironment(EmbodiedEnvironment):
+class OmniglotEnvironment(SimulatedEnvironment):
     """Environment for Omniglot dataset."""
 
-    def __init__(self, patch_size=10, data_path=None):
+    def __init__(self, patch_size: int = 10, data_path: str | Path | None = None):
         """Initialize environment.
 
         Args:
             patch_size: height and width of patch in pixels, defaults to 10
-            data_path: path to the omniglot dataset. If None its set to
+            data_path: path to the omniglot dataset. If None, defaults to
                 ~/tbp/data/omniglot/python/
         """
         self.patch_size = patch_size
@@ -75,11 +76,6 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         # Just for compatibility. TODO: find cleaner way to do this.
         self._agents = [type("FakeAgent", (object,), {"action_space_type": "2d"})()]
 
-    def add_object(self, *args, **kwargs) -> ObjectID:
-        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
-        #      interface and how the class hierarchy is defined and used.
-        raise NotImplementedError("OmniglotEnvironment does not support adding objects")
-
     def step(
         self, actions: Sequence[Action]
     ) -> tuple[Observations, ProprioceptiveState]:
@@ -91,8 +87,8 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         move in increments specified by amount through this list. Overall there are
         usually several hundred points (~200-400) but it varies between characters and
         versions.
-        If the reach the end of a move path and the episode is not finished, we start
-        from the beginning again. If len(move_path) % amount != 0 we will sample
+        If we reach the end of a move path and the episode is not finished, we start
+        from the beginning again. If len(move_path) % amount != 0, we will sample
         different points on the second pass.
 
         Args:
@@ -103,18 +99,18 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         Returns:
             The observations and proprioceptive state.
         """
-        obs = self._observation()
+        obs = self._observations()
 
         for action in actions:
             amount = 1
             if hasattr(action, "rotation_degrees"):
                 amount = max(action.rotation_degrees, 1)
             self.step_num += int(amount)
-            obs = self._observation()
+            obs = self._observations()
 
-        return obs
+        return obs, self._state()
 
-    def _observation(self) -> Observations:
+    def _observations(self) -> Observations:
         query_loc = self.locations[self.step_num % self.max_steps]
         patch = self.get_image_patch(
             self.current_image,
@@ -122,18 +118,18 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             self.patch_size,
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
-        obs = Observations(
+        return Observations(
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
-                        SensorID("patch"): SensorObservations(
+                        SensorID("patch"): SensorObservation(
                             {
                                 "depth": depth,
                                 "semantic": np.array(~patch, dtype=int),
                                 "rgba": np.stack([depth, depth, depth], axis=2),
                             }
                         ),
-                        SensorID("view_finder"): SensorObservations(
+                        SensorID("view_finder"): SensorObservation(
                             {
                                 "depth": self.current_image,
                                 "semantic": np.array(~patch, dtype=int),
@@ -143,28 +139,19 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
 
-    def get_state(self) -> ProprioceptiveState:
+    def _state(self) -> ProprioceptiveState:
         loc = self.locations[self.step_num % self.max_steps]
         sensor_position = np.array([loc[0], loc[1], 0])
         return ProprioceptiveState(
             {
                 AgentID("agent_id_0"): AgentState(
                     sensors={
-                        SensorID("patch" + ".depth"): SensorState(
+                        SensorID("patch"): SensorState(
                             rotation=self.rotation,
                             position=sensor_position,
                         ),
-                        SensorID("patch" + ".rgba"): SensorState(
-                            rotation=self.rotation,
-                            position=sensor_position,
-                        ),
-                        SensorID("view_finder" + ".depth"): SensorState(
-                            rotation=self.rotation,
-                            position=sensor_position,
-                        ),
-                        SensorID("view_finder" + ".rgba"): SensorState(
+                        SensorID("view_finder"): SensorState(
                             rotation=self.rotation,
                             position=sensor_position,
                         ),
@@ -175,18 +162,16 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             }
         )
 
-    def switch_to_object(self, alphabet_id, character_id, version_id):
+    def switch_to_object(
+        self,
+        alphabet_id: int,
+        character_id: int,
+        version_id: int,
+    ):
         self.current_alphabet = self.alphabet_names[alphabet_id]
         self.character_id = character_id
         self.character_version = version_id
         self.current_image, self.locations = self.load_new_character_data()
-
-    def remove_all_objects(self) -> None:
-        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
-        #      interface and how the class hierarchy is defined and used.
-        raise NotImplementedError(
-            "OmniglotEnvironment does not support removing all objects"
-        )
 
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self.step_num = 0
@@ -198,14 +183,14 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
-                        SensorID("patch"): SensorObservations(
+                        SensorID("patch"): SensorObservation(
                             {
                                 "depth": depth,
                                 "semantic": np.array(~patch, dtype=int),
                                 "rgba": np.stack([depth, depth, depth], axis=2),
                             }
                         ),
-                        SensorID("view_finder"): SensorObservations(
+                        SensorID("view_finder"): SensorObservation(
                             {
                                 "depth": self.current_image,
                                 "semantic": np.array(~patch, dtype=int),
@@ -215,7 +200,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
+        return obs, self._state()
 
     def load_new_character_data(self):
         img_char_dir = (
@@ -250,7 +235,12 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self.max_steps = len(locations) - 1
         return current_image, locations
 
-    def get_image_patch(self, img, loc, patch_size):
+    def get_image_patch(
+        self,
+        img: npt.NDArray[np.bool_],
+        loc: npt.NDArray[np.float64],
+        patch_size: int,
+    ):
         loc = np.array(loc, dtype=int)
         startx = loc[1] - patch_size // 2
         stopx = loc[1] + patch_size // 2
@@ -258,7 +248,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         stopy = loc[0] + patch_size // 2
         return img[startx:stopx, starty:stopy]
 
-    def motor_to_locations(self, motor):
+    def motor_to_locations(self, motor: Sequence[npt.NDArray[np.float64]]):
         motor = [d[:, 0:2] for d in motor]
         motor = [space_motor_to_img(d) for d in motor]
         locations = np.zeros(2)
@@ -270,18 +260,18 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self._current_state = None
 
 
-class SaccadeOnImageEnvironment(EmbodiedEnvironment):
+class SaccadeOnImageEnvironment(SimulatedEnvironment):
     """Environment for moving over a 2D image with depth channel.
 
     Images should be stored in .png format for rgb and .data format for depth.
     """
 
-    def __init__(self, patch_size=64, data_path=None):
+    def __init__(self, patch_size: int = 64, data_path: str | Path | None = None):
         """Initialize environment.
 
         Args:
             patch_size: height and width of patch in pixels, defaults to 64
-            data_path: path to the image dataset. If None its set to
+            data_path: path to the image dataset. If None, defaults to
                 ~/tbp/data/worldimages/labeled_scenes/
         """
         self.patch_size = patch_size
@@ -320,13 +310,6 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         # TODO Use 2D-specific actions instead of overloading? Habitat actions
         self._valid_actions = ["look_up", "look_down", "turn_left", "turn_right"]
 
-    def add_object(self, *args, **kwargs) -> ObjectID:
-        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
-        #      interface and how the class hierarchy is defined and used.
-        raise NotImplementedError(
-            "SaccadeOnImageEnvironment does not support adding objects"
-        )
-
     def step(
         self, actions: Sequence[Action]
     ) -> tuple[Observations, ProprioceptiveState]:
@@ -338,7 +321,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         Returns:
             The observation and proprioceptive state.
         """
-        obs = self._observation()
+        obs = self._observations()
 
         for action in actions:
             if action.name in self._valid_actions:
@@ -351,33 +334,33 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             # Make sure amount is int since we are moving using pixel indices
             amount = int(amount)
             self.current_loc = self.get_next_loc(action.name, amount)
-            obs = self._observation()
+            obs = self._observations()
 
-        return obs
+        return obs, self._state()
 
-    def _observation(self) -> Observations:
+    def _observations(self) -> Observations:
         (
             depth_patch,
             rgb_patch,
             depth3d_patch,
             sensor_frame_patch,
         ) = self.get_image_patch(self.current_loc)
-        obs = Observations(
+        return Observations(
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
-                        SensorID("patch"): SensorObservations(
+                        SensorID("patch"): SensorObservation(
                             {
                                 "depth": depth_patch,
                                 "rgba": rgb_patch,
                                 "semantic_3d": depth3d_patch,
                                 "sensor_frame_data": sensor_frame_patch,
-                                "world_camera": self.world_camera,
+                                "cam_to_world": self.cam_to_world,
                                 # Save pixel loc for plotting
                                 "pixel_loc": self.current_loc,
                             }
                         ),
-                        SensorID("view_finder"): SensorObservations(
+                        SensorID("view_finder"): SensorObservation(
                             {
                                 "depth": self.current_depth_image,
                                 "rgba": self.current_rgb_image,
@@ -387,9 +370,8 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
 
-    def get_state(self) -> ProprioceptiveState:
+    def _state(self) -> ProprioceptiveState:
         loc = self.current_loc
         # Provide LM w/ sensor position in 3D, body-centric coordinates
         # instead of pixel indices
@@ -400,17 +382,10 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             {
                 AgentID("agent_id_0"): AgentState(
                     sensors={
-                        SensorID("patch" + ".depth"): SensorState(
+                        SensorID("patch"): SensorState(
                             rotation=self.rotation, position=sensor_position
                         ),
-                        SensorID("patch" + ".rgba"): SensorState(
-                            rotation=self.rotation, position=sensor_position
-                        ),
-                        SensorID("view_finder" + ".depth"): SensorState(
-                            rotation=self.rotation,
-                            position=sensor_position,
-                        ),
-                        SensorID("view_finder" + ".rgba"): SensorState(
+                        SensorID("view_finder"): SensorState(
                             rotation=self.rotation,
                             position=sensor_position,
                         ),
@@ -421,7 +396,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             }
         )
 
-    def switch_to_object(self, scene_id, scene_version_id):
+    def switch_to_object(self, scene_id: int, scene_version_id: int):
         """Load new image to be used as environment."""
         self.current_scene = self.scene_names[scene_id]
         self.scene_version = scene_version_id
@@ -437,18 +412,11 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             self.current_sf_scene_point_cloud,
         ) = self.get_3d_scene_point_cloud()
 
-    def remove_all_objects(self) -> None:
-        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
-        #      interface and how the class hierarchy is defined and used.
-        raise NotImplementedError(
-            "SaccadeOnImageEnvironment does not support removing all objects"
-        )
-
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         """Reset environment and extract image patch.
 
-        TODO: clean up. Do we need this? No reset required in this env interface, maybe
-        indicate this better here.
+        TODO: clean up. Do we need this? No reset is required in this environment
+          interface, so this should be indicated more clearly.
 
         Returns:
             The observation from the image patch.
@@ -465,17 +433,17 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             {
                 AgentID("agent_id_0"): AgentObservations(
                     {
-                        SensorID("patch"): SensorObservations(
+                        SensorID("patch"): SensorObservation(
                             {
                                 "depth": depth_patch,
                                 "rgba": rgb_patch,
                                 "semantic_3d": depth3d_patch,
                                 "sensor_frame_data": sensor_frame_patch,
-                                "world_camera": self.world_camera,
+                                "cam_to_world": self.cam_to_world,
                                 "pixel_loc": np.array(self.current_loc),
                             }
                         ),
-                        SensorID("view_finder"): SensorObservations(
+                        SensorID("view_finder"): SensorObservation(
                             {
                                 "depth": self.current_depth_image,
                                 "rgba": self.current_rgb_image,
@@ -485,14 +453,14 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
+        return obs, self._state()
 
     def load_new_scene_data(self):
         """Load depth and rgb data for next scene environment.
 
         Returns:
             current_depth_image: The depth image.
-            current_rgb_image: The rgb image.
+            current_rgb_image: The RGB image.
             start_location: The start location.
         """
         # Set data paths
@@ -515,7 +483,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         start_location = [obs_shape[0] // 2, obs_shape[1] // 2]
         return current_depth_image, current_rgb_image, start_location
 
-    def load_depth_data(self, depth_path, height, width):
+    def load_depth_data(self, depth_path: Path, height: int, width: int):
         """Load depth image from .data file.
 
         Returns:
@@ -523,7 +491,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         """
         return np.fromfile(depth_path, np.float32).reshape(height, width)
 
-    def process_depth_data(self, depth):
+    def process_depth_data(self, depth: npt.NDArray[np.float32]):
         """Process depth data by reshaping, clipping and flipping.
 
         Returns:
@@ -533,7 +501,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         depth[np.isnan(depth)] = 10
 
         depth_clipped = depth.copy()
-        # Anything thats further away than 40cm is clipped
+        # Anything that's further away than 40cm is clipped
         # TODO: make this a hyperparameter?
         depth_clipped[depth > 0.4] = 10
         # flipping image makes visualization more intuitive. If we want to have this
@@ -542,11 +510,11 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         # sensor orientation (TODO).
         return depth_clipped  # np.flipud(depth_clipped)
 
-    def load_rgb_data(self, rgb_path):
+    def load_rgb_data(self, rgb_path: Path):
         """Load RGB image and put into np array.
 
         Returns:
-            The rgb image.
+            The RGB image.
         """
         return np.array(
             PIL.Image.open(rgb_path)  # .transpose(PIL.Image.FLIP_TOP_BOTTOM)
@@ -568,7 +536,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         obs = Observations(
             {
                 agent_id: AgentObservations(
-                    {sensor_id: SensorObservations({"depth": self.current_depth_image})}
+                    {sensor_id: SensorObservation({"depth": self.current_depth_image})}
                 )
             }
         )
@@ -577,7 +545,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             {
                 agent_id: AgentState(
                     sensors={
-                        SensorID(sensor_id + ".depth"): SensorState(
+                        sensor_id: SensorState(
                             rotation=rotation,
                             position=np.array([0, 0, 0]),
                         )
@@ -601,7 +569,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             zooms=1,
             # hfov of iPad front camera from
             # https://developer.apple.com/library/archive/documentation/DeviceInformation/Reference/iOSDeviceCompatibility/Cameras/Cameras.html
-            # TODO: determine dynamically from which device is sending data
+            # TODO: determine dynamically which device is sending data
             hfov=54.201,
             get_all_points=True,
             use_semantic_sensor=False,
@@ -618,10 +586,13 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         current_sf_scene_point_cloud = current_sf_scene_point_cloud.reshape(
             (image_shape[0], image_shape[1], 4)
         )
-        self.world_camera = obs_3d[agent_id][sensor_id]["world_camera"]
+        self.cam_to_world = obs_3d[agent_id][sensor_id]["cam_to_world"]
         return current_scene_point_cloud, current_sf_scene_point_cloud
 
-    def get_3d_coordinates_from_pixel_indices(self, pixel_idx):
+    def get_3d_coordinates_from_pixel_indices(
+        self,
+        pixel_idx: npt.NDArray[np.int_],
+    ):
         """Retrieve 3D coordinates of a pixel.
 
         Returns:
@@ -645,7 +616,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             ]
         )
 
-    def get_next_loc(self, action_name, amount):
+    def get_next_loc(self, action_name: str, amount: int):
         """Calculate next location in pixel space given the current action.
 
         Returns:
@@ -673,7 +644,10 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             new_loc[1] = self.move_area[1][1]
         return new_loc
 
-    def get_image_patch(self, loc):
+    def get_image_patch(
+        self,
+        loc: npt.NDArray[np.int_],
+    ):
         """Extract 2D image patch from a location in pixel space.
 
         Returns:
@@ -714,12 +688,12 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
 class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
     """Environment for moving over a 2D streamed image with depth channel."""
 
-    def __init__(self, patch_size=64, data_path=None):
+    def __init__(self, patch_size: int = 64, data_path: str | Path | None = None):
         """Initialize environment.
 
         Args:
             patch_size: height and width of patch in pixels, defaults to 64
-            data_path: path to the image dataset. If None its set to
+            data_path: path to the image dataset. If None, defaults to
                 ~/tbp/data/worldimages/world_data_stream/
         """
         # TODO: use super() to avoid repeating lines of code
@@ -759,7 +733,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         #      don't call super().__init__ while inheriting
         self._valid_actions = ["look_up", "look_down", "turn_left", "turn_right"]
 
-    def switch_to_scene(self, scene_id):
+    def switch_to_scene(self, scene_id: int):
         self.current_scene = scene_id
         (
             self.current_depth_image,
@@ -819,12 +793,12 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
 
 # Functions from omniglot/python.demo.py
 # TODO: integrate better and maybe rewrite
-def load_img(fn):
+def load_img(fn: Path):
     img = plt.imread(fn)
     return np.array(img, dtype=bool)
 
 
-def load_motor(fn):
+def load_motor(fn: Path):
     motor = []
     with fn.open() as fid:
         lines = fid.readlines()
@@ -842,6 +816,6 @@ def load_motor(fn):
     return motor
 
 
-def space_motor_to_img(pt):
+def space_motor_to_img(pt: npt.NDArray[np.float64]):
     pt[:, 1] = -pt[:, 1]
     return pt

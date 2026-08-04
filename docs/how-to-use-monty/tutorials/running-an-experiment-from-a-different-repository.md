@@ -2,17 +2,56 @@
 title: Running An Experiment From A Different Repository
 ---
 
-> [!WARNING]
->
-> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
-
 If you have your own repository and want to run your own experiment or a benchmark, you do not need to replicate the `tbp.monty` benchmarks setup.
 
 > [!NOTE]
 >
 > We have a [tbp.monty_project_template](https://github.com/thousandbrainsproject/tbp.monty_project_template) template repository, so that you can quickly use [tbp.monty](https://github.com/thousandbrainsproject/tbp.monty) for your project, prototype, or paper.
 
-You have the option of running everything from a single script file. The general setup is:
+First, you will need to install `tbp.monty` as a dependency using `conda`. You will need to add `thousandbrainsproject` to your list of channels, as well as the specific `tbp.monty` dependency:
+
+```yaml
+# environment.yaml
+
+# ...
+channels:
+  # ...
+  - thousandbrainsproject
+
+dependencies:
+  # ...
+  - thousandbrainsproject::tbp.monty
+  - pip
+  - pip:
+    - -e .[dev]
+```
+
+You'll also want to add `tbp.monty` and a [Hydra](https://hydra.cc/) dependency to your `pyproject.toml`:
+
+```toml
+[project]
+# ...
+dependencies = [
+    # ...
+    "tbp.monty", # imported via conda (thousandbrainsproject::tbp.monty)
+    "hydra-core>=1.3.2", # Hydra is used for configuring Monty
+]
+```
+
+With the `enviroment.yaml` configured, create your environment:
+
+```
+conda env create -f environment.yaml
+```
+
+> [!NOTE]
+>
+> `tbp.monty` is only distributed for `x86_64` architecture, so if you are on Apple Silicon, your `conda` environment needs to be created using `--subdir=osx64` option:
+> ```
+> conda env create -f environment.yaml --subdir=osx-64
+> ```
+
+Once your `conda` environment is configured, the general setup is:
 
 ```python
 from tbp.monty.frameworks.run_env import setup_env
@@ -21,65 +60,55 @@ from tbp.monty.frameworks.run_env import setup_env
 # tbp.monty configuration and runtime.
 setup_env()
 
-# imports from tbp.monty for use in your configuration
+# import run to run the experiment
+from tbp.monty.frameworks.run import main  # noqa: E402
 
-# import run or run_parallel to run the experiment
-from tbp.monty.frameworks.run import run  # noqa: E402
-from tbp.monty.frameworks.run_parallel import run_parallel  # noqa: E402
-
-experiment_config = # your configuration
-
-run(experiment_config)
-# or
-run_parallel(experiment_config)
+if __name__ == "__main__":
+    main()
 ```
 
-A more filled out example:
+or
 
 ```python
-import os
-from pathlib import Path
-
 from tbp.monty.frameworks.run_env import setup_env
 
+# call setup_env() to initialize environment used by
+# tbp.monty configuration and runtime.
 setup_env()
 
-from tbp.monty.frameworks.config_utils.config_args import (  # noqa: E402
-    LoggingConfig,
-    PatchAndViewMontyConfig,
-)
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (  # noqa: E402
-    SupervisedPretrainingExperimentArgs,
-    get_env_interface_per_object_by_idx,
-)
-from tbp.monty.frameworks.environments import embodied_data as ED  # noqa: E402
-from tbp.monty.frameworks.experiments.pretraining_experiments import (  # noqa: E402
-    MontySupervisedObjectPretrainingExperiment,
-)
-from tbp.monty.frameworks.run import run  # noqa: E402
-from tbp.monty.simulators.habitat.configs import (  # noqa: E402
-    PatchViewFinderMountHabitatEnvInterfaceConfig,
-)
+# import run_parallel to run the experiment, parallelizing across episodes
+from tbp.monty.frameworks.run_parallel import main  # noqa: E402
 
-first_experiment = dict(
-    experiment_class=MontySupervisedObjectPretrainingExperiment,
-    logging=LoggingConfig(
-        log_parallel_wandb=False,
-        run_name="test",
-        output_dir=(
-            Path(os.getenv("MONTY_LOGS")) / "projects" / "monty_runs" / "test"
-        ).expanduser(),
-    ),
-    experiment_args=SupervisedPretrainingExperimentArgs(
-        do_eval=False,
-        max_train_steps=1,
-        n_train_epochs=1,
-    ),
-    monty_config=PatchAndViewMontyConfig(),
-    env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(),
-    train_env_interface_class=ED.EnvironmentInterfacePerObject,
-    train_env_interface_args=get_env_interface_per_object_by_idx(start=0, stop=1),
-)
-
-run(first_experiment)
+if __name__ == "__main__":
+    main()
 ```
+
+The above scripts let you run the existing `tbp.monty` experiments from your own project. For example:
+```
+python run.py experiment=tutorial/first_experiment
+```
+
+To run your own experiment, you need to configure it using [Hydra](https://hydra.cc/) (`hydra-core>=1.3.2`). For the purpose of this tutorial, we'll assume that your Hydra configuration is stored in `src/project/conf`:
+
+```
+src
+`- project
+   `- conf
+      `- experiment
+         `- example.yaml
+environment.yaml
+pyproject.toml
+run.py
+run_parallel.py
+```
+
+With the above setup in place and a correct configuration present in `example.yaml`, you can now execute it via:
+```
+python run.py experiment=example
+```
+or
+```
+python run_parallel.py experiment=example
+```
+
+For a full working example, see the template repository: https://github.com/thousandbrainsproject/tbp.monty_project_template.

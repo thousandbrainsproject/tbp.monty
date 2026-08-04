@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: medium
 improved-metric: dynamic
 output-type: prototype, PR, monty-feature
-skills: python, research, monty
+skills: python, research, monty-beginner
 contributor: 
 status: open
 ---

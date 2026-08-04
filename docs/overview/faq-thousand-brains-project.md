@@ -58,8 +58,12 @@ We are also planning to host a series of **invited speakers** again, so please l
 
 The Thousand Brains project and our research **continues to be funded by Jeff Hawkins** and now **also in part by the Gates Foundation**.  Our funding is focused on fundamental research into this new technology but will also facilitate exchanges with related research groups and potential applications.
 
-# What are Numenta’s Goals for the Thousand Brains Project?
+# What are Thousand Brains Project's Goals?
+We believe that the future of AI and robotics will be based on sensorimotor learning.
 
-From our inception, Numenta has had two goals: first, to **understand the human brain and how it creates intelligence**, and second, to **apply these principles to enable true machine intelligence**. The Thousand Brains Project is aligned with both of these goals and adds a third goal to make the technology accessible and widely adopted.
+Our mission is threefold: 
+1. Create core sensory-motor algorithms guided by neuroscience.
+2. Create an open-source platform ([tbp.monty](https://github.com/thousandbrainsproject/tbp.monty)) for creating sensory-motor products.
+3. Increase awareness of sensory-motor technologies for AI and robotics.
 
-Numenta has developed a framework for understanding what the neocortex does and how it does it, called the Thousand Brains Theory of Intelligence. It is a collaborative open-source framework dedicated to creating a new type of artificial intelligence that pushes the current boundaries of AI. Numenta’s goals for the Thousand Brains Project are to **build an open-source platform for intelligent sensorimotor systems and to be a catalyst for a whole new way of thinking about machine intelligence**.
+We want to **understand the human brain and how it creates intelligence** and **apply these principles to enable true machine intelligence**. This is an open-source project to help **make the technology accessible and widely adopted**.

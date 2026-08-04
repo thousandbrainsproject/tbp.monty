@@ -99,7 +99,53 @@ A Draft Pull Request is ignored and not triaged.
 
 ### Title
 
-A short descriptive title.
+The title should be short and descriptive. Because our commit messages use the pull request title, the title should be prefixed with a label based on the [Conventional Commits 1.0.0 Standard](https://www.conventionalcommits.org/en/v1.0.0/).
+
+A breaking change is communicated by appending `!` after the label. This correlates with `MAJOR` in [RFC 7 - Monty versioning][monty-versioning].
+
+Here are some examples of titles that meet these guidelines.
+
+```
+docs: remove obsolete MotorSystemConfig references
+refactor!: Use TypedDict for SensorObservations
+fix: OmniglotEnvironment includes view_finder ProprioceptiveState
+chore: version 0.18.0
+ci: tidy ci and prepare for turning on merge queue
+fix: run_parallel no longer hands on mac
+refactor: Address mypyp issues
+test: Make hierarchy test less brittle
+```
+
+`tbp.monty` code adopts the following label `<type>`s:
+
+- `fix`: Fix to a bug in the **src/tbp/monty** codebase. This correlates with `PATCH` in [RFC 7 - Monty versioning][monty-versioning].
+- `feat`: Introduction of a new feature to the **scr/tbp/monty** codebase. This correlates with `MINOR` in [RFC 7 - Monty versioning][monty-versioning].
+- `build`: Change to the build system or external dependencies.
+- `ci`: Change to our GitHub Actions configuration files and scripts.
+- `docs`: Documentation only update.
+- `perf`: Performance improvement.
+- `refactor`: A **src/tbp/monty** code change that neither fixes a bug nor adds a feature.
+- `style`: Change that does not affect the meaning of the code (white-space, formatting, etc.).
+- `test`: Adding or correcting tests.
+- `chore`: The commit is a catch all for work outside of the types identified above. For example, the commit affects infrastructure, tooling, development, or other non-Monty framework code.
+- `rfc`: RFC proposal.
+- `revert`: Commit that reverts a previous commit.
+
+Even with the above guidance, sometimes there might be doubt or disagreement on what type to use. If it seems like multiple types are appropriate, maybe there should be multiple pull requests. Otherwise, discuss in the pull request and select a best-fit type.
+
+[monty-versioning]: https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0007_monty_versioning.md
+
+> [!NOTE]
+> `fix`, `feat`, and `refactor` types refer only to the **src/tbp/monty** codebase. Adding a new tool is not a feature. Fixing a tool is not a feature. Refactoring a tool is not a refactor of `src/tbp/monty`.
+>
+> By restricting these types to **src/tbp/monty**, it enables us to rapidly distinguish when we need to increment the `tbp.monty` version for publishing. Only `fix`, `feat`, `refactor` commits will be relevant to determine whether a `MINOR` or `MAJOR` version increment is required.
+>
+> By default, a version increment is `PATCH`. If there is a `feat` commit present, then the version increment is `MINOR`. If there is a breaking change commit present: `fix!`, `feat!`, `refactor!`, then the version increment is `MINOR` if and only if `MAJOR == 0`, and it is `MAJOR` otherwise.
+
+> [!NOTE]
+> In `tbp.monty`, we do not use the `BREAKING CHANGE` optional footer to indicate a breaking change.
+
+See [RFC 10 - Conventional Commits](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0010_conventional_commits.md) for more details.
 
 ### Description
 

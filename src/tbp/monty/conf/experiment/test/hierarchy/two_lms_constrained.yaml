@@ -1,0 +1,28 @@
+# @package _global_
+
+defaults:
+  - /monty: evidencegraph_exp50_e3_t3_tot2500
+  - /monty/motor_system_config: naive_scan_10
+  - /monty/learning_module: evidence_2lm
+  - /monty/sensor_module: 2sm_camera_dist
+  - /monty/connectivity: 2lm_2sm
+  - /environment: test_habitat_2lm_dist_transforms
+  - /env_interface: test_train_2obj_predefined
+  - /env_interface/transform: missing_depthto3d_sensor3
+  - /logging: silent_info_monty_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 30
+    max_eval_steps: 30
+    max_total_steps: 60
+    n_train_epochs: 3
+    n_eval_epochs: 3
+    model_name_or_path: ''
+    min_lms_match: 1
+    seed: 42
+    supervised_lm_ids: all
+    logging:
+      run_name: ""

@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -29,16 +29,13 @@ class DefaultFeaturesForMatchingSelector:
         tolerances: dict,
     ) -> dict[str, bool]:
         use_features = {}
-        for input_channel in tolerances.keys():
-            if (
-                input_channel not in feature_weights.keys()
-                or feature_evidence_increment <= 0
-            ):
+        for input_channel in tolerances:
+            if input_channel not in feature_weights or feature_evidence_increment <= 0:
                 use_features[input_channel] = False
             else:
                 non_morphological_features = {
                     k
-                    for k in feature_weights[input_channel].keys()
+                    for k in feature_weights[input_channel]
                     if k not in ["pose_vectors", "pose_fully_defined"]
                 }
                 feature_weights_provided = len(non_morphological_features) > 0

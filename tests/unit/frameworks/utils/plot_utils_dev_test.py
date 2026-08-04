@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -44,11 +44,13 @@ class GetActionNameTest(unittest.TestCase):
         self.assertEqual(name, "None")
 
     def test_not_match_step_action_name(self) -> None:
-        action = MoveTangentially(
-            agent_id=AgentID("agent_id_0"), distance=13, direction=(1, 2, 3)
-        )
+        actions = [
+            MoveTangentially(
+                agent_id=AgentID("agent_id_0"), distance=13, direction=(1, 2, 3)
+            )
+        ]
         name = get_action_name(
-            action_stats=[[action, {}]],
+            action_stats=[[actions, {}]],
             step=1,
             is_match_step=False,
             obs_on_object=False,

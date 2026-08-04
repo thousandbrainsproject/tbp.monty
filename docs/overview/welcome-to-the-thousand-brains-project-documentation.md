@@ -11,9 +11,9 @@ This documentation outlines the current features, and future vision, of our plat
 The Monty project incorporates a lot of new concepts and ideas and will require considerable learning on the part of contributors who want to make significant code contributions or to use the code to solve real-world problems.  With that in mind, we've tried to make the project easy to comprehend and get started with.  To understand the fundamental principles of the project, these are some resources that we recommend:
 
 1. 🧠 [Vision of the Thousand Brains Project](./vision-of-the-thousand-brains-project.md) which describes the **guiding principles** of the project.
-2. 🎥 [YouTube Videos](https://www.youtube.com/@thousandbrainsproject) that contain in depth descriptions of the project and the principles that guide it.  The **Quick Start playlist** is the fastest way to learn the basics.
+2. 🎥 [YouTube Videos](https://www.youtube.com/@thousandbrainsproject) that contain in depth descriptions of the project and the principles that guide it.  The **[Meet Monty 2026 playlist](https://youtube.com/playlist?list=PLXpTU6oIscrkM2ZYSohq04cudo1cGGKTb&si=0ZJquQ8VzZZNupg1)** is the fastest way to get an overview of the project and our approach.
 3. 📚 [Tutorials](../how-to-use-monty/tutorials.md) which are **step-by-step guides** for using Monty.
-4. 💬 [Discourse Forum](https://thousandbrains.discourse.group/) which is a community forum for discussing the project and a great place for beginners to **get answers to questions**.
+4. 💬 [Discourse Forum](https://forum.thousandbrains.org/) which is a community forum for discussing the project and a great place for beginners to **get answers to questions**.
 5. ❓ You can also check out our FAQs for the [Thousand Brains Project](./faq-thousand-brains-project.md), and the underlying [Monty algorithms](../how-monty-works/faq-monty.md).
 
 # Section Overview
@@ -27,7 +27,7 @@ The documentation is broken into six main sections:
 | ⚙️&nbsp;[How&nbsp;Monty&nbsp;Works](../how-monty-works/implementation-overview.md) | Dive deep into the concrete algorithms that make Monty work and understand how the different components function together. |
 | 🤝&nbsp;[Contributing](../contributing/why-contribute.md) | Discover the many ways you can contribute to the project - from code and documentation to testing and ideas. |
 | 👥&nbsp;[Community](../community/code-of-conduct.md) | Join our welcoming community! Learn about our guidelines, code of conduct, and how to participate effectively. |
-| 🧠&nbsp;[Theory](../theory/theory-overview.md) | The neuroscience theory behind the project and our recent conceptual progress. |
+| 🧠&nbsp;[Neuroscience Theory](../theory/theory-overview.md) | The neuroscience theory behind the project and our recent conceptual progress. |
 | 🔮&nbsp;[Future&nbsp;Work](../future-work/project-roadmap.md) | Explore exciting opportunities to help shape Monty's future by contributing to planned features and improvements. |
 
 
@@ -43,7 +43,7 @@ We are excited to have you here!  Our intention for making the project open-sour
 | Resource | Description |
 |----------|-------------|
 | <a href="https://github.com/thousandbrainsproject/tbp.monty" style="display: flex; align-items: center;"><img src="../figures/overview/github.png" alt="GitHub" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;GitHub&nbsp;Repository</a> | Access our source code, contribute features, report issues and collaborate with other developers |
-| <a href="https://thousandbrains.discourse.group/" style="display: flex; align-items: center;"><img src="../figures/overview/discourse.png" alt="Forum" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Community&nbsp;Forum</a> | Discuss ideas, ask questions and connect with other community members |
+| <a href="https://forum.thousandbrains.org/" style="display: flex; align-items: center;"><img src="../figures/overview/discourse.png" alt="Forum" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Community&nbsp;Forum</a> | Discuss ideas, ask questions and connect with other community members |
 | <a href="https://thousandbrains.org/" style="display: flex; align-items: center;"><img src="../figures/overview/website.png" alt="Website" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Official&nbsp;Website</a> | Learn about our mission, team and the science behind the project |
 | <a href="https://www.youtube.com/@thousandbrainsproject" style="display: flex; align-items: center;"><img src="../figures/overview/youtube.png" alt="YouTube" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;YouTube&nbsp;Channel</a> | Watch tutorials, technical deep-dives and project updates |
 | <a href="https://bsky.app/profile/thousandbrains.org" style="display: flex; align-items: center;"><img src="../figures/overview/bluesky.png" alt="Bluesky" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Bluesky</a> <a href="https://x.com/1000brainsproj" style="display: flex; align-items: center;"><img src="../figures/overview/twitter.png" alt="X/Twitter" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;X/Twitter</a> | Get the latest news and announcements, and engage with our community |
@@ -65,6 +65,24 @@ If you're writing a publication that references the Thousand Brains Project or M
 }
 ```
 
+[Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://doi.org/10.1162/NECO.a.1508):
+```
+@article{thousand-brains_systems_2026,
+	title = {Thousand-{Brains} {Systems}: {Sensorimotor} {Intelligence} for {Rapid}, {Robust} {Learning} and {Inference}},
+	volume = {38},
+	issn = {0899-7667, 1530-888X},
+	url = {https://direct.mit.edu/neco/article/38/6/845/136222/Thousand-Brains-Systems-Sensorimotor-Intelligence},
+	doi = {10.1162/NECO.a.1508},
+	number = {6},
+	urldate = {2026-06-10},
+	journal = {Neural Computation},
+	author = {Leadholm, Niels and Clay, Viviane and Knudstrup, Scott and Lee, Hojae and Hawkins, Jeff},
+      month = may,
+	year = {2026},
+	pages = {845--896},
+}
+```
+
 [Hierarchy or Heterarchy? A Theory of Long-Range Connections for the Sensorimotor Brain](https://arxiv.org/abs/2507.05888):
 ```
 @misc{hawkins2025hierarchyheterarchytheorylongrange,
@@ -75,18 +93,5 @@ If you're writing a publication that references the Thousand Brains Project or M
       archivePrefix={arXiv},
       primaryClass={q-bio.NC},
       url={https://arxiv.org/abs/2507.05888},
-}
-```
-
-[Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://arxiv.org/abs/2507.04494):
-```
-@misc{leadholm2025thousandbrainssystemssensorimotorintelligence,
-      title={Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference}, 
-      author={Niels Leadholm and Viviane Clay and Scott Knudstrup and Hojae Lee and Jeff Hawkins},
-      year={2025},
-      eprint={2507.04494},
-      archivePrefix={arXiv},
-      primaryClass={cs.AI},
-      url={https://arxiv.org/abs/2507.04494}, 
 }
 ```

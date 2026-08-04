@@ -277,7 +277,7 @@ Hole, K. J., & Ahmad, S. (2021). **A thousand brains: Toward biologically constr
 
 Clay, V., Leadholm, N., & Hawkins, J. (2024). **The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence.** arXiv. <https://arxiv.org/abs/2412.18354#>
 
-Leadholm, N., Clay, V., Knudstrup, S., Lee, H., Hawkins, J. (2025) **Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference** arXiv. <https://arxiv.org/abs/2507.04494>
+Leadholm, N., Clay, V., Knudstrup, S., Lee, H., & Hawkins, J. (2026). **Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference.** Neural Computation, 38(6), 845–896. <https://doi.org/10.1162/NECO.a.1508>
 
 > [!NOTE]
 > You can read the [Thousand-Brains Systems Plain Language Explainer](https://thousandbrains.org/thousand-brain-systems-sensorimotor-intelligence-for-rapid-robust-learning-and-inference-a-plain-language-explainer/) for a less technical overview of the concepts in the above paper.

@@ -9,51 +9,153 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from dataclasses import dataclass
+from typing import Any, Literal, Protocol, Sequence
 
+import numpy as np
+
+from tbp.monty.cmp import Goal, Message
+from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.motor_system import ExperimentMotorSystem
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.models.motor_policies import MotorPolicy
-from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_policy_selectors import MotorPolicySelector
+from tbp.monty.frameworks.models.motor_system_state import (
+    MotorSystemState,
+    ProprioceptiveState,
+)
+from tbp.monty.memento import Memento
+
+__all__ = [
+    "MotorSystem",
+    "RuntimeMotorSystem",
+]
 
 
-class MotorSystem:
-    """The basic motor system implementation."""
+@dataclass
+class SurfacePolicyActionDetailsTelemetry:
+    pc_heading: list[Literal["min", "max", "no", "jump"] | None]
+    avoidance_heading: list[bool | None]
+    z_defined_pc: list[tuple[np.ndarray, tuple[np.ndarray, np.ndarray]] | None]
 
-    def __init__(
-        self, policy: MotorPolicy, state: MotorSystemState | None = None
-    ) -> None:
-        """Initialize the motor system with a motor policy.
 
-        Args:
-            policy: The motor policy to use.
-            state: The initial state of the motor system.
-                Defaults to None.
-        """
-        self._policy = policy
-        self._state = state
+class RuntimeMotorSystem(Protocol):
+    """Monty runtime interface to a Motor System."""
 
-    def post_episode(self) -> None:
-        """Post episode hook."""
-        self._policy.post_episode()
-
-    def pre_episode(self) -> None:
-        """Pre episode hook."""
-        self._policy.pre_episode()
-
-    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
-        """Sets the experiment mode.
-
-        Args:
-            mode: The experiment mode.
-        """
-        self._policy.set_experiment_mode(mode)
-
-    def __call__(self) -> list[Action]:
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+        percept: Message,
+        goals: Sequence[Goal],
+    ) -> list[Action]:
         """Defines the structure for __call__.
 
         Delegates to the motor policy.
 
+        Args:
+            ctx: The runtime context.
+            observations: The observations from the environment.
+            proprioceptive_state: The proprioceptive state from the environment.
+            percept: The percept from (currently) the first sensor module.
+            goals: The goals to consider.
+
         Returns:
-            The action to take.
+            The actions to take.
         """
-        return self._policy(self._state)
+        ...
+
+
+class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
+    """The basic motor system implementation."""
+
+    _policy_selector: MotorPolicySelector
+    _action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]]
+
+    def __init__(self, policy_selector: MotorPolicySelector) -> None:
+        """Initialize the motor system with a motor policy.
+
+        Args:
+            policy_selector: The motor policy selector to use.
+        """
+        self._policy_selector = policy_selector
+
+        # TODO: When the motor system is encapsulated within Monty, then motor_only_step
+        #       attribute should be moved to Monty itself instead.
+        self._motor_only_step = False
+
+        # TODO: Passing self to policy selector is a hack. What we should be
+        # doing is using more sophisticated actions for surface agents instead.
+        # We only do this so that SurfacePolicy and its descendants can set
+        # motor_only_step to True.
+        # Undoing this hack should probably happen when motor_only_step is moved
+        # to Monty itself.
+        self._policy_selector.fixme_provide_motor_system(self)
+
+        # TODO: make this part of `__init__()` after `reset()` is removed.
+        self._init_MotorSystem()
+
+    @property
+    def motor_only_step(self) -> bool:
+        """When `True`, suppress Learning Module processing."""
+        return self._motor_only_step
+
+    @motor_only_step.setter
+    def motor_only_step(self, value: bool) -> None:
+        self._motor_only_step = value
+
+    @property
+    def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
+        return self._action_sequence
+
+    def _init_MotorSystem(self) -> None:  # noqa: N802
+        # For each step, we store the actions produced by the policy and the current
+        # motor system state as a (actions, state) tuple.
+        self._action_sequence = []
+
+        # TODO: Get rid of this once we have another path for telemetry.
+        self._telemetry_surface_action_details = SurfacePolicyActionDetailsTelemetry(
+            pc_heading=[],
+            avoidance_heading=[],
+            z_defined_pc=[],
+        )
+
+    def reset(self) -> None:
+        self._init_MotorSystem()
+        self._policy_selector.reset()
+
+    def state_dict(self) -> Memento:
+        return self._policy_selector.state_dict()
+
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        proprioceptive_state: ProprioceptiveState,
+        percept: Message,
+        goals: Sequence[Goal],
+    ) -> list[Action]:
+        motor_system_state = MotorSystemState(proprioceptive_state)
+        policy_result = self._policy_selector(
+            ctx, observations, motor_system_state, percept, goals
+        )
+
+        self.motor_only_step = policy_result.motor_only_step
+
+        self._action_sequence.append((policy_result.actions, motor_system_state))
+
+        telemetry = policy_result.telemetry
+        if telemetry is not None:
+            self._telemetry_surface_action_details.pc_heading.append(
+                telemetry.pc_heading
+            )
+            self._telemetry_surface_action_details.avoidance_heading.append(
+                telemetry.avoidance_heading
+            )
+            self._telemetry_surface_action_details.z_defined_pc.append(
+                telemetry.z_defined_pc
+            )
+
+        return policy_result.actions

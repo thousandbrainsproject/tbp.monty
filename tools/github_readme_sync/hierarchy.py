@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -27,13 +27,15 @@ from tools.github_readme_sync.constants import (
 )
 from tools.github_readme_sync.file import find_markdown_files, read_file_content
 
+logger = logging.getLogger(__name__)
+
 HIERARCHY_FILE = "hierarchy.md"
 CATEGORY_PREFIX = "# "
 DOCUMENT_PREFIX = "- "
 INDENTATION_UNIT = "  "  # Single indentation level
 
 # URLs that are checked
-README_URL = "https://thousandbrainsproject.readme.io"
+README_URL = "https://docs.thousandbrains.org"
 
 
 def create_hierarchy_file(output_dir, hierarchy):
@@ -41,7 +43,7 @@ def create_hierarchy_file(output_dir, hierarchy):
     with (output_dir / HIERARCHY_FILE).open("w") as f:
         for category in hierarchy:
             write_category(f, category, 0)
-    logging.info(f"{GREEN}Export complete{RESET}")
+    logger.info(f"{GREEN}Export complete{RESET}")
 
 
 def write_category(file, category, indent_level):
@@ -74,7 +76,7 @@ def check_hierarchy_file(folder: str):
 
     hierarchy_file = folder / HIERARCHY_FILE
     if not hierarchy_file.exists():
-        logging.error(f"File {hierarchy_file} does not exist")
+        logger.error(f"File {hierarchy_file} does not exist")
         sys.exit(1)
 
     with hierarchy_file.open() as f:
@@ -101,7 +103,7 @@ def check_hierarchy_file(folder: str):
             slug = extract_slug(line.strip())
 
             if slug in unique_slugs:
-                logging.error(
+                logger.error(
                     f"Duplicate slug found: {slug}"
                     f"\n{unique_slugs[slug].strip()}\n{line.strip()}"
                 )
@@ -114,16 +116,21 @@ def check_hierarchy_file(folder: str):
             parent_stack.append(new_doc)
 
             slug_path = folder.joinpath(*[el["slug"] for el in parent_stack])
-            errors = sanity_check(slug_path.with_suffix(".md"))
+            errors = sanity_check_slugs(slug_path.with_suffix(".md"), folder)
             if errors:
                 link_check_errors.extend(errors)
 
+            file_path = folder.joinpath(extract_file_path(line))
+            file_path_errors = sanity_check_file_path(file_path, folder)
+            if file_path_errors:
+                link_check_errors.extend(file_path_errors)
+
     if link_check_errors:
         for error in link_check_errors:
-            logging.error(error)
+            logger.error(error)
         sys.exit(1)
 
-    logging.info(f"{GREEN}Hierarchy check complete{RESET}")
+    logger.info(f"{GREEN}Hierarchy check complete{RESET}")
     return hierarchy
 
 
@@ -133,9 +140,44 @@ def extract_slug(line: str):
     return match.group(1)
 
 
-def sanity_check(path):
+def sanity_check_slugs(path, folder):
+    # Path casing is checked relative to the docs folder. Absolute prefixes
+    # (e.g. macOS tempfile /var/folders/.../T/) are outside our control and
+    # may contain uppercase segments even when all docs paths are lowercase.
+    relative_path = Path(path).relative_to(folder)
+    if str(relative_path) != str(relative_path).lower():
+        return [
+            f"File {path} does not exist based on slugs capitalization - "
+            "check what's in the [] in hierarchy.md "
+            "to make sure everything is lowercase"
+        ]
+
     if not path.exists():
-        return [f"File {path} does not exist"]
+        return [
+            f"File {path} does not exist based on slugs - "
+            "check what's in the [] in hierarchy.md"
+        ]
+
+    return check_links(path)
+
+
+def sanity_check_file_path(path, folder):
+    # Path casing is checked relative to the docs folder. Absolute prefixes
+    # (e.g. macOS tempfile /var/folders/.../T/) are outside our control and
+    # may contain uppercase segments even when all docs paths are lowercase.
+    relative_path = Path(path).relative_to(folder)
+    if str(relative_path) != str(relative_path).lower():
+        return [
+            f"File {path} does not exist based on capitalization - "
+            "check what's in the () in hierarchy.md "
+            "to make sure everything is lowercase"
+        ]
+
+    if not path.exists():
+        return [
+            f"File {path} does not exist based on file path - "
+            "check what's in the () in hierarchy.md"
+        ]
 
     return check_links(path)
 
@@ -146,6 +188,11 @@ def check_links(path):
         content = f.read()
     file_name = path.name
 
+    # Ignore example lines marked with <!-- check-links-ignore -->
+    content = "\n".join(
+        line for line in content.splitlines() if "check-links-ignore" not in line
+    )
+
     regex_md_links = r"\[([^\]]*)\]\(([^)]+\.md(?:#[^)]*)?)\)"
     md_link_matches = re.findall(regex_md_links, content)
 
@@ -155,7 +202,7 @@ def check_links(path):
         r"(?:\.\./)*figures/[^\s\)\"\']+(?:\.png|\.jpg|\.jpeg|\.gif|\.svg|\.webp|\s)"
     )
     image_link_matches = re.findall(regex_figures, content)
-    logging.debug(
+    logger.debug(
         f"{WHITE}{file_name}"
         f"{GREEN} {len(md_link_matches)} links"
         f"{CYAN} {len(image_link_matches)} images"
@@ -181,7 +228,7 @@ def check_links(path):
         path_to_check = current_dir / match[1].split("#")[0]
         if any(placeholder in match[1] for placeholder in IGNORE_DOCS):
             continue
-        logging.debug(f"{GREEN}  {path_to_check.name}{RESET}")
+        logger.debug(f"{GREEN}  {path_to_check.name}{RESET}")
         if not path_to_check.exists():
             errors.append(f"  Linked {match[1]} does not exist")
 
@@ -189,7 +236,7 @@ def check_links(path):
         path_to_check = current_dir / match.split("#")[0]
         if any(placeholder in match for placeholder in IGNORE_IMAGES):
             continue
-        logging.debug(f"{CYAN}  {path_to_check.name}{RESET}")
+        logger.debug(f"{CYAN}  {path_to_check.name}{RESET}")
         if not path_to_check.exists():
             errors.append(f"  Image {path_to_check} does not exist")
 
@@ -221,13 +268,13 @@ def check_external(folder, ignore_dirs, rdme):
                 if file_errors:
                     errors[file_path] = file_errors
             except Exception:
-                logging.exception(f"{RED}Error processing {file_path}: {RESET}")
+                logger.exception(f"{RED}Error processing {file_path}: {RESET}")
 
     report_errors(errors, total_links_checked)
 
 
 def process_file(file_path, rdme, url_cache):
-    logging.debug(f"{WHITE}{file_path}{RESET}")
+    logger.debug(f"{WHITE}{file_path}{RESET}")
     file_errors = []
     content = read_file_content(file_path)
     all_links = extract_external_links(content)
@@ -235,7 +282,7 @@ def process_file(file_path, rdme, url_cache):
 
     for url in all_links:
         if url in url_cache:
-            logging.debug("cache hit %s", url)
+            logger.debug("cache hit %s", url)
             if url_cache[url]:
                 file_errors.extend(url_cache[url])
             links_checked += 1
@@ -288,7 +335,7 @@ def check_readme_link(url, rdme):
         log_msg += f"[{200 if response else 404}]{RESET}"
         if time > 1:
             log_msg += f" ({YELLOW}{time:.2f}s{RESET})"
-        logging.info(log_msg)
+        logger.info(log_msg)
         if not response:
             return [f"  broken link: {url} (Not found)"]
     except Exception as e:  # noqa: BLE001
@@ -299,7 +346,7 @@ def check_readme_link(url, rdme):
 
 def check_external_link(url):
     if any(ignored_url in url for ignored_url in IGNORE_EXTERNAL_URLS):
-        logging.info(f"{WHITE}{url} {GREEN}[IGNORED]{RESET}")
+        logger.info(f"{WHITE}{url} {GREEN}[IGNORED]{RESET}")
         return []
 
     try:
@@ -311,7 +358,7 @@ def check_external_link(url):
         log_msg = f"{WHITE}{url} {status_color}[{response.status_code}]{RESET}"
         if time > 1:
             log_msg += f" ({YELLOW}{time:.2f}s{RESET})"
-        logging.info(log_msg)
+        logger.info(log_msg)
         if response.status_code < 200 or response.status_code > 299:
             return [f"  broken link: {url} ({response.status_code})"]
     except requests.RequestException as e:
@@ -369,15 +416,23 @@ def request_headers() -> dict:
 
 
 def report_errors(errors, total_links_checked):
-    logging.info("")
+    logger.info("")
     if errors:
         for file_path, file_errors in errors.items():
-            logging.error(f"{RED}{file_path}{RESET}")
+            logger.error(f"{RED}{file_path}{RESET}")
             for error in file_errors:
-                logging.error(error)
+                logger.error(error)
         sys.exit(1)
     else:
-        logging.info(
+        logger.info(
             f"{GREEN}No external link errors found. "
             f"Total links checked: {total_links_checked}{RESET}"
         )
+
+
+def extract_file_path(line: str) -> Path:
+    match = re.search(r"\]\((.*?)\)", line)
+    if not match:
+        logger.error(f"Could not extract file path from line: {line}")
+        sys.exit(1)
+    return Path(match.group(1))

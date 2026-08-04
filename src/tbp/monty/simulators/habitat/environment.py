@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -13,18 +13,18 @@ from dataclasses import asdict, dataclass, is_dataclass
 from typing import TYPE_CHECKING, Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.environments.embodied_environment import (
-    EmbodiedEnvironment,
+from tbp.monty.frameworks.environments.environment import (
     ObjectID,
-    QuaternionWXYZ,
+    ObjectInfo,
     SemanticID,
-    VectorXYZ,
+    SimulatedObjectEnvironment,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.utils.dataclass_utils import (
     create_dataclass_args,
 )
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.habitat import (
     HabitatAgent,
     HabitatSim,
@@ -43,7 +43,6 @@ __all__ = [
     "SingleSensorAgentArgs",
 ]
 
-from tbp.monty.simulators.simulator import Simulator
 
 # Create agent and object configuration helper dataclasses
 
@@ -83,14 +82,14 @@ class AgentConfig:
     agent_args: dict | type[HabitatAgentArgs]
 
 
-class HabitatEnvironment(EmbodiedEnvironment):
+class HabitatEnvironment(SimulatedObjectEnvironment):
     """habitat-sim environment compatible with Monty.
 
     Attributes:
         agents: List of :class:`AgentConfig` to place in the scene.
         objects: Optional list of :class:`ObjectConfig` to place in the scene.
         scene_id: Scene to use or None for empty environment.
-        seed: Simulator seed to use
+        seed: Simulator seed to use.
         data_path: Path to the dataset.
     """
 
@@ -115,7 +114,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
             agent = agent_type(**args)
             self._agents.append(agent)
 
-        self._env: Simulator = HabitatSim(
+        self._env = HabitatSim(
             agents=self._agents,
             scene_id=scene_id,
             seed=seed,
@@ -135,7 +134,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
-    ) -> ObjectID:
+    ) -> ObjectInfo:
         return self._env.add_object(
             name,
             position,
@@ -143,7 +142,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
             scale,
             semantic_id,
             primary_target_object,
-        ).object_id
+        )
 
     def step(
         self, actions: Sequence[Action]

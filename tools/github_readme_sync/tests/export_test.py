@@ -81,7 +81,3 @@ class TestExport(unittest.TestCase):
 
         with (self.test_output_dir / "category-2" / "doc-2.md").open() as f:
             self.assertEqual(f.read(), "Content of Doc 2")
-
-
-if __name__ == "__main__":
-    unittest.main()
