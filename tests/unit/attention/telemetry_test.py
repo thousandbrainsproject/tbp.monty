@@ -77,3 +77,8 @@ class AttentionSystemTelemetryTest(unittest.TestCase):
         system = AttentionSystem(voxel_size=0.01)
         system.step([], [region(NEAR_POINT)])
         self.assertEqual(len(system.state_dict()["voxel_grids"]), 1)
+
+    def test_state_dict_carries_the_grid_geometry(self) -> None:
+        state = self.system.state_dict()
+        self.assertEqual(state["voxel_size"], 0.01)
+        self.assertEqual(state["voxel_lifetime"], 2)

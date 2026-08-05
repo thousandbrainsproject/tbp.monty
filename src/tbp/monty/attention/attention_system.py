@@ -51,7 +51,7 @@ class AttentionSystem:
 
     def __init__(
         self,
-        voxel_size: float = 0.05,
+        voxel_size: float = 0.005,
         voxel_lifetime: int = 6,
         telemetry: AttentionSystemTelemetry | None = None,
     ):
@@ -147,9 +147,14 @@ class AttentionSystem:
         """Export the recorded telemetry.
 
         Returns:
-            The telemetry's state dict.
+            The telemetry's state dict, alongside the grid's voxel size and
+            lifetime so consumers can place voxels in world coordinates.
         """
-        return self._telemetry.state_dict()
+        return dict(
+            voxel_size=self._voxel_size,
+            voxel_lifetime=self._voxel_lifetime,
+            **self._telemetry.state_dict(),
+        )
 
     def _observe(self, regions: list[list[Goal]]) -> pd.DataFrame:
         """Voxelize this step's regions into a fresh grid.

@@ -146,7 +146,7 @@ class MontyBase(Monty):
         self._is_done = False
         self._actions: list[Action] = []
         self._goals: list[Goal] = []
-        self._attention_system = AttentionSystem(voxel_size=0.05)
+        self._attention_system = AttentionSystem()
 
     @property
     def attention_system(self) -> AttentionSystem:
