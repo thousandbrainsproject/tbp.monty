@@ -13,6 +13,7 @@ import copy
 
 import numpy as np
 
+from tbp.monty.cmp import Message
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
@@ -269,9 +270,10 @@ class EvidenceLMTest(BaseGraphTest):
         mlh_pose = graph_lm._hypotheses[graph_id].poses[mlh_id].copy()
 
         displacement = np.array([0.1, 0.2, 0.3])
-        location_only = copy.deepcopy(fake_obs_test[-1])
-        location_only.location = last_location_before + displacement
-        location_only.process_features_in_lm = False
+        percept_args = copy.deepcopy(self.default_percept_args)
+        percept_args["location"] = last_location_before + displacement
+        percept_args["process_features_in_lm"] = False
+        location_only = Message(**percept_args)
 
         graph_lm.add_lm_processing_to_buffer_stats(lm_processed=False)
         graph_lm.matching_step(self.ctx, [location_only])

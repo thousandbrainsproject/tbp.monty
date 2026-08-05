@@ -46,6 +46,7 @@ class BaseGraphTest(TestCase):
             sender_id=fake_sender_id,
             sender_type="SM",
         )
+        self.default_percept_args = default_percept_args
         fp_1 = copy.deepcopy(default_percept_args)
         fp_1["location"] = np.array([1.0, 0.0, 0.0])
         fp_2 = copy.deepcopy(default_percept_args)
