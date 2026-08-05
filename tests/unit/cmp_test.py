@@ -6,17 +6,24 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 import json
 import unittest
+from typing import Literal
 
 import numpy as np
+import numpy.typing as npt
 
 from tbp.monty.cmp import Goal, Message, encode_goal, location_mean
 from tbp.monty.frameworks.models.buffer import BufferEncoder
 from tbp.monty.geometry import Rotation
 
 
-def _message(sender_type: str, location) -> Message:
+def _message(
+    sender_type: Literal["SM", "LM"],
+    location: npt.NDArray[np.float64] | None,
+) -> Message:
     return Message(
         location=location,
         morphological_features={},
@@ -34,13 +41,14 @@ class CMPMessageTest(unittest.TestCase):
         self.assertTrue(_message("SM", np.zeros(3)).is_from_sm())
         self.assertFalse(_message("LM", np.zeros(3)).is_from_sm())
 
-    def test_location_mean_averages_locations(self):
+    def test_location_mean_filters_out_none_locations(self):
         messages = [
             _message("SM", np.array([0.0, 0.0, 0.0])),
+            _message("SM", None),
             _message("SM", np.array([2.0, 4.0, 6.0])),
         ]
         np.testing.assert_array_equal(
-            location_mean(messages), np.array([1.0, 2.0, 3.0])
+            location_mean(messages), np.mean([[0.0, 0.0, 0.0], [2.0, 4.0, 6.0]], axis=0)
         )
 
     def test_location_mean_none_when_no_location(self):

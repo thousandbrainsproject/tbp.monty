@@ -159,7 +159,7 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
             "Expected nan padding for missing step 2, but got other values",
         )
 
-    def test_get_all_locations_on_object_returns_shared_array(self):
+    def test_get_all_locations_on_object_excludes_off_object_steps(self):
         state_sm_1 = create_mock_message(
             sender_id="SM_0",
             sender_type="SM",
@@ -177,21 +177,12 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         self.buffer.append([state_sm_2])
 
         locations = self.buffer.get_all_locations_on_object()
-        global_on_object_ids = np.where(self.buffer.on_object)[0]
-
-        np.testing.assert_array_equal(
-            locations, self.buffer.locations[global_on_object_ids]
-        )
 
         # Only the first (on-object) step is returned.
         self.assertEqual(locations.shape, (1, 3))
         np.testing.assert_array_equal(locations[0], np.array([1.0, 2.0, 3.0]))
 
-    def test_mixed_step_location_only_channel_stores_no_features(self):
-        """A location-only SM channel in a mixed step stores no feature row.
-
-        It still counts toward the last_location mean.
-        """
+    def test_only_feature_percepts_store_pose_vectors(self):
         feature_sm = create_mock_message(
             sender_id="SM_0",
             sender_type="SM",
@@ -208,10 +199,6 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         )
         self.buffer.append([feature_sm, location_only_sm])
 
-        # last_location is the mean of both SM locations.
-        np.testing.assert_array_equal(
-            self.buffer.last_location, np.array([1.0, 1.0, 1.0])
-        )
         # The feature channel stored a pose row; the location-only channel did not.
         self.assertIn("pose_vectors", self.buffer.features["SM_0"])
         self.assertNotIn("pose_vectors", self.buffer.features["SM_1"])

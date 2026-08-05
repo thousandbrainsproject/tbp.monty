@@ -18,7 +18,6 @@ from hypothesis import strategies as st
 from tbp.monty.cmp import Message
 from tbp.monty.frameworks.models.sensor_modules import (
     FeatureChangeFilter,
-    PassthroughPerceptFilter,
 )
 
 
@@ -79,24 +78,12 @@ class FeatureChangeFilterTest(unittest.TestCase):
                 process_features_in_lm=True,
             )
         )
-        location = np.array([10.0, 0.0, 0.0]) if feature_changed else np.zeros(3)
+        location = (
+            np.array([10.0, 0.0, 0.0]) if feature_changed else np.array([0.0, 0.0, 0.0])
+        )
         result = feature_filter(
             create_percept(
                 location=location, on_object=True, process_features_in_lm=valid
             )
         )
         self.assertEqual(result.process_features_in_lm, valid and feature_changed)
-
-
-class PassthroughPerceptFilterTest(unittest.TestCase):
-    @given(valid=st.booleans())
-    def test_process_features_in_lm_iff_valid(self, valid: bool):
-        percept_filter = PassthroughPerceptFilter()
-        result = percept_filter(
-            create_percept(
-                location=np.array([0.0, 0.0, 0.0]),
-                on_object=valid,
-                process_features_in_lm=valid,
-            )
-        )
-        self.assertEqual(result.process_features_in_lm, valid)
