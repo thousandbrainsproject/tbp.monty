@@ -30,7 +30,7 @@ from tbp.monty.frameworks.models.salience.strategies import (
     SalienceStrategy,
     Uniform,
 )
-from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
+from tbp.monty.frameworks.models.salience.telemetry import SalienceSMTelemetry
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.memento import Memento
 
@@ -44,7 +44,7 @@ class SalienceSM(SensorModule):
         save_raw_obs: bool = False,
         salience_strategy: SalienceStrategy | None = None,
         return_inhibitor: ReturnInhibitor | None = None,
-        snapshot_telemetry: SnapshotTelemetry | None = None,
+        snapshot_telemetry: SalienceSMTelemetry | None = None,
         segmentation_strategy: SegmentationStrategy | None = None,
     ) -> None:
         self._sensor_module_id = sensor_module_id
@@ -56,7 +56,7 @@ class SalienceSM(SensorModule):
             ReturnInhibitor() if return_inhibitor is None else return_inhibitor
         )
         self._snapshot_telemetry = (
-            SnapshotTelemetry() if snapshot_telemetry is None else snapshot_telemetry
+            SalienceSMTelemetry() if snapshot_telemetry is None else snapshot_telemetry
         )
 
         self._segmentation_strategy = segmentation_strategy
@@ -103,11 +103,6 @@ class SalienceSM(SensorModule):
             motor_only_step: Whether the current step is a motor-only step.
 
         """
-        if self._save_raw_obs and not self.is_exploring:
-            self._snapshot_telemetry.raw_observation(
-                observation, self.state.rotation, self.state.position
-            )
-
         if motor_only_step:
             return
 
@@ -135,7 +130,16 @@ class SalienceSM(SensorModule):
             for i in range(len(on_object.locations))
         ]
 
-        self._region = self._segment_region(ctx, observation, on_object, salience)
+        segmentation_map, self._region = self._segment_region(
+            ctx, observation, on_object, salience
+        )
+
+        if not self.is_exploring:
+            if self._save_raw_obs:
+                self._snapshot_telemetry.raw_observation(
+                    observation, self.state.rotation, self.state.position
+                )
+            self._snapshot_telemetry.record(segmentation_map, self._region)
 
     def _segment_region(
         self,
@@ -143,7 +147,7 @@ class SalienceSM(SensorModule):
         observation: SensorObservation,
         on_object: OnObjectObservation,
         salience: np.ndarray,
-    ) -> list[Goal]:
+    ) -> tuple[np.ndarray | None, list[Goal]]:
         """Segment the surface under fixation into a region proposal.
 
         The region is the set of on-object locations inside the segmented
@@ -157,10 +161,11 @@ class SalienceSM(SensorModule):
             salience: Weighted salience, aligned with ``on_object.locations``.
 
         Returns:
-            The region's goals, or an empty list without a segmentation strategy.
+            The segmentation mask and the region's goals; None and an empty
+            list without a segmentation strategy.
         """
         if self._segmentation_strategy is None:
-            return []
+            return None, []
 
         segmentation_map = self._segmentation_strategy(
             ctx=ctx, rgba=observation["rgba"], depth=observation["depth"]
@@ -175,7 +180,7 @@ class SalienceSM(SensorModule):
         surface_locations = on_object.locations_map[surface_mask]
         surface_salience = salience_map[surface_mask]
 
-        return [
+        return segmentation_map, [
             Goal(
                 location=surface_locations[i],
                 morphological_features=None,

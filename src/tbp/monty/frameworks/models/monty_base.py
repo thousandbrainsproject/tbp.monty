@@ -148,6 +148,10 @@ class MontyBase(Monty):
         self._goals: list[Goal] = []
         self._attention_system = AttentionSystem(voxel_size=0.05)
 
+    @property
+    def attention_system(self) -> AttentionSystem:
+        return self._attention_system
+
     def step(
         self,
         ctx: RuntimeContext,

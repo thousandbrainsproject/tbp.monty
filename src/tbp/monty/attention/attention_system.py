@@ -14,8 +14,10 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
+from tbp.monty.attention.telemetry import AttentionSystemTelemetry
 from tbp.monty.attention.voxels import VOXEL_LEVELS, voxelize_and_bin_points
 from tbp.monty.cmp import Goal
+from tbp.monty.memento import Memento
 
 
 def empty_voxel_grid() -> pd.DataFrame:
@@ -47,13 +49,19 @@ class AttentionSystem:
     that was not seen ages by a step, and one whose age runs out is dropped.
     """
 
-    def __init__(self, voxel_size: float = 0.05, voxel_lifetime: int = 6):
+    def __init__(
+        self,
+        voxel_size: float = 0.05,
+        voxel_lifetime: int = 6,
+        telemetry: AttentionSystemTelemetry | None = None,
+    ):
         """Initialize the attention system.
 
         Args:
             voxel_size: Edge length of a voxel, in world units.
             voxel_lifetime: How many steps a voxel survives without being
                 re-observed.
+            telemetry: Telemetry storage for the attention system.
 
         Raises:
             ValueError: If voxel_lifetime is not positive.
@@ -62,6 +70,9 @@ class AttentionSystem:
             raise ValueError(f"voxel_lifetime must be >= 1, got {voxel_lifetime}")
         self._voxel_size = voxel_size
         self._voxel_lifetime = voxel_lifetime
+        self._telemetry = (
+            AttentionSystemTelemetry() if telemetry is None else telemetry
+        )
         self._voxel_grid = empty_voxel_grid()
 
     @property
@@ -103,6 +114,7 @@ class AttentionSystem:
         aged = self._age(self._voxel_grid)
         merged = self._merge(aged, observed)
         self._voxel_grid = self._expire(merged)
+        self._telemetry.voxel_grid(self._voxel_grid)
         return self._filter(goals)
 
     def contains_points(
@@ -127,8 +139,17 @@ class AttentionSystem:
         return query.isin(occupied)
 
     def reset(self) -> None:
-        """Discard the current grid."""
+        """Discard the current grid and recorded telemetry."""
         self._voxel_grid = empty_voxel_grid()
+        self._telemetry.reset()
+
+    def state_dict(self) -> Memento:
+        """Export the recorded telemetry.
+
+        Returns:
+            The telemetry's state dict.
+        """
+        return self._telemetry.state_dict()
 
     def _observe(self, regions: list[list[Goal]]) -> pd.DataFrame:
         """Voxelize this step's regions into a fresh grid.
