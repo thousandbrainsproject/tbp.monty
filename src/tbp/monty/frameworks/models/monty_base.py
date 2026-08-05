@@ -398,12 +398,12 @@ class MontyBase(Monty):
         self._goals = []
 
     def snapshot(self) -> Memento:
+        memo = {}
         lm_dict = {
             lm.learning_module_id: lm.state_dict() for lm in self.learning_modules
         }
-        return {
-            "lm_dict": copy.deepcopy(lm_dict),
-        }
+        memo["lm_dict"] = copy.deepcopy(lm_dict)
+        return memo
 
     def restore(self, memo: Memento) -> None:
         lm_dict = memo["lm_dict"]
