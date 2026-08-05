@@ -63,8 +63,9 @@ This community project expands upon the Thousand Brains Project by designing and
 * **Surface Agent Implementation:** Built using a Maixsense A010 ToF sensor mounted to a Ufactory Lite 6 robot arm.
 * **Custom Integration:** Integrated with Monty through a custom environment, environment interface, and motor-policy.
 * **Hardware Tooling:** Includes a reverse-engineered Python package that exposes programmatic control of the Maixsense A010 sensor.
-
 * **Object Dataset:** Evaluated the system against a structured eight-object dataset with defined orientations suitable for evaluating recognition accuracy, continual learning, and rotation invariance. As an extension to the project, a 3D Model Dataset was scanned in and made available to the community.
+
+Note that this project does not integrate the different modalities at the same time. Each agent is run independently. 
 
 ### Results and Findings
 * The Distant Agent demonstrated reliable supervised recognition with sub-degree rotation errors. 
@@ -77,3 +78,7 @@ This community project expands upon the Thousand Brains Project by designing and
 At the start of this project a proof of concept was demonstrated by reproducing the Monty Meets World Experiment above. For information on how this was done, see the following links: [Explanation](https://forum.thousandbrains.org/t/design-of-final-year-undergraduate-project-with-the-inclusion-of-the-tbp/417/30?u=zachary_danzig) | [Experiment YAML](https://github.com/Zinxiee/tbp.monty/blob/main/src/tbp/monty/conf/experiment/zachs_examples/zachs_monty_meets_world.yaml) | [Demo](https://youtu.be/a9u1Y3Amlxc).  
 
 For more about this project, visit the links above or see the [Discourse community topic](https://forum.thousandbrains.org/t/design-of-final-year-undergraduate-project-with-the-inclusion-of-the-tbp/417).
+
+Watch the presentation:
+
+[07/2026 - Robotic Object Recognition for Thousand Brains Systems](https://www.youtube.com/watch?v=3wgHNqkRekM)
