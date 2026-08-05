@@ -78,6 +78,7 @@ class MontyExperiment:
 
         # Feature flag for "recreation" episode/epoch strategy.
         self._recreation_mode = False
+        logger.warning(f"_recreation_mode = {self._recreation_mode}")
         self._monty_cfg = None
         self._monty_memo = {}
 
@@ -426,6 +427,8 @@ class MontyExperiment:
         learning_modules = instantiate(config.pop("learning_modules"))
         for lm_id, lm in learning_modules.items():
             lm.learning_module_id = lm_id
+            if self._recreation_mode:
+                lm.init_from_ltm()  # TODO: init should have already done everything
 
         sensor_modules = instantiate(config.pop("sensor_modules"))
         motor_system = instantiate(config.pop("motor_system_config"))
@@ -470,8 +473,9 @@ class MontyExperiment:
     def _restore_monty(self) -> None:
         """Recreate episodic state of Monty model."""
         if self._recreation_mode:
-            self._create_monty()
+            # TODO: we _should_ be able to create Monty _outside_ this condition
             if self._monty_memo:
+                self._create_monty()
                 self.model.restore(self._monty_memo)
             self.logger_handler.model = self.model
         else:
