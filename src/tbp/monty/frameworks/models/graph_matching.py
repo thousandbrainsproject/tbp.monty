@@ -17,6 +17,7 @@ import torch
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
@@ -43,6 +44,8 @@ logger = logging.getLogger(__name__)
 
 class MontyForGraphMatching(MontyBase):
     """General Monty model for recognizing objects using graphs."""
+
+    _match_criterion: MatchCriterion
 
     LOGGING_REGISTRY: ClassVar[dict[str, type[BaseMontyLogger]]] = {
         # Don't do any formal logging, just save models. Used for pretraining.
@@ -116,14 +119,15 @@ class MontyForGraphMatching(MontyBase):
         """Set LM terminal states to time_out."""
         self._set_time_outs(global_time_out=True)
 
-    def check_terminal_conditions(self):
+    def check_terminal_conditions(self) -> bool:
         """Check if all LMs have reached a terminal state.
 
         This could be no_match, match, or time_out. If all LMs have reached one of these
         states, end the episode.
 
         Currently the episode just ends if
-            - min_lms_match lms have reached "match"
+            - the configured `match_criterion` is satisfied by the LMs that have
+              reached "match"
             - all lms have reached "no_match"
             - We have exceeded max_total_steps
 
@@ -134,7 +138,7 @@ class MontyForGraphMatching(MontyBase):
             may be more difficult if not all LMs know about all objects.
 
         Returns:
-            True if all LMs have reached a terminal state, False otherwise.
+            True if the match criterion is satisfied, False otherwise.
         """
         # First check if all LMs have no match (for example in the first episode when
         # we have no objects in memory yet). If that is the case there is no need to
@@ -154,21 +158,21 @@ class MontyForGraphMatching(MontyBase):
         if not self.exceeded_min_steps:
             return False
 
-        # Check if >= min_lms_match LMs have reached match
+        # Check if LMs satisfy the match criterion
         # TODO: we may also want to count no_match as done.
-        num_lms_done = 0
+        terminal_states: dict[str, str | None] = {}
         for lm in self.learning_modules:
             lm.update_terminal_condition()
             logger.debug(
                 f"{lm.learning_module_id} has terminal state: {lm.terminal_state}"
             )
-            # If any LM is not done yet, we are not done yet
-            if lm.terminal_state == "match":
-                num_lms_done += 1
+            terminal_states[lm.learning_module_id] = lm.terminal_state
 
-        if num_lms_done >= self.min_lms_match:
+        if self._match_criterion(terminal_states):
             logger.info("\n\nMONTY DETECTED MATCH\n\n")
             return True
+
+        return False
 
     # ------------------ Getters & Setters ---------------------
 
@@ -496,9 +500,9 @@ class MontyForGraphMatching(MontyBase):
                 exploration mode anymore (if we timed out we didn't recognize an object
                 so exploration makes no sense since we won't add anything to memory).
                 This is set to False, if Monty didn't reach a global time out (exceeded
-                max_steps) but instead, min_lms_match LMs have recognized an object.
-                Then the other LMs will be set to time_out, but we still want to
-                explore.
+                max_steps) but instead, the match criterion was satisfied by the LMs
+                that recognized an object. Then the other LMs will be set to time_out,
+                but we still want to explore.
         """
         # Don't set LM states to time out if we were in exploratory mode
         if self.step_type != "exploratory_step":
@@ -923,16 +927,23 @@ class GraphLM(LearningModule):
         )
 
     def state_dict(self) -> Memento:
-        return dict(
+        memo = dict(
             graph_memory=self.graph_memory.state_dict(),
             target_to_graph_id=self.target_to_graph_id,
             graph_id_to_target=self.graph_id_to_target,
         )
+        # TODO: remove logging config when telemetry is refactored
+        if hasattr(self, "has_detailed_logger"):
+            memo["has_detailed_logger"] = self.has_detailed_logger
+        return memo
 
     def load_state_dict(self, memento: Memento) -> None:
         self.graph_memory.load_state_dict(memento["graph_memory"])
         self.target_to_graph_id = memento["target_to_graph_id"]
         self.graph_id_to_target = memento["graph_id_to_target"]
+        # TODO: remove logging config when telemetry is refactored
+        if "has_detailed_logger" in memento:
+            self.has_detailed_logger = memento["has_detailed_logger"]
 
         # After loading the long-term memory, give the LM a chance to
         # update any internal state based on the contents of memory.
