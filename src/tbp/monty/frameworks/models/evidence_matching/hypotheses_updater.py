@@ -64,8 +64,8 @@ class HypothesesUpdater(ContextManager[Self], Protocol):
     ) -> Hypotheses:
         """Displace existing hypothesis locations by the sensed displacement.
 
-        A no-op when there are no hypotheses yet or there is no displacement (e.g.
-        before the first movement).
+        Implementations should be a no-op when there are no hypotheses yet or there is
+        no displacement (e.g. before the first movement).
 
         Args:
             hypotheses: Hypothesis space for the graph.

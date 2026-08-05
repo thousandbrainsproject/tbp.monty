@@ -220,7 +220,7 @@ class FeatureAtLocationBuffer:
                 f"Pose vectors of input channel '{input_channel}' were last received "
                 f"at step {len(pose_vectors) - 1}, but the current step is "
                 f"{len(self.locations) - 1}. The returned pose combines a location and "
-                "an pose observed at different time steps."
+                "a pose observed at different time steps."
             )
         channel_pose = pose_vectors[-1].reshape((3, 3))
         return np.vstack(
