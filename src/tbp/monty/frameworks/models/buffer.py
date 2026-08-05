@@ -256,7 +256,7 @@ class FeatureAtLocationBuffer:
         Returns:
             The locations at steps where the global on_object flag is True.
         """
-        return self.locations[self._global_on_object_ids()]
+        return self.locations[self._global_on_object_mask()]
 
     def get_all_input_percepts(self) -> list[Message]:
         """Get all the percept inputs that the buffer's parent LM has observed.
@@ -336,7 +336,7 @@ class FeatureAtLocationBuffer:
         """
         all_features_on_object = {}
         # Number of steps where at least one input was on the object
-        global_on_object_ids = self._global_on_object_ids()
+        global_on_object_ids = self._global_on_object_mask()
         logger.debug(
             f"Observed {self.locations.shape} locations, "
             f"{len(global_on_object_ids)} global on object"
@@ -461,7 +461,7 @@ class FeatureAtLocationBuffer:
             # If no symmetry was detected, this will be None.
             self.stats["symmetric_rotations_ts"] = self.stats["symmetric_rotations"]
 
-    def _global_on_object_ids(self) -> npt.NDArray[np.bool_]:
+    def _global_on_object_mask(self) -> npt.NDArray[np.bool_]:
         """Get indices of steps where at least one input was on the object.
 
         Returns:
