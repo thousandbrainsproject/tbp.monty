@@ -12,7 +12,7 @@ import unittest
 
 import pandas as pd
 
-from tbp.monty.frameworks.run_parallel import get_per_lm_stats, parse_episode_spec
+from tbp.monty.frameworks.run_parallel import parse_episode_spec, per_lm_stats
 
 
 class PerLMStatsTest(unittest.TestCase):
@@ -34,7 +34,7 @@ class PerLMStatsTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            get_per_lm_stats(eval_stats),
+            per_lm_stats(eval_stats),
             {
                 "LM_0/overall/percent_correct": 50.0,
                 "LM_1/overall/percent_correct": 25.0,
