@@ -67,8 +67,8 @@ def create_mock_message(
         location: 3D location array.
         on_object: Whether the observation is on the object.
         pose_vectors: Optional pose vectors (3x3 array). Defaults to identity.
-        process_features_in_lm: Whether the message carries features (True) or is a
-            location-only message (False).
+        process_features_in_lm: Whether the message carries features for processing by
+            the learning module.
 
     Returns:
         A mock Message compatible with FeatureAtLocationBuffer.append().
@@ -160,8 +160,6 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         )
 
     def test_get_all_locations_on_object_returns_shared_array(self):
-        """get_all_locations_on_object returns the locations filtered on object."""
-        # Step 1: on object
         state_sm_1 = create_mock_message(
             sender_id="SM_0",
             sender_type="SM",
@@ -170,7 +168,6 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
         )
         self.buffer.append([state_sm_1])
 
-        # Step 2: off object
         state_sm_2 = create_mock_message(
             sender_id="SM_0",
             sender_type="SM",

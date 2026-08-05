@@ -41,7 +41,3 @@ class IsLocationOnlyStepTest(unittest.TestCase):
 
         self.assertTrue(is_location_only_step([sm_location_only, lm_with_features]))
         self.assertFalse(is_location_only_step([sm_with_features]))
-
-
-if __name__ == "__main__":
-    unittest.main()

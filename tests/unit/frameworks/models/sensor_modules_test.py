@@ -100,7 +100,3 @@ class PassthroughPerceptFilterTest(unittest.TestCase):
             )
         )
         self.assertEqual(result.process_features_in_lm, valid)
-
-
-if __name__ == "__main__":
-    unittest.main()
