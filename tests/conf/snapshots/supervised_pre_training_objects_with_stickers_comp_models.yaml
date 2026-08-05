@@ -127,7 +127,7 @@ experiment:
           - -0.1
         scene_id: null
         seed: 42
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/compositional_objects}
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/compositional_objects_1.2}
         agents:
           agent_args:
             agent_id: agent_id_0
@@ -251,7 +251,7 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: debugging
-      run_name: supervised_pre_training_objects_with_stickers_comp_models
+      run_name: supervised_pre_training_objects_with_stickers_comp_models_1.2
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
