@@ -43,6 +43,7 @@ from tbp.monty.frameworks.loggers.monty_handlers import (
 from tbp.monty.frameworks.utils.logging_utils import (
     maybe_rename_existing_dir,
     maybe_rename_existing_file,
+    overall_accuracy,
 )
 from tbp.monty.hydra import instantiate_experiment, register_resolvers
 
@@ -456,6 +457,18 @@ def get_overall_stats(stats):
     return overall_stats
 
 
+def per_lm_stats(eval_stats):
+    """Reconstruct LM accuracy metrics from the merged evaluation rows.
+
+    Returns:
+        Named per-LM accuracy percentages.
+    """
+    return {
+        f"{lm_id}/overall/percent_correct": overall_accuracy(lm_stats)
+        for lm_id, lm_stats in eval_stats.groupby("lm_id")
+    }
+
+
 def print_benchmark_stats(overall_stats: dict) -> None:
     benchmark_keys = [
         "overall/percent_correct",
@@ -702,7 +715,9 @@ def run_episodes_parallel(
                 eval_stats = pd.read_csv(csv_path)
                 eval_table = wandb.Table(dataframe=eval_stats)
                 if wandb_run:
-                    wandb_run.log({"eval_stats": eval_table})
+                    wandb_run.log(
+                        {"eval_stats": eval_table, **per_lm_stats(eval_stats)}
+                    )
             else:
                 print(f"No csv table found at {csv_path} to log to wandb")
 

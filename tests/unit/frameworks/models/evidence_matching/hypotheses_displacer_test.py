@@ -12,6 +12,7 @@ from unittest import TestCase
 from unittest.mock import Mock, patch
 
 import numpy as np
+from scipy.spatial import KDTree
 
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.scorer import (
     DefaultFeatureEvidenceScorer,
@@ -53,6 +54,48 @@ class DefaultHypothesesDisplacerTest(TestCase):
             feature_evidence_scorer=self.feature_evidence_scorer,
             past_weight=1,
             present_weight=1,
+        )
+
+    def test_clamps_neighbors_to_channel_node_count(self) -> None:
+        channel_locations = np.zeros((1, 3))
+        location_tree = KDTree(channel_locations)
+        graph = Mock()
+        graph.find_nearest_neighbors = Mock(
+            side_effect=lambda search_locations, num_neighbors: location_tree.query(
+                search_locations,
+                k=num_neighbors,
+            )[1]
+        )
+        self.mock_graph_memory.get_graph.return_value = graph
+        self.mock_graph_memory.get_locations_in_graph.return_value = channel_locations
+        self.mock_graph_memory.get_feature_array.return_value = {
+            "channel_a": np.empty((1, 0))
+        }
+        self.mock_graph_memory.get_features_at_node.return_value = {
+            "pose_vectors": np.eye(3).reshape(1, 1, 9),
+            "pose_fully_defined": np.ones((1, 1, 1)),
+        }
+
+        evidence = self.displacer._calculate_evidence_for_new_locations(
+            graph_id="test_object",
+            input_channel="channel_a",
+            search_locations=np.zeros((1, 3)),
+            channel_possible_poses=np.eye(3).reshape(1, 3, 3),
+            channel_features={
+                "pose_vectors": np.eye(3),
+                "pose_fully_defined": True,
+            },
+        )
+
+        self.assertEqual(
+            graph.find_nearest_neighbors.call_args.kwargs["num_neighbors"],
+            1,
+            "a one-node graph[channel] should request for one nearest neighbor",
+        )
+        self.assertEqual(
+            evidence.shape,
+            (1,),
+            "a single search location should produce exactly one evidence value",
         )
 
     def test_multi_channel_evidence_sums(self) -> None:
