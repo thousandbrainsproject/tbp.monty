@@ -457,7 +457,7 @@ def get_overall_stats(stats):
     return overall_stats
 
 
-def get_per_lm_stats(eval_stats):
+def per_lm_stats(eval_stats):
     """Reconstruct LM accuracy metrics from the merged evaluation rows.
 
     Returns:
@@ -716,7 +716,7 @@ def run_episodes_parallel(
                 eval_table = wandb.Table(dataframe=eval_stats)
                 if wandb_run:
                     wandb_run.log(
-                        {"eval_stats": eval_table, **get_per_lm_stats(eval_stats)}
+                        {"eval_stats": eval_table, **per_lm_stats(eval_stats)}
                     )
             else:
                 print(f"No csv table found at {csv_path} to log to wandb")

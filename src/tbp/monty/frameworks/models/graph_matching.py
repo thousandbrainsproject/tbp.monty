@@ -927,16 +927,23 @@ class GraphLM(LearningModule):
         )
 
     def state_dict(self) -> Memento:
-        return dict(
+        memo = dict(
             graph_memory=self.graph_memory.state_dict(),
             target_to_graph_id=self.target_to_graph_id,
             graph_id_to_target=self.graph_id_to_target,
         )
+        # TODO: remove logging config when telemetry is refactored
+        if hasattr(self, "has_detailed_logger"):
+            memo["has_detailed_logger"] = self.has_detailed_logger
+        return memo
 
     def load_state_dict(self, memento: Memento) -> None:
         self.graph_memory.load_state_dict(memento["graph_memory"])
         self.target_to_graph_id = memento["target_to_graph_id"]
         self.graph_id_to_target = memento["graph_id_to_target"]
+        # TODO: remove logging config when telemetry is refactored
+        if "has_detailed_logger" in memento:
+            self.has_detailed_logger = memento["has_detailed_logger"]
 
         # After loading the long-term memory, give the LM a chance to
         # update any internal state based on the contents of memory.
