@@ -38,7 +38,7 @@ class AttentionSystem:
     a persistent voxel grid.
 
     At present, the voxel grid is used to filter out goals that do not fall within
-    the voxel grid. Voxels that have not been re-observed for a number of steps
+    the voxel grid. Voxels that have not been re-proposed for a number of steps
     (i.e., the voxel_lifetime) are expired from the grid.
     """
 
@@ -51,9 +51,9 @@ class AttentionSystem:
         """Initialize the attention system.
 
         Args:
-            voxel_size: Edge length of a voxel, in world units.
+            voxel_size: Edge length of a voxel, in meters.
             voxel_lifetime: How many steps a voxel survives without being
-                re-observed.
+                re-proposed.
             telemetry: Telemetry storage for the attention system.
 
         Raises:
@@ -70,12 +70,12 @@ class AttentionSystem:
 
     @property
     def voxel_size(self) -> float:
-        """Edge length of a voxel, in world units."""
+        """Edge length of a voxel, in meters."""
         return self._voxel_size
 
     @property
     def voxel_lifetime(self) -> int:
-        """How many steps a voxel survives without being re-observed."""
+        """How many steps a voxel survives without being re-proposed."""
         return self._voxel_lifetime
 
     @property
@@ -94,12 +94,12 @@ class AttentionSystem:
         Returns:
             Filtered list of goals.
         """
-        observed = self._observe(regions)
-        # Age what is already held before folding in what was just seen, so that
-        # a re-observed voxel's fresh row lands on top of the tick rather than
-        # after it.
+        proposed = self._voxelize_regions(regions)
+        # Age what is already held before folding in what was just proposed, so
+        # that a re-proposed voxel's fresh row lands on top of the tick rather
+        # than after it.
         aged = self._age(self._voxel_grid)
-        merged = self._merge(aged, observed)
+        merged = self._merge(aged, proposed)
         self._voxel_grid = self._expire(merged)
         self._telemetry.voxel_grid(self._voxel_grid)
         return self._filter(goals)
@@ -138,7 +138,7 @@ class AttentionSystem:
             **self._telemetry.state_dict(),
         )
 
-    def _observe(self, regions: list[list[Goal]]) -> pd.DataFrame:
+    def _voxelize_regions(self, regions: list[list[Goal]]) -> pd.DataFrame:
         """Voxelize this step's regions into a fresh grid.
 
         Args:
@@ -192,23 +192,23 @@ class AttentionSystem:
         aged["age"] = (aged["age"] - 1).astype(np.int32)
         return aged
 
-    def _merge(self, remembered: pd.DataFrame, observed: pd.DataFrame) -> pd.DataFrame:
-        """Merge this step's observations into the voxels already held.
+    def _merge(self, remembered: pd.DataFrame, proposed: pd.DataFrame) -> pd.DataFrame:
+        """Merge this step's proposed voxels into the voxels already held.
 
         Args:
             remembered: The voxels held from earlier steps, already aged.
-            observed: The grid built from this step's regions alone.
+            proposed: The grid built from this step's regions alone.
 
         Returns:
             The merged frame, before expired voxels are dropped.
 
         """
         if len(remembered) == 0:
-            return observed
-        if len(observed) == 0:
+            return proposed
+        if len(proposed) == 0:
             return remembered
 
-        fresh = observed.copy()
+        fresh = proposed.copy()
         seen_before = fresh.index.intersection(remembered.index)
         if len(seen_before):
             fresh.loc[seen_before, "count"] = (

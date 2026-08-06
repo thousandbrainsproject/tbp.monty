@@ -126,7 +126,7 @@ class SlicMerge(SegmentationStrategy):
         # Build adjacency graph
         adj: list[set[int]] = [set() for _ in range(n_regions)]
 
-        # - Regions are adjacent to their left/right neights.
+        # - Regions are adjacent to their left/right neighbors.
         h_neighbors = region_image[:, :-1] != region_image[:, 1:]
         for i, j in zip(*np.where(h_neighbors)):
             a, b = region_image[i, j], region_image[i, j + 1]
@@ -142,9 +142,7 @@ class SlicMerge(SegmentationStrategy):
 
         # Breadth-first merge from the point of fixation.
         central_region = region_image[y, x]
-        accepted_regions: set[int] = {
-            central_region
-        }  # foreground = attentional region.
+        accepted_regions: set[int] = {central_region}
         visited = {central_region}
         queue = deque([central_region])
         while queue:
