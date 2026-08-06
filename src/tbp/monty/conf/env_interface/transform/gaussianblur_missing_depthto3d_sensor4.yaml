@@ -5,7 +5,7 @@ transform:
   agent_id: agent_id_0
   sigma: 5
   sensor_ids:
-  - patch_0
+  - patch_1
 - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
   agent_id: agent_id_0
   max_depth: 1
@@ -27,8 +27,8 @@ transform:
     - 64
   world_coord: true
   zooms:
-  - 30.0
   - 10.0
+  - 30.0
   - 5.0
   - 1.0
   get_all_points: true

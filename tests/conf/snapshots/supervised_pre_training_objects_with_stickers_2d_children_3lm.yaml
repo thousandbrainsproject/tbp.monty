@@ -31,27 +31,9 @@ experiment:
           hypotheses_updater_args:
             max_nneighbors: 10
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
-          feature_weights:
-            patch_0:
-              hsv: ${np.array:[1, 0.5, 0.5]}
-              pose_vectors: ${np.array:[0, 2, 1]}
-          tolerances:
-            patch_0:
-              hsv: ${np.array:[0.1, 0.2, 0.2]}
-          max_match_distance: 0.001
-          x_percent_threshold: 20
-          evidence_threshold_config: all
-          max_graph_size: 0.1
-          num_model_voxels_per_dim: 100
-          object_evidence_threshold: 5
-        learning_module_1:
-          hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
-          hypotheses_updater_args:
-            max_nneighbors: 10
-          _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
           max_match_distance: 0.001
           tolerances:
-            patch_1:
+            patch_0:
               hsv: ${np.array:[0.1, 1, 1]}
               principal_curvatures_log: ${np.ones:2}
           feature_weights: {}
@@ -59,6 +41,24 @@ experiment:
           num_model_voxels_per_dim: 200
           max_nodes_per_graph: 2000
           object_evidence_threshold: 20
+        learning_module_1:
+          hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
+          hypotheses_updater_args:
+            max_nneighbors: 10
+          _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+          feature_weights:
+            patch_1:
+              hsv: ${np.array:[1, 0.5, 0.5]}
+              pose_vectors: ${np.array:[0, 2, 1]}
+          tolerances:
+            patch_1:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+          max_match_distance: 0.001
+          x_percent_threshold: 20
+          evidence_threshold_config: all
+          max_graph_size: 0.1
+          num_model_voxels_per_dim: 100
+          object_evidence_threshold: 5
         learning_module_2:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
@@ -83,8 +83,33 @@ experiment:
           max_nodes_per_graph: 2000
       sensor_modules:
         sensor_module_0:
-          _target_: tbp.monty.frameworks.models.two_d_sensor_module.TwoDSensorModule
+          _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
           sensor_module_id: patch_0
+          features:
+          - pose_vectors
+          - pose_fully_defined
+          - on_object
+          - object_coverage
+          - min_depth
+          - mean_depth
+          - hsv
+          - principal_curvatures_log
+          delta_thresholds:
+            on_object: 0
+            n_steps: 20
+            hsv:
+            - 0.1
+            - 0.1
+            - 0.1
+            pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+            principal_curvatures_log:
+            - 2
+            - 2
+            distance: 0.01
+          save_raw_obs: true
+        sensor_module_1:
+          _target_: tbp.monty.frameworks.models.two_d_sensor_module.TwoDSensorModule
+          sensor_module_id: patch_1
           save_raw_obs: false
           edge_detector:
             _target_: tbp.monty.frameworks.utils.edge_detection.EdgeDetector
@@ -109,19 +134,6 @@ experiment:
           - coherence
           - mean_depth
           - min_depth
-          delta_thresholds: null
-        sensor_module_1:
-          _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
-          sensor_module_id: patch_1
-          features:
-          - pose_vectors
-          - pose_fully_defined
-          - on_object
-          - object_coverage
-          - min_depth
-          - mean_depth
-          - hsv
-          - principal_curvatures_log
           delta_thresholds:
             on_object: 0
             n_steps: 20
@@ -130,11 +142,7 @@ experiment:
             - 0.1
             - 0.1
             pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
-            principal_curvatures_log:
-            - 2
-            - 2
             distance: 0.01
-          save_raw_obs: true
         sensor_module_2:
           _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
           sensor_module_id: patch_2
@@ -246,8 +254,8 @@ experiment:
             - false
             - false
             zooms:
-            - 30.0
             - 10.0
+            - 30.0
             - 5.0
             - 1.0
           agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
@@ -257,7 +265,7 @@ experiment:
         agent_id: agent_id_0
         sigma: 5
         sensor_ids:
-        - patch_0
+        - patch_1
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
         agent_id: agent_id_0
         max_depth: 1
@@ -279,8 +287,8 @@ experiment:
           - 64
         world_coord: true
         zooms:
-        - 30.0
         - 10.0
+        - 30.0
         - 5.0
         - 1.0
         get_all_points: true
@@ -353,7 +361,7 @@ experiment:
       count: 1
     seed: 42
     supervised_lm_ids:
-    - learning_module_0
+    - learning_module_1
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 episodes: all
 num_parallel: 16

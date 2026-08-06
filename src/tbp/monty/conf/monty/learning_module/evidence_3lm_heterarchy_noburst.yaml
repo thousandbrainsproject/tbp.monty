@@ -2,25 +2,9 @@
 
 learning_module_0:
   _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
-  feature_weights:
-    patch_0:
-      hsv: ${np.array:[1, 0.5, 0.5]}
-      pose_vectors: ${np.array:[0, 2, 1]}
-  tolerances:
-    patch_0:
-      hsv: ${np.array:[0.1, 0.2, 0.2]}
-  max_match_distance: 0.001
-  x_percent_threshold: 20
-  evidence_threshold_config: all
-  max_graph_size: 0.1
-  num_model_voxels_per_dim: 100
-  object_evidence_threshold: 5
-
-learning_module_1:
-  _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
   max_match_distance: 0.001
   tolerances:
-    patch_1:
+    patch_0:
       hsv: ${np.array:[0.1, 1, 1]}
       principal_curvatures_log: ${np.ones:2}
   feature_weights: {}
@@ -28,6 +12,22 @@ learning_module_1:
   num_model_voxels_per_dim: 200
   max_nodes_per_graph: 2000
   object_evidence_threshold: 20
+
+learning_module_1:
+  _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+  feature_weights:
+    patch_1:
+      hsv: ${np.array:[1, 0.5, 0.5]}
+      pose_vectors: ${np.array:[0, 2, 1]}
+  tolerances:
+    patch_1:
+      hsv: ${np.array:[0.1, 0.2, 0.2]}
+  max_match_distance: 0.001
+  x_percent_threshold: 20
+  evidence_threshold_config: all
+  max_graph_size: 0.1
+  num_model_voxels_per_dim: 100
+  object_evidence_threshold: 5
 
 learning_module_2:
   _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM

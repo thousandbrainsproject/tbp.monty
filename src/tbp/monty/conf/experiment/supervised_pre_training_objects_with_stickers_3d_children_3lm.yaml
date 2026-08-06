@@ -8,7 +8,7 @@ defaults:
   - /monty/connectivity: 3lm_3sm_heterarchy
   - /environment: habitat_dist_agent_sensors3
   - /env_interface: train_objects_with_stickers_3d_children_predefined
-  - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch1
+  - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
   - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4
   - /logging: silent_info_train
 
@@ -27,6 +27,6 @@ experiment:
       count: 1
     seed: 42
     supervised_lm_ids:
-      - learning_module_1
+      - learning_module_0
     logging:
       run_name: supervised_pre_training_objects_with_stickers_3d_children_3lm
